@@ -1,6 +1,9 @@
 import React from "react";
 import type { ReactNode } from "react";
 
+/**
+ * @deprecated Use PrintSlimHeader plus PrintSlimFooter for active print pages.
+ */
 type PrintPageHeaderProps = {
   eyebrow: string;
   headline: string;

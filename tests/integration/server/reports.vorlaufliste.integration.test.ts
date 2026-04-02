@@ -10,12 +10,14 @@
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
  * - articleValues enthaelt fuer alle aktiven Report-Kategorien stabile Werte oder null.
  * - useShortCodes=true ersetzt Artikel- und Komponentennamen durch Shortcodes.
+ * - Projekt-Preview-Tags der Vorlaufliste enthalten ungefiltert alle Projekt-Tags, nicht nur System-Tags.
  *
  * Fehlerfaelle:
  * - Mehrere Termine eines Projekts erzeugen mehrere Zeilen.
  * - Report ignoriert Artikel-Mappings, reportState, Paging oder Rollenpruefung.
  * - Termine ohne Projektzuordnung landen im Report.
  * - Shortcodes werden ignoriert und stattdessen immer die vollen Namen ausgegeben.
+ * - Nicht-default Projekt-Tags verschwinden in der Vorlaufliste-Preview.
  *
  * Ziel:
  * Den End-to-end-Vertrag der neuen Reports-Vorlaufliste inklusive Rollen- und Pagingverhalten absichern.
@@ -313,7 +315,11 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.items).toHaveLength(2);
     expect(response.body.items[0]).toEqual(expect.objectContaining({
       projectId: reportProject.project.id,
-      tags: [expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true })],
+      tags: expect.arrayContaining([
+        expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true }),
+        expect.objectContaining({ name: reportProject.createdTags[0], isDefault: false }),
+        expect.objectContaining({ name: reportProject.createdTags[1], isDefault: false }),
+      ]),
       highlightTag: expect.objectContaining({ name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: true }),
       customerFullName: "Mustermann, Max",
       postalCode: "12345",

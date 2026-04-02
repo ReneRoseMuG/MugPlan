@@ -11,9 +11,11 @@ import {
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
 import { ProduktionsplanungPrintLayout, type ProduktionsplanungPrintCategory } from "@/components/reports/ProduktionsplanungPrintLayout";
-import { PrintPageHeader } from "@/components/print/PrintPageHeader";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
+import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
+import { PrintSlimHeader } from "@/components/print/PrintSlimHeader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
@@ -477,6 +479,14 @@ function resolveVorlauflistePrintCellValue(row: VorlauflisteItem, columnId: stri
     return resolveValue(Number.isInteger(categoryId) ? resolveVorlauflisteArticleValue(row, categoryId) : null);
   }
   return "-";
+}
+
+function renderVorlauflistePrintCellContent(row: VorlauflisteItem, columnId: string, testId: string): JSX.Element {
+  return (
+    <span className={VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME} data-testid={testId}>
+      {resolveVorlauflistePrintCellValue(row, columnId)}
+    </span>
+  );
 }
 
 interface ReportsPageProps {
@@ -1372,55 +1382,82 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 </Button>
               ) : null}
               renderPage={(page) => (
-                <PrintPageShell orientation="landscape" paddingMm={10} testId={`vorlaufliste-print-page-${page.pageNumber}`}>
-                  <PrintPageHeader
-                    eyebrow="Report"
-                    headline="Vorlaufliste"
-                    subline={
+                <PrintPageShell
+                  orientation="landscape"
+                  paddingMm={10}
+                  testId={`vorlaufliste-print-page-${page.pageNumber}`}
+                  footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`vorlaufliste-print-page-footer-${page.pageNumber}`} />}
+                >
+                  <PrintSlimHeader
+                    label="Vorlaufliste"
+                    context={
                       submittedFilters?.toDate
                         ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
                         : formatDate(submittedFilters?.fromDate ?? null)
                     }
-                    rightSlot={(
-                      <div className="text-right">
-                        <p className="text-[10px] font-medium text-slate-500">{`Seite ${page.pageNumber} von ${page.totalPages}`}</p>
-                      </div>
-                    )}
+                    testId={`vorlaufliste-print-page-header-${page.pageNumber}`}
                   />
-                  <div className="mt-5 flex min-h-0 flex-1 overflow-hidden rounded border border-slate-300">
-                    <table className="w-full border-collapse text-[11px] text-slate-900">
-                      <thead className="bg-slate-100">
-                        <tr>
-                          {page.columns.map((column) => (
-                            <th
-                              key={column.id}
-                              className={cn("border-b border-slate-300 px-2 py-2 text-left font-semibold", column.isIndicator ? "px-0" : "")}
-                              style={column.isIndicator ? { width: 8, minWidth: 8 } : { width: `${(column.scaledWidthPx / VORLAUFLISTE_PRINT_WIDTH_PX) * 100}%` }}
-                            >
-                              {column.isIndicator ? "" : column.headerText}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {page.rows.map((row) => (
-                          <tr key={`vorlaufliste-print-row-${page.pageNumber}-${row.projectId}`} className="align-top">
-                            {page.columns.map((column) => (
-                              <td
-                                key={`${row.projectId}-${column.id}`}
-                                className={cn("border-b border-slate-200 px-2 py-2", column.isIndicator ? "px-0 py-0" : "")}
-                              >
-                                {column.isIndicator ? (
-                                  <div className="min-h-[28px] w-[8px]" style={{ backgroundColor: resolveVorlauflisteIndicatorColor(row) }} />
-                                ) : (
-                                  <span>{resolveVorlauflistePrintCellValue(row, column.id)}</span>
-                                )}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+                    {page.weekSections.map((weekSection) => (
+                      <section
+                        key={`vorlaufliste-print-week-${page.pageNumber}-${weekSection.weekStart}-${weekSection.continuedFromPrevious ? "continued" : "start"}`}
+                        className="space-y-2"
+                        data-testid={`vorlaufliste-print-week-${page.pageNumber}-${weekSection.weekStart}`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <PrintSectionHeader label={`KW ${weekSection.weekNumber}`} className="tracking-widest" />
+                            {weekSection.continuedFromPrevious ? (
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-slate-500">
+                                Fortsetzung
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-[10px] text-slate-400">
+                            {formatDate(weekSection.weekStart)} - {formatDate(weekSection.weekEnd)}
+                          </p>
+                        </div>
+                        <div className="overflow-hidden rounded border border-slate-300">
+                          <table className="w-full border-collapse text-[11px] text-slate-900">
+                            <thead className="bg-slate-100">
+                              <tr>
+                                {page.columns.map((column) => (
+                                  <th
+                                    key={column.id}
+                                    className={cn("border-b border-slate-300 px-2 py-2 text-left font-semibold", column.isIndicator ? "px-0" : "")}
+                                    style={column.isIndicator ? { width: 8, minWidth: 8 } : { width: `${(column.scaledWidthPx / VORLAUFLISTE_PRINT_WIDTH_PX) * 100}%` }}
+                                  >
+                                    {column.isIndicator ? "" : column.headerText}
+                                  </th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {weekSection.rows.map((row) => (
+                                <tr key={`vorlaufliste-print-row-${page.pageNumber}-${weekSection.weekStart}-${row.projectId}`} className="align-top">
+                                  {page.columns.map((column) => (
+                                    <td
+                                      key={`${row.projectId}-${column.id}`}
+                                      className={cn("border-b border-slate-200 px-2 py-2", column.isIndicator ? "px-0 py-0" : "")}
+                                    >
+                                      {column.isIndicator ? (
+                                        <div className="min-h-[28px] w-[8px]" style={{ backgroundColor: resolveVorlauflisteIndicatorColor(row) }} />
+                                      ) : (
+                                        renderVorlauflistePrintCellContent(
+                                          row,
+                                          column.id,
+                                          `vorlaufliste-print-cell-${page.pageNumber}-${row.projectId}-${column.id}`,
+                                        )
+                                      )}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+                    ))}
                   </div>
                 </PrintPageShell>
               )}
@@ -1541,5 +1578,3 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     </div>
   );
 }
-
-

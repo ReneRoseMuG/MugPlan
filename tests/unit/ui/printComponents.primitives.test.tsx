@@ -62,6 +62,23 @@ describe("generisches Print-System", () => {
     expect(landscapeHtml).toContain("210mm");
   });
 
+  it("PrintPageShell rendert einen optionalen Footer-Slot", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(
+        PrintPageShell,
+        {
+          orientation: "landscape",
+          footer: React.createElement("div", { "data-testid": "print-shell-footer" }, "footer"),
+        },
+        React.createElement("div", null, "inhalt"),
+      ),
+    );
+
+    expect(html).toContain("inhalt");
+    expect(html).toContain('data-testid="print-shell-footer"');
+    expect(html).toContain("footer");
+  });
+
   it("PrintDayColumn rendert label im generischen Spaltenkopf", () => {
     const html = renderToStaticMarkup(
       React.createElement(PrintDayColumn, { label: "Mo, 01.01.", dateKey: "2099-01-01" }),
