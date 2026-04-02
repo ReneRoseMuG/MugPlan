@@ -199,6 +199,11 @@ function rowByText(table: Locator, text: string): Locator {
   return table.getByRole("row").filter({ hasText: text }).first();
 }
 
+function formatIsoDateForUi(value: string): string {
+  const [year, month, day] = value.split("-");
+  return `${day}.${month}.${year}`;
+}
+
 async function getHeaderTexts(table: Locator) {
   return (await table.locator("thead th").allTextContents())
     .map((value) => value.trim())
@@ -366,10 +371,17 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
 
   await page.getByTestId("button-reports-vorlaufliste-print-preview").click();
   await expect(page.getByTestId("dialog-vorlaufliste-print-preview")).toBeVisible();
-  await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toContainText("Seite 1 von 2");
+  await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toHaveCount(0);
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(formatIsoDateForUi(inRangeDate));
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).not.toContainText(inRangeDate);
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(/Seite 1 von \d+/);
   await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText("KOL");
+  const firstPrintPage = page.getByTestId("vorlaufliste-print-page-1").first();
+  const firstPageBox = await firstPrintPage.boundingBox();
+  expect(firstPageBox).not.toBeNull();
+  expect(firstPageBox!.width).toBeGreaterThan(firstPageBox!.height);
   await page.getByTestId("button-vorlaufliste-print-preview-next").click();
-  await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toContainText("Seite 2 von 2");
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText(/Seite 2 von \d+/);
   await page.getByTestId("button-reports-vorlaufliste-print").click();
   await expect.poll(async () => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls ?? 0)).toBe(1);
   await page.keyboard.press("Escape");

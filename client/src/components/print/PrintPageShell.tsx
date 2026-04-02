@@ -18,12 +18,12 @@ export function PrintPageShell({ orientation, children, paddingMm = 10, testId }
 
   return (
     <section
-      className="mx-auto flex flex-col gap-5 border border-slate-300 bg-white text-slate-900 shadow-lg print:shadow-none"
+      className="mx-auto shrink-0 flex flex-col gap-5 overflow-hidden border border-slate-300 bg-white text-slate-900 shadow-lg print:shadow-none"
       data-testid={testId}
       data-print-orientation={orientation}
       style={{
         width: `${dimensions.width}mm`,
-        minHeight: `${dimensions.height}mm`,
+        height: `${dimensions.height}mm`,
         padding: `${paddingMm}mm`,
         boxSizing: "border-box",
       }}

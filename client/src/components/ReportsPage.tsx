@@ -11,6 +11,7 @@ import {
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
 import { ProductVorlaufPrintLayout, type ProductVorlaufPrintCategory } from "@/components/reports/ProductVorlaufPrintLayout";
+import { PrintPageHeader } from "@/components/print/PrintPageHeader";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { Button } from "@/components/ui/button";
@@ -184,7 +185,7 @@ const PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
 const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
-const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 20;
+const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 
 function normalizeIds(ids: number[]): number[] {
@@ -1346,8 +1347,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               onPageChange={setActiveVorlauflistePrintPageIndex}
               testIdPrefix="vorlaufliste-print-preview"
               dialogTestId="dialog-vorlaufliste-print-preview"
+              showPageMetaBar={false}
               getPageKey={(page) => page.pageNumber}
-              getPageTitle={(page) => `Seite ${page.pageNumber} von ${page.totalPages}`}
               headerActions={vorlauflistePrintPages.length > 0 ? (
                 <Button type="button" variant="outline" onClick={handleVorlauflistePrint} data-testid="button-reports-vorlaufliste-print">
                   <Printer className="h-4 w-4" />
@@ -1356,17 +1357,21 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               ) : null}
               renderPage={(page) => (
                 <PrintPageShell orientation="landscape" paddingMm={10} testId={`vorlaufliste-print-page-${page.pageNumber}`}>
-                  <div className="flex items-center justify-between border-b border-slate-300 pb-3">
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-900">Vorlaufliste</h2>
-                      <p className="text-sm text-slate-600">
-                        {submittedFilters?.fromDate ?? "-"}
-                        {submittedFilters?.toDate ? ` bis ${submittedFilters.toDate}` : ""}
-                      </p>
-                    </div>
-                    <div className="text-sm text-slate-600">Seite {page.pageNumber} von {page.totalPages}</div>
-                  </div>
-                  <div className="mt-4 overflow-hidden rounded border border-slate-300">
+                  <PrintPageHeader
+                    eyebrow="Report"
+                    headline="Vorlaufliste"
+                    subline={
+                      submittedFilters?.toDate
+                        ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
+                        : formatDate(submittedFilters?.fromDate ?? null)
+                    }
+                    rightSlot={(
+                      <div className="text-right">
+                        <p className="text-[10px] font-medium text-slate-500">{`Seite ${page.pageNumber} von ${page.totalPages}`}</p>
+                      </div>
+                    )}
+                  />
+                  <div className="mt-5 flex min-h-0 flex-1 overflow-hidden rounded border border-slate-300">
                     <table className="w-full border-collapse text-[11px] text-slate-900">
                       <thead className="bg-slate-100">
                         <tr>

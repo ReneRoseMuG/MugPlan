@@ -19,6 +19,7 @@ type PrintPreviewDialogProps<TPage> = {
   dialogTestId?: string;
   loadingState?: React.ReactNode;
   errorState?: React.ReactNode;
+  showPageMetaBar?: boolean;
 };
 
 export function PrintPreviewDialog<TPage>({
@@ -37,6 +38,7 @@ export function PrintPreviewDialog<TPage>({
   dialogTestId,
   loadingState,
   errorState,
+  showPageMetaBar = true,
 }: PrintPreviewDialogProps<TPage>) {
   const activePage = pages[activePageIndex] ?? null;
   const canGoPrev = activePageIndex > 0;
@@ -75,14 +77,16 @@ export function PrintPreviewDialog<TPage>({
               </div>
             </DialogHeader>
 
-            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-sm">
-              <div className="font-medium text-slate-700" data-testid={`${testIdPrefix}-page-indicator`}>
-                {pages.length > 0 ? `Seite ${activePageIndex + 1} von ${pages.length}` : "Keine Seiten geladen"}
+            {showPageMetaBar ? (
+              <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-sm">
+                <div className="font-medium text-slate-700" data-testid={`${testIdPrefix}-page-indicator`}>
+                  {pages.length > 0 ? `Seite ${activePageIndex + 1} von ${pages.length}` : "Keine Seiten geladen"}
+                </div>
+                <div className="min-w-0 truncate text-right text-slate-500" data-testid={`${testIdPrefix}-page-title`}>
+                  {activePage && getPageTitle ? getPageTitle(activePage, activePageIndex) : ""}
+                </div>
               </div>
-              <div className="min-w-0 truncate text-right text-slate-500" data-testid={`${testIdPrefix}-page-title`}>
-                {activePage && getPageTitle ? getPageTitle(activePage, activePageIndex) : ""}
-              </div>
-            </div>
+            ) : null}
 
             <div className="relative flex-1 overflow-auto bg-slate-200 px-4 py-4" data-testid={`${testIdPrefix}-pages`}>
               <style>
