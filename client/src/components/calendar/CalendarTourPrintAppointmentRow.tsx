@@ -46,7 +46,10 @@ export function CalendarTourPrintAppointmentRow({ appointment }: Props) {
   const countryLine = appointment.customer.country?.trim() ?? "";
 
   return (
-    <tr className={isReklamation ? "bg-red-50" : ""} data-testid={`tour-print-appointment-row-${appointment.id}`}>
+    <tr
+      className={`break-before-avoid break-inside-avoid${isReklamation ? " bg-red-50" : ""}`}
+      data-testid={`tour-print-appointment-row-${appointment.id}`}
+    >
       <td className={`py-1 pr-2 text-[11px] align-top whitespace-nowrap overflow-hidden${dateIsReklamation ? " italic text-red-600" : " text-slate-700"}`}>
         {dateIsReklamation ? (
           <>
