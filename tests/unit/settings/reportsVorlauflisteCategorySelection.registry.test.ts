@@ -2,110 +2,70 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der User-Setting-Key fuer die Vorlaufliste speichert Produkt- und Komponentenkategorie-IDs getrennt.
- * - Nur positive Integer-Arrays ohne Duplikate sind gueltig.
- * - Das optionale Feld useShortCodes wird als boolescher Wert akzeptiert oder abgewiesen.
- * - Optionale columnWidths akzeptieren nur ganzzahlige Pixelwerte im erlaubten Bereich.
+ * - Der User-Setting-Key für die Vorlaufliste speichert die neue Spaltenkonfiguration benutzerspezifisch.
+ * - columnOrder, hiddenColumns, useShortCodes und columnWidths werden im Registry-Vertrag validiert.
+ * - Legacy-Felder aus dem alten Shape machen den Payload nicht ungültig.
  *
- * Fehlerfaelle:
- * - Ungueltige JSON-Strukturen oder Duplikate werden als gueltig akzeptiert.
- * - Nicht-boolescher Wert fuer useShortCodes wird akzeptiert.
- * - Ungueltige columnWidths werden trotz falscher Werte angenommen.
+ * Fehlerfälle:
+ * - Der Default fällt auf alte Kategorie-Arrays zurück.
+ * - Ungültige Arrays, Nicht-Boolean-Werte oder falsche columnWidths werden akzeptiert.
+ * - Bestehende Legacy-Payloads würden durch die Registry hart abgewiesen.
  *
  * Ziel:
- * Den Registry-Vertrag fuer die persistente Vorlaufliste-Kategorieauswahl absichern.
+ * Den Registry-Vertrag für die persistente Vorlaufliste-Spaltenkonfiguration absichern.
  */
 import { describe, expect, it } from "vitest";
+
 import { userSettingsRegistry } from "../../../server/settings/registry";
 
 describe("settings registry: reports.vorlaufliste.categorySelection", () => {
   const definition = userSettingsRegistry.reportsVorlauflisteCategorySelection;
 
-  it("uses a USER-scoped json setting with empty default arrays", () => {
+  it("uses a USER-scoped json setting with an empty object default", () => {
     expect(definition.key).toBe("reports.vorlaufliste.categorySelection");
     expect(definition.type).toBe("json");
     expect(definition.allowedScopes).toEqual(["USER"]);
-    expect(definition.defaultValue).toEqual({
-      productCategoryIds: [],
-      componentCategoryIds: [],
-    });
+    expect(definition.defaultValue).toEqual({});
   });
 
-  it("accepts positive integer arrays without duplicates", () => {
+  it("accepts the new column configuration shape", () => {
     expect(definition.validate({
-      productCategoryIds: [1, 2],
-      componentCategoryIds: [3, 4],
-    })).toBe(true);
-  });
-
-  it("rejects invalid payloads and duplicate ids", () => {
-    expect(definition.validate(null)).toBe(false);
-    expect(definition.validate({
-      productCategoryIds: [1, 1],
-      componentCategoryIds: [3],
-    })).toBe(false);
-    expect(definition.validate({
-      productCategoryIds: ["1"],
-      componentCategoryIds: [3],
-    })).toBe(false);
-  });
-
-  it("accepts useShortCodes as optional boolean", () => {
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
+      columnOrder: ["amount", "city", "product-7"],
+      hiddenColumns: ["component-9"],
       useShortCodes: true,
-    })).toBe(true);
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
-      useShortCodes: false,
-    })).toBe(true);
-  });
-
-  it("rejects non-boolean useShortCodes", () => {
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
-      useShortCodes: "true",
-    })).toBe(false);
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
-      useShortCodes: 1,
-    })).toBe(false);
-  });
-
-  it("accepts optional columnWidths with integer pixel values", () => {
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
       columnWidths: {
         amount: 180,
-        "product-9": 320,
+        "product-7": 320,
       },
     })).toBe(true);
   });
 
-  it("rejects invalid columnWidths", () => {
+  it("rejects invalid arrays, non-boolean flags and invalid widths", () => {
+    expect(definition.validate(null)).toBe(false);
     expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
+      columnOrder: ["amount", "amount"],
+    })).toBe(false);
+    expect(definition.validate({
+      hiddenColumns: ["city", ""],
+    })).toBe(false);
+    expect(definition.validate({
+      useShortCodes: "true",
+    })).toBe(false);
+    expect(definition.validate({
       columnWidths: {
         amount: 79,
       },
     })).toBe(false);
     expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
-      columnWidths: {
-        amount: 120.5,
-      },
-    })).toBe(false);
-    expect(definition.validate({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
       columnWidths: [],
     })).toBe(false);
+  });
+
+  it("ignores legacy category fields instead of rejecting the payload", () => {
+    expect(definition.validate({
+      productCategoryIds: [1, 2],
+      componentCategoryIds: [3],
+      useShortCodes: false,
+    })).toBe(true);
   });
 });

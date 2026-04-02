@@ -78,6 +78,12 @@ export type VorlauflistePagedResult = {
   items: VorlauflisteRow[];
 };
 
+export type VorlauflisteResult = {
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+  items: VorlauflisteRow[];
+};
+
 export type ProductVorlaufItemTotal = {
   itemName: string;
   totalQuantity: number;
@@ -136,6 +142,19 @@ type ProjectReportTagState = {
   hasReportExclusion: boolean;
   cancellationTag: Tag | null;
   specialMeasureTag: Tag | null;
+};
+
+type VorlauflisteAppointmentMeta = {
+  sortDate: string;
+  actualDate: string;
+  reportState: AppointmentCancellationReportState;
+};
+
+type VorlauflisteProjectMeta = {
+  sortedProjectIds: number[];
+  appointmentMetaByProjectId: Map<number, VorlauflisteAppointmentMeta>;
+  projectReportTagStateByProjectId: Map<number, ProjectReportTagState>;
+  tagsByProjectId: Map<number, Tag[]>;
 };
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -226,15 +245,40 @@ function buildProjectReportTagStateByProjectId(
   return stateByProjectId;
 }
 
-export async function getVorlauflistePaged(params: {
+async function listActiveVorlauflisteCategories(): Promise<{
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+}> {
+  const [activeProductCategories, activeComponentCategories] = await Promise.all([
+    db
+      .select({
+        id: productCategories.id,
+        name: productCategories.name,
+      })
+      .from(productCategories)
+      .where(eq(productCategories.isActive, true))
+      .orderBy(asc(productCategories.name), asc(productCategories.id)),
+    db
+      .select({
+        id: componentCategories.id,
+        name: componentCategories.name,
+      })
+      .from(componentCategories)
+      .where(eq(componentCategories.isActive, true))
+      .orderBy(asc(componentCategories.name), asc(componentCategories.id)),
+  ]);
+
+  return {
+    productCategories: activeProductCategories,
+    componentCategories: activeComponentCategories,
+  };
+}
+
+async function buildVorlauflisteProjectMeta(params: {
   fromDate: string;
   toDate?: string;
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
   useShortCodes: boolean;
-  page: number;
-  pageSize: number;
-}): Promise<VorlauflistePagedResult> {
+}): Promise<VorlauflisteProjectMeta> {
   const appointmentConditions = buildAppointmentConditions(params);
   const projectAppointmentRows = await db
     .select({
@@ -254,13 +298,10 @@ export async function getVorlauflistePaged(params: {
 
   if (normalizedAppointmentRows.length === 0) {
     return {
-      page: params.page,
-      pageSize: params.pageSize,
-      total: 0,
-      totalPages: 0,
-      productCategories: [],
-      componentCategories: [],
-      items: [],
+      sortedProjectIds: [],
+      appointmentMetaByProjectId: new Map<number, VorlauflisteAppointmentMeta>(),
+      projectReportTagStateByProjectId: new Map<number, ProjectReportTagState>(),
+      tagsByProjectId: new Map<number, Tag[]>(),
     };
   }
 
@@ -275,11 +316,7 @@ export async function getVorlauflistePaged(params: {
     appointmentTagsByAppointmentId,
     tagsByProjectId,
   );
-  const appointmentMetaByProjectId = new Map<number, {
-    sortDate: string;
-    actualDate: string;
-    reportState: AppointmentCancellationReportState;
-  }>();
+  const appointmentMetaByProjectId = new Map<number, VorlauflisteAppointmentMeta>();
   const appointmentAccumulatorByProjectId = new Map<number, {
     firstActiveDate: string | null;
     firstCancelledDate: string | null;
@@ -327,31 +364,26 @@ export async function getVorlauflistePaged(params: {
     .sort((left, right) => left[1].sortDate.localeCompare(right[1].sortDate, "de") || left[0] - right[0])
     .map(([projectId]) => projectId);
 
-  const total = sortedProjectIds.length;
-  if (total === 0) {
-    return {
-      page: params.page,
-      pageSize: params.pageSize,
-      total: 0,
-      totalPages: 0,
-      productCategories: [],
-      componentCategories: [],
-      items: [],
-    };
-  }
+  return {
+    sortedProjectIds,
+    appointmentMetaByProjectId,
+    projectReportTagStateByProjectId,
+    tagsByProjectId,
+  };
+}
 
-  const offset = (params.page - 1) * params.pageSize;
-  const projectIds = sortedProjectIds.slice(offset, offset + params.pageSize);
+async function buildVorlauflisteItems(params: {
+  projectIds: number[];
+  useShortCodes: boolean;
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+  appointmentMetaByProjectId: Map<number, VorlauflisteAppointmentMeta>;
+  projectReportTagStateByProjectId: Map<number, ProjectReportTagState>;
+  tagsByProjectId: Map<number, Tag[]>;
+}): Promise<VorlauflisteRow[]> {
+  const { projectIds } = params;
   if (projectIds.length === 0) {
-    return {
-      page: params.page,
-      pageSize: params.pageSize,
-      total,
-      totalPages: Math.ceil(total / params.pageSize),
-      productCategories: [],
-      componentCategories: [],
-      items: [],
-    };
+    return [];
   }
 
   const projectRows = await db
@@ -408,10 +440,8 @@ export async function getVorlauflistePaged(params: {
 
   const projectById = new Map(projectRows.map((row) => [row.project.id, row] as const));
   const bucketsByProjectId = new Map<number, ReportArticleBuckets>();
-  const selectedProductCategoryIds = new Set(params.productCategoryIds);
-  const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
-  const productCategoryNameById = new Map<number, string>();
-  const componentCategoryNameById = new Map<number, string>();
+  const activeProductCategoryIds = new Set(params.productCategories.map((category) => category.id));
+  const activeComponentCategoryIds = new Set(params.componentCategories.map((category) => category.id));
 
   for (const row of orderItemRows) {
     const projectId = row.item.projectId;
@@ -420,91 +450,131 @@ export async function getVorlauflistePaged(params: {
     if (
       row.product
       && row.productCategory
-      && (selectedProductCategoryIds.size === 0 || selectedProductCategoryIds.has(row.productCategory.id))
+      && activeProductCategoryIds.has(row.productCategory.id)
     ) {
-      productCategoryNameById.set(row.productCategory.id, row.productCategory.name);
       const displayName = resolveArticleName(row.product.name.trim(), row.product.shortCode, params.useShortCodes);
       addToBucket(buckets, row.productCategory.id, displayName);
       bucketsByProjectId.set(projectId, buckets);
       continue;
     }
 
-    if (!row.component || !row.componentCategory) {
+    if (!row.component || !row.componentCategory || !activeComponentCategoryIds.has(row.componentCategory.id)) {
       bucketsByProjectId.set(projectId, buckets);
       continue;
     }
 
-    if (selectedComponentCategoryIds.size > 0 && !selectedComponentCategoryIds.has(row.componentCategory.id)) {
-      bucketsByProjectId.set(projectId, buckets);
-      continue;
-    }
-
-    componentCategoryNameById.set(row.componentCategory.id, row.componentCategory.name);
     const displayName = resolveArticleName(row.component.name.trim(), row.component.shortCode, params.useShortCodes);
     addToBucket(buckets, row.componentCategory.id, displayName);
     bucketsByProjectId.set(projectId, buckets);
   }
 
-  const orderedProductCategories: VorlauflisteCategory[] = params.productCategoryIds
-    .filter((id) => productCategoryNameById.has(id))
-    .map((id) => ({ id, name: productCategoryNameById.get(id)! }));
-
-  const orderedComponentCategories: VorlauflisteCategory[] = params.componentCategoryIds
-    .filter((id) => componentCategoryNameById.has(id))
-    .map((id) => ({ id, name: componentCategoryNameById.get(id)! }));
-
   const allCategoryIds = [
-    ...params.productCategoryIds,
-    ...params.componentCategoryIds,
+    ...params.productCategories.map((category) => category.id),
+    ...params.componentCategories.map((category) => category.id),
   ];
+
+  return projectIds
+    .map((projectId) => {
+      const row = projectById.get(projectId);
+      const appointmentMeta = params.appointmentMetaByProjectId.get(projectId);
+      const projectTagState = params.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+      if (!row || !appointmentMeta) return null;
+      const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+      const projectTags = (params.tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
+
+      const articleValues: VorlauflisteArticleValue[] = allCategoryIds.map((categoryId) => ({
+        categoryId,
+        value: joinSorted(buckets.get(categoryId) ?? new Set()),
+      }));
+
+      return {
+        projectId,
+        projectName: row.project.name,
+        isActive: row.project.isActive,
+        orderNumber: row.order?.orderNumber ?? null,
+        customerId: row.customer.id,
+        customerNumber: row.customer.customerNumber || null,
+        tags: projectTags,
+        highlightTag: projectTagState.cancellationTag ?? projectTagState.specialMeasureTag,
+        amount: row.order?.amount ?? null,
+        customerFullName: row.customer.fullName ?? null,
+        postalCode: row.customer.postalCode ?? null,
+        city: row.customer.city ?? null,
+        country: row.customer.country ?? null,
+        articleValues,
+        plannedDateText: row.order?.plannedDateText ?? null,
+        plannedWeek: row.order?.plannedWeek ?? null,
+        actualDate: appointmentMeta.actualDate,
+        projectDescription: stripReportHtmlToText(row.project.descriptionMd),
+        notesCount: projectNoteCountsByProjectId.get(projectId) ?? 0,
+        plannedAppointmentsCount: plannedAppointmentsCountByProjectId.get(projectId) ?? 0,
+        attachmentsCount: projectAttachmentsCountByProjectId.get(projectId) ?? 0,
+        reportState: appointmentMeta.reportState,
+      };
+    })
+    .filter((entry): entry is VorlauflisteRow => entry !== null);
+}
+
+export async function getVorlauflistePaged(params: {
+  fromDate: string;
+  toDate?: string;
+  useShortCodes: boolean;
+  page: number;
+  pageSize: number;
+}): Promise<VorlauflistePagedResult> {
+  const [categories, projectMeta] = await Promise.all([
+    listActiveVorlauflisteCategories(),
+    buildVorlauflisteProjectMeta(params),
+  ]);
+
+  const total = projectMeta.sortedProjectIds.length;
+  const totalPages = total === 0 ? 0 : Math.ceil(total / params.pageSize);
+  const offset = (params.page - 1) * params.pageSize;
+  const projectIds = projectMeta.sortedProjectIds.slice(offset, offset + params.pageSize);
+  const items = await buildVorlauflisteItems({
+    projectIds,
+    useShortCodes: params.useShortCodes,
+    productCategories: categories.productCategories,
+    componentCategories: categories.componentCategories,
+    appointmentMetaByProjectId: projectMeta.appointmentMetaByProjectId,
+    projectReportTagStateByProjectId: projectMeta.projectReportTagStateByProjectId,
+    tagsByProjectId: projectMeta.tagsByProjectId,
+  });
 
   return {
     page: params.page,
     pageSize: params.pageSize,
     total,
-    totalPages: Math.ceil(total / params.pageSize),
-    productCategories: orderedProductCategories,
-    componentCategories: orderedComponentCategories,
-    items: projectIds
-      .map((projectId) => {
-        const row = projectById.get(projectId);
-        const appointmentMeta = appointmentMetaByProjectId.get(projectId);
-        const projectTagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
-        if (!row || !appointmentMeta) return null;
-        const buckets = bucketsByProjectId.get(projectId) ?? createEmptyBuckets();
-        const projectTags = (tagsByProjectId.get(projectId) ?? []).filter((tag) => tag.isDefault);
+    totalPages,
+    productCategories: categories.productCategories,
+    componentCategories: categories.componentCategories,
+    items,
+  };
+}
 
-        const articleValues: VorlauflisteArticleValue[] = allCategoryIds.map((categoryId) => ({
-          categoryId,
-          value: joinSorted(buckets.get(categoryId) ?? new Set()),
-        }));
+export async function getVorlauflistePrintPreview(params: {
+  fromDate: string;
+  toDate?: string;
+  useShortCodes: boolean;
+}): Promise<VorlauflisteResult> {
+  const [categories, projectMeta] = await Promise.all([
+    listActiveVorlauflisteCategories(),
+    buildVorlauflisteProjectMeta(params),
+  ]);
+  const items = await buildVorlauflisteItems({
+    projectIds: projectMeta.sortedProjectIds,
+    useShortCodes: params.useShortCodes,
+    productCategories: categories.productCategories,
+    componentCategories: categories.componentCategories,
+    appointmentMetaByProjectId: projectMeta.appointmentMetaByProjectId,
+    projectReportTagStateByProjectId: projectMeta.projectReportTagStateByProjectId,
+    tagsByProjectId: projectMeta.tagsByProjectId,
+  });
 
-        return {
-          projectId,
-          projectName: row.project.name,
-          isActive: row.project.isActive,
-          orderNumber: row.order?.orderNumber ?? null,
-          customerId: row.customer.id,
-          customerNumber: row.customer.customerNumber || null,
-          tags: projectTags,
-          highlightTag: projectTagState.cancellationTag ?? projectTagState.specialMeasureTag,
-          amount: row.order?.amount ?? null,
-          customerFullName: row.customer.fullName ?? null,
-          postalCode: row.customer.postalCode ?? null,
-          city: row.customer.city ?? null,
-          country: row.customer.country ?? null,
-          articleValues,
-          plannedDateText: row.order?.plannedDateText ?? null,
-          plannedWeek: row.order?.plannedWeek ?? null,
-          actualDate: appointmentMeta.actualDate,
-          projectDescription: stripReportHtmlToText(row.project.descriptionMd),
-          notesCount: projectNoteCountsByProjectId.get(projectId) ?? 0,
-          plannedAppointmentsCount: plannedAppointmentsCountByProjectId.get(projectId) ?? 0,
-          attachmentsCount: projectAttachmentsCountByProjectId.get(projectId) ?? 0,
-          reportState: appointmentMeta.reportState,
-        };
-      })
-      .filter((entry): entry is VorlauflisteRow => entry !== null),
+  return {
+    productCategories: categories.productCategories,
+    componentCategories: categories.componentCategories,
+    items,
   };
 }
 

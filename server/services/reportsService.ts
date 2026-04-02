@@ -22,8 +22,6 @@ export async function listVorlaufliste(
   params: {
     fromDate: string;
     toDate?: string;
-    productCategoryIds: number[];
-    componentCategoryIds: number[];
     useShortCodes: boolean;
     page: number;
     pageSize: number;
@@ -37,6 +35,23 @@ export async function listVorlaufliste(
   }
 
   return reportsRepository.getVorlauflistePaged(params);
+}
+
+export async function getVorlauflistePrintPreview(
+  params: {
+    fromDate: string;
+    toDate?: string;
+    useShortCodes: boolean;
+  },
+  roleKey: CanonicalRoleKey,
+) {
+  assertReportReadRole(roleKey);
+
+  if (params.toDate && params.toDate < params.fromDate) {
+    throw new ReportsError(422, "VALIDATION_ERROR");
+  }
+
+  return reportsRepository.getVorlauflistePrintPreview(params);
 }
 
 export async function listProductVorlauf(

@@ -2,19 +2,20 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Reports-Seite sperrt die Erzeugung ohne Von-Datum und zeigt Vorlaufliste-Daten mit voller, teilweiser und leerer Artikelbelegung sichtbar an.
- * - Shortcodes und Kategorieauswahlen fuer Vorlaufliste und Produkt-Vorlauf bleiben nach Navigation sichtbar erhalten.
- * - Ein geleertes Bis-Datum erweitert die Vorlaufliste bei erneuter Erzeugung wieder auf spaetere Termine.
- * - Der Produkt-Vorlauf zeigt Produkt- und Komponentenbloecke sowie den Sondermass-Block fuer passende Projekte sichtbar an.
+ * - Die Reports-Seite sperrt die Erzeugung ohne Von-Datum und zeigt die Vorlaufliste mit voller, teilweiser und leerer Artikelbelegung an.
+ * - Vorlaufliste-Shortcodes sowie Spalten-Sichtbarkeit und -Reihenfolge bleiben nach Navigation erhalten und lassen sich zurücksetzen.
+ * - Der Statusindikator ersetzt die alte Zeilenfärbung, die Druckvorschau paginiert den vollständigen Report und Drucken ruft window.print auf.
+ * - Ein geleertes Bis-Datum erweitert die Vorlaufliste erneut auf spätere Termine.
+ * - Der Produkt-Vorlauf zeigt Produkt-, Komponenten- und Sondermaß-Blöcke weiterhin sichtbar an.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
- * - Persistierte Checkbox-Auswahlen oder die Shortcode-Option gehen nach Navigation verloren.
- * - Ein geleertes Bis-Datum bleibt im UI wirkungslos.
- * - Der Produkt-Vorlauf verliert Sondermass- oder Gruppentreffer im Browserfluss.
+ * - Persistierte Vorlaufliste-Konfiguration geht nach Navigation verloren.
+ * - Die Druckvorschau lädt keine zweite Seite oder ruft Drucken nicht aus dem Dialog heraus auf.
+ * - Der Produkt-Vorlauf verliert Sondermaß- oder Gruppentreffer im Browserfluss.
  *
  * Ziel:
- * Die FT26-Reportsuite aus Anwendersicht ueber Vorlaufliste, Persistenz und Produkt-Vorlauf im Browser regressionssicher absichern.
+ * Die FT26-Reportsuite aus Anwendersicht über Vorlaufliste, Persistenz, Druckvorschau und Produkt-Vorlauf regressionssicher absichern.
  */
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
@@ -198,7 +199,20 @@ function rowByText(table: Locator, text: string): Locator {
   return table.getByRole("row").filter({ hasText: text }).first();
 }
 
-test("covers visible FT26 report interactions, persistence and product-vorlauf output", async ({ page }) => {
+async function getHeaderTexts(table: Locator) {
+  return (await table.locator("thead th").allTextContents())
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+}
+
+test("covers visible FT26 report interactions, persistence, print preview and product-vorlauf output", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as Window & { __printCalls?: number }).__printCalls = 0;
+    window.print = () => {
+      (window as Window & { __printCalls?: number }).__printCalls = ((window as Window & { __printCalls?: number }).__printCalls ?? 0) + 1;
+    };
+  });
+
   const inRangeDate = getRelativeBerlinDate(1);
   const laterDate = getRelativeBerlinDate(40);
   const specialMeasureTag = await ensureManagedSpecialMeasureTag();
@@ -289,6 +303,14 @@ test("covers visible FT26 report interactions, persistence and product-vorlauf o
     },
   });
 
+  for (let index = 0; index < 18; index += 1) {
+    await createBrowserReportProjectFixture({
+      prefix: `FT26 Browser Druckseite ${index + 1}`,
+      appointmentDates: [inRangeDate],
+      amount: String(1000 + index),
+    });
+  }
+
   await openReports(page);
 
   const vorlauflisteGenerateButton = page.getByTestId("button-reports-vorlaufliste-generate");
@@ -311,6 +333,10 @@ test("covers visible FT26 report interactions, persistence and product-vorlauf o
   await expect(vorlauflisteTable).toContainText("Fenster Klein Voll");
   await expect(vorlauflisteTable).not.toContainText("KOL");
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
+  await expect(page.getByTestId(`reports-vorlaufliste-indicator-${specialProject.project.id}`)).toHaveCSS("background-color", "rgb(30, 58, 138)");
+  await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Storniert");
+  await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Sondermaß / Info-Tag");
+  expect(await rowByText(vorlauflisteTable, specialProject.customer.fullName ?? "").getAttribute("style")).toBeNull();
 
   const partialRow = rowByText(vorlauflisteTable, partialProject.customer.fullName ?? "");
   await expect(partialRow).toContainText("Teilglas Browser");
@@ -324,13 +350,32 @@ test("covers visible FT26 report interactions, persistence and product-vorlauf o
   await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toHaveAttribute("data-state", "checked");
 
   await vorlauflisteGenerateButton.click();
+  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+  await page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`).click();
+  await page.getByTestId("button-reports-vorlaufliste-column-actualDate-up").click();
+  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+
   await expect(vorlauflisteTable).toContainText("KOL");
   await expect(vorlauflisteTable).toContainText("TG");
   await expect(vorlauflisteTable).not.toContainText("Kolmikko Voll");
   await expect(vorlauflisteTable).not.toContainText("Tuer Glas Voll");
+  await expect(vorlauflisteTable).not.toContainText("SP");
+
+  const reorderedHeaders = await getHeaderTexts(vorlauflisteTable);
+  expect(reorderedHeaders.indexOf("Tatsächlicher Termin")).toBeLessThan(reorderedHeaders.indexOf("KW Vorgeplant"));
+
+  await page.getByTestId("button-reports-vorlaufliste-print-preview").click();
+  await expect(page.getByTestId("dialog-vorlaufliste-print-preview")).toBeVisible();
+  await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toContainText("Seite 1 von 2");
+  await expect(page.getByTestId("vorlaufliste-print-preview-active-page-shell")).toContainText("KOL");
+  await page.getByTestId("button-vorlaufliste-print-preview-next").click();
+  await expect(page.getByTestId("vorlaufliste-print-preview-page-indicator")).toContainText("Seite 2 von 2");
+  await page.getByTestId("button-reports-vorlaufliste-print").click();
+  await expect.poll(async () => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls ?? 0)).toBe(1);
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("dialog-vorlaufliste-print-preview")).toBeHidden();
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId(`checkbox-reports-vorlaufliste-component-category-${controlComponent.categoryId}`).click();
   await page.getByTestId(`checkbox-reports-product-vorlauf-component-category-${controlComponent.categoryId}`).click();
 
   await page.getByTestId("nav-termine").click();
@@ -338,13 +383,21 @@ test("covers visible FT26 report interactions, persistence and product-vorlauf o
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
   await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toHaveAttribute("data-state", "checked");
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-component-category-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
   await expect(page.getByTestId(`checkbox-reports-product-vorlauf-component-category-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
 
   await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
   await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
   await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
   await vorlauflisteGenerateButton.click();
+  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
+  await page.getByTestId("button-reports-vorlaufliste-columns-reset").click();
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "checked");
+  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+
+  await expect(vorlauflisteTable).toContainText("SP");
+  const resetHeaders = await getHeaderTexts(vorlauflisteTable);
+  expect(resetHeaders.indexOf("KW Vorgeplant")).toBeLessThan(resetHeaders.indexOf("Tatsächlicher Termin"));
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
 
   await page.getByTestId("button-reports-back").click();

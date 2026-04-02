@@ -8,7 +8,7 @@
  * - Ohne Bis-Datum werden alle Termine ab Von-Datum beruecksichtigt.
  * - Paging greift serverseitig projektbasiert mit 100er-Seiten.
  * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
- * - articleValues enthaelt genau die per Kategorie-ID gefilterten Artikelwerte.
+ * - articleValues enthaelt fuer alle aktiven Report-Kategorien stabile Werte oder null.
  * - useShortCodes=true ersetzt Artikel- und Komponentennamen durch Shortcodes.
  *
  * Fehlerfaelle:
@@ -28,7 +28,7 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
-import { tags, type Tag } from "../../../shared/schema";
+import { productCategories, tags, type Tag } from "../../../shared/schema";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
@@ -318,12 +318,22 @@ describe("FT26 integration: report vorlaufliste", () => {
       customerFullName: "Mustermann, Max",
       postalCode: "12345",
       city: "Berlin",
-      articleValues: [],
+      articleValues: expect.arrayContaining([
+        expect.objectContaining({ value: "Fasssauna Nord" }),
+        expect.objectContaining({ value: "Ganzglas" }),
+      ]),
       plannedDateText: "15.05.2099",
       plannedWeek: "KW 20",
       actualDate: "2099-05-10",
       projectDescription: "Alpha & Beta",
     }));
+    expect(response.body.productCategories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "Fass Saunen" }),
+    ]));
+    expect(response.body.componentCategories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: "Tuer" }),
+      expect.objectContaining({ name: "Fenster" }),
+    ]));
   });
 
   it("allows dispatcher access and includes appointments after fromDate when toDate is omitted", async () => {
@@ -348,7 +358,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     ]);
   });
 
-  it("filters articleValues by selected category ids and returns category metadata in response", async () => {
+  it("returns all active categories and keeps empty active category values as null", async () => {
     const admin = await loginAdminAgent(app);
     const filteredProject = await createReportProjectFixture({
       prefix: "FT26-FILTER",
@@ -366,9 +376,17 @@ describe("FT26 integration: report vorlaufliste", () => {
       categoryName: "Ofen",
       name: "Ofen Filter 2",
     });
+    const inactiveProduct = await createProductFixture({
+      categoryName: "FT26 Inaktive Kategorie",
+      name: "Nicht sichtbar",
+    });
+    await db
+      .update(productCategories)
+      .set({ isActive: false })
+      .where(eq(productCategories.id, inactiveProduct.categoryId));
 
     const response = await admin
-      .get(`/api/reports/vorlaufliste?fromDate=2099-06-01&page=1&pageSize=100&productCategoryIds=${unrelatedProduct.categoryId}&componentCategoryIds=${ovenComponent.categoryId}`)
+      .get("/api/reports/vorlaufliste?fromDate=2099-06-01&page=1&pageSize=100")
       .expect(200);
 
     type AV = { categoryId: number; value: string | null };
@@ -381,11 +399,15 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(unrelatedAV?.value).toBeNull();
     expect(ovenAV?.value).toBe("Ofen Filter");
 
-    // Response envelope contains only the queried component category (no match for unrelated product)
-    expect(response.body.productCategories).toEqual([]);
-    expect(response.body.componentCategories).toEqual([
+    expect(response.body.productCategories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: unrelatedProduct.categoryId, name: "FT26 Fremdkategorie" }),
+    ]));
+    expect(response.body.productCategories).not.toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: inactiveProduct.categoryId, name: "FT26 Inaktive Kategorie" }),
+    ]));
+    expect(response.body.componentCategories).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: ovenComponent.categoryId, name: "Ofen" }),
-    ]);
+    ]));
   });
 
   it("rejects reader access with forbidden", async () => {
@@ -511,7 +533,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     type Item = { projectId: number; articleValues: AV[] };
 
     const responseWithSC = await admin
-      .get(`/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&productCategoryIds=${scProduct.categoryId}&componentCategoryIds=${scComponent.categoryId}&useShortCodes=true`)
+      .get("/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&useShortCodes=true")
       .expect(200);
 
     const itemWithSC = (responseWithSC.body.items as Item[]).find((i) => i.projectId === scProject.id);
@@ -520,7 +542,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(itemWithSC!.articleValues).toContainEqual({ categoryId: scComponent.categoryId, value: "SC-K" });
 
     const responseNoSC = await admin
-      .get(`/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&productCategoryIds=${scProduct.categoryId}&componentCategoryIds=${scComponent.categoryId}&useShortCodes=false`)
+      .get("/api/reports/vorlaufliste?fromDate=2099-11-01&page=1&pageSize=100&useShortCodes=false")
       .expect(200);
 
     const itemNoSC = (responseNoSC.body.items as Item[]).find((i) => i.projectId === scProject.id);
@@ -619,24 +641,18 @@ describe("FT26 integration: report vorlaufliste", () => {
       page: "1",
       pageSize: "100",
     });
-    for (const categoryId of [
-      lookupProduct.categoryId,
-      lookupDoor.categoryId,
-      lookupWindow.categoryId,
-      lookupOven.categoryId,
-      lookupControl.categoryId,
-      lookupRoof.categoryId,
-    ]) {
-      if (categoryId === lookupProduct.categoryId) {
-        params.append("productCategoryIds", String(categoryId));
-      } else {
-        params.append("componentCategoryIds", String(categoryId));
-      }
-    }
 
     const response = await admin
       .get(`/api/reports/vorlaufliste?${params.toString()}`)
       .expect(200);
+
+    expect(response.body.productCategories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: lookupProduct.categoryId }),
+    ]));
+    expect(response.body.componentCategories).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: lookupDoor.categoryId }),
+      expect.objectContaining({ id: lookupRoof.categoryId }),
+    ]));
 
     type ArticleValue = { categoryId: number; value: string | null };
     type ReportItem = {
@@ -738,7 +754,6 @@ describe("FT26 integration: report vorlaufliste", () => {
       toDate: "2100-03-31",
       page: "1",
       pageSize: "100",
-      componentCategoryIds: String(lookupWindow.categoryId),
     }).toString()}`;
 
     type ReportItem = {

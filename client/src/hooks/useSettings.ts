@@ -3,8 +3,8 @@ import { useSettingsContext } from "@/providers/SettingsProvider";
 
 type ToastDesktopPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 type VorlauflisteCategorySelection = {
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
+  columnOrder?: string[];
+  hiddenColumns?: string[];
   useShortCodes?: boolean;
   columnWidths?: Record<string, number>;
 };
@@ -79,15 +79,21 @@ export function resolveToastDesktopPosition(value: unknown): ToastDesktopPositio
 
 export function resolveVorlauflisteCategorySelection(value: unknown): VorlauflisteCategorySelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { productCategoryIds: [], componentCategoryIds: [] };
+    return {};
   }
   const candidate = value as Record<string, unknown>;
-  const parseIds = (input: unknown) => Array.isArray(input)
-    ? input.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
-    : [];
+  const parseStringArray = (input: unknown): string[] | undefined => {
+    if (!Array.isArray(input)) return undefined;
+    const values = input
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+    if (values.length !== input.length || values.length === 0) {
+      return undefined;
+    }
+    return Array.from(new Set(values));
+  };
 
-  const productCategoryIds = parseIds(candidate.productCategoryIds);
-  const componentCategoryIds = parseIds(candidate.componentCategoryIds);
   const columnWidths = candidate.columnWidths && typeof candidate.columnWidths === "object" && !Array.isArray(candidate.columnWidths)
     ? Object.fromEntries(
       Object.entries(candidate.columnWidths)
@@ -102,8 +108,8 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
     : undefined;
 
   return {
-    productCategoryIds: Array.from(new Set(productCategoryIds)),
-    componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+    columnOrder: parseStringArray(candidate.columnOrder),
+    hiddenColumns: parseStringArray(candidate.hiddenColumns),
     useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : undefined,
     columnWidths,
   };
@@ -114,15 +120,19 @@ export function resolveProductVorlaufSelection(value: unknown): ProductVorlaufSe
     return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false, sonderblockTagIds: [] };
   }
   const candidate = value as Record<string, unknown>;
-  const parsed = resolveVorlauflisteCategorySelection(value);
+  const parseIds = (input: unknown) => Array.isArray(input)
+    ? input.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+    : [];
+  const productCategoryIds = parseIds(candidate.productCategoryIds);
+  const componentCategoryIds = parseIds(candidate.componentCategoryIds);
   const sonderblockTagIds = Array.isArray(candidate.sonderblockTagIds)
     ? candidate.sonderblockTagIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
     : [];
 
   return {
-    productCategoryIds: parsed.productCategoryIds,
-    componentCategoryIds: parsed.componentCategoryIds,
-    useShortCodes: parsed.useShortCodes ?? false,
+    productCategoryIds: Array.from(new Set(productCategoryIds)),
+    componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+    useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : false,
     sonderblockTagIds: Array.from(new Set(sonderblockTagIds)),
   };
 }

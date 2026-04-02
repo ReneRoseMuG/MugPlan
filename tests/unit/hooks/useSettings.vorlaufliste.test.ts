@@ -2,19 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - resolveVorlauflisteCategorySelection normalisiert Produkt- und Komponentenkategorie-IDs.
- * - Das optionale Feld useShortCodes wird erhalten und nicht verworfen.
- * - Das optionale Feld columnWidths wird gefiltert und erhalten.
- * - Duplikate in den ID-Arrays werden entfernt.
+ * - resolveVorlauflisteCategorySelection normalisiert columnOrder und hiddenColumns als deduplizierte String-Arrays.
+ * - useShortCodes und gültige columnWidths bleiben erhalten.
+ * - Legacy-Felder aus dem alten Kategorie-Setting werden still ignoriert.
  *
- * Fehlerfaelle:
- * - useShortCodes wird beim Auslesen aus dem Setting-Store verworfen, obwohl gespeichert.
- * - Ungueltige columnWidths werden ungefiltert uebernommen.
- * - Ungueltige Eingaben werden nicht sauber auf leere Defaults zurueckgefuehrt.
+ * Fehlerfälle:
+ * - Ungültige Eingaben führen nicht sauber auf leere Defaults zurück.
+ * - Gemischte oder leere Spaltenlisten bleiben fälschlich erhalten.
+ * - Veraltete productCategoryIds/componentCategoryIds beeinflussen den neuen Resolver noch.
  *
  * Ziel:
- * Den clientseitigen Resolver fuer die Vorlaufliste-Kategorieauswahl absichern,
- * insbesondere das korrekte Erhalten des useShortCodes-Feldes nach der Normalisierung.
+ * Den clientseitigen Resolver für die neue Vorlaufliste-Spaltenkonfiguration absichern.
  */
 import { describe, expect, it } from "vitest";
 
@@ -22,53 +20,17 @@ import { resolveVorlauflisteCategorySelection } from "../../../client/src/hooks/
 
 describe("useSettings: resolveVorlauflisteCategorySelection", () => {
   it("returns empty defaults for invalid input", () => {
-    expect(resolveVorlauflisteCategorySelection(null)).toEqual({ productCategoryIds: [], componentCategoryIds: [] });
-    expect(resolveVorlauflisteCategorySelection(undefined)).toEqual({ productCategoryIds: [], componentCategoryIds: [] });
-    expect(resolveVorlauflisteCategorySelection([])).toEqual({ productCategoryIds: [], componentCategoryIds: [] });
-    expect(resolveVorlauflisteCategorySelection("string")).toEqual({ productCategoryIds: [], componentCategoryIds: [] });
+    expect(resolveVorlauflisteCategorySelection(null)).toEqual({});
+    expect(resolveVorlauflisteCategorySelection(undefined)).toEqual({});
+    expect(resolveVorlauflisteCategorySelection([])).toEqual({});
+    expect(resolveVorlauflisteCategorySelection("string")).toEqual({});
   });
 
-  it("normalizes valid category id arrays and deduplicates", () => {
+  it("normalizes configured columns, hidden columns and widths", () => {
     const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [1, 2, 2],
-      componentCategoryIds: [3],
-    });
-    expect(result.productCategoryIds).toEqual([1, 2]);
-    expect(result.componentCategoryIds).toEqual([3]);
-    expect(result.useShortCodes).toBeUndefined();
-  });
-
-  it("preserves useShortCodes when set to true", () => {
-    const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [1],
-      componentCategoryIds: [],
-      useShortCodes: true,
-    });
-    expect(result.useShortCodes).toBe(true);
-  });
-
-  it("preserves useShortCodes when set to false", () => {
-    const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [],
-      componentCategoryIds: [2],
+      columnOrder: [" amount ", "city", "amount", "product-5"],
+      hiddenColumns: [" component-2 ", "component-2"],
       useShortCodes: false,
-    });
-    expect(result.useShortCodes).toBe(false);
-  });
-
-  it("discards useShortCodes when not a boolean", () => {
-    const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [],
-      componentCategoryIds: [],
-      useShortCodes: "true",
-    });
-    expect(result.useShortCodes).toBeUndefined();
-  });
-
-  it("preserves valid columnWidths and filters invalid entries", () => {
-    const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
       columnWidths: {
         amount: 180,
         "product-5": 320,
@@ -76,18 +38,45 @@ describe("useSettings: resolveVorlauflisteCategorySelection", () => {
         invalidFloat: 120.5,
       },
     });
-    expect(result.columnWidths).toEqual({
-      amount: 180,
-      "product-5": 320,
+
+    expect(result).toEqual({
+      columnOrder: ["amount", "city", "product-5"],
+      hiddenColumns: ["component-2"],
+      useShortCodes: false,
+      columnWidths: {
+        amount: 180,
+        "product-5": 320,
+      },
     });
   });
 
-  it("filters out non-positive-integer ids", () => {
+  it("drops invalid configured arrays instead of partially keeping them", () => {
     const result = resolveVorlauflisteCategorySelection({
-      productCategoryIds: [1, 0, -1, 1.5, "x"],
-      componentCategoryIds: [2],
+      columnOrder: ["amount", "", 3],
+      hiddenColumns: [],
+      useShortCodes: true,
     });
-    expect(result.productCategoryIds).toEqual([1]);
-    expect(result.componentCategoryIds).toEqual([2]);
+
+    expect(result).toEqual({
+      columnOrder: undefined,
+      hiddenColumns: undefined,
+      useShortCodes: true,
+      columnWidths: undefined,
+    });
+  });
+
+  it("ignores legacy category id fields from the old payload shape", () => {
+    const result = resolveVorlauflisteCategorySelection({
+      productCategoryIds: [1, 2],
+      componentCategoryIds: [3],
+      useShortCodes: true,
+    });
+
+    expect(result).toEqual({
+      columnOrder: undefined,
+      hiddenColumns: undefined,
+      useShortCodes: true,
+      columnWidths: undefined,
+    });
   });
 });

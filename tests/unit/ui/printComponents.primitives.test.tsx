@@ -6,12 +6,12 @@
  * - PrintDayColumn rendert einen domainblinden Spaltenkopf.
  * - PrintAppointmentSlot rendert header, body und optionalen footer-Slot.
  * - PrintDocumentRoot erzeugt einen dedizierten Print-Root mit mehreren Seiten.
- * - PrintPreviewDialog zeigt Seitenzähler, Navigation und aktive Seite.
+ * - PrintPreviewDialog zeigt Seitenzähler, Navigation, aktive Seite und optionale Header-Aktionen.
  *
  * Fehlerfälle:
  * - Die generische Seitenschale fällt auf pixelbasierte Altklassen zurück.
  * - Der Print-Root rendert keine getrennten Druckseiten.
- * - Die generische Vorschau verliert Navigation oder aktive Seite.
+ * - Die generische Vorschau verliert Navigation, aktive Seite oder Header-Aktionen.
  *
  * Ziel:
  * Das generische Print-System in Isolation absichern, unabhängig vom Tour-Druckfall.
@@ -127,5 +127,26 @@ describe("generisches Print-System", () => {
     expect(html).toContain("page-1");
     expect(html).toContain("button-print-preview-prev");
     expect(html).toContain("button-print-preview-next");
+  });
+
+  it("PrintPreviewDialog rendert optionale Header-Aktionen", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <PrintPreviewDialog
+        open
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+        headerActions={<button type="button">Drucken</button>}
+      />,
+    );
+
+    expect(html).toContain("Drucken");
   });
 });

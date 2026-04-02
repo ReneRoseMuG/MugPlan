@@ -7,6 +7,7 @@ type PrintPreviewDialogProps<TPage> = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  headerActions?: React.ReactNode;
   pages: readonly TPage[];
   activePageIndex: number;
   onPageChange: (nextPageIndex: number) => void;
@@ -24,6 +25,7 @@ export function PrintPreviewDialog<TPage>({
   open,
   onOpenChange,
   title,
+  headerActions,
   pages,
   activePageIndex,
   onPageChange,
@@ -67,7 +69,10 @@ export function PrintPreviewDialog<TPage>({
         >
           <div className="flex max-h-[calc(100vh-32px)] flex-col">
             <DialogHeader className="border-b border-border px-6 py-4">
-              <DialogTitle>{title}</DialogTitle>
+              <div className="flex items-center justify-between gap-3">
+                <DialogTitle>{title}</DialogTitle>
+                {headerActions ? <div className="pr-8">{headerActions}</div> : null}
+              </div>
             </DialogHeader>
 
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 text-sm">

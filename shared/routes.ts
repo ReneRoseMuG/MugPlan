@@ -394,6 +394,12 @@ const reportVorlauflisteResponseSchema = pagedListMetaSchema.extend({
   items: z.array(reportVorlauflisteItemSchema),
 });
 
+const reportVorlauflistePrintPreviewResponseSchema = z.object({
+  productCategories: z.array(reportVorlauflisteCategorySchema),
+  componentCategories: z.array(reportVorlauflisteCategorySchema),
+  items: z.array(reportVorlauflisteItemSchema),
+});
+
 const reportProductVorlaufItemTotalSchema = z.object({
   itemName: z.string().min(1),
   totalQuantity: z.number().int().min(0),
@@ -3911,14 +3917,6 @@ export const api = {
           fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
           toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
           refreshKey: z.string().optional(),
-          productCategoryIds: z.preprocess(
-            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
-            z.array(z.coerce.number().int().positive()).default([]),
-          ),
-          componentCategoryIds: z.preprocess(
-            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
-            z.array(z.coerce.number().int().positive()).default([]),
-          ),
           useShortCodes: z.preprocess(
             (value) => value === "true" || value === true,
             z.boolean().default(false),
@@ -3928,6 +3926,23 @@ export const api = {
         }).strict(),
         responses: {
           200: reportVorlauflisteResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+      printPreview: {
+        method: "GET" as const,
+        path: "/api/reports/vorlaufliste/print-preview",
+        input: z.object({
+          fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          useShortCodes: z.preprocess(
+            (value) => value === "true" || value === true,
+            z.boolean().default(false),
+          ),
+        }).strict(),
+        responses: {
+          200: reportVorlauflistePrintPreviewResponseSchema,
           403: z.object({ code: z.literal("FORBIDDEN") }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { FileText, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, FileText, Loader2, Lock, Printer, RotateCcw } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 import {
   isManagedReportExclusionTagName,
@@ -11,6 +11,8 @@ import {
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
 import { ProductVorlaufPrintLayout, type ProductVorlaufPrintCategory } from "@/components/reports/ProductVorlaufPrintLayout";
+import { PrintPageShell } from "@/components/print/PrintPageShell";
+import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
@@ -20,6 +22,7 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 import { ReportConfigSurface } from "@/components/ui/report-config-surface";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   buildVorlauflistePreviewProject,
   VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME,
@@ -30,6 +33,10 @@ import { useSetting, useSettings } from "@/hooks/useSettings";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { cn } from "@/lib/utils";
+import {
+  buildVorlauflistePrintPages,
+  type VorlauflistePrintColumn,
+} from "@/lib/vorlaufliste-print-model";
 
 type ReportType = "vorlaufliste" | "product-vorlauf";
 type ResolvedScope = "USER" | "ROLE" | "GLOBAL" | "DEFAULT";
@@ -42,6 +49,7 @@ type VorlauflisteCategory = {
 type VorlauflisteItem = {
   projectId: number;
   projectName: string;
+  isActive: boolean;
   orderNumber: string | null;
   customerId: number;
   customerNumber: string | null;
@@ -68,6 +76,12 @@ type VorlauflisteResponse = {
   pageSize: number;
   total: number;
   totalPages: number;
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+  items: VorlauflisteItem[];
+};
+
+type VorlauflistePrintPreviewResponse = {
   productCategories: VorlauflisteCategory[];
   componentCategories: VorlauflisteCategory[];
   items: VorlauflisteItem[];
@@ -122,19 +136,23 @@ type SubmittedFilters = {
   sonderblockTagIds: number[];
 };
 
-type CategorySelection = {
+type VorlauflisteSelection = {
+  useShortCodes?: boolean;
+  columnWidths?: Record<string, number>;
+  columnOrder?: string[];
+  hiddenColumns?: string[];
+};
+
+type ProductVorlaufSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
-  columnWidths?: Record<string, number>;
   sonderblockTagIds?: number[];
 };
 
 type VorlauflisteRequestParams = {
   fromDate: string;
   toDate?: string;
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
   useShortCodes: boolean;
   page: number;
   pageSize: number;
@@ -165,6 +183,9 @@ const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
 const PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
+const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
+const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 20;
+const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 
 function normalizeIds(ids: number[]): number[] {
   return Array.from(new Set(ids.filter((value) => Number.isInteger(value) && value > 0))).sort((left, right) => left - right);
@@ -217,28 +238,8 @@ function resolveValue(value: string | null): string {
   return value.trim();
 }
 
-function parseHexColor(color: string | null | undefined): [number, number, number] | null {
-  if (!color) return null;
-  const normalized = color.trim().replace(/^#/, "");
-  if (normalized.length !== 3 && normalized.length !== 6) return null;
-  const expanded = normalized.length === 3
-    ? normalized.split("").map((part) => `${part}${part}`).join("")
-    : normalized;
-
-  const red = Number.parseInt(expanded.slice(0, 2), 16);
-  const green = Number.parseInt(expanded.slice(2, 4), 16);
-  const blue = Number.parseInt(expanded.slice(4, 6), 16);
-  if ([red, green, blue].some((part) => Number.isNaN(part))) return null;
-  return [red, green, blue];
-}
-
-function resolveTagBackgroundStyle(tag: Tag | null): CSSProperties | undefined {
-  const parsedColor = parseHexColor(tag?.color);
-  if (!parsedColor) return undefined;
-  const [red, green, blue] = parsedColor;
-  return {
-    backgroundColor: `rgba(${red}, ${green}, ${blue}, 0.16)`,
-  };
+function resolveVorlauflisteArticleValue(row: Pick<VorlauflisteItem, "articleValues">, categoryId: number): string | null {
+  return row.articleValues.find((entry) => entry.categoryId === categoryId)?.value ?? null;
 }
 
 function resolveInitialSelectionIds(params: {
@@ -269,10 +270,21 @@ export function buildVorlauflisteReportUrl(params: VorlauflisteRequestParams): s
     pageSize: String(params.pageSize),
   });
   if (params.toDate) searchParams.set("toDate", params.toDate);
-  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
-  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
   return `/api/reports/vorlaufliste?${searchParams.toString()}`;
+}
+
+export function buildVorlauflistePrintPreviewUrl(params: {
+  fromDate: string;
+  toDate?: string;
+  useShortCodes: boolean;
+}): string {
+  const searchParams = new URLSearchParams({
+    fromDate: params.fromDate,
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  return `/api/reports/vorlaufliste/print-preview?${searchParams.toString()}`;
 }
 
 export function buildProductVorlaufReportUrl(params: ProductVorlaufRequestParams): string {
@@ -418,6 +430,53 @@ function ArticleCategorySelection({
   );
 }
 
+function normalizeColumnIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(
+    value
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0 && entry !== VORLAUFLISTE_INDICATOR_COLUMN_ID),
+  ));
+}
+
+function resolveOrderedColumnIds(defaultOrder: string[], configuredOrder: string[]): string[] {
+  const validIds = new Set(defaultOrder);
+  const filteredConfiguredOrder = configuredOrder.filter((columnId) => validIds.has(columnId));
+  const missingIds = defaultOrder.filter((columnId) => !filteredConfiguredOrder.includes(columnId));
+  return [...filteredConfiguredOrder, ...missingIds];
+}
+
+function resolveVisibleHiddenColumnIds(defaultOrder: string[], configuredHiddenColumns: string[]): string[] {
+  const validIds = new Set(defaultOrder);
+  return configuredHiddenColumns.filter((columnId) => validIds.has(columnId));
+}
+
+function resolveVorlauflisteIndicatorColor(row: Pick<VorlauflisteItem, "reportState" | "highlightTag">): string | undefined {
+  if (row.reportState === "cancelled_only" || row.reportState === "contains_cancelled") {
+    return "#E24B4A";
+  }
+  const color = row.highlightTag?.color?.trim();
+  return color && color.length > 0 ? color : undefined;
+}
+
+function resolveVorlauflistePrintCellValue(row: VorlauflisteItem, columnId: string): string {
+  if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) return "";
+  if (columnId === "amount") return formatAmount(row.amount);
+  if (columnId === "customerFullName") return resolveValue(row.customerFullName);
+  if (columnId === "postalCode") return resolveValue(row.postalCode);
+  if (columnId === "city") return resolveValue(row.city);
+  if (columnId === "plannedDateText") return resolveValue(row.plannedDateText);
+  if (columnId === "plannedWeek") return resolveValue(row.plannedWeek);
+  if (columnId === "actualDate") return formatDate(row.actualDate);
+  if (columnId === "projectDescription") return resolveValue(row.projectDescription);
+  if (columnId.startsWith("product-") || columnId.startsWith("component-")) {
+    const categoryId = Number.parseInt(columnId.split("-")[1] ?? "", 10);
+    return resolveValue(Number.isInteger(categoryId) ? resolveVorlauflisteArticleValue(row, categoryId) : null);
+  }
+  return "-";
+}
+
 interface ReportsPageProps {
   onCancel?: () => void;
 }
@@ -434,11 +493,10 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [isReportOverlayOpen, setIsReportOverlayOpen] = useState(false);
   const [reportRequestId, setReportRequestId] = useState(0);
 
-  const vorlauflisteSelection = useSetting(VORLAUFLISTE_SETTING_KEY) as CategorySelection | undefined;
-  const productVorlaufSelection = useSetting(PRODUCT_VORLAUF_SETTING_KEY) as CategorySelection | undefined;
+  const vorlauflisteSelection = useSetting(VORLAUFLISTE_SETTING_KEY) as VorlauflisteSelection | undefined;
+  const productVorlaufSelection = useSetting(PRODUCT_VORLAUF_SETTING_KEY) as ProductVorlaufSelection | undefined;
   const { setSetting, settingsByKey } = useSettings();
 
-  const vorlauflisteResolvedScope = (settingsByKey.get(VORLAUFLISTE_SETTING_KEY)?.resolvedScope ?? "DEFAULT") as ResolvedScope;
   const productVorlaufResolvedScope = (settingsByKey.get(PRODUCT_VORLAUF_SETTING_KEY)?.resolvedScope ?? "DEFAULT") as ResolvedScope;
 
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
@@ -467,10 +525,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     [componentCategories],
   );
 
-  const [selectedVorlauflisteProductCategoryIds, setSelectedVorlauflisteProductCategoryIds] = useState<number[]>([]);
-  const [selectedVorlauflisteComponentCategoryIds, setSelectedVorlauflisteComponentCategoryIds] = useState<number[]>([]);
   const [useVorlauflisteShortCodes, setUseVorlauflisteShortCodes] = useState(false);
   const [vorlauflisteColumnWidths, setVorlauflisteColumnWidths] = useState<Record<string, number>>({});
+  const [vorlauflisteColumnOrder, setVorlauflisteColumnOrder] = useState<string[]>([]);
+  const [vorlauflisteHiddenColumns, setVorlauflisteHiddenColumns] = useState<string[]>([]);
+  const [isVorlauflisteColumnsPopoverOpen, setIsVorlauflisteColumnsPopoverOpen] = useState(false);
+  const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
+  const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
   const [selectedProductVorlaufProductCategoryIds, setSelectedProductVorlaufProductCategoryIds] = useState<number[]>([]);
   const [selectedProductVorlaufComponentCategoryIds, setSelectedProductVorlaufComponentCategoryIds] = useState<number[]>([]);
   const [useProductVorlaufShortCodes, setUseProductVorlaufShortCodes] = useState(false);
@@ -487,24 +548,11 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [appointmentTagCatalog, projectTagCatalog]);
 
   useEffect(() => {
-    const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
-    const validComponentIds = new Set(defaultComponentCategories.map((category) => category.id));
-    const resolvedProductIds = normalizeIds((vorlauflisteSelection?.productCategoryIds ?? []).filter((id) => validProductIds.has(id)));
-    const resolvedComponentIds = normalizeIds((vorlauflisteSelection?.componentCategoryIds ?? []).filter((id) => validComponentIds.has(id)));
-
-    setSelectedVorlauflisteProductCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: vorlauflisteResolvedScope,
-      persistedIds: resolvedProductIds,
-      defaultIds: defaultProductCategories.map((category) => category.id),
-    }));
-    setSelectedVorlauflisteComponentCategoryIds(resolveInitialSelectionIds({
-      resolvedScope: vorlauflisteResolvedScope,
-      persistedIds: resolvedComponentIds,
-      defaultIds: defaultComponentCategories.map((category) => category.id),
-    }));
     setUseVorlauflisteShortCodes(vorlauflisteSelection?.useShortCodes ?? false);
     setVorlauflisteColumnWidths(normalizeColumnWidths(vorlauflisteSelection?.columnWidths));
-  }, [defaultComponentCategories, defaultProductCategories, vorlauflisteResolvedScope, vorlauflisteSelection]);
+    setVorlauflisteColumnOrder(normalizeColumnIdList(vorlauflisteSelection?.columnOrder));
+    setVorlauflisteHiddenColumns(normalizeColumnIdList(vorlauflisteSelection?.hiddenColumns));
+  }, [vorlauflisteSelection]);
 
   useEffect(() => {
     const validProductIds = new Set(defaultProductCategories.map((category) => category.id));
@@ -528,31 +576,44 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     setSelectedProductVorlaufSonderblockTagIds(resolvedSonderblockTagIds);
   }, [availableSonderblockTags, defaultComponentCategories, defaultProductCategories, productVorlaufResolvedScope, productVorlaufSelection]);
 
-  const persistSelection = async (reportType: ReportType, next: CategorySelection) => {
-    const value: CategorySelection = {
-      productCategoryIds: normalizeIds(next.productCategoryIds),
-      componentCategoryIds: normalizeIds(next.componentCategoryIds),
-    };
+  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProductVorlaufSelection) => {
     if (reportType === "vorlaufliste") {
-      value.useShortCodes = next.useShortCodes ?? false;
-      value.columnWidths = normalizeColumnWidths(next.columnWidths);
+      const vorlauflisteNext = next as VorlauflisteSelection;
+      const value: VorlauflisteSelection = {
+        useShortCodes: next.useShortCodes ?? false,
+        columnWidths: normalizeColumnWidths(vorlauflisteNext.columnWidths),
+      };
+      const columnOrder = normalizeColumnIdList(vorlauflisteNext.columnOrder);
+      const hiddenColumns = normalizeColumnIdList(vorlauflisteNext.hiddenColumns);
+      if (columnOrder.length > 0) value.columnOrder = columnOrder;
+      if (hiddenColumns.length > 0) value.hiddenColumns = hiddenColumns;
+      await setSetting({
+        key: VORLAUFLISTE_SETTING_KEY,
+        scopeType: "USER",
+        value,
+      });
     } else {
-      value.useShortCodes = next.useShortCodes ?? false;
-      value.sonderblockTagIds = normalizeIds(next.sonderblockTagIds ?? []);
+      const productNext = next as ProductVorlaufSelection;
+      const value: ProductVorlaufSelection = {
+        productCategoryIds: normalizeIds(productNext.productCategoryIds),
+        componentCategoryIds: normalizeIds(productNext.componentCategoryIds),
+        useShortCodes: productNext.useShortCodes ?? false,
+        sonderblockTagIds: normalizeIds(productNext.sonderblockTagIds ?? []),
+      };
+      await setSetting({
+        key: PRODUCT_VORLAUF_SETTING_KEY,
+        scopeType: "USER",
+        value,
+      });
     }
-    await setSetting({
-      key: reportType === "vorlaufliste" ? VORLAUFLISTE_SETTING_KEY : PRODUCT_VORLAUF_SETTING_KEY,
-      scopeType: "USER",
-      value,
-    });
   };
 
-  const persistVorlauflisteSelection = async (columnWidths: Record<string, number>) => {
+  const persistVorlauflisteSelection = async (next?: Partial<VorlauflisteSelection>) => {
     await persistSelection("vorlaufliste", {
-      productCategoryIds: selectedVorlauflisteProductCategoryIds,
-      componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
-      useShortCodes: useVorlauflisteShortCodes,
-      columnWidths,
+      useShortCodes: next?.useShortCodes ?? useVorlauflisteShortCodes,
+      columnWidths: next?.columnWidths ?? vorlauflisteColumnWidths,
+      columnOrder: next?.columnOrder ?? vorlauflisteColumnOrder,
+      hiddenColumns: next?.hiddenColumns ?? vorlauflisteHiddenColumns,
     });
   };
 
@@ -563,14 +624,25 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       return fetchJson(buildVorlauflisteReportUrl({
         fromDate: submittedFilters!.fromDate,
         toDate: submittedFilters?.toDate,
-        productCategoryIds: submittedFilters?.productCategoryIds ?? [],
-        componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
         useShortCodes: submittedFilters?.useShortCodes ?? false,
         page,
         pageSize: REPORT_PAGE_SIZE,
         refreshKey: reportRequestId,
       }), { cache: "no-store" });
     },
+  });
+  const {
+    data: vorlauflistePrintPreviewData,
+    isLoading: isVorlauflistePrintPreviewLoading,
+    isError: isVorlauflistePrintPreviewError,
+  } = useQuery<VorlauflistePrintPreviewResponse>({
+    queryKey: ["reports-vorlaufliste-print-preview", submittedFilters, reportRequestId],
+    enabled: isVorlauflistePrintPreviewOpen && submittedFilters?.reportType === "vorlaufliste",
+    queryFn: async () => fetchJson(buildVorlauflistePrintPreviewUrl({
+      fromDate: submittedFilters!.fromDate,
+      toDate: submittedFilters?.toDate,
+      useShortCodes: submittedFilters?.useShortCodes ?? false,
+    }), { cache: "no-store" }),
   });
 
   const { data: productVorlaufData, isLoading: isProductVorlaufLoading } = useQuery<ProductVorlaufResponse>({
@@ -608,13 +680,23 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     selectedProductVorlaufProductCategoryIds,
   ]);
 
-  const resolvePersistedColumnWidth = (columnId: string, header: string, defaultWidth: number) => {
-    const minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH;
+  useEffect(() => {
+    if (!isVorlauflistePrintPreviewOpen) {
+      setActiveVorlauflistePrintPageIndex(0);
+      return;
+    }
+    setActiveVorlauflistePrintPageIndex(0);
+  }, [isVorlauflistePrintPreviewOpen, vorlauflistePrintPreviewData]);
+
+  const resolvePersistedColumnWidth = (columnId: string, defaultWidth: number, minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH) => {
+    if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) {
+      return { width: 8, minWidth: 8 };
+    }
     const width = clampColumnWidth(vorlauflisteColumnWidths[columnId] ?? defaultWidth, minWidth);
     return { width, minWidth };
   };
 
-  const vorlauflisteColumns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => {
+  const allVorlauflisteColumns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => {
     const productCategories: VorlauflisteCategory[] = vorlauflisteData?.productCategories ?? [];
     const componentCategories: VorlauflisteCategory[] = vorlauflisteData?.componentCategories ?? [];
     const wrapCellClassName = "align-top";
@@ -623,6 +705,22 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     );
 
     const columns: TableViewColumnDef<VorlauflisteItem>[] = [
+      {
+        id: VORLAUFLISTE_INDICATOR_COLUMN_ID,
+        header: "",
+        width: 8,
+        minWidth: 8,
+        className: "p-0",
+        headerClassName: "p-0",
+        resizable: false,
+        cell: ({ row }) => (
+          <div
+            className="h-full min-h-[24px] w-[8px]"
+            style={{ backgroundColor: resolveVorlauflisteIndicatorColor(row) }}
+            data-testid={`reports-vorlaufliste-indicator-${row.projectId}`}
+          />
+        ),
+      },
       { id: "amount", header: "Auftragssumme", accessor: (row) => row.amount ?? "", width: 160, minWidth: 160, className: wrapCellClassName, resizable: true, cell: ({ row }) => <span>{formatAmount(row.amount)}</span> },
       { id: "customerFullName", header: "Kunde", accessor: (row) => row.customerFullName ?? "", width: 220, minWidth: 220, className: wrapCellClassName, resizable: true, cell: ({ row }) => renderWrappedText(row.customerFullName) },
       { id: "postalCode", header: "PLZ", accessor: (row) => row.postalCode ?? "", width: 110, minWidth: 110, className: wrapCellClassName, resizable: true, cell: ({ row }) => <span>{resolveValue(row.postalCode)}</span> },
@@ -633,16 +731,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       columns.push({
         id: `product-${category.id}`,
         header: category.name,
-        accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
+        accessor: (row) => resolveVorlauflisteArticleValue(row, category.id) ?? "",
         width: 220,
         minWidth: 220,
         className: wrapCellClassName,
         headerClassName: "whitespace-nowrap",
         resizable: true,
-        cell: ({ row }) => {
-          const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
-          return renderWrappedText(value);
-        },
+        cell: ({ row }) => renderWrappedText(resolveVorlauflisteArticleValue(row, category.id)),
       });
     }
 
@@ -650,16 +745,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       columns.push({
         id: `component-${category.id}`,
         header: category.name,
-        accessor: (row) => row.articleValues.find((v) => v.categoryId === category.id)?.value ?? "",
+        accessor: (row) => resolveVorlauflisteArticleValue(row, category.id) ?? "",
         width: 220,
         minWidth: 220,
         className: wrapCellClassName,
         headerClassName: "whitespace-nowrap",
         resizable: true,
-        cell: ({ row }) => {
-          const value = row.articleValues.find((v) => v.categoryId === category.id)?.value ?? null;
-          return renderWrappedText(value);
-        },
+        cell: ({ row }) => renderWrappedText(resolveVorlauflisteArticleValue(row, category.id)),
       });
     }
 
@@ -671,31 +763,81 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     );
 
     return columns.map((column) => {
-      const headerText = typeof column.header === "string" ? column.header : column.id;
       const defaultWidth = typeof column.width === "number"
         ? column.width
         : typeof column.minWidth === "number"
           ? column.minWidth
           : 160;
-      const { width, minWidth } = resolvePersistedColumnWidth(column.id, headerText, defaultWidth);
+      const minWidth = typeof column.minWidth === "number" ? column.minWidth : VORLAUFLISTE_MIN_COLUMN_WIDTH;
+      const resolved = resolvePersistedColumnWidth(column.id, defaultWidth, minWidth);
       return {
         ...column,
-        width,
-        minWidth,
+        width: resolved.width,
+        minWidth: resolved.minWidth,
         resizable: column.resizable ?? true,
       };
     });
   }, [vorlauflisteColumnWidths, vorlauflisteData]);
 
+  const configurableVorlauflisteColumns = useMemo(
+    () => allVorlauflisteColumns.filter((column) => column.id !== VORLAUFLISTE_INDICATOR_COLUMN_ID),
+    [allVorlauflisteColumns],
+  );
+  const defaultVorlauflisteColumnOrder = useMemo(
+    () => configurableVorlauflisteColumns.map((column) => column.id),
+    [configurableVorlauflisteColumns],
+  );
+  const resolvedVorlauflisteColumnOrder = useMemo(
+    () => resolveOrderedColumnIds(defaultVorlauflisteColumnOrder, vorlauflisteColumnOrder),
+    [defaultVorlauflisteColumnOrder, vorlauflisteColumnOrder],
+  );
+  const resolvedVorlauflisteHiddenColumns = useMemo(
+    () => resolveVisibleHiddenColumnIds(defaultVorlauflisteColumnOrder, vorlauflisteHiddenColumns),
+    [defaultVorlauflisteColumnOrder, vorlauflisteHiddenColumns],
+  );
+  const vorlauflisteColumns = useMemo<TableViewColumnDef<VorlauflisteItem>[]>(() => {
+    const indicatorColumn = allVorlauflisteColumns.find((column) => column.id === VORLAUFLISTE_INDICATOR_COLUMN_ID);
+    const columnById = new Map(configurableVorlauflisteColumns.map((column) => [column.id, column] as const));
+    const orderedColumns = resolvedVorlauflisteColumnOrder
+      .map((columnId) => columnById.get(columnId))
+      .filter((column): column is TableViewColumnDef<VorlauflisteItem> => Boolean(column))
+      .filter((column) => !resolvedVorlauflisteHiddenColumns.includes(column.id));
+
+    return indicatorColumn ? [indicatorColumn, ...orderedColumns] : orderedColumns;
+  }, [
+    allVorlauflisteColumns,
+    configurableVorlauflisteColumns,
+    resolvedVorlauflisteColumnOrder,
+    resolvedVorlauflisteHiddenColumns,
+  ]);
+
   const updateVorlauflisteColumnWidth = (columnId: string, width: number) => {
+    if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) return;
     setVorlauflisteColumnWidths((current) => ({ ...current, [columnId]: width }));
   };
 
   const commitVorlauflisteColumnWidth = (columnId: string, width: number) => {
+    if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) return;
     const next = { ...vorlauflisteColumnWidths, [columnId]: width };
     setVorlauflisteColumnWidths(next);
-    void persistVorlauflisteSelection(next);
+    void persistVorlauflisteSelection({ columnWidths: next });
   };
+
+  const vorlauflistePrintColumns = useMemo<VorlauflistePrintColumn[]>(() => (
+    vorlauflisteColumns.map((column) => ({
+      id: column.id,
+      headerText: typeof column.header === "string" ? column.header : "",
+      width: typeof column.width === "number" ? column.width : 160,
+      isIndicator: column.id === VORLAUFLISTE_INDICATOR_COLUMN_ID,
+    }))
+  ), [vorlauflisteColumns]);
+
+  const vorlauflistePrintPages = useMemo(() => buildVorlauflistePrintPages<VorlauflisteItem>({
+    columns: vorlauflistePrintColumns,
+    rows: vorlauflistePrintPreviewData?.items ?? [],
+    rowsPerPage: VORLAUFLISTE_PRINT_ROWS_PER_PAGE,
+    availableWidthPx: VORLAUFLISTE_PRINT_WIDTH_PX,
+  }), [vorlauflistePrintColumns, vorlauflistePrintPreviewData]);
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
@@ -708,8 +850,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     const fromDate = isVorlaufliste ? vorlauflisteFromDate : productVorlaufFromDate;
     const toDate = isVorlaufliste ? vorlauflisteToDate : productVorlaufToDate;
     const showToDate = isVorlaufliste ? showVorlauflisteToDate : showProductVorlaufToDate;
-    const productCategoryIds = isVorlaufliste ? selectedVorlauflisteProductCategoryIds : selectedProductVorlaufProductCategoryIds;
-    const componentCategoryIds = isVorlaufliste ? selectedVorlauflisteComponentCategoryIds : selectedProductVorlaufComponentCategoryIds;
+    const productCategoryIds = isVorlaufliste ? [] : selectedProductVorlaufProductCategoryIds;
+    const componentCategoryIds = isVorlaufliste ? [] : selectedProductVorlaufComponentCategoryIds;
 
     if (fromDate.trim().length === 0) return;
     setPage(1);
@@ -726,8 +868,57 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     setIsReportOverlayOpen(true);
   };
 
-  const closeOverlay = () => setIsReportOverlayOpen(false);
+  const closeOverlay = () => {
+    setIsReportOverlayOpen(false);
+    setIsVorlauflisteColumnsPopoverOpen(false);
+    setIsVorlauflistePrintPreviewOpen(false);
+  };
+  const handleVorlauflistePrint = () => window.print();
   const handleProductVorlaufPrint = () => window.print();
+  const fixedVorlauflisteColumnIds = useMemo(
+    () => configurableVorlauflisteColumns
+      .filter((column) => !column.id.startsWith("product-") && !column.id.startsWith("component-"))
+      .map((column) => column.id),
+    [configurableVorlauflisteColumns],
+  );
+  const categoryVorlauflisteColumnIds = useMemo(
+    () => configurableVorlauflisteColumns
+      .filter((column) => column.id.startsWith("product-") || column.id.startsWith("component-"))
+      .map((column) => column.id),
+    [configurableVorlauflisteColumns],
+  );
+  const vorlauflisteColumnById = useMemo(
+    () => new Map(configurableVorlauflisteColumns.map((column) => [column.id, column] as const)),
+    [configurableVorlauflisteColumns],
+  );
+
+  const updateVorlauflisteColumnVisibility = (columnId: string, checked: boolean) => {
+    const nextHiddenColumns = checked
+      ? resolvedVorlauflisteHiddenColumns.filter((entry) => entry !== columnId)
+      : Array.from(new Set([...resolvedVorlauflisteHiddenColumns, columnId]));
+    setVorlauflisteHiddenColumns(nextHiddenColumns);
+    void persistVorlauflisteSelection({ hiddenColumns: nextHiddenColumns });
+  };
+
+  const moveVorlauflisteColumn = (columnId: string, direction: -1 | 1) => {
+    const index = resolvedVorlauflisteColumnOrder.indexOf(columnId);
+    if (index === -1) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= resolvedVorlauflisteColumnOrder.length) return;
+    const nextOrder = [...resolvedVorlauflisteColumnOrder];
+    [nextOrder[index], nextOrder[targetIndex]] = [nextOrder[targetIndex], nextOrder[index]];
+    setVorlauflisteColumnOrder(nextOrder);
+    void persistVorlauflisteSelection({ columnOrder: nextOrder });
+  };
+
+  const resetVorlauflisteColumns = () => {
+    setVorlauflisteColumnOrder(defaultVorlauflisteColumnOrder);
+    setVorlauflisteHiddenColumns([]);
+    void persistVorlauflisteSelection({
+      columnOrder: defaultVorlauflisteColumnOrder,
+      hiddenColumns: [],
+    });
+  };
 
   return (
     <div className="h-full w-full">
@@ -740,7 +931,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         className="h-full w-full"
         contentClassName="min-h-0"
         contentSlot={(
-          <div className="relative h-full overflow-hidden" data-testid="reports-panel">
+          <div
+            className={cn(
+              "relative h-full overflow-hidden",
+              isProductVorlauflayout ? "reports-print-product-vorlauf-active" : undefined,
+            )}
+            data-testid="reports-panel"
+          >
             <style>
               {`
                 @media print {
@@ -751,11 +948,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   body * {
                     visibility: hidden !important;
                   }
-                  [data-testid="reports-product-vorlauf-overlay"],
-                  [data-testid="reports-product-vorlauf-overlay"] * {
+                  [data-testid="print-document-root"],
+                  [data-testid="print-document-root"] * {
                     visibility: visible !important;
                   }
-                  [data-testid="reports-product-vorlauf-overlay"] {
+                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"],
+                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"] * {
+                    visibility: visible !important;
+                  }
+                  .reports-print-product-vorlauf-active [data-testid="reports-product-vorlauf-overlay"] {
                     position: absolute !important;
                     inset: 0 !important;
                     overflow: visible !important;
@@ -777,7 +978,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </div>
                   )}
                 >
-                  <div className="grid grid-cols-1 gap-5 xl:grid-cols-[max-content_minmax(0,1fr)] xl:items-start">
+                  <div className="grid grid-cols-1 gap-5">
                     <div className="space-y-3" data-testid="reports-vorlaufliste-date-range-column">
                       <h4 className="text-sm font-semibold text-foreground">Datumsbereich</h4>
                       <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap">
@@ -800,52 +1001,15 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                         )}
                       </div>
                     </div>
-
-                    <div className="justify-self-end space-y-3" data-testid="reports-vorlaufliste-categories-column">
-                      <h4 className="text-sm font-semibold text-foreground">Artikel Kategorien</h4>
-                      <ArticleCategorySelection
-                        productCategories={defaultProductCategories}
-                        componentCategories={defaultComponentCategories}
-                        selectedProductCategoryIds={selectedVorlauflisteProductCategoryIds}
-                        selectedComponentCategoryIds={selectedVorlauflisteComponentCategoryIds}
-                        onProductCategoryToggle={(categoryId, checked) => {
-                          const nextIds = checked
-                            ? normalizeIds([...selectedVorlauflisteProductCategoryIds, categoryId])
-                            : selectedVorlauflisteProductCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedVorlauflisteProductCategoryIds(nextIds);
-                          void persistSelection("vorlaufliste", {
-                            productCategoryIds: nextIds,
-                            componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
-                            useShortCodes: useVorlauflisteShortCodes,
-                            columnWidths: vorlauflisteColumnWidths,
-                          });
-                        }}
-                        onComponentCategoryToggle={(categoryId, checked) => {
-                          const nextIds = checked
-                            ? normalizeIds([...selectedVorlauflisteComponentCategoryIds, categoryId])
-                            : selectedVorlauflisteComponentCategoryIds.filter((id) => id !== categoryId);
-                          setSelectedVorlauflisteComponentCategoryIds(nextIds);
-                          void persistSelection("vorlaufliste", {
-                            productCategoryIds: selectedVorlauflisteProductCategoryIds,
-                            componentCategoryIds: nextIds,
-                            useShortCodes: useVorlauflisteShortCodes,
-                            columnWidths: vorlauflisteColumnWidths,
-                          });
-                        }}
-                        testIdPrefix="reports-vorlaufliste"
-                      />
+                    <div className="space-y-3" data-testid="reports-vorlaufliste-settings-column">
+                      <h4 className="text-sm font-semibold text-foreground">Optionen</h4>
                       <label className="mt-3 flex items-center gap-3 text-sm text-foreground" data-testid="reports-vorlaufliste-use-shortcodes-label">
                         <Checkbox
                           checked={useVorlauflisteShortCodes}
                           onCheckedChange={(checked) => {
                             const next = Boolean(checked);
                             setUseVorlauflisteShortCodes(next);
-                            void persistSelection("vorlaufliste", {
-                              productCategoryIds: selectedVorlauflisteProductCategoryIds,
-                              componentCategoryIds: selectedVorlauflisteComponentCategoryIds,
-                              useShortCodes: next,
-                              columnWidths: vorlauflisteColumnWidths,
-                            });
+                            void persistVorlauflisteSelection({ useShortCodes: next });
                           }}
                           data-testid="checkbox-reports-vorlaufliste-use-shortcodes"
                         />
@@ -1009,37 +1173,151 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                   <div className="min-w-0">
                     <h3 className="text-base font-semibold text-foreground">Vorlaufliste</h3>
                   </div>
-                  <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-back">Zurück</Button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Popover open={isVorlauflisteColumnsPopoverOpen} onOpenChange={setIsVorlauflisteColumnsPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="outline" data-testid="button-reports-vorlaufliste-columns">
+                          <Columns3 className="h-4 w-4" />
+                          Spalten
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[420px] p-0" align="end">
+                        <div className="border-b border-border px-4 py-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <h4 className="text-sm font-semibold text-foreground">Spalten konfigurieren</h4>
+                              <p className="text-xs text-muted-foreground">Sichtbarkeit und Reihenfolge der Vorlaufliste anpassen.</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="sm" onClick={resetVorlauflisteColumns} data-testid="button-reports-vorlaufliste-columns-reset">
+                              <RotateCcw className="h-4 w-4" />
+                              Reset
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="max-h-[70vh] space-y-4 overflow-auto px-4 py-4">
+                          <section data-testid="reports-vorlaufliste-columns-fixed-indicator">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feststehend</h5>
+                            <div className="mt-2 flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
+                              <div className="flex items-center gap-3">
+                                <Lock className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-foreground">Statusindikator</span>
+                              </div>
+                              <span className="text-xs text-muted-foreground">Fix</span>
+                            </div>
+                          </section>
+                          <section data-testid="reports-vorlaufliste-columns-fixed-columns">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Festspalten</h5>
+                            <div className="mt-2 space-y-2">
+                              {fixedVorlauflisteColumnIds.map((columnId) => {
+                                const column = vorlauflisteColumnById.get(columnId);
+                                if (!column) return null;
+                                const label = typeof column.header === "string" ? column.header : columnId;
+                                const index = resolvedVorlauflisteColumnOrder.indexOf(columnId);
+                                return (
+                                  <div key={columnId} className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+                                    <label className="flex min-w-0 items-center gap-3 text-sm text-foreground">
+                                      <Checkbox
+                                        checked={!resolvedVorlauflisteHiddenColumns.includes(columnId)}
+                                        onCheckedChange={(checked) => updateVorlauflisteColumnVisibility(columnId, Boolean(checked))}
+                                        data-testid={`checkbox-reports-vorlaufliste-column-${columnId}`}
+                                      />
+                                      <span className="truncate">{label}</span>
+                                    </label>
+                                    <div className="flex items-center gap-1">
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, -1)} disabled={index <= 0} data-testid={`button-reports-vorlaufliste-column-${columnId}-up`}>
+                                        <ArrowUp className="h-4 w-4" />
+                                      </Button>
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, 1)} disabled={index === -1 || index >= resolvedVorlauflisteColumnOrder.length - 1} data-testid={`button-reports-vorlaufliste-column-${columnId}-down`}>
+                                        <ArrowDown className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </section>
+                          <section data-testid="reports-vorlaufliste-columns-categories">
+                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Artikel-Kategorien</h5>
+                            <div className="mt-2 space-y-2">
+                              {categoryVorlauflisteColumnIds.map((columnId) => {
+                                const column = vorlauflisteColumnById.get(columnId);
+                                if (!column) return null;
+                                const label = typeof column.header === "string" ? column.header : columnId;
+                                const index = resolvedVorlauflisteColumnOrder.indexOf(columnId);
+                                return (
+                                  <div key={columnId} className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
+                                    <label className="flex min-w-0 items-center gap-3 text-sm text-foreground">
+                                      <Checkbox
+                                        checked={!resolvedVorlauflisteHiddenColumns.includes(columnId)}
+                                        onCheckedChange={(checked) => updateVorlauflisteColumnVisibility(columnId, Boolean(checked))}
+                                        data-testid={`checkbox-reports-vorlaufliste-column-${columnId}`}
+                                      />
+                                      <span className="truncate">{label}</span>
+                                    </label>
+                                    <div className="flex items-center gap-1">
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, -1)} disabled={index <= 0} data-testid={`button-reports-vorlaufliste-column-${columnId}-up`}>
+                                        <ArrowUp className="h-4 w-4" />
+                                      </Button>
+                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, 1)} disabled={index === -1 || index >= resolvedVorlauflisteColumnOrder.length - 1} data-testid={`button-reports-vorlaufliste-column-${columnId}-down`}>
+                                        <ArrowDown className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </section>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Button type="button" variant="outline" onClick={() => setIsVorlauflistePrintPreviewOpen(true)} data-testid="button-reports-vorlaufliste-print-preview">
+                      <Printer className="h-4 w-4" />
+                      Druckvorschau
+                    </Button>
+                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-back">Zurück</Button>
+                  </div>
                 </div>
-                <div className="min-h-0 flex-1">
+                <div className="min-h-0 flex-1 overflow-hidden">
                   {isVorlauflisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : (
-                    
-                      <TableView
-                      columns={vorlauflisteColumns}
-                      rows={vorlauflisteData?.items ?? []}
-                      rowKey={(row) => row.projectId}
-                      rowClassName={() => "even:bg-muted/35"}
-                      rowStyle={(row) => resolveTagBackgroundStyle(row.highlightTag)}
-                      rowTitle={(row) => row.highlightTag?.name}
-                      rowPreviewRenderer={(row) => (
-                        <ProjectTableHoverPreview
-                          project={buildVorlauflistePreviewProject(
-                            row,
-                            vorlauflisteData?.productCategories ?? [],
-                            vorlauflisteData?.componentCategories ?? [],
+                    <div className="flex h-full flex-col">
+                      <div className="min-h-0 flex-1 overflow-hidden">
+                        <TableView
+                          columns={vorlauflisteColumns}
+                          rows={vorlauflisteData?.items ?? []}
+                          rowKey={(row) => row.projectId}
+                          rowTitle={(row) => row.highlightTag?.name}
+                          rowPreviewRenderer={(row) => (
+                            <ProjectTableHoverPreview
+                              project={buildVorlauflistePreviewProject(
+                                row,
+                                vorlauflisteData?.productCategories ?? [],
+                                vorlauflisteData?.componentCategories ?? [],
+                              )}
+                            />
                           )}
+                          onColumnResize={updateVorlauflisteColumnWidth}
+                          onColumnResizeEnd={commitVorlauflisteColumnWidth}
+                          tableClassName="table-fixed"
+                          testId="table-reports-vorlaufliste"
+                          stickyHeader
+                          emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
                         />
-                      )}
-                      onColumnResize={updateVorlauflisteColumnWidth}
-                      onColumnResizeEnd={commitVorlauflisteColumnWidth}
-                      tableClassName="table-fixed"
-                      testId="table-reports-vorlaufliste"
-                      stickyHeader
-                      emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
-                    />
-                    
+                      </div>
+                      <div className="border-t border-border px-6 py-3" data-testid="reports-vorlaufliste-legend">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span className="block h-4 w-2 rounded-sm" style={{ backgroundColor: "#E24B4A" }} />
+                            <span>Storniert</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="block h-4 w-2 rounded-sm" style={{ backgroundColor: "#1e3a8a" }} />
+                            <span>Sondermaß / Info-Tag</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
                 <div className="border-t border-border px-6 py-4">
@@ -1058,6 +1336,76 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 </div>
               </div>
             </div>
+
+            <PrintPreviewDialog
+              open={isVorlauflistePrintPreviewOpen}
+              onOpenChange={setIsVorlauflistePrintPreviewOpen}
+              title="Druckvorschau Vorlaufliste"
+              pages={vorlauflistePrintPages}
+              activePageIndex={activeVorlauflistePrintPageIndex}
+              onPageChange={setActiveVorlauflistePrintPageIndex}
+              testIdPrefix="vorlaufliste-print-preview"
+              dialogTestId="dialog-vorlaufliste-print-preview"
+              getPageKey={(page) => page.pageNumber}
+              getPageTitle={(page) => `Seite ${page.pageNumber} von ${page.totalPages}`}
+              headerActions={vorlauflistePrintPages.length > 0 ? (
+                <Button type="button" variant="outline" onClick={handleVorlauflistePrint} data-testid="button-reports-vorlaufliste-print">
+                  <Printer className="h-4 w-4" />
+                  Drucken
+                </Button>
+              ) : null}
+              renderPage={(page) => (
+                <PrintPageShell orientation="landscape" paddingMm={10} testId={`vorlaufliste-print-page-${page.pageNumber}`}>
+                  <div className="flex items-center justify-between border-b border-slate-300 pb-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-slate-900">Vorlaufliste</h2>
+                      <p className="text-sm text-slate-600">
+                        {submittedFilters?.fromDate ?? "-"}
+                        {submittedFilters?.toDate ? ` bis ${submittedFilters.toDate}` : ""}
+                      </p>
+                    </div>
+                    <div className="text-sm text-slate-600">Seite {page.pageNumber} von {page.totalPages}</div>
+                  </div>
+                  <div className="mt-4 overflow-hidden rounded border border-slate-300">
+                    <table className="w-full border-collapse text-[11px] text-slate-900">
+                      <thead className="bg-slate-100">
+                        <tr>
+                          {page.columns.map((column) => (
+                            <th
+                              key={column.id}
+                              className={cn("border-b border-slate-300 px-2 py-2 text-left font-semibold", column.isIndicator ? "px-0" : "")}
+                              style={column.isIndicator ? { width: 8, minWidth: 8 } : { width: `${(column.scaledWidthPx / VORLAUFLISTE_PRINT_WIDTH_PX) * 100}%` }}
+                            >
+                              {column.isIndicator ? "" : column.headerText}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {page.rows.map((row) => (
+                          <tr key={`vorlaufliste-print-row-${page.pageNumber}-${row.projectId}`} className="align-top">
+                            {page.columns.map((column) => (
+                              <td
+                                key={`${row.projectId}-${column.id}`}
+                                className={cn("border-b border-slate-200 px-2 py-2", column.isIndicator ? "px-0 py-0" : "")}
+                              >
+                                {column.isIndicator ? (
+                                  <div className="min-h-[28px] w-[8px]" style={{ backgroundColor: resolveVorlauflisteIndicatorColor(row) }} />
+                                ) : (
+                                  <span>{resolveVorlauflistePrintCellValue(row, column.id)}</span>
+                                )}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </PrintPageShell>
+              )}
+              loadingState={isVorlauflistePrintPreviewLoading ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
+              errorState={isVorlauflistePrintPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
+            />
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProductVorlauflayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-product-vorlauf-overlay">
               <div className="flex h-full flex-col">

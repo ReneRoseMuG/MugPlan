@@ -88,7 +88,50 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
   return globalScopeMarker;
 }
 
+function normalizeVorlauflisteResolvedValue(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const parseStringArray = (input: unknown): string[] | undefined => {
+    if (!Array.isArray(input)) return undefined;
+    const values = input
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+    if (values.length !== input.length || values.length === 0) {
+      return undefined;
+    }
+    return Array.from(new Set(values));
+  };
+
+  const columnWidths = candidate.columnWidths && typeof candidate.columnWidths === "object" && !Array.isArray(candidate.columnWidths)
+    ? Object.fromEntries(
+      Object.entries(candidate.columnWidths)
+        .filter(([key, width]) =>
+          key.trim().length > 0
+          && typeof width === "number"
+          && Number.isInteger(width)
+          && width >= 80
+          && width <= 960)
+        .map(([key, width]) => [key, width]),
+    )
+    : undefined;
+
+  return {
+    columnOrder: parseStringArray(candidate.columnOrder),
+    hiddenColumns: parseStringArray(candidate.hiddenColumns),
+    useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : undefined,
+    columnWidths,
+  };
+}
+
 function normalizeResolvedSettingValue(definition: SettingDefinition, value: unknown): unknown {
+  if (definition.key === "reports.vorlaufliste.categorySelection") {
+    return normalizeVorlauflisteResolvedValue(value);
+  }
+
   if (definition.key !== "reports.productVorlauf.selection") {
     return value;
   }

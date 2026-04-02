@@ -2,25 +2,26 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Vorlaufliste-Kategorieauswahl wird pro Benutzer getrennt gespeichert.
- * - Persistierte Kategorie-ID-Arrays bleiben ueber erneutes Laden der resolved Settings erhalten.
- * - Persistierte columnWidths bleiben benutzerspezifisch an die Vorlaufliste gebunden.
+ * - Die Vorlaufliste-Spaltenkonfiguration wird pro Benutzer getrennt gespeichert.
+ * - Persistierte columnOrder, hiddenColumns, columnWidths und useShortCodes bleiben über Reloads stabil.
+ * - Legacy-Felder aus dem alten Setting-Shape werden serverseitig aus dem resolved Setting herausnormalisiert.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Scope-Leak zwischen zwei Benutzern.
- * - Verlust der Report-Kategorieauswahl nach Reload.
- * - Verlust oder Vermischung persistierter Spaltenbreiten nach Reload.
+ * - Verlust oder Vermischung persistierter Spaltenkonfiguration nach Reload.
+ * - Alte productCategoryIds/componentCategoryIds tauchen weiterhin im resolved Setting auf.
  *
  * Ziel:
- * Die benutzerspezifische Persistenz der Vorlaufliste-Checkboxauswahl auf API-Ebene absichern.
+ * Die benutzerspezifische Persistenz der neuen Vorlaufliste-Spaltenkonfiguration auf API-Ebene absichern.
  */
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { registerRoutes } from "../../../server/routes";
+
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { createUser } from "../../../server/repositories/usersRepository";
+import { registerRoutes } from "../../../server/routes";
 import { hashPassword } from "../../../server/security/passwordHash";
 
 type ResolvedSetting = {
@@ -77,11 +78,7 @@ function getSetting(settings: ResolvedSetting[], key: string): ResolvedSetting {
   return setting;
 }
 
-async function setUserSetting(agent: SuperAgentTest, value: {
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
-  columnWidths?: Record<string, number>;
-}): Promise<void> {
+async function patchUserSetting(agent: SuperAgentTest, value: Record<string, unknown>): Promise<void> {
   const settings = await getResolvedSettings(agent);
   const setting = getSetting(settings, "reports.vorlaufliste.categorySelection");
   const version = typeof setting.userVersion === "number" && setting.userVersion >= 1 ? setting.userVersion : 1;
@@ -97,44 +94,65 @@ async function setUserSetting(agent: SuperAgentTest, value: {
     .expect(200);
 }
 
-describe("integration: reports vorlaufliste category selection persistence", () => {
-  it("persists the category selection user-specifically and keeps values across reload", async () => {
+describe("integration: reports vorlaufliste column configuration persistence", () => {
+  it("persists the user-specific column configuration across reloads", async () => {
     const userA = await createDispatcherAgent("a");
     const userB = await createDispatcherAgent("b");
 
-    await setUserSetting(userA, {
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
+    await patchUserSetting(userA, {
+      columnOrder: ["amount", "city", "product-11"],
+      hiddenColumns: ["component-21"],
       columnWidths: {
         amount: 180,
         "product-11": 320,
       },
+      useShortCodes: true,
     });
 
     const settingsA = await getResolvedSettings(userA);
     const settingsB = await getResolvedSettings(userB);
 
     expect(getSetting(settingsA, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
+      columnOrder: ["amount", "city", "product-11"],
+      hiddenColumns: ["component-21"],
       columnWidths: {
         amount: 180,
         "product-11": 320,
       },
+      useShortCodes: true,
     });
-    expect(getSetting(settingsB, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
-      productCategoryIds: [],
-      componentCategoryIds: [],
-    });
+    expect(getSetting(settingsB, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({});
 
     const reloadedA = await getResolvedSettings(userA);
     expect(getSetting(reloadedA, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
+      columnOrder: ["amount", "city", "product-11"],
+      hiddenColumns: ["component-21"],
       columnWidths: {
         amount: 180,
         "product-11": 320,
       },
+      useShortCodes: true,
+    });
+  });
+
+  it("normalizes legacy category fields out of the resolved setting", async () => {
+    const user = await createDispatcherAgent("legacy");
+
+    await patchUserSetting(user, {
+      productCategoryIds: [11, 12],
+      componentCategoryIds: [21],
+      columnOrder: ["amount", "city"],
+      hiddenColumns: ["component-21"],
+      useShortCodes: false,
+    });
+
+    const settings = await getResolvedSettings(user);
+
+    expect(getSetting(settings, "reports.vorlaufliste.categorySelection").resolvedValue).toEqual({
+      columnOrder: ["amount", "city"],
+      hiddenColumns: ["component-21"],
+      columnWidths: undefined,
+      useShortCodes: false,
     });
   });
 });

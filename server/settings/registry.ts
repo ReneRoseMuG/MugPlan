@@ -50,8 +50,8 @@ type ListViewMode = (typeof listViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 type VorlauflisteCategorySelection = {
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
+  columnOrder?: string[];
+  hiddenColumns?: string[];
   useShortCodes?: boolean;
   columnWidths?: Record<string, number>;
 };
@@ -156,11 +156,19 @@ function isValidPositiveIntegerArray(value: unknown): value is number[] {
   return new Set(value).size === value.length;
 }
 
+function isValidStringArray(value: unknown): value is string[] {
+  if (!Array.isArray(value)) return false;
+  if (!value.every((entry) => typeof entry === "string" && entry.trim().length > 0)) {
+    return false;
+  }
+  return new Set(value).size === value.length;
+}
+
 function isValidVorlauflisteCategorySelection(value: unknown): value is VorlauflisteCategorySelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const parsed = value as Record<string, unknown>;
-  if (!isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
-  if (!isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.columnOrder !== undefined && !isValidStringArray(parsed.columnOrder)) return false;
+  if (parsed.hiddenColumns !== undefined && !isValidStringArray(parsed.hiddenColumns)) return false;
   if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
   if (parsed.columnWidths !== undefined) {
     if (!parsed.columnWidths || typeof parsed.columnWidths !== "object" || Array.isArray(parsed.columnWidths)) {
@@ -409,13 +417,10 @@ export const userSettingsRegistry = {
   },
   reportsVorlauflisteCategorySelection: {
     key: "reports.vorlaufliste.categorySelection",
-    label: "Vorlaufliste Kategorien",
-    description: "Speichert die benutzerspezifische Kategorieauswahl fuer die Vorlaufliste.",
+    label: "Vorlaufliste Spaltenkonfiguration",
+    description: "Speichert die benutzerspezifische Spaltenkonfiguration fuer die Vorlaufliste.",
     type: "json",
-    defaultValue: {
-      productCategoryIds: [],
-      componentCategoryIds: [],
-    },
+    defaultValue: {},
     allowedScopes: ["USER"],
     validate: isValidVorlauflisteCategorySelection,
   },

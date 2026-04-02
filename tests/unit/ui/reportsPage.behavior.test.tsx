@@ -4,13 +4,15 @@
  * Abgedeckte Regeln:
  * - Report-Erzeugung bleibt ohne initiales Von-Datum im UI deaktiviert.
  * - Ein geleertes Bis-Datum wird beim Vorlauflisten-URL-Aufbau nicht weitergegeben.
+ * - Der neue Druckvorschau-URL-Aufbau übernimmt nur Datumsbereich und Shortcodes.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
- * - Ein zuvor sichtbares Bis-Datum bleibt als leerer Parameter im Folge-Request erhalten.
+ * - Ein leeres Bis-Datum bleibt als Parameter im Folge-Request erhalten.
+ * - Der Druckpfad übernimmt versehentlich Paging oder alte Kategorie-Filter.
  *
  * Ziel:
- * Die stabil ohne DOM pruefbaren UI-Basisregeln der ReportsPage regressionssicher absichern.
+ * Die stabil ohne DOM prüfbaren Basisregeln der ReportsPage regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -99,6 +101,7 @@ vi.mock("@/components/ui/entity-tag-footer-row", () => ({
 import {
   ReportsPage,
   buildProductVorlaufReportUrl,
+  buildVorlauflistePrintPreviewUrl,
   buildVorlauflisteReportUrl,
 } from "../../../client/src/components/ReportsPage";
 
@@ -133,13 +136,20 @@ describe("FT26 UI: ReportsPage behavior", () => {
           isLoading: false,
         };
       }
+      if (key === "reports-vorlaufliste-print-preview") {
+        return {
+          data: { items: [], productCategories: [], componentCategories: [] },
+          isLoading: false,
+          isError: false,
+        };
+      }
       if (key === "reports-product-vorlauf") {
         return {
           data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
           isLoading: false,
         };
       }
-      return { data: [], isLoading: false };
+      return { data: [], isLoading: false, isError: false };
     });
   });
 
@@ -156,8 +166,6 @@ describe("FT26 UI: ReportsPage behavior", () => {
   it("omits toDate from the vorlaufliste URL when the field was cleared", () => {
     const url = buildVorlauflisteReportUrl({
       fromDate: "2026-03-29",
-      productCategoryIds: [1],
-      componentCategoryIds: [2],
       useShortCodes: false,
       page: 1,
       pageSize: 100,
@@ -168,6 +176,25 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("refreshKey=8");
     expect(url).not.toContain("toDate=");
+    expect(url).not.toContain("productCategoryIds=");
+    expect(url).not.toContain("componentCategoryIds=");
+  });
+
+  it("builds the dedicated print-preview URL without paging or category filters", () => {
+    const url = buildVorlauflistePrintPreviewUrl({
+      fromDate: "2026-03-29",
+      toDate: "2026-03-30",
+      useShortCodes: true,
+    });
+
+    expect(url).toContain("/api/reports/vorlaufliste/print-preview?");
+    expect(url).toContain("fromDate=2026-03-29");
+    expect(url).toContain("toDate=2026-03-30");
+    expect(url).toContain("useShortCodes=true");
+    expect(url).not.toContain("page=");
+    expect(url).not.toContain("pageSize=");
+    expect(url).not.toContain("productCategoryIds=");
+    expect(url).not.toContain("componentCategoryIds=");
   });
 
   it("includes shortcodes and sonderblock tags in the product-vorlauf URL", () => {
