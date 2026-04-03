@@ -1,18 +1,18 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Reports-Seite rendert die Vorlaufliste ohne alten Kategorie-Checkbox-Block.
- * - Das Vorlauflisten-Overlay enthält Spalten- und Druckvorschau-Aktion sowie eine feste Indikatorspalte.
- * - Die Tabellenverdrahtung verwendet keine Zeilen-Hintergrundfunktion mehr.
+ * - Die Reports-Seite rendert die prototypnahen FT26-Toggles fuer Datum und Kalenderwoche samt Header-Actions.
+ * - Die Produktionsplanung zeigt keinen alten Info-Tag-, Sonderblock- oder deaktivierten Kategorie-Block mehr.
+ * - Nicht-Admins sehen keinen Kategorie-Layout-Button; Admins erhalten stattdessen den Dialog-Einstieg.
  *
- * Fehlerfälle:
- * - Die Vorlaufliste zeigt weiterhin einen separaten Kategorienblock.
- * - Spalten- oder Druckvorschau-Button fehlen im Overlay.
- * - Die TableView erhält weiterhin rowClassName statt nur der Indikatorspalte.
+ * Fehlerfaelle:
+ * - Alte Produktionsplanung-Blöcke oder Legacy-Tabelle bleiben sichtbar verdrahtet.
+ * - Die prototypnahen Toggle- und Action-Elemente fehlen oder fallen auf die alte Tab-Struktur zurueck.
+ * - Der Admin-Einstieg fuer das Kategorie-Layout fehlt oder wird Nicht-Admins angezeigt.
  *
  * Ziel:
- * Das sichtbare UI-Wiring der neuen Vorlaufliste-Konfiguration regressionssicher absichern.
+ * Das sichtbare FT26-UI-Wiring der ReportsPage im UI-Handoff regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -26,7 +26,7 @@ const localStorageGetItemMock = vi.fn();
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
   useSetting: (key: string) => useSettingsMock().settingsByKey.get(key)?.resolvedValue,
-  resolveProduktionsplanungSelection: (value: unknown) => value,
+  resolveLegacyProduktionsplanungSelection: (value: unknown) => value,
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -74,6 +74,26 @@ vi.mock("@/components/ui/report-config-surface", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>,
+  TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/toggle-group", () => ({
+  ToggleGroup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  ToggleGroupItem: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>,
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div data-testid={String(props["data-testid"] ?? "")}>{children}</div>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock("@/components/ui/popover", () => ({
   Popover: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   PopoverTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -116,9 +136,13 @@ vi.mock("@/components/ui/help/help-icon", () => ({
   HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
 }));
 
+vi.mock("@/components/ui/badge", () => ({
+  Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
 import { ReportsPage } from "../../../client/src/components/ReportsPage";
 
-describe("FT26/FT32 UI: ReportsPage wiring", () => {
+describe("FT26 UI: ReportsPage wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     vi.stubGlobal("window", {
@@ -196,7 +220,7 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
       }
       if (key === "reports-produktionsplanung") {
         return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
+          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
           isLoading: false,
         };
       }
@@ -204,17 +228,18 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     });
   });
 
-  it("renders the new vorlaufliste settings and overlay actions", () => {
+  it("renders the new prototype toggles and action buttons", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect(html).toContain("reports-vorlaufliste-date-range-column");
-    expect(html).toContain("reports-vorlaufliste-settings-column");
-    expect(html).not.toContain("reports-vorlaufliste-categories-column");
-    expect(html).toContain("button-reports-vorlaufliste-columns");
+    expect(html).toContain("toggle-reports-vorlaufliste-date");
+    expect(html).toContain("toggle-reports-vorlaufliste-calendarWeek");
+    expect(html).toContain("toggle-reports-produktionsplanung-date");
+    expect(html).toContain("toggle-reports-produktionsplanung-calendarWeek");
+    expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
     expect(html).toContain("button-reports-vorlaufliste-print-preview");
-    expect(html).toContain("reports-vorlaufliste-legend");
-    expect(html).not.toContain("checkbox-reports-vorlaufliste-product-category-");
-    expect(html).not.toContain("checkbox-reports-vorlaufliste-component-category-");
+    expect(html).not.toContain("tab-reports-vorlaufliste-columns");
+    expect(html).toContain("reports-vorlaufliste-config-panel");
+    expect(html).toContain("reports-produktionsplanung-config-panel");
   });
 
   it("passes an indicator column to the table and no rowClassName callback", () => {
@@ -224,33 +249,79 @@ describe("FT26/FT32 UI: ReportsPage wiring", () => {
     expect(html).toContain("data-has-row-class=\"false\"");
   });
 
-  it("keeps the category selector disabled for non-admins and hides the layout editor", () => {
+  it("shows product and component category columns in the actual report table definition before report data exists", () => {
+    useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
+      const key = options.queryKey?.[0];
+      if (key === "/api/admin/master-data/product-categories?active=all") {
+        return {
+          data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
+          isLoading: false,
+        };
+      }
+      if (key === "/api/admin/master-data/component-categories?active=all") {
+        return {
+          data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
+          isLoading: false,
+        };
+      }
+      if (key === "reports-vorlaufliste") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 100,
+            total: 0,
+            totalPages: 0,
+            productCategories: [],
+            componentCategories: [],
+            items: [],
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "reports-vorlaufliste-print-preview") {
+        return {
+          data: { items: [], productCategories: [], componentCategories: [] },
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === "reports-produktionsplanung") {
+        return {
+          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
+          isLoading: false,
+        };
+      }
+      return { data: [], isLoading: false, isError: false };
+    });
+
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect(html).toContain("reports-produktionsplanung-disabled-hint");
-    expect(html).toContain("Die Kategorieauswahl wird über das Kategorie-Layout gesteuert.");
-    expect(html).toContain("reports-produktionsplanung-categories");
-    expect(html).not.toContain("reports-produktionsplanung-products");
-    expect(html).not.toContain("reports-produktionsplanung-components");
-    expect(html).not.toContain("Produktkategorien");
-    expect(html).not.toContain("Komponentenkategorien");
-    expect(html).not.toContain("Block 1");
-    expect(html).not.toContain("1 Kategorie");
-    expect(html).not.toContain("2 Kategorien");
-    expect(html).not.toContain("1 Spalte");
-    expect(html).not.toContain("2 Spalten");
-    expect(html).not.toContain("3 Spalten");
-    expect(html).not.toContain("reports-produktionsplanung-category-layout");
-    expect(html).not.toContain("reports-produktionsplanung-layout-warning");
+    expect(html).toContain("Fass Saunen");
+    expect(html).toContain("Fenster");
+    expect(html).toContain("data-column-ids=\"__indicator,amount,customerFullName,postalCode,city,product-1,component-2,plannedDateText,plannedWeek,actualDate,projectDescription\"");
   });
 
-  it("shows the admin layout editor and warning when no global layout is configured", () => {
+  it("removes the legacy produktionsplanung config blocks for non-admins", () => {
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("toggle-reports-produktionsplanung-date");
+    expect(html).toContain("toggle-reports-produktionsplanung-calendarWeek");
+    expect(html).not.toContain("reports-produktionsplanung-info-tags");
+    expect(html).not.toContain("reports-produktionsplanung-sonderblock-tags");
+    expect(html).not.toContain("reports-produktionsplanung-categories-column");
+    expect(html).not.toContain("button-reports-produktionsplanung-open-category-layout");
+    expect(html).not.toContain("reports-produktionsplanung-projects");
+    expect(html).not.toContain("reports-produktionsplanung-special-measures");
+    expect(html).toContain("reports-produktionsplanung-project-cards");
+  });
+
+  it("shows the admin category-layout entry and warning when no global layout is configured", () => {
     localStorageGetItemMock.mockReturnValue("ADMIN");
 
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect(html).toContain("reports-produktionsplanung-category-layout");
-    expect(html).toContain("button-reports-produktionsplanung-category-layout-add");
+    expect(html).toContain("button-reports-produktionsplanung-open-category-layout");
+    expect(html).not.toContain("dialog-reports-produktionsplanung-category-layout");
     expect(html).toContain("reports-produktionsplanung-layout-warning");
     expect(html).toContain("Kategorie-Layout noch nicht konfiguriert.");
   });

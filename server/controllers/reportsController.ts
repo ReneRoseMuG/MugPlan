@@ -87,7 +87,6 @@ export async function listProduktionsplanung(req: Request, res: Response, next: 
       productCategoryIds: input.productCategoryIds,
       componentCategoryIds: input.componentCategoryIds,
       useShortCodes: input.useShortCodes,
-      sonderblockTagIds: input.sonderblockTagIds,
     }, roleKey);
 
     res.json(report);
@@ -103,4 +102,3 @@ export async function listProduktionsplanung(req: Request, res: Response, next: 
     next(error);
   }
 }
-

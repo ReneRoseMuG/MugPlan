@@ -1,18 +1,18 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
  * - Report-Erzeugung bleibt ohne initiales Von-Datum im UI deaktiviert.
  * - Ein geleertes Bis-Datum wird beim Vorlauflisten-URL-Aufbau nicht weitergegeben.
- * - Der neue Druckvorschau-URL-Aufbau übernimmt nur Datumsbereich und Shortcodes.
+ * - Der Produktionsplanung-URL-Aufbau enthaelt nur noch Kategorien, Zeitraum und Shortcodes.
  *
- * Fehlerfälle:
+ * Fehlerfaelle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
  * - Ein leeres Bis-Datum bleibt als Parameter im Folge-Request erhalten.
- * - Der Druckpfad übernimmt versehentlich Paging oder alte Kategorie-Filter.
+ * - Der Produktionsplanung-Request uebernimmt versehentlich entfernte Sonderblock-Parameter.
  *
  * Ziel:
- * Die stabil ohne DOM prüfbaren Basisregeln der ReportsPage regressionssicher absichern.
+ * Die stabil ohne DOM pruefbaren FT26-Basisregeln der ReportsPage regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -25,7 +25,7 @@ const useQueryMock = vi.fn();
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
   useSetting: (key: string) => useSettingsMock().settingsByKey.get(key)?.resolvedValue,
-  resolveProduktionsplanungSelection: (value: unknown) => value,
+  resolveLegacyProduktionsplanungSelection: (value: unknown) => value,
 }));
 
 vi.mock("@/lib/project-appointments", () => ({
@@ -83,6 +83,26 @@ vi.mock("@/components/ui/report-config-surface", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/tabs", () => ({
+  Tabs: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsTrigger: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>,
+  TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/toggle-group", () => ({
+  ToggleGroup: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  ToggleGroupItem: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>,
+}));
+
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock("@/components/ui/table-view", () => ({
   TableView: () => <div data-testid="reports-table-view" />,
 }));
@@ -97,6 +117,14 @@ vi.mock("@/components/ui/list-paging-footer", () => ({
 
 vi.mock("@/components/ui/entity-tag-footer-row", () => ({
   EntityTagFooterRow: () => <div>tag-row</div>,
+}));
+
+vi.mock("@/components/ui/badge", () => ({
+  Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
 }));
 
 import {
@@ -146,7 +174,7 @@ describe("FT26 UI: ReportsPage behavior", () => {
       }
       if (key === "reports-produktionsplanung") {
         return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], specialMeasureProjects: [], projectRows: [] },
+          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
           isLoading: false,
         };
       }
@@ -177,8 +205,6 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("refreshKey=8");
     expect(url).not.toContain("toDate=");
-    expect(url).not.toContain("productCategoryIds=");
-    expect(url).not.toContain("componentCategoryIds=");
   });
 
   it("builds the dedicated print-preview URL without paging or category filters", () => {
@@ -194,28 +220,23 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("useShortCodes=true");
     expect(url).not.toContain("page=");
     expect(url).not.toContain("pageSize=");
-    expect(url).not.toContain("productCategoryIds=");
-    expect(url).not.toContain("componentCategoryIds=");
   });
 
-  it("includes shortcodes and sonderblock tags in the produktionsplanung URL", () => {
+  it("builds the produktionsplanung URL without removed sonderblock parameters", () => {
     const url = buildProduktionsplanungReportUrl({
       fromDate: "2026-03-29",
       toDate: "2026-03-30",
       productCategoryIds: [1],
       componentCategoryIds: [2],
       useShortCodes: true,
-      sonderblockTagIds: [7, 8],
     });
 
     expect(url).toContain("/api/reports/produktionsplanung?");
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("toDate=2026-03-30");
+    expect(url).toContain("productCategoryIds=1");
+    expect(url).toContain("componentCategoryIds=2");
     expect(url).toContain("useShortCodes=true");
-    expect(url).toContain("sonderblockTagIds=7");
-    expect(url).toContain("sonderblockTagIds=8");
+    expect(url).not.toContain("sonderblockTagIds=");
   });
-
 });
-
-

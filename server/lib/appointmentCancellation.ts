@@ -1,6 +1,7 @@
 import type { Tag } from "@shared/schema";
 import {
   isPickerVisibleForDomain,
+  isManagedRemarksTagName,
   isManagedReportExclusionTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
@@ -33,6 +34,15 @@ export function isManagedSpecialMeasureTag(tag: Pick<Tag, "name"> | null | undef
 
 export function hasManagedSpecialMeasureTag(tags: Array<Pick<Tag, "name">>): boolean {
   return tags.some((tag) => isManagedSpecialMeasureTag(tag));
+}
+
+export function isManagedRemarksTag(tag: Pick<Tag, "name"> | null | undefined): boolean {
+  if (!tag) return false;
+  return isManagedRemarksTagName(tag.name);
+}
+
+export function hasManagedRemarksTag(tags: Array<Pick<Tag, "name">>): boolean {
+  return tags.some((tag) => isManagedRemarksTag(tag));
 }
 
 export function filterPickerTagsForDomain<TTag extends Pick<Tag, "name">>(

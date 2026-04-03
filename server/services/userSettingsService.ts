@@ -132,7 +132,20 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
     return normalizeVorlauflisteResolvedValue(value);
   }
 
-  if (definition.key !== "reports.produktionsplanung.selection" && definition.key !== "reports.productVorlauf.selection") {
+  if (definition.key === "reports.produktionsplanung.selection") {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return definition.defaultValue;
+    }
+
+    return {
+      ...(definition.defaultValue as Record<string, unknown>),
+      useShortCodes: typeof (value as Record<string, unknown>).useShortCodes === "boolean"
+        ? (value as Record<string, unknown>).useShortCodes
+        : (definition.defaultValue as Record<string, unknown>).useShortCodes,
+    };
+  }
+
+  if (definition.key !== "reports.productVorlauf.selection") {
     return value;
   }
 

@@ -13,6 +13,19 @@ type VorlauflisteCategorySelection = {
   columnWidths?: Record<string, number>;
 };
 type ProduktionsplanungSelection = {
+  useShortCodes?: boolean;
+};
+type ReportRangeConfig = {
+  activeTab?: "date" | "calendarWeek";
+  fromDate?: string;
+  toDate?: string;
+  kwStart?: number;
+  weekCount?: number;
+};
+type VorlauflisteRangeConfig = ReportRangeConfig;
+type ProduktionsplanungRangeConfig = ReportRangeConfig;
+
+type LegacyProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes?: boolean;
@@ -42,6 +55,8 @@ export type UserSettingKey =
   | "demoData.adminFormState"
   | "reports.vorlaufliste.categorySelection"
   | "reports.produktionsplanung.selection"
+  | "reports.vorlaufliste.rangeConfig"
+  | "reports.produktionsplanung.rangeConfig"
   | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
@@ -66,6 +81,8 @@ type UserSettingValueByKey = {
   "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
+  "reports.vorlaufliste.rangeConfig": VorlauflisteRangeConfig;
+  "reports.produktionsplanung.rangeConfig": ProduktionsplanungRangeConfig;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
 
@@ -122,6 +139,76 @@ export function resolveVorlauflisteCategorySelection(value: unknown): Vorlauflis
 }
 
 export function resolveProduktionsplanungSelection(value: unknown): ProduktionsplanungSelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { useShortCodes: false };
+  }
+  const candidate = value as Record<string, unknown>;
+  return {
+    useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : false,
+  };
+}
+
+export function resolveVorlauflisteRangeConfig(value: unknown): VorlauflisteRangeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { activeTab: "date" };
+  }
+  const candidate = value as Record<string, unknown>;
+  const activeTab = candidate.activeTab === "calendarWeek" || candidate.activeTab === "date" || candidate.activeTab === "columns"
+    ? (candidate.activeTab === "columns" ? "date" : candidate.activeTab)
+    : "date";
+  const fromDate = typeof candidate.fromDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.fromDate)
+    ? candidate.fromDate
+    : undefined;
+  const toDate = typeof candidate.toDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.toDate)
+    ? candidate.toDate
+    : undefined;
+  const kwStart = typeof candidate.kwStart === "number" && Number.isInteger(candidate.kwStart) && candidate.kwStart >= 1 && candidate.kwStart <= 53
+    ? candidate.kwStart
+    : undefined;
+  const weekCount = typeof candidate.weekCount === "number" && Number.isInteger(candidate.weekCount) && candidate.weekCount >= 1 && candidate.weekCount <= 52
+    ? candidate.weekCount
+    : undefined;
+
+  return {
+    activeTab,
+    fromDate,
+    toDate,
+    kwStart,
+    weekCount,
+  };
+}
+
+export function resolveProduktionsplanungRangeConfig(value: unknown): ProduktionsplanungRangeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { activeTab: "date" };
+  }
+  const candidate = value as Record<string, unknown>;
+  const activeTab = candidate.activeTab === "calendarWeek" || candidate.activeTab === "date"
+    ? candidate.activeTab
+    : "date";
+  const fromDate = typeof candidate.fromDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.fromDate)
+    ? candidate.fromDate
+    : undefined;
+  const toDate = typeof candidate.toDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.toDate)
+    ? candidate.toDate
+    : undefined;
+  const kwStart = typeof candidate.kwStart === "number" && Number.isInteger(candidate.kwStart) && candidate.kwStart >= 1 && candidate.kwStart <= 53
+    ? candidate.kwStart
+    : undefined;
+  const weekCount = typeof candidate.weekCount === "number" && Number.isInteger(candidate.weekCount) && candidate.weekCount >= 1 && candidate.weekCount <= 52
+    ? candidate.weekCount
+    : undefined;
+
+  return {
+    activeTab,
+    fromDate,
+    toDate,
+    kwStart,
+    weekCount,
+  };
+}
+
+export function resolveLegacyProduktionsplanungSelection(value: unknown): LegacyProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false, sonderblockTagIds: [] };
   }
@@ -241,6 +328,12 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "reports.produktionsplanung.selection") {
       return resolveProduktionsplanungSelection(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.vorlaufliste.rangeConfig") {
+      return resolveVorlauflisteRangeConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.produktionsplanung.rangeConfig") {
+      return resolveProduktionsplanungRangeConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.categoryLayout") {
       return resolveCategoryLayoutConfig(setting?.resolvedValue) as UserSettingValueByKey[K];

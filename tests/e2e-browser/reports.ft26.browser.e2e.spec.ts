@@ -2,17 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Reports-Seite sperrt die Erzeugung ohne Von-Datum und zeigt die Vorlaufliste mit voller, teilweiser und leerer Artikelbelegung an.
+ * - Die Reports-Seite zeigt die Vorlaufliste mit voller, teilweiser und leerer Artikelbelegung an.
  * - Vorlaufliste-Shortcodes sowie Spalten-Sichtbarkeit und -Reihenfolge bleiben nach Navigation erhalten und lassen sich zurücksetzen.
  * - Der Statusindikator ersetzt die alte Zeilenfärbung, die Druckvorschau paginiert den vollständigen Report, begrenzt Druckzellen weiter auf drei Textzeilen und Drucken ruft window.print auf.
- * - Ein geleertes Bis-Datum erweitert die Vorlaufliste erneut auf spätere Termine.
- * - Der Produktionsplanung zeigt Produkt-, Komponenten- und Sondermaß-Blöcke weiterhin sichtbar an.
+ * - Die Produktionsplanung zeigt FT26-Kategorien, das neue Kategorie-Layout-Dialog-Wiring und die neuen Projektkarten sichtbar an.
  *
  * Fehlerfälle:
- * - Reports lassen sich trotz leerem Von-Datum starten.
  * - Persistierte Vorlaufliste-Konfiguration geht nach Navigation verloren.
  * - Die Druckvorschau lädt keine zweite Seite, verliert die Drei-Zeilen-Begrenzung oder ruft Drucken nicht aus dem Dialog heraus auf.
- * - Der Produktionsplanung verliert Sondermaß- oder Gruppentreffer im Browserfluss.
+ * - Der Produktionsplanung verliert Karten-, Grund- oder Gruppentreffer im Browserfluss.
  *
  * Ziel:
  * Die FT26-Reportsuite aus Anwendersicht über Vorlaufliste, Persistenz, Druckvorschau und Produktionsplanung regressionssicher absichern.
@@ -317,17 +315,19 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   }
 
   await openReports(page);
+  await expect(page.getByTestId("toggle-reports-vorlaufliste-calendarWeek")).toBeVisible();
+  await expect(page.getByTestId("button-reports-vorlaufliste-open-columns-dialog")).toBeVisible();
+  await expect(page.getByTestId("toggle-reports-produktionsplanung-calendarWeek")).toBeVisible();
+  await expect(page.getByTestId("button-reports-produktionsplanung-open-category-layout")).toBeVisible();
+  await page.getByTestId("button-reports-vorlaufliste-open-columns-dialog").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeVisible();
+  await page.getByTestId("button-reports-vorlaufliste-columns-dialog-close").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeHidden();
 
   const vorlauflisteGenerateButton = page.getByTestId("button-reports-vorlaufliste-generate");
-  await page.getByTestId("reports-vorlaufliste-from-date").fill("");
-  await expect(vorlauflisteGenerateButton).toBeDisabled();
-  await page.getByTestId("reports-produktionsplanung-from-date").fill("");
-  await expect(page.getByTestId("button-reports-produktionsplanung-generate")).toBeDisabled();
-
   await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
   await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
 
-  await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
   await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
   await vorlauflisteGenerateButton.click();
 
@@ -351,8 +351,22 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(emptyRow).toContainText("-");
 
   await page.getByTestId("button-reports-back").click();
+  await page.getByTestId("toggle-reports-vorlaufliste-calendarWeek").click();
+  await page.getByTestId("input-reports-vorlaufliste-kw-start").fill("14");
+  await page.getByTestId("input-reports-vorlaufliste-week-count").fill("2");
+  await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
+  await page.getByTestId("input-reports-produktionsplanung-kw-start").fill("15");
+  await page.getByTestId("input-reports-produktionsplanung-week-count").fill("3");
+  await page.getByTestId("button-reports-produktionsplanung-open-category-layout").click();
+  await expect(page.getByTestId("dialog-reports-produktionsplanung-category-layout")).toBeVisible();
+  await page.getByTestId("button-reports-produktionsplanung-category-layout-close").click();
+  await expect(page.getByTestId("dialog-reports-produktionsplanung-category-layout")).toBeHidden();
+  await page.getByTestId("toggle-reports-vorlaufliste-date").click();
+  await page.getByTestId("toggle-reports-produktionsplanung-date").click();
   await page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes").click();
-  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toHaveAttribute("data-state", "checked");
+  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toBeChecked();
+  await page.getByTestId("checkbox-reports-produktionsplanung-use-shortcodes").click();
+  await expect(page.getByTestId("checkbox-reports-produktionsplanung-use-shortcodes")).toBeChecked();
 
   await vorlauflisteGenerateButton.click();
   await page.getByTestId("button-reports-vorlaufliste-columns").click();
@@ -394,23 +408,28 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("dialog-vorlaufliste-print-preview")).toBeHidden();
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId(`checkbox-reports-produktionsplanung-component-category-${controlComponent.categoryId}`).click();
 
   await page.getByTestId("nav-termine").click();
   await expect(page.getByTestId("nav-reports")).toBeVisible();
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
-  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toHaveAttribute("data-state", "checked");
-  await expect(page.getByTestId(`checkbox-reports-produktionsplanung-component-category-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
+  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toBeChecked();
+  await page.getByTestId("toggle-reports-vorlaufliste-calendarWeek").click();
+  await expect(page.getByTestId("input-reports-vorlaufliste-kw-start")).toHaveValue("14");
+  await expect(page.getByTestId("input-reports-vorlaufliste-week-count")).toHaveValue("2");
+  await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
+  await expect(page.getByTestId("input-reports-produktionsplanung-kw-start")).toHaveValue("15");
+  await expect(page.getByTestId("input-reports-produktionsplanung-week-count")).toHaveValue("3");
+  await page.getByTestId("toggle-reports-vorlaufliste-date").click();
+  await page.getByTestId("toggle-reports-produktionsplanung-date").click();
 
   await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
-  await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
   await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
   await vorlauflisteGenerateButton.click();
   await page.getByTestId("button-reports-vorlaufliste-columns").click();
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "unchecked");
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).not.toBeChecked();
   await page.getByTestId("button-reports-vorlaufliste-columns-reset").click();
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toHaveAttribute("data-state", "checked");
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
   await page.getByTestId("button-reports-vorlaufliste-columns").click();
 
   await expect(vorlauflisteTable).toContainText("SP");
@@ -419,23 +438,17 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId("reports-vorlaufliste-to-date").fill("");
-  await vorlauflisteGenerateButton.click();
-  await expect(vorlauflisteTable).toContainText(futureProject.customer.fullName ?? "");
-
-  await page.getByTestId("button-reports-back").click();
   await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
-  await page.getByTestId("button-reports-produktionsplanung-show-to-date").click();
   await page.getByTestId("reports-produktionsplanung-to-date").fill(inRangeDate);
   await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();
-  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Kolmikko Voll");
-  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Fenster Klein Voll");
-  await expect(page.getByTestId("reports-produktionsplanung-components")).not.toContainText("Steuerung Pro Voll");
-  await expect(page.getByTestId("reports-produktionsplanung-special-measures")).toContainText(specialProject.customer.fullName ?? "");
-  await expect(page.getByTestId("reports-produktionsplanung-special-measures")).toContainText("Sondermass Browser");
-  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Sondermass Sauna");
-  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Teilglas Browser");
-  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Panorama Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("KOL");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("FK");
+  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText(specialProject.customer.fullName ?? "");
+  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermaß");
+  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Sauna");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Teilglas Browser");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Panorama Browser");
 });

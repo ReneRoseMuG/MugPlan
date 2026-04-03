@@ -1,4 +1,5 @@
 ﻿import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+import { differenceInCalendarDays } from "date-fns";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 
 import { db } from "../db";
@@ -12,22 +13,25 @@ import {
   projectOrder,
   projectOrderItems,
   projects,
-  tags,
   type Tag,
   tours,
 } from "@shared/schema";
 import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
 import {
   hasAppointmentCancellationTag,
+  isManagedRemarksTag,
   hasManagedReportExclusionTag,
   isAppointmentCancellationTag,
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
 import {
   buildGroupedProduktionsplanungCategoryGroups,
-  collectMatchedSonderblockTagIds,
+  collectManagedReportCardReasonTags,
 } from "../lib/reportProduktionsplanung";
 import {
+  getAppointmentAttachmentCountsByAppointmentIds,
+  getAppointmentEmployeesByAppointmentIds,
+  getAppointmentNoteCountsByAppointmentIds,
   getProjectAttachmentCountsByProjectIds,
   getProjectNoteCountsByProjectIds,
 } from "./appointmentsRepository";
@@ -95,32 +99,33 @@ export type ProduktionsplanungCategoryGroup = {
   items: ProduktionsplanungItemTotal[];
 };
 
-export type ProduktionsplanungSpecialMeasureProject = {
+export type ReportEmployeeSummary = {
+  id: number;
+  fullName: string;
+};
+
+export type ProduktionsplanungProjectRow = {
   projectId: number;
   orderNumber: string | null;
   customerNumber: string | null;
   customerFullName: string | null;
-  actualDate: string | null;
+  projectName: string;
+  actualDate: string;
+  durationDays: number;
+  tourName: string | null;
+  employees: ReportEmployeeSummary[];
+  notesCount: number;
+  attachmentsCount: number;
+  tags: Tag[];
+  reportCardReasonTags: Tag[];
+  articleValues: VorlauflisteArticleValue[];
   projectDescription: string | null;
-  specialMeasureTag: Tag | null;
 };
 
 export type ProduktionsplanungResult = {
   productCategoryGroups: ProduktionsplanungCategoryGroup[];
   componentCategoryGroups: ProduktionsplanungCategoryGroup[];
-  specialMeasureProjects: ProduktionsplanungSpecialMeasureProject[];
   projectRows: ProduktionsplanungProjectRow[];
-};
-
-export type ProduktionsplanungProjectRow = {
-  projectId: number;
-  projectName: string;
-  orderNumber: string | null;
-  actualDate: string;
-  tourName: string | null;
-  articleValues: VorlauflisteArticleValue[];
-  projectDescription: string | null;
-  matchedSonderblockTagIds: number[];
 };
 
 type ReportArticleBuckets = Map<number, Set<string>>;
@@ -129,6 +134,7 @@ type NormalizedProjectAppointmentRow = {
   appointmentId: number;
   projectId: number;
   startDate: string;
+  endDate: string | null;
   tourId: number | null;
   tourName: string | null;
 };
@@ -142,11 +148,16 @@ type ProjectReportTagState = {
   hasReportExclusion: boolean;
   cancellationTag: Tag | null;
   specialMeasureTag: Tag | null;
+  remarksTag: Tag | null;
 };
 
 type VorlauflisteAppointmentMeta = {
+  appointmentId: number;
   sortDate: string;
   actualDate: string;
+  durationDays: number;
+  tourName: string | null;
+  appointmentTags: Tag[];
   reportState: AppointmentCancellationReportState;
 };
 
@@ -207,6 +218,7 @@ function createEmptyProjectReportTagState(): ProjectReportTagState {
     hasReportExclusion: false,
     cancellationTag: null,
     specialMeasureTag: null,
+    remarksTag: null,
   };
 }
 
@@ -228,6 +240,7 @@ function buildProjectReportTagStateByProjectId(
       hasReportExclusion: hasManagedReportExclusionTag(projectTags),
       cancellationTag: findFirstMatchingTag(projectTags, isAppointmentCancellationTag),
       specialMeasureTag: findFirstMatchingTag(projectTags, isManagedSpecialMeasureTag),
+      remarksTag: findFirstMatchingTag(projectTags, isManagedRemarksTag),
     });
   }
 
@@ -238,6 +251,7 @@ function buildProjectReportTagStateByProjectId(
     current.hasReportExclusion ||= hasManagedReportExclusionTag(appointmentTags);
     current.cancellationTag ??= findFirstMatchingTag(appointmentTags, isAppointmentCancellationTag);
     current.specialMeasureTag ??= findFirstMatchingTag(appointmentTags, isManagedSpecialMeasureTag);
+    current.remarksTag ??= findFirstMatchingTag(appointmentTags, isManagedRemarksTag);
 
     stateByProjectId.set(row.projectId, current);
   }
@@ -285,16 +299,18 @@ async function buildVorlauflisteProjectMeta(params: {
       appointmentId: appointments.id,
       projectId: appointments.projectId,
       startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
+      endDate: sql<string | null>`case when ${appointments.endDate} is null then null else date_format(${appointments.endDate}, '%Y-%m-%d') end`,
+      tourId: appointments.tourId,
+      tourName: tours.name,
     })
     .from(appointments)
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(and(...appointmentConditions))
     .orderBy(asc(appointments.startDate), asc(appointments.id));
 
-  const normalizedAppointmentRows = projectAppointmentRows.filter((row): row is {
-    appointmentId: number;
-    projectId: number;
-    startDate: string;
-  } => typeof row.projectId === "number");
+  const normalizedAppointmentRows = projectAppointmentRows.filter((row): row is NormalizedProjectAppointmentRow =>
+    typeof row.projectId === "number",
+  );
 
   if (normalizedAppointmentRows.length === 0) {
     return {
@@ -318,8 +334,8 @@ async function buildVorlauflisteProjectMeta(params: {
   );
   const appointmentMetaByProjectId = new Map<number, VorlauflisteAppointmentMeta>();
   const appointmentAccumulatorByProjectId = new Map<number, {
-    firstActiveDate: string | null;
-    firstCancelledDate: string | null;
+    firstActiveMeta: Omit<VorlauflisteAppointmentMeta, "reportState"> | null;
+    firstCancelledMeta: Omit<VorlauflisteAppointmentMeta, "reportState"> | null;
     hasActive: boolean;
     hasCancelled: boolean;
   }>();
@@ -331,29 +347,39 @@ async function buildVorlauflisteProjectMeta(params: {
     }
 
     const current = appointmentAccumulatorByProjectId.get(row.projectId) ?? {
-      firstActiveDate: null,
-      firstCancelledDate: null,
+      firstActiveMeta: null,
+      firstCancelledMeta: null,
       hasActive: false,
       hasCancelled: false,
     };
     const isCancelled = hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? []);
+    const appointmentMeta = {
+      appointmentId: row.appointmentId,
+      sortDate: row.startDate,
+      actualDate: row.startDate,
+      durationDays: differenceInCalendarDays(
+        new Date(`${row.endDate ?? row.startDate}T00:00:00`),
+        new Date(`${row.startDate}T00:00:00`),
+      ) + 1,
+      tourName: row.tourName ?? null,
+      appointmentTags: appointmentTagsByAppointmentId.get(row.appointmentId) ?? [],
+    };
 
     if (isCancelled) {
       current.hasCancelled = true;
-      current.firstCancelledDate ??= row.startDate;
+      current.firstCancelledMeta ??= appointmentMeta;
     } else {
       current.hasActive = true;
-      current.firstActiveDate ??= row.startDate;
+      current.firstActiveMeta ??= appointmentMeta;
     }
 
     appointmentAccumulatorByProjectId.set(row.projectId, current);
 
-    const actualDate = current.firstActiveDate ?? current.firstCancelledDate;
-    if (!actualDate) continue;
+    const selectedMeta = current.firstActiveMeta ?? current.firstCancelledMeta;
+    if (!selectedMeta) continue;
 
     appointmentMetaByProjectId.set(row.projectId, {
-      sortDate: actualDate,
-      actualDate,
+      ...selectedMeta,
       reportState: current.hasCancelled
         ? (current.hasActive ? "contains_cancelled" : "cancelled_only")
         : "default",
@@ -584,56 +610,25 @@ export async function getProduktionsplanung(params: {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes: boolean;
-  sonderblockTagIds: number[];
 }): Promise<ProduktionsplanungResult> {
-  const appointmentConditions = buildAppointmentConditions(params);
-  const projectAppointmentRows = await db
-    .select({
-      appointmentId: appointments.id,
-      projectId: appointments.projectId,
-      startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
-      tourId: appointments.tourId,
-      tourName: tours.name,
-    })
-    .from(appointments)
-    .leftJoin(tours, eq(appointments.tourId, tours.id))
-    .where(and(...appointmentConditions))
-    .orderBy(asc(appointments.startDate), asc(appointments.id));
-
-  const normalizedAppointmentRows = projectAppointmentRows.filter((row): row is NormalizedProjectAppointmentRow =>
-    typeof row.projectId === "number",
-  );
-  if (normalizedAppointmentRows.length === 0) {
+  const projectMeta = await buildVorlauflisteProjectMeta(params);
+  if (projectMeta.sortedProjectIds.length === 0) {
     return {
       productCategoryGroups: [],
       componentCategoryGroups: [],
-      specialMeasureProjects: [],
       projectRows: [],
     };
   }
 
-  const allProjectIds = Array.from(new Set(normalizedAppointmentRows.map((row) => row.projectId)));
-  const appointmentTagsByAppointmentId = await getAppointmentTagsByAppointmentIds(
-    normalizedAppointmentRows.map((row) => row.appointmentId),
-  );
-  const tagsByProjectId = await getProjectTagsByProjectIds(allProjectIds);
-  const projectReportTagStateByProjectId = buildProjectReportTagStateByProjectId(
-    allProjectIds,
-    normalizedAppointmentRows,
-    appointmentTagsByAppointmentId,
-    tagsByProjectId,
-  );
-  const eligibleProjectIds = allProjectIds.filter((projectId) => {
-    const tagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+  const eligibleProjectIds = projectMeta.sortedProjectIds.filter((projectId) => {
+    const tagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
     return !tagState.hasReportExclusion && !tagState.cancellationTag;
   });
-  const eligibleProjectIdSet = new Set(eligibleProjectIds);
 
   if (eligibleProjectIds.length === 0) {
     return {
       productCategoryGroups: [],
       componentCategoryGroups: [],
-      specialMeasureProjects: [],
       projectRows: [],
     };
   }
@@ -664,6 +659,42 @@ export async function getProduktionsplanung(params: {
     .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
     .where(inArray(projectOrderItems.projectId, eligibleProjectIds));
 
+  const representativeAppointmentIds = Array.from(new Set(
+    eligibleProjectIds
+      .map((projectId) => projectMeta.appointmentMetaByProjectId.get(projectId)?.appointmentId)
+      .filter((appointmentId): appointmentId is number => typeof appointmentId === "number" && Number.isInteger(appointmentId) && appointmentId > 0),
+  ));
+  const [
+    representativeAppointmentEmployees,
+    representativeAppointmentNoteCounts,
+    representativeAppointmentAttachmentCounts,
+    projectNoteCountsByProjectId,
+    projectAttachmentsCountByProjectId,
+  ] = await Promise.all([
+    getAppointmentEmployeesByAppointmentIds(representativeAppointmentIds),
+    getAppointmentNoteCountsByAppointmentIds(representativeAppointmentIds),
+    getAppointmentAttachmentCountsByAppointmentIds(representativeAppointmentIds),
+    getProjectNoteCountsByProjectIds(eligibleProjectIds),
+    getProjectAttachmentCountsByProjectIds(eligibleProjectIds),
+  ]);
+
+  const employeesByAppointmentId = new Map<number, ReportEmployeeSummary[]>();
+  for (const row of representativeAppointmentEmployees) {
+    const entries = employeesByAppointmentId.get(row.appointmentId) ?? [];
+    entries.push({
+      id: row.employee.id,
+      fullName: row.employee.fullName,
+    });
+    employeesByAppointmentId.set(row.appointmentId, entries);
+  }
+  for (const [appointmentId, employeesForAppointment] of Array.from(employeesByAppointmentId.entries())) {
+    employeesByAppointmentId.set(
+      appointmentId,
+      employeesForAppointment.sort((left: ReportEmployeeSummary, right: ReportEmployeeSummary) =>
+        left.fullName.localeCompare(right.fullName, "de") || left.id - right.id),
+    );
+  }
+
   const selectedProductCategoryIds = new Set(params.productCategoryIds);
   const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
   const productGroupRows: Array<{
@@ -680,22 +711,7 @@ export async function getProduktionsplanung(params: {
     shortCode: string | null;
     quantity: number;
   }> = [];
-  const matchedProjectIds = new Set<number>();
   const articleBucketsByProjectId = new Map<number, ReportArticleBuckets>();
-  const appointmentMetaByProjectId = new Map<number, { actualDate: string; tourName: string | null }>();
-  const selectedTagRows: Tag[] = params.sonderblockTagIds.length > 0
-    ? await db.select().from(tags).where(inArray(tags.id, params.sonderblockTagIds))
-    : [];
-
-  for (const row of normalizedAppointmentRows) {
-    if (!eligibleProjectIdSet.has(row.projectId) || appointmentMetaByProjectId.has(row.projectId)) {
-      continue;
-    }
-    appointmentMetaByProjectId.set(row.projectId, {
-      actualDate: row.startDate,
-      tourName: row.tourName ?? null,
-    });
-  }
 
   for (const row of orderItemRows) {
     const quantity = Number(row.item.quantity ?? 0);
@@ -719,7 +735,6 @@ export async function getProduktionsplanung(params: {
           shortCode: row.product.shortCode,
           quantity,
         });
-        matchedProjectIds.add(row.item.projectId);
       }
       continue;
     }
@@ -743,7 +758,6 @@ export async function getProduktionsplanung(params: {
         shortCode: row.component.shortCode,
         quantity,
       });
-      matchedProjectIds.add(row.item.projectId);
     }
   }
 
@@ -751,69 +765,51 @@ export async function getProduktionsplanung(params: {
   const sortedComponentCategoryGroups = buildGroupedProduktionsplanungCategoryGroups(componentGroupRows, params.useShortCodes);
 
   const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
-  const specialMeasureProjects: ProduktionsplanungSpecialMeasureProject[] = [];
-
-  for (const projectId of Array.from(matchedProjectIds)) {
-    const projectTagState = projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
-    const specialMeasureTag = projectTagState.specialMeasureTag;
-    if (!specialMeasureTag) {
-      continue;
-    }
-
-    const projectDetail = projectDetailsById.get(projectId);
-    if (!projectDetail) {
-      continue;
-    }
-
-    specialMeasureProjects.push({
-      projectId,
-      orderNumber: projectDetail.order?.orderNumber ?? null,
-      customerNumber: projectDetail.customer?.customerNumber ?? null,
-      customerFullName: projectDetail.customer?.fullName ?? null,
-      actualDate: appointmentMetaByProjectId.get(projectId)?.actualDate ?? null,
-      projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
-      specialMeasureTag,
-    });
-  }
-
-  specialMeasureProjects.sort((left, right) => {
-    const orderA = left.orderNumber ?? "";
-    const orderB = right.orderNumber ?? "";
-    return orderA.localeCompare(orderB, "de") || left.projectId - right.projectId;
-  });
 
   const allCategoryIds = [...params.productCategoryIds, ...params.componentCategoryIds];
   const projectRows = eligibleProjectIds
     .map((projectId) => {
       const projectDetail = projectDetailsById.get(projectId);
-      const appointmentMeta = appointmentMetaByProjectId.get(projectId);
+      const appointmentMeta = projectMeta.appointmentMetaByProjectId.get(projectId);
       if (!projectDetail || !appointmentMeta) {
         return null;
       }
 
-      const projectTags = tagsByProjectId.get(projectId) ?? [];
-      const appointmentTags = normalizedAppointmentRows
-        .filter((row) => row.projectId === projectId)
-        .flatMap((row) => appointmentTagsByAppointmentId.get(row.appointmentId) ?? []);
-      const matchedSonderblockTagIds = collectMatchedSonderblockTagIds({
-        selectedTags: selectedTagRows,
-        projectTags,
-        appointmentTags,
-      });
+      const projectTags = projectMeta.tagsByProjectId.get(projectId) ?? [];
       const articleBuckets = articleBucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+      const appointmentEmployees = employeesByAppointmentId.get(appointmentMeta.appointmentId) ?? [];
+      const notesCount = (projectNoteCountsByProjectId.get(projectId) ?? 0) + (representativeAppointmentNoteCounts.get(appointmentMeta.appointmentId) ?? 0);
+      const attachmentsCount = (projectAttachmentsCountByProjectId.get(projectId) ?? 0) + (representativeAppointmentAttachmentCounts.get(appointmentMeta.appointmentId) ?? 0);
+      const reportCardReasonTags = collectManagedReportCardReasonTags({
+        projectTags,
+        appointmentTags: appointmentMeta.appointmentTags,
+      });
+
+      if (reportCardReasonTags.length === 0) {
+        return null;
+      }
 
       return {
         projectId,
         projectName: projectDetail.project.name,
         orderNumber: projectDetail.order?.orderNumber ?? null,
+        customerNumber: projectDetail.customer?.customerNumber ?? null,
+        customerFullName: projectDetail.customer?.fullName ?? null,
         actualDate: appointmentMeta.actualDate,
+        durationDays: appointmentMeta.durationDays,
         tourName: appointmentMeta.tourName,
+        employees: appointmentEmployees,
+        notesCount,
+        attachmentsCount,
+        tags: Array.from(new Map(
+          [...projectTags, ...appointmentMeta.appointmentTags].map((tag) => [tag.id, tag] as const),
+        ).values()).sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id),
+        reportCardReasonTags,
         articleValues: allCategoryIds.map((categoryId) => ({
           categoryId,
           value: joinSorted(articleBuckets.get(categoryId) ?? new Set()),
         })),
         projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
-        matchedSonderblockTagIds,
       };
     })
     .filter((entry): entry is ProduktionsplanungProjectRow => entry !== null)
@@ -822,7 +818,6 @@ export async function getProduktionsplanung(params: {
   return {
     productCategoryGroups: sortedProductCategoryGroups,
     componentCategoryGroups: sortedComponentCategoryGroups,
-    specialMeasureProjects,
     projectRows,
   };
 }

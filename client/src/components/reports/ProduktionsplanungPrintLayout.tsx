@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import type { Tag } from "@shared/schema";
 
 import {
   buildCategoryLayoutBlocks,
@@ -24,17 +25,23 @@ type ProduktionsplanungProjectRow = {
   projectId: number;
   projectName: string;
   orderNumber: string | null;
+  customerNumber: string | null;
+  customerFullName: string | null;
   actualDate: string;
+  durationDays: number;
   tourName: string | null;
+  employees: Array<{ id: number; fullName: string }>;
+  notesCount: number;
+  attachmentsCount: number;
+  tags: Tag[];
+  reportCardReasonTags: Tag[];
   articleValues: Array<{ categoryId: number; value: string | null }>;
   projectDescription: string | null;
-  matchedSonderblockTagIds: number[];
 };
 
 type ProduktionsplanungResponse = {
   productCategoryGroups: ProduktionsplanungCategoryGroup[];
   componentCategoryGroups: ProduktionsplanungCategoryGroup[];
-  specialMeasureProjects: Array<unknown>;
   projectRows: ProduktionsplanungProjectRow[];
 };
 
@@ -53,6 +60,36 @@ function formatDate(value: string | null): string {
 function resolveValue(value: string | null): string {
   if (!value || value.trim().length === 0) return "-";
   return value.trim();
+}
+
+function formatDurationDays(value: number): string {
+  return value === 1 ? "1 Tag" : `${value} Tage`;
+}
+
+function splitProjectRowArticleValue(value: string): string[] {
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function buildProjectRowArticleGroups(
+  row: ProduktionsplanungProjectRow,
+  categories: ProduktionsplanungPrintCategory[],
+): Array<{ categoryId: number; categoryName: string; items: string[] }> {
+  return categories
+    .map((category) => {
+      const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
+      if (!value || value.trim().length === 0) return null;
+      const items = splitProjectRowArticleValue(value);
+      if (items.length === 0) return null;
+      return {
+        categoryId: category.id,
+        categoryName: category.name,
+        items,
+      };
+    })
+    .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
 }
 
 function renderCategoryCard(group: ProduktionsplanungCategoryGroup) {
@@ -119,6 +156,110 @@ function renderCategoryLayoutSection(
   );
 }
 
+function PrintTagList({
+  tags,
+  testId,
+}: {
+  tags: Tag[];
+  testId: string;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1" data-testid={testId}>
+      {tags.length > 0 ? tags.map((tag) => (
+        <span
+          key={tag.id}
+          className="rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-medium text-slate-700"
+          data-testid={`${testId}-tag-${tag.id}`}
+        >
+          {tag.name}
+        </span>
+      )) : (
+        <span className="text-[10px] text-slate-400">Keine Tags</span>
+      )}
+    </div>
+  );
+}
+
+function PrintProjectCardFooter({ row }: { row: ProduktionsplanungProjectRow }) {
+  return (
+    <div className="space-y-2 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-slate-900">Mitarbeiter:</span>
+        {row.employees.length > 0 ? row.employees.map((employee) => (
+          <span key={employee.id} className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
+            {employee.fullName}
+          </span>
+        )) : (
+          <span>-</span>
+        )}
+        <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">Notizen {row.notesCount}</span>
+        <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">Anhänge {row.attachmentsCount}</span>
+      </div>
+      <PrintTagList tags={row.tags} testId={`print-produktionsplanung-project-card-${row.projectId}-tags`} />
+    </div>
+  );
+}
+
+function PrintProjectCard({
+  row,
+  categories,
+}: {
+  row: ProduktionsplanungProjectRow;
+  categories: ProduktionsplanungPrintCategory[];
+}) {
+  const articleGroups = buildProjectRowArticleGroups(row, categories);
+
+  return (
+    <article
+      className="break-inside-avoid rounded-lg border border-slate-300 bg-white shadow-sm"
+      data-testid={`print-produktionsplanung-project-card-${row.projectId}`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+        <div className="space-y-1">
+          <div className="text-sm font-semibold text-slate-900">{resolveValue(row.customerFullName)}</div>
+          <div className="text-xs text-slate-600">{resolveValue(row.customerNumber)}</div>
+        </div>
+        <div className="space-y-1 text-center">
+          <div className="text-sm font-semibold text-slate-900">{resolveValue(row.orderNumber)}</div>
+          <div className="text-sm text-slate-700">{row.projectName}</div>
+          {row.reportCardReasonTags.length > 0 ? (
+            <div className="flex flex-wrap justify-center gap-1" data-testid={`print-produktionsplanung-project-card-${row.projectId}-reasons`}>
+              {row.reportCardReasonTags.map((tag) => (
+                <span key={tag.id} className="rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-medium text-slate-700">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="space-y-1 text-right">
+          <div className="text-sm font-semibold text-slate-900">{formatDate(row.actualDate)}</div>
+          <div className="text-xs text-slate-600">{formatDurationDays(row.durationDays)}</div>
+          {row.tourName ? <div className="text-xs text-slate-600">{row.tourName}</div> : null}
+        </div>
+      </div>
+      <div className="space-y-3 px-4 py-4">
+        <p className="whitespace-pre-wrap text-sm text-slate-800">{resolveValue(row.projectDescription)}</p>
+        {articleGroups.length > 0 ? (
+          <div className="space-y-2" data-testid={`print-produktionsplanung-project-card-${row.projectId}-articles`}>
+            {articleGroups.map((group) => (
+              <div key={`${row.projectId}-${group.categoryId}`} className="space-y-1">
+                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">{group.categoryName}</div>
+                <div className="flex flex-wrap gap-2 text-sm text-slate-700">
+                  {group.items.map((item) => (
+                    <span key={`${row.projectId}-${group.categoryId}-${item}`}>{item}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+      <PrintProjectCardFooter row={row} />
+    </article>
+  );
+}
+
 export function ProduktionsplanungPrintLayout({
   data,
   categories,
@@ -128,8 +269,6 @@ export function ProduktionsplanungPrintLayout({
   categories: ProduktionsplanungPrintCategory[];
   layoutConfig: CategoryLayoutConfig;
 }) {
-  const sonderblockRows = data.projectRows.filter((row) => row.matchedSonderblockTagIds.length > 0);
-
   return (
     <div className="hidden print:block">
       <div className="space-y-6 bg-white text-slate-900">
@@ -141,62 +280,16 @@ export function ProduktionsplanungPrintLayout({
           ], layoutConfig)}
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold">Projektliste</h2>
-          <div className="mt-3 overflow-hidden rounded border border-slate-300">
-            <table className="min-w-full border-collapse text-[11px]">
-              <thead className="bg-slate-100">
-                <tr className="text-left">
-                  <th className="border-b border-slate-300 px-2 py-2 font-semibold">#</th>
-                  <th className="border-b border-slate-300 px-2 py-2 font-semibold">Tatsächlicher Termin</th>
-                  <th className="border-b border-slate-300 px-2 py-2 font-semibold">Tour</th>
-                  <th className="border-b border-slate-300 px-2 py-2 font-semibold">Projekt / Auftragsnummer</th>
-                  {categories.map((category) => (
-                    <th key={category.id} className="border-b border-slate-300 px-2 py-2 font-semibold whitespace-nowrap">{category.name}</th>
-                  ))}
-                  <th className="border-b border-slate-300 px-2 py-2 font-semibold">Anmerkungen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.projectRows.map((row, index) => (
-                  <tr key={row.projectId} className="align-top">
-                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">{index + 1}</td>
-                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">{formatDate(row.actualDate)}</td>
-                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">{resolveValue(row.tourName)}</td>
-                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">
-                      {row.projectName} / {resolveValue(row.orderNumber)}
-                    </td>
-                    {categories.map((category) => {
-                      const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
-                      return (
-                        <td key={`${row.projectId}-${category.id}`} className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">
-                          {resolveValue(value)}
-                        </td>
-                      );
-                    })}
-                    <td className="border-b border-slate-200 px-2 py-2 whitespace-nowrap">{resolveValue(row.projectDescription)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold">Sonderblöcke</h2>
-          {sonderblockRows.length > 0 ? (
-            <div className="mt-3 space-y-3">
-              {sonderblockRows.map((row, index) => (
-                <div key={row.projectId} className="break-inside-avoid rounded border border-slate-300 p-3">
-                  <h3 className="text-sm font-semibold">
-                    #{index + 1} - {formatDate(row.actualDate)} - {row.projectName}
-                  </h3>
-                  <p className="mt-2 text-sm text-slate-700">{resolveValue(row.projectDescription)}</p>
-                </div>
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Projekte</h2>
+          {data.projectRows.length > 0 ? (
+            <div className="grid gap-4">
+              {data.projectRows.map((row) => (
+                <PrintProjectCard key={row.projectId} row={row} categories={categories} />
               ))}
             </div>
           ) : (
-            <p className="mt-2 text-xs text-slate-500">Keine Sonderblöcke im gewählten Zeitraum.</p>
+            <p className="text-xs text-slate-500">Keine passenden Projekte im gewählten Zeitraum.</p>
           )}
         </section>
       </div>

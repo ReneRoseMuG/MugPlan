@@ -1,31 +1,30 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Produktionsplanung gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und summiert deren Mengen.
- * - Der Produkt Report liefert zusaetzlich eine strenge Projektliste ohne Reklamation und Storno.
- * - Sondermasse listen nur Projekte im Zeitraum mit passendem Sondermass-Tag und passender Report-Position.
- * - Ein Folgeabruf ohne toDate erweitert das Reportfenster wieder auf spaetere passende Projekte ab fromDate.
- * - Stornierte Projekte sollen im Produktionsplanung weder Mengen noch Sondermass-Treffer beitragen.
- * - Projekte oder Termine mit dem managed Reklamation-Tag sollen aus Mengen und Sondermass-Treffern ausgeschlossen werden.
- * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
+ * - Produktionsplanung gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und liefert die neuen FT26-Projektkarten.
+ * - projectRows verwenden den fruehesten Termin im Zeitraum als repraesentativen Termin inklusive Dauer, Mitarbeitern, Notizen, Anhaengen und Tags.
+ * - reportCardReasonTags enthalten serverseitig nur "Sondermaß" und "Anmerkungen"; Reklamation und Storno schliessen Projekte weiter hart aus.
+ * - Nur ADMIN und DISPONENT duerfen den Report lesen; READER wird abgewiesen.
  *
  * Fehlerfaelle:
- * - Nicht ausgewaehlte Kategorien fliessen in Summen ein.
- * - Getaggte Projekte ohne passende Report-Position erscheinen als Sondermass.
- * - Ein Folgeabruf ohne toDate behaelt faelschlich das alte Enddatum bei.
- * - Stornierte Projekte bleiben trotz Soll-Regel in Summen oder Sondermasslisten sichtbar.
- * - Reklamations-Tags auf Projekt oder Termin werden im Produktionsplanung ignoriert.
+ * - Entfernte Sonderblock-Parameter werden weiter akzeptiert.
+ * - projectRows verlieren Aggregationen oder den fruehesten Termin.
+ * - Reklamations- oder Storno-Projekte bleiben im Report sichtbar.
  * - Rollenpruefung fehlt oder ist uneinheitlich.
  *
  * Ziel:
- * Den End-to-end-Vertrag des Reports Produktionsplanung inklusive Summierung, Ausschlussregeln, Sondermass-Logik und Rollen absichern.
+ * Den FT26-Endpunkt /api/reports/produktionsplanung inklusive neuem Contract und Ausschlussregeln end-to-end absichern.
  */
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import * as appointmentAttachmentsService from "../../../server/services/appointmentAttachmentsService";
+import * as appointmentNotesService from "../../../server/services/appointmentNotesService";
+import * as projectAttachmentsService from "../../../server/services/projectAttachmentsService";
+import * as projectNotesService from "../../../server/services/projectNotesService";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import {
   attachAppointmentTagFixture,
@@ -33,6 +32,7 @@ import {
   createAppointmentFixture,
   createComponentFixture,
   createCustomerFixtureWithOverrides,
+  createEmployeeFixtureWithOverrides,
   createExactTagFixture,
   createProductFixture,
   createProjectFixture,
@@ -41,9 +41,10 @@ import {
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 import {
+  MANAGED_REMARKS_TAG_NAME,
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import { tags, type Tag } from "../../../shared/schema";
@@ -71,15 +72,26 @@ async function createRoleAgent(roleCode: "DISPATCHER" | "READER") {
   return loginAgent(app, { username: `test-${token}`, password });
 }
 
+function buildAttachmentPayload(prefix: string) {
+  const token = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    filename: `${token}.pdf`,
+    originalName: `${token}.pdf`,
+    mimeType: "application/pdf",
+    fileSize: 128,
+    storagePath: `integration-fixtures/${token}.pdf`,
+    version: 1,
+  };
+}
+
 async function createProduktionsplanungProjectFixture(params: {
   prefix: string;
-  appointmentDates: string[];
+  appointmentDates: Array<{ startDate: string; endDate?: string | null; employeeIds?: number[]; tourId?: number | null }>;
   descriptionMd?: string | null;
   productItems?: Array<{ categoryName: string; name: string; quantity: number; shortCode?: string | null }>;
   componentItems?: Array<{ categoryName: string; name: string; quantity: number; shortCode?: string | null }>;
   projectTags?: Tag[];
   appointmentTagsByIndex?: Tag[][];
-  tourId?: number | null;
 }) {
   const customer = await createCustomerFixtureWithOverrides({
     prefix: `${params.prefix}-CUST`,
@@ -101,7 +113,13 @@ async function createProduktionsplanungProjectFixture(params: {
 
   const appointments = [];
   for (const appointmentDate of params.appointmentDates) {
-    appointments.push(await createAppointmentFixture({ projectId: project.id, startDate: appointmentDate, tourId: params.tourId ?? null }));
+    appointments.push(await createAppointmentFixture({
+      projectId: project.id,
+      startDate: appointmentDate.startDate,
+      endDate: appointmentDate.endDate ?? null,
+      employeeIds: appointmentDate.employeeIds ?? [],
+      tourId: appointmentDate.tourId ?? null,
+    }));
   }
 
   for (const tag of params.projectTags ?? []) {
@@ -137,6 +155,7 @@ async function createProduktionsplanungProjectFixture(params: {
   }
 
   return {
+    customer,
     project: updatedProject,
     appointments,
   };
@@ -147,6 +166,9 @@ async function ensureExactTag(name: string, color?: string) {
     .select({
       id: tags.id,
       name: tags.name,
+      color: tags.color,
+      isDefault: tags.isDefault,
+      version: tags.version,
     })
     .from(tags)
     .where(eq(tags.name, name))
@@ -164,31 +186,32 @@ async function ensureManagedSpecialMeasureTag() {
 }
 
 describe("FT26 integration: report produktionsplanung", () => {
-  it("groups concrete products and components by category and sums their quantities", async () => {
+  it("groups selected categories and rejects the removed sonderblockTagIds parameter", async () => {
     const admin = await loginAdminAgent(app);
     const specialMeasureTag = await ensureManagedSpecialMeasureTag();
-    const specialProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-A",
-      appointmentDates: ["2099-09-10"],
-      descriptionMd: "<p>Sondermass Alpha</p>",
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
+    const visibleProject = await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-GROUPS",
+      appointmentDates: [{ startDate: "2099-09-10" }],
+      descriptionMd: "<p>Sichtbares Projekt</p>",
       projectTags: [specialMeasureTag],
+      appointmentTagsByIndex: [[remarksTag]],
       productItems: [{ categoryName: "Fass Saunen", name: "Sauna A", quantity: 2 }],
-      componentItems: [
-        { categoryName: "Fenster", name: "Fenster A", quantity: 4 },
-        { categoryName: "Ofen", name: "Ofen A", quantity: 1 },
-      ],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster A", quantity: 4 }],
     });
     await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-B",
-      appointmentDates: ["2099-09-11"],
+      prefix: "FT26-PV-NO-REASON",
+      appointmentDates: [{ startDate: "2099-09-11" }],
       productItems: [{ categoryName: "Fass Saunen", name: "Sauna B", quantity: 3 }],
       componentItems: [{ categoryName: "Fenster", name: "Fenster B", quantity: 2 }],
     });
 
-    const saunaCategoryId = specialProject.project.id > 0
-      ? (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna" })).categoryId
-      : 0;
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster" })).categoryId;
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna FT26" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster FT26" })).categoryId;
+
+    await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&sonderblockTagIds=7`)
+      .expect(422);
 
     const response = await admin
       .get(`/api/reports/produktionsplanung?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
@@ -214,172 +237,154 @@ describe("FT26 integration: report produktionsplanung", () => {
         ],
       },
     ]);
-    expect(response.body.specialMeasureProjects).toEqual([
+    expect(response.body.projectRows).toEqual([
       expect.objectContaining({
-        projectId: specialProject.project.id,
-        orderNumber: expect.stringContaining("ORD-FT26-PV-A-PROJ"),
-        customerFullName: expect.any(String),
-        customerNumber: expect.stringContaining("FT26-PV-A-CUST"),
-        actualDate: "2099-09-10",
-        projectDescription: "Sondermass Alpha",
-        specialMeasureTag: expect.objectContaining({ id: specialMeasureTag.id }),
+        projectId: visibleProject.project.id,
+        orderNumber: expect.stringContaining("ORD-FT26-PV-GROUPS-PROJ"),
+        customerFullName: `${visibleProject.customer.fullName}`,
+        customerNumber: expect.stringContaining("FT26-PV-GROUPS-CUST"),
       }),
     ]);
   });
 
-  it("expands the result window when a follow-up request omits toDate", async () => {
+  it("uses the earliest appointment in range as representative and aggregates card data", async () => {
     const admin = await loginAdminAgent(app);
-    const novemberProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-TODATE-NOV",
-      appointmentDates: ["2099-11-05"],
-      productItems: [{ categoryName: "Fass Saunen", name: "November Sauna", quantity: 2 }],
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
+    const infoTag = await ensureExactTag("Info FT26", "#0f766e");
+    const employee = await createEmployeeFixtureWithOverrides({
+      prefix: "FT26-PV-EMP",
+      firstName: "Mara",
+      lastName: "Mitarbeiter",
     });
-    const decemberProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-TODATE-DEC",
-      appointmentDates: ["2099-12-05"],
-      productItems: [{ categoryName: "Fass Saunen", name: "Dezember Sauna", quantity: 3 }],
-    });
+    const tour = await createTourFixture("#0f766e");
 
-    const saunaCategoryId = (await createProductFixture({
-      categoryName: "Fass Saunen",
-      name: "FT26 Lookup ToDate Sauna",
-    })).categoryId;
-
-    const boundedResponse = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2099-11-01&toDate=2099-11-30&productCategoryIds=${saunaCategoryId}`)
-      .expect(200);
-    const unboundedResponse = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2099-11-01&productCategoryIds=${saunaCategoryId}`)
-      .expect(200);
-
-    expect(boundedResponse.body.productCategoryGroups).toEqual([
-      {
-        categoryId: saunaCategoryId,
-        categoryName: "Fass Saunen",
-        items: [{ itemName: "November Sauna", totalQuantity: 2 }],
-      },
-    ]);
-    expect(boundedResponse.body.projectRows).toEqual([
-      expect.objectContaining({
-        projectId: novemberProject.project.id,
-        actualDate: "2099-11-05",
-      }),
-    ]);
-
-    expect(unboundedResponse.body.productCategoryGroups).toEqual([
-      {
-        categoryId: saunaCategoryId,
-        categoryName: "Fass Saunen",
-        items: [
-          { itemName: "Dezember Sauna", totalQuantity: 3 },
-          { itemName: "November Sauna", totalQuantity: 2 },
-        ],
-      },
-    ]);
-    expect(unboundedResponse.body.projectRows).toEqual([
-      expect.objectContaining({
-        projectId: novemberProject.project.id,
-        actualDate: "2099-11-05",
-      }),
-      expect.objectContaining({
-        projectId: decemberProject.project.id,
-        actualDate: "2099-12-05",
-      }),
-    ]);
-  });
-
-  it("ignores non-selected categories in the grouped totals", async () => {
-    const admin = await loginAdminAgent(app);
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-FILTER",
-      appointmentDates: ["2099-10-01"],
-      productItems: [
-        { categoryName: "Fass Saunen", name: "Sauna Filter", quantity: 5 },
-        { categoryName: "FT26 Nicht gewaehlt", name: "Nicht gewaehlt", quantity: 9 },
+    const fixture = await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-CARD",
+      appointmentDates: [
+        { startDate: "2100-01-10", endDate: "2100-01-12", employeeIds: [employee.id], tourId: tour.id },
+        { startDate: "2100-01-15", employeeIds: [], tourId: tour.id },
       ],
-      componentItems: [
-        { categoryName: "Fenster", name: "Fenster Filter", quantity: 2 },
-        { categoryName: "FT26 Nicht gewaehlt Komponente", name: "Komponente Nicht", quantity: 8 },
-      ],
+      descriptionMd: "<p>Kartenbeschreibung</p>",
+      projectTags: [specialMeasureTag, infoTag],
+      appointmentTagsByIndex: [[remarksTag], []],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Lang", shortCode: "SL", quantity: 2 }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Breit", shortCode: "FB", quantity: 1 }],
     });
 
-    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Filter" })).categoryId;
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Filter" })).categoryId;
+    await projectNotesService.createProjectNote(fixture.project.id, {
+      title: "Projektnotiz",
+      body: "Projektnotiz Body",
+      print: true,
+    });
+    await appointmentNotesService.createAppointmentNote(fixture.appointments[0]!.id, {
+      title: "Terminnotiz",
+      body: "Terminnotiz Body",
+      print: true,
+    });
+    await projectAttachmentsService.createProjectAttachment({
+      projectId: fixture.project.id,
+      ...buildAttachmentPayload("ft26-project-attachment"),
+    });
+    await appointmentAttachmentsService.createAppointmentAttachment({
+      appointmentId: fixture.appointments[0]!.id,
+      ...buildAttachmentPayload("ft26-appointment-attachment"),
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Rows" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Rows" })).categoryId;
 
     const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2099-10-01&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
+      .get(`/api/reports/produktionsplanung?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&useShortCodes=true`)
+      .expect(200);
+
+    expect(response.body.projectRows).toEqual([
+      expect.objectContaining({
+        projectId: fixture.project.id,
+        projectName: "FT26-PV-CARD Projekt",
+        orderNumber: expect.stringContaining("ORD-FT26-PV-CARD-PROJ"),
+        customerNumber: expect.stringContaining("FT26-PV-CARD-CUST"),
+        customerFullName: expect.stringContaining("FT26-PV-CARD-CUST"),
+        actualDate: "2100-01-10",
+        durationDays: 3,
+        tourName: tour.name,
+        employees: [{ id: employee.id, fullName: "Mitarbeiter, Mara" }],
+        notesCount: 2,
+        attachmentsCount: 2,
+        tags: expect.arrayContaining([
+          expect.objectContaining({ id: infoTag.id, name: "Info FT26" }),
+          expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
+          expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
+        ]),
+        reportCardReasonTags: [
+          expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
+          expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
+        ],
+        articleValues: expect.arrayContaining([
+          { categoryId: saunaCategoryId, value: "SL" },
+          { categoryId: windowCategoryId, value: "FB" },
+        ]),
+        projectDescription: "Kartenbeschreibung",
+      }),
+    ]);
+  });
+
+  it("excludes cancelled and reklamation projects from groups and projectRows", async () => {
+    const admin = await loginAdminAgent(app);
+    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+    const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
+    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
+
+    const visibleProject = await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-VISIBLE",
+      appointmentDates: [{ startDate: "2100-02-10" }],
+      projectTags: [specialMeasureTag],
+      appointmentTagsByIndex: [[remarksTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Visible Sauna", quantity: 3 }],
+      componentItems: [{ categoryName: "Fenster", name: "Visible Fenster", quantity: 2 }],
+    });
+    const cancelledProject = await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-CANCELLED",
+      appointmentDates: [{ startDate: "2100-02-11" }],
+      projectTags: [specialMeasureTag],
+      appointmentTagsByIndex: [[cancellationTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Cancelled Sauna", quantity: 1 }],
+    });
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-REKL",
+      appointmentDates: [{ startDate: "2100-02-12" }],
+      projectTags: [reportExclusionTag, specialMeasureTag],
+      productItems: [{ categoryName: "Fass Saunen", name: "Excluded Sauna", quantity: 4 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Exclusion" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Exclusion" })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2100-02-01&toDate=2100-02-28&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
       .expect(200);
 
     expect(response.body.productCategoryGroups).toEqual([
       {
         categoryId: saunaCategoryId,
         categoryName: "Fass Saunen",
-        items: [{ itemName: "Sauna Filter", totalQuantity: 5 }],
+        items: [{ itemName: "Visible Sauna", totalQuantity: 3 }],
       },
     ]);
     expect(response.body.componentCategoryGroups).toEqual([
       {
         categoryId: windowCategoryId,
         categoryName: "Fenster",
-        items: [{ itemName: "Fenster Filter", totalQuantity: 2 }],
+        items: [{ itemName: "Visible Fenster", totalQuantity: 2 }],
       },
     ]);
-  });
-
-  it("returns no grouped totals when no categories are selected", async () => {
-    const admin = await loginAdminAgent(app);
-    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
-
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-EMPTY",
-      appointmentDates: ["2099-10-15"],
-      projectTags: [specialMeasureTag],
-      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Leer", quantity: 1 }],
-      componentItems: [{ categoryName: "Fenster", name: "Fenster Leer", quantity: 2 }],
-    });
-
-    const response = await admin
-      .get("/api/reports/produktionsplanung?fromDate=2099-10-01&toDate=2099-10-31")
-      .expect(200);
-
-    expect(response.body.productCategoryGroups).toEqual([]);
-    expect(response.body.componentCategoryGroups).toEqual([]);
-    expect(response.body.specialMeasureProjects).toEqual([]);
-  });
-
-  it("lists only tagged projects that also contribute matching report positions", async () => {
-    const admin = await loginAdminAgent(app);
-    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-TAG-ONLY",
-      appointmentDates: ["2099-11-01"],
-      projectTags: [specialMeasureTag],
-      productItems: [{ categoryName: "Nicht im Report", name: "Ignored", quantity: 4 }],
-    });
-    const taggedWithMatch = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-TAG-MATCH",
-      appointmentDates: ["2099-11-02"],
-      descriptionMd: "<p>Mit Treffer</p>",
-      appointmentTagsByIndex: [[specialMeasureTag]],
-      componentItems: [{ categoryName: "Fenster", name: "Fenster Treffer", quantity: 2 }],
-    });
-
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Sondermass" })).categoryId;
-
-    const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2099-11-01&componentCategoryIds=${windowCategoryId}`)
-      .expect(200);
-
-    expect(response.body.specialMeasureProjects).toEqual([
+    expect(response.body.projectRows).toEqual([
       expect.objectContaining({
-        projectId: taggedWithMatch.project.id,
-        orderNumber: expect.stringContaining("ORD-FT26-PV-TAG-MATCH-PROJ"),
-        customerFullName: expect.any(String),
-        customerNumber: expect.stringContaining("FT26-PV-TAG-MATCH-CUST"),
-        actualDate: "2099-11-02",
-        projectDescription: "Mit Treffer",
+        projectId: visibleProject.project.id,
       }),
     ]);
+    expect(response.body.projectRows[0]?.projectId).not.toBe(cancelledProject.project.id);
   });
 
   it("allows dispatcher access and rejects reader access", async () => {
@@ -394,260 +399,4 @@ describe("FT26 integration: report produktionsplanung", () => {
         expect(body.code).toBe("FORBIDDEN");
       });
   });
-
-  it("excludes cancelled projects from grouped totals and special-measure hits", async () => {
-    const admin = await loginAdminAgent(app);
-    const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
-    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
-
-    const cancelledProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-CANCELLED",
-      appointmentDates: ["2099-12-05"],
-      descriptionMd: "<p>Storniert soll verschwinden</p>",
-      productItems: [{ categoryName: "Fass Saunen", name: "Cancelled Sauna", quantity: 2 }],
-      componentItems: [{ categoryName: "Fenster", name: "Cancelled Fenster", quantity: 1 }],
-    });
-    const activeProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-ACTIVE",
-      appointmentDates: ["2099-12-06"],
-      descriptionMd: "<p>Aktiv bleibt sichtbar</p>",
-      productItems: [{ categoryName: "Fass Saunen", name: "Active Sauna", quantity: 3 }],
-      componentItems: [{ categoryName: "Fenster", name: "Active Fenster", quantity: 2 }],
-    });
-
-    await attachAppointmentTagFixture(cancelledProject.appointments[0].id, cancellationTag.id);
-    await attachProjectTagFixture(cancelledProject.project.id, specialMeasureTag.id);
-    await attachProjectTagFixture(activeProject.project.id, specialMeasureTag.id);
-
-    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Cancel" })).categoryId;
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Cancel" })).categoryId;
-
-    const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2099-12-01&toDate=2099-12-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
-      .expect(200);
-
-    expect(response.body.productCategoryGroups).toEqual([
-      {
-        categoryId: saunaCategoryId,
-        categoryName: "Fass Saunen",
-        items: [{ itemName: "Active Sauna", totalQuantity: 3 }],
-      },
-    ]);
-    expect(response.body.componentCategoryGroups).toEqual([
-      {
-        categoryId: windowCategoryId,
-        categoryName: "Fenster",
-        items: [{ itemName: "Active Fenster", totalQuantity: 2 }],
-      },
-    ]);
-    expect(response.body.specialMeasureProjects).toEqual([
-      expect.objectContaining({
-        projectId: activeProject.project.id,
-        orderNumber: expect.stringContaining("ORD-FT26-PV-ACTIVE-PROJ"),
-      }),
-    ]);
-  });
-
-  it("excludes projects and appointments tagged with Reklamation from grouped totals and special-measure hits", async () => {
-    const admin = await loginAdminAgent(app);
-    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
-    const specialMeasureTag = await ensureManagedSpecialMeasureTag();
-
-    const projectExcludedByProjectTag = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-REKL-PROJECT",
-      appointmentDates: ["2100-01-03"],
-      descriptionMd: "<p>Projekt-Tag Exclude</p>",
-      productItems: [{ categoryName: "Fass Saunen", name: "Project Reklamation Sauna", quantity: 4 }],
-      componentItems: [{ categoryName: "Fenster", name: "Project Reklamation Fenster", quantity: 2 }],
-    });
-    const projectExcludedByAppointmentTag = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-REKL-APPOINTMENT",
-      appointmentDates: ["2100-01-04"],
-      descriptionMd: "<p>Appointment-Tag Exclude</p>",
-      productItems: [{ categoryName: "Fass Saunen", name: "Appointment Reklamation Sauna", quantity: 5 }],
-      componentItems: [{ categoryName: "Fenster", name: "Appointment Reklamation Fenster", quantity: 3 }],
-    });
-    const visibleControlProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-REKL-VISIBLE",
-      appointmentDates: ["2100-01-05"],
-      descriptionMd: "<p>Kontrollprojekt</p>",
-      productItems: [{ categoryName: "Fass Saunen", name: "Visible Sauna", quantity: 6 }],
-      componentItems: [{ categoryName: "Fenster", name: "Visible Fenster", quantity: 4 }],
-    });
-
-    await attachProjectTagFixture(projectExcludedByProjectTag.project.id, reportExclusionTag.id);
-    await attachAppointmentTagFixture(projectExcludedByAppointmentTag.appointments[0].id, reportExclusionTag.id);
-    await attachProjectTagFixture(projectExcludedByProjectTag.project.id, specialMeasureTag.id);
-    await attachProjectTagFixture(projectExcludedByAppointmentTag.project.id, specialMeasureTag.id);
-    await attachProjectTagFixture(visibleControlProject.project.id, specialMeasureTag.id);
-
-    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Rekl" })).categoryId;
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Rekl" })).categoryId;
-
-    const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}`)
-      .expect(200);
-
-    expect(response.body.productCategoryGroups).toEqual([
-      {
-        categoryId: saunaCategoryId,
-        categoryName: "Fass Saunen",
-        items: [{ itemName: "Visible Sauna", totalQuantity: 6 }],
-      },
-    ]);
-    expect(response.body.componentCategoryGroups).toEqual([
-      {
-        categoryId: windowCategoryId,
-        categoryName: "Fenster",
-        items: [{ itemName: "Visible Fenster", totalQuantity: 4 }],
-      },
-    ]);
-    expect(response.body.specialMeasureProjects).toEqual([
-      expect.objectContaining({
-        projectId: visibleControlProject.project.id,
-        orderNumber: expect.stringContaining("ORD-FT26-PV-REKL-VISIBLE-PROJ"),
-      }),
-    ]);
-  });
-
-  it("returns strict projectRows with tour, shortcode values and selected sonderblock tags", async () => {
-    const admin = await loginAdminAgent(app);
-    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
-    const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
-    const sonderblockTag = await ensureExactTag("Baustellenstopp", "#2563eb");
-    const tour = await createTourFixture("#0f766e");
-
-    const visibleProject = await createProduktionsplanungProjectFixture({
-      prefix: "FT32-PV-ROWS-VISIBLE",
-      appointmentDates: ["2100-01-10"],
-      descriptionMd: "<p>Strenge Projektliste sichtbar</p>",
-      projectTags: [sonderblockTag],
-      tourId: tour.id,
-      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Lang", shortCode: "SL", quantity: 2 }],
-      componentItems: [{ categoryName: "Fenster", name: "Fenster Breit", shortCode: "FB", quantity: 1 }],
-    });
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT32-PV-ROWS-STORNO",
-      appointmentDates: ["2100-01-11"],
-      tourId: tour.id,
-      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Storno", shortCode: "SS", quantity: 1 }],
-      appointmentTagsByIndex: [[cancellationTag]],
-    });
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT32-PV-ROWS-REKL",
-      appointmentDates: ["2100-01-12"],
-      projectTags: [reportExclusionTag],
-      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Reklamation", shortCode: "SR", quantity: 1 }],
-    });
-
-    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Rows" })).categoryId;
-    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster Rows" })).categoryId;
-
-    const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2100-01-01&toDate=2100-01-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&useShortCodes=true&sonderblockTagIds=${sonderblockTag.id}`)
-      .expect(200);
-
-    expect(response.body.projectRows).toEqual([
-      {
-        projectId: visibleProject.project.id,
-        projectName: "FT32-PV-ROWS-VISIBLE Projekt",
-        orderNumber: expect.stringContaining("ORD-FT32-PV-ROWS-VISIBLE-PROJ"),
-        actualDate: "2100-01-10",
-        tourName: tour.name,
-        articleValues: expect.arrayContaining([
-          { categoryId: saunaCategoryId, value: "SL" },
-          { categoryId: windowCategoryId, value: "FB" },
-        ]),
-        projectDescription: "Strenge Projektliste sichtbar",
-        matchedSonderblockTagIds: [sonderblockTag.id],
-      },
-    ]);
-  });
-
-  it("returns only product groups when only product categories are selected", async () => {
-    const admin = await loginAdminAgent(app);
-    await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-PRODUCT-ONLY",
-      appointmentDates: ["2100-02-10"],
-      productItems: [{ categoryName: "Fass Saunen", name: "Produkt Only Sauna", quantity: 2 }],
-      componentItems: [{ categoryName: "Fenster", name: "Produkt Only Fenster", quantity: 4 }],
-    });
-
-    const saunaCategoryId = (await createProductFixture({
-      categoryName: "Fass Saunen",
-      name: "FT26 Lookup Produkt Only Sauna",
-    })).categoryId;
-
-    const response = await admin
-      .get(`/api/reports/produktionsplanung?fromDate=2100-02-01&toDate=2100-02-28&productCategoryIds=${saunaCategoryId}`)
-      .expect(200);
-
-    expect(response.body.productCategoryGroups).toEqual([
-      {
-        categoryId: saunaCategoryId,
-        categoryName: "Fass Saunen",
-        items: [{ itemName: "Produkt Only Sauna", totalQuantity: 2 }],
-      },
-    ]);
-    expect(response.body.componentCategoryGroups).toEqual([]);
-    expect(response.body.specialMeasureProjects).toEqual([]);
-  });
-
-  it("refreshes grouped totals after quantity changes and item removals between requests", async () => {
-    const admin = await loginAdminAgent(app);
-    const project = await createProduktionsplanungProjectFixture({
-      prefix: "FT26-PV-REFRESH",
-      appointmentDates: ["2100-03-10"],
-      componentItems: [{ categoryName: "Tuer", name: "Refresh Tuer", quantity: 1 }],
-    });
-
-    const doorCategoryId = (await createComponentFixture({
-      categoryName: "Tuer",
-      name: "FT26 Lookup Produkt Refresh Tuer",
-    })).categoryId;
-    const reportUrl = `/api/reports/produktionsplanung?fromDate=2100-03-01&toDate=2100-03-31&componentCategoryIds=${doorCategoryId}`;
-
-    const firstResponse = await admin.get(reportUrl).expect(200);
-    expect(firstResponse.body.componentCategoryGroups).toEqual([
-      {
-        categoryId: doorCategoryId,
-        categoryName: "Tuer",
-        items: [{ itemName: "Refresh Tuer", totalQuantity: 1 }],
-      },
-    ]);
-
-    const initialItems = await projectsService.listProjectOrderItems(project.project.id);
-    const doorItem = initialItems.find((item) => item.componentId != null);
-    if (!doorItem) {
-      throw new Error("Expected door order item.");
-    }
-
-    await projectsService.updateProjectOrderItem(project.project.id, doorItem.id, {
-      version: doorItem.version,
-      quantity: 4,
-    });
-
-    const secondResponse = await admin.get(reportUrl).expect(200);
-    expect(secondResponse.body.componentCategoryGroups).toEqual([
-      {
-        categoryId: doorCategoryId,
-        categoryName: "Tuer",
-        items: [{ itemName: "Refresh Tuer", totalQuantity: 4 }],
-      },
-    ]);
-
-    const refreshedItems = await projectsService.listProjectOrderItems(project.project.id);
-    const refreshedDoorItem = refreshedItems.find((item) => item.componentId != null);
-    if (!refreshedDoorItem) {
-      throw new Error("Expected refreshed door order item.");
-    }
-
-    await projectsService.deleteProjectOrderItem(project.project.id, refreshedDoorItem.id, refreshedDoorItem.version);
-
-    const thirdResponse = await admin.get(reportUrl).expect(200);
-    expect(thirdResponse.body.componentCategoryGroups).toEqual([]);
-  });
 });
-
-
-

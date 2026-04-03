@@ -61,7 +61,6 @@ export async function listProduktionsplanung(
     productCategoryIds: number[];
     componentCategoryIds: number[];
     useShortCodes: boolean;
-    sonderblockTagIds: number[];
   },
   roleKey: CanonicalRoleKey,
 ) {
@@ -73,4 +72,3 @@ export async function listProduktionsplanung(
 
   return reportsRepository.getProduktionsplanung(params);
 }
-

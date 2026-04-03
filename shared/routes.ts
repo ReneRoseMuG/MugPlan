@@ -411,31 +411,32 @@ const reportProduktionsplanungCategoryGroupSchema = z.object({
   items: z.array(reportProduktionsplanungItemTotalSchema),
 });
 
-const reportProduktionsplanungSpecialMeasureProjectSchema = z.object({
-  projectId: z.number().int().positive(),
-  orderNumber: z.string().nullable(),
-  customerNumber: z.string().nullable(),
-  customerFullName: z.string().nullable(),
-  actualDate: z.string().nullable(),
-  projectDescription: z.string().nullable(),
-  specialMeasureTag: tagSchema.nullable(),
-});
-
 const reportProduktionsplanungProjectRowSchema = z.object({
   projectId: z.number().int().positive(),
   projectName: z.string().min(1),
   orderNumber: z.string().nullable(),
+  customerNumber: z.string().nullable(),
+  customerFullName: z.string().nullable(),
   actualDate: z.string(),
+  durationDays: z.number().int().min(1),
   tourName: z.string().nullable(),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string().min(1),
+    }),
+  ),
+  notesCount: z.number().int().min(0),
+  attachmentsCount: z.number().int().min(0),
+  tags: z.array(tagSchema),
+  reportCardReasonTags: z.array(tagSchema),
   articleValues: z.array(reportVorlauflisteArticleValueSchema),
   projectDescription: z.string().nullable(),
-  matchedSonderblockTagIds: z.array(z.number().int().positive()),
 });
 
 const reportProduktionsplanungResponseSchema = z.object({
   productCategoryGroups: z.array(reportProduktionsplanungCategoryGroupSchema),
   componentCategoryGroups: z.array(reportProduktionsplanungCategoryGroupSchema),
-  specialMeasureProjects: z.array(reportProduktionsplanungSpecialMeasureProjectSchema),
   projectRows: z.array(reportProduktionsplanungProjectRowSchema),
 });
 
@@ -3967,10 +3968,6 @@ export const api = {
             (value) => value === "true" || value === true,
             z.boolean().default(false),
           ),
-          sonderblockTagIds: z.preprocess(
-            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
-            z.array(z.coerce.number().int().positive()).default([]),
-          ),
         }).strict(),
         responses: {
           200: reportProduktionsplanungResponseSchema,
@@ -4135,4 +4132,3 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
-

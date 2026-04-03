@@ -1,18 +1,18 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Produktionsplanung-Konfiguration wird pro Benutzer getrennt gespeichert.
- * - Persistierte Kategorie-IDs bleiben ueber erneutes Laden erhalten.
- * - Bewusst leere Arrays bleiben nach dem Speichern erhalten.
+ * - Die FT26-Produktionsplanung speichert pro Benutzer nur noch useShortCodes im neuen Selection-Key.
+ * - Die neuen Range-Settings fuer Vorlaufliste und Produktionsplanung bleiben ueber Reloads user-spezifisch erhalten.
+ * - Der Legacy-Key reports.productVorlauf.selection bleibt als aufgeloester Fallback lesbar.
  *
  * Fehlerfaelle:
  * - Scope-Leak zwischen zwei Benutzern.
- * - Verlust der Produktionsplanung-Konfiguration nach Reload.
- * - Leere Arrays fallen auf Default-Werte zurueck.
+ * - Range- oder Shortcode-Konfiguration geht nach Reload verloren.
+ * - Der Legacy-Fallback verschwindet aus den aufgeloesten Settings.
  *
  * Ziel:
- * Die benutzerspezifische Persistenz der Produktionsplanung-Konfiguration auf API-Ebene absichern.
+ * Die user-spezifische FT26-Settings-Persistenz auf API-Ebene absichern.
  */
 import express from "express";
 import { createServer } from "http";
@@ -46,9 +46,9 @@ beforeEach(() => {
 });
 
 async function createDispatcherAgent(label: string): Promise<SuperAgentTest> {
-  const username = `test-produktionsplanung-setting-${label}-${userCounter}`;
+  const username = `test-ft26-setting-${label}-${userCounter}`;
   userCounter += 1;
-  const password = `test-produktionsplanung-setting-password-${label}`;
+  const password = `test-ft26-setting-password-${label}`;
   const passwordHash = await hashPassword(password);
   await createUser({
     username,
@@ -75,23 +75,15 @@ function getSetting(settings: ResolvedSetting[], key: string): ResolvedSetting {
   return setting;
 }
 
-async function setUserSetting(
-  agent: SuperAgentTest,
-  value: {
-    productCategoryIds: number[];
-    componentCategoryIds: number[];
-    useShortCodes?: boolean;
-    sonderblockTagIds?: number[];
-  },
-): Promise<void> {
+async function patchUserSetting(agent: SuperAgentTest, key: string, value: unknown): Promise<void> {
   const settings = await getResolvedSettings(agent);
-  const setting = getSetting(settings, "reports.produktionsplanung.selection");
+  const setting = getSetting(settings, key);
   const version = typeof setting.userVersion === "number" && setting.userVersion >= 1 ? setting.userVersion : 1;
 
   await agent
     .patch("/api/user-settings")
     .send({
-      key: "reports.produktionsplanung.selection",
+      key,
       scopeType: "USER",
       version,
       value,
@@ -99,60 +91,79 @@ async function setUserSetting(
     .expect(200);
 }
 
-describe("integration: reports produktionsplanung selection persistence", () => {
-  it("persists the configuration user-specifically and keeps values across reload", async () => {
+describe("integration: FT26 report settings persistence", () => {
+  it("persists the slim produktionsplanung selection user-specifically", async () => {
     const userA = await createDispatcherAgent("a");
     const userB = await createDispatcherAgent("b");
 
-    await setUserSetting(userA, {
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
+    await patchUserSetting(userA, "reports.produktionsplanung.selection", {
       useShortCodes: true,
-      sonderblockTagIds: [31, 32],
     });
 
     const settingsA = await getResolvedSettings(userA);
     const settingsB = await getResolvedSettings(userB);
 
     expect(getSetting(settingsA, "reports.produktionsplanung.selection").resolvedValue).toEqual({
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
       useShortCodes: true,
-      sonderblockTagIds: [31, 32],
     });
     expect(getSetting(settingsB, "reports.produktionsplanung.selection").resolvedValue).toEqual({
-      productCategoryIds: [],
-      componentCategoryIds: [],
       useShortCodes: false,
-      sonderblockTagIds: [],
-    });
-
-    const reloadedA = await getResolvedSettings(userA);
-    expect(getSetting(reloadedA, "reports.produktionsplanung.selection").resolvedValue).toEqual({
-      productCategoryIds: [11, 12],
-      componentCategoryIds: [21, 22],
-      useShortCodes: true,
-      sonderblockTagIds: [31, 32],
     });
   });
 
-  it("keeps explicitly empty category arrays after reload", async () => {
-    const user = await createDispatcherAgent("empty");
+  it("persists the new range settings across reloads", async () => {
+    const user = await createDispatcherAgent("range");
 
-    await setUserSetting(user, {
-      productCategoryIds: [],
-      componentCategoryIds: [],
+    await patchUserSetting(user, "reports.vorlaufliste.rangeConfig", {
+      activeTab: "date",
+      fromDate: "2026-04-06",
+      toDate: "2026-05-08",
+      kwStart: 17,
+      weekCount: 3,
+    });
+    await patchUserSetting(user, "reports.produktionsplanung.rangeConfig", {
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-07",
+      toDate: "2026-05-09",
+      kwStart: 21,
+      weekCount: 2,
     });
 
     const reloaded = await getResolvedSettings(user);
-    expect(getSetting(reloaded, "reports.produktionsplanung.selection").resolvedValue).toEqual({
-      productCategoryIds: [],
-      componentCategoryIds: [],
-      useShortCodes: false,
-      sonderblockTagIds: [],
+
+    expect(getSetting(reloaded, "reports.vorlaufliste.rangeConfig").resolvedValue).toEqual({
+      activeTab: "date",
+      fromDate: "2026-04-06",
+      toDate: "2026-05-08",
+      kwStart: 17,
+      weekCount: 3,
+    });
+    expect(getSetting(reloaded, "reports.produktionsplanung.rangeConfig").resolvedValue).toEqual({
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-07",
+      toDate: "2026-05-09",
+      kwStart: 21,
+      weekCount: 2,
+    });
+  });
+
+  it("keeps the legacy produktvorlauf selection readable as resolved fallback data", async () => {
+    const user = await createDispatcherAgent("legacy");
+
+    await patchUserSetting(user, "reports.productVorlauf.selection", {
+      productCategoryIds: [11, 12],
+      componentCategoryIds: [21],
+      useShortCodes: true,
+      sonderblockTagIds: [31],
+    });
+
+    const reloaded = await getResolvedSettings(user);
+
+    expect(getSetting(reloaded, "reports.productVorlauf.selection").resolvedValue).toEqual({
+      productCategoryIds: [11, 12],
+      componentCategoryIds: [21],
+      useShortCodes: true,
+      sonderblockTagIds: [31],
     });
   });
 });
-
-
-

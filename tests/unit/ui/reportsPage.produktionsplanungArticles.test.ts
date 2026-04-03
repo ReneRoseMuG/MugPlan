@@ -25,15 +25,22 @@ describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
         projectId: 7,
         projectName: "Projekt Test",
         orderNumber: "ORD-007",
+        customerNumber: "C-007",
+        customerFullName: "Kunde Test",
         actualDate: "2099-11-05",
+        durationDays: 2,
         tourName: "Tour A",
+        employees: [],
+        notesCount: 0,
+        attachmentsCount: 0,
+        tags: [],
+        reportCardReasonTags: [],
         articleValues: [
           { categoryId: 10, value: "Premium IV, Premium V" },
           { categoryId: 20, value: "HUUM UKU 4.1 Local" },
           { categoryId: 30, value: "   " },
         ],
         projectDescription: null,
-        matchedSonderblockTagIds: [],
       },
       [
         { id: 10, name: "Fass Saunen" },
@@ -56,6 +63,5 @@ describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
     ]);
   });
 });
-
 
 

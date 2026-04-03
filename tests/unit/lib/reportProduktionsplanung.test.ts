@@ -1,23 +1,23 @@
-﻿/**
+/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
  * - Produktionsplanung fasst Mengen je Kategorie ueber identische Shortcodes zusammen, wenn Shortcodes aktiv sind.
  * - Ohne Shortcode oder bei deaktivierter Option bleiben Artikel getrennt.
- * - Sonderblock-Treffer ignorieren Reklamation und Storniert selbst dann, wenn sie in der Auswahl enthalten sind.
+ * - reportCardReasonTags enthalten ausschliesslich die managed Gruende "Sondermaß" und "Anmerkungen".
  *
  * Fehlerfaelle:
  * - Shortcodes verdichten Mengen nicht stabil.
- * - Nicht erlaubte Sonderblock-Tags landen in matchedSonderblockTagIds.
+ * - Reklamation oder Storniert landen faelschlich in den Karten-Gruenden.
  *
  * Ziel:
- * Die reine Produktionsplanung-Hilfslogik ohne DB-Abhaengigkeiten regressionssicher absichern.
+ * Die reine FT26-Hilfslogik der Produktionsplanung ohne DB-Abhaengigkeit regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 
 import {
   buildGroupedProduktionsplanungCategoryGroups,
-  collectMatchedSonderblockTagIds,
+  collectManagedReportCardReasonTags,
 } from "../../../server/lib/reportProduktionsplanung";
 
 describe("reportProduktionsplanung helpers", () => {
@@ -52,25 +52,22 @@ describe("reportProduktionsplanung helpers", () => {
     ]);
   });
 
-  it("ignores reclamation and cancellation tags in sonderblock matches", () => {
-    const result = collectMatchedSonderblockTagIds({
-      selectedTags: [
-        { id: 1, name: "Reklamation", color: "#f97316", isDefault: false, version: 1 },
-        { id: 2, name: "Storniert", color: "#ef4444", isDefault: false, version: 1 },
-        { id: 3, name: "Baustellenstopp", color: "#2563eb", isDefault: false, version: 1 },
-      ],
+  it("collects only managed card reason tags from project and appointment tags", () => {
+    const result = collectManagedReportCardReasonTags({
       projectTags: [
         { id: 1, name: "Reklamation", color: "#f97316", isDefault: false, version: 1 },
-        { id: 3, name: "Baustellenstopp", color: "#2563eb", isDefault: false, version: 1 },
+        { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
       ],
       appointmentTags: [
-        { id: 2, name: "Storniert", color: "#ef4444", isDefault: false, version: 1 },
-        { id: 3, name: "Baustellenstopp", color: "#2563eb", isDefault: false, version: 1 },
+        { id: 3, name: "Sondermaß", color: "#1e3a8a", isDefault: false, version: 1 },
+        { id: 4, name: "Storniert", color: "#ef4444", isDefault: false, version: 1 },
+        { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
       ],
     });
 
-    expect(result).toEqual([3]);
+    expect(result).toEqual([
+      { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
+      { id: 3, name: "Sondermaß", color: "#1e3a8a", isDefault: false, version: 1 },
+    ]);
   });
 });
-
-

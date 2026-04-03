@@ -1,5 +1,7 @@
-﻿import {
+import {
+  isManagedRemarksTagName,
   isManagedReportExclusionTagName,
+  isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
 } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
@@ -80,27 +82,21 @@ export function buildGroupedProduktionsplanungCategoryGroups(
       left.categoryName.localeCompare(right.categoryName, "de") || left.categoryId - right.categoryId);
 }
 
-export function collectMatchedSonderblockTagIds(params: {
-  selectedTags: Tag[];
+export function collectManagedReportCardReasonTags(params: {
   projectTags: Tag[];
   appointmentTags: Tag[];
-}): number[] {
-  const allowedSelectedTagIds = new Set(
-    params.selectedTags
-      .filter((tag) =>
-        !isManagedReportExclusionTagName(tag.name)
-        && !isReservedAppointmentCancellationTagName(tag.name))
-      .map((tag) => tag.id),
-  );
+}): Tag[] {
+  const reasons = [...params.projectTags, ...params.appointmentTags]
+    .filter((tag) =>
+      !isManagedReportExclusionTagName(tag.name)
+      && !isReservedAppointmentCancellationTagName(tag.name)
+      && (isManagedSpecialMeasureTagName(tag.name) || isManagedRemarksTagName(tag.name)));
 
-  if (allowedSelectedTagIds.size === 0) {
-    return [];
+  const uniqueReasons = new Map<number, Tag>();
+  for (const tag of reasons) {
+    uniqueReasons.set(tag.id, tag);
   }
 
-  return Array.from(new Set(
-    [...params.projectTags, ...params.appointmentTags]
-      .filter((tag) => allowedSelectedTagIds.has(tag.id))
-      .map((tag) => tag.id),
-  )).sort((left, right) => left - right);
+  return Array.from(uniqueReasons.values())
+    .sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id);
 }
-
