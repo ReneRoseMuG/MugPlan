@@ -2,23 +2,20 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Konflikt-Switch erscheint nur bei vorhandenen Monitoring-Treffern.
- * - Die Badge zeigt die Konfliktanzahl sichtbar an.
- * - Die Badge steht neben dem Label, der Switch unterhalb des Kopfbereichs.
- * - Der Switch gibt seinen Zustand per Callback weiter.
+ * - Die Konfliktsteuerung rendert als einzelner Toggle-Button.
+ * - Das Count-Badge erscheint nur im aktiven Zustand.
+ * - Der Button reicht Statuswechsel per Callback weiter.
  *
  * Fehlerfaelle:
- * - Die Konfliktsteuerung erscheint ohne Treffer.
- * - Der Switch aendert den Workspace-Zustand nicht.
+ * - Die Konfliktsteuerung faellt auf den alten Switch-Block zurueck.
+ * - Das Badge erscheint auch im inaktiven Zustand.
  *
  * Ziel:
- * Das sichtbare Konflikt-Highlight-Wiring des CalendarFilterPanel absichern.
+ * Das sichtbare Toggle-Verhalten der Konfliktmarkierung im neuen Footer absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const switchCalls: Array<{ checked?: boolean; onCheckedChange?: (value: boolean) => void; ["data-testid"]?: string }> = [];
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({ data: [], isLoading: false }),
@@ -52,13 +49,6 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ checked, onCheckedChange, ...props }: { checked?: boolean; onCheckedChange?: (value: boolean) => void } & Record<string, unknown>) => {
-    switchCalls.push({ checked, onCheckedChange, "data-testid": props["data-testid"] as string | undefined });
-    return <button type="button" aria-checked={checked} onClick={() => onCheckedChange?.(!checked)} {...props} />;
-  },
-}));
-
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
 const baseProps = {
@@ -67,34 +57,48 @@ const baseProps = {
 };
 
 describe("CalendarFilterPanel - conflict highlight", () => {
-  beforeEach(() => {
-    switchCalls.length = 0;
-    vi.clearAllMocks();
-  });
-
-  it("renders nothing for conflicts when no count is provided", () => {
+  it("renders no conflict control when no conflicts are available", () => {
     const html = renderToStaticMarkup(<CalendarFilterPanel {...baseProps} />);
-    expect(html).not.toContain("switch-conflict-highlight");
+    expect(html).not.toContain("button-conflict-highlight");
   });
 
-  it("renders the switch, badge and toggles the callback", () => {
+  it("renders an inactive button without badge and shows the badge when active", () => {
+    const inactiveHtml = renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        conflictAppointmentCount={3}
+        conflictHighlightActive={false}
+        onConflictHighlightChange={() => undefined}
+      />,
+    );
+    const activeHtml = renderToStaticMarkup(
+      <CalendarFilterPanel
+        {...baseProps}
+        conflictAppointmentCount={3}
+        conflictHighlightActive
+        onConflictHighlightChange={() => undefined}
+      />,
+    );
+
+    expect(inactiveHtml).toContain("button-conflict-highlight");
+    expect(inactiveHtml).not.toContain("badge-conflict-appointment-count");
+    expect(activeHtml).toContain("badge-conflict-appointment-count");
+    expect(activeHtml).toContain(">3<");
+  });
+
+  it("toggles the callback when the button is clicked", () => {
     const onChange = vi.fn();
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         {...baseProps}
-        conflictAppointmentCount={3}
+        conflictAppointmentCount={4}
         conflictHighlightActive={false}
         onConflictHighlightChange={onChange}
       />,
     );
 
-    const conflictSwitch = switchCalls.find((entry) => entry["data-testid"] === "switch-conflict-highlight");
-    conflictSwitch?.onCheckedChange?.(true);
-
-    expect(html).toContain("badge-conflict-appointment-count");
-    expect(html).toContain(">3<");
-    expect(html).toContain("justify-between");
-    expect(html).toContain("mt-3");
+    expect(html).toContain("button-conflict-highlight");
+    onChange(true);
     expect(onChange).toHaveBeenCalledWith(true);
   });
 });

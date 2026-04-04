@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Employee = {
@@ -12,9 +13,11 @@ const logPrefix = "[calendar-employee-filter]";
 export function CalendarEmployeeFilter({
   value,
   onChange,
+  triggerClassName,
 }: {
   value?: number | null;
   onChange: (employeeId: number | null) => void;
+  triggerClassName?: string;
 }) {
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -40,18 +43,21 @@ export function CalendarEmployeeFilter({
   };
 
   return (
-    <Select value={value ? String(value) : "all"} onValueChange={handleValueChange}>
-      <SelectTrigger className="w-56 bg-white">
-        <SelectValue placeholder="Mitarbeiter filtern" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">Alle Mitarbeiter</SelectItem>
-        {activeEmployees.map((employee) => (
-          <SelectItem key={employee.id} value={String(employee.id)}>
-            {employee.fullName}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div className="relative">
+      <Users className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <Select value={value ? String(value) : "all"} onValueChange={handleValueChange}>
+        <SelectTrigger className={`w-56 bg-white pl-9 ${triggerClassName ?? ""}`.trim()}>
+          <SelectValue placeholder="Mitarbeiter filtern" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Alle Mitarbeiter</SelectItem>
+          {activeEmployees.map((employee) => (
+            <SelectItem key={employee.id} value={String(employee.id)}>
+              {employee.fullName}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }

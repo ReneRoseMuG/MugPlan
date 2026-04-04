@@ -2,19 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Mitarbeiterfilter und KW-Eingabe liegen links in derselben Toolbar-Zeile.
- * - Konflikt- und Druck-Panel bleiben gemeinsam rechts in derselben Zeile.
- * - Die rechten Panel-Container strecken sich auf dieselbe Höhe.
- * - Konflikt- und Druck-Panel teilen dieselbe feste Mindesthöhe.
+ * - Der Wochenkalender-Footer rendert als zweizeiliges 5-Spalten-Grid.
+ * - Mitarbeiter, Füllmodus, Kalenderwoche, Touren und Druckbereich liegen in den vorgesehenen Zellen.
+ * - Unter dem Konfliktbereich bleibt in Zeile 2 eine sichtbare Platzhalterzelle erhalten.
  *
- * Fehlerfälle:
- * - Das KW-Feld bleibt als eigenes rechtes Panel stehen.
- * - Das Druck-Panel rutscht wieder unter die linke Filtergruppe oder steht links vom Konflikt-Panel.
- * - Die rechten Panel-Container erscheinen wieder sichtbar unterschiedlich hoch.
- * - Das rote Panel bleibt trotz Stretch sichtbar niedriger als das beige Panel.
+ * Fehlerfaelle:
+ * - Das Week-Layout faellt wieder auf die alte Toolbar-Zeile zurueck.
+ * - Druck- oder Konfliktbereich verlieren ihre feste Grid-Position.
  *
  * Ziel:
- * Die sichtbare Zeilenstruktur der Wochen-Toolbar mit linker Filtergruppe und rechter Aktionsgruppe absichern.
+ * Das sichtbare Raster und die Hauptbereiche des neuen Wochenkalender-Footers absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -52,24 +49,22 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ checked, onCheckedChange, ...props }: { checked?: boolean; onCheckedChange?: (value: boolean) => void } & Record<string, unknown>) => (
-    <button type="button" aria-checked={checked} onClick={() => onCheckedChange?.(!checked)} {...props} />
-  ),
-}));
-
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
-describe("CalendarFilterPanel - week action row", () => {
-  it("renders employee filter and kw input together on the left while conflict and print panels stay on the right", () => {
+describe("CalendarFilterPanel - week footer redesign", () => {
+  it("renders the week footer as a fixed two-row grid with print panel and conflict placeholder", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
+        weekAppointmentDisplayMode="detail"
+        onWeekAppointmentDisplayModeChange={() => undefined}
+        weekLanesCollapsed={false}
+        onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
         onSelectedPrintTourIdChange={() => undefined}
-        printWeekCount={1}
+        printWeekCount={2}
         onPrintWeekCountChange={() => undefined}
         onOpenPrintPreview={() => undefined}
         printStartNextWeek={false}
@@ -84,30 +79,33 @@ describe("CalendarFilterPanel - week action row", () => {
       />,
     );
 
-    expect(html).toContain("calendar-week-toolbar-row");
-    expect(html).toContain("calendar-panel-employee-filter");
-    expect(html).toContain("calendar-panel-kw-inline");
-    expect(html).toContain("calendar-week-action-row");
+    expect(html).toContain("calendar-week-footer-grid");
+    expect(html).toContain("grid-template-columns:auto auto auto 32px auto");
+    expect(html).toContain("Mitarbeiter");
+    expect(html).toContain("Füllmodus");
+    expect(html).toContain("Kalenderwoche");
+    expect(html).toContain("Touren");
+    expect(html).toContain("Wochenplanung drucken");
     expect(html).toContain("calendar-panel-print");
-    expect(html).toContain("calendar-panel-conflicts");
-    expect(html).not.toContain('data-testid="calendar-panel-kw"');
-    expect(html.indexOf("calendar-panel-employee-filter")).toBeLessThan(html.indexOf("calendar-week-action-row"));
-    expect(html.indexOf("calendar-panel-kw-inline")).toBeLessThan(html.indexOf("calendar-week-action-row"));
-    expect(html.indexOf("calendar-panel-conflicts")).toBeLessThan(html.indexOf("calendar-panel-print"));
+    expect(html).toContain("calendar-week-footer-conflict-placeholder");
   });
 
-  it("renders the kw control as a simple labeled input next to the employee filter", () => {
+  it("renders the redesigned controls instead of the old toolbar structure", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
+        weekAppointmentDisplayMode="standard"
+        onWeekAppointmentDisplayModeChange={() => undefined}
+        weekLanesCollapsed
+        onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
         onSelectedPrintTourIdChange={() => undefined}
         printWeekCount={1}
         onPrintWeekCountChange={() => undefined}
         onOpenPrintPreview={() => undefined}
-        printStartNextWeek={false}
+        printStartNextWeek
         onPrintStartNextWeekChange={() => undefined}
         showKwJump
         kwJumpValue="14"
@@ -116,63 +114,13 @@ describe("CalendarFilterPanel - week action row", () => {
       />,
     );
 
-    expect(html).toContain("KW:");
+    expect(html).toContain("select-week-display-mode");
+    expect(html).toContain("toggle-week-lanes-expanded");
+    expect(html).toContain("toggle-week-lanes-collapsed");
+    expect(html).toContain("toggle-print-start-current-week");
+    expect(html).toContain("toggle-print-start-next-week");
     expect(html).toContain("input-calendar-kw-jump");
-    expect(html).toContain("calendar-panel-kw-inline");
-    expect(html).not.toContain("Kalenderwoche");
-  });
-
-  it("stretches the right-side panel containers to a visually aligned height", () => {
-    const html = renderToStaticMarkup(
-      <CalendarFilterPanel
-        employeeId={null}
-        onEmployeeIdChange={() => undefined}
-        showWeekDisplayMode
-        selectedPrintTourId={1}
-        onSelectedPrintTourIdChange={() => undefined}
-        printWeekCount={1}
-        onPrintWeekCountChange={() => undefined}
-        onOpenPrintPreview={() => undefined}
-        printStartNextWeek={false}
-        onPrintStartNextWeekChange={() => undefined}
-        showKwJump
-        kwJumpValue="14"
-        onKwJumpChange={() => undefined}
-        onKwJumpSubmit={() => undefined}
-        conflictAppointmentCount={3}
-        conflictHighlightActive={false}
-        onConflictHighlightChange={() => undefined}
-      />,
-    );
-
-    expect(html).toContain("items-stretch");
-    expect(html.match(/flex h-full min-h-\[116px\] flex-col rounded-xl/g)?.length).toBe(2);
-    expect(html).toContain("flex h-full flex-1 flex-col justify-between");
-  });
-
-  it("renders the conflict badge beside the label and the switch beneath it", () => {
-    const html = renderToStaticMarkup(
-      <CalendarFilterPanel
-        employeeId={null}
-        onEmployeeIdChange={() => undefined}
-        showWeekDisplayMode
-        selectedPrintTourId={1}
-        onSelectedPrintTourIdChange={() => undefined}
-        printWeekCount={1}
-        onPrintWeekCountChange={() => undefined}
-        onOpenPrintPreview={() => undefined}
-        printStartNextWeek={false}
-        onPrintStartNextWeekChange={() => undefined}
-        conflictAppointmentCount={3}
-        conflictHighlightActive={false}
-        onConflictHighlightChange={() => undefined}
-      />,
-    );
-
-    expect(html).toContain("justify-between");
-    expect(html).toContain("badge-conflict-appointment-count");
-    expect(html).toContain('data-testid="switch-conflict-highlight"');
-    expect(html).toContain("mt-3");
-    expect(html.indexOf("badge-conflict-appointment-count")).toBeLessThan(html.indexOf('data-testid="switch-conflict-highlight"'));
+    expect(html).not.toContain("calendar-week-toolbar-row");
+    expect(html).not.toContain("calendar-week-action-row");
   });
 });

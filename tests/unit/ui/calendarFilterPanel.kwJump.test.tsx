@@ -2,17 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Das KW-Feld erscheint nur im Wochenkontext.
- * - Enter und Blur loesen den KW-Submit aus.
- * - Der Ruecksprung-Button erscheint nur bei vorhandenem Ruecksprungziel.
- * - Fehlerhafte KW-Eingaben markieren das Feld sichtbar.
+ * - Die KW-Steuerung erscheint nur im Wochenkontext.
+ * - Enter und Blur loesen weiterhin den Submit aus.
+ * - Das Redesign rendert keinen Ruecksprung-Link mehr.
+ * - Fehlerhafte Eingaben markieren das Spinner-Feld sichtbar.
  *
  * Fehlerfaelle:
- * - Das KW-Feld rendert ausserhalb des Wochenkontexts.
- * - Submit oder Ruecksprung bleiben ohne Callback.
+ * - Die KW-Steuerung verschwindet im Week-Footer.
+ * - Das Feld faellt auf einen Browser-Number-Input oder den alten Ruecksprung-Link zurueck.
  *
  * Ziel:
- * Das sichtbare KW-Jump-Wiring des CalendarFilterPanel absichern.
+ * Das sichtbare KW-Spinner-Wiring des neuen Wochenkalender-Footers absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -59,12 +59,6 @@ vi.mock("@/components/ui/select", () => ({
   SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder}</span>,
 }));
 
-vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ checked, onCheckedChange, ...props }: { checked?: boolean; onCheckedChange?: (value: boolean) => void } & Record<string, unknown>) => (
-    <button type="button" aria-checked={checked} onClick={() => onCheckedChange?.(!checked)} {...props} />
-  ),
-}));
-
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
 const baseProps = {
@@ -79,11 +73,17 @@ describe("CalendarFilterPanel - kw jump", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the kw input only when enabled", () => {
+  it("renders the kw spinner only when week jumping is enabled", () => {
     const withoutKw = renderToStaticMarkup(<CalendarFilterPanel {...baseProps} />);
     const withKw = renderToStaticMarkup(
       <CalendarFilterPanel
         {...baseProps}
+        showWeekDisplayMode
+        selectedPrintTourId={1}
+        onSelectedPrintTourIdChange={() => undefined}
+        printWeekCount={1}
+        onPrintWeekCountChange={() => undefined}
+        onOpenPrintPreview={() => undefined}
         showKwJump
         kwJumpValue="22"
         onKwJumpChange={() => undefined}
@@ -95,13 +95,18 @@ describe("CalendarFilterPanel - kw jump", () => {
     expect(withKw).toContain("input-calendar-kw-jump");
   });
 
-  it("calls submit on enter and blur and renders the back button when enabled", () => {
+  it("submits on enter and blur and renders the back button when enabled", () => {
     const onSubmit = vi.fn();
     const onBack = vi.fn();
-
-    renderToStaticMarkup(
+    const html = renderToStaticMarkup(
       <CalendarFilterPanel
         {...baseProps}
+        showWeekDisplayMode
+        selectedPrintTourId={1}
+        onSelectedPrintTourIdChange={() => undefined}
+        printWeekCount={1}
+        onPrintWeekCountChange={() => undefined}
+        onOpenPrintPreview={() => undefined}
         showKwJump
         kwJumpValue="22"
         onKwJumpChange={() => undefined}
@@ -120,12 +125,19 @@ describe("CalendarFilterPanel - kw jump", () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(2);
     expect(onBack).toHaveBeenCalledTimes(1);
+    expect(html).toContain("button-calendar-kw-jump-back");
   });
 
-  it("marks the kw input visibly when kwJumpError is set", () => {
+  it("marks the kw spinner visibly when kwJumpError is set", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         {...baseProps}
+        showWeekDisplayMode
+        selectedPrintTourId={1}
+        onSelectedPrintTourIdChange={() => undefined}
+        printWeekCount={1}
+        onPrintWeekCountChange={() => undefined}
+        onOpenPrintPreview={() => undefined}
         showKwJump
         kwJumpValue="53"
         kwJumpError
@@ -134,13 +146,19 @@ describe("CalendarFilterPanel - kw jump", () => {
       />,
     );
 
-    expect(html).toContain("border-destructive");
+    expect(html).toContain("text-destructive");
   });
 
-  it("renders the kw input without browser stepper buttons", () => {
+  it("renders the kw input as a text-based numeric spinner field", () => {
     renderToStaticMarkup(
       <CalendarFilterPanel
         {...baseProps}
+        showWeekDisplayMode
+        selectedPrintTourId={1}
+        onSelectedPrintTourIdChange={() => undefined}
+        printWeekCount={1}
+        onPrintWeekCountChange={() => undefined}
+        onOpenPrintPreview={() => undefined}
         showKwJump
         kwJumpValue="14"
         onKwJumpChange={() => undefined}

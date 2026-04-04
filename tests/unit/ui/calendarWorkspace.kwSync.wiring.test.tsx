@@ -39,8 +39,24 @@ vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
   },
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({ toast: vi.fn() }),
+}));
+
 vi.mock("@/hooks/useSettings", () => ({
-  useSetting: () => 33,
+  useSettings: () => ({ setSetting: vi.fn() }),
+  useSetting: (key: string) => {
+    switch (key) {
+      case "calendar.weekAppointmentDisplayMode":
+        return "standard";
+      case "calendar.weekLanes.isCollapsed":
+        return false;
+      case "calendarWeekendColumnPercent":
+        return 33;
+      default:
+        return null;
+    }
+  },
 }));
 
 vi.mock("@/lib/project-appointments", () => ({
@@ -57,6 +73,11 @@ describe("CalendarWorkspace - kw sync wiring", () => {
   beforeEach(() => {
     filterPanelCalls.length = 0;
     vi.stubGlobal("React", React);
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "ADMIN",
+      },
+    });
   });
 
   it("preloads the current iso week into the kw input in week mode", () => {
@@ -74,6 +95,8 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     );
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
+    expect(filterPanelCalls.at(-1)?.weekAppointmentDisplayMode).toBe("standard");
+    expect(filterPanelCalls.at(-1)?.weekLanesCollapsed).toBe(false);
   });
 
   it("updates the kw input when the visible week changes", () => {

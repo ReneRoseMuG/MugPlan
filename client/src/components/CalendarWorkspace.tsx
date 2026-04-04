@@ -4,10 +4,11 @@ import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
+import { useToast } from "@/hooks/use-toast";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
-import { useSetting } from "@/hooks/useSettings";
+import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
@@ -54,6 +55,8 @@ export function CalendarWorkspace({
   restoreScrollLeft,
   onScrollRestoreApplied,
 }: CalendarWorkspaceProps) {
+  const { toast } = useToast();
+  const { setSetting } = useSettings();
   const [selectedPrintTourId, setSelectedPrintTourId] = useState<number | null>(null);
   const [printWeekCount, setPrintWeekCount] = useState(1);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
@@ -64,7 +67,14 @@ export function CalendarWorkspace({
     activeView === "week" ? String(getISOWeek(currentDate)) : "",
   );
   const [kwJumpError, setKwJumpError] = useState(false);
+  const weekAppointmentDisplayMode = useSetting("calendar.weekAppointmentDisplayMode");
+  const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
+  const userRole = useMemo(
+    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
+    [],
+  );
+  const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
   const conflictAppointmentIds = useMemo(
     () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
     [monitoringItems],
@@ -91,8 +101,8 @@ export function CalendarWorkspace({
     setKwInputValue(String(getISOWeek(currentDate)));
   }, [activeView, currentDate]);
 
-  const submitKwJump = () => {
-    const trimmedValue = kwInputValue.trim();
+  const submitKwJump = (valueOverride?: string) => {
+    const trimmedValue = (valueOverride ?? kwInputValue).trim();
     if (trimmedValue.length === 0) {
       setKwJumpError(false);
       return;
@@ -116,6 +126,36 @@ export function CalendarWorkspace({
 
     const isOutOfRange = Number.isInteger(parsedKw) && parsedKw >= 1 && parsedKw <= 53;
     setKwJumpError(isOutOfRange);
+  };
+
+  const persistWeekAppointmentDisplayMode = (value: "standard" | "compact" | "detail" | "split") => {
+    void setSetting({
+      key: "calendar.weekAppointmentDisplayMode",
+      scopeType: "USER",
+      value,
+    }).catch((error) => {
+      console.error("[calendar-workspace] week display mode persist failed", error);
+      toast({
+        title: "Füllmodus konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const persistWeekLanesCollapsed = (collapsed: boolean) => {
+    void setSetting({
+      key: "calendar.weekLanes.isCollapsed",
+      scopeType: "USER",
+      value: collapsed,
+    }).catch((error) => {
+      console.error("[calendar-workspace] week lanes collapsed persist failed", error);
+      toast({
+        title: "Tourenansicht konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
   };
 
   const next = () => {
@@ -144,6 +184,8 @@ export function CalendarWorkspace({
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
+          weekAppointmentDisplayMode={weekAppointmentDisplayMode ?? "standard"}
+          weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentIds={conflictAppointmentIds}
           onNewAppointment={(date, options) => {
@@ -259,6 +301,11 @@ export function CalendarWorkspace({
             employeeId={employeeFilterId}
             onEmployeeIdChange={onEmployeeFilterChange}
             showWeekDisplayMode={activeView === "week"}
+            weekAppointmentDisplayMode={weekAppointmentDisplayMode ?? "standard"}
+            onWeekAppointmentDisplayModeChange={persistWeekAppointmentDisplayMode}
+            weekAppointmentDisplayModeDisabled={!canEditWeekDisplayMode}
+            weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
+            onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
             selectedPrintTourId={selectedPrintTourId}
             onSelectedPrintTourIdChange={setSelectedPrintTourId}
             printWeekCount={printWeekCount}
@@ -276,7 +323,12 @@ export function CalendarWorkspace({
               setKwInputValue(value);
               setKwJumpError(false);
             }}
-            onKwJumpSubmit={submitKwJump}
+            onKwJumpSubmit={() => submitKwJump()}
+            onKwJumpValueCommit={(value) => {
+              setKwInputValue(value);
+              setKwJumpError(false);
+              submitKwJump(value);
+            }}
             showKwJumpBack={jumpBackDate !== null}
             onKwJumpBack={() => {
               if (!jumpBackDate) return;

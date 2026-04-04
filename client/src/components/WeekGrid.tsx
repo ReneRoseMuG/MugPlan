@@ -4,6 +4,8 @@ import type { CalendarNavCommand } from "@/pages/Home";
 interface WeekGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
+  weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
+  weekLanesCollapsed?: boolean;
   conflictHighlightActive?: boolean;
   conflictAppointmentIds?: Set<number>;
   navCommand?: CalendarNavCommand;
@@ -17,6 +19,8 @@ interface WeekGridProps {
 export function WeekGrid({
   currentDate,
   employeeFilterId,
+  weekAppointmentDisplayMode,
+  weekLanesCollapsed,
   conflictHighlightActive = false,
   conflictAppointmentIds = new Set<number>(),
   navCommand,
@@ -30,6 +34,8 @@ export function WeekGrid({
     <CalendarWeekView
       currentDate={currentDate}
       employeeFilterId={employeeFilterId}
+      weekAppointmentDisplayMode={weekAppointmentDisplayMode}
+      weekLanesCollapsed={weekLanesCollapsed}
       conflictHighlightActive={conflictHighlightActive}
       conflictAppointmentIds={conflictAppointmentIds}
       navCommand={navCommand}

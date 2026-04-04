@@ -28,7 +28,18 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => ({ setSetting: setSettingMock }),
-  useSetting: () => "standard",
+  useSetting: (key: string) => {
+    switch (key) {
+      case "calendar.weekAppointmentDisplayMode":
+        return "standard";
+      case "calendar.weekLanes.isCollapsed":
+        return false;
+      case "calendarWeekendColumnPercent":
+        return 33;
+      default:
+        return null;
+    }
+  },
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -114,6 +125,10 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
+        weekAppointmentDisplayMode="standard"
+        onWeekAppointmentDisplayModeChange={() => undefined}
+        weekLanesCollapsed={false}
+        onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
         onSelectedPrintTourIdChange={() => undefined}
         printWeekCount={2}
@@ -126,11 +141,12 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
 
     expect(html).toContain("Wochenplanung drucken");
     expect(html).toContain("Tour");
-    expect(html).toContain("Anzahl Wochen");
-    expect(html).toContain("Start diese Woche");
+    expect(html).toContain("Beginn");
     expect(html).toContain("select-tour-print-preview");
     expect(html).toContain("input-tour-print-week-count");
     expect(html).toContain("button-open-tour-print-preview");
+    expect(html).toContain("toggle-print-start-current-week");
+    expect(html).toContain("toggle-print-start-next-week");
     expect(html.indexOf("select-tour-print-preview")).toBeLessThan(html.indexOf("input-tour-print-week-count"));
     expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("button-open-tour-print-preview"));
   });
