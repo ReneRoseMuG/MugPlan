@@ -10,6 +10,26 @@ function setNoStoreHeaders(res: Response) {
   res.set("Expires", "0");
 }
 
+export async function getReportConfigDefaults(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const defaults = await reportsService.getReportConfigDefaults(roleKey);
+    setNoStoreHeaders(res);
+    res.json(defaults);
+  } catch (error) {
+    if (error instanceof reportsService.ReportsError) {
+      res.status(error.status).json({ code: error.code });
+      return;
+    }
+    next(error);
+  }
+}
+
 export async function listVorlaufliste(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = req.userContext?.roleKey;

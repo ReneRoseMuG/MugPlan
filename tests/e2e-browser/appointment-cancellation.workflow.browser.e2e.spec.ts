@@ -219,7 +219,6 @@ test("runs the browser cancellation flow from regular future appointment to canc
 
   await openReports(page);
   await page.getByTestId("reports-vorlaufliste-from-date").fill(appointmentDate);
-  await page.getByTestId("button-reports-vorlaufliste-show-to-date").click();
   await page.getByTestId("reports-vorlaufliste-to-date").fill(appointmentDate);
   await page.getByTestId("button-reports-vorlaufliste-generate").click();
 
@@ -229,20 +228,15 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(
     vorlauflisteTable.getByRole("row").filter({ hasText: customer.fullName ?? "" }).first(),
   ).toHaveAttribute("aria-label", "Storniert");
-  await expect(vorlauflisteTable).toContainText(/0,00\s*â‚¬/);
+  await expect(vorlauflisteTable).toContainText("0,00");
 
   await page.getByTestId("button-reports-back").click();
   await page.getByTestId("reports-produktionsplanung-from-date").fill(appointmentDate);
-  await page.getByTestId("button-reports-produktionsplanung-show-to-date").click();
   await page.getByTestId("reports-produktionsplanung-to-date").fill(appointmentDate);
   await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();
-  await expect(page.getByTestId("reports-produktionsplanung-products")).toContainText("Keine passenden Produkte gefunden.");
-  await expect(page.getByTestId("reports-produktionsplanung-components")).toContainText("Keine passenden Komponenten gefunden.");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Keine passenden Kategorien im gewählten Zeitraum gefunden.");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
 });
-
-
-

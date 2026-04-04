@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Report-Erzeugung bleibt ohne initiales Von-Datum im UI deaktiviert.
- * - Ein geleertes Bis-Datum wird beim Vorlauflisten-URL-Aufbau nicht weitergegeben.
+ * - Die Default-Range leitet Enddatum und KW-Reichweite aus dem letzten verfügbaren Projektermin ab.
+ * - Der URL-Aufbau der Reports bleibt beim optionalen toDate-Parameter technisch korrekt.
  * - Der Produktionsplanung-URL-Aufbau enthaelt nur noch Kategorien, Zeitraum und Shortcodes.
  *
  * Fehlerfaelle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
- * - Ein leeres Bis-Datum bleibt als Parameter im Folge-Request erhalten.
+ * - Datum Ende oder KW-Anzahl fallen trotz spaetem Projektermin auf den alten 5-Wochen-Default zurueck.
+ * - Der URL-Builder setzt einen toDate-Parameter trotz fehlendem Wert.
  * - Der Produktionsplanung-Request uebernimmt versehentlich entfernte Sonderblock-Parameter.
  *
  * Ziel:
@@ -132,6 +134,7 @@ import {
   buildProduktionsplanungReportUrl,
   buildVorlauflistePrintPreviewUrl,
   buildVorlauflisteReportUrl,
+  resolveDefaultReportRange,
 } from "../../../client/src/components/ReportsPage";
 
 describe("FT26 UI: ReportsPage behavior", () => {
@@ -147,6 +150,12 @@ describe("FT26 UI: ReportsPage behavior", () => {
     });
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
       const key = options.queryKey?.[0];
+      if (key === "reports-config-defaults") {
+        return {
+          data: { latestProjectAppointmentDate: "2026-10-05" },
+          isLoading: false,
+        };
+      }
       if (key === "/api/admin/master-data/product-categories?active=all") {
         return {
           data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
@@ -190,6 +199,22 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(html).toContain("button-reports-vorlaufliste-generate");
     expect(html).toContain("button-reports-produktionsplanung-generate");
     expect(html).toContain("disabled");
+  });
+
+  it("derives the date and kw defaults from the latest available project appointment week", () => {
+    const defaults = resolveDefaultReportRange("2026-04-03", "2026-10-05");
+
+    expect(defaults.fromDate).toBe("2026-04-06");
+    expect(defaults.toDate).toBe("2026-10-11");
+    expect(defaults.weekCount).toBe(28);
+  });
+
+  it("keeps the fallback default when no latest project appointment date is available", () => {
+    const defaults = resolveDefaultReportRange("2026-04-03", null);
+
+    expect(defaults.fromDate).toBe("2026-04-06");
+    expect(defaults.toDate).toBe("2026-05-08");
+    expect(defaults.weekCount).toBe(6);
   });
 
   it("omits toDate from the vorlaufliste URL when the field was cleared", () => {

@@ -128,6 +128,10 @@ export type ProduktionsplanungResult = {
   projectRows: ProduktionsplanungProjectRow[];
 };
 
+export type ReportConfigDefaults = {
+  latestProjectAppointmentDate: string | null;
+};
+
 type ReportArticleBuckets = Map<number, Set<string>>;
 
 type NormalizedProjectAppointmentRow = {
@@ -211,6 +215,21 @@ function buildAppointmentConditions(params: { fromDate: string; toDate?: string 
   }
 
   return appointmentConditions;
+}
+
+export async function getReportConfigDefaults(): Promise<ReportConfigDefaults> {
+  const [row] = await db
+    .select({
+      latestProjectAppointmentDate: sql<string>`coalesce(${appointments.endDate}, ${appointments.startDate})`,
+    })
+    .from(appointments)
+    .where(isNotNull(appointments.projectId))
+    .orderBy(sql`coalesce(${appointments.endDate}, ${appointments.startDate}) desc`, sql`${appointments.id} desc`)
+    .limit(1);
+
+  return {
+    latestProjectAppointmentDate: row?.latestProjectAppointmentDate ?? null,
+  };
 }
 
 function createEmptyProjectReportTagState(): ProjectReportTagState {

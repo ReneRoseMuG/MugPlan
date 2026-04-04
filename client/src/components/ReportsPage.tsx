@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { addDays, addWeeks, endOfISOWeek, format, getISOWeek, getISOWeekYear } from "date-fns";
+import { useRef } from "react";
+import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear } from "date-fns";
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowRight, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2, X } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
@@ -119,6 +120,10 @@ type ProduktionsplanungResponse = {
   productCategoryGroups: ProduktionsplanungCategoryGroup[];
   componentCategoryGroups: ProduktionsplanungCategoryGroup[];
   projectRows: ProduktionsplanungProjectRow[];
+};
+
+type ReportConfigDefaultsResponse = {
+  latestProjectAppointmentDate: string | null;
 };
 
 type ProduktionsplanungProjectRow = {
@@ -282,7 +287,7 @@ function resolveNextMonday(referenceDate: Date): Date {
   return nextMonday;
 }
 
-function resolveDefaultReportRange(todayBerlin: string): {
+export function resolveDefaultReportRange(todayBerlin: string, latestProjectAppointmentDate?: string | null): {
   fromDate: string;
   toDate: string;
   weekCount: number;
@@ -299,17 +304,26 @@ function resolveDefaultReportRange(todayBerlin: string): {
   }
 
   const nextMonday = resolveNextMonday(parsedToday);
-  const defaultEndDate = addDays(addWeeks(nextMonday, 4), 4);
+  const currentWeekStart = resolveKwJumpTarget(getISOWeek(parsedToday), parsedToday) ?? parsedToday;
+  const parsedLatestProjectAppointmentDate = parseDateOnlyInput(latestProjectAppointmentDate ?? "");
+  const fallbackEndDate = addDays(addWeeks(nextMonday, 4), 4);
+  const latestWeekEndDate = parsedLatestProjectAppointmentDate ? endOfISOWeek(parsedLatestProjectAppointmentDate) : null;
+  const defaultEndDate = latestWeekEndDate && latestWeekEndDate >= nextMonday ? latestWeekEndDate : fallbackEndDate;
+  const weekCount = Math.max(1, Math.ceil((differenceInCalendarDays(defaultEndDate, currentWeekStart) + 1) / 7));
   return {
     fromDate: formatDateOnlyInput(nextMonday),
     toDate: formatDateOnlyInput(defaultEndDate),
-    weekCount: 5,
-    referenceDate: nextMonday,
+    weekCount,
+    referenceDate: parsedToday,
   };
 }
 
 function normalizePersistedDate(value: string | undefined): string | undefined {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
+}
+
+function resolveRequiredToDate(value: string | undefined, fallback: string): string {
+  return normalizePersistedDate(value) ?? fallback;
 }
 
 function normalizeWeekCount(value: number | undefined): number {
@@ -641,7 +655,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   );
   const isAdmin = userRole === "ADMIN";
   const todayBerlin = getBerlinTodayDateString();
-  const defaultReportRange = useMemo(() => resolveDefaultReportRange(todayBerlin), [todayBerlin]);
+  const { data: reportConfigDefaults } = useQuery<ReportConfigDefaultsResponse>({
+    queryKey: ["reports-config-defaults"],
+    queryFn: () => fetchJson("/api/reports/defaults"),
+  });
+  const defaultReportRange = useMemo(
+    () => resolveDefaultReportRange(todayBerlin, reportConfigDefaults?.latestProjectAppointmentDate ?? null),
+    [reportConfigDefaults?.latestProjectAppointmentDate, todayBerlin],
+  );
   const defaultIsoWeek = useMemo(() => getISOWeek(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
   const defaultIsoWeekYear = useMemo(() => getISOWeekYear(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(defaultReportRange.fromDate);
@@ -723,8 +744,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
   const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
   const [useProduktionsplanungShortCodes, setUseProduktionsplanungShortCodes] = useState(false);
+  const hasHydratedVorlauflisteSelectionRef = useRef(false);
+  const hasHydratedProduktionsplanungSelectionRef = useRef(false);
 
   useEffect(() => {
+    if (hasHydratedVorlauflisteSelectionRef.current) {
+      return;
+    }
+    hasHydratedVorlauflisteSelectionRef.current = true;
     setUseVorlauflisteShortCodes(vorlauflisteSelection?.useShortCodes ?? false);
     setVorlauflisteColumnWidths(normalizeColumnWidths(vorlauflisteSelection?.columnWidths));
     setVorlauflisteColumnOrder(normalizeColumnIdList(vorlauflisteSelection?.columnOrder));
@@ -732,32 +759,31 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [vorlauflisteSelection]);
 
   useEffect(() => {
+    if (hasHydratedProduktionsplanungSelectionRef.current) {
+      return;
+    }
+    hasHydratedProduktionsplanungSelectionRef.current = true;
     setUseProduktionsplanungShortCodes(effectiveProduktionsplanungSelection?.useShortCodes ?? false);
   }, [effectiveProduktionsplanungSelection]);
 
   useEffect(() => {
     setActiveVorlauflisteTab(vorlauflisteRangeConfig?.activeTab ?? "date");
-    setVorlauflisteFromDate(vorlauflisteRangeConfig?.fromDate ?? defaultReportRange.fromDate);
-    setVorlauflisteToDate(vorlauflisteRangeConfig?.toDate ?? defaultReportRange.toDate);
-    setVorlauflisteKwStart(normalizeKwStart(vorlauflisteRangeConfig?.kwStart) ?? defaultIsoWeek);
-    setVorlauflisteWeekCount(
-      typeof vorlauflisteRangeConfig?.weekCount === "number"
-        ? normalizeWeekCount(vorlauflisteRangeConfig.weekCount)
-        : defaultReportRange.weekCount,
-    );
-  }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount, vorlauflisteRangeConfig]);
+  }, [vorlauflisteRangeConfig?.activeTab]);
 
   useEffect(() => {
     setActiveProduktionsplanungTab(produktionsplanungRangeConfig?.activeTab ?? "date");
-    setProduktionsplanungFromDate(produktionsplanungRangeConfig?.fromDate ?? defaultReportRange.fromDate);
-    setProduktionsplanungToDate(produktionsplanungRangeConfig?.toDate ?? defaultReportRange.toDate);
-    setProduktionsplanungKwStart(normalizeKwStart(produktionsplanungRangeConfig?.kwStart) ?? defaultIsoWeek);
-    setProduktionsplanungWeekCount(
-      typeof produktionsplanungRangeConfig?.weekCount === "number"
-        ? normalizeWeekCount(produktionsplanungRangeConfig.weekCount)
-        : defaultReportRange.weekCount,
-    );
-  }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount, produktionsplanungRangeConfig]);
+  }, [produktionsplanungRangeConfig?.activeTab]);
+
+  useEffect(() => {
+    setVorlauflisteFromDate(defaultReportRange.fromDate);
+    setVorlauflisteToDate(defaultReportRange.toDate);
+    setVorlauflisteKwStart(defaultIsoWeek);
+    setVorlauflisteWeekCount(defaultReportRange.weekCount);
+    setProduktionsplanungFromDate(defaultReportRange.fromDate);
+    setProduktionsplanungToDate(defaultReportRange.toDate);
+    setProduktionsplanungKwStart(defaultIsoWeek);
+    setProduktionsplanungWeekCount(defaultReportRange.weekCount);
+  }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
 
   const isProduktionsplanungCategoryLayoutConfigured = (categoryLayoutConfig?.length ?? 0) > 0;
   const activeProductCategoryIds = useMemo(
@@ -844,7 +870,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       value: {
         activeTab: next.activeTab ?? activeVorlauflisteTab,
         fromDate: normalizePersistedDate(next.fromDate ?? vorlauflisteFromDate),
-        toDate: normalizePersistedDate(next.toDate ?? vorlauflisteToDate),
+        toDate: resolveRequiredToDate(next.toDate ?? vorlauflisteToDate, defaultReportRange.toDate),
         kwStart: normalizeKwStart(next.kwStart ?? vorlauflisteKwStart),
         weekCount: normalizeWeekCount(next.weekCount ?? vorlauflisteWeekCount),
       },
@@ -858,7 +884,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       value: {
         activeTab: next.activeTab ?? activeProduktionsplanungTab,
         fromDate: normalizePersistedDate(next.fromDate ?? produktionsplanungFromDate),
-        toDate: normalizePersistedDate(next.toDate ?? produktionsplanungToDate),
+        toDate: resolveRequiredToDate(next.toDate ?? produktionsplanungToDate, defaultReportRange.toDate),
         kwStart: normalizeKwStart(next.kwStart ?? produktionsplanungKwStart),
         weekCount: normalizeWeekCount(next.weekCount ?? produktionsplanungWeekCount),
       },
@@ -1200,9 +1226,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       .filter((column): column is { id: string; label: string } => Boolean(column)),
     [resolvedVorlauflisteColumnOrder, vorlauflisteColumnById],
   );
-  const showVorlauflisteToDate = vorlauflisteToDate.trim().length > 0;
-  const showProduktionsplanungToDate = produktionsplanungToDate.trim().length > 0;
-
   const updateVorlauflisteColumnVisibility = (columnId: string, checked: boolean) => {
     const nextHiddenColumns = checked
       ? resolvedVorlauflisteHiddenColumns.filter((entry) => entry !== columnId)
@@ -1405,7 +1428,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 >
                   {activeVorlauflisteTab === "date" ? (
                     <div className="space-y-3" data-testid="reports-vorlaufliste-date-panel">
-                      <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
                         <div className="flex flex-col gap-1">
                           <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
                           <input
@@ -1420,55 +1443,24 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             data-testid="reports-vorlaufliste-from-date"
                           />
                         </div>
-                        {showVorlauflisteToDate ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="date"
-                                value={vorlauflisteToDate}
-                                onChange={(event) => {
-                                  const nextValue = event.target.value;
-                                  setVorlauflisteToDate(nextValue);
-                                  void persistVorlauflisteRangeConfig({ toDate: nextValue });
-                                }}
-                                className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                data-testid="reports-vorlaufliste-to-date"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setVorlauflisteToDate("");
-                                  void persistVorlauflisteRangeConfig({ toDate: "" });
-                                }}
-                                className="rounded p-1 text-slate-400 transition-colors hover:text-slate-600"
-                                data-testid="button-reports-vorlaufliste-clear-to-date"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextValue = vorlauflisteToDate || defaultReportRange.toDate;
-                                setVorlauflisteToDate(nextValue);
-                                void persistVorlauflisteRangeConfig({ toDate: nextValue });
-                              }}
-                              className="w-40 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-400 shadow-sm transition-colors hover:border-slate-400 hover:text-slate-600"
-                              data-testid="button-reports-vorlaufliste-show-to-date"
-                            >
-                              Anzeigen
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
+                          <input
+                            type="date"
+                            value={vorlauflisteToDate}
+                            onChange={(event) => {
+                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
+                              setVorlauflisteToDate(nextValue);
+                              void persistVorlauflisteRangeConfig({ toDate: nextValue });
+                            }}
+                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-testid="reports-vorlaufliste-to-date"
+                          />
+                        </div>
                       </div>
                       <RangeSummary
                         fromDate={vorlauflisteFromDate}
-                        toDate={showVorlauflisteToDate ? vorlauflisteToDate : vorlauflisteFromDate}
+                        toDate={vorlauflisteToDate}
                         testId="reports-vorlaufliste-date-summary"
                       />
                     </div>
@@ -1565,7 +1557,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 >
                   {activeProduktionsplanungTab === "date" ? (
                     <div className="space-y-3" data-testid="reports-produktionsplanung-date-panel">
-                      <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
                         <div className="flex flex-col gap-1">
                           <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
                           <input
@@ -1580,55 +1572,24 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                             data-testid="reports-produktionsplanung-from-date"
                           />
                         </div>
-                        {showProduktionsplanungToDate ? (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="date"
-                                value={produktionsplanungToDate}
-                                onChange={(event) => {
-                                  const nextValue = event.target.value;
-                                  setProduktionsplanungToDate(nextValue);
-                                  void persistProduktionsplanungRangeConfig({ toDate: nextValue });
-                                }}
-                                className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                data-testid="reports-produktionsplanung-to-date"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setProduktionsplanungToDate("");
-                                  void persistProduktionsplanungRangeConfig({ toDate: "" });
-                                }}
-                                className="rounded p-1 text-slate-400 transition-colors hover:text-slate-600"
-                                data-testid="button-reports-produktionsplanung-clear-to-date"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const nextValue = produktionsplanungToDate || defaultReportRange.toDate;
-                                setProduktionsplanungToDate(nextValue);
-                                void persistProduktionsplanungRangeConfig({ toDate: nextValue });
-                              }}
-                              className="w-40 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-2 text-left text-sm text-slate-400 shadow-sm transition-colors hover:border-slate-400 hover:text-slate-600"
-                              data-testid="button-reports-produktionsplanung-show-to-date"
-                            >
-                              Anzeigen
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
+                          <input
+                            type="date"
+                            value={produktionsplanungToDate}
+                            onChange={(event) => {
+                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
+                              setProduktionsplanungToDate(nextValue);
+                              void persistProduktionsplanungRangeConfig({ toDate: nextValue });
+                            }}
+                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-testid="reports-produktionsplanung-to-date"
+                          />
+                        </div>
                       </div>
                       <RangeSummary
                         fromDate={produktionsplanungFromDate}
-                        toDate={showProduktionsplanungToDate ? produktionsplanungToDate : produktionsplanungFromDate}
+                        toDate={produktionsplanungToDate}
                         testId="reports-produktionsplanung-date-summary"
                       />
                     </div>

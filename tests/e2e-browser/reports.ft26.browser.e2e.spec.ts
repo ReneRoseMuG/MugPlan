@@ -414,12 +414,15 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
   await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toBeChecked();
+  await expect(page.getByTestId("reports-vorlaufliste-to-date")).not.toHaveValue(inRangeDate);
+  await expect(page.getByTestId("reports-produktionsplanung-to-date")).toHaveValue(await page.getByTestId("reports-vorlaufliste-to-date").inputValue());
   await page.getByTestId("toggle-reports-vorlaufliste-calendarWeek").click();
-  await expect(page.getByTestId("input-reports-vorlaufliste-kw-start")).toHaveValue("14");
-  await expect(page.getByTestId("input-reports-vorlaufliste-week-count")).toHaveValue("2");
+  const resetVorlauflisteKwStart = await page.getByTestId("input-reports-vorlaufliste-kw-start").inputValue();
+  const resetVorlauflisteWeekCount = await page.getByTestId("input-reports-vorlaufliste-week-count").inputValue();
   await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
-  await expect(page.getByTestId("input-reports-produktionsplanung-kw-start")).toHaveValue("15");
-  await expect(page.getByTestId("input-reports-produktionsplanung-week-count")).toHaveValue("3");
+  await expect(page.getByTestId("input-reports-produktionsplanung-kw-start")).toHaveValue(resetVorlauflisteKwStart);
+  await expect(page.getByTestId("input-reports-produktionsplanung-week-count")).toHaveValue(resetVorlauflisteWeekCount);
+  expect(Number.parseInt(resetVorlauflisteWeekCount, 10)).toBeGreaterThan(2);
   await page.getByTestId("toggle-reports-vorlaufliste-date").click();
   await page.getByTestId("toggle-reports-produktionsplanung-date").click();
 

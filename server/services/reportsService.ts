@@ -18,6 +18,11 @@ function assertReportReadRole(roleKey: CanonicalRoleKey) {
   }
 }
 
+export async function getReportConfigDefaults(roleKey: CanonicalRoleKey) {
+  assertReportReadRole(roleKey);
+  return reportsRepository.getReportConfigDefaults();
+}
+
 export async function listVorlaufliste(
   params: {
     fromDate: string;

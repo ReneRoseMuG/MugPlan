@@ -1,4 +1,3 @@
-import { Calendar } from "lucide-react";
 import { getISOWeek } from "date-fns";
 
 const WEEKDAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"] as const;
@@ -57,8 +56,7 @@ export function RangeSummary({ fromDate, toDate, testId }: RangeSummaryProps) {
       className="flex items-center gap-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
       data-testid={testId}
     >
-      <div className="flex flex-1 items-center gap-1.5 px-3 py-2">
-        <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <div className="flex flex-1 items-center justify-start px-3 py-2 text-left">
         <span className="whitespace-nowrap text-xs font-semibold text-slate-700">{formatShortDate(fromDate)}</span>
       </div>
 
@@ -73,9 +71,8 @@ export function RangeSummary({ fromDate, toDate, testId }: RangeSummaryProps) {
         )}
       </div>
 
-      <div className="flex flex-1 items-center justify-end gap-1.5 px-3 py-2">
+      <div className="flex flex-1 items-center justify-start px-3 py-2 text-left">
         <span className="whitespace-nowrap text-xs font-semibold text-slate-700">{formatShortDate(toDate)}</span>
-        <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
       </div>
     </div>
   );

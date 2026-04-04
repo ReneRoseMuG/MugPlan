@@ -162,6 +162,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
     });
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
       const key = options.queryKey?.[0];
+      if (key === "reports-config-defaults") {
+        return {
+          data: { latestProjectAppointmentDate: "2026-10-05" },
+          isLoading: false,
+        };
+      }
       if (key === "/api/admin/master-data/product-categories?active=all") {
         return {
           data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
@@ -238,8 +244,18 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
     expect(html).toContain("button-reports-vorlaufliste-print-preview");
     expect(html).not.toContain("tab-reports-vorlaufliste-columns");
+    expect(html).not.toContain("button-reports-vorlaufliste-clear-to-date");
+    expect(html).not.toContain("button-reports-vorlaufliste-show-to-date");
+    expect(html).not.toContain("button-reports-produktionsplanung-clear-to-date");
+    expect(html).not.toContain("button-reports-produktionsplanung-show-to-date");
     expect(html).toContain("reports-vorlaufliste-config-panel");
     expect(html).toContain("reports-produktionsplanung-config-panel");
+  });
+
+  it("renders the latest appointment week sunday as default end date in both panels", () => {
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect((html.match(/value=\"2026-10-11\"/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("passes an indicator column to the table and no rowClassName callback", () => {
@@ -252,6 +268,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
   it("shows product and component category columns in the actual report table definition before report data exists", () => {
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
       const key = options.queryKey?.[0];
+      if (key === "reports-config-defaults") {
+        return {
+          data: { latestProjectAppointmentDate: "2026-10-05" },
+          isLoading: false,
+        };
+      }
       if (key === "/api/admin/master-data/product-categories?active=all") {
         return {
           data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],

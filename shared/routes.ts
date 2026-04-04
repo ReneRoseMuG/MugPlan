@@ -440,6 +440,10 @@ const reportProduktionsplanungResponseSchema = z.object({
   projectRows: z.array(reportProduktionsplanungProjectRowSchema),
 });
 
+const reportConfigDefaultsResponseSchema = z.object({
+  latestProjectAppointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+});
+
 const authenticatedResponseSchema = z.object({
   status: z.literal("authenticated"),
   userId: z.number().int().positive(),
@@ -3910,6 +3914,16 @@ export const api = {
     },
   },
   reports: {
+    defaults: {
+      get: {
+        method: "GET" as const,
+        path: "/api/reports/defaults",
+        responses: {
+          200: reportConfigDefaultsResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+        },
+      },
+    },
     vorlaufliste: {
       list: {
         method: "GET" as const,
