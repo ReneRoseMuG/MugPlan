@@ -60,15 +60,11 @@ function FooterSectionLabel({ children }: { children: React.ReactNode }) {
 function FooterCell({
   label,
   children,
-  borderRight = true,
-  borderTop = false,
   style,
   alignTop = false,
 }: {
   label?: React.ReactNode;
   children?: React.ReactNode;
-  borderRight?: boolean;
-  borderTop?: boolean;
   style?: React.CSSProperties;
   alignTop?: boolean;
 }) {
@@ -78,8 +74,6 @@ function FooterCell({
       className={[
         "flex min-h-[92px] flex-col gap-2 px-4 py-3",
         alignTop ? "justify-start" : "justify-center",
-        borderRight ? "border-r border-slate-200" : "",
-        borderTop ? "border-t border-slate-200" : "",
       ].join(" ")}
     >
       {label ? <FooterSectionLabel>{label}</FooterSectionLabel> : null}
@@ -351,7 +345,7 @@ export function CalendarFilterPanel({
             >
               <button
                 type="button"
-                className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
+                className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
                   conflictHighlightActive
                     ? "border-amber-300 bg-amber-50 text-amber-800"
                     : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
@@ -359,26 +353,29 @@ export function CalendarFilterPanel({
                 onClick={() => onConflictHighlightChange?.(!conflictHighlightActive)}
                 data-testid="button-conflict-highlight"
               >
-                <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
-                Hervorheben
-                {conflictHighlightActive ? (
-                  <span
-                    className="inline-flex items-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
-                    data-testid="badge-conflict-appointment-count"
-                  >
-                    {conflictAppointmentCount}
-                  </span>
-                ) : null}
+                <span className="inline-flex items-center gap-2">
+                  <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
+                  Hervorheben
+                </span>
+                <span
+                  className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                    conflictHighlightActive ? "bg-amber-500 text-white" : "invisible"
+                  }`}
+                  data-testid="badge-conflict-appointment-count"
+                  aria-hidden={conflictHighlightActive ? undefined : "true"}
+                >
+                  {conflictAppointmentCount}
+                </span>
               </button>
             </FooterCell>
           ) : (
-            <div className="border-r border-slate-200" style={{ gridColumn: 3, gridRow: 1 }} />
+            <div style={{ gridColumn: 3, gridRow: 1 }} />
           )}
 
           <div style={{ gridColumn: 4, gridRow: "1 / 3" }} />
 
           <div
-            className="grid border-l border-slate-200"
+            className="grid"
             style={{ gridColumn: 5, gridRow: "1 / 3", gridTemplateColumns: "auto auto", gridTemplateRows: "auto auto" }}
             data-testid="calendar-panel-print"
           >
@@ -386,7 +383,7 @@ export function CalendarFilterPanel({
               <FooterSectionLabel>Wochenplanung drucken</FooterSectionLabel>
             </div>
 
-            <div className="flex items-center border-b border-slate-200 px-4 pb-3 pt-2">
+            <div className="flex items-center px-4 pb-3 pt-2">
               <div className="min-w-[150px]">
                 <Label className="sr-only">Tour</Label>
                 <Select
@@ -409,7 +406,7 @@ export function CalendarFilterPanel({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 border-b border-slate-200 px-4 pb-3 pt-2">
+            <div className="flex items-center gap-2 px-4 pb-3 pt-2">
               <NumberSpinner
                 value={printWeekCount}
                 min={1}
@@ -459,7 +456,7 @@ export function CalendarFilterPanel({
             </div>
           </div>
 
-          <FooterCell label="Kalenderwoche" borderTop style={{ gridColumn: 1, gridRow: 2 }}>
+          <FooterCell label="Kalenderwoche" style={{ gridColumn: 1, gridRow: 2 }}>
             {showKwJumpControls ? (
               <div className="flex items-end gap-2">
                 <KwJumpSpinner
@@ -486,7 +483,7 @@ export function CalendarFilterPanel({
             ) : null}
           </FooterCell>
 
-          <FooterCell label="Touren" borderTop style={{ gridColumn: 2, gridRow: 2 }}>
+          <FooterCell label="Touren" style={{ gridColumn: 2, gridRow: 2 }}>
             <SegmentedButtons
               value={weekLanesCollapsed ? "collapsed" : "expanded"}
               onChange={(value) => onWeekLanesCollapsedChange?.(value === "collapsed")}
@@ -499,7 +496,6 @@ export function CalendarFilterPanel({
           </FooterCell>
 
           <div
-            className="border-r border-t border-slate-200"
             style={{ gridColumn: 3, gridRow: 2 }}
             data-testid="calendar-week-footer-conflict-placeholder"
           />
@@ -511,7 +507,7 @@ export function CalendarFilterPanel({
   const conflictControls = showConflictHighlightControls ? (
     <button
       type="button"
-      className={`inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
+      className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
         conflictHighlightActive
           ? "border-amber-300 bg-amber-50 text-amber-800"
           : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
@@ -519,16 +515,19 @@ export function CalendarFilterPanel({
       onClick={() => onConflictHighlightChange?.(!conflictHighlightActive)}
       data-testid="button-conflict-highlight"
     >
-      <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
-      Hervorheben
-      {conflictHighlightActive ? (
-        <span
-          className="inline-flex items-center rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
-          data-testid="badge-conflict-appointment-count"
-        >
-          {conflictAppointmentCount}
-        </span>
-      ) : null}
+      <span className="inline-flex items-center gap-2">
+        <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
+        Hervorheben
+      </span>
+      <span
+        className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+          conflictHighlightActive ? "bg-amber-500 text-white" : "invisible"
+        }`}
+        data-testid="badge-conflict-appointment-count"
+        aria-hidden={conflictHighlightActive ? undefined : "true"}
+      >
+        {conflictAppointmentCount}
+      </span>
     </button>
   ) : null;
 

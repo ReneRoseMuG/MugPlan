@@ -81,9 +81,11 @@ describe("CalendarFilterPanel - conflict highlight", () => {
     );
 
     expect(inactiveHtml).toContain("button-conflict-highlight");
-    expect(inactiveHtml).not.toContain("badge-conflict-appointment-count");
+    expect(inactiveHtml).toContain("badge-conflict-appointment-count");
+    expect(inactiveHtml).toContain("invisible");
     expect(activeHtml).toContain("badge-conflict-appointment-count");
     expect(activeHtml).toContain(">3<");
+    expect(activeHtml).not.toContain("invisible");
   });
 
   it("toggles the callback when the button is clicked", () => {
