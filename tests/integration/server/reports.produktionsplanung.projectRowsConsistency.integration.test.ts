@@ -2,12 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Projektliste des Produkt-Reports bildet die kanonische DB-Referenz fuer Termine im Zeitraum korrekt ab.
+ * - Die Projektkarten des Produkt-Reports bilden die kanonische DB-Referenz fuer kartentaugliche Projekte im Zeitraum korrekt ab.
+ * - Karten erscheinen nur fuer Projekte mit Sondermaß und/oder Anmerkungen.
  * - Reklamation und jeder Storno-Bezug schliessen Projekte aus dem zweiten Report vollstaendig aus.
  * - Termine ohne Projekt und Termine ausserhalb des Fensters erzeugen keine Projektzeilen.
  *
  * Fehlerfaelle:
  * - Der Report erfindet, verliert oder fehlfiltert Projekte in `projectRows`.
+ * - Projekte ohne Karten-Grund erscheinen faelschlich in der Kartenliste.
  * - Storno- oder Reklamationsprojekte bleiben trotz strenger Produkt-Report-Regel sichtbar.
  *
  * Ziel:
@@ -31,9 +33,13 @@ import {
   createTourFixture,
 } from "../../helpers/testDataFactory";
 import {
+  MANAGED_REMARKS_TAG_NAME,
   MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  isManagedRemarksTagName,
   isManagedReportExclusionTagName,
+  isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
 } from "../../../shared/appointmentCancellation";
 import { appointments, appointmentTags, projectTags, tags } from "../../../shared/schema";
@@ -113,6 +119,8 @@ describe("integration: produktionsplanung project rows consistency", () => {
     const admin = await loginAdminAgent(app);
     const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
     const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+    const specialMeasureTag = await ensureExactTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
     const tourA = await createTourFixture("#1d4ed8");
     const tourB = await createTourFixture("#0f766e");
 
@@ -120,11 +128,17 @@ describe("integration: produktionsplanung project rows consistency", () => {
       prefix: "FT32-CONS-A",
       appointmentDates: ["2030-06-03"],
       tourId: tourA.id,
+      projectTagIds: [specialMeasureTag.id],
     });
     const visibleB = await createStrictProjectFixture({
       prefix: "FT32-CONS-B",
       appointmentDates: ["2030-06-07"],
       tourId: tourB.id,
+      appointmentTagIdsByIndex: [[remarksTag.id]],
+    });
+    await createStrictProjectFixture({
+      prefix: "FT32-CONS-NO-REASON",
+      appointmentDates: ["2030-06-08"],
     });
     await createStrictProjectFixture({
       prefix: "FT32-CONS-CANCEL",
@@ -207,7 +221,11 @@ describe("integration: produktionsplanung project rows consistency", () => {
         .filter((row) => {
           const projectTagNames = projectTagNamesByProjectId.get(row.projectId) ?? [];
           const appointmentTagNames = appointmentTagNamesByAppointmentId.get(row.appointmentId) ?? [];
-          return ![...projectTagNames, ...appointmentTagNames].some((tagName) =>
+          const combinedTagNames = [...projectTagNames, ...appointmentTagNames];
+          const hasCardReason = combinedTagNames.some((tagName) =>
+            isManagedSpecialMeasureTagName(tagName) || isManagedRemarksTagName(tagName));
+
+          return hasCardReason && !combinedTagNames.some((tagName) =>
             isManagedReportExclusionTagName(tagName) || isReservedAppointmentCancellationTagName(tagName));
         })
         .map((row) => row.projectId),
@@ -222,5 +240,4 @@ describe("integration: produktionsplanung project rows consistency", () => {
     ]));
   });
 });
-
 
