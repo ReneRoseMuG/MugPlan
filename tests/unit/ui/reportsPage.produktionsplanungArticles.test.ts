@@ -2,45 +2,60 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Artikelliste im Produktionsplanung bleibt nach Kategorien gruppiert.
+ * - Die gemeinsame Produktionsplanung-Artikellogik gruppiert Werte stabil nach Kategorien.
+ * - Die Item-Ableitung erzeugt pro Einzelwert ein `label: value`-Paar fuer den Renderer.
  * - Produktkategorien bleiben vor Komponentenkategorien in der Ausgabe-Reihenfolge.
- * - Kommagetrennte Artikelwerte werden in einzelne sichtbare Zeilen aufgeteilt.
  *
  * Fehlerfaelle:
- * - Die Report-Zelle faellt auf einen einzigen Fliesstext pro Projekt zurueck.
+ * - Die gemeinsame Helper-Schicht faellt auf einen einzigen Fliesstext pro Projekt zurueck.
  * - Leere Kategorien erscheinen als sichtbare Leerbloecke.
- * - Die Reihenfolge zwischen Produkt- und Komponentenkategorien kippt.
+ * - Einzelwerte werden nicht mehr in rendererfaehige `label: value`-Paare ueberfuehrt.
  *
  * Ziel:
- * Die aufbereitete Artikellisten-Struktur fuer die Produktionsplanung-Tabelle isoliert regressionssicher absichern.
+ * Die entdoppelte Artikellisten-Logik fuer Produktionsplanungskarten und Drucklayout isoliert regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 
-import { buildProjectRowArticleGroups } from "../../../client/src/components/ReportsPage";
+import {
+  buildProjectRowArticleGroups,
+  buildProjectRowArticleItems,
+} from "../../../client/src/components/reports/produktionsplanungProjectCard.shared";
+
+const baseRow = {
+  projectId: 7,
+  customerId: 17,
+  appointmentId: 27,
+  projectName: "Projekt Test",
+  orderNumber: "ORD-007",
+  customerNumber: "C-007",
+  customerFullName: "Kunde Test",
+  actualDate: "2099-11-05",
+  durationDays: 2,
+  tourName: "Tour A",
+  employees: [],
+  customerNotesCount: 0,
+  projectNotesCount: 0,
+  appointmentNotesCount: 0,
+  notesCount: 0,
+  customerAttachmentsCount: 0,
+  projectAttachmentsCount: 0,
+  appointmentAttachmentsCount: 0,
+  attachmentsCount: 0,
+  tags: [],
+  reportCardReasonTags: [],
+  projectDescription: null,
+} as const;
 
 describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
   it("groups non-empty category values into highlighted row sections with one item per line", () => {
     const result = buildProjectRowArticleGroups(
       {
-        projectId: 7,
-        projectName: "Projekt Test",
-        orderNumber: "ORD-007",
-        customerNumber: "C-007",
-        customerFullName: "Kunde Test",
-        actualDate: "2099-11-05",
-        durationDays: 2,
-        tourName: "Tour A",
-        employees: [],
-        notesCount: 0,
-        attachmentsCount: 0,
-        tags: [],
-        reportCardReasonTags: [],
+        ...baseRow,
         articleValues: [
           { categoryId: 10, value: "Premium IV, Premium V" },
           { categoryId: 20, value: "HUUM UKU 4.1 Local" },
           { categoryId: 30, value: "   " },
         ],
-        projectDescription: null,
       },
       [
         { id: 10, name: "Fass Saunen" },
@@ -62,6 +77,29 @@ describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
       },
     ]);
   });
-});
 
+  it("maps grouped values into renderer-ready label-value items and skips empty categories", () => {
+    const result = buildProjectRowArticleItems(
+      {
+        ...baseRow,
+        articleValues: [
+          { categoryId: 10, value: "Premium IV, Premium V" },
+          { categoryId: 20, value: "HUUM UKU 4.1 Local" },
+          { categoryId: 30, value: null },
+        ],
+      },
+      [
+        { id: 10, name: "Fass Saunen" },
+        { id: 30, name: "Rueckwaende" },
+        { id: 20, name: "Steuerungen" },
+      ],
+    );
+
+    expect(result).toEqual([
+      { label: "Fass Saunen", value: "Premium IV" },
+      { label: "Fass Saunen", value: "Premium V" },
+      { label: "Steuerungen", value: "HUUM UKU 4.1 Local" },
+    ]);
+  });
+});
 

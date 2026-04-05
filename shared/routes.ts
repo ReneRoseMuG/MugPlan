@@ -413,6 +413,8 @@ const reportProduktionsplanungCategoryGroupSchema = z.object({
 
 const reportProduktionsplanungProjectRowSchema = z.object({
   projectId: z.number().int().positive(),
+  customerId: z.number().int().positive(),
+  appointmentId: z.number().int().positive(),
   projectName: z.string().min(1),
   orderNumber: z.string().nullable(),
   customerNumber: z.string().nullable(),
@@ -426,7 +428,13 @@ const reportProduktionsplanungProjectRowSchema = z.object({
       fullName: z.string().min(1),
     }),
   ),
+  customerNotesCount: z.number().int().min(0),
+  projectNotesCount: z.number().int().min(0),
+  appointmentNotesCount: z.number().int().min(0),
   notesCount: z.number().int().min(0),
+  customerAttachmentsCount: z.number().int().min(0),
+  projectAttachmentsCount: z.number().int().min(0),
+  appointmentAttachmentsCount: z.number().int().min(0),
   attachmentsCount: z.number().int().min(0),
   tags: z.array(tagSchema),
   reportCardReasonTags: z.array(tagSchema),
@@ -4154,3 +4162,6 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
+export type ReportProduktionsplanungCategoryGroup = z.infer<typeof reportProduktionsplanungCategoryGroupSchema>;
+export type ReportProduktionsplanungProjectRow = z.infer<typeof reportProduktionsplanungProjectRowSchema>;
+export type ReportProduktionsplanungResponse = z.infer<typeof reportProduktionsplanungResponseSchema>;

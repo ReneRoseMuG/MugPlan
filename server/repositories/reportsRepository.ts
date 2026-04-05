@@ -29,6 +29,8 @@ import {
   collectManagedReportCardReasonTags,
 } from "../lib/reportProduktionsplanung";
 import {
+  getCustomerAttachmentCountsByCustomerIds,
+  getCustomerNoteCountsByCustomerIds,
   getAppointmentAttachmentCountsByAppointmentIds,
   getAppointmentEmployeesByAppointmentIds,
   getAppointmentNoteCountsByAppointmentIds,
@@ -106,6 +108,8 @@ export type ReportEmployeeSummary = {
 
 export type ProduktionsplanungProjectRow = {
   projectId: number;
+  customerId: number;
+  appointmentId: number;
   orderNumber: string | null;
   customerNumber: string | null;
   customerFullName: string | null;
@@ -114,7 +118,13 @@ export type ProduktionsplanungProjectRow = {
   durationDays: number;
   tourName: string | null;
   employees: ReportEmployeeSummary[];
+  customerNotesCount: number;
+  projectNotesCount: number;
+  appointmentNotesCount: number;
   notesCount: number;
+  customerAttachmentsCount: number;
+  projectAttachmentsCount: number;
+  appointmentAttachmentsCount: number;
   attachmentsCount: number;
   tags: Tag[];
   reportCardReasonTags: Tag[];
@@ -683,17 +693,26 @@ export async function getProduktionsplanung(params: {
       .map((projectId) => projectMeta.appointmentMetaByProjectId.get(projectId)?.appointmentId)
       .filter((appointmentId): appointmentId is number => typeof appointmentId === "number" && Number.isInteger(appointmentId) && appointmentId > 0),
   ));
+  const customerIds = Array.from(new Set(
+    projectDetails
+      .map((row) => row.customer?.id)
+      .filter((customerId): customerId is number => typeof customerId === "number" && Number.isInteger(customerId) && customerId > 0),
+  ));
   const [
     representativeAppointmentEmployees,
     representativeAppointmentNoteCounts,
     representativeAppointmentAttachmentCounts,
+    customerNoteCountsByCustomerId,
     projectNoteCountsByProjectId,
+    customerAttachmentsCountByCustomerId,
     projectAttachmentsCountByProjectId,
   ] = await Promise.all([
     getAppointmentEmployeesByAppointmentIds(representativeAppointmentIds),
     getAppointmentNoteCountsByAppointmentIds(representativeAppointmentIds),
     getAppointmentAttachmentCountsByAppointmentIds(representativeAppointmentIds),
+    getCustomerNoteCountsByCustomerIds(customerIds),
     getProjectNoteCountsByProjectIds(eligibleProjectIds),
+    getCustomerAttachmentCountsByCustomerIds(customerIds),
     getProjectAttachmentCountsByProjectIds(eligibleProjectIds),
   ]);
 
@@ -790,15 +809,22 @@ export async function getProduktionsplanung(params: {
     .map((projectId) => {
       const projectDetail = projectDetailsById.get(projectId);
       const appointmentMeta = projectMeta.appointmentMetaByProjectId.get(projectId);
-      if (!projectDetail || !appointmentMeta) {
+      if (!projectDetail || !projectDetail.customer || !appointmentMeta) {
         return null;
       }
 
       const projectTags = projectMeta.tagsByProjectId.get(projectId) ?? [];
       const articleBuckets = articleBucketsByProjectId.get(projectId) ?? createEmptyBuckets();
       const appointmentEmployees = employeesByAppointmentId.get(appointmentMeta.appointmentId) ?? [];
-      const notesCount = (projectNoteCountsByProjectId.get(projectId) ?? 0) + (representativeAppointmentNoteCounts.get(appointmentMeta.appointmentId) ?? 0);
-      const attachmentsCount = (projectAttachmentsCountByProjectId.get(projectId) ?? 0) + (representativeAppointmentAttachmentCounts.get(appointmentMeta.appointmentId) ?? 0);
+      const customerId = projectDetail.customer.id;
+      const customerNotesCount = customerNoteCountsByCustomerId.get(customerId) ?? 0;
+      const projectNotesCount = projectNoteCountsByProjectId.get(projectId) ?? 0;
+      const appointmentNotesCount = representativeAppointmentNoteCounts.get(appointmentMeta.appointmentId) ?? 0;
+      const notesCount = customerNotesCount + projectNotesCount + appointmentNotesCount;
+      const customerAttachmentsCount = customerAttachmentsCountByCustomerId.get(customerId) ?? 0;
+      const projectAttachmentsCount = projectAttachmentsCountByProjectId.get(projectId) ?? 0;
+      const appointmentAttachmentsCount = representativeAppointmentAttachmentCounts.get(appointmentMeta.appointmentId) ?? 0;
+      const attachmentsCount = customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount;
       const reportCardReasonTags = collectManagedReportCardReasonTags({
         projectTags,
         appointmentTags: appointmentMeta.appointmentTags,
@@ -808,17 +834,25 @@ export async function getProduktionsplanung(params: {
         return null;
       }
 
-      return {
+      const row: ProduktionsplanungProjectRow = {
         projectId,
+        customerId,
+        appointmentId: appointmentMeta.appointmentId,
         projectName: projectDetail.project.name,
         orderNumber: projectDetail.order?.orderNumber ?? null,
-        customerNumber: projectDetail.customer?.customerNumber ?? null,
-        customerFullName: projectDetail.customer?.fullName ?? null,
+        customerNumber: projectDetail.customer.customerNumber ?? null,
+        customerFullName: projectDetail.customer.fullName ?? null,
         actualDate: appointmentMeta.actualDate,
         durationDays: appointmentMeta.durationDays,
         tourName: appointmentMeta.tourName,
         employees: appointmentEmployees,
+        customerNotesCount,
+        projectNotesCount,
+        appointmentNotesCount,
         notesCount,
+        customerAttachmentsCount,
+        projectAttachmentsCount,
+        appointmentAttachmentsCount,
         attachmentsCount,
         tags: Array.from(new Map(
           [...projectTags, ...appointmentMeta.appointmentTags].map((tag) => [tag.id, tag] as const),
@@ -830,6 +864,7 @@ export async function getProduktionsplanung(params: {
         })),
         projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
       };
+      return row;
     })
     .filter((entry): entry is ProduktionsplanungProjectRow => entry !== null)
     .sort((left, right) => left.actualDate.localeCompare(right.actualDate, "de") || left.projectId - right.projectId);

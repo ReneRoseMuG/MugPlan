@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import type { ReportProduktionsplanungResponse, ReportProduktionsplanungProjectRow } from "@shared/routes";
 import type { Tag } from "@shared/schema";
 
 import {
@@ -8,6 +9,11 @@ import {
   distributeSortedItemsIntoColumns,
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
+import {
+  buildProjectRowArticleItems,
+  type ProduktionsplanungArticleCategory,
+} from "@/components/reports/produktionsplanungProjectCard.shared";
+import { renderProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
 import { cn } from "@/lib/utils";
 
 type ProduktionsplanungItemTotal = {
@@ -21,34 +27,7 @@ type ProduktionsplanungCategoryGroup = {
   items: ProduktionsplanungItemTotal[];
 };
 
-type ProduktionsplanungProjectRow = {
-  projectId: number;
-  projectName: string;
-  orderNumber: string | null;
-  customerNumber: string | null;
-  customerFullName: string | null;
-  actualDate: string;
-  durationDays: number;
-  tourName: string | null;
-  employees: Array<{ id: number; fullName: string }>;
-  notesCount: number;
-  attachmentsCount: number;
-  tags: Tag[];
-  reportCardReasonTags: Tag[];
-  articleValues: Array<{ categoryId: number; value: string | null }>;
-  projectDescription: string | null;
-};
-
-type ProduktionsplanungResponse = {
-  productCategoryGroups: ProduktionsplanungCategoryGroup[];
-  componentCategoryGroups: ProduktionsplanungCategoryGroup[];
-  projectRows: ProduktionsplanungProjectRow[];
-};
-
-export type ProduktionsplanungPrintCategory = {
-  id: number;
-  name: string;
-};
+export type ProduktionsplanungPrintCategory = ProduktionsplanungArticleCategory;
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -64,32 +43,6 @@ function resolveValue(value: string | null): string {
 
 function formatDurationDays(value: number): string {
   return value === 1 ? "1 Tag" : `${value} Tage`;
-}
-
-function splitProjectRowArticleValue(value: string): string[] {
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-}
-
-function buildProjectRowArticleGroups(
-  row: ProduktionsplanungProjectRow,
-  categories: ProduktionsplanungPrintCategory[],
-): Array<{ categoryId: number; categoryName: string; items: string[] }> {
-  return categories
-    .map((category) => {
-      const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
-      if (!value || value.trim().length === 0) return null;
-      const items = splitProjectRowArticleValue(value);
-      if (items.length === 0) return null;
-      return {
-        categoryId: category.id,
-        categoryName: category.name,
-        items,
-      };
-    })
-    .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
 }
 
 function renderCategoryCard(group: ProduktionsplanungCategoryGroup) {
@@ -180,7 +133,7 @@ function PrintTagList({
   );
 }
 
-function PrintProjectCardFooter({ row }: { row: ProduktionsplanungProjectRow }) {
+function PrintProjectCardFooter({ row }: { row: ReportProduktionsplanungProjectRow }) {
   return (
     <div className="space-y-2 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
       <div className="flex flex-wrap items-center gap-2">
@@ -204,10 +157,15 @@ function PrintProjectCard({
   row,
   categories,
 }: {
-  row: ProduktionsplanungProjectRow;
+  row: ReportProduktionsplanungProjectRow;
   categories: ProduktionsplanungPrintCategory[];
 }) {
-  const articleGroups = buildProjectRowArticleGroups(row, categories);
+  const articleSection = renderProjectArticleListSection({
+    articleItems: buildProjectRowArticleItems(row, categories),
+    articleSectionClassName: "space-y-2",
+    articleListClassName: "list-disc space-y-0.5 pl-4 text-[10px] leading-snug text-slate-700",
+    testIdPrefix: `print-produktionsplanung-project-card-${row.projectId}`,
+  });
 
   return (
     <article
@@ -240,20 +198,7 @@ function PrintProjectCard({
       </div>
       <div className="space-y-3 px-4 py-4">
         <p className="whitespace-pre-wrap text-sm text-slate-800">{resolveValue(row.projectDescription)}</p>
-        {articleGroups.length > 0 ? (
-          <div className="space-y-2" data-testid={`print-produktionsplanung-project-card-${row.projectId}-articles`}>
-            {articleGroups.map((group) => (
-              <div key={`${row.projectId}-${group.categoryId}`} className="space-y-1">
-                <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-900">{group.categoryName}</div>
-                <div className="flex flex-wrap gap-2 text-sm text-slate-700">
-                  {group.items.map((item) => (
-                    <span key={`${row.projectId}-${group.categoryId}-${item}`}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
+        {articleSection}
       </div>
       <PrintProjectCardFooter row={row} />
     </article>
@@ -265,7 +210,7 @@ export function ProduktionsplanungPrintLayout({
   categories,
   layoutConfig,
 }: {
-  data: ProduktionsplanungResponse;
+  data: ReportProduktionsplanungResponse;
   categories: ProduktionsplanungPrintCategory[];
   layoutConfig: CategoryLayoutConfig;
 }) {

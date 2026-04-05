@@ -5,8 +5,10 @@ import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getI
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowRight, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2, X } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
+import type { ReportProduktionsplanungResponse } from "@shared/routes";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
+import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import {
@@ -20,10 +22,8 @@ import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { PrintSlimHeader } from "@/components/print/PrintSlimHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
@@ -106,43 +106,8 @@ type VorlauflistePrintPreviewResponse = {
   items: VorlauflisteItem[];
 };
 
-type ProduktionsplanungItemTotal = {
-  itemName: string;
-  totalQuantity: number;
-};
-
-type ProduktionsplanungCategoryGroup = {
-  categoryId: number;
-  categoryName: string;
-  items: ProduktionsplanungItemTotal[];
-};
-
-type ProduktionsplanungResponse = {
-  productCategoryGroups: ProduktionsplanungCategoryGroup[];
-  componentCategoryGroups: ProduktionsplanungCategoryGroup[];
-  projectRows: ProduktionsplanungProjectRow[];
-};
-
 type ReportConfigDefaultsResponse = {
   latestProjectAppointmentDate: string | null;
-};
-
-type ProduktionsplanungProjectRow = {
-  projectId: number;
-  projectName: string;
-  orderNumber: string | null;
-  customerNumber: string | null;
-  customerFullName: string | null;
-  actualDate: string;
-  durationDays: number;
-  tourName: string | null;
-  employees: Array<{ id: number; fullName: string }>;
-  notesCount: number;
-  attachmentsCount: number;
-  tags: Tag[];
-  reportCardReasonTags: Tag[];
-  articleValues: Array<{ categoryId: number; value: string | null }>;
-  projectDescription: string | null;
 };
 
 type ReportRangeTab = ReportConfigPanelMode;
@@ -265,10 +230,6 @@ function resolveValue(value: string | null): string {
   return value.trim();
 }
 
-function formatDurationDays(value: number): string {
-  return value === 1 ? "1 Tag" : `${value} Tage`;
-}
-
 function parseDateOnlyInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const parsed = new Date(`${value}T00:00:00`);
@@ -375,34 +336,8 @@ export function buildProduktionsplanungReportUrl(params: ProduktionsplanungReque
   return `/api/reports/produktionsplanung?${searchParams.toString()}`;
 }
 
-function splitProjectRowArticleValue(value: string): string[] {
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-}
-
-export function buildProjectRowArticleGroups(
-  row: ProduktionsplanungProjectRow,
-  categories: ProduktionsplanungPrintCategory[],
-): Array<{ categoryId: number; categoryName: string; items: string[] }> {
-  return categories
-    .map((category) => {
-      const value = row.articleValues.find((entry) => entry.categoryId === category.id)?.value ?? null;
-      if (!value || value.trim().length === 0) return null;
-      const items = splitProjectRowArticleValue(value);
-      if (items.length === 0) return null;
-      return {
-        categoryId: category.id,
-        categoryName: category.name,
-        items,
-      };
-    })
-    .filter((value): value is { categoryId: number; categoryName: string; items: string[] } => Boolean(value));
-}
-
 function renderGroupedCategoryList(
-  groups: ProduktionsplanungCategoryGroup[],
+  groups: ReportProduktionsplanungResponse["productCategoryGroups"],
   layoutConfig: CategoryLayoutConfig,
   emptyText: string,
   testIdPrefix: string,
@@ -515,103 +450,6 @@ function renderVorlauflistePrintCellContent(row: VorlauflisteItem, columnId: str
     <span className={VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME} data-testid={testId}>
       {resolveVorlauflistePrintCellValue(row, columnId)}
     </span>
-  );
-}
-
-function ReportProjectCardFooter({
-  employees,
-  notesCount,
-  attachmentsCount,
-  tags,
-  testIdPrefix,
-}: {
-  employees: Array<{ id: number; fullName: string }>;
-  notesCount: number;
-  attachmentsCount: number;
-  tags: Tag[];
-  testIdPrefix: string;
-}) {
-  return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span className="font-semibold text-foreground">Mitarbeiter:</span>
-        {employees.length > 0 ? employees.map((employee) => (
-          <Badge key={employee.id} variant="secondary" data-testid={`${testIdPrefix}-employee-${employee.id}`}>
-            {employee.fullName}
-          </Badge>
-        )) : (
-          <span data-testid={`${testIdPrefix}-employee-empty`}>-</span>
-        )}
-        <Badge variant="outline" data-testid={`${testIdPrefix}-notes-count`}>Notizen {notesCount}</Badge>
-        <Badge variant="outline" data-testid={`${testIdPrefix}-attachments-count`}>Anhänge {attachmentsCount}</Badge>
-      </div>
-      <EntityTagFooterRow tags={tags} testId={`${testIdPrefix}-tags`} />
-    </div>
-  );
-}
-
-function ReportProjectCard({
-  row,
-  categories,
-}: {
-  row: ProduktionsplanungProjectRow;
-  categories: ProduktionsplanungPrintCategory[];
-}) {
-  return (
-    <article
-      className="rounded-lg border border-border/60 bg-background/80 shadow-sm"
-      data-testid={`reports-produktionsplanung-project-card-${row.projectId}`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
-        <div className="space-y-1">
-          <div className="text-sm font-semibold text-foreground">{resolveValue(row.customerFullName)}</div>
-          <div className="text-xs text-muted-foreground">{resolveValue(row.customerNumber)}</div>
-        </div>
-        <div className="space-y-1 text-center">
-          <div className="text-sm font-semibold text-foreground">{resolveValue(row.orderNumber)}</div>
-          <div className="text-sm text-muted-foreground">{row.projectName}</div>
-          {row.reportCardReasonTags.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-1" data-testid={`reports-produktionsplanung-project-card-${row.projectId}-reasons`}>
-              {row.reportCardReasonTags.map((tag) => (
-                <Badge key={tag.id} variant="outline">{tag.name}</Badge>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <div className="space-y-1 text-right">
-          <div className="text-sm font-semibold text-foreground">{formatDate(row.actualDate)}</div>
-          <div className="text-xs text-muted-foreground">{formatDurationDays(row.durationDays)}</div>
-        </div>
-      </div>
-      <div className="space-y-3 px-4 py-4">
-        <p className="whitespace-pre-wrap text-sm text-foreground" data-testid={`reports-produktionsplanung-project-card-${row.projectId}-description`}>
-          {resolveValue(row.projectDescription)}
-        </p>
-        {categories.length > 0 ? (
-          <div className="space-y-2" data-testid={`reports-produktionsplanung-project-card-${row.projectId}-articles`}>
-            {buildProjectRowArticleGroups(row, categories).map((group) => (
-              <div key={`${row.projectId}-${group.categoryId}`} className="space-y-1">
-                <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-foreground">{group.categoryName}</div>
-                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                  {group.items.map((item) => (
-                    <span key={`${row.projectId}-${group.categoryId}-${item}`}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <div className="border-t border-border/60 bg-slate-50 px-4 py-3">
-        <ReportProjectCardFooter
-          employees={row.employees}
-          notesCount={row.notesCount}
-          attachmentsCount={row.attachmentsCount}
-          tags={row.tags}
-          testIdPrefix={`reports-produktionsplanung-project-card-${row.projectId}`}
-        />
-      </div>
-    </article>
   );
 }
 
@@ -891,7 +729,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     }), { cache: "no-store" }),
   });
 
-  const { data: produktionsplanungData, isLoading: isProduktionsplanungLoading } = useQuery<ProduktionsplanungResponse>({
+  const { data: produktionsplanungData, isLoading: isProduktionsplanungLoading } = useQuery<ReportProduktionsplanungResponse>({
     queryKey: ["reports-produktionsplanung", submittedFilters, reportRequestId],
     enabled: submittedFilters?.reportType === "produktionsplanung" && isReportOverlayOpen,
     queryFn: async () => {
@@ -1919,9 +1757,9 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                       <section className="rounded-md border border-border/60 bg-background/70 p-4" data-testid="reports-produktionsplanung-project-cards">
                         <h4 className="text-sm font-semibold">Projekte</h4>
                         {produktionsplanungData?.projectRows?.length ? (
-                          <div className="mt-3 grid gap-4 xl:grid-cols-2">
+                          <div className="mt-3 flex flex-col gap-4">
                             {(produktionsplanungData?.projectRows ?? []).map((row) => (
-                              <ReportProjectCard
+                              <ProduktionsplanungProjectCard
                                 key={row.projectId}
                                 row={row}
                                 categories={effectiveProduktionsplanungPrintCategories}
