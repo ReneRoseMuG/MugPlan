@@ -145,7 +145,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       city: fixture.customer.city,
       country: fixture.customer.country,
       notesCount: 1,
-      plannedAppointmentsCount: 1,
+      appointmentsCount: 1,
       attachmentsCount: 1,
     });
     expect(listItem.tags.map((tag: { id: number }) => tag.id).sort((a: number, b: number) => a - b)).toEqual(
@@ -246,7 +246,7 @@ describe("FT05+/FT03 integration: customer entity card payloads", () => {
       postalCode: "28203",
       country: "Luxemburg",
       notesCount: 2,
-      plannedAppointmentsCount: 2,
+      appointmentsCount: 2,
       attachmentsCount: 1,
     });
 

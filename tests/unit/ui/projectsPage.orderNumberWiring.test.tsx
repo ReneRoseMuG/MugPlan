@@ -183,7 +183,7 @@ describe("FT02 projects page order number wiring", () => {
                 projectArticleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
                 tags: [],
                 notesCount: 1,
-                plannedAppointmentsCount: 2,
+                appointmentsCount: 2,
                 nextAppointmentStartDate: "2099-07-10",
                 nextAppointmentStartTimeHour: 8,
                 customer: {
@@ -295,7 +295,7 @@ describe("FT02 projects page order number wiring", () => {
                 projectArticleItems: [],
                 tags: [],
                 notesCount: 0,
-                plannedAppointmentsCount: 0,
+                appointmentsCount: 0,
                 nextAppointmentStartDate: null,
                 nextAppointmentStartTimeHour: null,
                 customer: {

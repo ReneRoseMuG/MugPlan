@@ -51,6 +51,7 @@ import {
 } from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
+import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 import {
   buildVorlauflistePrintPages,
@@ -324,35 +325,6 @@ function normalizePersistedDate(value: string | undefined): string | undefined {
 
 function resolveRequiredToDate(value: string | undefined, fallback: string): string {
   return normalizePersistedDate(value) ?? fallback;
-}
-
-function normalizeWeekCount(value: number | undefined): number {
-  if (typeof value !== "number" || !Number.isInteger(value)) return 1;
-  return Math.max(1, Math.min(52, value));
-}
-
-function normalizeKwStart(value: number | undefined): number | undefined {
-  if (typeof value !== "number" || !Number.isInteger(value)) return undefined;
-  return Math.max(1, Math.min(53, value));
-}
-
-function resolveReportRangeFromKw(params: {
-  kwStart: number | undefined;
-  weekCount: number | undefined;
-  referenceDate: Date;
-}): { fromDate: string; toDate: string } | null {
-  const normalizedKwStart = normalizeKwStart(params.kwStart);
-  if (!normalizedKwStart) return null;
-
-  const startDate = resolveKwJumpTarget(normalizedKwStart, params.referenceDate);
-  if (!startDate) return null;
-
-  const weekCount = normalizeWeekCount(params.weekCount);
-  const endDate = endOfISOWeek(addWeeks(startDate, weekCount - 1));
-  return {
-    fromDate: format(startDate, "yyyy-MM-dd"),
-    toDate: format(endDate, "yyyy-MM-dd"),
-  };
 }
 
 function resolveVorlauflisteArticleValue(row: Pick<VorlauflisteItem, "articleValues">, categoryId: number): string | null {
@@ -1759,11 +1731,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           rowTitle={(row) => row.highlightTag?.name}
                           rowPreviewRenderer={(row) => (
                             <ProjectTableHoverPreview
-                              project={buildVorlauflistePreviewProject(
-                                row,
-                                vorlauflisteData?.productCategories ?? [],
-                                vorlauflisteData?.componentCategories ?? [],
-                              )}
+                              project={{
+                                ...buildVorlauflistePreviewProject(
+                                  row,
+                                  vorlauflisteData?.productCategories ?? [],
+                                  vorlauflisteData?.componentCategories ?? [],
+                                ),
+                                appointmentsCount: row.plannedAppointmentsCount,
+                              }}
                             />
                           )}
                           onColumnResize={updateVorlauflisteColumnWidth}

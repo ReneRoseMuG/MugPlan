@@ -145,7 +145,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
       orderNumber: fixture.project.orderNumber,
       descriptionMd: fixture.project.descriptionMd,
       notesCount: 1,
-      plannedAppointmentsCount: 1,
+      appointmentsCount: 1,
       attachmentsCount: 1,
       customer: {
         id: fixture.customer.id,
@@ -286,7 +286,7 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
       orderNumber: "PROJ-NEU-44",
       descriptionMd: "Projektbeschreibung Neu",
       notesCount: 2,
-      plannedAppointmentsCount: 2,
+      appointmentsCount: 2,
       attachmentsCount: 2,
       customer: {
         fullName: customerPatch.body.fullName,

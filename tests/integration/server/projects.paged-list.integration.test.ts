@@ -108,7 +108,7 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.total).toBe(1);
     expect(response.body.items).toHaveLength(1);
     expect(response.body.items[0]?.name).toBe("FT30 Target Project");
-    expect(response.body.items[0]?.plannedAppointmentsCount).toBe(1);
+    expect(response.body.items[0]?.appointmentsCount).toBe(1);
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
     expect(response.body.items[0]?.projectArticleItems).toEqual([
       { label: "Saunamodell", value: "FT30 Sauna Modell" },

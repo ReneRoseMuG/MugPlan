@@ -217,12 +217,12 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
   const employeeRows = useMemo(() => {
     return filteredEmployees.map((employee) => {
       const appointments = appointmentsByEmployeeId.get(employee.id) ?? [];
-      const plannedAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
+      const appointmentsCount = appointments.length;
       return {
         employee,
         team: getTeamName(employee.teamId),
         relevantAppointment: resolveRelevantAppointment(appointments, berlinToday),
-        plannedAppointmentsCount,
+        appointmentsCount,
       };
     });
   }, [filteredEmployees, appointmentsByEmployeeId, berlinToday, teams]);
@@ -321,9 +321,9 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
         cell: ({ row }) => <span>{formatAppointmentLabel(row.relevantAppointment)}</span>,
       },
       {
-        id: "plannedAppointmentsCount",
-        header: "Geplante Termine",
-        accessor: (row) => row.plannedAppointmentsCount,
+        id: "appointmentsCount",
+        header: "Alle Termine",
+        accessor: (row) => row.appointmentsCount,
         align: "center",
         width: 140,
       },
@@ -501,7 +501,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
             {filteredEmployees.map((employee) => {
               const teamInfo = getTeamName(employee.teamId);
               const appointments = appointmentsByEmployeeId.get(employee.id) ?? [];
-              const currentAppointmentsCount = appointments.filter((appointment) => appointment.startDate >= berlinToday).length;
+              const currentAppointmentsCount = appointments.length;
 
               return (
                 <EmployeeEntityCard
@@ -515,7 +515,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     notesCount: employee.notesCount ?? 0,
                     attachmentsCount: employee.attachmentsCount ?? 0,
                     tags: employee.tags ?? [],
-                    plannedAppointmentsCount: currentAppointmentsCount,
+                    appointmentsCount: currentAppointmentsCount,
                   }}
                   team={teamInfo ? { ...teamInfo, members: teamMembersById.get(teamInfo.id) ?? [] } : null}
                   tour={null}
@@ -561,7 +561,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
                     notesCount: row.employee.notesCount ?? 0,
                     attachmentsCount: row.employee.attachmentsCount ?? 0,
                     tags: row.employee.tags ?? [],
-                    plannedAppointmentsCount: row.plannedAppointmentsCount,
+                    appointmentsCount: row.appointmentsCount,
                   }}
                   team={row.team ? { ...row.team, members: teamMembersById.get(row.team.id) ?? [] } : null}
                   tour={null}

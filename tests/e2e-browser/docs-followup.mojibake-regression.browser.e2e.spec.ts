@@ -45,8 +45,8 @@ test("keeps changed calendar and project labels free of mojibake", async ({ page
   await loginAsAdmin(page);
 
   await expect(page.getByText("Wochenplanung drucken")).toBeVisible();
-  await expect(page.getByText("Anzahl Wochen")).toBeVisible();
-  await expect(page.getByText("Start diese Woche")).toBeVisible();
+  await expect(page.getByTestId("input-tour-print-week-count")).toBeVisible();
+  await expect(page.getByText("Nächste Woche")).toBeVisible();
 
   await page.getByTestId("nav-projekte").click();
   await expect(page.getByText("Kunde Nr.")).toBeVisible();

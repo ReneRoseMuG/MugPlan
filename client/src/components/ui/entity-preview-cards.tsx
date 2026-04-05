@@ -46,7 +46,7 @@ type ProjectEntityCardProps = {
     descriptionMd: string | null;
     isActive?: boolean;
     notesCount: number;
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     attachmentsCount: number;
     tags: Tag[];
     customer: {
@@ -96,7 +96,7 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
           badges={(
             <>
               <EntityAppointmentsHoverPreview
-                source={{ type: "project", id: project.id, count: project.plannedAppointmentsCount }}
+                source={{ type: "project", id: project.id, count: project.appointmentsCount }}
                 triggerTestId={testIds?.appointments ?? `text-project-planned-appointments-${project.id}`}
               />
               <EntityNotesHoverPreview
@@ -198,7 +198,7 @@ type CustomerEntityCardProps = {
     phone?: string | null;
     email?: string | null;
     notesCount: number;
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     attachmentsCount: number;
     tags: Tag[];
   };
@@ -230,7 +230,7 @@ export function CustomerEntityCard({ customer, className, onDoubleClick, testIds
           badges={(
             <>
               <EntityAppointmentsHoverPreview
-                source={{ type: "customer", id: customer.id, count: customer.plannedAppointmentsCount }}
+                source={{ type: "customer", id: customer.id, count: customer.appointmentsCount }}
                 triggerTestId={testIds?.appointments ?? `text-customer-planned-appointments-${customer.id}`}
               />
               <EntityNotesHoverPreview
@@ -279,7 +279,7 @@ type EmployeeEntityCardProps = {
     notesCount: number;
     attachmentsCount: number;
     tags: Tag[];
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
   };
   team?: {
     id: number;
@@ -331,7 +331,7 @@ export function EmployeeEntityCard({
           badges={(
             <>
               <EntityAppointmentsHoverPreview
-                source={{ type: "employee", id: employee.id, count: employee.plannedAppointmentsCount }}
+                source={{ type: "employee", id: employee.id, count: employee.appointmentsCount }}
                 triggerTestId={testIds?.appointments ?? `text-employee-current-appointments-${employee.id}`}
               />
               <EntityNotesHoverPreview

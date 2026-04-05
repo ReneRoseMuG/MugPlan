@@ -22,7 +22,7 @@ type LinkedProjectListItem = {
   isActive: boolean;
   version: number;
   notesCount: number;
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   projectArticleItems: ProjectArticleItem[];

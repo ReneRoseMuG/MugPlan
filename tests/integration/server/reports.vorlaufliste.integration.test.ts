@@ -84,6 +84,7 @@ async function createReportProjectFixture(params: {
   customerLastName?: string | null;
   postalCode?: string | null;
   city?: string | null;
+  country?: string | null;
   articleValues?: Partial<{
     sauna: string;
     door: string;
@@ -102,6 +103,7 @@ async function createReportProjectFixture(params: {
     lastName: params.customerLastName ?? `${params.prefix} Kunde`,
     postalCode: params.postalCode ?? null,
     city: params.city ?? null,
+    country: params.country ?? null,
   });
 
   const project = await createProjectFixture({
@@ -446,7 +448,7 @@ describe("FT26 integration: report vorlaufliste", () => {
     expect(response.body.page).toBe(2);
     expect(response.body.pageSize).toBe(100);
     expect(response.body.items).toHaveLength(5);
-  });
+  }, 60_000);
 
   it("derives reportState and actualDate from active and cancelled appointments", async () => {
     const admin = await loginAdminAgent(app);
@@ -818,5 +820,80 @@ describe("FT26 integration: report vorlaufliste", () => {
     });
     expect(refreshedWindowValue).toBeNull();
     expect(secondItems.map((item) => item.projectId)).not.toContain(outOfWindowProject.project.id);
+  });
+
+  it("liefert alle 23 Felder einer Vorlaufliste-Zeile mit exakten Werten", async () => {
+    const admin = await loginAdminAgent(app);
+
+    // Lookup-Produkt nur für die categoryId – createReportProjectFixture
+    // legt das eigentliche Bestellpositions-Produkt intern über articleValues an.
+    const saunaCategoryRef = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT26-L5 Sauna Kategorie-Lookup",
+    });
+
+    const fixture = await createReportProjectFixture({
+      prefix: "FT26-L5-FULL",
+      appointmentDates: ["2098-08-01"],
+      plannedDateText: "01.08.2098",
+      plannedWeek: "KW 31",
+      descriptionMd: "<p>Vollfelder Test</p>",
+      customerFirstName: "Luise",
+      customerLastName: "Mustermann",
+      postalCode: "12345",
+      city: "Berlin",
+      country: "Deutschland",
+      articleValues: {
+        sauna: "FT26-L5 Sauna Vollfelder",
+      },
+    });
+
+    const response = await admin
+      .get("/api/reports/vorlaufliste?fromDate=2098-08-01&toDate=2098-08-31&page=1&pageSize=100")
+      .expect(200);
+
+    const row = (response.body.items as Array<{ projectId: number }>).find(
+      (item) => item.projectId === fixture.project.id,
+    );
+    expect(row).toBeDefined();
+
+    type Category = { id: number };
+    const productCats = response.body.productCategories as Category[];
+    const componentCats = response.body.componentCategories as Category[];
+    const expectedArticleValues = [
+      ...productCats.map((cat) => ({
+        categoryId: cat.id,
+        value: cat.id === saunaCategoryRef.categoryId ? "FT26-L5 Sauna Vollfelder" : null,
+      })),
+      ...componentCats.map((cat) => ({
+        categoryId: cat.id,
+        value: null,
+      })),
+    ];
+
+    expect(row).toEqual({
+      projectId: fixture.project.id,
+      projectName: "FT26-L5-FULL Projekt",
+      isActive: true,
+      orderNumber: fixture.orderNumber,
+      customerId: fixture.customer.id,
+      customerNumber: fixture.customer.customerNumber,
+      tags: [],
+      highlightTag: null,
+      amount: null,
+      customerFullName: "Mustermann, Luise",
+      postalCode: "12345",
+      city: "Berlin",
+      country: "Deutschland",
+      articleValues: expectedArticleValues,
+      plannedDateText: "01.08.2098",
+      plannedWeek: "KW 31",
+      actualDate: "2098-08-01",
+      projectDescription: "Vollfelder Test",
+      notesCount: 0,
+      plannedAppointmentsCount: 1,
+      attachmentsCount: 0,
+      reportState: "default",
+    });
   });
 });

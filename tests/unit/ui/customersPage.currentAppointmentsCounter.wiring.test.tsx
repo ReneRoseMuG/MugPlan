@@ -167,7 +167,7 @@ describe("FT05+ customers page footer badge wiring", () => {
                 version: 3,
                 tags: [],
                 notesCount,
-                plannedAppointmentsCount: 4,
+                appointmentsCount: 4,
                 nextAppointmentStartDate: "2099-05-20",
                 nextAppointmentStartTimeHour: 9,
                 nextAppointmentId: 70,

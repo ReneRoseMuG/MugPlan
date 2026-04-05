@@ -8,7 +8,7 @@ import type { Tag } from "@shared/schema";
 type LinkedProjectCardProject = {
   id: number;
   notesCount: number;
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   attachmentsCount: number;
   name: string;
   orderNumber: string | null;

@@ -246,7 +246,7 @@ export type ProjectBoardListItem = ProjectListItem & {
     phone: string | null;
     email: string | null;
   };
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   attachmentsCount: number;
@@ -407,10 +407,7 @@ export async function getProjectsPaged(params: {
       id: appointments.id,
     })
     .from(appointments)
-    .where(and(
-      inArray(appointments.projectId, projectIds),
-      gte(appointments.startDate, getBerlinTodayDate()),
-    ))
+    .where(inArray(appointments.projectId, projectIds))
     .orderBy(
       asc(appointments.projectId),
       asc(appointments.startDate),
@@ -433,7 +430,7 @@ export async function getProjectsPaged(params: {
 
   const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
   const appointmentSummaryByProjectId = new Map<number, {
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
   }>();
@@ -442,13 +439,13 @@ export async function getProjectsPaged(params: {
     const current = appointmentSummaryByProjectId.get(row.projectId);
     if (!current) {
       appointmentSummaryByProjectId.set(row.projectId, {
-        plannedAppointmentsCount: 1,
+        appointmentsCount: 1,
         nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
         nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
       });
       continue;
     }
-    current.plannedAppointmentsCount += 1;
+    current.appointmentsCount += 1;
   }
 
   return {
@@ -458,7 +455,7 @@ export async function getProjectsPaged(params: {
       return {
         ...mergedProject,
         notesCount: notesCountByProjectId.get(row.project.id) ?? 0,
-        plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
+        appointmentsCount: appointmentSummary?.appointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
         projectArticleItems: projectArticleItemsByProject.get(row.project.id) ?? [],

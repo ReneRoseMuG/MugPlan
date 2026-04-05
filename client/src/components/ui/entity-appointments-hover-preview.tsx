@@ -5,7 +5,7 @@ import { AllAppointmentsPanel, type AllAppointmentsPanelItem } from "@/component
 import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
-import { sortAppointmentsByDateAsc } from "@/lib/entity-appointments";
+import { sortAppointmentsByDateDesc } from "@/lib/entity-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 
 type AppointmentSourceType = "customer" | "project" | "employee";
@@ -24,14 +24,13 @@ interface EntityAppointmentsHoverPreviewProps {
 }
 
 function resolveEndpoint(type: AppointmentSourceType, id: number): string {
-  const todayBerlin = getBerlinTodayDateString();
   if (type === "customer") {
-    return `/api/customers/${id}/appointments?scope=upcoming&fromDate=${todayBerlin}`;
+    return `/api/customers/${id}/appointments?scope=all`;
   }
   if (type === "employee") {
-    return `/api/employees/${id}/appointments?scope=upcoming&fromDate=${todayBerlin}`;
+    return `/api/employees/${id}/appointments?scope=all`;
   }
-  return `/api/projects/${id}/appointments?fromDate=${todayBerlin}`;
+  return `/api/projects/${id}/appointments?fromDate=1900-01-01`;
 }
 
 function mapAppointmentItem(
@@ -78,13 +77,13 @@ export function EntityAppointmentsHoverPreview({
   const items = useMemo(
     () =>
       [...(appointmentsQuery.data ?? [])]
-        .sort(sortAppointmentsByDateAsc)
+        .sort(sortAppointmentsByDateDesc)
         .slice(0, 4)
         .map((row) => mapAppointmentItem(source.type, row)),
     [appointmentsQuery.data, source.type],
   );
   const totalLoadedAppointments = appointmentsQuery.data?.length ?? 0;
-  const footerHint = source.type === "employee" && totalLoadedAppointments > 4
+  const footerHint = totalLoadedAppointments > 4
     ? "... weitere im Formular"
     : undefined;
 

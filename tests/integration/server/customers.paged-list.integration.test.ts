@@ -78,7 +78,7 @@ describe("FT30 integration: paged customers list", () => {
     expect(response.body.total).toBe(1);
     expect(response.body.items).toHaveLength(1);
     expect(response.body.items[0]?.customerNumber).toBe(customer.customerNumber);
-    expect(response.body.items[0]?.plannedAppointmentsCount).toBe(1);
+    expect(response.body.items[0]?.appointmentsCount).toBe(1);
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-11-10");
   });
 

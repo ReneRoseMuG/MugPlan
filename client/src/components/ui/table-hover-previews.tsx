@@ -14,7 +14,7 @@ export function ProjectTableHoverPreview({
     descriptionMd: string | null;
     isActive?: boolean;
     notesCount: number;
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     attachmentsCount: number;
     tags: Tag[];
     customer: {
@@ -50,7 +50,7 @@ export function CustomerTableHoverPreview({
     phone?: string | null;
     email?: string | null;
     notesCount: number;
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     attachmentsCount: number;
     tags: Tag[];
   };
@@ -74,7 +74,7 @@ export function EmployeeTableHoverPreview({
     notesCount: number;
     attachmentsCount: number;
     tags: Tag[];
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
   };
   team?: {
     id: number;

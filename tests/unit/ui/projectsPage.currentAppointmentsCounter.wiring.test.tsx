@@ -196,7 +196,7 @@ describe("FT02 projects page footer badge wiring", () => {
                 projectArticleItems: overrides.projectArticleItems ?? [],
                 tags: [],
                 notesCount,
-                plannedAppointmentsCount: 6,
+                appointmentsCount: 6,
                 nextAppointmentStartDate: "2099-06-01",
                 nextAppointmentStartTimeHour: 10,
                 attachmentsCount: 3,

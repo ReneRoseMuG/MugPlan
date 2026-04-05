@@ -2,18 +2,18 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Das Termine-Hover-Preview lädt nur aktuelle/geplante Termine ab heute.
- * - Kunden und Mitarbeiter nutzen `scope=upcoming`, Projekte `fromDate=today`.
- * - Die Vorschau sortiert aufsteigend und begrenzt die Anzeige auf vier Termine.
- * - Der Panel-Titel lautet "Geplante Termine".
+ * - Das Termine-Hover-Preview lädt alle Termine (vergangen und zukünftig).
+ * - Kunden und Mitarbeiter nutzen `scope=all`, Projekte `fromDate=1900-01-01`.
+ * - Die Vorschau sortiert absteigend (neueste zuerst) und begrenzt die Anzeige auf vier Termine.
+ * - footerHint "... weitere im Formular" erscheint für alle Entity-Typen bei mehr als vier Terminen.
  *
  * Fehlerfälle:
- * - Das Preview lädt weiterhin historische oder ungefilterte Terminmengen.
- * - Die Liste bleibt absteigend sortiert oder wächst über vier Einträge hinaus.
- * - Der Titel fällt auf den alten Wortlaut zurück.
+ * - Das Preview filtert vergangene Termine heraus (Regression der neuen Sichtbarkeitsregel).
+ * - Die Liste sortiert aufsteigend statt absteigend.
+ * - footerHint fehlt oder erscheint nur bei bestimmten Entity-Typen.
  *
  * Ziel:
- * Den neuen Lade- und Anzeigevertrag des Footer-Termine-Previews regressionssicher absichern.
+ * Den aktuellen Lade- und Anzeigevertrag des Termine-Previews regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -67,7 +67,7 @@ describe("FT03 UI: EntityAppointmentsHoverPreview behavior", () => {
     useQueryMock.mockReset();
   });
 
-  it("requests upcoming customer appointments from today onward", async () => {
+  it("requests all customer appointments (scope=all)", async () => {
     let capturedOptions: QueryOptions | undefined;
     useQueryMock.mockImplementation((options: QueryOptions) => {
       capturedOptions = options;
@@ -83,13 +83,13 @@ describe("FT03 UI: EntityAppointmentsHoverPreview behavior", () => {
     vi.stubGlobal("fetch", fetchMock);
     await capturedOptions?.queryFn();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/customers/7/appointments?scope=upcoming&fromDate=2026-03-29",
+      "/api/customers/7/appointments?scope=all",
       { credentials: "include" },
     );
     vi.unstubAllGlobals();
   });
 
-  it("requests upcoming employee appointments from today onward", async () => {
+  it("requests all employee appointments (scope=all)", async () => {
     let capturedOptions: QueryOptions | undefined;
     useQueryMock.mockImplementation((options: QueryOptions) => {
       capturedOptions = options;
@@ -104,13 +104,13 @@ describe("FT03 UI: EntityAppointmentsHoverPreview behavior", () => {
     vi.stubGlobal("fetch", fetchMock);
     await capturedOptions?.queryFn();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/employees/8/appointments?scope=upcoming&fromDate=2026-03-29",
+      "/api/employees/8/appointments?scope=all",
       { credentials: "include" },
     );
     vi.unstubAllGlobals();
   });
 
-  it("requests project appointments from today onward, sorts ascending and limits the preview to four items", () => {
+  it("requests all project appointments (fromDate=1900-01-01), sorts descending and limits the preview to four items", () => {
     useQueryMock.mockImplementation(() => ({
       data: [
         { id: 4, startDate: "2026-04-02", startTimeHour: 12, customer: { fullName: "D" }, projectName: "P" },
@@ -129,10 +129,11 @@ describe("FT03 UI: EntityAppointmentsHoverPreview behavior", () => {
     expect(panelCalls[0]?.title).toBe("Termine");
     expect(panelCalls[0]?.totalCount).toBe(5);
     const items = panelCalls[0]?.items as Array<{ id: number }>;
-    expect(items.map((item) => item.id)).toEqual([1, 2, 3, 4]);
+    // absteigend: 5 (2026-04-03), 4 (2026-04-02), 3 (2026-04-01), 4 would be cut — top 4 descending
+    expect(items.map((item) => item.id)).toEqual([5, 4, 3, 2]);
   });
 
-  it("shows the employee overflow hint below the fourth appointment when more entries exist", () => {
+  it("shows the overflow hint for all entity types when more than four appointments exist", () => {
     useQueryMock.mockImplementation(() => ({
       data: [
         { id: 1, startDate: "2026-03-29", startTimeHour: 8, customer: { fullName: "A" }, projectName: "P" },
@@ -145,13 +146,14 @@ describe("FT03 UI: EntityAppointmentsHoverPreview behavior", () => {
     }));
 
     renderToStaticMarkup(
-      <EntityAppointmentsHoverPreview source={{ type: "employee", id: 3, count: 5 }} />,
+      <EntityAppointmentsHoverPreview source={{ type: "customer", id: 3, count: 5 }} />,
     );
 
     expect(panelCalls[0]?.title).toBe("Termine");
     expect(panelCalls[0]?.totalCount).toBe(5);
     expect(panelCalls[0]?.footerHint).toBe("... weitere im Formular");
     const items = panelCalls[0]?.items as Array<{ id: number }>;
-    expect(items.map((item) => item.id)).toEqual([1, 2, 3, 4]);
+    // absteigend: 5,4,3,2 — top 4
+    expect(items.map((item) => item.id)).toEqual([5, 4, 3, 2]);
   });
 });

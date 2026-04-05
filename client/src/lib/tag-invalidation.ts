@@ -17,7 +17,8 @@ export async function invalidateTagProjectionQueries(): Promise<void> {
         || firstKey === "entityAppointments"
         || firstKey === "projectAppointments"
         || firstKey === "tourPrintPreview"
-        || firstKey === "tour-management-appointments-count";
+        || firstKey === "tour-management-appointments-count"
+        || firstKey === "/api/entity-appointments-preview";
     },
   });
   await queryClient.invalidateQueries({

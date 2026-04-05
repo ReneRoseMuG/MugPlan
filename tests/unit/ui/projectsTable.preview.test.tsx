@@ -166,7 +166,7 @@ describe("FT03 projects table preview wiring", () => {
                 projectArticleItems: [{ label: "Saunamodell", value: "Modell Table" }],
                 tags: [{ id: 3, name: "Tag A", color: "#123456", isDefault: false, version: 1 }],
                 notesCount: 5,
-                plannedAppointmentsCount: 1,
+                appointmentsCount: 1,
                 nextAppointmentStartDate: "2099-08-09",
                 nextAppointmentStartTimeHour: 14,
                 attachmentsCount: 2,

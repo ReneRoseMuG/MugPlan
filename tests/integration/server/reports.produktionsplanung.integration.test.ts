@@ -399,4 +399,62 @@ describe("FT26 integration: report produktionsplanung", () => {
         expect(body.code).toBe("FORBIDDEN");
       });
   });
+
+  it("fuegt Artikel mit identischem Shortcode bei useShortCodes=true zusammen und trennt sie bei false", async () => {
+    const admin = await loginAdminAgent(app);
+    const sondermaßTag = await ensureManagedSpecialMeasureTag();
+
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-SC-MERGE-A",
+      appointmentDates: [{ startDate: "2098-06-10" }],
+      appointmentTagsByIndex: [[sondermaßTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Alpha", quantity: 2, shortCode: "SC-MERGE" }],
+    });
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-SC-MERGE-B",
+      appointmentDates: [{ startDate: "2098-06-11" }],
+      appointmentTagsByIndex: [[sondermaßTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Beta", quantity: 3, shortCode: "SC-MERGE" }],
+    });
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-SC-MERGE-C",
+      appointmentDates: [{ startDate: "2098-06-12" }],
+      appointmentTagsByIndex: [[sondermaßTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Gamma", quantity: 1 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup SC-Merge Sauna" })).categoryId;
+
+    type CategoryGroup = {
+      categoryId: number;
+      categoryName: string;
+      items: Array<{ itemName: string; totalQuantity: number }>;
+    };
+
+    const responseWithSC = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2098-06-01&toDate=2098-06-30&productCategoryIds=${saunaCategoryId}&useShortCodes=true`)
+      .expect(200);
+
+    const withSCGroups = responseWithSC.body.productCategoryGroups as CategoryGroup[];
+    expect(withSCGroups).toHaveLength(1);
+    expect(withSCGroups[0]?.categoryId).toBe(saunaCategoryId);
+
+    const withSCItems = withSCGroups[0]!.items;
+    expect(withSCItems).toHaveLength(2);
+    expect(withSCItems).toContainEqual({ itemName: "SC-MERGE", totalQuantity: 5 });
+    expect(withSCItems).toContainEqual({ itemName: "Sauna Gamma", totalQuantity: 1 });
+
+    const responseNoSC = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2098-06-01&toDate=2098-06-30&productCategoryIds=${saunaCategoryId}&useShortCodes=false`)
+      .expect(200);
+
+    const noSCGroups = responseNoSC.body.productCategoryGroups as CategoryGroup[];
+    expect(noSCGroups).toHaveLength(1);
+
+    const noSCItems = noSCGroups[0]!.items;
+    expect(noSCItems).toHaveLength(3);
+    expect(noSCItems).toContainEqual({ itemName: "Sauna Alpha", totalQuantity: 2 });
+    expect(noSCItems).toContainEqual({ itemName: "Sauna Beta", totalQuantity: 3 });
+    expect(noSCItems).toContainEqual({ itemName: "Sauna Gamma", totalQuantity: 1 });
+  });
 });

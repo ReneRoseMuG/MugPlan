@@ -25,7 +25,7 @@ type CustomerSortKey = "customerNumber" | "lastName" | "firstName" | "relevantAp
 
 type CustomerListItem = Customer & {
   notesCount: number;
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   nextAppointmentId: number | null;

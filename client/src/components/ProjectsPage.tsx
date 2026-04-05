@@ -26,7 +26,7 @@ type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
 
 type ProjectListItem = Project & {
   notesCount: number;
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   projectArticleItems: ProjectArticleItem[];

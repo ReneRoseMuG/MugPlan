@@ -47,7 +47,7 @@ test("opens the print preview as paginated A4 pages", async ({ page }) => {
   }
 
   await loginAsAdmin(page);
-  await page.getByRole("button", { name: /Woche/i }).click();
+  await page.getByTestId("nav-wochenuebersicht").click();
 
   const printTourSelect = page.getByTestId("select-tour-print-preview");
   const openPreviewButton = page.getByTestId("button-open-tour-print-preview");

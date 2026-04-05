@@ -56,7 +56,7 @@ describe("FT03 table entity card previews", () => {
           descriptionMd: null,
           isActive: true,
           notesCount: 2,
-          plannedAppointmentsCount: 3,
+          appointmentsCount: 3,
           attachmentsCount: 1,
           tags: [],
           customer: {
@@ -86,7 +86,7 @@ describe("FT03 table entity card previews", () => {
           fullName: "Musterkunde",
           customerNumber: "C-3",
           notesCount: 1,
-          plannedAppointmentsCount: 2,
+          appointmentsCount: 2,
           attachmentsCount: 0,
           tags: [],
         }}
@@ -112,7 +112,7 @@ describe("FT03 table entity card previews", () => {
           notesCount: 4,
           attachmentsCount: 2,
           tags: [],
-          plannedAppointmentsCount: 5,
+          appointmentsCount: 5,
         }}
         team={{ id: 2, name: "Team Blau", members: [] }}
         tour={{ id: 1, name: "Tour Ost", members: [] }}

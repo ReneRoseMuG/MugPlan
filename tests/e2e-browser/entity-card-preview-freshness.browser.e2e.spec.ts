@@ -384,9 +384,9 @@ test("Mitarbeiterkarte und Preview begrenzen Hover auf vier Termine, waehrend da
   await expect(employeeCard.getByTestId(`text-employee-current-appointments-${employee.id}`)).toContainText("8");
 
   await employeeCard.getByTestId(`text-employee-current-appointments-${employee.id}`).hover();
-  await expect(page.getByTestId(`employee-appointment-preview-${appointments[0].id}`)).toBeVisible({ timeout: 5_000 });
-  await expect(page.getByTestId(`employee-appointment-preview-${appointments[3].id}`)).toBeVisible();
-  await expect(page.getByTestId(`employee-appointment-preview-${appointments[4].id}`)).toHaveCount(0);
+  await expect(page.getByTestId(`employee-appointment-preview-${appointments[7].id}`)).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByTestId(`employee-appointment-preview-${appointments[4].id}`)).toBeVisible();
+  await expect(page.getByTestId(`employee-appointment-preview-${appointments[3].id}`)).toHaveCount(0);
   await expect(page.getByText("... weitere im Formular")).toBeVisible();
 
   await page.getByTestId("toggle-employees-table").click();

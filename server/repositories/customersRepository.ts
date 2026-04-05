@@ -19,7 +19,7 @@ import { getCustomerTagsByCustomerIds } from "./tagRelationsRepository";
 export type CustomerWithTags = Customer & { tags: Tag[] };
 export type CustomerListItem = Customer & { notesCount: number; tags: Tag[] };
 export type CustomerBoardListItem = CustomerListItem & {
-  plannedAppointmentsCount: number;
+  appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
   historicalAppointments: Array<{
@@ -193,10 +193,7 @@ export async function getCustomersPaged(params: {
       id: appointments.id,
     })
     .from(appointments)
-    .where(and(
-      inArray(appointments.customerId, customerIds),
-      sql`${appointments.startDate} >= ${getBerlinTodayDate()}`,
-    ))
+    .where(inArray(appointments.customerId, customerIds))
     .orderBy(
       asc(appointments.customerId),
       asc(appointments.startDate),
@@ -242,7 +239,7 @@ export async function getCustomersPaged(params: {
 
   const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
   const appointmentSummaryByCustomerId = new Map<number, {
-    plannedAppointmentsCount: number;
+    appointmentsCount: number;
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
     nextAppointmentId: number | null;
@@ -253,7 +250,7 @@ export async function getCustomersPaged(params: {
     const current = appointmentSummaryByCustomerId.get(row.customerId);
     if (!current) {
       appointmentSummaryByCustomerId.set(row.customerId, {
-        plannedAppointmentsCount: 1,
+        appointmentsCount: 1,
         nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
         nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
         nextAppointmentId: row.id,
@@ -261,7 +258,7 @@ export async function getCustomersPaged(params: {
       continue;
     }
 
-    current.plannedAppointmentsCount += 1;
+    current.appointmentsCount += 1;
   }
 
   for (const row of historicalAppointmentRows) {
@@ -284,7 +281,7 @@ export async function getCustomersPaged(params: {
         ...row,
         notesCount: notesCountByCustomerId.get(row.id) ?? 0,
         tags: tagsByCustomerId.get(row.id) ?? [],
-        plannedAppointmentsCount: appointmentSummary?.plannedAppointmentsCount ?? 0,
+        appointmentsCount: appointmentSummary?.appointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
         nextAppointmentId: appointmentSummary?.nextAppointmentId ?? null,

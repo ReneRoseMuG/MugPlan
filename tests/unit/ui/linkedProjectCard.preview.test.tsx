@@ -58,7 +58,7 @@ describe("LinkedProjectCard preview wiring", () => {
     isActive: true,
     version: 1,
     notesCount: 2,
-    plannedAppointmentsCount: 1,
+    appointmentsCount: 1,
     attachmentsCount: 3,
     tags: [],
     projectArticleItems: [],
