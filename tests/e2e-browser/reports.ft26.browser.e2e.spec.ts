@@ -449,7 +449,7 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("KOL");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("FK");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText(specialProject.customer.fullName ?? "");
-  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermaß");
+  await expect(page.getByTestId("reports-produktionsplanung-project-cards")).not.toContainText("Sondermaß");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Browser");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Teilglas Browser");

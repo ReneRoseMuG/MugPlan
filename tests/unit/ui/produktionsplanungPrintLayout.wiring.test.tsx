@@ -57,6 +57,8 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
           projectRows: [
             {
               projectId: 1,
+              customerId: 2,
+              appointmentId: 3,
               projectName: "Projekt Alpha",
               orderNumber: "ORD-001",
               customerNumber: "C-001",
@@ -65,7 +67,13 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
               durationDays: 2,
               tourName: "Tour Nord",
               employees: [{ id: 8, fullName: "Max Muster" }],
+              customerNotesCount: 1,
+              projectNotesCount: 1,
+              appointmentNotesCount: 1,
               notesCount: 3,
+              customerAttachmentsCount: 0,
+              projectAttachmentsCount: 1,
+              appointmentAttachmentsCount: 0,
               attachmentsCount: 1,
               tags: [{ id: 6, name: "Info", color: "#2563eb", isDefault: false, version: 1 }],
               reportCardReasonTags: [
@@ -97,8 +105,11 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("Sondermaß");
     expect(html).toContain("Anmerkungen");
     expect(html).toContain("Beschreibung Alpha");
+    expect(html).toContain("<li");
+    expect(html).toContain("Fass Saunen");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Sauna Beta");
+    expect(html).toContain("Fenster");
     expect(html).toContain("Fenster Breit");
     expect(html).toContain("Max Muster");
     expect(html).toContain("Notizen 3");

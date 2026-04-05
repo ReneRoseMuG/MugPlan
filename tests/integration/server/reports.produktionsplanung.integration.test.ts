@@ -23,6 +23,8 @@ import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import * as appointmentAttachmentsService from "../../../server/services/appointmentAttachmentsService";
 import * as appointmentNotesService from "../../../server/services/appointmentNotesService";
+import * as customerAttachmentsService from "../../../server/services/customerAttachmentsService";
+import * as customerNotesService from "../../../server/services/customerNotesService";
 import * as projectAttachmentsService from "../../../server/services/projectAttachmentsService";
 import * as projectNotesService from "../../../server/services/projectNotesService";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
@@ -277,10 +279,19 @@ describe("FT26 integration: report produktionsplanung", () => {
       body: "Projektnotiz Body",
       print: true,
     });
+    await customerNotesService.createCustomerNote(fixture.customer.id, {
+      title: "Kundennotiz",
+      body: "Kundennotiz Body",
+      print: true,
+    });
     await appointmentNotesService.createAppointmentNote(fixture.appointments[0]!.id, {
       title: "Terminnotiz",
       body: "Terminnotiz Body",
       print: true,
+    });
+    await customerAttachmentsService.createCustomerAttachment({
+      customerId: fixture.customer.id,
+      ...buildAttachmentPayload("ft26-customer-attachment"),
     });
     await projectAttachmentsService.createProjectAttachment({
       projectId: fixture.project.id,
@@ -301,6 +312,8 @@ describe("FT26 integration: report produktionsplanung", () => {
     expect(response.body.projectRows).toEqual([
       expect.objectContaining({
         projectId: fixture.project.id,
+        customerId: fixture.customer.id,
+        appointmentId: fixture.appointments[0]!.id,
         projectName: "FT26-PV-CARD Projekt",
         orderNumber: expect.stringContaining("ORD-FT26-PV-CARD-PROJ"),
         customerNumber: expect.stringContaining("FT26-PV-CARD-CUST"),
@@ -309,8 +322,14 @@ describe("FT26 integration: report produktionsplanung", () => {
         durationDays: 3,
         tourName: tour.name,
         employees: [{ id: employee.id, fullName: "Mitarbeiter, Mara" }],
-        notesCount: 2,
-        attachmentsCount: 2,
+        customerNotesCount: 1,
+        projectNotesCount: 1,
+        appointmentNotesCount: 1,
+        notesCount: 3,
+        customerAttachmentsCount: 1,
+        projectAttachmentsCount: 1,
+        appointmentAttachmentsCount: 1,
+        attachmentsCount: 3,
         tags: expect.arrayContaining([
           expect.objectContaining({ id: infoTag.id, name: "Info FT26" }),
           expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
