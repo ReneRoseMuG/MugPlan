@@ -669,6 +669,14 @@ export const api = {
         }),
       },
     },
+    sessionStatus: {
+      method: "GET" as const,
+      path: "/api/auth/session",
+      responses: {
+        200: authenticatedResponseSchema,
+        401: z.object({ code: z.literal("UNAUTHORIZED") }),
+      },
+    },
     setupAdmin: {
       method: "POST" as const,
       path: "/api/auth/setup-admin",

@@ -247,6 +247,7 @@ export default function Home({ onLogout }: HomeProps) {
             onViewChange={handleViewChange}
             onLogout={onLogout}
             currentView={view}
+            currentDate={currentDate}
             userRole={userRole}
             backupDisabled={backupDisabled}
             monitoringCount={canAccessMonitoring ? monitoringItems?.length ?? 0 : undefined}

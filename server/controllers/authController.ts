@@ -12,6 +12,19 @@ export async function getSetupStatus(_req: Request, res: Response, next: NextFun
   }
 }
 
+export async function getSessionStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const payload = await authService.getSessionStatus(req.session.userId);
+    if (!payload) {
+      res.status(401).json({ code: "UNAUTHORIZED" });
+      return;
+    }
+    res.json(payload);
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function setupAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.auth.setupAdmin.input.parse(req.body);

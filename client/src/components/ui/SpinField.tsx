@@ -6,6 +6,7 @@ type SpinFieldProps = {
   onChange: (value: number) => void;
   min: number;
   max: number;
+  strictTextBounds?: boolean;
   hint?: string;
   inputTestId?: string;
   incrementTestId?: string;
@@ -18,6 +19,7 @@ export function SpinField({
   onChange,
   min,
   max,
+  strictTextBounds = false,
   hint,
   inputTestId,
   incrementTestId,
@@ -38,7 +40,8 @@ export function SpinField({
           value={String(value)}
           onChange={(event) => {
             const parsedValue = Number.parseInt(event.target.value.replace(/\D/g, ""), 10);
-            if (!Number.isNaN(parsedValue)) {
+            const isWithinBounds = parsedValue >= min && parsedValue <= max;
+            if (!Number.isNaN(parsedValue) && (!strictTextBounds || isWithinBounds)) {
               setClampedValue(parsedValue);
             }
           }}

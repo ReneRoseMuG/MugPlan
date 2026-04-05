@@ -105,6 +105,23 @@ export async function getSetupStatus() {
   };
 }
 
+export async function getSessionStatus(userId: number | undefined): Promise<AuthenticatedPayload | null> {
+  if (!Number.isFinite(userId) || !userId || userId <= 0) {
+    return null;
+  }
+
+  const user = await usersRepository.getUserTwoFactorRecordById(userId);
+  if (!user || !user.isActive || !user.roleCode) {
+    return null;
+  }
+
+  return toAuthenticatedPayload({
+    userId: user.userId,
+    username: user.username,
+    roleCode: user.roleCode,
+  });
+}
+
 export async function setupAdmin(input: { username: string; password: string }): Promise<AuthenticatedPayload> {
   const bootstrap = await getBootstrapState();
   if (!bootstrap.needsAdminSetup) {

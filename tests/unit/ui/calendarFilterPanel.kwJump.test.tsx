@@ -146,7 +146,10 @@ describe("CalendarFilterPanel - kw jump", () => {
       />,
     );
 
+    const kwInput = inputCalls.find((entry) => entry["data-testid"] === "input-calendar-kw-jump");
+
     expect(html).toContain("text-destructive");
+    expect(kwInput?.["aria-invalid"]).toBe(true);
   });
 
   it("renders the kw input as a text-based numeric spinner field", () => {

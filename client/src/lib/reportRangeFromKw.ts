@@ -1,5 +1,6 @@
 import { addWeeks, endOfISOWeek, format } from "date-fns";
 
+import { normalizeIsoWeekNumber } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 
 export function normalizeWeekCount(value: number | undefined): number {
@@ -8,9 +9,7 @@ export function normalizeWeekCount(value: number | undefined): number {
 }
 
 export function normalizeKwStart(value: number | undefined): number | undefined {
-  if (typeof value !== "number" || !Number.isInteger(value)) return undefined;
-  if (value < 1) return undefined;
-  return Math.min(53, value);
+  return normalizeIsoWeekNumber(value);
 }
 
 export function resolveReportRangeFromKw(params: {
