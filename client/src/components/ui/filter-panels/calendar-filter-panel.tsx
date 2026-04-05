@@ -10,6 +10,7 @@ import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { sanitizeIsoWeekInput, stepIsoWeekValue } from "@/lib/isoWeekInput";
 
 type WeekAppointmentDisplayMode = "standard" | "compact" | "detail" | "split";
 
@@ -125,9 +126,7 @@ function KwJumpSpinner({
   onCommitValue?: (value: string) => void;
 }) {
   const commitStep = (delta: number) => {
-    const parsedValue = Number.parseInt(value, 10);
-    const baseValue = Number.isFinite(parsedValue) ? parsedValue : min;
-    const nextValue = String(Math.min(max, Math.max(min, baseValue + delta)));
+    const nextValue = String(Math.min(max, Math.max(min, stepIsoWeekValue(value, delta))));
     onChange?.(nextValue);
     onCommitValue?.(nextValue);
     if (!onCommitValue) {
@@ -144,10 +143,11 @@ function KwJumpSpinner({
         pattern="[0-9]*"
         maxLength={3}
         value={value}
+        aria-invalid={error || undefined}
         className={`h-9 rounded-none border-0 px-3 text-left text-sm font-semibold text-slate-800 shadow-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
           error ? "bg-destructive/5 text-destructive" : ""
         }`}
-        onChange={(event) => onChange?.(event.target.value.replace(/\D/g, ""))}
+        onChange={(event) => onChange?.(sanitizeIsoWeekInput(event.target.value))}
         onKeyDown={(event) => {
           if (event.key === "Enter") {
             event.preventDefault();

@@ -4,6 +4,7 @@ import { logWarn } from "../lib/logger";
 
 const setupAllowedPaths = new Set<string>([
   "/auth/setup-status",
+  "/auth/session",
   "/auth/setup-admin",
   "/auth/login",
   "/auth/quick-login-targets",

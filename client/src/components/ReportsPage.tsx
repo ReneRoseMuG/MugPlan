@@ -1448,6 +1448,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           }}
                           min={1}
                           max={53}
+                          strictTextBounds
                           hint={`KW ${String(vorlauflisteKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
                           inputTestId="input-reports-vorlaufliste-kw-start"
                           incrementTestId="button-reports-vorlaufliste-kw-start-up"
@@ -1577,6 +1578,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                           }}
                           min={1}
                           max={53}
+                          strictTextBounds
                           hint={`KW ${String(produktionsplanungKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
                           inputTestId="input-reports-produktionsplanung-kw-start"
                           incrementTestId="button-reports-produktionsplanung-kw-start-up"

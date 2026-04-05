@@ -7,7 +7,17 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
 import AdminSetup from "@/pages/AdminSetup";
-import { getSetupStatus, logout } from "@/lib/auth";
+import StandaloneCalendarWeek from "@/pages/StandaloneCalendarWeek";
+import StandaloneCalendarMonth from "@/pages/StandaloneCalendarMonth";
+import {
+  StandaloneAppointments,
+  StandaloneCustomers,
+  StandaloneEmployees,
+  StandaloneProjects,
+  StandaloneTeams,
+  StandaloneTours,
+} from "@/pages/StandaloneDomainViews";
+import { getSessionStatus, getSetupStatus, logout } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { SettingsProvider } from "@/providers/SettingsProvider";
 import { FloatingPreviewKeeperProvider } from "@/contexts/floating-preview-keeper";
@@ -29,6 +39,14 @@ function AuthenticatedApp({ onLogout }: { onLogout: () => void }) {
 function Router({ onLogout }: RouterProps) {
   return (
     <Switch>
+      <Route path="/standalone/calendar/week" component={StandaloneCalendarWeek} />
+      <Route path="/standalone/calendar/month" component={StandaloneCalendarMonth} />
+      <Route path="/standalone/appointments" component={StandaloneAppointments} />
+      <Route path="/standalone/projects" component={StandaloneProjects} />
+      <Route path="/standalone/customers" component={StandaloneCustomers} />
+      <Route path="/standalone/employees" component={StandaloneEmployees} />
+      <Route path="/standalone/tours" component={StandaloneTours} />
+      <Route path="/standalone/teams" component={StandaloneTeams} />
       <Route
         path="/calendar"
       >
@@ -61,7 +79,18 @@ function App() {
       try {
         const status = await getSetupStatus();
         if (cancelled) return;
-        setStage(status.needsAdminSetup ? "setup" : "login");
+        if (status.needsAdminSetup) {
+          setStage("setup");
+          return;
+        }
+        try {
+          await getSessionStatus();
+          if (cancelled) return;
+          setStage("authed");
+        } catch {
+          if (cancelled) return;
+          setStage("login");
+        }
       } catch {
         if (cancelled) return;
         setStage("login");

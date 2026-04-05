@@ -1,18 +1,22 @@
-import { CalendarDays, Calendar, LogOut, RefreshCw } from "lucide-react";
+import type { ElementType, ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { ViewType } from "@/pages/Home";
+import { getISOWeek, getISOWeekYear } from "date-fns";
+import { Calendar, CalendarDays, ExternalLink, LogOut, RefreshCw } from "lucide-react";
+
 import { domainIcons } from "@/lib/domain-icons";
+import type { ViewType } from "@/pages/Home";
 
 interface SidebarProps {
   onViewChange: (view: ViewType) => void;
   onLogout: () => void;
   currentView?: ViewType;
+  currentDate?: Date;
   userRole?: string;
   backupDisabled?: boolean;
   monitoringCount?: number;
 }
 
-function NavGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function NavGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="mb-2.5 overflow-hidden rounded-lg border border-border" data-testid={`nav-group-${title.toLowerCase().replace(/\s+/g, "-")}`}>
       <div
@@ -35,34 +39,54 @@ function NavButton({
   onClick,
   count,
   testId,
+  standaloneUrl,
 }: {
-  icon: React.ElementType;
+  icon: ElementType;
   label: string;
   isActive?: boolean;
   onClick?: () => void;
   count?: number;
   testId?: string;
+  standaloneUrl?: string;
 }) {
   const resolvedTestId = testId ?? `nav-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const standaloneTestId = `${resolvedTestId}-open-tab`;
+  const mainButtonClassName = `
+    flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-all duration-200
+    ${standaloneUrl ? "min-w-0 flex-1" : "w-full"}
+    ${isActive ? "border border-slate-200 bg-white text-primary" : "text-slate-600 hover:bg-white hover:text-slate-900"}
+  `;
 
   if (onClick) {
     return (
-      <button
-        onClick={onClick}
-        data-testid={resolvedTestId}
-        className={`
-          flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-all duration-200
-          ${isActive ? "border border-slate-200 bg-white text-primary" : "text-slate-600 hover:bg-white hover:text-slate-900"}
-        `}
-      >
-        <Icon className="h-4 w-4 shrink-0 opacity-80" />
-        <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
-        {typeof count === "number" ? (
-          <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`${resolvedTestId}-count`}>
-            {count}
-          </span>
+      <div className={standaloneUrl ? "flex items-center gap-1" : undefined}>
+        <button
+          type="button"
+          onClick={onClick}
+          data-testid={resolvedTestId}
+          className={mainButtonClassName}
+        >
+          <Icon className="h-4 w-4 shrink-0 opacity-80" />
+          <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
+          {typeof count === "number" ? (
+            <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`${resolvedTestId}-count`}>
+              {count}
+            </span>
+          ) : null}
+        </button>
+        {standaloneUrl ? (
+          <button
+            type="button"
+            onClick={() => window.open(standaloneUrl, "_blank")}
+            data-testid={standaloneTestId}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
+            title="In neuem Tab öffnen"
+            aria-label={`${label} in neuem Tab öffnen`}
+          >
+            <ExternalLink className="h-[13px] w-[13px]" />
+          </button>
         ) : null}
-      </button>
+      </div>
     );
   }
 
@@ -81,6 +105,7 @@ export function Sidebar({
   onViewChange,
   onLogout,
   currentView,
+  currentDate = new Date(),
   userRole,
   backupDisabled = false,
   monitoringCount,
@@ -97,6 +122,8 @@ export function Sidebar({
   const TeamsIcon = domainIcons.teams;
   const ToursIcon = domainIcons.tours;
   const AdminIcon = domainIcons.admin;
+  const currentWeek = getISOWeek(currentDate);
+  const currentWeekYear = getISOWeekYear(currentDate);
 
   return (
     <div
@@ -110,6 +137,7 @@ export function Sidebar({
           MuG Plan
         </h1>
         <button
+          type="button"
           onClick={() => void queryClient.invalidateQueries()}
           className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-white hover:text-slate-600"
           title="Daten neu laden"
@@ -127,6 +155,7 @@ export function Sidebar({
             testId="nav-wochenuebersicht"
             isActive={currentView === "week"}
             onClick={() => onViewChange("week")}
+            standaloneUrl={`/standalone/calendar/week?kw=${currentWeek}&year=${currentWeekYear}`}
           />
           <NavButton
             icon={Calendar}
@@ -134,13 +163,35 @@ export function Sidebar({
             testId="nav-monatsuebersicht"
             isActive={currentView === "month" || currentView === "monthSheet"}
             onClick={() => onViewChange("monthSheet")}
+            standaloneUrl="/standalone/calendar/month"
           />
-          <NavButton icon={AppointmentsIcon} label="Termine" isActive={currentView === "appointmentsList"} onClick={() => onViewChange("appointmentsList")} />
+          <NavButton
+            icon={AppointmentsIcon}
+            label="Termine"
+            testId="nav-termine"
+            isActive={currentView === "appointmentsList"}
+            onClick={() => onViewChange("appointmentsList")}
+            standaloneUrl="/standalone/appointments"
+          />
         </NavGroup>
 
         <NavGroup title="Projektplanung">
-          <NavButton icon={ProjectsIcon} label="Projekte" isActive={currentView === "project" || currentView === "projectList"} onClick={() => onViewChange("projectList")} />
-          <NavButton icon={CustomersIcon} label="Kunden" isActive={currentView === "customer" || currentView === "customerList"} onClick={() => onViewChange("customerList")} />
+          <NavButton
+            icon={ProjectsIcon}
+            label="Projekte"
+            testId="nav-projekte"
+            isActive={currentView === "project" || currentView === "projectList"}
+            onClick={() => onViewChange("projectList")}
+            standaloneUrl="/standalone/projects"
+          />
+          <NavButton
+            icon={CustomersIcon}
+            label="Kunden"
+            testId="nav-kunden"
+            isActive={currentView === "customer" || currentView === "customerList"}
+            onClick={() => onViewChange("customerList")}
+            standaloneUrl="/standalone/customers"
+          />
         </NavGroup>
 
         {canAccessReports ? (
@@ -157,9 +208,30 @@ export function Sidebar({
         ) : null}
 
         <NavGroup title="Mitarbeiter Verwaltung">
-          <NavButton icon={EmployeesIcon} label="Mitarbeiter" isActive={currentView === "employees"} onClick={() => onViewChange("employees")} />
-          <NavButton icon={TeamsIcon} label="Teams" isActive={currentView === "teams"} onClick={() => onViewChange("teams")} />
-          <NavButton icon={ToursIcon} label="Touren" isActive={currentView === "tours"} onClick={() => onViewChange("tours")} />
+          <NavButton
+            icon={EmployeesIcon}
+            label="Mitarbeiter"
+            testId="nav-mitarbeiter"
+            isActive={currentView === "employees"}
+            onClick={() => onViewChange("employees")}
+            standaloneUrl="/standalone/employees"
+          />
+          <NavButton
+            icon={TeamsIcon}
+            label="Teams"
+            testId="nav-teams"
+            isActive={currentView === "teams"}
+            onClick={() => onViewChange("teams")}
+            standaloneUrl="/standalone/teams"
+          />
+          <NavButton
+            icon={ToursIcon}
+            label="Touren"
+            testId="nav-touren"
+            isActive={currentView === "tours"}
+            onClick={() => onViewChange("tours")}
+            standaloneUrl="/standalone/tours"
+          />
         </NavGroup>
 
         {isAdmin ? (

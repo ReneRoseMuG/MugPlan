@@ -5,6 +5,7 @@ import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
+import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
@@ -102,13 +103,18 @@ export function CalendarWorkspace({
   }, [activeView, currentDate]);
 
   const submitKwJump = (valueOverride?: string) => {
-    const trimmedValue = (valueOverride ?? kwInputValue).trim();
+    const trimmedValue = sanitizeIsoWeekInput(valueOverride ?? kwInputValue);
     if (trimmedValue.length === 0) {
       setKwJumpError(false);
       return;
     }
 
-    const parsedKw = Number(trimmedValue);
+    const parsedKw = parseIsoWeekInput(trimmedValue);
+    if (!parsedKw) {
+      setKwJumpError(true);
+      return;
+    }
+
     const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
     if (targetDate) {
       const currentWeekStart = startOfISOWeek(currentDate);
@@ -124,8 +130,7 @@ export function CalendarWorkspace({
       return;
     }
 
-    const isOutOfRange = Number.isInteger(parsedKw) && parsedKw >= 1 && parsedKw <= 53;
-    setKwJumpError(isOutOfRange);
+    setKwJumpError(true);
   };
 
   const persistWeekAppointmentDisplayMode = (value: "standard" | "compact" | "detail" | "split") => {
@@ -320,7 +325,7 @@ export function CalendarWorkspace({
             kwJumpValue={kwInputValue}
             kwJumpError={kwJumpError}
             onKwJumpChange={(value) => {
-              setKwInputValue(value);
+              setKwInputValue(sanitizeIsoWeekInput(value));
               setKwJumpError(false);
             }}
             onKwJumpSubmit={() => submitKwJump()}

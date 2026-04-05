@@ -31,19 +31,21 @@ export function WeekGrid({
   onScrollRestoreApplied,
 }: WeekGridProps) {
   return (
-    <CalendarWeekView
-      currentDate={currentDate}
-      employeeFilterId={employeeFilterId}
-      weekAppointmentDisplayMode={weekAppointmentDisplayMode}
-      weekLanesCollapsed={weekLanesCollapsed}
-      conflictHighlightActive={conflictHighlightActive}
-      conflictAppointmentIds={conflictAppointmentIds}
-      navCommand={navCommand}
-      onVisibleDateChange={onVisibleDateChange}
-      onNewAppointment={onNewAppointment}
-      onOpenAppointment={onOpenAppointment}
-      restoreScrollLeft={restoreScrollLeft}
-      onScrollRestoreApplied={onScrollRestoreApplied}
-    />
+    <div className="h-full" data-testid="calendar-week-view">
+      <CalendarWeekView
+        currentDate={currentDate}
+        employeeFilterId={employeeFilterId}
+        weekAppointmentDisplayMode={weekAppointmentDisplayMode}
+        weekLanesCollapsed={weekLanesCollapsed}
+        conflictHighlightActive={conflictHighlightActive}
+        conflictAppointmentIds={conflictAppointmentIds}
+        navCommand={navCommand}
+        onVisibleDateChange={onVisibleDateChange}
+        onNewAppointment={onNewAppointment}
+        onOpenAppointment={onOpenAppointment}
+        restoreScrollLeft={restoreScrollLeft}
+        onScrollRestoreApplied={onScrollRestoreApplied}
+      />
+    </div>
   );
 }

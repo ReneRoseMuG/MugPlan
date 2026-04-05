@@ -50,6 +50,24 @@ function persistRole(payload: AuthenticatedPayload): void {
   window.localStorage.setItem("userRole", payload.roleCode);
 }
 
+export async function getSessionStatus(): Promise<AuthenticatedPayload> {
+  const response = await fetch("/api/auth/session", {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.localStorage.removeItem("userRole");
+    }
+    throw new Error(`Session status failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as AuthenticatedPayload;
+  persistRole(payload);
+  return payload;
+}
+
 export async function login(username: string, password: string): Promise<LoginPayload> {
   const response = await fetch("/api/auth/login", {
     method: "POST",
