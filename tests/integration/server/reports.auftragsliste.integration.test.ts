@@ -1,0 +1,245 @@
+/**
+ * Test Scope:
+ *
+ * Abgedeckte Regeln:
+ * - Die Auftragsliste liefert projekteweise Kartenbasis mit repraesentativem Termin, Kategorien und kumulierten Metadaten.
+ * - Reklamation schliesst Projekte aus; bei ausschliesslich stornierten Terminen dient der frueheste Storno als Fallback.
+ * - Kategorienfilter und Shortcode-Substitution wirken serverseitig in `articleValues`.
+ * - Nur ADMIN und DISPONENT duerfen den Report lesen; READER wird abgewiesen.
+ *
+ * Fehlerfaelle:
+ * - Reklamationsprojekte erscheinen trotz Ausschluss weiter im Report.
+ * - Storno-Fallback oder Shortcode-Ersatz greifen nicht.
+ * - Rollenpruefung fehlt oder liefert uneinheitliche Statuscodes.
+ *
+ * Ziel:
+ * Den Endpunkt `/api/reports/auftragsliste` end-to-end gegen die wichtigsten Fachregeln absichern.
+ */
+import { eq } from "drizzle-orm";
+import { beforeAll, describe, expect, it } from "vitest";
+import { db } from "../../../server/db";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
+import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
+import {
+  attachAppointmentTagFixture,
+  attachProjectTagFixture,
+  createAppointmentFixture,
+  createComponentFixture,
+  createCustomerFixtureWithOverrides,
+  createExactTagFixture,
+  createProductFixture,
+  createProjectFixture,
+  createProjectOrderItemFixture,
+  createTourFixture,
+} from "../../helpers/testDataFactory";
+import * as projectsService from "../../../server/services/projectsService";
+import {
+  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+} from "../../../shared/appointmentCancellation";
+import { tags, type Tag } from "../../../shared/schema";
+
+let app: Awaited<ReturnType<typeof createApiTestApp>>;
+let authCounter = 1;
+
+beforeAll(async () => {
+  app = await createApiTestApp();
+});
+
+async function createRoleAgent(roleCode: "DISPATCHER" | "READER") {
+  const token = `${roleCode.toLowerCase()}-auftragsliste-${authCounter}`;
+  authCounter += 1;
+  const password = `${token}-password`;
+  const passwordHash = await hashPassword(password);
+  await createUser({
+    username: `test-${token}`,
+    email: `test-${token}@local.test`,
+    firstName: "Test",
+    lastName: roleCode,
+    passwordHash,
+    roleCode,
+  });
+  return loginAgent(app, { username: `test-${token}`, password });
+}
+
+async function ensureExactTag(name: string, color = "#2563eb") {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
+      isDefault: tags.isDefault,
+      version: tags.version,
+    })
+    .from(tags)
+    .where(eq(tags.name, name))
+    .limit(1);
+
+  if (existing) return existing;
+  return createExactTagFixture(name, color);
+}
+
+async function createAuftragslisteProjectFixture(params: {
+  prefix: string;
+  appointmentDates: Array<{ startDate: string; employeeIds?: number[]; tourId?: number | null }>;
+  descriptionMd?: string | null;
+  productItems?: Array<{ categoryName: string; name: string; shortCode?: string | null; quantity?: number }>;
+  componentItems?: Array<{ categoryName: string; name: string; shortCode?: string | null; quantity?: number }>;
+  projectTags?: Tag[];
+  appointmentTagsByIndex?: Tag[][];
+}) {
+  const customer = await createCustomerFixtureWithOverrides({
+    prefix: `${params.prefix}-CUST`,
+    fullName: `${params.prefix} Kunde`,
+  });
+  const project = await createProjectFixture({
+    prefix: `${params.prefix}-PROJ`,
+    customerId: customer.id,
+    name: `${params.prefix} Projekt`,
+  });
+  const updatedProject = await projectsService.updateProject(project.id, {
+    version: project.version,
+    descriptionMd: params.descriptionMd ?? null,
+  });
+  if (!updatedProject) throw new Error("Expected updated project fixture.");
+
+  const orderNumber = updatedProject.projectOrder?.orderNumber ?? updatedProject.orderNumber;
+  if (!orderNumber) throw new Error("Expected order number.");
+
+  const appointments = [];
+  for (const appointmentDate of params.appointmentDates) {
+    appointments.push(await createAppointmentFixture({
+      projectId: project.id,
+      startDate: appointmentDate.startDate,
+      employeeIds: appointmentDate.employeeIds ?? [],
+      tourId: appointmentDate.tourId ?? null,
+    }));
+  }
+
+  for (const tag of params.projectTags ?? []) {
+    await attachProjectTagFixture(project.id, tag.id);
+  }
+
+  for (const [appointmentIndex, tagsForAppointment] of (params.appointmentTagsByIndex ?? []).entries()) {
+    const appointment = appointments[appointmentIndex];
+    if (!appointment) continue;
+    for (const tag of tagsForAppointment ?? []) {
+      await attachAppointmentTagFixture(appointment.id, tag.id);
+    }
+  }
+
+  for (const item of params.productItems ?? []) {
+    const product = await createProductFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber,
+      productId: product.id,
+      quantity: item.quantity ?? 1,
+    });
+  }
+
+  for (const item of params.componentItems ?? []) {
+    const component = await createComponentFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber,
+      componentId: component.id,
+      quantity: item.quantity ?? 1,
+    });
+  }
+
+  return {
+    customer,
+    project: updatedProject,
+  };
+}
+
+describe("integration: report auftragsliste", () => {
+  it("returns filtered product and component categories and substitutes shortcodes", async () => {
+    const admin = await loginAdminAgent(app);
+    const dispatcher = await createRoleAgent("DISPATCHER");
+    const tour = await createTourFixture("#0f766e");
+    const shortCodeProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-SHORT",
+      appointmentDates: [{ startDate: "2099-09-10", tourId: tour.id }],
+      descriptionMd: "<p>Sichtbares Projekt</p>",
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Sauna Alpha", shortCode: "SAU-A" },
+        { categoryName: "Wellness", name: "Wellness Alpha", shortCode: "WELL-A" },
+      ],
+      componentItems: [
+        { categoryName: "Fenster", name: "Fenster Alpha", shortCode: "WIN-A" },
+        { categoryName: "Tueren", name: "Tuer Beta", shortCode: "DOOR-B" },
+      ],
+    });
+
+    const productCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna AL" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup Fenster AL" })).categoryId;
+
+    const response = await dispatcher
+      .get(`/api/reports/auftragsliste?fromDate=2099-09-01&toDate=2099-09-30&productCategoryIds=${productCategoryId}&componentCategoryIds=${windowCategoryId}&useShortCodes=true`)
+      .expect(200);
+
+    expect(response.body.productCategories).toEqual([
+      {
+        id: productCategoryId,
+        name: "Fass Saunen",
+      },
+    ]);
+    expect(response.body.componentCategories).toEqual([
+      {
+        id: windowCategoryId,
+        name: "Fenster",
+      },
+    ]);
+    expect(response.body.items).toEqual([
+      expect.objectContaining({
+        projectId: shortCodeProject.project.id,
+        orderNumber: expect.stringContaining("ORD-AL-SHORT-PROJ"),
+        customerFullName: shortCodeProject.customer.fullName,
+        tourName: tour.name,
+        projectDescription: "Sichtbares Projekt",
+        articleValues: [
+          { categoryId: productCategoryId, value: "SAU-A" },
+          { categoryId: windowCategoryId, value: "WIN-A" },
+        ],
+      }),
+    ]);
+  });
+
+  it("excludes reklamation projects and falls back to the earliest cancelled appointment", async () => {
+    const admin = await loginAdminAgent(app);
+    const exclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#dc2626");
+    const cancelledTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
+    const excludedProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-EXCLUDED",
+      appointmentDates: [{ startDate: "2099-10-02" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Reklamation" }],
+      projectTags: [exclusionTag],
+    });
+    const fallbackProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-CANCELLED",
+      appointmentDates: [{ startDate: "2099-10-03" }, { startDate: "2099-10-05" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Storno" }],
+      appointmentTagsByIndex: [[cancelledTag], [cancelledTag]],
+    });
+
+    const response = await admin
+      .get("/api/reports/auftragsliste?fromDate=2099-10-01&toDate=2099-10-31")
+      .expect(200);
+
+    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).toContain(fallbackProject.project.id);
+    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).not.toContain(excludedProject.project.id);
+    const fallbackRow = response.body.items.find((item: { projectId: number }) => item.projectId === fallbackProject.project.id);
+    expect(fallbackRow.actualDate).toBe("2099-10-03");
+  });
+
+  it("rejects readers", async () => {
+    const reader = await createRoleAgent("READER");
+
+    await reader
+      .get("/api/reports/auftragsliste?fromDate=2099-11-01&toDate=2099-11-30")
+      .expect(403);
+  });
+});

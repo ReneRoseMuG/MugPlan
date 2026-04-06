@@ -448,6 +448,42 @@ const reportProduktionsplanungResponseSchema = z.object({
   projectRows: z.array(reportProduktionsplanungProjectRowSchema),
 });
 
+const reportAuftragslisteProjectRowSchema = z.object({
+  projectId: z.number().int().positive(),
+  customerId: z.number().int().positive(),
+  appointmentId: z.number().int().positive(),
+  projectName: z.string().min(1),
+  orderNumber: z.string().nullable(),
+  customerNumber: z.string().nullable(),
+  customerFullName: z.string().nullable(),
+  actualDate: z.string(),
+  durationDays: z.number().int().min(1),
+  tourName: z.string().nullable(),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string().min(1),
+    }),
+  ),
+  customerNotesCount: z.number().int().min(0),
+  projectNotesCount: z.number().int().min(0),
+  appointmentNotesCount: z.number().int().min(0),
+  notesCount: z.number().int().min(0),
+  customerAttachmentsCount: z.number().int().min(0),
+  projectAttachmentsCount: z.number().int().min(0),
+  appointmentAttachmentsCount: z.number().int().min(0),
+  attachmentsCount: z.number().int().min(0),
+  tags: z.array(tagSchema),
+  articleValues: z.array(reportVorlauflisteArticleValueSchema),
+  projectDescription: z.string().nullable(),
+});
+
+const reportAuftragslisteResponseSchema = z.object({
+  productCategories: z.array(reportVorlauflisteCategorySchema),
+  componentCategories: z.array(reportVorlauflisteCategorySchema),
+  items: z.array(reportAuftragslisteProjectRowSchema),
+});
+
 const reportConfigDefaultsResponseSchema = z.object({
   latestProjectAppointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
 });
@@ -4006,6 +4042,33 @@ export const api = {
         },
       },
     },
+    auftragsliste: {
+      list: {
+        method: "GET" as const,
+        path: "/api/reports/auftragsliste",
+        input: z.object({
+          fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+          productCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          componentCategoryIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          useShortCodes: z.preprocess(
+            (value) => value === "true" || value === true,
+            z.boolean().default(false),
+          ),
+        }).strict(),
+        responses: {
+          200: reportAuftragslisteResponseSchema,
+          403: z.object({ code: z.literal("FORBIDDEN") }),
+          422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        },
+      },
+    },
   },
   monitoring: {
     list: {
@@ -4162,6 +4225,8 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
+export type ReportAuftragslisteProjectRow = z.infer<typeof reportAuftragslisteProjectRowSchema>;
+export type ReportAuftragslisteResponse = z.infer<typeof reportAuftragslisteResponseSchema>;
 export type ReportProduktionsplanungCategoryGroup = z.infer<typeof reportProduktionsplanungCategoryGroupSchema>;
 export type ReportProduktionsplanungProjectRow = z.infer<typeof reportProduktionsplanungProjectRowSchema>;
 export type ReportProduktionsplanungResponse = z.infer<typeof reportProduktionsplanungResponseSchema>;

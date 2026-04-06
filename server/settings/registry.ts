@@ -58,6 +58,11 @@ type VorlauflisteCategorySelection = {
 type ProduktionsplanungSelection = {
   useShortCodes?: boolean;
 };
+type AuftragslisteSelection = {
+  productCategoryIds?: number[];
+  componentCategoryIds?: number[];
+  useShortCodes?: boolean;
+};
 type LegacyProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
@@ -72,6 +77,13 @@ type VorlauflisteRangeConfig = {
   weekCount?: number;
 };
 type ProduktionsplanungRangeConfig = {
+  activeTab?: "date" | "calendarWeek";
+  fromDate?: string;
+  toDate?: string;
+  kwStart?: number;
+  weekCount?: number;
+};
+type AuftragslisteRangeConfig = {
   activeTab?: "date" | "calendarWeek";
   fromDate?: string;
   toDate?: string;
@@ -221,6 +233,15 @@ function isValidProduktionsplanungSelection(value: unknown): value is Produktion
   return true;
 }
 
+function isValidAuftragslisteSelection(value: unknown): value is AuftragslisteSelection {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  if (parsed.productCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
+  if (parsed.componentCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
+  return true;
+}
+
 function isValidLegacyProduktionsplanungSelection(value: unknown): value is LegacyProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const parsed = value as Record<string, unknown>;
@@ -299,6 +320,23 @@ function isValidProduktionsplanungRangeConfig(value: unknown): value is Produkti
   ) {
     return false;
   }
+  return true;
+}
+
+function isValidAuftragslisteRangeConfig(value: unknown): value is AuftragslisteRangeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  if (
+    parsed.activeTab !== undefined
+    && parsed.activeTab !== "date"
+    && parsed.activeTab !== "calendarWeek"
+  ) {
+    return false;
+  }
+  if (parsed.fromDate !== undefined && (typeof parsed.fromDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.fromDate))) return false;
+  if (parsed.toDate !== undefined && (typeof parsed.toDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.toDate))) return false;
+  if (parsed.kwStart !== undefined && (typeof parsed.kwStart !== "number" || !Number.isInteger(parsed.kwStart) || parsed.kwStart < 1 || parsed.kwStart > 53)) return false;
+  if (parsed.weekCount !== undefined && (typeof parsed.weekCount !== "number" || !Number.isInteger(parsed.weekCount) || parsed.weekCount < 1 || parsed.weekCount > 52)) return false;
   return true;
 }
 
@@ -570,6 +608,19 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: isValidProduktionsplanungSelection,
   },
+  reportsAuftragslisteSelection: {
+    key: "reports.auftragsliste.selection",
+    label: "Auftragsliste Konfiguration",
+    description: "Speichert benutzerspezifisch die Produkt- und Komponentenfilter sowie Shortcodes der Auftragsliste.",
+    type: "json",
+    defaultValue: {
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      useShortCodes: false,
+    },
+    allowedScopes: ["USER"],
+    validate: isValidAuftragslisteSelection,
+  },
   reportsVorlauflisteRangeConfig: {
     key: "reports.vorlaufliste.rangeConfig",
     label: "Vorlaufliste Zeitraumskonfiguration",
@@ -591,6 +642,17 @@ export const userSettingsRegistry = {
     },
     allowedScopes: ["USER"],
     validate: isValidProduktionsplanungRangeConfig,
+  },
+  reportsAuftragslisteRangeConfig: {
+    key: "reports.auftragsliste.rangeConfig",
+    label: "Auftragsliste Zeitraumskonfiguration",
+    description: "Speichert benutzerspezifisch den aktiven Zeitraum-Tab und die Kalenderwochenwerte der Auftragsliste.",
+    type: "json",
+    defaultValue: {
+      activeTab: "date",
+    },
+    allowedScopes: ["USER"],
+    validate: isValidAuftragslisteRangeConfig,
   },
   reportsCategoryLayout: {
     key: "reports.categoryLayout",

@@ -20,6 +20,7 @@ type PrintPreviewDialogProps<TPage> = {
   loadingState?: React.ReactNode;
   errorState?: React.ReactNode;
   showPageMetaBar?: boolean;
+  pageOrientation?: "portrait" | "landscape";
 };
 
 export function PrintPreviewDialog<TPage>({
@@ -39,6 +40,7 @@ export function PrintPreviewDialog<TPage>({
   loadingState,
   errorState,
   showPageMetaBar = true,
+  pageOrientation = "landscape",
 }: PrintPreviewDialogProps<TPage>) {
   const activePage = pages[activePageIndex] ?? null;
   const canGoPrev = activePageIndex > 0;
@@ -160,7 +162,12 @@ export function PrintPreviewDialog<TPage>({
         </DialogContent>
       </Dialog>
 
-      <PrintDocumentRoot pages={pages} renderPage={renderPage} getPageKey={getPageKey} />
+      <PrintDocumentRoot
+        pages={pages}
+        renderPage={renderPage}
+        getPageKey={getPageKey}
+        pageOrientation={pageOrientation}
+      />
     </>
   );
 }

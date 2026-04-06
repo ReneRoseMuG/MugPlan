@@ -9,5 +9,6 @@ router.get(api.reports.defaults.get.path, reportsController.getReportConfigDefau
 router.get(api.reports.vorlaufliste.list.path, reportsController.listVorlaufliste);
 router.get(api.reports.vorlaufliste.printPreview.path, reportsController.getVorlauflistePrintPreview);
 router.get(api.reports.produktionsplanung.list.path, reportsController.listProduktionsplanung);
+router.get(api.reports.auftragsliste.list.path, reportsController.listAuftragsliste);
 
 export default router;

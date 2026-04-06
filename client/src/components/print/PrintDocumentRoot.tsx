@@ -5,12 +5,14 @@ type PrintDocumentRootProps<TPage> = {
   pages: readonly TPage[];
   renderPage: (page: TPage, index: number) => React.ReactNode;
   getPageKey?: (page: TPage, index: number) => React.Key;
+  pageOrientation?: "portrait" | "landscape";
 };
 
 export function PrintDocumentRoot<TPage>({
   pages,
   renderPage,
   getPageKey,
+  pageOrientation = "landscape",
 }: PrintDocumentRootProps<TPage>) {
   const portalTarget = typeof document !== "undefined" ? document.body : null;
   if (!portalTarget || pages.length === 0) return null;
@@ -21,7 +23,7 @@ export function PrintDocumentRoot<TPage>({
         {`
           @media print {
             @page {
-              size: A4 landscape;
+              size: A4 ${pageOrientation};
               margin: 0;
             }
           }

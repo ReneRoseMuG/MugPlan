@@ -1,0 +1,132 @@
+import { format } from "date-fns";
+import { de } from "date-fns/locale";
+import type { Tag } from "@shared/schema";
+import { CalendarWeekAppointmentAttachmentsHover } from "@/components/calendar/CalendarWeekAppointmentAttachmentsHover";
+import { CalendarWeekAppointmentEmployeesHover } from "@/components/calendar/CalendarWeekAppointmentEmployeesHover";
+import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { cn } from "@/lib/utils";
+
+type ReportProjectCardRow = {
+  projectId: number;
+  customerId: number;
+  appointmentId: number;
+  projectName: string;
+  orderNumber: string | null;
+  customerNumber: string | null;
+  customerFullName: string | null;
+  tourName?: string | null;
+  actualDate: string | null;
+  durationDays: number;
+  employees: Array<{ id: number; fullName: string }>;
+  customerNotesCount: number;
+  projectNotesCount: number;
+  appointmentNotesCount: number;
+  customerAttachmentsCount: number;
+  projectAttachmentsCount: number;
+  appointmentAttachmentsCount: number;
+  attachmentsCount: number;
+  tags: Tag[];
+};
+
+function formatDateLabel(value: string | null): string {
+  if (!value) return "-";
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return format(parsed, "dd.MM.yyyy", { locale: de });
+}
+
+function resolveValue(value: string | null): string {
+  if (!value || value.trim().length === 0) return "-";
+  return value.trim();
+}
+
+function formatDurationDays(value: number): string {
+  return value === 1 ? "1 Tag" : `${value} Tage`;
+}
+
+function ReportProjectCardFooter({
+  row,
+  testIdPrefix,
+}: {
+  row: ReportProjectCardRow;
+  testIdPrefix: string;
+}) {
+  return (
+    <div className="grid w-full gap-3 md:grid-cols-2">
+      <div className="min-w-0 md:w-1/2" data-testid={`${testIdPrefix}-footer-tags-column`}>
+        <EntityTagFooterRow tags={row.tags} testId={`${testIdPrefix}-tags`} />
+      </div>
+      <div className="min-w-0 md:w-1/2" data-testid={`${testIdPrefix}-footer-badges-column`}>
+        <div className="flex flex-nowrap items-center justify-end gap-1 overflow-x-auto text-xs text-muted-foreground">
+          <CalendarWeekAppointmentEmployeesHover employees={row.employees} />
+          <EntityNotesHoverPreview
+            sourceMode="cumulative"
+            sources={{
+              customer: { id: row.customerId, count: row.customerNotesCount },
+              project: { id: row.projectId, count: row.projectNotesCount },
+              appointment: { id: row.appointmentId, count: row.appointmentNotesCount },
+            }}
+            triggerLabel="Notizen"
+            triggerTestId={`${testIdPrefix}-notes-hover`}
+          />
+          <CalendarWeekAppointmentAttachmentsHover
+            appointmentId={row.appointmentId}
+            totalAttachmentsCount={row.attachmentsCount}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ReportProjectCard({
+  row,
+  testIdPrefix,
+  bodyContent,
+  className,
+  headerClassName,
+  bodyClassName,
+  footerClassName,
+}: {
+  row: ReportProjectCardRow;
+  testIdPrefix: string;
+  bodyContent?: React.ReactNode;
+  className?: string;
+  headerClassName?: string;
+  bodyClassName?: string;
+  footerClassName?: string;
+}) {
+  return (
+    <article
+      className={cn("rounded-lg border border-border bg-white shadow-sm", className)}
+      data-testid={testIdPrefix}
+    >
+      <div className={cn("grid gap-2 border-b border-border px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-4", headerClassName)}>
+        <div className="min-w-0 text-sm">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-nowrap">
+            <span className="truncate font-semibold text-foreground">{resolveValue(row.customerFullName)}</span>
+            <span className="text-xs text-muted-foreground">{resolveValue(row.customerNumber)}</span>
+          </div>
+        </div>
+        <div className="min-w-0 text-sm md:text-center">
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-nowrap md:justify-center">
+            <span className="truncate font-semibold text-foreground">{resolveValue(row.orderNumber)}</span>
+            <span className="truncate text-sm text-muted-foreground">{resolveValue(row.projectName)}</span>
+          </div>
+        </div>
+        <div className="text-sm md:text-right">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-nowrap md:justify-end">
+            {row.tourName ? <span className="text-xs text-muted-foreground">{resolveValue(row.tourName)}</span> : null}
+            <span className="font-semibold text-foreground">{formatDateLabel(row.actualDate)}</span>
+            <span className="text-xs text-muted-foreground">{formatDurationDays(row.durationDays)}</span>
+          </div>
+        </div>
+      </div>
+      {bodyContent ? <div className={cn("grid gap-6 px-4 py-4 md:grid-cols-2", bodyClassName)}>{bodyContent}</div> : null}
+      <div className={cn("border-t border-border bg-slate-50 px-4 py-3", footerClassName)}>
+        <ReportProjectCardFooter row={row} testIdPrefix={testIdPrefix} />
+      </div>
+    </article>
+  );
+}
