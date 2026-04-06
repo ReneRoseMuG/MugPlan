@@ -50,7 +50,9 @@ export async function downloadBackupFile(req: Request, res: Response, next: Next
       return;
     }
     const backupLogId = Number(req.params.id);
-    const kind = req.params.kind === "excel" || req.params.kind === "pdf" ? req.params.kind : null;
+    const kind = req.params.kind === "excel" || req.params.kind === "pdf" || req.params.kind === "zip"
+      ? req.params.kind
+      : null;
     if (!Number.isInteger(backupLogId) || backupLogId <= 0 || !kind) {
       res.status(422).json({ code: "VALIDATION_ERROR" });
       return;
@@ -58,7 +60,14 @@ export async function downloadBackupFile(req: Request, res: Response, next: Next
 
     const file = await backupService.resolveBackupDownloadPath({ roleKey }, backupLogId, kind);
     res.setHeader("Content-Disposition", `attachment; filename="${file.fileName}"`);
-    res.setHeader("Content-Type", kind === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader(
+      "Content-Type",
+      kind === "pdf"
+        ? "application/pdf"
+        : kind === "zip"
+          ? "application/zip"
+          : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
 
     await new Promise<void>((resolve, reject) => {
       const stream = fs.createReadStream(file.filePath);

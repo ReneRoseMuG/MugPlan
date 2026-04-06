@@ -5,10 +5,10 @@
  * Use Case: UC07 - Echte Integrationspruefung mit _test DB und Dateiausgaben
  *
  * Abgedeckte Regeln:
- * - Scheduler erzeugt bei relevanten Datenaenderungen ein success-Backup mit Excel/PDF-Dateien.
+ * - Scheduler erzeugt bei relevanten Datenaenderungen ein success-Backup mit Excel/PDF/ZIP-Dateien.
  * - Zweiter Lauf ohne relevante Datenaenderung erzeugt skipped (no_changes).
  * - Manueller Admin-Backup-Run erzeugt erzwungen einen Exportlauf.
- * - Admin-Backuplog-API und Download-Endpunkte liefern echte Daten aus backup_log/file_path.
+ * - Admin-Backuplog-API und Download-Endpunkte liefern echte Daten aus backup_log/file_path fuer Excel/PDF/ZIP.
  * - CalDAV-Outbound-Sync sendet PUT/DELETE bei Termin create/update/delete an HTTPS-Endpoint.
  * - CalDAV-Persistenz schreibt external_event_id und calendar_sync_log.
  *
@@ -140,7 +140,7 @@ async function seedDomainData() {
 function parseFilePathJson(value: string | null): { excelPath?: string; pdfPath?: string } {
   if (!value) return {};
   try {
-    return JSON.parse(value) as { excelPath?: string; pdfPath?: string };
+    return JSON.parse(value) as { excelPath?: string; pdfPath?: string; zipPath?: string };
   } catch {
     return {};
   }
@@ -216,8 +216,10 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
     const fileInfo = parseFilePathJson(firstLogs[0]?.filePath ?? null);
     expect(fileInfo.excelPath).toBeTruthy();
     expect(fileInfo.pdfPath).toBeTruthy();
+    expect(fileInfo.zipPath).toBeTruthy();
     await expect(fs.stat(fileInfo.excelPath!)).resolves.toBeTruthy();
     await expect(fs.stat(fileInfo.pdfPath!)).resolves.toBeTruthy();
+    await expect(fs.stat(fileInfo.zipPath!)).resolves.toBeTruthy();
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(fileInfo.excelPath!);
@@ -256,6 +258,7 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
 
     await agent.get(`/api/admin/backups/${success.id}/download/excel`).expect(200);
     await agent.get(`/api/admin/backups/${success.id}/download/pdf`).expect(200);
+    await agent.get(`/api/admin/backups/${success.id}/download/zip`).expect(200);
   });
 
   it("runs forced backup via admin API even without data changes", async () => {
@@ -270,6 +273,13 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
     const runResponse = await agent.post("/api/admin/backups/run").expect(200);
     expect(runResponse.body.status).toBe("success");
     expect(runResponse.body.reason).toBeNull();
+    const fileInfo = parseFilePathJson(runResponse.body.filePath ?? null);
+    expect(fileInfo.excelPath).toBeTruthy();
+    expect(fileInfo.pdfPath).toBeTruthy();
+    expect(fileInfo.zipPath).toBeTruthy();
+    await expect(fs.stat(fileInfo.excelPath!)).resolves.toBeTruthy();
+    await expect(fs.stat(fileInfo.pdfPath!)).resolves.toBeTruthy();
+    await expect(fs.stat(fileInfo.zipPath!)).resolves.toBeTruthy();
 
     const logsResponse = await agent.get("/api/admin/backups/logs").expect(200);
     expect(logsResponse.body[0]?.status).toBe("success");

@@ -4,13 +4,13 @@
  * Feature: FT07/FT16/FT29 - SettingsPage
  *
  * Abgedeckte Regeln:
- * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, die EntityFormShell-Breiten, `backup_enabled` und `auth_two_factor_enabled`.
- * - Der Backup-Bereich zeigt den manuellen Trigger und die sichtbaren Monitoring-Spalten.
- * - Der Dump-Bereich zeigt den neuen Preview-Einstieg fuer den Transfer-Import.
+ * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, die EntityFormShell-Breiten und `auth_two_factor_enabled`.
+ * - Der Backup-Bereich zeigt den ZIP-Download, die verdichteten Monitoring-Spalten und den direkt persistierten `backup_enabled`-Switch.
+ * - Der Dump-Import ist in den Backup-Bereich integriert.
  *
  * Fehlerfaelle:
  * - Einstellungs-Save-Controls verschwinden aus der Seite.
- * - Die Backup-Uebersicht verliert ihren manuellen Trigger oder die Kernspalten.
+ * - Die Backup-Uebersicht verliert ZIP-Download, Importbereich oder den direkten Backup-Switch.
  *
  * Ziel:
  * Sichtbares Settings-Seitenverhalten ueber gerendertes Markup statt ueber Quelltextmarker absichern.
@@ -88,7 +88,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
           status: "success",
           errorMessage: null,
           exportedRecordCount: 12,
-          filePath: "{\"excelPath\":\"backup.xlsx\"}",
+          filePath: "{\"excelPath\":\"backup.xlsx\",\"pdfPath\":\"backup.pdf\",\"zipPath\":\"backup.zip\"}",
         },
       ],
       isLoading: false,
@@ -98,12 +98,12 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     });
   });
 
-  it("renders the save controls for help preview, backup and two-factor settings plus the backup panel", () => {
+  it("renders the backup panel with zip download, direct backup switch persistence and integrated dump import", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
 
     expect(html).toContain("tab-settings-general");
     expect(html).toContain("tab-settings-backup");
-    expect(html).toContain("tab-settings-db-dump");
+    expect(html).not.toContain("tab-settings-db-dump");
     expect(html).toContain("Sicherheit");
     expect(html).toContain("select-setting-helpTextPreviewSize");
     expect(html).toContain("button-save-helpTextPreviewSize");
@@ -114,18 +114,19 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     expect(html).toContain("switch-setting-auth-two-factor-enabled");
     expect(html).toContain("button-save-auth-two-factor-enabled");
     expect(html).toContain("switch-setting-backup-enabled");
-    expect(html).toContain("button-save-backup-enabled");
-    expect(html).toContain("Backups (Read-Only Monitoring)");
+    expect(html).not.toContain("button-save-backup-enabled");
+    expect(html).toContain("Backups");
     expect(html).toContain("button-backups-run-now");
-    expect(html).toContain("Created");
+    expect(html).toContain("Datum");
     expect(html).toContain("Status");
-    expect(html).toContain("Fehlermeldung");
-    expect(html).toContain("Anzahl exportierter Datensaetze");
+    expect(html).toContain("Umfang");
     expect(html).toContain("Download");
     expect(html).toContain("table-backup-logs-frame");
     expect(html).toContain("Eintraege: 1");
+    expect(html).toContain("backup-download-excel-1");
+    expect(html).toContain("backup-download-pdf-1");
+    expect(html).toContain("backup-download-zip-1");
     expect(html).toContain("Dump Import");
-    expect(html).toContain("table-dump-list-frame");
     expect(html).toContain("input-dump-import-file");
     expect(html).toContain("button-dump-import-preview");
   });

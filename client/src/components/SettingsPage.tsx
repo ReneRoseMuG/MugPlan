@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/hooks/useSettings";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
 
 function stringifyValue(value: unknown): string {
   if (value === null || value === undefined) return "-";
@@ -104,19 +105,60 @@ type DumpImportApplyRow = {
   };
 };
 
-function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string } {
+function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string; zipPath?: string } {
   if (!filePathRaw) return {};
   try {
     const parsed = JSON.parse(filePathRaw) as unknown;
     if (!parsed || typeof parsed !== "object") return {};
-    const candidate = parsed as { excelPath?: unknown; pdfPath?: unknown };
+    const candidate = parsed as { excelPath?: unknown; pdfPath?: unknown; zipPath?: unknown };
     return {
       excelPath: typeof candidate.excelPath === "string" ? candidate.excelPath : undefined,
       pdfPath: typeof candidate.pdfPath === "string" ? candidate.pdfPath : undefined,
+      zipPath: typeof candidate.zipPath === "string" ? candidate.zipPath : undefined,
     };
   } catch {
     return {};
   }
+}
+
+function formatBackupDate(value: string): string {
+  return new Date(value).toLocaleDateString("de-DE");
+}
+
+function formatBackupScope(value: number): string {
+  return `${value} DS`;
+}
+
+function BackupStatusIcon({ row }: { row: BackupLogRow }) {
+  const title = row.status === "error"
+    ? row.errorMessage ?? "Backup fehlgeschlagen"
+    : row.status === "skipped"
+      ? row.errorMessage === "no_changes"
+        ? "Keine Änderungen"
+        : row.errorMessage ?? "Backup übersprungen"
+      : "Backup erfolgreich";
+
+  if (row.status === "success") {
+    return (
+      <span title={title}>
+        <CheckCheck className="h-4 w-4 text-emerald-600" aria-label="Backup erfolgreich" />
+      </span>
+    );
+  }
+
+  if (row.status === "error") {
+    return (
+      <span title={title}>
+        <AlertTriangle className="h-4 w-4 text-red-600" aria-label="Backup fehlgeschlagen" />
+      </span>
+    );
+  }
+
+  return (
+    <span title={title}>
+      <MinusCircle className="h-4 w-4 text-sky-600" aria-label="Backup übersprungen" />
+    </span>
+  );
 }
 
 export function SettingsPage() {
@@ -565,18 +607,20 @@ export function SettingsPage() {
     }
   };
 
-  const handleSaveBackupEnabled = async () => {
+  const handleSaveBackupEnabled = async (nextValue: boolean) => {
     setBackupEnabledError(null);
     setBackupEnabledSaved(false);
+    setBackupEnabledValue(nextValue);
     try {
       await setSetting({
         key: "backup_enabled",
         scopeType: "GLOBAL",
-        value: backupEnabledValue,
+        value: nextValue,
       });
       setBackupEnabledSaved(true);
       void backupsQuery.refetch();
     } catch (error) {
+      setBackupEnabledValue(resolvedBackupEnabled);
       setBackupEnabledError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
@@ -596,7 +640,7 @@ export function SettingsPage() {
     }
   };
 
-  const backupRows = backupsQuery.data ?? [];
+  const backupRows = (backupsQuery.data ?? []).slice(0, 15);
   const dumpRows = dumpsQuery.data ?? [];
 
   const handleRunBackupNow = async () => {
@@ -620,11 +664,11 @@ export function SettingsPage() {
       const base = payload.status === "success"
         ? "Backup erfolgreich erzeugt."
         : payload.status === "skipped"
-          ? "Backup-Lauf uebersprungen."
+          ? "Backup-Lauf übersprungen."
           : "Backup-Lauf mit Fehler beendet.";
       const reason = payload.reason ? ` Grund: ${payload.reason}.` : "";
       const cleanup = typeof payload.cleanupDeletedCount === "number"
-        ? ` Retention geloeschte Dateien: ${payload.cleanupDeletedCount}.`
+        ? ` Retention gelöschte Dateien: ${payload.cleanupDeletedCount}.`
         : "";
       setBackupRunInfo(`${base}${reason}${cleanup}`);
       await backupsQuery.refetch();
@@ -654,6 +698,7 @@ export function SettingsPage() {
       setIsDumpCreating(false);
     }
   };
+
 
   const handleDeleteDump = async (filename: string) => {
     setIsDumpDeleting(filename);
@@ -732,13 +777,12 @@ export function SettingsPage() {
   return (
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
       <h3 className="text-xl font-black tracking-tight text-primary">Einstellungen</h3>
-      <p className="mb-5 mt-1 text-sm text-slate-500">Direkte Bearbeitung globaler und benutzerspezifischer Settings.</p>
+      
 
       <Tabs defaultValue="settings" className="flex min-h-0 flex-1 flex-col" data-testid="settings-tabs">
         <TabsList className="self-start" data-testid="settings-tabs-list">
           <TabsTrigger value="settings" data-testid="tab-settings-general">Einstellungen</TabsTrigger>
           <TabsTrigger value="backup" data-testid="tab-settings-backup">Backup</TabsTrigger>
-          <TabsTrigger value="db-dump" data-testid="tab-settings-db-dump">DB Dump</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1" data-testid="settings-tab-content-general">
@@ -1073,7 +1117,7 @@ export function SettingsPage() {
                 <p className="mt-2 text-xs text-slate-600">
                   Wirksam: {stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)} ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
                 </p>
-                <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Aenderung wirkt fuer alle künftigen Logins.</p>
+                <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Änderung wirkt für alle künftigen Logins.</p>
                 {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                 {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
               </div>
@@ -1082,48 +1126,10 @@ export function SettingsPage() {
             <h4 className="hidden">Backups</h4>
             <p className="hidden">Steuerung und Monitoring aller Backup-Funktionen.</p>
 
-            <div className="shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-backup-enabled">
-          <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
-          <p className="mb-3 text-xs text-slate-500">{backupEnabledSetting?.description ?? "Aktiviert den automatischen Backup-Job."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-            <div className="flex h-10 items-center gap-3">
-              <Switch
-                checked={backupEnabledValue}
-                onCheckedChange={setBackupEnabledValue}
-                data-testid="switch-setting-backup-enabled"
-              />
-              <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
-            </div>
-            <Button onClick={() => void handleSaveBackupEnabled()} disabled={isSaving} data-testid="button-save-backup-enabled">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">
-            Wirksam: {stringifyValue(backupEnabledSetting?.resolvedValue ?? true)} ({backupEnabledSetting?.resolvedScope ?? "-"})
-          </p>
-          {backupEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
-        </div>
-
-            <div className="min-h-0 flex-1 rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="font-semibold text-slate-900">Backups (Read-Only Monitoring)</p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => void handleRunBackupNow()}
-                disabled={isRunningBackupNow}
-                data-testid="button-backups-run-now"
-              >
-                {isRunningBackupNow ? "Backup laeuft..." : "Backup jetzt erzeugen"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
-                Aktualisieren
-              </Button>
-            </div>
+            <div className="flex min-h-0 w-full max-w-5xl flex-1 self-center flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
+          <div className="mb-3">
+            <p className="font-semibold text-slate-900">Backups</p>
+            <p className="text-xs text-slate-500">Historie der letzten 15 Backup-Läufe inklusive Excel-, PDF- und ZIP-Download.</p>
           </div>
           {backupRunInfo && <p className="mb-2 text-xs text-emerald-700">{backupRunInfo}</p>}
           {backupRunError && <p className="mb-2 text-xs text-destructive">{backupRunError}</p>}
@@ -1133,57 +1139,201 @@ export function SettingsPage() {
           ) : backupsQuery.isError ? (
             <p className="text-sm text-destructive">Backups konnten nicht geladen werden.</p>
           ) : backupRows.length === 0 ? (
-            <p className="text-sm text-slate-500">Noch keine Backup-Eintraege vorhanden.</p>
+            <p className="text-sm text-slate-500">Noch keine Backup-Einträge vorhanden.</p>
           ) : (
-            <div className="h-full min-h-0 overflow-auto rounded-md border border-slate-200" data-testid="table-backup-logs-frame">
+            <div className="min-h-0 flex-1 overflow-auto rounded-md border border-slate-200" data-testid="table-backup-logs-frame">
               <table className="min-w-full text-sm" data-testid="table-backup-logs">
                 <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
                   <tr className="border-b border-slate-200 text-left">
-                    <th className="bg-white px-2 py-2">Created</th>
+                    <th className="bg-white px-2 py-2">Datum</th>
                     <th className="bg-white px-2 py-2">Status</th>
-                    <th className="bg-white px-2 py-2">Fehlermeldung</th>
-                    <th className="bg-white px-2 py-2">Anzahl exportierter Datensaetze</th>
+                    <th className="bg-white px-2 py-2">Umfang</th>
                     <th className="bg-white px-2 py-2">Download</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {backupRows.map((row) => (
+                  {backupRows.map((row) => {
+                    const fileRefs = parseBackupFileRefs(row.filePath);
+                    return (
                     <tr key={row.id} className="border-b border-slate-100" data-testid={`backup-row-${row.id}`}>
-                      <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
-                      <td className="px-2 py-2">{row.status}</td>
-                      <td className="px-2 py-2">{row.errorMessage ?? "-"}</td>
-                      <td className="px-2 py-2">{row.exportedRecordCount}</td>
+                      <td className="px-2 py-2">{formatBackupDate(row.createdAt)}</td>
                       <td className="px-2 py-2">
-                        <div className="flex gap-2">
-                          {parseBackupFileRefs(row.filePath).excelPath ? (
+                        <span className="inline-flex items-center" title={row.errorMessage ?? undefined}>
+                          <BackupStatusIcon row={row} />
+                        </span>
+                      </td>
+                      <td className="px-2 py-2">{formatBackupScope(row.exportedRecordCount)}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          {fileRefs.excelPath ? (
                             <a href={`/api/admin/backups/${row.id}/download/excel`} className="underline text-primary" data-testid={`backup-download-excel-${row.id}`}>
                               Excel
                             </a>
                           ) : (
                             <span className="text-slate-400">Excel</span>
                           )}
-                          {parseBackupFileRefs(row.filePath).pdfPath ? (
+                          {fileRefs.pdfPath ? (
                             <a href={`/api/admin/backups/${row.id}/download/pdf`} className="underline text-primary" data-testid={`backup-download-pdf-${row.id}`}>
                               PDF
                             </a>
                           ) : (
                             <span className="text-slate-400">PDF</span>
                           )}
+                          {fileRefs.zipPath ? (
+                            <a href={`/api/admin/backups/${row.id}/download/zip`} className="underline text-primary" data-testid={`backup-download-zip-${row.id}`}>
+                              ZIP
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">ZIP</span>
+                          )}
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
                 <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
                   <tr className="border-t border-slate-200">
-                    <td colSpan={5} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
-                      Eintraege: {backupRows.length}
+                    <td colSpan={4} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
+                      Einträge: {backupRows.length}
                     </td>
                   </tr>
                 </tfoot>
               </table>
             </div>
           )}
+          <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-slate-200 pt-4" data-testid="backup-controls-container">
+            <div className="min-w-[220px]">
+              <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
+              
+              <div className="flex h-10 items-center gap-3">
+                <Switch
+                  checked={backupEnabledValue}
+                  onCheckedChange={(checked) => void handleSaveBackupEnabled(checked)}
+                  data-testid="switch-setting-backup-enabled"
+                />
+                <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+              </div>
+              {backupEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+              {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => void handleRunBackupNow()}
+                disabled={isRunningBackupNow}
+                data-testid="button-backups-run-now"
+              >
+                {isRunningBackupNow ? "Backup läuft..." : "Backup erzeugen"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
+                Aktualisieren
+              </Button>
+            </div>
+          </div>
+            </div>
+            <div className="sticky bottom-0 z-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4 shadow-[0_-1px_0_0_rgba(226,232,240,1)]" data-testid="dump-import-section">
+              <p className="font-semibold text-slate-900">Dump Import</p>
+              <p className="mb-1 text-xs text-slate-500">
+                ZIP-Dump hochladen, Vorschau prüfen und erst danach mit Sicherheitsphrase anwenden.
+              </p>
+              <p className="mb-3 text-xs font-medium text-amber-700" data-testid="dump-import-warning">
+                Achtung: Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => {
+                    setSelectedDumpFile(e.target.files?.[0] ?? null);
+                    setDumpImportPreview(null);
+                    setDumpImportResult(null);
+                    setDumpImportError(null);
+                    setDumpConfirmationInput("");
+                  }}
+                  data-testid="input-dump-import-file"
+                  className="text-sm"
+                />
+                <Button
+                  onClick={() => void handlePreviewDumpImport()}
+                  disabled={!selectedDumpFile || isDumpPreviewLoading || isDumpApplying}
+                  data-testid="button-dump-import-preview"
+                >
+                  {isDumpImporting ? "Prüfung läuft..." : "Vorschau prüfen"}
+                </Button>
+              </div>
+              {dumpImportPreview && (
+                <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-import-preview-report">
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span className="font-semibold text-slate-900">Status: {dumpImportPreview.transferReadiness}</span>
+                    <span>Ziel: {dumpImportPreview.targetDatabaseName}</span>
+                    <span>Dump: {dumpImportPreview.dumpId}</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 md:grid-cols-3">
+                    <div>Tabellen: {dumpImportPreview.expectedTables.length}</div>
+                    <div>Upload-Dateien: {dumpImportPreview.expectedUploads.fileCount}</div>
+                    <div>Upload-Groesse: {(dumpImportPreview.expectedUploads.totalBytes / 1024 / 1024).toFixed(2)} MB</div>
+                  </div>
+                  {dumpImportPreview.warnings.length > 0 && (
+                    <div data-testid="dump-import-preview-warnings">
+                      <p className="text-xs font-semibold text-amber-700">Warnungen</p>
+                      {dumpImportPreview.warnings.map((warning) => (
+                        <p key={warning} className="text-xs text-amber-700">{warning}</p>
+                      ))}
+                    </div>
+                  )}
+                  {dumpImportPreview.blockingIssues.length > 0 && (
+                    <div data-testid="dump-import-preview-blockers">
+                      <p className="text-xs font-semibold text-destructive">Blocker</p>
+                      {dumpImportPreview.blockingIssues.map((issue) => (
+                        <p key={issue} className="text-xs text-destructive">{issue}</p>
+                      ))}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-slate-900">Sicherheitsphrase</p>
+                    <p className="text-xs text-slate-600" data-testid="dump-import-confirmation-phrase">{dumpImportPreview.confirmationPhrase}</p>
+                    <Input
+                      value={dumpConfirmationInput}
+                      onChange={(event) => setDumpConfirmationInput(event.target.value)}
+                      data-testid="input-dump-import-confirmation"
+                    />
+                    <Button
+                      onClick={() => void handleApplyDumpImport()}
+                      disabled={
+                        isDumpApplying
+                        || dumpImportPreview.transferReadiness === "blocked"
+                        || dumpConfirmationInput.trim() !== dumpImportPreview.confirmationPhrase
+                      }
+                      data-testid="button-dump-import-apply"
+                    >
+                      {isDumpApplying ? "Import laeuft..." : "Import anwenden"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {dumpImportResult && (
+                <p className="mt-2 text-xs text-emerald-700" data-testid="dump-import-success">
+                  Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}. Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
+                </p>
+              )}
+              {dumpImportResult && (
+                <div className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600" data-testid="dump-import-summary">
+                  <p>Status: {dumpImportResult.importStatus}</p>
+                  <p>Verifikation: {dumpImportResult.verificationPassed ? "bestanden" : "fehlgeschlagen"}</p>
+                  <p>Zielbackup: {dumpImportResult.targetBackupCreated ? "erstellt" : "nicht erstellt"}</p>
+                  {dumpImportResult.warnings.map((warning) => (
+                    <p key={warning} className="text-amber-700">{warning}</p>
+                  ))}
+                  {dumpImportResult.blockingIssues.map((issue) => (
+                    <p key={issue} className="text-destructive">{issue}</p>
+                  ))}
+                </div>
+              )}
+              {dumpImportError && (
+                <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
+              )}
             </div>
           </div>
         </TabsContent>

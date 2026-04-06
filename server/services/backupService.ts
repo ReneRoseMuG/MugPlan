@@ -3,7 +3,7 @@ import path from "path";
 import * as backupRepository from "../repositories/backupRepository";
 import { runBackupManualTick } from "./backupScheduler";
 
-export type BackupDownloadKind = "excel" | "pdf";
+export type BackupDownloadKind = "excel" | "pdf" | "zip";
 
 export class BackupServiceError extends Error {
   status: number;
@@ -39,15 +39,16 @@ export async function listBackupLogs(context: RequestContext) {
   }));
 }
 
-function parseFilePathJson(filePathRaw: string | null): { excelPath?: string; pdfPath?: string } {
+function parseFilePathJson(filePathRaw: string | null): { excelPath?: string; pdfPath?: string; zipPath?: string } {
   if (!filePathRaw) return {};
   try {
     const parsed = JSON.parse(filePathRaw) as unknown;
     if (!parsed || typeof parsed !== "object") return {};
-    const candidate = parsed as { excelPath?: unknown; pdfPath?: unknown };
+    const candidate = parsed as { excelPath?: unknown; pdfPath?: unknown; zipPath?: unknown };
     return {
       excelPath: typeof candidate.excelPath === "string" ? candidate.excelPath : undefined,
       pdfPath: typeof candidate.pdfPath === "string" ? candidate.pdfPath : undefined,
+      zipPath: typeof candidate.zipPath === "string" ? candidate.zipPath : undefined,
     };
   } catch {
     return {};
@@ -66,7 +67,11 @@ export async function resolveBackupDownloadPath(
   }
 
   const parsed = parseFilePathJson(record.filePath);
-  const configuredPath = kind === "excel" ? parsed.excelPath : parsed.pdfPath;
+  const configuredPath = kind === "excel"
+    ? parsed.excelPath
+    : kind === "pdf"
+      ? parsed.pdfPath
+      : parsed.zipPath;
   if (!configuredPath) {
     throw new BackupServiceError("Datei fuer diesen Backup-Eintrag nicht verfuegbar", 404, "NOT_FOUND");
   }

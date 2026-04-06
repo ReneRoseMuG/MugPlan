@@ -114,13 +114,14 @@ export async function runBackupCycle(input: {
       exportedRecordCount: documents.exportedRecordCount,
       filePath: JSON.stringify(persisted),
     });
-    logInfo(`${logPrefix} run -> success`, {
-      trigger: input.trigger,
-      force: input.force,
-      exportedRecordCount: documents.exportedRecordCount,
-      excelPath: persisted.excelPath,
-      pdfPath: persisted.pdfPath,
-    });
+      logInfo(`${logPrefix} run -> success`, {
+        trigger: input.trigger,
+        force: input.force,
+        exportedRecordCount: documents.exportedRecordCount,
+        excelPath: persisted.excelPath,
+        pdfPath: persisted.pdfPath,
+        zipPath: persisted.zipPath,
+      });
     const cleanup = await cleanupOldBackups();
     return {
       status: "success",
