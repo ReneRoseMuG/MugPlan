@@ -713,7 +713,7 @@ async function buildDumpArtifacts(): Promise<{
   };
 }
 
-async function writeDumpArchive(zipPath: string): Promise<void> {
+export async function writeDumpArchive(zipPath: string): Promise<void> {
   const artifacts = await buildDumpArtifacts();
   const { archive, finalize } = buildArchive(zipPath);
   archive.append(JSON.stringify(artifacts.payload), { name: "data.json" });

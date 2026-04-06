@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { getBackupBasePath } from "../config/storagePaths";
+import { writeDumpArchive } from "./dumpService";
 
 function formatDateFolder(input = new Date()): string {
   const year = input.getFullYear();
@@ -21,13 +22,15 @@ export async function persistBackupFiles(input: {
   excelBuffer: Buffer;
   pdfBuffer: Buffer;
   now?: Date;
-}): Promise<{ excelPath: string; pdfPath: string }> {
+}): Promise<{ excelPath: string; pdfPath: string; zipPath: string }> {
   const targetDir = await getBackupDayDirectory(input.now);
   const excelPath = path.resolve(targetDir, "calendar-backup.xlsx");
   const pdfPath = path.resolve(targetDir, "anstehende-termine.pdf");
+  const zipPath = path.resolve(targetDir, "database-dump.zip");
 
   await fs.writeFile(excelPath, input.excelBuffer);
   await fs.writeFile(pdfPath, input.pdfBuffer);
+  await writeDumpArchive(zipPath);
 
-  return { excelPath, pdfPath };
+  return { excelPath, pdfPath, zipPath };
 }
