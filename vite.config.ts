@@ -30,6 +30,47 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) {
+            return undefined;
+          }
+
+          if (id.includes("@radix-ui")) {
+            return "vendor-radix";
+          }
+
+          if (
+            id.includes("react")
+            || id.includes("scheduler")
+            || id.includes("wouter")
+            || id.includes("@tanstack/react-query")
+          ) {
+            return "vendor-react";
+          }
+
+          if (id.includes("leaflet")) {
+            return "vendor-maps";
+          }
+
+          if (id.includes("pdfjs-dist")) {
+            return "vendor-pdf";
+          }
+
+          if (id.includes("date-fns") || id.includes("zod")) {
+            return "vendor-utils";
+          }
+
+          if (id.includes("lucide-react")) {
+            return "vendor-icons";
+          }
+
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     fs: {

@@ -140,6 +140,7 @@ export function Sidebar({
           type="button"
           onClick={() => void queryClient.invalidateQueries()}
           className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-white hover:text-slate-600"
+          data-testid="sidebar-refresh"
           title="Daten neu laden"
         >
           <RefreshCw className="h-3 w-3" />

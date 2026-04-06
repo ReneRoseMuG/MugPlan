@@ -4,6 +4,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "postinstall": "tsx script/patch-node-cron-sourcemaps.ts",
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start:orig": "NODE_ENV=production node dist/index.cjs",
