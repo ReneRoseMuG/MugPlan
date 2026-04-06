@@ -3,13 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowDown, ArrowRight, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2, X } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
-import type { ReportProduktionsplanungResponse } from "@shared/routes";
+import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } from "@shared/routes";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
 
+import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
+import { AuftragslistePrintLayout } from "@/components/reports/AuftragslistePrintLayout";
 import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
+import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import {
   ProduktionsplanungCategoryLayoutEditor,
@@ -50,6 +53,7 @@ import {
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { paginateAuftragslistePrintPages } from "@/lib/auftragsliste-print-model";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
@@ -58,7 +62,7 @@ import {
   type VorlauflistePrintColumn,
 } from "@/lib/vorlaufliste-print-model";
 
-type ReportType = "vorlaufliste" | "produktionsplanung";
+type ReportType = "vorlaufliste" | "produktionsplanung" | "auftragsliste";
 
 type VorlauflisteCategory = {
   id: number;
@@ -110,6 +114,12 @@ type ReportConfigDefaultsResponse = {
   latestProjectAppointmentDate: string | null;
 };
 
+type AuftragslisteResponse = {
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+  items: ReportAuftragslisteResponse["items"];
+};
+
 type ReportRangeTab = ReportConfigPanelMode;
 type VorlauflistePanelTab = ReportRangeTab;
 
@@ -120,6 +130,12 @@ type SubmittedFilters = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
   useShortCodes: boolean;
+};
+
+export type StandaloneReportLaunch = SubmittedFilters & {
+  activeTab: ReportRangeTab;
+  kwStart?: number;
+  weekCount?: number;
 };
 
 type VorlauflisteSelection = {
@@ -133,6 +149,12 @@ type ProduktionsplanungSelection = {
   useShortCodes?: boolean;
 };
 
+type AuftragslisteSelection = {
+  productCategoryIds?: number[];
+  componentCategoryIds?: number[];
+  useShortCodes?: boolean;
+};
+
 type VorlauflisteRangeConfig = {
   activeTab?: VorlauflistePanelTab;
   fromDate?: string;
@@ -142,6 +164,14 @@ type VorlauflisteRangeConfig = {
 };
 
 type ProduktionsplanungRangeConfig = {
+  activeTab?: ReportRangeTab;
+  fromDate?: string;
+  toDate?: string;
+  kwStart?: number;
+  weekCount?: number;
+};
+
+type AuftragslisteRangeConfig = {
   activeTab?: ReportRangeTab;
   fromDate?: string;
   toDate?: string;
@@ -170,11 +200,21 @@ type ProduktionsplanungRequestParams = {
   useShortCodes: boolean;
 };
 
+type AuftragslisteRequestParams = {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  useShortCodes: boolean;
+};
+
 const REPORT_PAGE_SIZE = 100;
 const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
 const PRODUKTIONSPLANUNG_SETTING_KEY = "reports.produktionsplanung.selection";
+const AUFTRAGSLISTE_SETTING_KEY = "reports.auftragsliste.selection";
 const VORLAUFLISTE_RANGE_SETTING_KEY = "reports.vorlaufliste.rangeConfig";
 const PRODUKTIONSPLANUNG_RANGE_SETTING_KEY = "reports.produktionsplanung.rangeConfig";
+const AUFTRAGSLISTE_RANGE_SETTING_KEY = "reports.auftragsliste.rangeConfig";
 const PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY = "reports.categoryLayout";
 const LEGACY_PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
@@ -182,12 +222,54 @@ const MAX_REPORT_COLUMN_WIDTH = 960;
 const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
 const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
+const AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX = 920;
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
   const parsed = new Date(`${value}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
   return format(parsed, "dd.MM.yyyy", { locale: de });
+}
+
+function formatCompactWeekdayDate(value: string | null | undefined): string {
+  const normalized = typeof value === "string" ? value : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return "-";
+  }
+  const parsed = new Date(`${normalized}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return normalized;
+  }
+  const weekday = new Intl.DateTimeFormat("de-DE", { weekday: "short" }).format(parsed).replace(/\.$/, "");
+  return `${weekday} ${format(parsed, "dd.MM.yy", { locale: de })}`;
+}
+
+function resolveReportRangeMetaLabel(params: {
+  activeTab: ReportRangeTab;
+  fromDate: string;
+  toDate?: string;
+  kwRange?: { fromDate: string; toDate: string } | null;
+}): string {
+  const fromDate = params.activeTab === "calendarWeek"
+    ? params.kwRange?.fromDate ?? ""
+    : params.fromDate;
+  const toDate = params.activeTab === "calendarWeek"
+    ? params.kwRange?.toDate ?? ""
+    : (params.toDate ?? "");
+
+  if (!fromDate) return "-";
+
+  const parsedFromDate = parseDateOnlyInput(fromDate);
+  const parsedToDate = parseDateOnlyInput(toDate);
+  const weekCount = parsedFromDate && parsedToDate
+    ? Math.max(1, Math.ceil((differenceInCalendarDays(parsedToDate, parsedFromDate) + 1) / 7))
+    : 1;
+  const fromLabel = formatCompactWeekdayDate(fromDate);
+  const toLabel = parsedToDate ? formatCompactWeekdayDate(toDate) : null;
+
+  return toLabel
+    ? `${fromLabel} - ${toLabel} = ${weekCount} KW`
+    : `${fromLabel} = ${weekCount} KW`;
 }
 
 function formatAmount(value: string | null): string {
@@ -336,6 +418,32 @@ export function buildProduktionsplanungReportUrl(params: ProduktionsplanungReque
   return `/api/reports/produktionsplanung?${searchParams.toString()}`;
 }
 
+export function buildAuftragslisteReportUrl(params: AuftragslisteRequestParams): string {
+  const searchParams = new URLSearchParams({
+    fromDate: params.fromDate,
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
+  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  return `/api/reports/auftragsliste?${searchParams.toString()}`;
+}
+
+export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string {
+  const searchParams = new URLSearchParams({
+    reportType: params.reportType,
+    activeTab: params.activeTab,
+    fromDate: params.fromDate,
+  });
+  if (params.toDate) searchParams.set("toDate", params.toDate);
+  if (typeof params.kwStart === "number") searchParams.set("kwStart", String(params.kwStart));
+  if (typeof params.weekCount === "number") searchParams.set("weekCount", String(params.weekCount));
+  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
+  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  return `/standalone/reports?${searchParams.toString()}`;
+}
+
 function renderGroupedCategoryList(
   groups: ReportProduktionsplanungResponse["productCategoryGroups"],
   layoutConfig: CategoryLayoutConfig,
@@ -455,9 +563,10 @@ function renderVorlauflistePrintCellContent(row: VorlauflisteItem, columnId: str
 
 interface ReportsPageProps {
   onCancel?: () => void;
+  standaloneLaunch?: StandaloneReportLaunch | null;
 }
 
-export function ReportsPage({ onCancel }: ReportsPageProps) {
+export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPageProps) {
   const [userRole] = useState(() =>
     typeof window === "undefined"
       ? "DISPATCHER"
@@ -479,12 +588,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState(defaultReportRange.toDate);
   const [produktionsplanungFromDate, setProduktionsplanungFromDate] = useState(defaultReportRange.fromDate);
   const [produktionsplanungToDate, setProduktionsplanungToDate] = useState(defaultReportRange.toDate);
+  const [auftragslisteFromDate, setAuftragslisteFromDate] = useState(defaultReportRange.fromDate);
+  const [auftragslisteToDate, setAuftragslisteToDate] = useState(defaultReportRange.toDate);
   const [activeVorlauflisteTab, setActiveVorlauflisteTab] = useState<VorlauflistePanelTab>("date");
   const [activeProduktionsplanungTab, setActiveProduktionsplanungTab] = useState<ReportRangeTab>("date");
+  const [activeAuftragslisteTab, setActiveAuftragslisteTab] = useState<ReportRangeTab>("date");
   const [vorlauflisteKwStart, setVorlauflisteKwStart] = useState<number | undefined>(defaultIsoWeek);
   const [vorlauflisteWeekCount, setVorlauflisteWeekCount] = useState<number>(defaultReportRange.weekCount);
   const [produktionsplanungKwStart, setProduktionsplanungKwStart] = useState<number | undefined>(defaultIsoWeek);
   const [produktionsplanungWeekCount, setProduktionsplanungWeekCount] = useState<number>(defaultReportRange.weekCount);
+  const [auftragslisteKwStart, setAuftragslisteKwStart] = useState<number | undefined>(defaultIsoWeek);
+  const [auftragslisteWeekCount, setAuftragslisteWeekCount] = useState<number>(defaultReportRange.weekCount);
   const [page, setPage] = useState(1);
   const [submittedFilters, setSubmittedFilters] = useState<SubmittedFilters | null>(null);
   const [isReportOverlayOpen, setIsReportOverlayOpen] = useState(false);
@@ -496,6 +610,8 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const vorlauflisteRangeConfig = useSetting(VORLAUFLISTE_RANGE_SETTING_KEY) as VorlauflisteRangeConfig | undefined;
   const produktionsplanungSelection = useSetting(PRODUKTIONSPLANUNG_SETTING_KEY) as ProduktionsplanungSelection | undefined;
   const produktionsplanungRangeConfig = useSetting(PRODUKTIONSPLANUNG_RANGE_SETTING_KEY) as ProduktionsplanungRangeConfig | undefined;
+  const auftragslisteSelection = useSetting(AUFTRAGSLISTE_SETTING_KEY) as AuftragslisteSelection | undefined;
+  const auftragslisteRangeConfig = useSetting(AUFTRAGSLISTE_RANGE_SETTING_KEY) as AuftragslisteRangeConfig | undefined;
   const categoryLayoutConfig = useSetting(PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY) as CategoryLayoutConfig | undefined;
   const { isSaving, setSetting, settingsByKey } = useSettings();
 
@@ -545,7 +661,6 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     () => [...activeProductCategories, ...activeComponentCategories],
     [activeComponentCategories, activeProductCategories],
   );
-
   const [useVorlauflisteShortCodes, setUseVorlauflisteShortCodes] = useState(false);
   const [vorlauflisteColumnWidths, setVorlauflisteColumnWidths] = useState<Record<string, number>>({});
   const [vorlauflisteColumnOrder, setVorlauflisteColumnOrder] = useState<string[]>([]);
@@ -554,8 +669,16 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
   const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
   const [useProduktionsplanungShortCodes, setUseProduktionsplanungShortCodes] = useState(false);
+  const [useAuftragslisteShortCodes, setUseAuftragslisteShortCodes] = useState(false);
+  const [selectedAuftragslisteProductCategoryIds, setSelectedAuftragslisteProductCategoryIds] = useState<number[]>([]);
+  const [selectedAuftragslisteComponentCategoryIds, setSelectedAuftragslisteComponentCategoryIds] = useState<number[]>([]);
+  const [isAuftragslisteCategoryPopoverOpen, setIsAuftragslisteCategoryPopoverOpen] = useState(false);
+  const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
+  const [activeAuftragslistePrintPageIndex, setActiveAuftragslistePrintPageIndex] = useState(0);
   const hasHydratedVorlauflisteSelectionRef = useRef(false);
   const hasHydratedProduktionsplanungSelectionRef = useRef(false);
+  const hasHydratedAuftragslisteSelectionRef = useRef(false);
+  const hasAppliedStandaloneLaunchRef = useRef(false);
 
   useEffect(() => {
     if (hasHydratedVorlauflisteSelectionRef.current) {
@@ -577,12 +700,26 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
   }, [effectiveProduktionsplanungSelection]);
 
   useEffect(() => {
+    if (hasHydratedAuftragslisteSelectionRef.current) {
+      return;
+    }
+    hasHydratedAuftragslisteSelectionRef.current = true;
+    setUseAuftragslisteShortCodes(auftragslisteSelection?.useShortCodes ?? false);
+    setSelectedAuftragslisteProductCategoryIds(auftragslisteSelection?.productCategoryIds ?? []);
+    setSelectedAuftragslisteComponentCategoryIds(auftragslisteSelection?.componentCategoryIds ?? []);
+  }, [auftragslisteSelection]);
+
+  useEffect(() => {
     setActiveVorlauflisteTab(vorlauflisteRangeConfig?.activeTab ?? "date");
   }, [vorlauflisteRangeConfig?.activeTab]);
 
   useEffect(() => {
     setActiveProduktionsplanungTab(produktionsplanungRangeConfig?.activeTab ?? "date");
   }, [produktionsplanungRangeConfig?.activeTab]);
+
+  useEffect(() => {
+    setActiveAuftragslisteTab(auftragslisteRangeConfig?.activeTab ?? "date");
+  }, [auftragslisteRangeConfig?.activeTab]);
 
   useEffect(() => {
     setVorlauflisteFromDate(defaultReportRange.fromDate);
@@ -593,7 +730,55 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     setProduktionsplanungToDate(defaultReportRange.toDate);
     setProduktionsplanungKwStart(defaultIsoWeek);
     setProduktionsplanungWeekCount(defaultReportRange.weekCount);
+    setAuftragslisteFromDate(defaultReportRange.fromDate);
+    setAuftragslisteToDate(defaultReportRange.toDate);
+    setAuftragslisteKwStart(defaultIsoWeek);
+    setAuftragslisteWeekCount(defaultReportRange.weekCount);
   }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
+
+  useEffect(() => {
+    if (!standaloneLaunch || hasAppliedStandaloneLaunchRef.current) {
+      return;
+    }
+    hasAppliedStandaloneLaunchRef.current = true;
+
+    if (standaloneLaunch.reportType === "vorlaufliste") {
+      setActiveVorlauflisteTab(standaloneLaunch.activeTab);
+      setVorlauflisteFromDate(standaloneLaunch.fromDate);
+      setVorlauflisteToDate(standaloneLaunch.toDate ?? "");
+      if (typeof standaloneLaunch.kwStart === "number") setVorlauflisteKwStart(standaloneLaunch.kwStart);
+      if (typeof standaloneLaunch.weekCount === "number") setVorlauflisteWeekCount(standaloneLaunch.weekCount);
+      setUseVorlauflisteShortCodes(standaloneLaunch.useShortCodes);
+    } else if (standaloneLaunch.reportType === "produktionsplanung") {
+      setActiveProduktionsplanungTab(standaloneLaunch.activeTab);
+      setProduktionsplanungFromDate(standaloneLaunch.fromDate);
+      setProduktionsplanungToDate(standaloneLaunch.toDate ?? "");
+      if (typeof standaloneLaunch.kwStart === "number") setProduktionsplanungKwStart(standaloneLaunch.kwStart);
+      if (typeof standaloneLaunch.weekCount === "number") setProduktionsplanungWeekCount(standaloneLaunch.weekCount);
+      setUseProduktionsplanungShortCodes(standaloneLaunch.useShortCodes);
+    } else {
+      setActiveAuftragslisteTab(standaloneLaunch.activeTab);
+      setAuftragslisteFromDate(standaloneLaunch.fromDate);
+      setAuftragslisteToDate(standaloneLaunch.toDate ?? "");
+      if (typeof standaloneLaunch.kwStart === "number") setAuftragslisteKwStart(standaloneLaunch.kwStart);
+      if (typeof standaloneLaunch.weekCount === "number") setAuftragslisteWeekCount(standaloneLaunch.weekCount);
+      setUseAuftragslisteShortCodes(standaloneLaunch.useShortCodes);
+      setSelectedAuftragslisteProductCategoryIds(standaloneLaunch.productCategoryIds);
+      setSelectedAuftragslisteComponentCategoryIds(standaloneLaunch.componentCategoryIds);
+    }
+
+    setPage(1);
+    setSubmittedFilters({
+      reportType: standaloneLaunch.reportType,
+      fromDate: standaloneLaunch.fromDate,
+      toDate: standaloneLaunch.toDate,
+      productCategoryIds: standaloneLaunch.productCategoryIds,
+      componentCategoryIds: standaloneLaunch.componentCategoryIds,
+      useShortCodes: standaloneLaunch.useShortCodes,
+    });
+    setReportRequestId((current) => current + 1);
+    setIsReportOverlayOpen(true);
+  }, [standaloneLaunch, defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
 
   const isProduktionsplanungCategoryLayoutConfigured = (categoryLayoutConfig?.length ?? 0) > 0;
   const activeProductCategoryIds = useMemo(
@@ -604,6 +789,22 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     () => new Set(activeComponentCategories.map((category) => category.id)),
     [activeComponentCategories],
   );
+  const allActiveAuftragslisteComponentCategoryIds = useMemo(
+    () => activeComponentCategories.map((category) => category.id),
+    [activeComponentCategories],
+  );
+  const allActiveAuftragslisteProductCategoryIds = useMemo(
+    () => activeProductCategories.map((category) => category.id),
+    [activeProductCategories],
+  );
+  const effectiveAuftragslisteProductCategoryIds = useMemo(() => {
+    const selectedIds = selectedAuftragslisteProductCategoryIds.filter((id) => activeProductCategoryIds.has(id));
+    return selectedIds.length > 0 ? selectedIds : allActiveAuftragslisteProductCategoryIds;
+  }, [activeProductCategoryIds, allActiveAuftragslisteProductCategoryIds, selectedAuftragslisteProductCategoryIds]);
+  const effectiveAuftragslisteComponentCategoryIds = useMemo(() => {
+    const selectedIds = selectedAuftragslisteComponentCategoryIds.filter((id) => activeComponentCategoryIds.has(id));
+    return selectedIds.length > 0 ? selectedIds : allActiveAuftragslisteComponentCategoryIds;
+  }, [activeComponentCategoryIds, allActiveAuftragslisteComponentCategoryIds, selectedAuftragslisteComponentCategoryIds]);
   const effectiveProduktionsplanungCategoryIds = useMemo(
     () => (isProduktionsplanungCategoryLayoutConfigured
       ? getCategoryLayoutIds(categoryLayoutConfig ?? []).filter((id) =>
@@ -635,7 +836,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     [allActiveProduktionsplanungCategories, categoryLayoutConfig],
   );
 
-  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProduktionsplanungSelection) => {
+  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProduktionsplanungSelection | AuftragslisteSelection) => {
     if (reportType === "vorlaufliste") {
       const vorlauflisteNext = next as VorlauflisteSelection;
       const value: VorlauflisteSelection = {
@@ -648,6 +849,18 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       if (hiddenColumns.length > 0) value.hiddenColumns = hiddenColumns;
       await setSetting({
         key: VORLAUFLISTE_SETTING_KEY,
+        scopeType: "USER",
+        value,
+      });
+    } else if (reportType === "auftragsliste") {
+      const auftragslisteNext = next as AuftragslisteSelection;
+      const value: AuftragslisteSelection = {
+        productCategoryIds: Array.from(new Set((auftragslisteNext.productCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
+        componentCategoryIds: Array.from(new Set((auftragslisteNext.componentCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
+        useShortCodes: auftragslisteNext.useShortCodes ?? false,
+      };
+      await setSetting({
+        key: AUFTRAGSLISTE_SETTING_KEY,
         scopeType: "USER",
         value,
       });
@@ -670,6 +883,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       columnWidths: next?.columnWidths ?? vorlauflisteColumnWidths,
       columnOrder: next?.columnOrder ?? vorlauflisteColumnOrder,
       hiddenColumns: next?.hiddenColumns ?? vorlauflisteHiddenColumns,
+    });
+  };
+
+  const persistAuftragslisteSelection = async (next?: Partial<AuftragslisteSelection>) => {
+    await persistSelection("auftragsliste", {
+      productCategoryIds: next?.productCategoryIds ?? effectiveAuftragslisteProductCategoryIds,
+      componentCategoryIds: next?.componentCategoryIds ?? effectiveAuftragslisteComponentCategoryIds,
+      useShortCodes: next?.useShortCodes ?? useAuftragslisteShortCodes,
     });
   };
 
@@ -697,6 +918,20 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
         toDate: resolveRequiredToDate(next.toDate ?? produktionsplanungToDate, defaultReportRange.toDate),
         kwStart: normalizeKwStart(next.kwStart ?? produktionsplanungKwStart),
         weekCount: normalizeWeekCount(next.weekCount ?? produktionsplanungWeekCount),
+      },
+    });
+  };
+
+  const persistAuftragslisteRangeConfig = async (next: Partial<AuftragslisteRangeConfig>) => {
+    await setSetting({
+      key: AUFTRAGSLISTE_RANGE_SETTING_KEY,
+      scopeType: "USER",
+      value: {
+        activeTab: next.activeTab ?? activeAuftragslisteTab,
+        fromDate: normalizePersistedDate(next.fromDate ?? auftragslisteFromDate),
+        toDate: resolveRequiredToDate(next.toDate ?? auftragslisteToDate, defaultReportRange.toDate),
+        kwStart: normalizeKwStart(next.kwStart ?? auftragslisteKwStart),
+        weekCount: normalizeWeekCount(next.weekCount ?? auftragslisteWeekCount),
       },
     });
   };
@@ -742,6 +977,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
       }));
     },
   });
+  const { data: auftragslisteData, isLoading: isAuftragslisteLoading } = useQuery<AuftragslisteResponse>({
+    queryKey: ["reports-auftragsliste", submittedFilters, reportRequestId],
+    enabled: submittedFilters?.reportType === "auftragsliste" && isReportOverlayOpen,
+    queryFn: async () => fetchJson(buildAuftragslisteReportUrl({
+      fromDate: submittedFilters!.fromDate,
+      toDate: submittedFilters?.toDate,
+      productCategoryIds: submittedFilters?.productCategoryIds ?? [],
+      componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
+      useShortCodes: submittedFilters?.useShortCodes ?? false,
+    }), { cache: "no-store" }),
+  });
   const availableVorlauflisteProductCategories = useMemo<VorlauflisteCategory[]>(() => {
     if ((vorlauflisteData?.productCategories?.length ?? 0) > 0) {
       return vorlauflisteData?.productCategories ?? [];
@@ -779,6 +1025,18 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     effectiveProduktionsplanungCategoryIds,
     isProduktionsplanungCategoryLayoutConfigured,
   ]);
+  const effectiveAuftragslisteCategories = useMemo<ProduktionsplanungPrintCategory[]>(() => {
+    const productCats = auftragslisteData?.productCategories
+      ?? activeProductCategories.map((category) => ({ id: category.id, name: category.name }));
+    const componentCats = auftragslisteData?.componentCategories
+      ?? activeComponentCategories.map((category) => ({ id: category.id, name: category.name }));
+    return [...productCats, ...componentCats].map((category) => ({ id: category.id, name: category.name }));
+  }, [
+    activeComponentCategories,
+    activeProductCategories,
+    auftragslisteData?.componentCategories,
+    auftragslisteData?.productCategories,
+  ]);
   const persistCategoryLayoutConfig = async (nextConfig: CategoryLayoutConfig) => {
     await setSetting({
       key: PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY,
@@ -794,6 +1052,14 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     }
     setActiveVorlauflistePrintPageIndex(0);
   }, [isVorlauflistePrintPreviewOpen, vorlauflistePrintPreviewData]);
+
+  useEffect(() => {
+    if (!isAuftragslistePrintPreviewOpen) {
+      setActiveAuftragslistePrintPageIndex(0);
+      return;
+    }
+    setActiveAuftragslistePrintPageIndex(0);
+  }, [auftragslisteData, isAuftragslistePrintPreviewOpen]);
 
   const resolvePersistedColumnWidth = (columnId: string, defaultWidth: number, minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH) => {
     if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) {
@@ -947,12 +1213,17 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     rowsPerPage: VORLAUFLISTE_PRINT_ROWS_PER_PAGE,
     availableWidthPx: VORLAUFLISTE_PRINT_WIDTH_PX,
   }), [vorlauflistePrintColumns, vorlauflistePrintPreviewData]);
+  const auftragslistePrintPages = useMemo(
+    () => paginateAuftragslistePrintPages(auftragslisteData?.items ?? [], AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX),
+    [auftragslisteData?.items],
+  );
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
   const canGoNext = totalPages > 0 && page < totalPages;
   const isVorlauflisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "vorlaufliste";
   const isProduktionsplanungLayout = isReportOverlayOpen && submittedFilters?.reportType === "produktionsplanung";
+  const isAuftragslisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "auftragsliste";
   const vorlauflisteKwRange = useMemo(() => resolveReportRangeFromKw({
     kwStart: vorlauflisteKwStart,
     weekCount: vorlauflisteWeekCount,
@@ -963,47 +1234,120 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
     weekCount: produktionsplanungWeekCount,
     referenceDate: defaultReportRange.referenceDate,
   }), [defaultReportRange.referenceDate, produktionsplanungKwStart, produktionsplanungWeekCount]);
+  const auftragslisteKwRange = useMemo(() => resolveReportRangeFromKw({
+    kwStart: auftragslisteKwStart,
+    weekCount: auftragslisteWeekCount,
+    referenceDate: defaultReportRange.referenceDate,
+  }), [auftragslisteKwStart, auftragslisteWeekCount, defaultReportRange.referenceDate]);
+  const vorlauflisteRangeMetaLabel = useMemo(() => resolveReportRangeMetaLabel({
+    activeTab: activeVorlauflisteTab,
+    fromDate: vorlauflisteFromDate,
+    toDate: vorlauflisteToDate,
+    kwRange: vorlauflisteKwRange,
+  }), [activeVorlauflisteTab, vorlauflisteFromDate, vorlauflisteKwRange, vorlauflisteToDate]);
+  const produktionsplanungRangeMetaLabel = useMemo(() => resolveReportRangeMetaLabel({
+    activeTab: activeProduktionsplanungTab,
+    fromDate: produktionsplanungFromDate,
+    toDate: produktionsplanungToDate,
+    kwRange: produktionsplanungKwRange,
+  }), [activeProduktionsplanungTab, produktionsplanungFromDate, produktionsplanungKwRange, produktionsplanungToDate]);
+  const auftragslisteRangeMetaLabel = useMemo(() => resolveReportRangeMetaLabel({
+    activeTab: activeAuftragslisteTab,
+    fromDate: auftragslisteFromDate,
+    toDate: auftragslisteToDate,
+    kwRange: auftragslisteKwRange,
+  }), [activeAuftragslisteTab, auftragslisteFromDate, auftragslisteKwRange, auftragslisteToDate]);
+  const reportsPrintPageSize = isAuftragslistePrintPreviewOpen ? "A4 portrait" : "A4 landscape";
   const isVorlauflisteGenerateDisabled = activeVorlauflisteTab === "calendarWeek"
     ? !vorlauflisteKwRange
     : vorlauflisteFromDate.trim().length === 0;
   const isProduktionsplanungGenerateDisabled = activeProduktionsplanungTab === "calendarWeek"
     ? !produktionsplanungKwRange
     : produktionsplanungFromDate.trim().length === 0;
-
-  const handleGenerateReport = (reportType: ReportType) => {
+  const isAuftragslisteGenerateDisabled = activeAuftragslisteTab === "calendarWeek"
+    ? !auftragslisteKwRange
+    : auftragslisteFromDate.trim().length === 0;
+  const resolveStandaloneLaunch = (reportType: ReportType): StandaloneReportLaunch | null => {
     const isVorlaufliste = reportType === "vorlaufliste";
-    const activeTab = isVorlaufliste ? activeVorlauflisteTab : activeProduktionsplanungTab;
-    const kwRange = isVorlaufliste ? vorlauflisteKwRange : produktionsplanungKwRange;
+    const isAuftragsliste = reportType === "auftragsliste";
+    const activeTab = isVorlaufliste
+      ? activeVorlauflisteTab
+      : isAuftragsliste
+        ? activeAuftragslisteTab
+        : activeProduktionsplanungTab;
+    const kwRange = isVorlaufliste
+      ? vorlauflisteKwRange
+      : isAuftragsliste
+        ? auftragslisteKwRange
+        : produktionsplanungKwRange;
     const fromDate = activeTab === "calendarWeek"
       ? (kwRange?.fromDate ?? "")
-      : (isVorlaufliste ? vorlauflisteFromDate : produktionsplanungFromDate);
+      : (isVorlaufliste ? vorlauflisteFromDate : isAuftragsliste ? auftragslisteFromDate : produktionsplanungFromDate);
     const toDate = activeTab === "calendarWeek"
       ? kwRange?.toDate
       : (() => {
-        const value = isVorlaufliste ? vorlauflisteToDate : produktionsplanungToDate;
+        const value = isVorlaufliste ? vorlauflisteToDate : isAuftragsliste ? auftragslisteToDate : produktionsplanungToDate;
         return value.trim().length > 0 ? value : undefined;
       })();
-    const productCategoryIds = isVorlaufliste ? [] : effectiveProduktionsplanungProductCategoryIds;
-    const componentCategoryIds = isVorlaufliste ? [] : effectiveProduktionsplanungComponentCategoryIds;
+    const productCategoryIds = isVorlaufliste
+      ? []
+      : isAuftragsliste
+        ? effectiveAuftragslisteProductCategoryIds
+        : effectiveProduktionsplanungProductCategoryIds;
+    const componentCategoryIds = isVorlaufliste
+      ? []
+      : isAuftragsliste
+        ? effectiveAuftragslisteComponentCategoryIds
+        : effectiveProduktionsplanungComponentCategoryIds;
 
-    if (fromDate.trim().length === 0) return;
-    setPage(1);
-    setSubmittedFilters({
+    if (fromDate.trim().length === 0) return null;
+    const kwStart = activeTab === "calendarWeek"
+      ? (isVorlaufliste ? vorlauflisteKwStart : isAuftragsliste ? auftragslisteKwStart : produktionsplanungKwStart)
+      : undefined;
+    const weekCount = activeTab === "calendarWeek"
+      ? (isVorlaufliste ? vorlauflisteWeekCount : isAuftragsliste ? auftragslisteWeekCount : produktionsplanungWeekCount)
+      : undefined;
+    return {
       reportType,
+      activeTab,
       fromDate,
       toDate,
+      kwStart,
+      weekCount,
       productCategoryIds,
       componentCategoryIds,
-      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : useProduktionsplanungShortCodes,
+      useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : isAuftragsliste ? useAuftragslisteShortCodes : useProduktionsplanungShortCodes,
+    };
+  };
+
+  const handleGenerateReport = (reportType: ReportType) => {
+    const launch = resolveStandaloneLaunch(reportType);
+    if (!launch) return;
+    setPage(1);
+    setSubmittedFilters({
+      reportType: launch.reportType,
+      fromDate: launch.fromDate,
+      toDate: launch.toDate,
+      productCategoryIds: launch.productCategoryIds,
+      componentCategoryIds: launch.componentCategoryIds,
+      useShortCodes: launch.useShortCodes,
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
+  };
+
+  const handleOpenReportInTab = (reportType: ReportType) => {
+    const launch = resolveStandaloneLaunch(reportType);
+    if (!launch) return;
+    window.open(buildStandaloneReportUrl(launch), "_blank");
   };
 
   const closeOverlay = () => {
     setIsReportOverlayOpen(false);
     setIsVorlauflisteColumnsPopoverOpen(false);
     setIsVorlauflistePrintPreviewOpen(false);
+    setIsAuftragslisteCategoryPopoverOpen(false);
+    setIsAuftragslistePrintPreviewOpen(false);
     setIsProduktionsplanungCategoryLayoutDialogOpen(false);
   };
   const handleVorlauflistePrint = () => window.print();
@@ -1086,7 +1430,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               {`
                 @media print {
                   @page {
-                    size: A4 landscape;
+                    size: ${reportsPrintPageSize};
                     margin: 1cm;
                   }
                   body * {
@@ -1185,7 +1529,7 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                 </Dialog>
               ) : null}
 
-              <div className="flex items-stretch gap-5 overflow-x-auto pb-2">
+              <div className="grid items-stretch gap-5 pb-2 md:grid-cols-2">
                 <ReportConfigPanel
                   title="Vorlaufliste"
                   helpKey="reports-vorlaufliste"
@@ -1222,16 +1566,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </label>
                   )}
                   footer={(
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateReport("vorlaufliste")}
+                    <ReportOpenToggle
                       disabled={isVorlauflisteGenerateDisabled}
-                      className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      data-testid="button-reports-vorlaufliste-generate"
-                    >
-                      Report erzeugen
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                      onOpen={() => handleGenerateReport("vorlaufliste")}
+                      onOpenInTab={() => handleOpenReportInTab("vorlaufliste")}
+                      openTestId="button-reports-vorlaufliste-generate"
+                      openInTabTestId="button-reports-vorlaufliste-open-tab"
+                    />
                   )}
                   testId="reports-vorlaufliste-config-panel"
                   togglePrefix="reports-vorlaufliste"
@@ -1352,16 +1693,13 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </label>
                   )}
                   footer={(
-                    <button
-                      type="button"
-                      onClick={() => handleGenerateReport("produktionsplanung")}
+                    <ReportOpenToggle
                       disabled={isProduktionsplanungGenerateDisabled}
-                      className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      data-testid="button-reports-produktionsplanung-generate"
-                    >
-                      Report erzeugen
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
+                      onOpen={() => handleGenerateReport("produktionsplanung")}
+                      onOpenInTab={() => handleOpenReportInTab("produktionsplanung")}
+                      openTestId="button-reports-produktionsplanung-generate"
+                      openInTabTestId="button-reports-produktionsplanung-open-tab"
+                    />
                   )}
                   testId="reports-produktionsplanung-config-panel"
                   togglePrefix="reports-produktionsplanung"
@@ -1445,14 +1783,192 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
                     </div>
                   )}
                 </ReportConfigPanel>
+
+                <ReportConfigPanel
+                  title="Auftragsliste"
+                  helpKey="report-auftragsliste"
+                  mode={activeAuftragslisteTab}
+                  onModeChange={(nextMode) => {
+                    setActiveAuftragslisteTab(nextMode);
+                    void persistAuftragslisteRangeConfig({ activeTab: nextMode });
+                  }}
+                  actionButton={(
+                    <Popover open={isAuftragslisteCategoryPopoverOpen} onOpenChange={setIsAuftragslisteCategoryPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                          data-testid="button-reports-auftragsliste-open-categories"
+                        >
+                          <Columns3 className="h-3.5 w-3.5" />
+                          Kategorien
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent align="start" className="w-80" data-testid="reports-auftragsliste-categories-popover">
+                        <div className="space-y-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">Artikelliste</p>
+                          </div>
+                          <div className="space-y-2">
+                            {activeProductCategories.map((category) => {
+                              const checked = effectiveAuftragslisteProductCategoryIds.includes(category.id);
+                              return (
+                                <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(nextChecked) => {
+                                      const nextIds = Boolean(nextChecked)
+                                        ? Array.from(new Set([...effectiveAuftragslisteProductCategoryIds, category.id]))
+                                        : effectiveAuftragslisteProductCategoryIds.filter((id) => id !== category.id);
+                                      setSelectedAuftragslisteProductCategoryIds(nextIds);
+                                      void persistAuftragslisteSelection({ productCategoryIds: nextIds });
+                                    }}
+                                    data-testid={`checkbox-reports-auftragsliste-product-category-${category.id}`}
+                                  />
+                                  <span>{category.name}</span>
+                                </label>
+                              );
+                            })}
+                            {activeComponentCategories.map((category) => {
+                              const checked = effectiveAuftragslisteComponentCategoryIds.includes(category.id);
+                              return (
+                                <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(nextChecked) => {
+                                      const nextIds = Boolean(nextChecked)
+                                        ? Array.from(new Set([...effectiveAuftragslisteComponentCategoryIds, category.id]))
+                                        : effectiveAuftragslisteComponentCategoryIds.filter((id) => id !== category.id);
+                                      setSelectedAuftragslisteComponentCategoryIds(nextIds);
+                                      void persistAuftragslisteSelection({ componentCategoryIds: nextIds });
+                                    }}
+                                    data-testid={`checkbox-reports-auftragsliste-category-${category.id}`}
+                                  />
+                                  <span>{category.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  optionsSlot={(
+                    <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-auftragsliste-shortcodes-option">
+                      <input
+                        type="checkbox"
+                        checked={useAuftragslisteShortCodes}
+                        onChange={(event) => {
+                          const next = event.target.checked;
+                          setUseAuftragslisteShortCodes(next);
+                          void persistAuftragslisteSelection({ useShortCodes: next });
+                        }}
+                        className="h-4 w-4 rounded accent-slate-700"
+                        data-testid="checkbox-reports-auftragsliste-use-shortcodes"
+                      />
+                      <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+                    </label>
+                  )}
+                  footer={(
+                    <ReportOpenToggle
+                      disabled={isAuftragslisteGenerateDisabled}
+                      onOpen={() => handleGenerateReport("auftragsliste")}
+                      onOpenInTab={() => handleOpenReportInTab("auftragsliste")}
+                      openTestId="button-reports-auftragsliste-generate"
+                      openInTabTestId="button-reports-auftragsliste-open-tab"
+                    />
+                  )}
+                  testId="reports-auftragsliste-config-panel"
+                  togglePrefix="reports-auftragsliste"
+                >
+                  {activeAuftragslisteTab === "date" ? (
+                    <div className="space-y-3" data-testid="reports-auftragsliste-date-panel">
+                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
+                          <input
+                            type="date"
+                            value={auftragslisteFromDate}
+                            onChange={(event) => {
+                              const nextValue = event.target.value;
+                              setAuftragslisteFromDate(nextValue);
+                              void persistAuftragslisteRangeConfig({ fromDate: nextValue });
+                            }}
+                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-testid="reports-auftragsliste-from-date"
+                          />
+                        </div>
+                        <div className="flex flex-col items-end gap-1 text-right">
+                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
+                          <input
+                            type="date"
+                            value={auftragslisteToDate}
+                            onChange={(event) => {
+                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
+                              setAuftragslisteToDate(nextValue);
+                              void persistAuftragslisteRangeConfig({ toDate: nextValue });
+                            }}
+                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            data-testid="reports-auftragsliste-to-date"
+                          />
+                        </div>
+                      </div>
+                      <RangeSummary
+                        fromDate={auftragslisteFromDate}
+                        toDate={auftragslisteToDate}
+                        testId="reports-auftragsliste-date-summary"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-3" data-testid="reports-auftragsliste-calendar-week-panel">
+                      <div className="flex flex-wrap items-start gap-4">
+                        <SpinField
+                          label="KW Start"
+                          value={auftragslisteKwStart ?? defaultIsoWeek}
+                          onChange={(nextValue) => {
+                            setAuftragslisteKwStart(nextValue);
+                            void persistAuftragslisteRangeConfig({ kwStart: nextValue });
+                          }}
+                          min={1}
+                          max={53}
+                          strictTextBounds
+                          hint={`KW ${String(auftragslisteKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
+                          inputTestId="input-reports-auftragsliste-kw-start"
+                          incrementTestId="button-reports-auftragsliste-kw-start-up"
+                          decrementTestId="button-reports-auftragsliste-kw-start-down"
+                        />
+                        <SpinField
+                          label="Anzahl Wochen"
+                          value={auftragslisteWeekCount}
+                          onChange={(nextValue) => {
+                            setAuftragslisteWeekCount(nextValue);
+                            void persistAuftragslisteRangeConfig({ weekCount: nextValue });
+                          }}
+                          min={1}
+                          max={52}
+                          hint={`${auftragslisteWeekCount} ${auftragslisteWeekCount === 1 ? "Woche" : "Wochen"}`}
+                          inputTestId="input-reports-auftragsliste-week-count"
+                          incrementTestId="button-reports-auftragsliste-week-count-up"
+                          decrementTestId="button-reports-auftragsliste-week-count-down"
+                        />
+                      </div>
+                      <RangeSummary
+                        fromDate={auftragslisteKwRange?.fromDate ?? ""}
+                        toDate={auftragslisteKwRange?.toDate ?? ""}
+                        testId="reports-auftragsliste-calendar-week-summary"
+                      />
+                    </div>
+                  )}
+                </ReportConfigPanel>
               </div>
             </div>
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isVorlauflisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-overlay">
               <div className="flex h-full flex-col">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-                  <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-foreground">Vorlaufliste</h3>
+                  <div className="flex min-w-0 items-baseline gap-3">
+                    <h3 className="shrink-0 text-base font-semibold text-foreground">Vorlaufliste</h3>
+                    <span className="truncate text-sm text-muted-foreground">{vorlauflisteRangeMetaLabel}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Popover open={isVorlauflisteColumnsPopoverOpen} onOpenChange={setIsVorlauflisteColumnsPopoverOpen}>
@@ -1722,11 +2238,96 @@ export function ReportsPage({ onCancel }: ReportsPageProps) {
               errorState={isVorlauflistePrintPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
             />
 
+            <div className={cn("absolute inset-0 z-10 bg-slate-100 transition-opacity", isAuftragslisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-auftragsliste-overlay">
+              <div className="flex h-full flex-col">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
+                  <div className="flex min-w-0 items-baseline gap-3">
+                    <h3 className="shrink-0 text-base font-semibold text-foreground">Auftragsliste</h3>
+                    <span className="truncate text-sm text-muted-foreground">{auftragslisteRangeMetaLabel}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="outline" onClick={() => setIsAuftragslistePrintPreviewOpen(true)} data-testid="button-reports-auftragsliste-print-preview">
+                      <Printer className="h-4 w-4" />
+                      Druckvorschau
+                    </Button>
+                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-auftragsliste-back">Zurück</Button>
+                  </div>
+                </div>
+                <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-6">
+                  {isAuftragslisteLoading ? (
+                    <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
+                  ) : (
+                    <section data-testid="reports-auftragsliste-project-cards">
+                      {auftragslisteData?.items?.length ? (
+                        <div className="grid grid-cols-1 gap-4">
+                          {(auftragslisteData?.items ?? []).map((row) => (
+                            <AuftragslisteProjectCard
+                              key={row.projectId}
+                              row={row}
+                              categories={effectiveAuftragslisteCategories}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Keine passenden Projekte im gewählten Zeitraum gefunden.</p>
+                      )}
+                    </section>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <PrintPreviewDialog
+              open={isAuftragslistePrintPreviewOpen}
+              onOpenChange={setIsAuftragslistePrintPreviewOpen}
+              title="Druckvorschau Auftragsliste"
+              dialogWidthClassName="w-[calc(210mm+88px)]"
+              pages={auftragslistePrintPages}
+              activePageIndex={activeAuftragslistePrintPageIndex}
+              onPageChange={setActiveAuftragslistePrintPageIndex}
+              testIdPrefix="auftragsliste-print-preview"
+              dialogTestId="dialog-auftragsliste-print-preview"
+              showPageMetaBar={false}
+              pageOrientation="portrait"
+              getPageKey={(page) => page.pageNumber}
+              headerActions={auftragslistePrintPages.length > 0 ? (
+                <Button type="button" variant="outline" onClick={handleVorlauflistePrint} data-testid="button-reports-auftragsliste-print">
+                  <Printer className="h-4 w-4" />
+                  Drucken
+                </Button>
+              ) : null}
+              renderPage={(page) => (
+                <PrintPageShell
+                  orientation="portrait"
+                  paddingMm={10}
+                  testId={`auftragsliste-print-page-${page.pageNumber}`}
+                  footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`auftragsliste-print-page-footer-${page.pageNumber}`} />}
+                >
+                  <PrintSlimHeader
+                    label="Auftragsliste"
+                    context={
+                      submittedFilters?.toDate
+                        ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
+                        : formatDate(submittedFilters?.fromDate ?? null)
+                    }
+                    testId={`auftragsliste-print-page-header-${page.pageNumber}`}
+                  />
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+                    <AuftragslistePrintLayout
+                      items={page.items}
+                      categories={effectiveAuftragslisteCategories}
+                    />
+                  </div>
+                </PrintPageShell>
+              )}
+            />
+
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProduktionsplanungLayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-produktionsplanung-overlay">
               <div className="flex h-full flex-col">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
-                  <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-foreground">Produktionsplanung</h3>
+                  <div className="flex min-w-0 items-baseline gap-3">
+                    <h3 className="shrink-0 text-base font-semibold text-foreground">Produktionsplanung</h3>
+                    <span className="truncate text-sm text-muted-foreground">{produktionsplanungRangeMetaLabel}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-produktionsplanung-back">Zurück</Button>

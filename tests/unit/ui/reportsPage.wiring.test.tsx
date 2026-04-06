@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Die Reports-Seite rendert die prototypnahen FT26-Toggles fuer Datum und Kalenderwoche samt Header-Actions.
+ * - Die Auftragsliste erscheint als dritter Report-Block mit eigener Kategorien-Aktion.
  * - Die Produktionsplanung zeigt keinen alten Info-Tag-, Sonderblock- oder deaktivierten Kategorie-Block mehr.
  * - Nicht-Admins sehen keinen Kategorie-Layout-Button; Admins erhalten stattdessen den Dialog-Einstieg.
  *
  * Fehlerfaelle:
  * - Alte Produktionsplanung-Blöcke oder Legacy-Tabelle bleiben sichtbar verdrahtet.
  * - Die prototypnahen Toggle- und Action-Elemente fehlen oder fallen auf die alte Tab-Struktur zurueck.
+ * - Die Auftragsliste fehlt oder rendert ohne ihren Kategorien-Einstieg.
  * - Der Admin-Einstieg fuer das Kategorie-Layout fehlt oder wird Nicht-Admins angezeigt.
  *
  * Ziel:
@@ -101,7 +103,28 @@ vi.mock("@/components/ui/popover", () => ({
 }));
 
 vi.mock("@/components/print/PrintPreviewDialog", () => ({
-  PrintPreviewDialog: ({ title }: { title: string }) => <div data-testid="print-preview-dialog-marker">{title}</div>,
+  PrintPreviewDialog: ({
+    title,
+    pages = [],
+    renderPage,
+    dialogWidthClassName,
+    pageOrientation,
+  }: {
+    title: string;
+    pages?: unknown[];
+    renderPage?: (page: unknown, index: number) => React.ReactNode;
+    dialogWidthClassName?: string;
+    pageOrientation?: string;
+  }) => (
+    <div
+      data-testid="print-preview-dialog-marker"
+      data-dialog-width={dialogWidthClassName ?? ""}
+      data-page-orientation={pageOrientation ?? ""}
+    >
+      {title}
+      {pages.length > 0 && renderPage ? renderPage(pages[0], 0) : null}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/ui/table-view", () => ({
@@ -130,6 +153,24 @@ vi.mock("@/components/ui/list-paging-footer", () => ({
 
 vi.mock("@/components/ui/entity-tag-footer-row", () => ({
   EntityTagFooterRow: () => <div>tag-row</div>,
+}));
+
+vi.mock("@/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
+  CalendarWeekAppointmentEmployeesHover: ({ employees }: { employees: Array<{ id: number; fullName: string }> }) => (
+    <div data-testid="employees-hover">{employees.map((employee) => employee.fullName).join(", ") || "leer"}</div>
+  ),
+}));
+
+vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
+  EntityNotesHoverPreview: ({ triggerLabel }: { triggerLabel?: string }) => (
+    <div data-testid="notes-hover">{triggerLabel ?? "Notizen"}</div>
+  ),
+}));
+
+vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsHover", () => ({
+  CalendarWeekAppointmentAttachmentsHover: ({ totalAttachmentsCount }: { totalAttachmentsCount: number }) => (
+    <div data-testid="attachments-hover">Anhaenge {totalAttachmentsCount}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/help/help-icon", () => ({
@@ -230,6 +271,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
           isLoading: false,
         };
       }
+      if (key === "reports-auftragsliste") {
+        return {
+          data: { productCategories: [], componentCategories: [], items: [] },
+          isLoading: false,
+        };
+      }
       return { data: [], isLoading: false, isError: false };
     });
   });
@@ -241,7 +288,13 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("toggle-reports-vorlaufliste-calendarWeek");
     expect(html).toContain("toggle-reports-produktionsplanung-date");
     expect(html).toContain("toggle-reports-produktionsplanung-calendarWeek");
+    expect(html).toContain("toggle-reports-auftragsliste-date");
+    expect(html).toContain("toggle-reports-auftragsliste-calendarWeek");
     expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
+    expect(html).toContain("button-reports-auftragsliste-open-categories");
+    expect(html).toContain("button-reports-vorlaufliste-open-tab");
+    expect(html).toContain("button-reports-produktionsplanung-open-tab");
+    expect(html).toContain("button-reports-auftragsliste-open-tab");
     expect(html).toContain("button-reports-vorlaufliste-print-preview");
     expect(html).not.toContain("tab-reports-vorlaufliste-columns");
     expect(html).not.toContain("button-reports-vorlaufliste-clear-to-date");
@@ -250,12 +303,126 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).not.toContain("button-reports-produktionsplanung-show-to-date");
     expect(html).toContain("reports-vorlaufliste-config-panel");
     expect(html).toContain("reports-produktionsplanung-config-panel");
+    expect(html).toContain("reports-auftragsliste-config-panel");
+  });
+
+  it("renders the auftragsliste categories as one article list with product categories first", () => {
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("Artikelliste");
+    expect(html).toContain("checkbox-reports-auftragsliste-product-category-1");
+    expect(html).toContain("checkbox-reports-auftragsliste-category-2");
+    expect(html.indexOf("Fass Saunen")).toBeLessThan(html.indexOf("Fenster"));
   });
 
   it("renders the latest appointment week sunday as default end date in both panels", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
     expect((html.match(/value=\"2026-10-11\"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("renders the auftragsliste print preview in portrait with a narrower dialog shell", () => {
+    useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
+      const key = options.queryKey?.[0];
+      if (key === "reports-config-defaults") {
+        return {
+          data: { latestProjectAppointmentDate: "2026-10-05" },
+          isLoading: false,
+        };
+      }
+      if (key === "/api/admin/master-data/product-categories?active=all") {
+        return {
+          data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
+          isLoading: false,
+        };
+      }
+      if (key === "/api/admin/master-data/component-categories?active=all") {
+        return {
+          data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
+          isLoading: false,
+        };
+      }
+      if (key === "reports-vorlaufliste") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 100,
+            total: 0,
+            totalPages: 0,
+            productCategories: [],
+            componentCategories: [],
+            items: [],
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "reports-vorlaufliste-print-preview") {
+        return {
+          data: { items: [], productCategories: [], componentCategories: [] },
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === "reports-produktionsplanung") {
+        return {
+          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
+          isLoading: false,
+        };
+      }
+      if (key === "reports-auftragsliste") {
+        return {
+          data: {
+            productCategories: [{ id: 1, name: "Fass Saunen" }],
+            componentCategories: [{ id: 2, name: "Fenster" }],
+            items: [{
+              projectId: 31,
+              customerId: 44,
+              appointmentId: 55,
+              projectName: "Projekt Auftragsliste",
+              orderNumber: "AO-31",
+              customerNumber: "K-31",
+              customerFullName: "Kunde Auftragsliste",
+              actualDate: "2026-04-07",
+              durationDays: 2,
+              tourName: "Tour 1",
+              employees: [],
+              customerNotesCount: 0,
+              projectNotesCount: 0,
+              appointmentNotesCount: 0,
+              notesCount: 0,
+              customerAttachmentsCount: 0,
+              projectAttachmentsCount: 0,
+              appointmentAttachmentsCount: 0,
+              attachmentsCount: 0,
+              tags: [],
+              articleValues: [{ categoryId: 1, value: "Sauna Alpha" }],
+              projectDescription: "Hinweis Alpha",
+            }],
+          },
+          isLoading: false,
+        };
+      }
+      return { data: [], isLoading: false, isError: false };
+    });
+
+    const html = renderToStaticMarkup(
+      <ReportsPage
+        standaloneLaunch={{
+          reportType: "auftragsliste",
+          activeTab: "date",
+          fromDate: "2026-04-06",
+          toDate: "2026-05-03",
+          productCategoryIds: [1],
+          componentCategoryIds: [2],
+          useShortCodes: false,
+        }}
+      />,
+    );
+
+    expect(html).toContain("Druckvorschau Auftragsliste");
+    expect(html).toContain('data-page-orientation="portrait"');
+    expect(html).toContain('data-dialog-width="w-[calc(210mm+88px)]"');
+    expect(html).toContain('data-print-orientation="portrait"');
   });
 
   it("passes an indicator column to the table and no rowClassName callback", () => {
@@ -310,6 +477,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
       if (key === "reports-produktionsplanung") {
         return {
           data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
+          isLoading: false,
+        };
+      }
+      if (key === "reports-auftragsliste") {
+        return {
+          data: { productCategories: [], componentCategories: [], items: [] },
           isLoading: false,
         };
       }

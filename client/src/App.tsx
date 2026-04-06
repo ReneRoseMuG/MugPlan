@@ -14,6 +14,7 @@ import {
   StandaloneCustomers,
   StandaloneEmployees,
   StandaloneProjects,
+  StandaloneReports,
   StandaloneTeams,
   StandaloneTours,
 } from "@/pages/StandaloneDomainViews";
@@ -47,6 +48,7 @@ function Router({ onLogout }: RouterProps) {
       <Route path="/standalone/employees" component={StandaloneEmployees} />
       <Route path="/standalone/tours" component={StandaloneTours} />
       <Route path="/standalone/teams" component={StandaloneTeams} />
+      <Route path="/standalone/reports" component={StandaloneReports} />
       <Route
         path="/calendar"
       >

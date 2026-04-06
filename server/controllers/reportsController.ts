@@ -122,3 +122,35 @@ export async function listProduktionsplanung(req: Request, res: Response, next: 
     next(error);
   }
 }
+
+export async function listAuftragsliste(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const input = api.reports.auftragsliste.list.input.parse(req.query);
+    const report = await reportsService.listAuftragsliste({
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+      productCategoryIds: input.productCategoryIds,
+      componentCategoryIds: input.componentCategoryIds,
+      useShortCodes: input.useShortCodes,
+    }, roleKey);
+
+    setNoStoreHeaders(res);
+    res.json(report);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (error instanceof reportsService.ReportsError) {
+      res.status(error.status).json({ code: error.code });
+      return;
+    }
+    next(error);
+  }
+}

@@ -145,6 +145,29 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
     };
   }
 
+  if (definition.key === "reports.auftragsliste.selection") {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return definition.defaultValue;
+    }
+
+    const candidate = value as Record<string, unknown>;
+    const productCategoryIds = Array.isArray(candidate.productCategoryIds)
+      ? candidate.productCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+      : (definition.defaultValue as Record<string, unknown>).productCategoryIds;
+    const componentCategoryIds = Array.isArray(candidate.componentCategoryIds)
+      ? candidate.componentCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+      : (definition.defaultValue as Record<string, unknown>).componentCategoryIds;
+
+    return {
+      ...(definition.defaultValue as Record<string, unknown>),
+      productCategoryIds: Array.from(new Set(productCategoryIds as number[])),
+      componentCategoryIds: Array.from(new Set(componentCategoryIds as number[])),
+      useShortCodes: typeof candidate.useShortCodes === "boolean"
+        ? candidate.useShortCodes
+        : (definition.defaultValue as Record<string, unknown>).useShortCodes,
+    };
+  }
+
   if (definition.key !== "reports.productVorlauf.selection") {
     return value;
   }

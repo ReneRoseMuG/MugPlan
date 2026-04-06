@@ -77,3 +77,22 @@ export async function listProduktionsplanung(
 
   return reportsRepository.getProduktionsplanung(params);
 }
+
+export async function listAuftragsliste(
+  params: {
+    fromDate: string;
+    toDate?: string;
+    productCategoryIds: number[];
+    componentCategoryIds: number[];
+    useShortCodes: boolean;
+  },
+  roleKey: CanonicalRoleKey,
+) {
+  assertReportReadRole(roleKey);
+
+  if (params.toDate && params.toDate < params.fromDate) {
+    throw new ReportsError(422, "VALIDATION_ERROR");
+  }
+
+  return reportsRepository.getAuftragsliste(params);
+}

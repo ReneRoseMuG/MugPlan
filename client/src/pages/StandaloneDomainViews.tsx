@@ -7,6 +7,7 @@ import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeesPage } from "@/components/EmployeesPage";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
+import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
 import { TeamManagement } from "@/components/TeamManagement";
 import { TourManagement } from "@/components/TourManagement";
 import StandaloneLayout from "@/components/StandaloneLayout";
@@ -24,6 +25,48 @@ function StandaloneOverlay({ children }: { children: ReactNode }) {
       {children}
     </div>
   );
+}
+
+function parsePositiveInteger(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | null {
+  const params = new URLSearchParams(search);
+  const reportType = params.get("reportType");
+  const activeTab = params.get("activeTab");
+  const fromDate = params.get("fromDate");
+  const toDate = params.get("toDate") ?? undefined;
+  const kwStart = parsePositiveInteger(params.get("kwStart"));
+  const weekCount = parsePositiveInteger(params.get("weekCount"));
+  const productCategoryIds = params.getAll("productCategoryIds")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+  const componentCategoryIds = params.getAll("componentCategoryIds")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+
+  if (
+    (reportType !== "vorlaufliste" && reportType !== "produktionsplanung" && reportType !== "auftragsliste")
+    || (activeTab !== "date" && activeTab !== "calendarWeek")
+    || !fromDate
+  ) {
+    return null;
+  }
+
+  return {
+    reportType,
+    activeTab,
+    fromDate,
+    toDate,
+    kwStart,
+    weekCount,
+    productCategoryIds,
+    componentCategoryIds,
+    useShortCodes: params.get("useShortCodes") === "true",
+  };
 }
 
 export function StandaloneAppointments() {
@@ -195,6 +238,16 @@ export function StandaloneTeams() {
   return (
     <StandaloneLayout title="Teams">
       <TeamManagement />
+    </StandaloneLayout>
+  );
+}
+
+export function StandaloneReports() {
+  const [launch] = useState<StandaloneReportLaunch | null>(() => parseStandaloneReportLaunch(window.location.search));
+
+  return (
+    <StandaloneLayout title="Reports">
+      <ReportsPage standaloneLaunch={launch} />
     </StandaloneLayout>
   );
 }

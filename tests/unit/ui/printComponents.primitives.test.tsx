@@ -121,6 +121,22 @@ describe("generisches Print-System", () => {
     expect(html).toContain(">b<");
   });
 
+  it("PrintDocumentRoot uebernimmt bei Bedarf Hochformat", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <PrintDocumentRoot
+        pages={[{ id: "a" }]}
+        pageOrientation="portrait"
+        getPageKey={(page) => page.id}
+        renderPage={(page) => <div>{page.id}</div>}
+      />,
+    );
+
+    expect(html).toContain("A4 portrait");
+    expect(html).not.toContain("A4 landscape");
+  });
+
   it("PrintPreviewDialog zeigt Seitenzähler, Titel und aktive Seite", () => {
     vi.stubGlobal("document", { body: {} });
 
@@ -165,5 +181,27 @@ describe("generisches Print-System", () => {
     );
 
     expect(html).toContain("Drucken");
+  });
+
+  it("PrintPreviewDialog reicht die Seitenausrichtung an den Druckroot weiter", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <PrintPreviewDialog
+        open
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        pageOrientation="portrait"
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+      />,
+    );
+
+    expect(html).toContain("A4 portrait");
+    expect(html).not.toContain("A4 landscape");
   });
 });

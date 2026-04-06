@@ -4,11 +4,13 @@
  * Abgedeckte Regeln:
  * - Die FT26-Produktionsplanung speichert pro Benutzer nur noch useShortCodes im neuen Selection-Key.
  * - Die neuen Range-Settings fuer Vorlaufliste und Produktionsplanung bleiben ueber Reloads user-spezifisch erhalten.
+ * - Die Auftragsliste speichert Kategorieauswahl, Shortcodes und Range user-spezifisch.
  * - Der Legacy-Key reports.productVorlauf.selection bleibt als aufgeloester Fallback lesbar.
  *
  * Fehlerfaelle:
  * - Scope-Leak zwischen zwei Benutzern.
  * - Range- oder Shortcode-Konfiguration geht nach Reload verloren.
+ * - Auftragslisten-Kategorien oder Datums-/KW-Werte gehen nach Reload verloren.
  * - Der Legacy-Fallback verschwindet aus den aufgeloesten Settings.
  *
  * Ziel:
@@ -144,6 +146,38 @@ describe("integration: FT26 report settings persistence", () => {
       toDate: "2026-05-09",
       kwStart: 21,
       weekCount: 2,
+    });
+  });
+
+  it("persists the auftragsliste selection and range settings across reloads", async () => {
+    const user = await createDispatcherAgent("auftragsliste");
+
+    await patchUserSetting(user, "reports.auftragsliste.selection", {
+      productCategoryIds: [11, 12],
+      componentCategoryIds: [21, 34],
+      useShortCodes: true,
+    });
+    await patchUserSetting(user, "reports.auftragsliste.rangeConfig", {
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-08",
+      toDate: "2026-05-10",
+      kwStart: 22,
+      weekCount: 4,
+    });
+
+    const reloaded = await getResolvedSettings(user);
+
+    expect(getSetting(reloaded, "reports.auftragsliste.selection").resolvedValue).toEqual({
+      productCategoryIds: [11, 12],
+      componentCategoryIds: [21, 34],
+      useShortCodes: true,
+    });
+    expect(getSetting(reloaded, "reports.auftragsliste.rangeConfig").resolvedValue).toEqual({
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-08",
+      toDate: "2026-05-10",
+      kwStart: 22,
+      weekCount: 4,
     });
   });
 

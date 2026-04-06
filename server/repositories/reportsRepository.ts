@@ -138,6 +138,37 @@ export type ProduktionsplanungResult = {
   projectRows: ProduktionsplanungProjectRow[];
 };
 
+export type AuftragslisteRow = {
+  projectId: number;
+  customerId: number;
+  appointmentId: number;
+  orderNumber: string | null;
+  customerNumber: string | null;
+  customerFullName: string | null;
+  projectName: string;
+  actualDate: string;
+  durationDays: number;
+  tourName: string | null;
+  employees: ReportEmployeeSummary[];
+  customerNotesCount: number;
+  projectNotesCount: number;
+  appointmentNotesCount: number;
+  notesCount: number;
+  customerAttachmentsCount: number;
+  projectAttachmentsCount: number;
+  appointmentAttachmentsCount: number;
+  attachmentsCount: number;
+  tags: Tag[];
+  articleValues: VorlauflisteArticleValue[];
+  projectDescription: string | null;
+};
+
+export type AuftragslisteResult = {
+  productCategories: VorlauflisteCategory[];
+  componentCategories: VorlauflisteCategory[];
+  items: AuftragslisteRow[];
+};
+
 export type ReportConfigDefaults = {
   latestProjectAppointmentDate: string | null;
 };
@@ -873,5 +904,214 @@ export async function getProduktionsplanung(params: {
     productCategoryGroups: sortedProductCategoryGroups,
     componentCategoryGroups: sortedComponentCategoryGroups,
     projectRows,
+  };
+}
+
+export async function getAuftragsliste(params: {
+  fromDate: string;
+  toDate?: string;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  useShortCodes: boolean;
+}): Promise<AuftragslisteResult> {
+  const [allCategories, projectMeta] = await Promise.all([
+    listActiveVorlauflisteCategories(),
+    buildVorlauflisteProjectMeta(params),
+  ]);
+  const allActiveProductCategories = allCategories.productCategories;
+  const allActiveComponentCategories = allCategories.componentCategories;
+
+  if (projectMeta.sortedProjectIds.length === 0) {
+    const productCategoriesForReport = params.productCategoryIds.length > 0
+      ? allActiveProductCategories.filter((category) => params.productCategoryIds.includes(category.id))
+      : allActiveProductCategories;
+    return {
+      productCategories: productCategoriesForReport,
+      componentCategories: params.componentCategoryIds.length > 0
+        ? allActiveComponentCategories.filter((category) => params.componentCategoryIds.includes(category.id))
+        : allActiveComponentCategories,
+      items: [],
+    };
+  }
+
+  const selectedProductCategoryIds = new Set(params.productCategoryIds);
+  const productCategoriesForReport = (selectedProductCategoryIds.size === 0
+    ? allActiveProductCategories
+    : allActiveProductCategories.filter((category) => selectedProductCategoryIds.has(category.id)));
+  const productCategoryIdsForReport = new Set(productCategoriesForReport.map((category) => category.id));
+  const selectedComponentCategoryIds = new Set(params.componentCategoryIds);
+  const componentCategoriesForReport = (selectedComponentCategoryIds.size === 0
+    ? allActiveComponentCategories
+    : allActiveComponentCategories.filter((category) => selectedComponentCategoryIds.has(category.id)));
+  const componentCategoryIdsForReport = new Set(componentCategoriesForReport.map((category) => category.id));
+  const eligibleProjectIds = projectMeta.sortedProjectIds.filter((projectId) => {
+    const tagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+    return !tagState.hasReportExclusion;
+  });
+
+  if (eligibleProjectIds.length === 0) {
+    return {
+      productCategories: productCategoriesForReport,
+      componentCategories: componentCategoriesForReport,
+      items: [],
+    };
+  }
+
+  const projectDetails = await db
+    .select({
+      project: projects,
+      customer: customers,
+      order: projectOrder,
+    })
+    .from(projects)
+    .leftJoin(customers, eq(projects.customerId, customers.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .where(inArray(projects.id, eligibleProjectIds));
+
+  const orderItemRows = await db
+    .select({
+      item: projectOrderItems,
+      product: products,
+      productCategory: productCategories,
+      component: components,
+      componentCategory: componentCategories,
+    })
+    .from(projectOrderItems)
+    .leftJoin(products, eq(projectOrderItems.productId, products.id))
+    .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
+    .leftJoin(components, eq(projectOrderItems.componentId, components.id))
+    .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(inArray(projectOrderItems.projectId, eligibleProjectIds));
+
+  const representativeAppointmentIds = Array.from(new Set(
+    eligibleProjectIds
+      .map((projectId) => projectMeta.appointmentMetaByProjectId.get(projectId)?.appointmentId)
+      .filter((appointmentId): appointmentId is number => typeof appointmentId === "number" && appointmentId > 0),
+  ));
+  const customerIds = Array.from(new Set(
+    projectDetails
+      .map((row) => row.customer?.id)
+      .filter((customerId): customerId is number => typeof customerId === "number" && customerId > 0),
+  ));
+  const [
+    representativeAppointmentEmployees,
+    representativeAppointmentNoteCounts,
+    representativeAppointmentAttachmentCounts,
+    customerNoteCountsByCustomerId,
+    projectNoteCountsByProjectId,
+    customerAttachmentsCountByCustomerId,
+    projectAttachmentsCountByProjectId,
+  ] = await Promise.all([
+    getAppointmentEmployeesByAppointmentIds(representativeAppointmentIds),
+    getAppointmentNoteCountsByAppointmentIds(representativeAppointmentIds),
+    getAppointmentAttachmentCountsByAppointmentIds(representativeAppointmentIds),
+    getCustomerNoteCountsByCustomerIds(customerIds),
+    getProjectNoteCountsByProjectIds(eligibleProjectIds),
+    getCustomerAttachmentCountsByCustomerIds(customerIds),
+    getProjectAttachmentCountsByProjectIds(eligibleProjectIds),
+  ]);
+
+  const employeesByAppointmentId = new Map<number, ReportEmployeeSummary[]>();
+  for (const row of representativeAppointmentEmployees) {
+    const entries = employeesByAppointmentId.get(row.appointmentId) ?? [];
+    entries.push({
+      id: row.employee.id,
+      fullName: row.employee.fullName,
+    });
+    employeesByAppointmentId.set(row.appointmentId, entries);
+  }
+  for (const [appointmentId, employeesForAppointment] of Array.from(employeesByAppointmentId.entries())) {
+    employeesByAppointmentId.set(
+      appointmentId,
+      employeesForAppointment.sort((left, right) => left.fullName.localeCompare(right.fullName, "de") || left.id - right.id),
+    );
+  }
+
+  const articleBucketsByProjectId = new Map<number, ReportArticleBuckets>();
+  for (const row of orderItemRows) {
+    const articleBuckets = articleBucketsByProjectId.get(row.item.projectId) ?? createEmptyBuckets();
+
+    if (
+      row.product
+      && row.productCategory
+      && row.product.name.trim().length > 0
+      && productCategoryIdsForReport.has(row.productCategory.id)
+    ) {
+      const displayName = resolveArticleName(row.product.name.trim(), row.product.shortCode, params.useShortCodes);
+      addToBucket(articleBuckets, row.productCategory.id, displayName);
+    }
+
+    if (
+      row.component
+      && row.componentCategory
+      && row.component.name.trim().length > 0
+      && componentCategoryIdsForReport.has(row.componentCategory.id)
+    ) {
+      const displayName = resolveArticleName(row.component.name.trim(), row.component.shortCode, params.useShortCodes);
+      addToBucket(articleBuckets, row.componentCategory.id, displayName);
+    }
+
+    articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
+  }
+
+  const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
+  const items = eligibleProjectIds
+    .map((projectId) => {
+      const projectDetail = projectDetailsById.get(projectId);
+      const appointmentMeta = projectMeta.appointmentMetaByProjectId.get(projectId);
+      if (!projectDetail || !projectDetail.customer || !appointmentMeta) {
+        return null;
+      }
+
+      const customerId = projectDetail.customer.id;
+      const customerNotesCount = customerNoteCountsByCustomerId.get(customerId) ?? 0;
+      const projectNotesCount = projectNoteCountsByProjectId.get(projectId) ?? 0;
+      const appointmentNotesCount = representativeAppointmentNoteCounts.get(appointmentMeta.appointmentId) ?? 0;
+      const notesCount = customerNotesCount + projectNotesCount + appointmentNotesCount;
+      const customerAttachmentsCount = customerAttachmentsCountByCustomerId.get(customerId) ?? 0;
+      const projectAttachmentsCount = projectAttachmentsCountByProjectId.get(projectId) ?? 0;
+      const appointmentAttachmentsCount = representativeAppointmentAttachmentCounts.get(appointmentMeta.appointmentId) ?? 0;
+      const attachmentsCount = customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount;
+      const projectTags = projectMeta.tagsByProjectId.get(projectId) ?? [];
+      const articleBuckets = articleBucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+
+      const row: AuftragslisteRow = {
+        projectId,
+        customerId,
+        appointmentId: appointmentMeta.appointmentId,
+        projectName: projectDetail.project.name,
+        orderNumber: projectDetail.order?.orderNumber ?? null,
+        customerNumber: projectDetail.customer.customerNumber || null,
+        customerFullName: projectDetail.customer.fullName ?? null,
+        actualDate: appointmentMeta.actualDate,
+        durationDays: appointmentMeta.durationDays,
+        tourName: appointmentMeta.tourName,
+        employees: employeesByAppointmentId.get(appointmentMeta.appointmentId) ?? [],
+        customerNotesCount,
+        projectNotesCount,
+        appointmentNotesCount,
+        notesCount,
+        customerAttachmentsCount,
+        projectAttachmentsCount,
+        appointmentAttachmentsCount,
+        attachmentsCount,
+        tags: Array.from(new Map(
+          [...projectTags, ...appointmentMeta.appointmentTags].map((tag) => [tag.id, tag] as const),
+        ).values()).sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id),
+        articleValues: [...productCategoriesForReport, ...componentCategoriesForReport].map((category) => ({
+          categoryId: category.id,
+          value: joinSorted(articleBuckets.get(category.id) ?? new Set()),
+        })),
+        projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
+      };
+      return row;
+    })
+    .filter((entry): entry is AuftragslisteRow => entry !== null)
+    .sort((left, right) => left.actualDate.localeCompare(right.actualDate, "de") || left.projectId - right.projectId);
+
+  return {
+    productCategories: productCategoriesForReport,
+    componentCategories: componentCategoriesForReport,
+    items,
   };
 }

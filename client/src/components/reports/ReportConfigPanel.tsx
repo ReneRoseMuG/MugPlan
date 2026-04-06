@@ -3,6 +3,7 @@ import { Calendar, CalendarDays } from "lucide-react";
 
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { defaultHeaderColor } from "@/lib/colors";
 import { cn } from "@/lib/utils";
 
 export type ReportConfigPanelMode = "date" | "calendarWeek";
@@ -46,15 +47,18 @@ export function ReportConfigPanel({
       className="flex w-[440px] min-w-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       data-testid={testId}
     >
-      <div className="flex items-center justify-between px-5 pb-3 pt-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-slate-800">{title}</span>
+      <div
+        className="flex items-center justify-between border-b border-border px-5 py-3"
+        style={{ backgroundColor: defaultHeaderColor }}
+      >
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-sm font-bold text-slate-800">{title}</span>
           {helpKey ? <HelpIcon helpKey={helpKey} size="sm" /> : null}
         </div>
         {actionButton}
       </div>
 
-      <div className="px-5 pb-4">
+      <div className="px-5 pb-4 pt-4">
         <ToggleGroup
           type="single"
           value={mode}
