@@ -4,16 +4,17 @@
  * Feature: FT07/FT16/FT29 - SettingsPage
  *
  * Abgedeckte Regeln:
- * - Die SettingsPage zeigt die sichtbaren Save-Controls fuer `helpTextPreviewSize`, die EntityFormShell-Breiten und `auth_two_factor_enabled`.
- * - Der Backup-Bereich zeigt den ZIP-Download, die verdichteten Monitoring-Spalten und den direkt persistierten `backup_enabled`-Switch.
- * - Der Dump-Import ist in den Backup-Bereich integriert.
+ * - Die SettingsPage rendert eine Sidebar-Navigation mit vier Eintraegen in zwei Gruppen.
+ * - Der Standard-Pane "Oberflaeche" ist beim ersten Laden sichtbar.
+ * - Die Oberflaeche-Einstellungen (helpTextPreviewSize, EntityFormShell-Breiten) zeigen Save-Controls.
+ * - Pane-spezifische Assertions (Sicherheit, Backup) sind in settingsPage.panes.behavior.test.tsx.
  *
  * Fehlerfaelle:
- * - Einstellungs-Save-Controls verschwinden aus der Seite.
- * - Die Backup-Uebersicht verliert ZIP-Download, Importbereich oder den direkten Backup-Switch.
+ * - Sidebar-Navigation fehlt oder zeigt nicht alle vier Eintraege.
+ * - Der Oberflaeche-Pane fehlt oder verliert Save-Controls.
  *
  * Ziel:
- * Sichtbares Settings-Seitenverhalten ueber gerendertes Markup statt ueber Quelltextmarker absichern.
+ * Seitenskelett und Standardpane-Verhalten absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -44,13 +45,6 @@ vi.mock("@/components/ui/switch", () => ({
   Switch: (props: Record<string, unknown>) => <input type="checkbox" data-testid={String(props["data-testid"] ?? "")} checked={Boolean(props.checked)} readOnly />,
 }));
 
-vi.mock("@/components/ui/tabs", () => ({
-  Tabs: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div {...props}>{children}</div>,
-  TabsList: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div {...props}>{children}</div>,
-  TabsTrigger: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" {...props}>{children}</button>,
-  TabsContent: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <section {...props}>{children}</section>,
-}));
-
 import { SettingsPage } from "../../../client/src/components/SettingsPage";
 
 describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
@@ -67,11 +61,13 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     useQueryMock.mockReset();
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map([
-        ["helpTextPreviewSize", { resolvedValue: "large" }],
-        ["entityFormShell.sidebarWidthPx", { resolvedValue: 360 }],
-        ["entityFormShell.contentMaxWidthPx", { resolvedValue: 760 }],
-        ["backup_enabled", { resolvedValue: true }],
-        ["auth_two_factor_enabled", { resolvedValue: true }],
+        ["helpTextPreviewSize", { resolvedValue: "large", resolvedScope: "DEFAULT" }],
+        ["attachmentPreviewSize", { resolvedValue: "large", resolvedScope: "DEFAULT" }],
+        ["entityFormShell.sidebarWidthPx", { resolvedValue: 360, resolvedScope: "DEFAULT" }],
+        ["entityFormShell.contentMaxWidthPx", { resolvedValue: 760, resolvedScope: "DEFAULT" }],
+        ["cardListColumns", { resolvedValue: 4, resolvedScope: "DEFAULT" }],
+        ["backup_enabled", { resolvedValue: true, resolvedScope: "GLOBAL" }],
+        ["auth_two_factor_enabled", { resolvedValue: true, resolvedScope: "GLOBAL" }],
       ]),
       isLoading: false,
       isError: false,
@@ -81,16 +77,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
       isSaving: false,
     });
     useQueryMock.mockReturnValue({
-      data: [
-        {
-          id: 1,
-          createdAt: "2026-03-20T10:00:00.000Z",
-          status: "success",
-          errorMessage: null,
-          exportedRecordCount: 12,
-          filePath: "{\"excelPath\":\"backup.xlsx\",\"pdfPath\":\"backup.pdf\",\"zipPath\":\"backup.zip\"}",
-        },
-      ],
+      data: [],
       isLoading: false,
       isError: false,
       error: null,
@@ -98,36 +85,45 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     });
   });
 
-  it("renders the backup panel with zip download, direct backup switch persistence and integrated dump import", () => {
+  it("rendert die Sidebar-Navigation mit allen vier Eintraegen", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
 
-    expect(html).toContain("tab-settings-general");
-    expect(html).toContain("tab-settings-backup");
-    expect(html).not.toContain("tab-settings-db-dump");
+    expect(html).toContain("settings-nav");
+    expect(html).toContain("nav-item-oberflaeche");
+    expect(html).toContain("nav-item-kalender");
+    expect(html).toContain("nav-item-sicherheit");
+    expect(html).toContain("nav-item-backup");
+    expect(html).toContain("Oberfläche");
+    expect(html).toContain("Kalender");
     expect(html).toContain("Sicherheit");
+    expect(html).toContain("Backup");
+  });
+
+  it("zeigt den Oberflaeche-Pane als Standard beim ersten Laden mit allen Save-Controls", () => {
+    const html = renderToStaticMarkup(<SettingsPage />);
+
+    // Standard-Pane ist "Oberflaeche" -> settings-pane-oberflaeche muss sichtbar sein
+    expect(html).toContain("settings-pane-oberflaeche");
+
+    // USER-Einstellungen
     expect(html).toContain("select-setting-helpTextPreviewSize");
     expect(html).toContain("button-save-helpTextPreviewSize");
     expect(html).toContain("input-setting-entityFormShellSidebarWidthPx");
     expect(html).toContain("button-save-entityFormShellSidebarWidthPx");
     expect(html).toContain("input-setting-entityFormShellContentMaxWidthPx");
     expect(html).toContain("button-save-entityFormShellContentMaxWidthPx");
-    expect(html).toContain("switch-setting-auth-two-factor-enabled");
-    expect(html).toContain("button-save-auth-two-factor-enabled");
-    expect(html).toContain("switch-setting-backup-enabled");
-    expect(html).not.toContain("button-save-backup-enabled");
-    expect(html).toContain("Backups");
-    expect(html).toContain("button-backups-run-now");
-    expect(html).toContain("Datum");
-    expect(html).toContain("Status");
-    expect(html).toContain("Umfang");
-    expect(html).toContain("Download");
-    expect(html).toContain("table-backup-logs-frame");
-    expect(html).toContain("Eintraege: 1");
-    expect(html).toContain("backup-download-excel-1");
-    expect(html).toContain("backup-download-pdf-1");
-    expect(html).toContain("backup-download-zip-1");
-    expect(html).toContain("Dump Import");
-    expect(html).toContain("input-dump-import-file");
-    expect(html).toContain("button-dump-import-preview");
+
+    // GLOBAL-Einstellungen (ebenfalls im Oberflaeche-Pane)
+    expect(html).toContain("button-save-toastDesktopPosition");
+    expect(html).toContain("button-save-hoverPreviewOpenDelayMs");
+  });
+
+  it("zeigt die anderen Panes im Standard-Render nicht", () => {
+    const html = renderToStaticMarkup(<SettingsPage />);
+
+    // Nur Oberflaeche ist der Standard — andere Panes sind initial nicht gerendert
+    expect(html).not.toContain("settings-pane-kalender");
+    expect(html).not.toContain("settings-pane-sicherheit");
+    expect(html).not.toContain("settings-pane-backup");
   });
 });

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSettings } from "@/hooks/useSettings";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
@@ -165,6 +164,8 @@ export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const [activePane, setActivePane] = useState<"oberflaeche" | "kalender" | "sicherheit" | "backup">("oberflaeche");
+  const [activeBackupTab, setActiveBackupTab] = useState<"backups" | "dumps" | "import">("backups");
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const helpTextPreviewSetting = settingsByKey.get("helpTextPreviewSize");
@@ -774,773 +775,685 @@ export function SettingsPage() {
     }
   };
 
+  const navItemClass = (pane: typeof activePane) =>
+    `w-full flex items-center gap-2 px-4 py-1.5 text-sm border-l-2 text-left ${
+      activePane === pane
+        ? "border-amber-600 text-slate-900 font-medium bg-white"
+        : "border-transparent text-slate-600 hover:bg-slate-100"
+    }`;
+
+  const innerTabClass = (tab: typeof activeBackupTab) =>
+    `px-3.5 py-1.5 text-xs border-b-2 -mb-px cursor-pointer ${
+      activeBackupTab === tab
+        ? "border-amber-600 text-amber-700 font-medium"
+        : "border-transparent text-slate-500 hover:text-slate-700"
+    }`;
+
   return (
-    <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white p-6 flex flex-col" data-testid="settings-landing-page">
-      <h3 className="text-xl font-black tracking-tight text-primary">Einstellungen</h3>
-      
+    <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white flex flex-col" data-testid="settings-landing-page">
+      <div className="flex min-h-0 flex-1">
 
-      <Tabs defaultValue="settings" className="flex min-h-0 flex-1 flex-col" data-testid="settings-tabs">
-        <TabsList className="self-start" data-testid="settings-tabs-list">
-          <TabsTrigger value="settings" data-testid="tab-settings-general">Einstellungen</TabsTrigger>
-          <TabsTrigger value="backup" data-testid="tab-settings-backup">Backup</TabsTrigger>
-        </TabsList>
+        {/* Sidebar */}
+        <nav
+          className="w-[188px] flex-shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col"
+          data-testid="settings-nav"
+          aria-label="Einstellungen Navigation"
+        >
+          <div className="px-4 py-4 border-b border-slate-200">
+            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Einstellungen</p>
+          </div>
 
-        <TabsContent value="settings" className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1" data-testid="settings-tab-content-general">
-          <div className="space-y-4">
-            {isAdmin ? (
-              <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-security">
-                <h4 className="font-bold text-slate-900">Sicherheit</h4>
-                <p className="mt-1 text-xs text-slate-500">Globale Login- und Zugriffseinstellungen.</p>
-                <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
-                  <p className="font-semibold text-slate-900">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
-                  <p className="mb-3 text-xs text-slate-500">
-                    {authTwoFactorEnabledSetting?.description ?? "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung fuer alle Benutzer."}
-                  </p>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                    <div className="flex h-10 items-center gap-3">
-                      <Switch
-                        checked={authTwoFactorEnabledValue}
-                        onCheckedChange={setAuthTwoFactorEnabledValue}
-                        data-testid="switch-setting-auth-two-factor-enabled"
-                      />
-                      <span className="text-sm text-slate-700">{authTwoFactorEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+          <div className="py-2">
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest px-4 pt-2 pb-1">Anzeige</p>
+            <button
+              className={navItemClass("oberflaeche")}
+              onClick={() => setActivePane("oberflaeche")}
+              data-testid="nav-item-oberflaeche"
+              aria-current={activePane === "oberflaeche" ? "page" : undefined}
+            >
+              Oberfläche
+            </button>
+            <button
+              className={navItemClass("kalender")}
+              onClick={() => setActivePane("kalender")}
+              data-testid="nav-item-kalender"
+              aria-current={activePane === "kalender" ? "page" : undefined}
+            >
+              Kalender
+            </button>
+          </div>
+
+          <div className="py-2 border-t border-slate-200">
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest px-4 pt-2 pb-1">System</p>
+            <button
+              className={navItemClass("sicherheit")}
+              onClick={() => setActivePane("sicherheit")}
+              data-testid="nav-item-sicherheit"
+              aria-current={activePane === "sicherheit" ? "page" : undefined}
+            >
+              Sicherheit
+            </button>
+            <button
+              className={navItemClass("backup")}
+              onClick={() => setActivePane("backup")}
+              data-testid="nav-item-backup"
+              aria-current={activePane === "backup" ? "page" : undefined}
+            >
+              Backup &amp; Dump
+            </button>
+          </div>
+        </nav>
+
+        {/* Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto p-6">
+
+          {/* ── Oberfläche ── */}
+          {activePane === "oberflaeche" && (
+            <div data-testid="settings-pane-oberflaeche">
+              <div className="mb-5 pb-3 border-b border-slate-200">
+                <h2 className="text-base font-medium text-slate-900">Oberfläche</h2>
+                <p className="text-xs text-slate-500 mt-1">Vorschau, Spalten, Formular-Layout und Toast-Position</p>
+              </div>
+
+              {/* USER settings */}
+              <div className="mb-6">
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                  Benutzerspezifisch
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 tracking-normal normal-case ml-1">USER</span>
+                </p>
+                <div className="space-y-2">
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
+                    <p className="font-semibold text-slate-900 text-sm">{previewSetting?.label ?? "Datei Vorschau Größe"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{previewSetting?.description ?? "Steuert die Größe der Dateivorschau."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <select
+                        value={previewValue}
+                        onChange={(event) => setPreviewValue(event.target.value as PreviewSize)}
+                        className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                        data-testid="select-setting-attachmentPreviewSize"
+                      >
+                        {previewOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                      <Button size="sm" onClick={() => void handleSavePreview()} disabled={isSaving} data-testid="button-save-attachmentPreviewSize">
+                        Speichern
+                      </Button>
                     </div>
-                    <Button
-                      onClick={() => void handleSaveAuthTwoFactorEnabled()}
-                      disabled={isSaving}
-                      data-testid="button-save-auth-two-factor-enabled"
-                    >
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(previewSetting?.resolvedValue)}</strong> ({previewSetting?.resolvedScope ?? "-"})</p>
+                    {previewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-helpTextPreviewSize">
+                    <p className="font-semibold text-slate-900 text-sm">{helpTextPreviewSetting?.label ?? "Hilfetext Vorschau Größe"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{helpTextPreviewSetting?.description ?? "Steuert die Größe von Hilfetext-Previews."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <select
+                        value={helpTextPreviewValue}
+                        onChange={(event) => setHelpTextPreviewValue(event.target.value as HelpTextPreviewSize)}
+                        className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                        data-testid="select-setting-helpTextPreviewSize"
+                      >
+                        {helpTextPreviewOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                      <Button size="sm" onClick={() => void handleSaveHelpTextPreview()} disabled={isSaving} data-testid="button-save-helpTextPreviewSize">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(helpTextPreviewSetting?.resolvedValue ?? "medium")}</strong> ({helpTextPreviewSetting?.resolvedScope ?? "-"})</p>
+                    {helpTextPreviewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {helpTextPreviewError && <p className="mt-1 text-xs text-destructive">{helpTextPreviewError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-cardListColumns">
+                    <p className="font-semibold text-slate-900 text-sm">{cardListColumnsSetting?.label ?? "Karten Spalten"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{cardListColumnsSetting?.description ?? "Anzahl der Spalten in Kartenlisten (2–6)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <Input
+                        type="number" min={2} max={6} step={1}
+                        value={cardListColumnsValue}
+                        onChange={(event) => setCardListColumnsValue(event.target.value)}
+                        data-testid="input-setting-cardListColumns"
+                      />
+                      <Button size="sm" onClick={() => void handleSaveCardListColumns()} disabled={isSaving} data-testid="button-save-cardListColumns">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(cardListColumnsSetting?.resolvedValue ?? defaultCardListColumns)}</strong> ({cardListColumnsSetting?.resolvedScope ?? "-"})</p>
+                    {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellSidebarWidthPx">
+                    <p className="font-semibold text-slate-900 text-sm">{entityFormShellSidebarWidthSetting?.label ?? "Formular Sidebar Breite (px)"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{entityFormShellSidebarWidthSetting?.description ?? "Feste Breite der rechten Formular-Sidebar (260–480 px)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <Input
+                        type="number" min={260} max={480} step={1}
+                        value={entityFormShellSidebarWidthValue}
+                        onChange={(event) => setEntityFormShellSidebarWidthValue(event.target.value)}
+                        data-testid="input-setting-entityFormShellSidebarWidthPx"
+                      />
+                      <Button size="sm" onClick={() => void handleSaveEntityFormShellSidebarWidth()} disabled={isSaving} data-testid="button-save-entityFormShellSidebarWidthPx">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(entityFormShellSidebarWidthSetting?.resolvedValue ?? defaultEntityFormShellSidebarWidthPx)}</strong> ({entityFormShellSidebarWidthSetting?.resolvedScope ?? "-"})</p>
+                    {entityFormShellSidebarWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {entityFormShellSidebarWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellSidebarWidthError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellContentMaxWidthPx">
+                    <p className="font-semibold text-slate-900 text-sm">{entityFormShellContentMaxWidthSetting?.label ?? "Formular Inhalt Max-Breite (px)"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{entityFormShellContentMaxWidthSetting?.description ?? "Maximale Breite des zentrierten Formularinhalts (640–1100 px)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <Input
+                        type="number" min={640} max={1100} step={1}
+                        value={entityFormShellContentMaxWidthValue}
+                        onChange={(event) => setEntityFormShellContentMaxWidthValue(event.target.value)}
+                        data-testid="input-setting-entityFormShellContentMaxWidthPx"
+                      />
+                      <Button size="sm" onClick={() => void handleSaveEntityFormShellContentMaxWidth()} disabled={isSaving} data-testid="button-save-entityFormShellContentMaxWidthPx">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(entityFormShellContentMaxWidthSetting?.resolvedValue ?? defaultEntityFormShellContentMaxWidthPx)}</strong> ({entityFormShellContentMaxWidthSetting?.resolvedScope ?? "-"})</p>
+                    {entityFormShellContentMaxWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {entityFormShellContentMaxWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellContentMaxWidthError}</p>}
+                  </div>
+
+                </div>
+              </div>
+
+              {/* GLOBAL settings */}
+              <div>
+                <p className="text-[11px] font-medium text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                  Global
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 tracking-normal normal-case ml-1">GLOBAL</span>
+                </p>
+                <div className="space-y-2">
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">
+                    <p className="font-semibold text-slate-900 text-sm">{toastDesktopPositionSetting?.label ?? "Toast Position Desktop"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{toastDesktopPositionSetting?.description ?? "Position von Info-Popups auf Desktop (gilt für alle Nutzer)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <select
+                        value={toastDesktopPositionValue}
+                        onChange={(event) => setToastDesktopPositionValue(event.target.value as ToastDesktopPosition)}
+                        className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
+                        data-testid="select-setting-toastDesktopPosition"
+                      >
+                        {toastDesktopPositionOptions.map((option) => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                      <Button size="sm" onClick={() => void handleSaveToastDesktopPosition()} disabled={isSaving} data-testid="button-save-toastDesktopPosition">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(toastDesktopPositionSetting?.resolvedValue ?? defaultToastDesktopPosition)}</strong> ({toastDesktopPositionSetting?.resolvedScope ?? "-"})</p>
+                    {toastDesktopPositionSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-hoverPreviewOpenDelayMs">
+                    <p className="font-semibold text-slate-900 text-sm">{hoverPreviewOpenDelaySetting?.label ?? "Hover Vorschau Verzögerung (ms)"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{hoverPreviewOpenDelaySetting?.description ?? "Verzögerung bis Hover-Previews geöffnet werden (0–2000 ms)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <Input
+                        type="number" min={0} max={2000} step={1}
+                        value={hoverPreviewOpenDelayValue}
+                        onChange={(event) => setHoverPreviewOpenDelayValue(event.target.value)}
+                        data-testid="input-setting-hoverPreviewOpenDelayMs"
+                      />
+                      <Button size="sm" onClick={() => void handleSaveHoverPreviewOpenDelay()} disabled={isSaving} data-testid="button-save-hoverPreviewOpenDelayMs">
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(hoverPreviewOpenDelaySetting?.resolvedValue ?? defaultHoverPreviewOpenDelayMs)}</strong> ({hoverPreviewOpenDelaySetting?.resolvedScope ?? "-"})</p>
+                    {hoverPreviewOpenDelaySaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {hoverPreviewOpenDelayError && <p className="mt-1 text-xs text-destructive">{hoverPreviewOpenDelayError}</p>}
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Kalender ── */}
+          {activePane === "kalender" && (
+            <div data-testid="settings-pane-kalender">
+              <div className="mb-5 pb-3 border-b border-slate-200">
+                <h2 className="text-base font-medium text-slate-900">Kalender</h2>
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  Konfigurationen für Kalenderansichten und Navigation
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 tracking-normal normal-case ml-1">GLOBAL</span>
+                </p>
+              </div>
+              <div className="space-y-2">
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
+                  <p className="font-semibold text-slate-900 text-sm">{weekendWidthSetting?.label ?? "Wochenende Spaltenbreite (%)"}</p>
+                  <p className="mb-3 text-xs text-slate-500">{weekendWidthSetting?.description ?? "Breite von Sa/So relativ zu Werktagen (1–100)."}</p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                    <Input
+                      type="number" min={1} max={100} step={1}
+                      value={weekendColumnPercentValue}
+                      onChange={(event) => setWeekendColumnPercentValue(event.target.value)}
+                      data-testid="input-setting-calendarWeekendColumnPercent"
+                    />
+                    <Button size="sm" onClick={() => void handleSaveWeekendColumnPercent()} disabled={isSaving} data-testid="button-save-calendarWeekendColumnPercent">
                       Speichern
                     </Button>
                   </div>
-                  <p className="mt-2 text-xs text-slate-600">
-                    Wirksam: {stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)} ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Aenderung wirkt fuer alle kuenftigen Logins.</p>
-                  {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-                  {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
+                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)}</strong> ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
+                  {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                  {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
                 </div>
-              </section>
-            ) : null}
-          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-other">
-            <h4 className="font-bold text-slate-900">Weitere Einstellungen</h4>
-            <p className="mt-1 text-xs text-slate-500">Allgemeine Oberflaechen- und Verhaltensoptionen.</p>
-            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-attachmentPreviewSize">
-          <p className="font-semibold text-slate-900">{previewSetting?.label ?? "Datei Vorschau Groesse"}</p>
-          <p className="mb-3 text-xs text-slate-500">{previewSetting?.description ?? "Steuert die Groesse der Dateivorschau."}</p>
 
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <select
-              value={previewValue}
-              onChange={(event) => setPreviewValue(event.target.value as PreviewSize)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
-              data-testid="select-setting-attachmentPreviewSize"
-            >
-              {previewOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <Button onClick={() => void handleSavePreview()} disabled={isSaving} data-testid="button-save-attachmentPreviewSize">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(previewSetting?.resolvedValue)} ({previewSetting?.resolvedScope ?? "-"})</p>
-          {previewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-helpTextPreviewSize">
-          <p className="font-semibold text-slate-900">{helpTextPreviewSetting?.label ?? "Hilfetext Vorschau Groesse"}</p>
-          <p className="mb-3 text-xs text-slate-500">{helpTextPreviewSetting?.description ?? "Steuert die Groesse von Hilfetext-Previews."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <select
-              value={helpTextPreviewValue}
-              onChange={(event) => setHelpTextPreviewValue(event.target.value as HelpTextPreviewSize)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
-              data-testid="select-setting-helpTextPreviewSize"
-            >
-              {helpTextPreviewOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <Button onClick={() => void handleSaveHelpTextPreview()} disabled={isSaving} data-testid="button-save-helpTextPreviewSize">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(helpTextPreviewSetting?.resolvedValue ?? "medium")} ({helpTextPreviewSetting?.resolvedScope ?? "-"})</p>
-          {helpTextPreviewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {helpTextPreviewError && <p className="mt-1 text-xs text-destructive">{helpTextPreviewError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-toastDesktopPosition">
-          <p className="font-semibold text-slate-900">{toastDesktopPositionSetting?.label ?? "Toast Position Desktop"}</p>
-          <p className="mb-3 text-xs text-slate-500">{toastDesktopPositionSetting?.description ?? "Steuert die Position von Info-Popups auf Desktop."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <select
-              value={toastDesktopPositionValue}
-              onChange={(event) => setToastDesktopPositionValue(event.target.value as ToastDesktopPosition)}
-              className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 text-sm"
-              data-testid="select-setting-toastDesktopPosition"
-            >
-              {toastDesktopPositionOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <Button onClick={() => void handleSaveToastDesktopPosition()} disabled={isSaving} data-testid="button-save-toastDesktopPosition">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(toastDesktopPositionSetting?.resolvedValue ?? defaultToastDesktopPosition)} ({toastDesktopPositionSetting?.resolvedScope ?? "-"})</p>
-          {toastDesktopPositionSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellSidebarWidthPx">
-          <p className="font-semibold text-slate-900">{entityFormShellSidebarWidthSetting?.label ?? "Formular Sidebar Breite (px)"}</p>
-          <p className="mb-3 text-xs text-slate-500">{entityFormShellSidebarWidthSetting?.description ?? "Steuert die feste Breite der rechten Formular-Sidebar."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={260}
-              max={480}
-              step={1}
-              value={entityFormShellSidebarWidthValue}
-              onChange={(event) => setEntityFormShellSidebarWidthValue(event.target.value)}
-              data-testid="input-setting-entityFormShellSidebarWidthPx"
-            />
-            <Button onClick={() => void handleSaveEntityFormShellSidebarWidth()} disabled={isSaving} data-testid="button-save-entityFormShellSidebarWidthPx">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(entityFormShellSidebarWidthSetting?.resolvedValue ?? defaultEntityFormShellSidebarWidthPx)} ({entityFormShellSidebarWidthSetting?.resolvedScope ?? "-"})</p>
-          {entityFormShellSidebarWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {entityFormShellSidebarWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellSidebarWidthError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellContentMaxWidthPx">
-          <p className="font-semibold text-slate-900">{entityFormShellContentMaxWidthSetting?.label ?? "Formular Inhalt Max-Breite (px)"}</p>
-          <p className="mb-3 text-xs text-slate-500">{entityFormShellContentMaxWidthSetting?.description ?? "Steuert die maximale Breite des zentrierten Formularinhalts."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={640}
-              max={1100}
-              step={1}
-              value={entityFormShellContentMaxWidthValue}
-              onChange={(event) => setEntityFormShellContentMaxWidthValue(event.target.value)}
-              data-testid="input-setting-entityFormShellContentMaxWidthPx"
-            />
-            <Button onClick={() => void handleSaveEntityFormShellContentMaxWidth()} disabled={isSaving} data-testid="button-save-entityFormShellContentMaxWidthPx">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(entityFormShellContentMaxWidthSetting?.resolvedValue ?? defaultEntityFormShellContentMaxWidthPx)} ({entityFormShellContentMaxWidthSetting?.resolvedScope ?? "-"})</p>
-          {entityFormShellContentMaxWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {entityFormShellContentMaxWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellContentMaxWidthError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-hoverPreviewOpenDelayMs">
-          <p className="font-semibold text-slate-900">{hoverPreviewOpenDelaySetting?.label ?? "Hover Vorschau Verzoegerung (ms)"}</p>
-          <p className="mb-3 text-xs text-slate-500">{hoverPreviewOpenDelaySetting?.description ?? "Verzoegerung bis Hover-Previews geoeffnet werden."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={0}
-              max={2000}
-              step={1}
-              value={hoverPreviewOpenDelayValue}
-              onChange={(event) => setHoverPreviewOpenDelayValue(event.target.value)}
-              data-testid="input-setting-hoverPreviewOpenDelayMs"
-            />
-            <Button onClick={() => void handleSaveHoverPreviewOpenDelay()} disabled={isSaving} data-testid="button-save-hoverPreviewOpenDelayMs">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(hoverPreviewOpenDelaySetting?.resolvedValue ?? defaultHoverPreviewOpenDelayMs)} ({hoverPreviewOpenDelaySetting?.resolvedScope ?? "-"})</p>
-          {hoverPreviewOpenDelaySaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {hoverPreviewOpenDelayError && <p className="mt-1 text-xs text-destructive">{hoverPreviewOpenDelayError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-cardListColumns">
-          <p className="font-semibold text-slate-900">{cardListColumnsSetting?.label ?? "Karten Spalten"}</p>
-          <p className="mb-3 text-xs text-slate-500">{cardListColumnsSetting?.description ?? "Anzahl der Spalten in Kartenlisten."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={2}
-              max={6}
-              step={1}
-              value={cardListColumnsValue}
-              onChange={(event) => setCardListColumnsValue(event.target.value)}
-              data-testid="input-setting-cardListColumns"
-            />
-            <Button onClick={() => void handleSaveCardListColumns()} disabled={isSaving} data-testid="button-save-cardListColumns">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(cardListColumnsSetting?.resolvedValue ?? defaultCardListColumns)} ({cardListColumnsSetting?.resolvedScope ?? "-"})</p>
-          {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
-        </div>
-
-            </div>
-          </section>
-
-          <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-calendar">
-            <h4 className="font-bold text-slate-900">Kalendereinstellungen</h4>
-            <p className="mt-1 text-xs text-slate-500">Konfigurationen fuer Kalenderansichten und Navigation.</p>
-            <div className="mt-3 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekendColumnPercent">
-          <p className="font-semibold text-slate-900">{weekendWidthSetting?.label ?? "Kalender Wochenende Breite (%)"}</p>
-          <p className="mb-3 text-xs text-slate-500">{weekendWidthSetting?.description ?? "Breite von Samstag/Sonntag relativ zu Werktagen."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={1}
-              max={100}
-              step={1}
-              value={weekendColumnPercentValue}
-              onChange={(event) => setWeekendColumnPercentValue(event.target.value)}
-              data-testid="input-setting-calendarWeekendColumnPercent"
-            />
-            <Button onClick={() => void handleSaveWeekendColumnPercent()} disabled={isSaving} data-testid="button-save-calendarWeekendColumnPercent">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)} ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
-          {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekScrollRange">
-          <p className="font-semibold text-slate-900">{weekScrollRangeSetting?.label ?? "Scrollbereich Wochen"}</p>
-          <p className="mb-3 text-xs text-slate-500">{weekScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Wochen im horizontalen Kalender-Scrollbereich."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={0}
-              max={12}
-              step={1}
-              value={weekScrollRangeValue}
-              onChange={(event) => setWeekScrollRangeValue(event.target.value)}
-              data-testid="input-setting-calendarWeekScrollRange"
-            />
-            <Button onClick={() => void handleSaveWeekScrollRange()} disabled={isSaving} data-testid="button-save-calendarWeekScrollRange">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(weekScrollRangeSetting?.resolvedValue ?? defaultWeekScrollRange)} ({weekScrollRangeSetting?.resolvedScope ?? "-"})</p>
-          {weekScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {weekScrollRangeError && <p className="mt-1 text-xs text-destructive">{weekScrollRangeError}</p>}
-        </div>
-
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarMonthScrollRange">
-          <p className="font-semibold text-slate-900">{monthScrollRangeSetting?.label ?? "Scrollbereich Monate"}</p>
-          <p className="mb-3 text-xs text-slate-500">{monthScrollRangeSetting?.description ?? "Anzahl zusaetzlicher Monate im horizontalen Kalender-Scrollbereich."}</p>
-
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <Input
-              type="number"
-              min={0}
-              max={12}
-              step={1}
-              value={monthScrollRangeValue}
-              onChange={(event) => setMonthScrollRangeValue(event.target.value)}
-              data-testid="input-setting-calendarMonthScrollRange"
-            />
-            <Button onClick={() => void handleSaveMonthScrollRange()} disabled={isSaving} data-testid="button-save-calendarMonthScrollRange">
-              Speichern
-            </Button>
-          </div>
-
-          <p className="mt-2 text-xs text-slate-600">Wirksam: {stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)} ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
-          {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-          {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
-        </div>
-
-            </div>
-          </section>
-
-          </div>
-        </TabsContent>
-
-        <TabsContent value="backup" className="mt-4 min-h-0 flex-1 overflow-hidden pr-1" data-testid="settings-tab-content-backup">
-
-          <div className="flex h-full min-h-0 flex-col gap-4" data-testid="settings-group-backups">
-            {false ? (
-              <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
-                <p className="font-semibold text-slate-900">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
-                <p className="mb-3 text-xs text-slate-500">
-                  {authTwoFactorEnabledSetting?.description ?? "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung fuer alle Benutzer."}
-                </p>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-                  <div className="flex h-10 items-center gap-3">
-                    <Switch
-                      checked={authTwoFactorEnabledValue}
-                      onCheckedChange={setAuthTwoFactorEnabledValue}
-                      data-testid="switch-setting-auth-two-factor-enabled"
-                    />
-                    <span className="text-sm text-slate-700">{authTwoFactorEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
-                  </div>
-                  <Button
-                    onClick={() => void handleSaveAuthTwoFactorEnabled()}
-                    disabled={isSaving}
-                    data-testid="button-save-auth-two-factor-enabled"
-                  >
-                    Speichern
-                  </Button>
-                </div>
-                <p className="mt-2 text-xs text-slate-600">
-                  Wirksam: {stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)} ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
-                </p>
-                <p className="mt-1 text-xs text-slate-500">Default: deaktiviert. Die Änderung wirkt für alle künftigen Logins.</p>
-                {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-                {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
-              </div>
-            ) : null}
-
-            <h4 className="hidden">Backups</h4>
-            <p className="hidden">Steuerung und Monitoring aller Backup-Funktionen.</p>
-
-            <div className="flex min-h-0 w-full max-w-5xl flex-1 self-center flex-col rounded-md border border-slate-200 bg-white p-4" data-testid="backups-monitoring-table">
-          <div className="mb-3">
-            <p className="font-semibold text-slate-900">Backups</p>
-            <p className="text-xs text-slate-500">Historie der letzten 15 Backup-Läufe inklusive Excel-, PDF- und ZIP-Download.</p>
-          </div>
-          {backupRunInfo && <p className="mb-2 text-xs text-emerald-700">{backupRunInfo}</p>}
-          {backupRunError && <p className="mb-2 text-xs text-destructive">{backupRunError}</p>}
-
-          {backupsQuery.isLoading ? (
-            <p className="text-sm text-slate-500">Backups werden geladen...</p>
-          ) : backupsQuery.isError ? (
-            <p className="text-sm text-destructive">Backups konnten nicht geladen werden.</p>
-          ) : backupRows.length === 0 ? (
-            <p className="text-sm text-slate-500">Noch keine Backup-Einträge vorhanden.</p>
-          ) : (
-            <div className="min-h-0 flex-1 overflow-auto rounded-md border border-slate-200" data-testid="table-backup-logs-frame">
-              <table className="min-w-full text-sm" data-testid="table-backup-logs">
-                <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
-                  <tr className="border-b border-slate-200 text-left">
-                    <th className="bg-white px-2 py-2">Datum</th>
-                    <th className="bg-white px-2 py-2">Status</th>
-                    <th className="bg-white px-2 py-2">Umfang</th>
-                    <th className="bg-white px-2 py-2">Download</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {backupRows.map((row) => {
-                    const fileRefs = parseBackupFileRefs(row.filePath);
-                    return (
-                    <tr key={row.id} className="border-b border-slate-100" data-testid={`backup-row-${row.id}`}>
-                      <td className="px-2 py-2">{formatBackupDate(row.createdAt)}</td>
-                      <td className="px-2 py-2">
-                        <span className="inline-flex items-center" title={row.errorMessage ?? undefined}>
-                          <BackupStatusIcon row={row} />
-                        </span>
-                      </td>
-                      <td className="px-2 py-2">{formatBackupScope(row.exportedRecordCount)}</td>
-                      <td className="px-2 py-2">
-                        <div className="flex flex-wrap gap-2">
-                          {fileRefs.excelPath ? (
-                            <a href={`/api/admin/backups/${row.id}/download/excel`} className="underline text-primary" data-testid={`backup-download-excel-${row.id}`}>
-                              Excel
-                            </a>
-                          ) : (
-                            <span className="text-slate-400">Excel</span>
-                          )}
-                          {fileRefs.pdfPath ? (
-                            <a href={`/api/admin/backups/${row.id}/download/pdf`} className="underline text-primary" data-testid={`backup-download-pdf-${row.id}`}>
-                              PDF
-                            </a>
-                          ) : (
-                            <span className="text-slate-400">PDF</span>
-                          )}
-                          {fileRefs.zipPath ? (
-                            <a href={`/api/admin/backups/${row.id}/download/zip`} className="underline text-primary" data-testid={`backup-download-zip-${row.id}`}>
-                              ZIP
-                            </a>
-                          ) : (
-                            <span className="text-slate-400">ZIP</span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
-                  <tr className="border-t border-slate-200">
-                    <td colSpan={4} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
-                      Einträge: {backupRows.length}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          )}
-          <div className="mt-4 flex flex-wrap items-start justify-between gap-4 border-t border-slate-200 pt-4" data-testid="backup-controls-container">
-            <div className="min-w-[220px]">
-              <p className="font-semibold text-slate-900">{backupEnabledSetting?.label ?? "Backups aktiv"}</p>
-              
-              <div className="flex h-10 items-center gap-3">
-                <Switch
-                  checked={backupEnabledValue}
-                  onCheckedChange={(checked) => void handleSaveBackupEnabled(checked)}
-                  data-testid="switch-setting-backup-enabled"
-                />
-                <span className="text-sm text-slate-700">{backupEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
-              </div>
-              {backupEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
-              {backupEnabledError && <p className="mt-1 text-xs text-destructive">{backupEnabledError}</p>}
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => void handleRunBackupNow()}
-                disabled={isRunningBackupNow}
-                data-testid="button-backups-run-now"
-              >
-                {isRunningBackupNow ? "Backup läuft..." : "Backup erzeugen"}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
-                Aktualisieren
-              </Button>
-            </div>
-          </div>
-            </div>
-            <div className="sticky bottom-0 z-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4 shadow-[0_-1px_0_0_rgba(226,232,240,1)]" data-testid="dump-import-section">
-              <p className="font-semibold text-slate-900">Dump Import</p>
-              <p className="mb-1 text-xs text-slate-500">
-                ZIP-Dump hochladen, Vorschau prüfen und erst danach mit Sicherheitsphrase anwenden.
-              </p>
-              <p className="mb-3 text-xs font-medium text-amber-700" data-testid="dump-import-warning">
-                Achtung: Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich.
-              </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <input
-                  type="file"
-                  accept=".zip"
-                  onChange={(e) => {
-                    setSelectedDumpFile(e.target.files?.[0] ?? null);
-                    setDumpImportPreview(null);
-                    setDumpImportResult(null);
-                    setDumpImportError(null);
-                    setDumpConfirmationInput("");
-                  }}
-                  data-testid="input-dump-import-file"
-                  className="text-sm"
-                />
-                <Button
-                  onClick={() => void handlePreviewDumpImport()}
-                  disabled={!selectedDumpFile || isDumpPreviewLoading || isDumpApplying}
-                  data-testid="button-dump-import-preview"
-                >
-                  {isDumpImporting ? "Prüfung läuft..." : "Vorschau prüfen"}
-                </Button>
-              </div>
-              {dumpImportPreview && (
-                <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-import-preview-report">
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <span className="font-semibold text-slate-900">Status: {dumpImportPreview.transferReadiness}</span>
-                    <span>Ziel: {dumpImportPreview.targetDatabaseName}</span>
-                    <span>Dump: {dumpImportPreview.dumpId}</span>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 md:grid-cols-3">
-                    <div>Tabellen: {dumpImportPreview.expectedTables.length}</div>
-                    <div>Upload-Dateien: {dumpImportPreview.expectedUploads.fileCount}</div>
-                    <div>Upload-Groesse: {(dumpImportPreview.expectedUploads.totalBytes / 1024 / 1024).toFixed(2)} MB</div>
-                  </div>
-                  {dumpImportPreview.warnings.length > 0 && (
-                    <div data-testid="dump-import-preview-warnings">
-                      <p className="text-xs font-semibold text-amber-700">Warnungen</p>
-                      {dumpImportPreview.warnings.map((warning) => (
-                        <p key={warning} className="text-xs text-amber-700">{warning}</p>
-                      ))}
-                    </div>
-                  )}
-                  {dumpImportPreview.blockingIssues.length > 0 && (
-                    <div data-testid="dump-import-preview-blockers">
-                      <p className="text-xs font-semibold text-destructive">Blocker</p>
-                      {dumpImportPreview.blockingIssues.map((issue) => (
-                        <p key={issue} className="text-xs text-destructive">{issue}</p>
-                      ))}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-900">Sicherheitsphrase</p>
-                    <p className="text-xs text-slate-600" data-testid="dump-import-confirmation-phrase">{dumpImportPreview.confirmationPhrase}</p>
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarWeekScrollRange">
+                  <p className="font-semibold text-slate-900 text-sm">{weekScrollRangeSetting?.label ?? "Scrollbereich Wochen"}</p>
+                  <p className="mb-3 text-xs text-slate-500">{weekScrollRangeSetting?.description ?? "Anzahl zusätzlicher Wochen im horizontalen Scroll (0–12)."}</p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                     <Input
-                      value={dumpConfirmationInput}
-                      onChange={(event) => setDumpConfirmationInput(event.target.value)}
-                      data-testid="input-dump-import-confirmation"
+                      type="number" min={0} max={12} step={1}
+                      value={weekScrollRangeValue}
+                      onChange={(event) => setWeekScrollRangeValue(event.target.value)}
+                      data-testid="input-setting-calendarWeekScrollRange"
                     />
-                    <Button
-                      onClick={() => void handleApplyDumpImport()}
-                      disabled={
-                        isDumpApplying
-                        || dumpImportPreview.transferReadiness === "blocked"
-                        || dumpConfirmationInput.trim() !== dumpImportPreview.confirmationPhrase
-                      }
-                      data-testid="button-dump-import-apply"
-                    >
-                      {isDumpApplying ? "Import laeuft..." : "Import anwenden"}
+                    <Button size="sm" onClick={() => void handleSaveWeekScrollRange()} disabled={isSaving} data-testid="button-save-calendarWeekScrollRange">
+                      Speichern
                     </Button>
                   </div>
+                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(weekScrollRangeSetting?.resolvedValue ?? defaultWeekScrollRange)}</strong> ({weekScrollRangeSetting?.resolvedScope ?? "-"})</p>
+                  {weekScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                  {weekScrollRangeError && <p className="mt-1 text-xs text-destructive">{weekScrollRangeError}</p>}
                 </div>
-              )}
-              {dumpImportResult && (
-                <p className="mt-2 text-xs text-emerald-700" data-testid="dump-import-success">
-                  Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}. Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
+
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-calendarMonthScrollRange">
+                  <p className="font-semibold text-slate-900 text-sm">{monthScrollRangeSetting?.label ?? "Scrollbereich Monate"}</p>
+                  <p className="mb-3 text-xs text-slate-500">{monthScrollRangeSetting?.description ?? "Anzahl zusätzlicher Monate im horizontalen Scroll (0–12)."}</p>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                    <Input
+                      type="number" min={0} max={12} step={1}
+                      value={monthScrollRangeValue}
+                      onChange={(event) => setMonthScrollRangeValue(event.target.value)}
+                      data-testid="input-setting-calendarMonthScrollRange"
+                    />
+                    <Button size="sm" onClick={() => void handleSaveMonthScrollRange()} disabled={isSaving} data-testid="button-save-calendarMonthScrollRange">
+                      Speichern
+                    </Button>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)}</strong> ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
+                  {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                  {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
+                </div>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── Sicherheit ── */}
+          {activePane === "sicherheit" && (
+            <div data-testid="settings-pane-sicherheit">
+              <div className="mb-5 pb-3 border-b border-slate-200">
+                <h2 className="text-base font-medium text-slate-900">Sicherheit</h2>
+                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                  Globale Login- und Zugriffseinstellungen (nur Admin)
+                  <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 tracking-normal normal-case ml-1">GLOBAL</span>
                 </p>
-              )}
-              {dumpImportResult && (
-                <div className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600" data-testid="dump-import-summary">
-                  <p>Status: {dumpImportResult.importStatus}</p>
-                  <p>Verifikation: {dumpImportResult.verificationPassed ? "bestanden" : "fehlgeschlagen"}</p>
-                  <p>Zielbackup: {dumpImportResult.targetBackupCreated ? "erstellt" : "nicht erstellt"}</p>
-                  {dumpImportResult.warnings.map((warning) => (
-                    <p key={warning} className="text-amber-700">{warning}</p>
-                  ))}
-                  {dumpImportResult.blockingIssues.map((issue) => (
-                    <p key={issue} className="text-destructive">{issue}</p>
-                  ))}
+              </div>
+              {isAdmin ? (
+                <div className="space-y-2" data-testid="settings-group-security">
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-auth-two-factor-enabled">
+                    <p className="font-semibold text-slate-900 text-sm">{authTwoFactorEnabledSetting?.label ?? "2FA global aktiv"}</p>
+                    <p className="mb-3 text-xs text-slate-500">
+                      {authTwoFactorEnabledSetting?.description ?? "Aktiviert die verpflichtende Zwei-Faktor-Anmeldung für alle Benutzer. Wirkt ab dem nächsten Login."}
+                    </p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                      <div className="flex h-9 items-center gap-3">
+                        <Switch
+                          checked={authTwoFactorEnabledValue}
+                          onCheckedChange={setAuthTwoFactorEnabledValue}
+                          data-testid="switch-setting-auth-two-factor-enabled"
+                        />
+                        <span className="text-sm text-slate-700">{authTwoFactorEnabledValue ? "Aktiv" : "Deaktiviert"}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => void handleSaveAuthTwoFactorEnabled()}
+                        disabled={isSaving}
+                        data-testid="button-save-auth-two-factor-enabled"
+                      >
+                        Speichern
+                      </Button>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Wirksam: <strong className="text-slate-700">{stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)}</strong> ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
+                    </p>
+                    {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
+                  </div>
                 </div>
-              )}
-              {dumpImportError && (
-                <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
+              ) : (
+                <p className="text-sm text-slate-500">Sicherheitseinstellungen sind nur für Administratoren sichtbar.</p>
               )}
             </div>
-          </div>
-        </TabsContent>
+          )}
 
-        <TabsContent value="db-dump" className="mt-4 min-h-0 flex-1 overflow-hidden pr-1" data-testid="settings-tab-content-db-dump">
-          <div className="flex h-full min-h-0 flex-col gap-4" data-testid="settings-group-dumps">
-            <p className="hidden">
-              Vollständiger Export und Import aller Anwendungsdaten inkl. Anhänge (außer Benutzer und Rollen).
-            </p>
-
-            <div className="flex h-full min-h-0 flex-1 flex-col gap-4">
-              {/* Dump erstellen */}
-              <div className="shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="dump-create-section">
-                <p className="font-semibold text-slate-900">Dump erstellen</p>
-                <p className="mb-3 text-xs text-slate-500">
-                  Exportiert alle Tabellendaten und den Anhang-Ordner als ZIP-Datei.
-                </p>
-                <Button
-                  onClick={() => void handleCreateDump()}
-                  disabled={isDumpCreating}
-                  data-testid="button-dump-create"
-                >
-                  {isDumpCreating ? "Dump wird erstellt..." : "Dump erstellen"}
-                </Button>
-                {dumpCreateResult && (
-                  <p className="mt-2 text-xs text-emerald-700" data-testid="dump-create-success">
-                    Dump erstellt: {dumpCreateResult.filename} ({(dumpCreateResult.sizeBytes / 1024 / 1024).toFixed(2)} MB)
-                  </p>
-                )}
-                {dumpCreateError && (
-                  <p className="mt-2 text-xs text-destructive" data-testid="dump-create-error">{dumpCreateError}</p>
-                )}
+          {/* ── Backup & Dump ── */}
+          {activePane === "backup" && (
+            <div data-testid="settings-pane-backup">
+              <div className="mb-5 pb-3 border-b border-slate-200">
+                <h2 className="text-base font-medium text-slate-900">Backup &amp; Dump</h2>
+                <p className="text-xs text-slate-500 mt-1">Steuerung, Protokoll und Datentransfer</p>
               </div>
 
-              {/* Dump-Liste */}
-              <div className="min-h-0 flex-1 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-list-section">
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="font-semibold text-slate-900">Vorhandene Dumps</p>
-                  <Button variant="outline" size="sm" onClick={() => void dumpsQuery.refetch()} data-testid="button-dumps-refresh">
-                    Aktualisieren
-                  </Button>
-                </div>
-                {dumpsQuery.isLoading ? (
-                  <p className="text-sm text-slate-500">Dumps werden geladen...</p>
-                ) : dumpsQuery.isError ? (
-                  <p className="text-sm text-destructive">Dumps konnten nicht geladen werden.</p>
-                ) : dumpRows.length === 0 ? (
-                  <p className="text-sm text-slate-500">Noch keine Dumps vorhanden.</p>
-                ) : (
-                  <div className="h-full min-h-0 overflow-auto rounded-md border border-slate-200" data-testid="table-dump-list-frame">
-                    <table className="min-w-full text-sm" data-testid="table-dump-list">
-                      <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
-                        <tr className="border-b border-slate-200 text-left">
-                          <th className="bg-white px-2 py-2">Erstellt</th>
-                          <th className="bg-white px-2 py-2">Groesse</th>
-                          <th className="bg-white px-2 py-2">Download</th>
-                          <th className="bg-white px-2 py-2">Loeschen</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {dumpRows.map((row) => (
-                          <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
-                            <td className="px-2 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
-                            <td className="px-2 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
-                            <td className="px-2 py-2">
-                              <a
-                                href={`/api/admin/dumps/${encodeURIComponent(row.filename)}/download`}
-                                className="underline text-primary"
-                                data-testid={`dump-download-${row.filename}`}
-                              >
-                                ZIP
-                              </a>
-                            </td>
-                            <td className="px-2 py-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => void handleDeleteDump(row.filename)}
-                                disabled={isDumpDeleting === row.filename}
-                                data-testid={`dump-delete-${row.filename}`}
-                              >
-                                {isDumpDeleting === row.filename ? "..." : "Loeschen"}
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
-                        <tr className="border-t border-slate-200">
-                          <td colSpan={4} className="bg-slate-50 px-2 py-2 text-xs font-medium text-slate-600">
-                            Eintraege: {dumpRows.length}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
+              {/* Inner tabs */}
+              <div className="flex border-b border-slate-200 mb-5" data-testid="backup-inner-tabs">
+                <button className={innerTabClass("backups")} onClick={() => setActiveBackupTab("backups")} data-testid="backup-inner-tab-backups">Backups</button>
+                <button className={innerTabClass("dumps")} onClick={() => setActiveBackupTab("dumps")} data-testid="backup-inner-tab-dumps">Dumps</button>
+                <button className={innerTabClass("import")} onClick={() => setActiveBackupTab("import")} data-testid="backup-inner-tab-import">Import</button>
               </div>
 
-              {/* Import */}
-              <div className="sticky bottom-0 z-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 p-4 shadow-[0_-1px_0_0_rgba(226,232,240,1)]" data-testid="dump-import-section">
-                <p className="font-semibold text-slate-900">Dump Import</p>
-                <p className="mb-1 text-xs text-slate-500">
-                  ZIP-Dump hochladen, Vorschau pruefen und erst danach mit Sicherheitsphrase anwenden.
-                </p>
-                <p className="mb-3 text-xs text-amber-700 font-medium" data-testid="dump-import-warning">
-                  Achtung: Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich.
-                </p>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="file"
-                    accept=".zip"
-                    onChange={(e) => {
-                      setSelectedDumpFile(e.target.files?.[0] ?? null);
-                      setDumpImportPreview(null);
-                      setDumpImportResult(null);
-                      setDumpImportError(null);
-                      setDumpConfirmationInput("");
-                    }}
-                    data-testid="input-dump-import-file"
-                    className="text-sm"
-                  />
-                  <Button
-                    onClick={() => void handlePreviewDumpImport()}
-                    disabled={!selectedDumpFile || isDumpPreviewLoading || isDumpApplying}
-                    data-testid="button-dump-import-preview"
-                  >
-                    {isDumpImporting ? "Prüfung läuft..." : "Vorschau prüfen"}
-                  </Button>
-                </div>
-                {dumpImportPreview && (
-                  <div className="mt-4 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-import-preview-report">
-                    <div className="flex flex-wrap items-center gap-3 text-sm">
-                      <span className="font-semibold text-slate-900">Status: {dumpImportPreview.transferReadiness}</span>
-                      <span>Ziel: {dumpImportPreview.targetDatabaseName}</span>
-                      <span>Dump: {dumpImportPreview.dumpId}</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 md:grid-cols-3">
-                      <div>Tabellen: {dumpImportPreview.expectedTables.length}</div>
-                      <div>Upload-Dateien: {dumpImportPreview.expectedUploads.fileCount}</div>
-                      <div>Upload-Groesse: {(dumpImportPreview.expectedUploads.totalBytes / 1024 / 1024).toFixed(2)} MB</div>
-                    </div>
-                    {dumpImportPreview.warnings.length > 0 && (
-                      <div data-testid="dump-import-preview-warnings">
-                        <p className="text-xs font-semibold text-amber-700">Warnungen</p>
-                        {dumpImportPreview.warnings.map((warning) => (
-                          <p key={warning} className="text-xs text-amber-700">{warning}</p>
-                        ))}
-                      </div>
-                    )}
-                    {dumpImportPreview.blockingIssues.length > 0 && (
-                      <div data-testid="dump-import-preview-blockers">
-                        <p className="text-xs font-semibold text-destructive">Blocker</p>
-                        {dumpImportPreview.blockingIssues.map((issue) => (
-                          <p key={issue} className="text-xs text-destructive">{issue}</p>
-                        ))}
-                      </div>
-                    )}
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-slate-900">Sicherheitsphrase</p>
-                      <p className="text-xs text-slate-600" data-testid="dump-import-confirmation-phrase">{dumpImportPreview.confirmationPhrase}</p>
-                      <Input
-                        value={dumpConfirmationInput}
-                        onChange={(event) => setDumpConfirmationInput(event.target.value)}
-                        data-testid="input-dump-import-confirmation"
+              {/* Inner tab: Backups */}
+              {activeBackupTab === "backups" && (
+                <div data-testid="settings-group-backups">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={backupEnabledValue}
+                        onCheckedChange={(checked) => void handleSaveBackupEnabled(checked)}
+                        data-testid="switch-setting-backup-enabled"
                       />
+                      <span className="text-sm font-medium text-slate-700">
+                        {backupEnabledSetting?.label ?? "Automatische Backups"}: {backupEnabledValue ? "aktiv" : "deaktiviert"}
+                      </span>
+                      <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 tracking-normal normal-case">GLOBAL</span>
+                    </div>
+                    <div className="flex gap-2">
                       <Button
-                        onClick={() => void handleApplyDumpImport()}
-                        disabled={
-                          isDumpApplying
-                          || dumpImportPreview.transferReadiness === "blocked"
-                          || dumpConfirmationInput.trim() !== dumpImportPreview.confirmationPhrase
-                        }
-                        data-testid="button-dump-import-apply"
+                        variant="default"
+                        size="sm"
+                        onClick={() => void handleRunBackupNow()}
+                        disabled={isRunningBackupNow}
+                        data-testid="button-backups-run-now"
                       >
-                        {isDumpApplying ? "Import laeuft..." : "Import anwenden"}
+                        {isRunningBackupNow ? "Backup läuft..." : "Backup erzeugen"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => void backupsQuery.refetch()} data-testid="button-backups-refresh">
+                        Aktualisieren
                       </Button>
                     </div>
                   </div>
-                )}
-                {dumpImportResult && (
-                  <p className="mt-2 text-xs text-emerald-700" data-testid="dump-import-success">
-                    Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}.
-                    Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
-                  </p>
-                )}
-                {dumpImportResult && (
-                  <div className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600" data-testid="dump-import-summary">
-                    <p>Status: {dumpImportResult.importStatus}</p>
-                    <p>Verifikation: {dumpImportResult.verificationPassed ? "bestanden" : "fehlgeschlagen"}</p>
-                    <p>Zielbackup: {dumpImportResult.targetBackupCreated ? "erstellt" : "nicht erstellt"}</p>
-                    {dumpImportResult.warnings.map((warning) => (
-                      <p key={warning} className="text-amber-700">{warning}</p>
-                    ))}
-                    {dumpImportResult.blockingIssues.map((issue) => (
-                      <p key={issue} className="text-destructive">{issue}</p>
-                    ))}
+                  {backupEnabledSaved && <p className="mb-2 text-xs text-emerald-700">Gespeichert.</p>}
+                  {backupEnabledError && <p className="mb-2 text-xs text-destructive">{backupEnabledError}</p>}
+                  {backupRunInfo && <p className="mb-2 text-xs text-emerald-700">{backupRunInfo}</p>}
+                  {backupRunError && <p className="mb-2 text-xs text-destructive">{backupRunError}</p>}
+
+                  <div className="rounded-md border border-slate-200 bg-white overflow-hidden" data-testid="backups-monitoring-table">
+                    {backupsQuery.isLoading ? (
+                      <p className="p-4 text-sm text-slate-500">Backups werden geladen...</p>
+                    ) : backupsQuery.isError ? (
+                      <p className="p-4 text-sm text-destructive">Backups konnten nicht geladen werden.</p>
+                    ) : backupRows.length === 0 ? (
+                      <p className="p-4 text-sm text-slate-500">Noch keine Backup-Einträge vorhanden.</p>
+                    ) : (
+                      <div className="overflow-auto" data-testid="table-backup-logs-frame">
+                        <table className="min-w-full text-sm" data-testid="table-backup-logs">
+                          <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                            <tr className="border-b border-slate-200 text-left">
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Datum</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Status</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Umfang</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Download</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {backupRows.map((row) => {
+                              const fileRefs = parseBackupFileRefs(row.filePath);
+                              return (
+                                <tr key={row.id} className="border-b border-slate-100" data-testid={`backup-row-${row.id}`}>
+                                  <td className="px-3 py-2">{formatBackupDate(row.createdAt)}</td>
+                                  <td className="px-3 py-2">
+                                    <span className="inline-flex items-center" title={row.errorMessage ?? undefined}>
+                                      <BackupStatusIcon row={row} />
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2">{formatBackupScope(row.exportedRecordCount)}</td>
+                                  <td className="px-3 py-2">
+                                    <div className="flex flex-wrap gap-2">
+                                      {fileRefs.excelPath ? (
+                                        <a href={`/api/admin/backups/${row.id}/download/excel`} className="underline text-primary text-xs" data-testid={`backup-download-excel-${row.id}`}>Excel</a>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs">Excel</span>
+                                      )}
+                                      {fileRefs.pdfPath ? (
+                                        <a href={`/api/admin/backups/${row.id}/download/pdf`} className="underline text-primary text-xs" data-testid={`backup-download-pdf-${row.id}`}>PDF</a>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs">PDF</span>
+                                      )}
+                                      {fileRefs.zipPath ? (
+                                        <a href={`/api/admin/backups/${row.id}/download/zip`} className="underline text-primary text-xs" data-testid={`backup-download-zip-${row.id}`}>ZIP</a>
+                                      ) : (
+                                        <span className="text-slate-400 text-xs">ZIP</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                          <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
+                            <tr className="border-t border-slate-200">
+                              <td colSpan={4} className="bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                                Einträge: {backupRows.length}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
                   </div>
-                )}
-                {dumpImportError && (
-                  <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Inner tab: Dumps */}
+              {activeBackupTab === "dumps" && (
+                <div data-testid="settings-group-dumps">
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <Button onClick={() => void handleCreateDump()} disabled={isDumpCreating} size="sm" data-testid="button-dump-create">
+                      {isDumpCreating ? "Dump wird erstellt..." : "Dump erstellen"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => void dumpsQuery.refetch()} data-testid="button-dumps-refresh">
+                      Aktualisieren
+                    </Button>
+                  </div>
+                  {dumpCreateResult && (
+                    <p className="mb-3 text-xs text-emerald-700" data-testid="dump-create-success">
+                      Dump erstellt: {dumpCreateResult.filename} ({(dumpCreateResult.sizeBytes / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                  {dumpCreateError && (
+                    <p className="mb-3 text-xs text-destructive" data-testid="dump-create-error">{dumpCreateError}</p>
+                  )}
+
+                  <div className="rounded-md border border-slate-200 bg-white overflow-hidden" data-testid="dump-list-section">
+                    {dumpsQuery.isLoading ? (
+                      <p className="p-4 text-sm text-slate-500">Dumps werden geladen...</p>
+                    ) : dumpsQuery.isError ? (
+                      <p className="p-4 text-sm text-destructive">Dumps konnten nicht geladen werden.</p>
+                    ) : dumpRows.length === 0 ? (
+                      <p className="p-4 text-sm text-slate-500">Noch keine Dumps vorhanden.</p>
+                    ) : (
+                      <div className="overflow-auto" data-testid="table-dump-list-frame">
+                        <table className="min-w-full text-sm" data-testid="table-dump-list">
+                          <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_rgba(226,232,240,1)]">
+                            <tr className="border-b border-slate-200 text-left">
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Erstellt</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Größe</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Download</th>
+                              <th className="bg-white px-3 py-2 text-xs font-medium text-slate-500">Löschen</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dumpRows.map((row) => (
+                              <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
+                                <td className="px-3 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
+                                <td className="px-3 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
+                                <td className="px-3 py-2">
+                                  <a
+                                    href={`/api/admin/dumps/${encodeURIComponent(row.filename)}/download`}
+                                    className="underline text-primary text-xs"
+                                    data-testid={`dump-download-${row.filename}`}
+                                  >
+                                    ZIP
+                                  </a>
+                                </td>
+                                <td className="px-3 py-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => void handleDeleteDump(row.filename)}
+                                    disabled={isDumpDeleting === row.filename}
+                                    data-testid={`dump-delete-${row.filename}`}
+                                  >
+                                    {isDumpDeleting === row.filename ? "..." : "Löschen"}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="sticky bottom-0 z-10 bg-slate-50 shadow-[0_-1px_0_0_rgba(226,232,240,1)]">
+                            <tr className="border-t border-slate-200">
+                              <td colSpan={4} className="bg-slate-50 px-3 py-2 text-xs font-medium text-slate-600">
+                                Einträge: {dumpRows.length}
+                              </td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Inner tab: Import */}
+              {activeBackupTab === "import" && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 p-4" data-testid="dump-import-section">
+                  <p className="font-semibold text-amber-900 text-sm mb-1">Achtung – destruktive Aktion</p>
+                  <p className="mb-3 text-xs text-amber-800" data-testid="dump-import-warning">
+                    Der Import überschreibt alle vorhandenen Daten (außer Benutzer und Rollen) unwiderruflich. Vor dem Anwenden wird automatisch ein Ziel-Backup erstellt.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <input
+                      type="file"
+                      accept=".zip"
+                      onChange={(e) => {
+                        setSelectedDumpFile(e.target.files?.[0] ?? null);
+                        setDumpImportPreview(null);
+                        setDumpImportResult(null);
+                        setDumpImportError(null);
+                        setDumpConfirmationInput("");
+                      }}
+                      data-testid="input-dump-import-file"
+                      className="text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void handlePreviewDumpImport()}
+                      disabled={!selectedDumpFile || isDumpPreviewLoading || isDumpApplying}
+                      data-testid="button-dump-import-preview"
+                    >
+                      {isDumpImporting ? "Prüfung läuft..." : "Vorschau prüfen"}
+                    </Button>
+                  </div>
+
+                  {dumpImportPreview && (
+                    <div className="mt-3 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="dump-import-preview-report">
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <span className="font-semibold text-slate-900">Status: {dumpImportPreview.transferReadiness}</span>
+                        <span className="text-slate-600">Ziel: {dumpImportPreview.targetDatabaseName}</span>
+                        <span className="text-slate-600">Dump: {dumpImportPreview.dumpId}</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 text-xs text-slate-600 md:grid-cols-3">
+                        <div>Tabellen: {dumpImportPreview.expectedTables.length}</div>
+                        <div>Upload-Dateien: {dumpImportPreview.expectedUploads.fileCount}</div>
+                        <div>Upload-Größe: {(dumpImportPreview.expectedUploads.totalBytes / 1024 / 1024).toFixed(2)} MB</div>
+                      </div>
+                      {dumpImportPreview.warnings.length > 0 && (
+                        <div data-testid="dump-import-preview-warnings">
+                          <p className="text-xs font-semibold text-amber-700">Warnungen</p>
+                          {dumpImportPreview.warnings.map((warning) => (
+                            <p key={warning} className="text-xs text-amber-700">{warning}</p>
+                          ))}
+                        </div>
+                      )}
+                      {dumpImportPreview.blockingIssues.length > 0 && (
+                        <div data-testid="dump-import-preview-blockers">
+                          <p className="text-xs font-semibold text-destructive">Blocker</p>
+                          {dumpImportPreview.blockingIssues.map((issue) => (
+                            <p key={issue} className="text-xs text-destructive">{issue}</p>
+                          ))}
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold text-slate-900">Sicherheitsphrase</p>
+                        <p className="text-xs text-slate-600" data-testid="dump-import-confirmation-phrase">{dumpImportPreview.confirmationPhrase}</p>
+                        <Input
+                          value={dumpConfirmationInput}
+                          onChange={(event) => setDumpConfirmationInput(event.target.value)}
+                          data-testid="input-dump-import-confirmation"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => void handleApplyDumpImport()}
+                          disabled={
+                            isDumpApplying
+                            || dumpImportPreview.transferReadiness === "blocked"
+                            || dumpConfirmationInput.trim() !== dumpImportPreview.confirmationPhrase
+                          }
+                          data-testid="button-dump-import-apply"
+                        >
+                          {isDumpApplying ? "Import läuft..." : "Import anwenden"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {dumpImportResult && (
+                    <p className="mt-3 text-xs text-emerald-700" data-testid="dump-import-success">
+                      Import abgeschlossen. Tabellen wiederhergestellt: {dumpImportResult.tablesRestored}. Anhänge: {dumpImportResult.uploadsRestored ? "wiederhergestellt" : "nicht enthalten"}.
+                    </p>
+                  )}
+                  {dumpImportResult && (
+                    <div className="mt-2 rounded-md border border-slate-200 bg-white p-3 text-xs text-slate-600" data-testid="dump-import-summary">
+                      <p>Status: {dumpImportResult.importStatus}</p>
+                      <p>Verifikation: {dumpImportResult.verificationPassed ? "bestanden" : "fehlgeschlagen"}</p>
+                      <p>Zielbackup: {dumpImportResult.targetBackupCreated ? "erstellt" : "nicht erstellt"}</p>
+                      {dumpImportResult.warnings.map((warning) => (
+                        <p key={warning} className="text-amber-700">{warning}</p>
+                      ))}
+                      {dumpImportResult.blockingIssues.map((issue) => (
+                        <p key={issue} className="text-destructive">{issue}</p>
+                      ))}
+                    </div>
+                  )}
+                  {dumpImportError && (
+                    <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
+                  )}
+                </div>
+              )}
+
             </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+          )}
+
+        </div>
+      </div>
     </div>
   );
 }
