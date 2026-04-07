@@ -881,7 +881,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(previewSetting?.resolvedValue)}</strong> ({previewSetting?.resolvedScope ?? "-"})</p>
                     {previewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {previewError && <p className="mt-1 text-xs text-destructive">{previewError}</p>}
                   </div>
@@ -904,7 +903,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(helpTextPreviewSetting?.resolvedValue ?? "medium")}</strong> ({helpTextPreviewSetting?.resolvedScope ?? "-"})</p>
                     {helpTextPreviewSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {helpTextPreviewError && <p className="mt-1 text-xs text-destructive">{helpTextPreviewError}</p>}
                   </div>
@@ -923,7 +921,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(cardListColumnsSetting?.resolvedValue ?? defaultCardListColumns)}</strong> ({cardListColumnsSetting?.resolvedScope ?? "-"})</p>
                     {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
                   </div>
@@ -942,7 +939,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(entityFormShellSidebarWidthSetting?.resolvedValue ?? defaultEntityFormShellSidebarWidthPx)}</strong> ({entityFormShellSidebarWidthSetting?.resolvedScope ?? "-"})</p>
                     {entityFormShellSidebarWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {entityFormShellSidebarWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellSidebarWidthError}</p>}
                   </div>
@@ -961,7 +957,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(entityFormShellContentMaxWidthSetting?.resolvedValue ?? defaultEntityFormShellContentMaxWidthPx)}</strong> ({entityFormShellContentMaxWidthSetting?.resolvedScope ?? "-"})</p>
                     {entityFormShellContentMaxWidthSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {entityFormShellContentMaxWidthError && <p className="mt-1 text-xs text-destructive">{entityFormShellContentMaxWidthError}</p>}
                   </div>
@@ -995,7 +990,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(toastDesktopPositionSetting?.resolvedValue ?? defaultToastDesktopPosition)}</strong> ({toastDesktopPositionSetting?.resolvedScope ?? "-"})</p>
                     {toastDesktopPositionSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {toastDesktopPositionError && <p className="mt-1 text-xs text-destructive">{toastDesktopPositionError}</p>}
                   </div>
@@ -1014,7 +1008,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(hoverPreviewOpenDelaySetting?.resolvedValue ?? defaultHoverPreviewOpenDelayMs)}</strong> ({hoverPreviewOpenDelaySetting?.resolvedScope ?? "-"})</p>
                     {hoverPreviewOpenDelaySaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {hoverPreviewOpenDelayError && <p className="mt-1 text-xs text-destructive">{hoverPreviewOpenDelayError}</p>}
                   </div>
@@ -1050,7 +1043,6 @@ export function SettingsPage() {
                       Speichern
                     </Button>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(weekendWidthSetting?.resolvedValue ?? defaultWeekendColumnPercent)}</strong> ({weekendWidthSetting?.resolvedScope ?? "-"})</p>
                   {weekendSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                   {weekendError && <p className="mt-1 text-xs text-destructive">{weekendError}</p>}
                 </div>
@@ -1069,7 +1061,6 @@ export function SettingsPage() {
                       Speichern
                     </Button>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(weekScrollRangeSetting?.resolvedValue ?? defaultWeekScrollRange)}</strong> ({weekScrollRangeSetting?.resolvedScope ?? "-"})</p>
                   {weekScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                   {weekScrollRangeError && <p className="mt-1 text-xs text-destructive">{weekScrollRangeError}</p>}
                 </div>
@@ -1088,7 +1079,6 @@ export function SettingsPage() {
                       Speichern
                     </Button>
                   </div>
-                  <p className="mt-2 text-xs text-slate-500">Wirksam: <strong className="text-slate-700">{stringifyValue(monthScrollRangeSetting?.resolvedValue ?? defaultMonthScrollRange)}</strong> ({monthScrollRangeSetting?.resolvedScope ?? "-"})</p>
                   {monthScrollRangeSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                   {monthScrollRangeError && <p className="mt-1 text-xs text-destructive">{monthScrollRangeError}</p>}
                 </div>
@@ -1132,9 +1122,6 @@ export function SettingsPage() {
                         Speichern
                       </Button>
                     </div>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Wirksam: <strong className="text-slate-700">{stringifyValue(authTwoFactorEnabledSetting?.resolvedValue ?? false)}</strong> ({authTwoFactorEnabledSetting?.resolvedScope ?? "-"})
-                    </p>
                     {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
                   </div>

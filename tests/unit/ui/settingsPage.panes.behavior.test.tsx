@@ -6,12 +6,12 @@
  * Abgedeckte Regeln:
  * - Der Oberflaeche-Pane (Standardpane) zeigt alle USER-Settings mit Scope-Badge-Markup.
  * - Der Oberflaeche-Pane zeigt alle GLOBAL-Settings des Bereichs Oberflaechensteuerung.
- * - Jedes Setting-Row hat ein eigenes data-testid und zeigt den Wirksam-Hinweis.
+ * - Jedes Setting-Row hat ein eigenes data-testid und zeigt Scope-Badges.
  * - Die Scope-Abschnitte (USER / GLOBAL) sind als Gruppen strukturiert.
  *
  * Fehlerfaelle:
  * - Ein Setting fehlt im Oberflaeche-Pane.
- * - Der Wirksam-Hinweis zeigt den falschen Wert oder Scope.
+ * - Ein Scope-Badge zeigt den falschen Wert.
  * - Ein Setting ist in den falschen Scope-Abschnitt gerutscht.
  *
  * Ziel:
@@ -143,13 +143,13 @@ describe("Settings Redesign UI: Pane-Inhalte (Oberflaeche-Standardpane)", () => 
     expect(html).toContain("GLOBAL");
   });
 
-  it("zeigt den Wirksam-Hinweis fuer attachmentPreviewSize mit korrektem Wert", () => {
+  it("zeigt resolved Value fuer attachmentPreviewSize und USER-Badge", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).toContain("small");
     expect(html).toContain("USER");
   });
 
-  it("zeigt den Wirksam-Hinweis fuer toastDesktopPosition", () => {
+  it("zeigt resolved Value fuer toastDesktopPosition und GLOBAL-Badge", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).toContain("bottom-right");
     expect(html).toContain("GLOBAL");
