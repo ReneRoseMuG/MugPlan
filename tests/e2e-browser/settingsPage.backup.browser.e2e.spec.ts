@@ -51,10 +51,11 @@ test.describe("FT07: Backup & Dump Inner-Tabs", () => {
     await openBackupPane(page);
     // Backups ist der Standard-Inner-Tab
     await expect(page.getByTestId("backups-monitoring-table")).toBeVisible();
-    await expect(page.locator("text=Datum")).toBeVisible();
-    await expect(page.locator("text=Status")).toBeVisible();
-    await expect(page.locator("text=Umfang")).toBeVisible();
-    await expect(page.locator("text=Download")).toBeVisible();
+    // Bei leerem Stand zeigt die Tabelle einen Empty-State-Text.
+    // Spaltenköpfe werden nur bei vorhandenen Einträgen gerendert.
+    await expect(
+      page.getByTestId("backups-monitoring-table").locator("text=Noch keine Backup-Einträge vorhanden.")
+    ).toBeVisible();
   });
 
   test("Backups-Inner-Tab: backup_enabled-Switch sichtbar ohne Speichern-Button", async ({ page }) => {
