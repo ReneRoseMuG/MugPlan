@@ -1,10 +1,28 @@
-import type { ProjectArticleItem } from "@shared/projectArticleList";
+import {
+  getProjectArticleField,
+  getProjectArticleFieldByCategoryName,
+  isReportSaunaProductCategoryName,
+  type ProjectArticleItem,
+} from "@shared/projectArticleList";
 import type { ReportProduktionsplanungProjectRow } from "@shared/routes";
 
 export type ProduktionsplanungArticleCategory = {
   id: number;
   name: string;
 };
+
+export function resolveProjectRowArticleLabel(categoryName: string): string {
+  if (isReportSaunaProductCategoryName(categoryName)) {
+    return getProjectArticleField("saunaModel").label;
+  }
+
+  const fieldKey = getProjectArticleFieldByCategoryName(categoryName);
+  if (!fieldKey) {
+    return categoryName;
+  }
+
+  return getProjectArticleField(fieldKey).label;
+}
 
 export function splitProjectRowArticleValue(value: string): string[] {
   return value
@@ -25,7 +43,7 @@ export function buildProjectRowArticleGroups(
       if (items.length === 0) return null;
       return {
         categoryId: category.id,
-        categoryName: category.name,
+        categoryName: resolveProjectRowArticleLabel(category.name),
         items,
       };
     })

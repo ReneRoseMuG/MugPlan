@@ -53,10 +53,10 @@ function ProductSelectionDropdownPanel({
 
   return (
     <CollectionDropDown
-      label={label ?? "Saunamodell"}
+      label={label ?? "Sauna"}
       value={draftSelection}
       options={options}
-      placeholder={placeholder ?? "Saunamodell auswaehlen"}
+      placeholder={placeholder ?? "Sauna auswaehlen"}
       onSelect={setDraftSelection}
       showAdopt
       onAdopt={() => {
@@ -105,7 +105,7 @@ export function ProductSelectionDropdown({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title ?? `${label ?? "Saunamodell"} auswaehlen`}</DialogTitle>
+          <DialogTitle>{title ?? `${label ?? "Sauna"} auswaehlen`}</DialogTitle>
         </DialogHeader>
         {panel}
       </DialogContent>

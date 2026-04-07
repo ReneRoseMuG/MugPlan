@@ -111,7 +111,7 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.items[0]?.appointmentsCount).toBe(1);
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
     expect(response.body.items[0]?.projectArticleItems).toEqual([
-      { label: "Saunamodell", value: "FT30 Sauna Modell" },
+      { label: "Sauna", value: "FT30 Sauna Modell" },
       { label: "Fenster", value: "FT30 Rundfenster" },
     ]);
   });
@@ -165,7 +165,7 @@ describe("FT30 integration: paged projects list", () => {
     expect(slotProject).toMatchObject({
       id: projectWithItems.id,
       projectArticleItems: [
-        { label: "Saunamodell", value: "FT30 Slot Sauna" },
+        { label: "Sauna", value: "FT30 Slot Sauna" },
         { label: "Ofen", value: "FT30 Slot Ofen" },
       ],
     });
@@ -208,7 +208,7 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.project).toMatchObject({
       id: project.id,
       projectArticleItems: [
-        { label: "Saunamodell", value: "FT30 Detail Sauna" },
+        { label: "Sauna", value: "FT30 Detail Sauna" },
         { label: "Ofen", value: "FT30 Detail Ofen" },
       ],
     });

@@ -163,7 +163,7 @@ describe("FT03 projects table preview wiring", () => {
                 descriptionMd: null,
                 isActive: true,
                 version: 9,
-                projectArticleItems: [{ label: "Saunamodell", value: "Modell Table" }],
+                projectArticleItems: [{ label: "Sauna", value: "Modell Table" }],
                 tags: [{ id: 3, name: "Tag A", color: "#123456", isDefault: false, version: 1 }],
                 notesCount: 5,
                 appointmentsCount: 1,

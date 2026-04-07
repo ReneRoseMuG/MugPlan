@@ -27,7 +27,7 @@ describe("project article description renderer integration", () => {
     const html = renderToStaticMarkup(
       React.createElement(ProjectArticleDescriptionRenderer, {
         articleItems: [
-          { label: "Saunamodell", value: "Modell A" },
+          { label: "Sauna", value: "Modell A" },
           { label: "Ofen", value: "Ofen XL" },
         ],
         descriptionHtml: "<p>Beschreibung</p>",
@@ -38,7 +38,7 @@ describe("project article description renderer integration", () => {
     expect(html.indexOf("Artikelliste")).toBeLessThan(html.indexOf("Anmerkungen"));
     expect(html).toContain('class="mb-1 text-[10px] font-semibold text-slate-900"');
     expect(html).toContain('class="font-semibold text-slate-900"');
-    expect(html).toContain("Saunamodell");
+    expect(html).toContain("Sauna");
     expect(html).toContain("Modell A");
     expect(html).toContain("<p>Beschreibung</p>");
   });
@@ -113,7 +113,7 @@ describe("project article description renderer integration", () => {
     const html = renderToStaticMarkup(
       React.createElement(ProjectArticleDescriptionRenderer, {
         articleItems: [
-          { label: "Saunamodell", value: "Modell A" },
+          { label: "Sauna", value: "Modell A" },
           { label: "Ofen", value: "" },
           { label: "", value: "Ignorieren" },
           { label: "Fenster", value: "Panorama" },

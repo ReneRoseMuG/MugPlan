@@ -92,7 +92,7 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("2 Tage");
     expect(html).toContain("Fenster");
     expect(html).toContain("WIN-A");
-    expect(html).toContain("Tueren");
+    expect(html).toContain("Tür");
     expect(html).toContain("DOOR-B");
     expect(html).toContain("Beschreibung Alpha");
     expect(html).toContain("employees-hover");

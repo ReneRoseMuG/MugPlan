@@ -94,7 +94,7 @@ describe("FT26 UI: ProduktionsplanungProjectCard wiring", () => {
     expect(html).toContain("Projekt Alpha");
     expect(html).toContain("05.11.2099");
     expect(html).toContain("2 Tage");
-    expect(html).toContain("Fass Saunen");
+    expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Sauna Beta");
     expect(html).toContain("Fenster");

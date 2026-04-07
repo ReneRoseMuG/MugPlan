@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildProjectRowArticleGroups,
   buildProjectRowArticleItems,
+  resolveProjectRowArticleLabel,
 } from "../../../client/src/components/reports/produktionsplanungProjectCard.shared";
 
 const baseRow = {
@@ -67,12 +68,12 @@ describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
     expect(result).toEqual([
       {
         categoryId: 10,
-        categoryName: "Fass Saunen",
+        categoryName: "Sauna",
         items: ["Premium IV", "Premium V"],
       },
       {
         categoryId: 20,
-        categoryName: "Steuerungen",
+        categoryName: "Steuerung",
         items: ["HUUM UKU 4.1 Local"],
       },
     ]);
@@ -96,10 +97,15 @@ describe("FT26 UI: ReportsPage produktionsplanung article groups", () => {
     );
 
     expect(result).toEqual([
-      { label: "Fass Saunen", value: "Premium IV" },
-      { label: "Fass Saunen", value: "Premium V" },
-      { label: "Steuerungen", value: "HUUM UKU 4.1 Local" },
+      { label: "Sauna", value: "Premium IV" },
+      { label: "Sauna", value: "Premium V" },
+      { label: "Steuerung", value: "HUUM UKU 4.1 Local" },
     ]);
   });
-});
 
+  it("uses project article labels when a category is known and falls back to the category name otherwise", () => {
+    expect(resolveProjectRowArticleLabel("Dachvarianten")).toBe("Dach");
+    expect(resolveProjectRowArticleLabel("Fass Saunen")).toBe("Sauna");
+    expect(resolveProjectRowArticleLabel("Sonderzubehoer")).toBe("Sonderzubehoer");
+  });
+});

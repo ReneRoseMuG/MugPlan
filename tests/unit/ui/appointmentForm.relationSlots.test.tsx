@@ -194,7 +194,7 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
           customerId: 21,
           name: "Projekt A",
           orderNumber: "ORD-11",
-          projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
+          projectArticleItems: [{ label: "Sauna", value: "Modell A" }],
           descriptionMd: null,
           isActive: true,
           type: 1,
@@ -277,7 +277,7 @@ describe("FT01 appointment form relation slots", () => {
       project: expect.objectContaining({
         id: 11,
         customerId: 21,
-        projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
+        projectArticleItems: [{ label: "Sauna", value: "Modell A" }],
       }),
     });
     expect(customerDetailCardCalls[0]).toMatchObject({
@@ -300,7 +300,7 @@ describe("FT01 appointment form relation slots", () => {
             customerId: 54,
             name: "Projekt Fallback",
             orderNumber: "ORD-44",
-            projectArticleItems: [{ label: "Saunamodell", value: "Fallback Modell" }],
+            projectArticleItems: [{ label: "Sauna", value: "Fallback Modell" }],
             descriptionMd: null,
             isActive: true,
             type: 1,
@@ -338,7 +338,7 @@ describe("FT01 appointment form relation slots", () => {
       project: expect.objectContaining({
         id: 44,
         customerId: 54,
-        projectArticleItems: [{ label: "Saunamodell", value: "Fallback Modell" }],
+        projectArticleItems: [{ label: "Sauna", value: "Fallback Modell" }],
       }),
     });
     expect(customerDetailCardCalls[0]).toMatchObject({
