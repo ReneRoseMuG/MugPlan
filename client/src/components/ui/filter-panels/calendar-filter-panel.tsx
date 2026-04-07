@@ -73,12 +73,12 @@ function FooterCell({
     <div
       style={style}
       className={[
-        "flex min-h-[92px] flex-col gap-2 px-4 py-3",
+        "flex min-h-[56px] flex-col gap-0.5 px-4 py-1",
         alignTop ? "justify-start" : "justify-center",
       ].join(" ")}
     >
       {label ? <FooterSectionLabel>{label}</FooterSectionLabel> : null}
-      <div className="flex min-w-0 items-center gap-2.5">{children}</div>
+      <div className="flex min-w-0 items-center gap-2">{children}</div>
     </div>
   );
 }
@@ -249,13 +249,6 @@ function SegmentedButtons({
   );
 }
 
-const WEEK_DISPLAY_MODE_OPTIONS: Array<{ value: WeekAppointmentDisplayMode; label: string }> = [
-  { value: "standard", label: "Standard" },
-  { value: "compact", label: "Zentriert" },
-  { value: "detail", label: "Gefüllt" },
-  { value: "split", label: "Geteilt" },
-];
-
 export function CalendarFilterPanel({
   employeeId,
   onEmployeeIdChange,
@@ -278,11 +271,6 @@ export function CalendarFilterPanel({
   onOpenPrintPreview,
   printStartNextWeek = false,
   onPrintStartNextWeekChange,
-  weekAppointmentDisplayMode = "standard",
-  onWeekAppointmentDisplayModeChange,
-  weekAppointmentDisplayModeDisabled = false,
-  weekLanesCollapsed = false,
-  onWeekLanesCollapsedChange,
 }: CalendarFilterPanelProps) {
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -306,159 +294,34 @@ export function CalendarFilterPanel({
     return (
       <FilterPanel title="Kalenderfilter" layout="stack">
         <div
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
-          style={{ display: "grid", gridTemplateColumns: "auto auto auto 32px auto" }}
+          className="grid min-h-[56px] items-start gap-x-4 gap-y-0.5 px-4 py-1"
+          style={{
+            gridTemplateColumns: "180px max-content max-content minmax(140px, max-content) max-content max-content max-content",
+          }}
           data-testid="calendar-week-footer-grid"
         >
-          <FooterCell label="Mitarbeiter" style={{ gridColumn: 1, gridRow: 1 }}>
-            <div className="min-w-[220px]">
-              <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} triggerClassName="w-full" />
-            </div>
-          </FooterCell>
-
-          <FooterCell label="Füllmodus" style={{ gridColumn: 2, gridRow: 1 }}>
-            <div className="min-w-[180px]">
-              <Select
-                value={weekAppointmentDisplayMode}
-                onValueChange={(value: WeekAppointmentDisplayMode) => onWeekAppointmentDisplayModeChange?.(value)}
-                disabled={weekAppointmentDisplayModeDisabled}
-              >
-                <SelectTrigger className="h-9 min-w-[180px] bg-white" data-testid="select-week-display-mode">
-                  <SelectValue placeholder="Füllmodus wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  {WEEK_DISPLAY_MODE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </FooterCell>
-
+          {/* Zeile 1: Labels */}
+          <FooterSectionLabel>Mitarbeiter</FooterSectionLabel>
+          <FooterSectionLabel>KW</FooterSectionLabel>
           {showConflictHighlightControls ? (
-            <FooterCell
-              label="Konflikte"
-              style={{ gridColumn: 3, gridRow: 1 }}
-              alignTop
-            >
-              <button
-                type="button"
-                className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
-                  conflictHighlightActive
-                    ? "border-amber-300 bg-amber-50 text-amber-800"
-                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
-                }`}
-                onClick={() => onConflictHighlightChange?.(!conflictHighlightActive)}
-                data-testid="button-conflict-highlight"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
-                  Hervorheben
-                </span>
-                <span
-                  className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
-                    conflictHighlightActive ? "bg-amber-500 text-white" : "invisible"
-                  }`}
-                  data-testid="badge-conflict-appointment-count"
-                  aria-hidden={conflictHighlightActive ? undefined : "true"}
-                >
-                  {conflictAppointmentCount}
-                </span>
-              </button>
-            </FooterCell>
+            <FooterSectionLabel>Konflikte</FooterSectionLabel>
           ) : (
-            <div style={{ gridColumn: 3, gridRow: 1 }} />
+            <div />
           )}
-
-          <div style={{ gridColumn: 4, gridRow: "1 / 3" }} />
-
-          <div
-            className="grid"
-            style={{ gridColumn: 5, gridRow: "1 / 3", gridTemplateColumns: "auto auto", gridTemplateRows: "auto auto" }}
-            data-testid="calendar-panel-print"
-          >
-            <div className="col-span-2 px-4 pb-0 pt-3">
-              <FooterSectionLabel>Wochenplanung drucken</FooterSectionLabel>
-            </div>
-
-            <div className="flex items-center px-4 pb-3 pt-2">
-              <div className="min-w-[150px]">
-                <Label className="sr-only">Tour</Label>
-                <Select
-                  value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
-                  onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
-                >
-                  <SelectTrigger className="h-9 min-w-[140px] bg-white" data-testid="select-tour-print-preview">
-                    <SelectValue placeholder="Tour" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tour</SelectItem>
-                    <SelectItem value="0">Ohne Tour</SelectItem>
-                    {tours.map((tour) => (
-                      <SelectItem key={tour.id} value={String(tour.id)}>
-                        {tour.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 px-4 pb-3 pt-2">
-              <NumberSpinner
-                value={printWeekCount}
-                min={1}
-                max={12}
-                onChange={onPrintWeekCountChange}
-                testId="input-tour-print-week-count"
-              />
-              <span className="whitespace-nowrap text-xs text-slate-500">
-                {printWeekCount === 1 ? "Woche" : "Wochen"}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1.5 px-4 py-3">
-              <FooterSectionLabel>Beginn</FooterSectionLabel>
-              <SegmentedButtons
-                value={printStartNextWeek ? "next" : "current"}
-                onChange={(value) => onPrintStartNextWeekChange?.(value === "next")}
-                options={[
-                  {
-                    value: "current",
-                    label: "Diese Woche",
-                    secondaryLabel: `Mo. ${buildStartDateValue(false)}`,
-                    testId: "toggle-print-start-current-week",
-                  },
-                  {
-                    value: "next",
-                    label: "Nächste Woche",
-                    secondaryLabel: `Mo. ${buildStartDateValue(true)}`,
-                    testId: "toggle-print-start-next-week",
-                  },
-                ]}
-              />
-            </div>
-
-            <div className="flex items-end px-4 py-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onOpenPrintPreview}
-                disabled={selectedPrintTourId === null}
-                data-testid="button-open-tour-print-preview"
-                className="inline-flex items-center gap-1.5"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Drucken
-              </Button>
-            </div>
+          <div className="pl-6">
+            <FooterSectionLabel>Planung drucken</FooterSectionLabel>
           </div>
+          <FooterSectionLabel>Wochen</FooterSectionLabel>
+          <FooterSectionLabel>Beginn</FooterSectionLabel>
+          <div />
 
-          <FooterCell label="Kalenderwoche" style={{ gridColumn: 1, gridRow: 2 }}>
+          {/* Zeile 2: Controls */}
+          <div className="w-full">
+            <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} triggerClassName="w-full" />
+          </div>
+          <div>
             {showKwJumpControls ? (
-              <div className="flex items-end gap-2">
+              <div className="flex items-center gap-2">
                 <KwJumpSpinner
                   value={kwJumpValue}
                   min={1}
@@ -472,7 +335,7 @@ export function CalendarFilterPanel({
                   <Button
                     type="button"
                     variant="ghost"
-                    className="h-9 self-end rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                    className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
                     onClick={onKwJumpBack}
                     data-testid="button-calendar-kw-jump-back"
                   >
@@ -481,24 +344,91 @@ export function CalendarFilterPanel({
                 ) : null}
               </div>
             ) : null}
-          </FooterCell>
-
-          <FooterCell label="Touren" style={{ gridColumn: 2, gridRow: 2 }}>
-            <SegmentedButtons
-              value={weekLanesCollapsed ? "collapsed" : "expanded"}
-              onChange={(value) => onWeekLanesCollapsedChange?.(value === "collapsed")}
-              compact
-              options={[
-                { value: "expanded", label: "Aufgeklappt", testId: "toggle-week-lanes-expanded" },
-                { value: "collapsed", label: "Zugeklappt", testId: "toggle-week-lanes-collapsed" },
-              ]}
-            />
-          </FooterCell>
-
-          <div
-            style={{ gridColumn: 3, gridRow: 2 }}
-            data-testid="calendar-week-footer-conflict-placeholder"
+          </div>
+          {showConflictHighlightControls ? (
+            <button
+              type="button"
+              className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
+                conflictHighlightActive
+                  ? "border-amber-300 bg-amber-50 text-amber-800"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
+              }`}
+              onClick={() => onConflictHighlightChange?.(!conflictHighlightActive)}
+              data-testid="button-conflict-highlight"
+            >
+              <span className="inline-flex items-center gap-2">
+                <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
+                Hervorheben
+              </span>
+              <span
+                className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+                  conflictHighlightActive ? "bg-amber-500 text-white" : "invisible"
+                }`}
+                data-testid="badge-conflict-appointment-count"
+                aria-hidden={conflictHighlightActive ? undefined : "true"}
+              >
+                {conflictAppointmentCount}
+              </span>
+            </button>
+          ) : (
+            <div />
+          )}
+          <div className="pl-6" data-testid="calendar-panel-print">
+            <Label className="sr-only">Tour</Label>
+            <Select
+              value={selectedPrintTourId !== null ? String(selectedPrintTourId) : "none"}
+              onValueChange={(value) => onSelectedPrintTourIdChange(value === "none" ? null : Number(value))}
+            >
+              <SelectTrigger className="h-9 min-w-[140px] bg-white" data-testid="select-tour-print-preview">
+                <SelectValue placeholder="Tour" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Tour</SelectItem>
+                <SelectItem value="0">Ohne Tour</SelectItem>
+                {tours.map((tour) => (
+                  <SelectItem key={tour.id} value={String(tour.id)}>
+                    {tour.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <NumberSpinner
+            value={printWeekCount}
+            min={1}
+            max={12}
+            onChange={onPrintWeekCountChange}
+            testId="input-tour-print-week-count"
           />
+          <SegmentedButtons
+            value={printStartNextWeek ? "next" : "current"}
+            onChange={(value) => onPrintStartNextWeekChange?.(value === "next")}
+            options={[
+              {
+                value: "current",
+                label: "Diese Woche",
+                secondaryLabel: `Mo. ${buildStartDateValue(false)}`,
+                testId: "toggle-print-start-current-week",
+              },
+              {
+                value: "next",
+                label: "Nächste Woche",
+                secondaryLabel: `Mo. ${buildStartDateValue(true)}`,
+                testId: "toggle-print-start-next-week",
+              },
+            ]}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onOpenPrintPreview}
+            disabled={selectedPrintTourId === null}
+            data-testid="button-open-tour-print-preview"
+            className="inline-flex h-9 items-center gap-1.5"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Drucken
+          </Button>
         </div>
       </FilterPanel>
     );
@@ -542,7 +472,7 @@ export function CalendarFilterPanel({
         </div>
         {showKwJumpControls ? (
           <div className="flex flex-col gap-1">
-            <Label className="text-xs">Kalenderwoche</Label>
+            <Label className="text-xs">KW</Label>
             <div className="flex items-end gap-2">
               <KwJumpSpinner
                 value={kwJumpValue}

@@ -6,6 +6,7 @@ interface WeekGridProps {
   employeeFilterId?: number | null;
   weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
   weekLanesCollapsed?: boolean;
+  onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
   conflictHighlightActive?: boolean;
   conflictAppointmentIds?: Set<number>;
   navCommand?: CalendarNavCommand;
@@ -21,6 +22,7 @@ export function WeekGrid({
   employeeFilterId,
   weekAppointmentDisplayMode,
   weekLanesCollapsed,
+  onWeekLanesCollapsedChange,
   conflictHighlightActive = false,
   conflictAppointmentIds = new Set<number>(),
   navCommand,
@@ -37,6 +39,7 @@ export function WeekGrid({
         employeeFilterId={employeeFilterId}
         weekAppointmentDisplayMode={weekAppointmentDisplayMode}
         weekLanesCollapsed={weekLanesCollapsed}
+        onWeekLanesCollapsedChange={onWeekLanesCollapsedChange}
         conflictHighlightActive={conflictHighlightActive}
         conflictAppointmentIds={conflictAppointmentIds}
         navCommand={navCommand}

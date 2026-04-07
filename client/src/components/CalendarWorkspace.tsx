@@ -68,14 +68,8 @@ export function CalendarWorkspace({
     activeView === "week" ? String(getISOWeek(currentDate)) : "",
   );
   const [kwJumpError, setKwJumpError] = useState(false);
-  const weekAppointmentDisplayMode = useSetting("calendar.weekAppointmentDisplayMode");
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
-  const canEditWeekDisplayMode = userRole === "ADMIN" || userRole === "DISPATCHER";
   const conflictAppointmentIds = useMemo(
     () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
     [monitoringItems],
@@ -133,21 +127,6 @@ export function CalendarWorkspace({
     setKwJumpError(true);
   };
 
-  const persistWeekAppointmentDisplayMode = (value: "standard" | "compact" | "detail" | "split") => {
-    void setSetting({
-      key: "calendar.weekAppointmentDisplayMode",
-      scopeType: "USER",
-      value,
-    }).catch((error) => {
-      console.error("[calendar-workspace] week display mode persist failed", error);
-      toast({
-        title: "Füllmodus konnte nicht gespeichert werden",
-        description: "Bitte erneut versuchen.",
-        variant: "destructive",
-      });
-    });
-  };
-
   const persistWeekLanesCollapsed = (collapsed: boolean) => {
     void setSetting({
       key: "calendar.weekLanes.isCollapsed",
@@ -189,8 +168,9 @@ export function CalendarWorkspace({
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
-          weekAppointmentDisplayMode={weekAppointmentDisplayMode ?? "standard"}
+          weekAppointmentDisplayMode="detail"
           weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
+          onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentIds={conflictAppointmentIds}
           onNewAppointment={(date, options) => {
@@ -301,14 +281,11 @@ export function CalendarWorkspace({
       </div>
 
       {hideMainNavigation ? null : (
-        <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+        <div className="flex-shrink-0 border-t border-border px-6 py-2 bg-card">
           <CalendarFilterPanel
             employeeId={employeeFilterId}
             onEmployeeIdChange={onEmployeeFilterChange}
             showWeekDisplayMode={activeView === "week"}
-            weekAppointmentDisplayMode={weekAppointmentDisplayMode ?? "standard"}
-            onWeekAppointmentDisplayModeChange={persistWeekAppointmentDisplayMode}
-            weekAppointmentDisplayModeDisabled={!canEditWeekDisplayMode}
             weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
             onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
             selectedPrintTourId={selectedPrintTourId}

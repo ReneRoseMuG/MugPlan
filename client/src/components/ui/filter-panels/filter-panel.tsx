@@ -14,11 +14,11 @@ export function FilterPanel({
   children,
 }: FilterPanelProps) {
   const layoutClassName = layout === "stack"
-    ? "flex flex-col gap-4"
-    : "flex flex-col gap-4 sm:flex-row sm:items-end";
+    ? "flex flex-col gap-1"
+    : "flex flex-col gap-1 sm:flex-row sm:items-end";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1">
       {showTitle ? (
         <p className="text-xs font-semibold tracking-wide text-muted-foreground">
           {title}

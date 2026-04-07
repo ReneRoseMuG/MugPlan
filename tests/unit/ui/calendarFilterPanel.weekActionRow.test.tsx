@@ -2,16 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Wochenkalender-Footer rendert als zweizeiliges 5-Spalten-Grid.
- * - Mitarbeiter, Füllmodus, Kalenderwoche, Touren und Druckbereich liegen in den vorgesehenen Zellen.
- * - Unter dem Konfliktbereich bleibt in Zeile 2 eine sichtbare Platzhalterzelle erhalten.
+ * - Der Wochenkalender-Footer rendert als kompaktes 5-Spalten-Grid in einer Zeile.
+ * - Mitarbeiter und KW liegen gemeinsam in derselben Zeile.
+ * - Der Druckbereich sitzt ohne zusaetzliche Footer-Zeile im selben Grid.
  *
- * Fehlerfaelle:
- * - Das Week-Layout faellt wieder auf die alte Toolbar-Zeile zurueck.
- * - Druck- oder Konfliktbereich verlieren ihre feste Grid-Position.
+ * Fehlerfälle:
+ * - Das Week-Layout fällt wieder auf die alte Toolbar-Zeile zurück.
+ * - Der Touren-Toggle bleibt versehentlich im Footer sichtbar.
  *
  * Ziel:
- * Das sichtbare Raster und die Hauptbereiche des neuen Wochenkalender-Footers absichern.
+ * Das sichtbare Raster und die kompakte einzeilige Footer-Struktur absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -52,14 +52,12 @@ vi.mock("@/components/ui/select", () => ({
 import { CalendarFilterPanel } from "../../../client/src/components/ui/filter-panels/calendar-filter-panel";
 
 describe("CalendarFilterPanel - week footer redesign", () => {
-  it("renders the week footer as a fixed two-row grid with print panel and conflict placeholder", () => {
+  it("renders the compact week footer grid with KW next to the employee filter", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
-        weekAppointmentDisplayMode="detail"
-        onWeekAppointmentDisplayModeChange={() => undefined}
         weekLanesCollapsed={false}
         onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
@@ -80,24 +78,21 @@ describe("CalendarFilterPanel - week footer redesign", () => {
     );
 
     expect(html).toContain("calendar-week-footer-grid");
-    expect(html).toContain("grid-template-columns:auto auto auto 32px auto");
+    expect(html).toContain("grid-template-columns:180px max-content max-content minmax(140px, max-content) max-content max-content max-content");
     expect(html).toContain("Mitarbeiter");
-    expect(html).toContain("Füllmodus");
-    expect(html).toContain("Kalenderwoche");
-    expect(html).toContain("Touren");
-    expect(html).toContain("Wochenplanung drucken");
+    expect(html).toContain("KW");
     expect(html).toContain("calendar-panel-print");
-    expect(html).toContain("calendar-week-footer-conflict-placeholder");
+    expect(html).not.toContain("calendar-week-footer-lower-left-placeholder");
+    expect(html).not.toContain("calendar-week-footer-tour-placeholder");
+    expect(html).not.toContain("calendar-week-footer-conflict-placeholder");
   });
 
-  it("renders the redesigned controls instead of the old toolbar structure", () => {
+  it("keeps footer print and kw controls without a second footer row", () => {
     const html = renderToStaticMarkup(
       <CalendarFilterPanel
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
-        weekAppointmentDisplayMode="standard"
-        onWeekAppointmentDisplayModeChange={() => undefined}
         weekLanesCollapsed
         onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
@@ -114,13 +109,12 @@ describe("CalendarFilterPanel - week footer redesign", () => {
       />,
     );
 
-    expect(html).toContain("select-week-display-mode");
-    expect(html).toContain("toggle-week-lanes-expanded");
-    expect(html).toContain("toggle-week-lanes-collapsed");
+    expect(html).toContain("input-calendar-kw-jump");
     expect(html).toContain("toggle-print-start-current-week");
     expect(html).toContain("toggle-print-start-next-week");
-    expect(html).toContain("input-calendar-kw-jump");
-    expect(html).not.toContain("calendar-week-toolbar-row");
-    expect(html).not.toContain("calendar-week-action-row");
+    expect(html).not.toContain("calendar-week-footer-lower-left-placeholder");
+    expect(html).not.toContain("calendar-week-footer-tour-placeholder");
+    expect(html).not.toContain("toggle-week-lanes-expanded");
+    expect(html).not.toContain("toggle-week-lanes-collapsed");
   });
 });

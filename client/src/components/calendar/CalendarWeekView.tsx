@@ -47,6 +47,7 @@ type CalendarWeekViewProps = {
   employeeFilterId?: number | null;
   weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
   weekLanesCollapsed?: boolean;
+  onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
   conflictHighlightActive?: boolean;
   conflictAppointmentIds?: Set<number>;
   navCommand?: CalendarNavCommand;
@@ -179,6 +180,7 @@ export function CalendarWeekView({
   employeeFilterId,
   weekAppointmentDisplayMode: weekAppointmentDisplayModeProp,
   weekLanesCollapsed: weekLanesCollapsedProp,
+  onWeekLanesCollapsedChange,
   conflictHighlightActive = false,
   conflictAppointmentIds = new Set<number>(),
   navCommand: _navCommand,
@@ -209,7 +211,6 @@ export function CalendarWeekView({
 
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
-  const weekAppointmentDisplayModeSetting = useSetting("calendar.weekAppointmentDisplayMode");
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const isAdmin = userRole === "ADMIN";
@@ -219,7 +220,7 @@ export function CalendarWeekView({
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
-  const weekAppointmentDisplayMode = weekAppointmentDisplayModeProp ?? weekAppointmentDisplayModeSetting ?? "standard";
+  const weekAppointmentDisplayMode = weekAppointmentDisplayModeProp ?? "detail";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
@@ -622,6 +623,35 @@ export function CalendarWeekView({
           <span className="text-sm text-muted-foreground">
             {format(baseWeekStart, "d. MMMM", { locale: de })} - {format(baseWeekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Touren</span>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+            <button
+              type="button"
+              onClick={() => onWeekLanesCollapsedChange?.(false)}
+              data-testid="toggle-week-lanes-expanded"
+              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+                !isCollapsedMode
+                  ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Aufgeklappt
+            </button>
+            <button
+              type="button"
+              onClick={() => onWeekLanesCollapsedChange?.(true)}
+              data-testid="toggle-week-lanes-collapsed"
+              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+                isCollapsedMode
+                  ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Zugeklappt
+            </button>
+          </div>
         </div>
       </div>
 

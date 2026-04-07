@@ -3,14 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Der Week-Header zeigt weiterhin KW und Datumsbereich.
- * - Footer-Steuerungen fuer Füllmodus und Touren erscheinen nicht mehr im Header.
+ * - Der Touren-Toggle erscheint rechts in derselben Titelzeile wie KW und Datumsbereich.
  *
- * Fehlerfaelle:
- * - Die alte Header-Steuerzeile bleibt sichtbar.
- * - Der Header verliert Titel- oder Datumsinformation.
+ * Fehlerfälle:
+ * - Die Titelzeile verliert KW oder Datumsinformation.
+ * - Der Touren-Toggle bleibt im Footer oder fehlt im Header.
  *
  * Ziel:
- * Die bereinigte Header-Zeile der Wochenansicht nach dem Footer-Redesign absichern.
+ * Die Header-Zeile der Wochenansicht mit inline Touren-Toggle absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -76,7 +76,7 @@ vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
 
 import { CalendarWeekView } from "../../../client/src/components/calendar/CalendarWeekView";
 
-describe("CalendarWeekView - header cleanup", () => {
+describe("CalendarWeekView - header controls", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
@@ -109,16 +109,17 @@ describe("CalendarWeekView - header cleanup", () => {
     });
   });
 
-  it("keeps the title/date row and removes the old header controls", () => {
+  it("keeps the title/date row and adds the lane toggle inline on the right", () => {
     const html = renderToStaticMarkup(
       <CalendarWeekView currentDate={new Date("2026-03-30T00:00:00Z")} />,
     );
 
     expect(html).toContain("KW 14");
     expect(html).toContain("30. März");
+    expect(html).toContain("Touren");
+    expect(html).toContain("toggle-week-lanes-expanded");
+    expect(html).toContain("toggle-week-lanes-collapsed");
     expect(html).not.toContain("Darstellungsmodus");
-    expect(html).not.toContain("Tour Sichtbarkeit");
     expect(html).not.toContain("select-week-appointment-display-mode");
-    expect(html).not.toContain("button-week-lanes-collapse-toggle");
   });
 });

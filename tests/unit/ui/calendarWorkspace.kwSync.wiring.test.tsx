@@ -95,7 +95,7 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     );
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
-    expect(filterPanelCalls.at(-1)?.weekAppointmentDisplayMode).toBe("standard");
+    expect(filterPanelCalls.at(-1)?.weekAppointmentDisplayMode).toBeUndefined();
     expect(filterPanelCalls.at(-1)?.weekLanesCollapsed).toBe(false);
   });
 

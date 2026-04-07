@@ -119,7 +119,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     const props = weekGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(17);
     expect(props?.restoreScrollLeft).toBe(144);
-    expect(props?.weekAppointmentDisplayMode).toBe("standard");
+    expect(props?.weekAppointmentDisplayMode).toBe("detail");
     expect(props?.weekLanesCollapsed).toBe(false);
     expect(props?.conflictHighlightActive).toBe(false);
     expect(props?.conflictAppointmentIds).toEqual(new Set([91]));

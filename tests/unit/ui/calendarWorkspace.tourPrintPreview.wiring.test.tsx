@@ -125,8 +125,6 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
         employeeId={null}
         onEmployeeIdChange={() => undefined}
         showWeekDisplayMode
-        weekAppointmentDisplayMode="standard"
-        onWeekAppointmentDisplayModeChange={() => undefined}
         weekLanesCollapsed={false}
         onWeekLanesCollapsedChange={() => undefined}
         selectedPrintTourId={1}
@@ -147,6 +145,8 @@ describe("FT31 UI: CalendarWorkspace tour print preview wiring", () => {
     expect(html).toContain("button-open-tour-print-preview");
     expect(html).toContain("toggle-print-start-current-week");
     expect(html).toContain("toggle-print-start-next-week");
+    expect(html).toContain("calendar-week-footer-displaymode-placeholder");
+    expect(html).not.toContain("select-week-display-mode");
     expect(html.indexOf("select-tour-print-preview")).toBeLessThan(html.indexOf("input-tour-print-week-count"));
     expect(html.indexOf("input-tour-print-week-count")).toBeLessThan(html.indexOf("button-open-tour-print-preview"));
   });
