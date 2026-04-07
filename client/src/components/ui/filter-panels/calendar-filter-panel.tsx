@@ -58,31 +58,6 @@ function FooterSectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FooterCell({
-  label,
-  children,
-  style,
-  alignTop = false,
-}: {
-  label?: React.ReactNode;
-  children?: React.ReactNode;
-  style?: React.CSSProperties;
-  alignTop?: boolean;
-}) {
-  return (
-    <div
-      style={style}
-      className={[
-        "flex min-h-[56px] flex-col gap-0.5 px-4 py-1",
-        alignTop ? "justify-start" : "justify-center",
-      ].join(" ")}
-    >
-      {label ? <FooterSectionLabel>{label}</FooterSectionLabel> : null}
-      <div className="flex min-w-0 items-center gap-2">{children}</div>
-    </div>
-  );
-}
-
 function SpinnerButton({
   direction,
   onClick,
