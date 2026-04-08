@@ -62,13 +62,13 @@ describe("FT02 project detail card order number", () => {
           amount: 1234.5,
           descriptionMd: "<p>Nur Hinweis</p>",
           isActive: true,
-          projectArticleItems: [{ label: "Saunamodell", value: "Modell A" }],
+          projectArticleItems: [{ label: "Sauna", value: "Modell A" }],
         }}
       />,
     );
 
     expect(html).toContain("Artikelliste");
-    expect(html).toContain("Saunamodell");
+    expect(html).toContain("Sauna");
     expect(html).toContain("Modell A");
     expect(html).toContain("Anmerkungen");
     expect(html).toContain("<p>Nur Hinweis</p>");

@@ -361,7 +361,7 @@ test("shows an extracted document only as project attachment after successful pr
   await expect(
     page.getByTestId("appointment-form-sidebar").getByText(extractionFileName, { exact: true }),
   ).toHaveCount(1);
-  await expect(page.getByTestId("badge-project-project-content-articles")).toContainText("Saunamodell");
+  await expect(page.getByTestId("badge-project-project-content-articles")).toContainText("Sauna");
   await expect(page.getByTestId("badge-project-project-content-articles")).toContainText(saunaProduct.name);
   await expect(page.getByTestId("badge-project-description")).not.toContainText("nicht hinterlegt");
 

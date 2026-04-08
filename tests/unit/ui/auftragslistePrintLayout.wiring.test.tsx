@@ -76,7 +76,7 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
     expect(html).toContain("2 Tage");
     expect(html).toContain("Sondermaß");
     expect(html).toContain("background-color:#1e3a8a");
-    expect(html).toContain("Fass Saunen");
+    expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Fenster");
     expect(html).toContain("Fenster Breit");

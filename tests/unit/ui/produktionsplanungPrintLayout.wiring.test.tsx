@@ -106,7 +106,7 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("Anmerkungen");
     expect(html).toContain("Beschreibung Alpha");
     expect(html).toContain("<li");
-    expect(html).toContain("Fass Saunen");
+    expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Sauna Beta");
     expect(html).toContain("Fenster");

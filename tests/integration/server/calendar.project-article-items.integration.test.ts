@@ -148,7 +148,7 @@ describe("calendar project article items integration", () => {
         const appointment = res.body.find((row: { projectId: number | null }) => row.projectId === project.id);
         expect(appointment).toBeDefined();
         expect(appointment.projectArticleItems).toEqual([
-          { label: "Saunamodell", value: product.body.name },
+          { label: "Sauna", value: product.body.name },
           { label: "Ofen", value: component.body.name },
         ]);
       });

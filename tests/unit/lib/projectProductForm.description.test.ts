@@ -41,13 +41,13 @@ describe("project product form helpers", () => {
     selections.window.componentName = "Panoramafenster";
 
     expect(buildProjectArticleLines(selections)).toEqual([
-      "Saunamodell: Modell S",
+      "Sauna: Modell S",
       "Ofen: Ofen X",
       "Fenster: Panoramafenster",
       "Tür: Ganzglastür",
       "Vorderwand: Frontglas",
       "Rückwand: Rueckwand doppelt",
-      "Inneneinrichtung: Espenholz",
+      "Einrichtung: Espenholz",
     ]);
   });
 

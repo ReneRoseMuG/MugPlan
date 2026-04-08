@@ -1,7 +1,7 @@
 export const PROJECT_ARTICLE_FIELDS = [
   {
     key: "saunaModel",
-    label: "Saunamodell",
+    label: "Sauna",
     source: "product",
   },
   {
@@ -55,7 +55,7 @@ export const PROJECT_ARTICLE_FIELDS = [
   },
   {
     key: "interior",
-    label: "Inneneinrichtung",
+    label: "Einrichtung",
     source: "component",
     categoryName: "Inneneinrichtung",
     categoryAliases: ["Inneneinrichtung"],

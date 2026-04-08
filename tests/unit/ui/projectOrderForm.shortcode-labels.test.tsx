@@ -40,7 +40,7 @@ vi.mock("@/components/ui/product-create-dialog", () => ({
 
 vi.mock("@/lib/project-product-form", () => ({
   PROJECT_PRODUCT_FIELDS: [
-    { key: "saunaModel", label: "Saunamodell" },
+    { key: "saunaModel", label: "Sauna" },
     { key: "oven", label: "Ofen" },
     { key: "control", label: "Steuerung" },
     { key: "roof", label: "Dach" },

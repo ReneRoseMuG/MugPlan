@@ -180,7 +180,7 @@ describe("FT02 projects page order number wiring", () => {
                 descriptionMd: "<strong>Wichtig</strong>",
                 isActive: true,
                 version: 4,
-                projectArticleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+                projectArticleItems: [{ label: "Sauna", value: "Modell Nord" }],
                 tags: [],
                 notesCount: 1,
                 appointmentsCount: 2,
@@ -255,12 +255,12 @@ describe("FT02 projects page order number wiring", () => {
     expect(hoverPreviewCalls.some((call) => call.className === "w-[420px] p-2")).toBe(true);
     expect(projectArticleRendererCalls).toHaveLength(2);
     expect(projectArticleRendererCalls[0]).toMatchObject({
-      articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+      articleItems: [{ label: "Sauna", value: "Modell Nord" }],
       descriptionHtml: "<strong>Wichtig</strong>",
       showSectionTitles: true,
     });
     expect(projectArticleRendererCalls[1]).toMatchObject({
-      articleItems: [{ label: "Saunamodell", value: "Modell Nord" }],
+      articleItems: [{ label: "Sauna", value: "Modell Nord" }],
       descriptionHtml: "<strong>Wichtig</strong>",
       showSectionTitles: true,
     });

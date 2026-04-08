@@ -149,7 +149,7 @@ async function expectWeekCardAndPreview(page: Page, params: {
   await appointmentPanel.getByTestId("week-project-description-hover-trigger").hover();
   const hoverArticleList = page.getByTestId("week-project-hover-renderer-articles-list");
   await expect(hoverArticleList).toBeVisible({ timeout: 5_000 });
-  await expect(hoverArticleList).toContainText(`Saunamodell: ${params.productName}`);
+  await expect(hoverArticleList).toContainText(`Sauna: ${params.productName}`);
   await expect(hoverArticleList).toContainText(`Ofen: ${params.componentName}`);
 }
 
@@ -163,7 +163,7 @@ async function expectCalendarArticleItems(page: Page, params: {
   const appointment = await fetchCalendarAppointment(page, params.appointmentId, params.date);
   expect(appointment.projectId).toBe(params.projectId);
   expect(appointment.projectArticleItems).toEqual(expect.arrayContaining([
-    { label: "Saunamodell", value: params.productName },
+    { label: "Sauna", value: params.productName },
     { label: "Ofen", value: params.componentName },
   ]));
   expect(appointment.projectArticleItems.length).toBeGreaterThanOrEqual(2);
