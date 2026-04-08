@@ -240,6 +240,8 @@ const buildProjectArticleItemsByProject = async (projectIds: number[]) => {
         slots.set("saunaModel", {
           label: getProjectArticleField("saunaModel").label,
           value: row.productName.trim(),
+          source: "product",
+          shortCode: row.productShortCode?.trim() || null,
         });
       }
       slotsByProject.set(row.projectId, slots);
@@ -260,6 +262,8 @@ const buildProjectArticleItemsByProject = async (projectIds: number[]) => {
     slots.set(fieldKey, {
       label: getProjectArticleField(fieldKey).label,
       value: row.componentName.trim(),
+      source: "component",
+      shortCode: row.componentShortCode?.trim() || null,
     });
     slotsByProject.set(row.projectId, slots);
   }

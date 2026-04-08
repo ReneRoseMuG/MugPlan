@@ -193,6 +193,11 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
       isCancelled: false,
     });
     expect(calendarItem.projectArticleItems).toHaveLength(9);
+    expect(calendarItem.projectArticleItems[0]).toEqual(expect.objectContaining({
+      source: "product",
+      shortCode: expect.any(String),
+    }));
+    expect(calendarItem.projectArticleItems.slice(1).every((item: { source?: string }) => item.source === "component")).toBe(true);
     expect(calendarItem.employees.map((employee: { id: number }) => employee.id).sort((a: number, b: number) => a - b)).toEqual(
       fixture.employees.map((employee) => employee.id).sort((a, b) => a - b),
     );
@@ -245,6 +250,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
       totalAttachmentsCount: 3,
     });
     expect(listItem.projectArticleItems).toHaveLength(9);
+    expect(listItem.projectArticleItems[0]).toEqual(expect.objectContaining({ source: "product" }));
   });
 
   it("reflects parent master-data and relation changes in the next calendar and table payload", async () => {
@@ -371,6 +377,7 @@ describe("FT03/FT24/FT28 integration: appointment entity card payloads", () => {
       totalAttachmentsCount: 4,
     });
     expect(refreshedCalendarItem.projectArticleItems).toHaveLength(9);
+    expect(refreshedCalendarItem.projectArticleItems[0]).toEqual(expect.objectContaining({ source: "product" }));
     expect(refreshedCalendarItem.employees.map((employee: { id: number }) => employee.id).sort((a: number, b: number) => a - b)).toEqual(
       [fixture.employees[0].id, extraEmployee.id].sort((a, b) => a - b),
     );

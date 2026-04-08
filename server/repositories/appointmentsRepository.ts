@@ -121,7 +121,9 @@ export async function listProjectArticleRowsByProjectIds(projectIds: number[]) {
       productId: projectOrderItems.productId,
       componentId: projectOrderItems.componentId,
       productName: products.name,
+      productShortCode: products.shortCode,
       componentName: components.name,
+      componentShortCode: components.shortCode,
       componentCategoryName: componentCategories.name,
     })
     .from(projectOrderItems)
