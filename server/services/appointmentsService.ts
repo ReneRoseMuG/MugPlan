@@ -839,6 +839,7 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
         id: row.customer.id,
         customerNumber: row.customer.customerNumber,
         fullName: row.customer.fullName,
+        phone: row.customer.phone ?? null,
         addressLine1: row.customer.addressLine1 ?? null,
         addressLine2: row.customer.addressLine2 ?? null,
         postalCode: row.customer.postalCode ?? null,

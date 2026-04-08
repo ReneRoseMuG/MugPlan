@@ -20,6 +20,7 @@ type AuftragslisteSelection = {
   componentCategoryIds?: number[];
   useShortCodes?: boolean;
 };
+type TourenplanPrintMode = "farbdruck" | "spardruck";
 type ReportRangeConfig = {
   activeTab?: "date" | "calendarWeek";
   fromDate?: string;
@@ -30,6 +31,7 @@ type ReportRangeConfig = {
 type VorlauflisteRangeConfig = ReportRangeConfig;
 type ProduktionsplanungRangeConfig = ReportRangeConfig;
 type AuftragslisteRangeConfig = ReportRangeConfig;
+type TourenplanRangeConfig = ReportRangeConfig;
 
 type LegacyProduktionsplanungSelection = {
   productCategoryIds: number[];
@@ -65,6 +67,8 @@ export type UserSettingKey =
   | "reports.vorlaufliste.rangeConfig"
   | "reports.produktionsplanung.rangeConfig"
   | "reports.auftragsliste.rangeConfig"
+  | "reports.tourenplan.rangeConfig"
+  | "reports.tourenplan.printMode"
   | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
@@ -93,6 +97,8 @@ type UserSettingValueByKey = {
   "reports.vorlaufliste.rangeConfig": VorlauflisteRangeConfig;
   "reports.produktionsplanung.rangeConfig": ProduktionsplanungRangeConfig;
   "reports.auftragsliste.rangeConfig": AuftragslisteRangeConfig;
+  "reports.tourenplan.rangeConfig": TourenplanRangeConfig;
+  "reports.tourenplan.printMode": TourenplanPrintMode;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
 
@@ -266,6 +272,40 @@ export function resolveAuftragslisteRangeConfig(value: unknown): AuftragslisteRa
   };
 }
 
+export function resolveTourenplanRangeConfig(value: unknown): TourenplanRangeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { activeTab: "date" };
+  }
+  const candidate = value as Record<string, unknown>;
+  const activeTab = candidate.activeTab === "calendarWeek" || candidate.activeTab === "date"
+    ? candidate.activeTab
+    : "date";
+  const fromDate = typeof candidate.fromDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.fromDate)
+    ? candidate.fromDate
+    : undefined;
+  const toDate = typeof candidate.toDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(candidate.toDate)
+    ? candidate.toDate
+    : undefined;
+  const kwStart = typeof candidate.kwStart === "number" && Number.isInteger(candidate.kwStart) && candidate.kwStart >= 1 && candidate.kwStart <= 53
+    ? candidate.kwStart
+    : undefined;
+  const weekCount = typeof candidate.weekCount === "number" && Number.isInteger(candidate.weekCount) && candidate.weekCount >= 1 && candidate.weekCount <= 52
+    ? candidate.weekCount
+    : undefined;
+
+  return {
+    activeTab,
+    fromDate,
+    toDate,
+    kwStart,
+    weekCount,
+  };
+}
+
+export function resolveTourenplanPrintMode(value: unknown): TourenplanPrintMode {
+  return value === "spardruck" ? "spardruck" : "farbdruck";
+}
+
 export function resolveLegacyProduktionsplanungSelection(value: unknown): LegacyProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false, sonderblockTagIds: [] };
@@ -398,6 +438,12 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "reports.auftragsliste.rangeConfig") {
       return resolveAuftragslisteRangeConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.tourenplan.rangeConfig") {
+      return resolveTourenplanRangeConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.tourenplan.printMode") {
+      return resolveTourenplanPrintMode(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.categoryLayout") {
       return resolveCategoryLayoutConfig(setting?.resolvedValue) as UserSettingValueByKey[K];

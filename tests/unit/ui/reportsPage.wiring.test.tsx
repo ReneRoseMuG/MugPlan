@@ -102,6 +102,14 @@ vi.mock("@/components/ui/popover", () => ({
   PopoverContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
+vi.mock("@/components/ui/select", () => ({
+  Select: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>,
+  SelectValue: ({ placeholder }: { placeholder?: string }) => <span>{placeholder ?? ""}</span>,
+  SelectContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  SelectItem: ({ children, value }: { children?: React.ReactNode; value: string }) => <div data-value={value}>{children}</div>,
+}));
+
 vi.mock("@/components/print/PrintPreviewDialog", () => ({
   PrintPreviewDialog: ({
     title,
@@ -221,6 +229,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
           isLoading: false,
         };
       }
+      if (key === "/api/tours") {
+        return {
+          data: [{ id: 7, name: "Tour Alpha", color: "#2266aa", isActive: true, version: 1 }],
+          isLoading: false,
+        };
+      }
       if (key === "reports-vorlaufliste") {
         return {
           data: {
@@ -277,6 +291,20 @@ describe("FT26 UI: ReportsPage wiring", () => {
           isLoading: false,
         };
       }
+      if (key === "reports-tourenplan-preview") {
+        return {
+          data: undefined,
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === "reports-tourenplan-appointments") {
+        return {
+          data: [],
+          isLoading: false,
+          isError: false,
+        };
+      }
       return { data: [], isLoading: false, isError: false };
     });
   });
@@ -304,6 +332,9 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("reports-vorlaufliste-config-panel");
     expect(html).toContain("reports-produktionsplanung-config-panel");
     expect(html).toContain("reports-auftragsliste-config-panel");
+    expect(html).toContain("reports-tourenplan-config-panel");
+    expect(html).toContain("select-reports-tourenplan-tour");
+    expect(html).toContain("checkbox-reports-tourenplan-use-shortcodes");
   });
 
   it("renders the auftragsliste categories as one article list with product categories first", () => {

@@ -539,6 +539,7 @@ const tourPrintPreviewAppointmentSchema = z.object({
     id: z.number().int().positive(),
     customerNumber: z.string(),
     fullName: z.string().nullable(),
+    phone: z.string().nullable(),
     addressLine1: z.string().nullable(),
     addressLine2: z.string().nullable(),
     postalCode: z.string().nullable(),

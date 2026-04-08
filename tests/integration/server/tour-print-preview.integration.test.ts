@@ -154,7 +154,7 @@ describe("FT31 integration: tour print preview", () => {
             projectName: project.name,
             durationDays: 2,
             saunaModel: null,
-            customer: expect.objectContaining({ postalCode: "12345", country: "Deutschland" }),
+            customer: expect.objectContaining({ postalCode: "12345", country: "Deutschland", phone: "12345" }),
           }),
         );
         expect(previewAppointment.employees).toEqual(

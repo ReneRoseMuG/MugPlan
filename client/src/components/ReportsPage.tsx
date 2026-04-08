@@ -14,6 +14,7 @@ import { ProduktionsplanungProjectCard } from "@/components/reports/Produktionsp
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
+import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
 import {
   ProduktionsplanungCategoryLayoutEditor,
   type CategoryLayoutCategoryOption,
@@ -1960,6 +1961,13 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     </div>
                   )}
                 </ReportConfigPanel>
+
+                <TourenplanReportPanel
+                  defaultReportRange={defaultReportRange}
+                  defaultIsoWeek={defaultIsoWeek}
+                  defaultIsoWeekYear={defaultIsoWeekYear}
+                  isAdmin={isAdmin}
+                />
               </div>
             </div>
 

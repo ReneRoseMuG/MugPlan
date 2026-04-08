@@ -19,6 +19,8 @@ import {
   resolveLegacyProduktionsplanungSelection,
   resolveProduktionsplanungRangeConfig,
   resolveProduktionsplanungSelection,
+  resolveTourenplanPrintMode,
+  resolveTourenplanRangeConfig,
   resolveVorlauflisteRangeConfig,
 } from "../../../client/src/hooks/useSettings";
 
@@ -102,5 +104,38 @@ describe("useSettings FT26 report resolvers", () => {
       useShortCodes: true,
       sonderblockTagIds: [12],
     });
+  });
+
+  it("normalizes the tourenplan settings for range config and print mode", () => {
+    expect(resolveTourenplanRangeConfig({
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-14",
+      toDate: "2026-04-28",
+      kwStart: 16,
+      weekCount: 3,
+    })).toEqual({
+      activeTab: "calendarWeek",
+      fromDate: "2026-04-14",
+      toDate: "2026-04-28",
+      kwStart: 16,
+      weekCount: 3,
+    });
+
+    expect(resolveTourenplanRangeConfig({
+      activeTab: "invalid",
+      fromDate: "14.04.2026",
+      toDate: "",
+      kwStart: 99,
+      weekCount: 0,
+    })).toEqual({
+      activeTab: "date",
+      fromDate: undefined,
+      toDate: undefined,
+      kwStart: undefined,
+      weekCount: undefined,
+    });
+
+    expect(resolveTourenplanPrintMode("spardruck")).toBe("spardruck");
+    expect(resolveTourenplanPrintMode("anything-else")).toBe("farbdruck");
   });
 });

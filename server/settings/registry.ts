@@ -49,6 +49,7 @@ const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
+const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
 type VorlauflisteCategorySelection = {
   columnOrder?: string[];
   hiddenColumns?: string[];
@@ -63,6 +64,7 @@ type AuftragslisteSelection = {
   componentCategoryIds?: number[];
   useShortCodes?: boolean;
 };
+type TourenplanPrintMode = (typeof tourenplanPrintModeOptions)[number];
 type LegacyProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
@@ -84,6 +86,13 @@ type ProduktionsplanungRangeConfig = {
   weekCount?: number;
 };
 type AuftragslisteRangeConfig = {
+  activeTab?: "date" | "calendarWeek";
+  fromDate?: string;
+  toDate?: string;
+  kwStart?: number;
+  weekCount?: number;
+};
+type TourenplanRangeConfig = {
   activeTab?: "date" | "calendarWeek";
   fromDate?: string;
   toDate?: string;
@@ -324,6 +333,23 @@ function isValidProduktionsplanungRangeConfig(value: unknown): value is Produkti
 }
 
 function isValidAuftragslisteRangeConfig(value: unknown): value is AuftragslisteRangeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const parsed = value as Record<string, unknown>;
+  if (
+    parsed.activeTab !== undefined
+    && parsed.activeTab !== "date"
+    && parsed.activeTab !== "calendarWeek"
+  ) {
+    return false;
+  }
+  if (parsed.fromDate !== undefined && (typeof parsed.fromDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.fromDate))) return false;
+  if (parsed.toDate !== undefined && (typeof parsed.toDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.toDate))) return false;
+  if (parsed.kwStart !== undefined && (typeof parsed.kwStart !== "number" || !Number.isInteger(parsed.kwStart) || parsed.kwStart < 1 || parsed.kwStart > 53)) return false;
+  if (parsed.weekCount !== undefined && (typeof parsed.weekCount !== "number" || !Number.isInteger(parsed.weekCount) || parsed.weekCount < 1 || parsed.weekCount > 52)) return false;
+  return true;
+}
+
+function isValidTourenplanRangeConfig(value: unknown): value is TourenplanRangeConfig {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const parsed = value as Record<string, unknown>;
   if (
@@ -653,6 +679,28 @@ export const userSettingsRegistry = {
     },
     allowedScopes: ["USER"],
     validate: isValidAuftragslisteRangeConfig,
+  },
+  reportsTourenplanRangeConfig: {
+    key: "reports.tourenplan.rangeConfig",
+    label: "Tourenplan Zeitraumskonfiguration",
+    description: "Speichert benutzerspezifisch den aktiven Zeitraum-Tab und die Kalenderwochenwerte des Tourenplans.",
+    type: "json",
+    defaultValue: {
+      activeTab: "date",
+    },
+    allowedScopes: ["USER"],
+    validate: isValidTourenplanRangeConfig,
+  },
+  reportsTourenplanPrintMode: {
+    key: "reports.tourenplan.printMode",
+    label: "Tourenplan Druckmodus",
+    description: "Steuert global, ob der Tourenplan im Farb- oder Sparmodus gedruckt wird.",
+    type: "enum",
+    options: tourenplanPrintModeOptions,
+    defaultValue: "farbdruck",
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is TourenplanPrintMode =>
+      typeof value === "string" && tourenplanPrintModeOptions.includes(value as TourenplanPrintMode),
   },
   reportsCategoryLayout: {
     key: "reports.categoryLayout",

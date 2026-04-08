@@ -4,6 +4,8 @@ export const MANAGED_REPORT_EXCLUSION_TAG_NAME = "Reklamation";
 export const MANAGED_REPORT_EXCLUSION_TAG_COLOR = "#f97316";
 export const MANAGED_SPECIAL_MEASURE_TAG_NAME = "Sondermaß";
 export const MANAGED_SPECIAL_MEASURE_TAG_COLOR = "#1e3a8a";
+export const MANAGED_MESSE_TAG_NAME = "Messe Aufbau/Abbau";
+export const MANAGED_MESSE_TAG_COLOR = "#4a7c3f";
 export const MANAGED_REMARKS_TAG_NAME = "Anmerkungen";
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
@@ -25,6 +27,10 @@ export function isManagedSpecialMeasureTagName(value: string): boolean {
   return normalizeTagName(value) === normalizeTagName(MANAGED_SPECIAL_MEASURE_TAG_NAME);
 }
 
+export function isManagedMesseTagName(value: string): boolean {
+  return normalizeTagName(value) === normalizeTagName(MANAGED_MESSE_TAG_NAME);
+}
+
 export function isManagedRemarksTagName(value: string): boolean {
   return normalizeTagName(value) === normalizeTagName(MANAGED_REMARKS_TAG_NAME);
 }
@@ -32,7 +38,8 @@ export function isManagedRemarksTagName(value: string): boolean {
 export function isProtectedSystemTagName(value: string): boolean {
   return isReservedAppointmentCancellationTagName(value)
     || isManagedReportExclusionTagName(value)
-    || isManagedSpecialMeasureTagName(value);
+    || isManagedSpecialMeasureTagName(value)
+    || isManagedMesseTagName(value);
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
@@ -45,6 +52,10 @@ export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain)
   }
 
   if (isManagedSpecialMeasureTagName(value)) {
+    return domain === "project" || domain === "appointment";
+  }
+
+  if (isManagedMesseTagName(value)) {
     return domain === "project" || domain === "appointment";
   }
 
