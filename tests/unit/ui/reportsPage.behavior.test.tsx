@@ -185,6 +185,26 @@ describe("FT26 UI: ReportsPage behavior", () => {
           isError: false,
         };
       }
+      if (key === "reports-tourenplan-preview") {
+        return {
+          data: {
+            fromDate: "2026-03-30",
+            toDate: "2026-04-05",
+            weeks: [],
+            appointments: [],
+            tour: { id: 1, name: "Testtour" },
+          },
+          isLoading: false,
+          isError: false,
+        };
+      }
+      if (key === "reports-tourenplan-appointments") {
+        return {
+          data: [],
+          isLoading: false,
+          isError: false,
+        };
+      }
       if (key === "reports-produktionsplanung") {
         return {
           data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },

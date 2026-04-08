@@ -163,8 +163,8 @@ async function expectCalendarArticleItems(page: Page, params: {
   const appointment = await fetchCalendarAppointment(page, params.appointmentId, params.date);
   expect(appointment.projectId).toBe(params.projectId);
   expect(appointment.projectArticleItems).toEqual(expect.arrayContaining([
-    { label: "Sauna", value: params.productName },
-    { label: "Ofen", value: params.componentName },
+    expect.objectContaining({ label: "Sauna", value: params.productName, source: "product" }),
+    expect.objectContaining({ label: "Ofen", value: params.componentName, source: "component" }),
   ]));
   expect(appointment.projectArticleItems.length).toBeGreaterThanOrEqual(2);
 }
