@@ -58,7 +58,6 @@ type TourenplanTagPresentation = {
 };
 
 const PAGE_CAPACITY_PX = 720;
-const WEEK_START_BUFFER_PX = 18;
 export const TOURENPLAN_CARD_GAP_PX = 6;
 export const TOURENPLAN_WEEK_SECTION_GAP_PX = 22;
 const TOURENPLAN_LOCATION_CHARS_PER_LINE = 18;

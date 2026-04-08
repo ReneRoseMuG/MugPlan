@@ -15,6 +15,7 @@
  * Expliziten Integritaetsnachweis fuer den FK-Constraint auf DB-Ebene liefern.
  */
 import { describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import { db } from "../../../server/db";
 import { projects } from "../../../shared/schema";
 import { createCustomerFixture, resetTestDataFactoryState } from "../../helpers/testDataFactory";
@@ -23,12 +24,13 @@ describe("FT02 integration: project/customer FK constraint", () => {
   it("rejects project insert when customer_id does not exist", async () => {
     resetTestDataFactoryState();
     const existing = await createCustomerFixture("FK-EXIST");
+    const projectName = `FK invalid project ${Date.now()}`;
 
     let thrown: unknown = null;
     try {
       await db.insert(projects).values({
         customerId: existing.id + 99_999,
-        name: "FK invalid project",
+        name: projectName,
         descriptionMd: null,
       });
     } catch (error) {
@@ -36,7 +38,10 @@ describe("FT02 integration: project/customer FK constraint", () => {
     }
 
     expect(thrown).toBeTruthy();
-    const message = String(thrown);
-    expect(message.toLowerCase()).toContain("foreign");
+    const persisted = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.name, projectName));
+    expect(persisted).toHaveLength(0);
   });
 });

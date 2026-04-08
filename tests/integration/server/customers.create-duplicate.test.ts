@@ -112,4 +112,22 @@ describe("FT21 integration: customers create duplicate mapping", () => {
         expect(res.body).toEqual({ code: "CUSTOMER_NUMBER_CONFLICT" });
       });
   });
+
+  it("returns 409 CUSTOMER_NUMBER_CONFLICT for a real duplicate customer number insert", async () => {
+    const agent = await loginAdminAgent();
+    const customerNumber = `DUP-${Date.now()}`;
+
+    await agent
+      .post("/api/customers")
+      .send({ customerNumber })
+      .expect(201);
+
+    await agent
+      .post("/api/customers")
+      .send({ customerNumber })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body).toEqual({ code: "CUSTOMER_NUMBER_CONFLICT" });
+      });
+  });
 });

@@ -58,6 +58,36 @@ describe("FT21 customers service duplicate customer number mapping", () => {
     });
   });
 
+  it("maps drizzle query errors with duplicate mysql cause to CUSTOMER_NUMBER_CONFLICT", async () => {
+    createCustomerMock.mockRejectedValueOnce({
+      message: "Failed query: insert into `customer` ...",
+      cause: {
+        code: "ER_DUP_ENTRY",
+        errno: 1062,
+        sqlMessage: "Duplicate entry '1003' for key 'customer.customer_customer_number_unique'",
+      },
+    });
+
+    await expect(
+      createCustomer({
+        customerNumber: "1003",
+        firstName: "A",
+        lastName: "B",
+        company: null,
+        email: null,
+        phone: "123",
+        addressLine1: null,
+        addressLine2: null,
+        postalCode: null,
+        city: null,
+        version: 1,
+      }),
+    ).rejects.toMatchObject<Partial<CustomersError>>({
+      status: 409,
+      code: "CUSTOMER_NUMBER_CONFLICT",
+    });
+  });
+
   it("rethrows non-duplicate errors", async () => {
     const error = new Error("db unavailable");
     createCustomerMock.mockRejectedValueOnce(error);
