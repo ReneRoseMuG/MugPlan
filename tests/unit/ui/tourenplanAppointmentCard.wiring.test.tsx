@@ -6,6 +6,7 @@
  * - Der Komponentenfilter blendet Sauna-Produkte aus.
  * - Der Shortcode-Modus ersetzt Artikelnamen nur bei vorhandenen Shortcodes.
  * - Reklamation erscheint nicht mehr als Headertext, bleibt aber als Kartenmarkierung sichtbar.
+ * - Farbdruck markiert farbige Flächen explizit für den Browser-Print und Mitarbeiterbadges bleiben fett.
  *
  * Fehlerfaelle:
  * - Der Kartenmodus rendert denselben Header fuer beide Druckvarianten.
@@ -74,6 +75,7 @@ describe("UI: TourenplanAppointmentCard", () => {
       <TourenplanAppointmentCard
         appointment={appointment}
         printMode="farbdruck"
+        fontSize="medium"
         useShortCodes={false}
         testId="tourenplan-card"
       />,
@@ -91,6 +93,9 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).toContain("Bitte Einfahrt freihalten.");
     expect(html).toContain("Kran erforderlich.");
     expect(html).not.toContain("tourenplan-card-header-separator");
+    expect(html).toContain('data-tourenplan-font-size="medium"');
+    expect(html).toContain("print-color-adjust:exact");
+    expect(html).toContain("font-weight:700");
   });
 
   it("uses shortcodes and the spar header separator in spardruck mode", () => {
@@ -98,12 +103,14 @@ describe("UI: TourenplanAppointmentCard", () => {
       <TourenplanAppointmentCard
         appointment={appointment}
         printMode="spardruck"
+        fontSize="small"
         useShortCodes
         testId="tourenplan-card"
       />,
     );
 
     expect(html).toContain('data-tourenplan-print-mode="spardruck"');
+    expect(html).toContain('data-tourenplan-font-size="small"');
     expect(html).toContain("tourenplan-card-header-separator");
     expect(html).toContain("H20");
     expect(html).toContain("X3");
@@ -125,6 +132,7 @@ describe("UI: TourenplanAppointmentCard", () => {
           projectDescription: null,
         }}
         printMode="farbdruck"
+        fontSize="large"
         useShortCodes={false}
         testId="tourenplan-card"
       />,

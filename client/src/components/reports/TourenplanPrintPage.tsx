@@ -3,6 +3,7 @@ import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppointmentCard";
 import type {
+  TourenplanFontSize,
   TourenplanOrientation,
   TourenplanPrintMode,
   TourenplanPrintPageData,
@@ -11,16 +12,22 @@ import type {
 type TourenplanPrintPageProps = {
   page: TourenplanPrintPageData;
   printMode: TourenplanPrintMode;
+  fontSize: TourenplanFontSize;
   orientation: TourenplanOrientation;
   useShortCodes: boolean;
   testId?: string;
 };
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+const EXACT_PRINT_COLOR_STYLE = {
+  WebkitPrintColorAdjust: "exact",
+  printColorAdjust: "exact",
+} as const;
 
 export function TourenplanPrintPage({
   page,
   printMode,
+  fontSize,
   orientation,
   useShortCodes,
   testId,
@@ -57,7 +64,7 @@ export function TourenplanPrintPage({
       testId={testId}
       footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={testId ? `${testId}-footer` : undefined} />}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2" style={EXACT_PRINT_COLOR_STYLE}>
         <header
           className="border-b border-slate-200 pb-1 text-[10px] font-medium text-slate-500"
           data-testid={testId ? `${testId}-header` : undefined}
@@ -94,6 +101,7 @@ export function TourenplanPrintPage({
                     key={appointment.id}
                     appointment={appointment}
                     printMode={printMode}
+                    fontSize={fontSize}
                     useShortCodes={useShortCodes}
                     dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
                     testId={testId ? `${testId}-appointment-${appointment.id}` : undefined}

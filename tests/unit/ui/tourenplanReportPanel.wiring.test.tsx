@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Das Tourenplan-Panel zeigt den neuen vierten Reportblock mit Shortcode-Option und Admin-Druckmodus.
- * - Die Verdrahtung uebergibt bei geoeffneter Vorschau dieselbe Orientierung an Dialog und Druckseite.
+ * - Die Verdrahtung uebergibt bei geoeffneter Vorschau dieselbe Orientierung und Schriftgröße an Dialog und Druckseite.
  *
  * Fehlerfaelle:
  * - Der neue Reportblock fehlt in der Reports-Seite oder blendet die Admin-Optionen nicht ein.
@@ -75,14 +75,17 @@ vi.mock("@/components/print/PrintPreviewDialog", () => ({
 vi.mock("@/components/reports/TourenplanPrintPage", () => ({
   TourenplanPrintPage: ({
     orientation,
+    fontSize,
     testId,
   }: {
     orientation: string;
+    fontSize: string;
     testId?: string;
   }) => (
     <div
       data-testid={testId}
       data-print-orientation={orientation}
+      data-tourenplan-font-size={fontSize}
     />
   ),
 }));
@@ -107,6 +110,9 @@ describe("UI: TourenplanReportPanel wiring", () => {
       }
       if (key === "reports.tourenplan.printMode") {
         return "farbdruck";
+      }
+      if (key === "reports.tourenplan.fontSize") {
+        return "medium";
       }
       return undefined;
     });
@@ -223,6 +229,7 @@ describe("UI: TourenplanReportPanel wiring", () => {
       .mockImplementationOnce(() => [1, vi.fn()])
       .mockImplementationOnce(() => [false, vi.fn()])
       .mockImplementationOnce(() => ["farbdruck", vi.fn()])
+      .mockImplementationOnce(() => ["medium", vi.fn()])
       .mockImplementationOnce(() => [orientation, vi.fn()])
       .mockImplementationOnce(() => [true, vi.fn()])
       .mockImplementationOnce(() => [0, vi.fn()]);
@@ -248,10 +255,12 @@ describe("UI: TourenplanReportPanel wiring", () => {
 
     expect(landscapeHtml).toContain("reports-tourenplan-config-panel");
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-use-shortcodes");
+    expect(landscapeHtml).toContain("reports-tourenplan-font-size-option");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-farbdruck");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-spardruck");
     expect(landscapeHtml).toContain('data-page-orientation="landscape"');
     expect(landscapeHtml).toContain('data-print-orientation="landscape"');
+    expect(landscapeHtml).toContain('data-tourenplan-font-size="medium"');
 
     const portraitSpy = installUseStateSequence("portrait");
     const portraitHtml = renderToStaticMarkup(
@@ -271,5 +280,6 @@ describe("UI: TourenplanReportPanel wiring", () => {
 
     expect(portraitHtml).toContain('data-page-orientation="portrait"');
     expect(portraitHtml).toContain('data-print-orientation="portrait"');
+    expect(portraitHtml).toContain('data-tourenplan-font-size="medium"');
   });
 });

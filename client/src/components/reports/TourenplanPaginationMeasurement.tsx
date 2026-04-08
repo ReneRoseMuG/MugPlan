@@ -3,6 +3,7 @@ import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppointmentCard";
 import type {
+  TourenplanFontSize,
   TourenplanOrientation,
   TourenplanPrintMode,
   TourenplanWeekGroup,
@@ -15,6 +16,7 @@ type TourenplanPaginationMeasurementProps = {
   tourName: string;
   weeks: TourenplanWeekGroup[];
   printMode: TourenplanPrintMode;
+  fontSize: TourenplanFontSize;
   orientation: TourenplanOrientation;
   useShortCodes: boolean;
   onMeasured: (measurement: { pageCapacityPx: number; cardHeights: Record<number, number> }) => void;
@@ -26,6 +28,7 @@ export function TourenplanPaginationMeasurement({
   tourName,
   weeks,
   printMode,
+  fontSize,
   orientation,
   useShortCodes,
   onMeasured,
@@ -58,7 +61,7 @@ export function TourenplanPaginationMeasurement({
       pageCapacityPx: Math.floor(pageContentNode.getBoundingClientRect().height),
       cardHeights,
     });
-  }, [onMeasured, orientation, printMode, useShortCodes, weeks]);
+  }, [fontSize, onMeasured, orientation, printMode, useShortCodes, weeks]);
 
   return (
     <div
@@ -93,6 +96,7 @@ export function TourenplanPaginationMeasurement({
                       <TourenplanAppointmentCard
                         appointment={appointment}
                         printMode={printMode}
+                        fontSize={fontSize}
                         useShortCodes={useShortCodes}
                       />
                     </div>

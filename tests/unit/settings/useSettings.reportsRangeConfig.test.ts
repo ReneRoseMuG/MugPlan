@@ -5,6 +5,7 @@
  * - Die Resolver fuer die neuen FT26-Range-Settings akzeptieren nur gueltige Tabs und KW-Werte.
  * - Die Produktionsplanung faellt fuer den neuen Selection-Key auf den Shortcode-Default zurueck.
  * - Der Legacy-Resolver bleibt fuer den Fallback auf reports.productVorlauf.selection erhalten.
+ * - Die Tourenplan-Schriftgröße faellt auf Medium zurueck, wenn kein gueltiger Wert vorliegt.
  *
  * Fehlerfaelle:
  * - Ungueltige activeTab-/KW-Werte gelangen unveraendert ins Frontend.
@@ -19,6 +20,7 @@ import {
   resolveLegacyProduktionsplanungSelection,
   resolveProduktionsplanungRangeConfig,
   resolveProduktionsplanungSelection,
+  resolveTourenplanFontSize,
   resolveTourenplanPrintMode,
   resolveTourenplanRangeConfig,
   resolveVorlauflisteRangeConfig,
@@ -137,5 +139,8 @@ describe("useSettings FT26 report resolvers", () => {
 
     expect(resolveTourenplanPrintMode("spardruck")).toBe("spardruck");
     expect(resolveTourenplanPrintMode("anything-else")).toBe("farbdruck");
+    expect(resolveTourenplanFontSize("small")).toBe("small");
+    expect(resolveTourenplanFontSize("large")).toBe("large");
+    expect(resolveTourenplanFontSize("anything-else")).toBe("medium");
   });
 });

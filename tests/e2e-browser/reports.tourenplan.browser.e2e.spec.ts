@@ -4,15 +4,15 @@
  * Abgedeckte Regeln:
  * - Der neue Tourenplan-Report nutzt echte Tour-, Termin-, Artikel- und Notizdaten im Browser.
  * - Tagfaelle Reklamation, Sondermass, Messe und Neutral erscheinen als eigene Karten.
- * - Shortcodes, schmale Seitenchrome sowie Admin-Optionen fuer Druckmodus und Orientierung wirken auf die Vorschau.
+ * - Shortcodes, schmale Seitenchrome sowie Admin-Optionen fuer Druckmodus, Schriftgröße und Orientierung wirken auf Vorschau und dedizierten Browser-Print-Pfad identisch.
  *
  * Fehlerfaelle:
  * - Der Tourenplan-Block fehlt oder kann mit echten Daten keine Vorschau laden.
  * - Produkt-/Komponentenlisten, Tags oder printNotes werden im Vorschau-Workflow nicht korrekt angezeigt.
- * - Seitenchrome, Druckmodus oder Orientierung bleiben wirkungslos.
+ * - Browser-Print-Root weicht in Inhalt, Orientierung oder KW-Markern von der sichtbaren Vorschauseite ab.
  *
  * Ziel:
- * Den neuen Tourenplan-Report Ende-zu-Ende mit echten Testdaten regressionssicher absichern.
+ * Den neuen Tourenplan-Report Ende-zu-Ende inklusive Paritaet zwischen sichtbarer Vorschau und echtem Browser-Print regressionssicher absichern.
  */
 import { expect, test } from "@playwright/test";
 import { eq } from "drizzle-orm";
@@ -41,6 +41,23 @@ import {
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+
+async function readPageSnapshot(locator: ReturnType<import("@playwright/test").Page["locator"]>) {
+  return locator.evaluate((element) => {
+    const normalize = (value: string | null | undefined) => (value ?? "").replace(/\s+/g, " ").trim();
+    const markers = Array.from(element.querySelectorAll<HTMLElement>('[data-testid*="-kw-marker-"]')).map((marker) => ({
+      testId: marker.getAttribute("data-testid") ?? "",
+      top: marker.style.top,
+      text: normalize(marker.textContent),
+    }));
+
+    return {
+      orientation: element.getAttribute("data-print-orientation"),
+      text: normalize(element.textContent),
+      markers,
+    };
+  });
+}
 
 test.describe.configure({ mode: "serial" });
 
@@ -253,6 +270,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
   await expect(page.getByTestId("button-reports-tourenplan-print-mode-farbdruck")).toBeVisible();
   await expect(page.getByTestId("button-reports-tourenplan-print-mode-spardruck")).toBeVisible();
+  await expect(page.getByTestId("select-reports-tourenplan-font-size")).toBeVisible();
 
   await page.getByTestId("select-reports-tourenplan-tour").click();
   await page.getByRole("option", { name: tour.name }).click();
@@ -263,6 +281,8 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 
   const firstPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
+  await expect(page.locator('[data-testid="print-document-root"]')).toHaveCount(1);
+  const printRootFirstPage = page.locator('[data-testid="print-document-root"] [data-testid="tourenplan-print-page-1"]').first();
   await expect(firstPage).toContainText(tour.name);
   await expect(firstPage).toContainText("Seite 1");
   await expect(firstPage).not.toContainText("Tourenplan");
@@ -284,11 +304,17 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(firstPage).toContainText("Roy H.");
   await expect(firstPage).toContainText("Dirk W.");
 
+  const landscapeScreenSnapshot = await readPageSnapshot(firstPage);
+  const landscapePrintSnapshot = await readPageSnapshot(printRootFirstPage);
+  expect(landscapePrintSnapshot).toEqual(landscapeScreenSnapshot);
+
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeHidden();
 
   await page.getByTestId("checkbox-reports-tourenplan-use-shortcodes").click();
   await page.getByTestId("button-reports-tourenplan-print-mode-spardruck").click();
+  await page.getByTestId("select-reports-tourenplan-font-size").click();
+  await page.getByRole("option", { name: "Large" }).click();
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 
@@ -301,9 +327,29 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(firstPageShortcodes).not.toContainText("Harvia 20");
   await expect(firstPageShortcodes).not.toContainText("Xenio 3");
   await expect(firstPageShortcodes.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-print-mode", "spardruck");
+  await expect(firstPageShortcodes.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-font-size", "large");
 
   await expect(page.getByTestId("button-reports-tourenplan-orientation-landscape")).toBeVisible();
   await expect(page.getByTestId("button-reports-tourenplan-orientation-portrait")).toBeVisible();
   await page.getByTestId("button-reports-tourenplan-orientation-portrait").click();
-  await expect(page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1")).toHaveAttribute("data-print-orientation", "portrait");
+  const portraitPreviewPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
+  await expect(portraitPreviewPage).toHaveAttribute("data-print-orientation", "portrait");
+
+  const portraitScreenSnapshot = await readPageSnapshot(portraitPreviewPage);
+  const portraitPrintSnapshot = await readPageSnapshot(printRootFirstPage);
+  expect(portraitPrintSnapshot).toEqual(portraitScreenSnapshot);
+
+  await page.emulateMedia({ media: "print" });
+  await expect(printRootFirstPage).toHaveAttribute("data-print-orientation", "portrait");
+  const printRootDisplay = await printRootFirstPage.evaluate((element) => {
+    const printRoot = element.closest('[data-testid="print-document-root"]');
+    if (!(printRoot instanceof HTMLElement)) {
+      throw new Error("Expected dedicated print root for Tourenplan page.");
+    }
+    return getComputedStyle(printRoot).display;
+  });
+  expect(printRootDisplay).toBe("block");
+  const portraitPrintMediaSnapshot = await readPageSnapshot(printRootFirstPage);
+  expect(portraitPrintMediaSnapshot).toEqual(portraitScreenSnapshot);
+  await page.emulateMedia({ media: "screen" });
 });

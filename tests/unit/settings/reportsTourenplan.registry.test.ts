@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - Der Tourenplan besitzt ein USER-Range-Setting mit Date-/KW-Payload.
  * - Der Druckmodus ist als GLOBAL-Enum auf Farb- und Sparmodus begrenzt.
+ * - Die Schriftgröße ist als USER-Enum auf Small, Medium und Large begrenzt.
  *
  * Fehlerfaelle:
  * - Ungueltige Tabs oder KW-Werte werden fuer den Tourenplan akzeptiert.
  * - Der Druckmodus akzeptiert beliebige Strings statt nur der beiden Modi.
+ * - Die Schriftgröße akzeptiert beliebige Strings statt nur der drei Stufen.
  *
  * Ziel:
  * Die Registry-Vertraege der neuen Tourenplan-Settings regressionssicher absichern.
@@ -48,5 +50,18 @@ describe("settings registry: Tourenplan", () => {
     expect(definition.validate("farbdruck")).toBe(true);
     expect(definition.validate("spardruck")).toBe(true);
     expect(definition.validate("graustufen")).toBe(false);
+  });
+
+  it("stores the font size as a user enum", () => {
+    const definition = userSettingsRegistry.reportsTourenplanFontSize;
+
+    expect(definition.key).toBe("reports.tourenplan.fontSize");
+    expect(definition.type).toBe("enum");
+    expect(definition.allowedScopes).toEqual(["USER"]);
+    expect(definition.defaultValue).toBe("medium");
+    expect(definition.validate("small")).toBe(true);
+    expect(definition.validate("medium")).toBe(true);
+    expect(definition.validate("large")).toBe(true);
+    expect(definition.validate("x-large")).toBe(false);
   });
 });

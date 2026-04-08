@@ -99,6 +99,7 @@ describe("UI: TourenplanPrintPage", () => {
       <TourenplanPrintPage
         page={page}
         printMode="farbdruck"
+        fontSize="medium"
         orientation="landscape"
         useShortCodes={false}
         testId="tourenplan-page"
