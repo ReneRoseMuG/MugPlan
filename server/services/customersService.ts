@@ -27,11 +27,11 @@ function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
 }
 
 function isCustomerNumberDuplicateError(error: unknown): boolean {
-  const mysqlError = error as { code?: string; errno?: number; sqlMessage?: string } | null;
-  if (!(mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062)) {
-    return false;
-  }
-  return true;
+  const directError = error as { code?: string; errno?: number; cause?: unknown } | null;
+  const causeError = directError?.cause as { code?: string; errno?: number } | null | undefined;
+  const dbError = causeError ?? directError;
+
+  return dbError?.code === "ER_DUP_ENTRY" || dbError?.errno === 1062;
 }
 
 function resolveScope(roleKey: CanonicalRoleKey, requestedScope: "active" | "inactive"): "active" | "inactive" {

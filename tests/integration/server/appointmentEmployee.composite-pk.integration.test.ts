@@ -15,6 +15,7 @@
  * Expliziten Integritaetsnachweis fuer den Composite-PK der Join-Tabelle liefern.
  */
 import { describe, expect, it } from "vitest";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../../server/db";
 import { appointmentEmployees } from "../../../shared/schema";
 import {
@@ -53,7 +54,13 @@ describe("FT01 integration: appointment_employee composite PK", () => {
     }
 
     expect(thrown).toBeTruthy();
-    const message = String(thrown).toLowerCase();
-    expect(message.includes("duplicate") || message.includes("primary")).toBe(true);
+    const rows = await db
+      .select()
+      .from(appointmentEmployees)
+      .where(and(
+        eq(appointmentEmployees.appointmentId, appointment.id),
+        eq(appointmentEmployees.employeeId, employee.id),
+      ));
+    expect(rows).toHaveLength(1);
   });
 });
