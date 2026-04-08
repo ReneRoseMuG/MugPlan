@@ -116,6 +116,8 @@ const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active"
 const projectArticleItemSchema = z.object({
   label: z.string().min(1),
   value: z.string().min(1),
+  source: z.enum(["product", "component"]).optional(),
+  shortCode: z.string().nullable().optional(),
 });
 
 const appointmentTagGroupsSchema = z.object({

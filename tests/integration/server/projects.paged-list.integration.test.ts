@@ -111,8 +111,8 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.items[0]?.appointmentsCount).toBe(1);
     expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
     expect(response.body.items[0]?.projectArticleItems).toEqual([
-      { label: "Sauna", value: "FT30 Sauna Modell" },
-      { label: "Fenster", value: "FT30 Rundfenster" },
+      { label: "Sauna", value: "FT30 Sauna Modell", source: "product", shortCode: null },
+      { label: "Fenster", value: "FT30 Rundfenster", source: "component", shortCode: null },
     ]);
   });
 
@@ -165,8 +165,8 @@ describe("FT30 integration: paged projects list", () => {
     expect(slotProject).toMatchObject({
       id: projectWithItems.id,
       projectArticleItems: [
-        { label: "Sauna", value: "FT30 Slot Sauna" },
-        { label: "Ofen", value: "FT30 Slot Ofen" },
+        { label: "Sauna", value: "FT30 Slot Sauna", source: "product", shortCode: null },
+        { label: "Ofen", value: "FT30 Slot Ofen", source: "component", shortCode: null },
       ],
     });
     expect(emptyProject).toMatchObject({
@@ -208,10 +208,52 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.project).toMatchObject({
       id: project.id,
       projectArticleItems: [
-        { label: "Sauna", value: "FT30 Detail Sauna" },
-        { label: "Ofen", value: "FT30 Detail Ofen" },
+        { label: "Sauna", value: "FT30 Detail Sauna", source: "product", shortCode: null },
+        { label: "Ofen", value: "FT30 Detail Ofen", source: "component", shortCode: null },
       ],
     });
+  });
+
+  it("adds optional source and shortcode metadata to projectArticleItems without changing ordering", async () => {
+    const agent = await loginAdminAgent(app);
+    const project = await createProjectFixture({
+      prefix: "FT30-PROJ-META",
+      name: "FT30 Meta Projekt",
+    });
+    const saunaProduct = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: "FT30 Meta Sauna",
+      shortCode: "FT30-SP",
+    });
+    const ovenComponent = await createComponentFixture({
+      categoryName: "Oefen",
+      name: "FT30 Meta Ofen",
+      shortCode: "FT30-OC",
+    });
+
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber: project.orderNumber ?? "",
+      productId: saunaProduct.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: project.id,
+      orderNumber: project.orderNumber ?? "",
+      componentId: ovenComponent.id,
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-12-23",
+    });
+
+    const response = await agent
+      .get(`/api/projects/${project.id}`)
+      .expect(200);
+
+    expect(response.body.project.projectArticleItems).toEqual([
+      { label: "Sauna", value: "FT30 Meta Sauna", source: "product", shortCode: "FT30-SP" },
+      { label: "Ofen", value: "FT30 Meta Ofen", source: "component", shortCode: "FT30-OC" },
+    ]);
   });
 
   it("returns empty projectArticleItems arrays on GET /api/projects/:id", async () => {

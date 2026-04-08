@@ -148,8 +148,90 @@ describe("calendar project article items integration", () => {
         const appointment = res.body.find((row: { projectId: number | null }) => row.projectId === project.id);
         expect(appointment).toBeDefined();
         expect(appointment.projectArticleItems).toEqual([
-          { label: "Sauna", value: product.body.name },
-          { label: "Ofen", value: component.body.name },
+          { label: "Sauna", value: product.body.name, source: "product", shortCode: null },
+          { label: "Ofen", value: component.body.name, source: "component", shortCode: null },
+        ]);
+      });
+  });
+
+  it("keeps product/component source metadata and shortcodes in calendar payloads", async () => {
+    const admin = await loginAdminAgent();
+    const token = `CAL-ART-META-${Date.now()}-${sequence++}`;
+    const project = await createProjectFixture({ prefix: token, name: `${token}-Project` });
+
+    const productCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-PROD-CAT`, isActive: true, version: 1 })
+      .expect(201);
+
+    const componentCategory = await ensureComponentCategoryFixture("Fenster");
+
+    const product = await admin
+      .post("/api/admin/master-data/products")
+      .send({
+        name: `${token}-Modell`,
+        shortCode: "CAL-P",
+        categoryId: productCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    const component = await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: `${token}-Fenster`,
+        shortCode: "CAL-C",
+        categoryId: componentCategory.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: product.body.id,
+        componentId: null,
+        quantity: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post(`/api/projects/${project.id}/order-items`)
+      .send({
+        projectId: project.id,
+        orderNumber: project.projectOrder!.orderNumber,
+        productId: null,
+        componentId: component.body.id,
+        quantity: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post("/api/appointments")
+      .send({
+        projectId: project.id,
+        startDate: "2099-01-04",
+        endDate: null,
+        startTime: null,
+        employeeIds: [],
+      })
+      .expect(201);
+
+    await admin
+      .get("/api/calendar/appointments?fromDate=2099-01-01&toDate=2099-01-05&detail=full")
+      .expect(200)
+      .expect((res) => {
+        const appointment = res.body.find((row: { projectId: number | null }) => row.projectId === project.id);
+        expect(appointment).toBeDefined();
+        expect(appointment.projectArticleItems).toEqual([
+          { label: "Sauna", value: product.body.name, source: "product", shortCode: "CAL-P" },
+          { label: "Fenster", value: component.body.name, source: "component", shortCode: "CAL-C" },
         ]);
       });
   });

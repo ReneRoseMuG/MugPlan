@@ -64,9 +64,20 @@ export const PROJECT_ARTICLE_FIELDS = [
 
 export type ProjectArticleFieldKey = (typeof PROJECT_ARTICLE_FIELDS)[number]["key"];
 
+export type ProjectArticleItemSource = "product" | "component";
+
 export type ProjectArticleItem = {
   label: string;
   value: string;
+  source?: ProjectArticleItemSource;
+  shortCode?: string | null;
+};
+
+export type ProjectArticleListFilter = "all" | "components";
+
+export type ProjectArticleListRenderOptions = {
+  filter?: ProjectArticleListFilter;
+  useShortCodes?: boolean;
 };
 
 const REPORT_SAUNA_PRODUCT_CATEGORY_ALIASES = [
@@ -81,6 +92,48 @@ export function normalizeProjectArticleValue(value: string): string {
     .replace(/\s+/g, "")
     .trim()
     .toLocaleLowerCase("de-DE");
+}
+
+export function normalizeProjectArticleItemText(value: string | null | undefined): string {
+  return value?.trim() ?? "";
+}
+
+export function matchesProjectArticleListFilter(
+  item: Pick<ProjectArticleItem, "source">,
+  filter: ProjectArticleListFilter = "all",
+): boolean {
+  if (filter === "components") {
+    return item.source === "component";
+  }
+  return true;
+}
+
+export function resolveProjectArticleItemDisplayValue(
+  item: Pick<ProjectArticleItem, "value" | "shortCode">,
+  useShortCodes = false,
+): string {
+  const shortCode = normalizeProjectArticleItemText(item.shortCode);
+  if (useShortCodes && shortCode.length > 0) {
+    return shortCode;
+  }
+  return normalizeProjectArticleItemText(item.value);
+}
+
+export function normalizeRenderableProjectArticleItems(
+  items: ProjectArticleItem[] | null | undefined,
+  options: ProjectArticleListRenderOptions = {},
+): ProjectArticleItem[] {
+  const filter = options.filter ?? "all";
+  const useShortCodes = options.useShortCodes ?? false;
+
+  return (items ?? [])
+    .filter((item) => matchesProjectArticleListFilter(item, filter))
+    .map((item) => ({
+      ...item,
+      label: normalizeProjectArticleItemText(item.label),
+      value: resolveProjectArticleItemDisplayValue(item, useShortCodes),
+    }))
+    .filter((item) => item.label.length > 0 && item.value.length > 0);
 }
 
 export function getProjectArticleField(key: ProjectArticleFieldKey) {

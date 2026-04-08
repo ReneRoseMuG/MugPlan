@@ -1,9 +1,14 @@
 import React from "react";
-import type { ProjectArticleItem } from "@shared/projectArticleList";
+import {
+  normalizeRenderableProjectArticleItems,
+  type ProjectArticleItem,
+  type ProjectArticleListRenderOptions,
+} from "@shared/projectArticleList";
 
 type ProjectArticleDescriptionRendererProps = {
   articleItems: ProjectArticleItem[] | null | undefined;
   descriptionHtml: string | null | undefined;
+  articleListOptions?: ProjectArticleListRenderOptions;
   showSectionTitles?: boolean;
   articleSectionClassName?: string;
   articleListClassName?: string;
@@ -22,21 +27,18 @@ function hasVisibleDescriptionContent(value: string | null | undefined): boolean
   return normalized.length > 0;
 }
 
-function normalizeArticleItems(items: ProjectArticleItem[] | null | undefined): ProjectArticleItem[] {
-  return (items ?? []).filter((item) => item.label.trim().length > 0 && item.value.trim().length > 0);
-}
-
-export function renderProjectArticleListSection({
+export function renderSelectiveProjectArticleListSection({
   articleItems,
+  articleListOptions,
   showSectionTitles = false,
   articleSectionClassName,
   articleListClassName,
   testIdPrefix,
 }: Pick<
   ProjectArticleDescriptionRendererProps,
-  "articleItems" | "showSectionTitles" | "articleSectionClassName" | "articleListClassName" | "testIdPrefix"
+  "articleItems" | "articleListOptions" | "showSectionTitles" | "articleSectionClassName" | "articleListClassName" | "testIdPrefix"
 >) {
-  const resolvedArticleItems = normalizeArticleItems(articleItems);
+  const resolvedArticleItems = normalizeRenderableProjectArticleItems(articleItems, articleListOptions);
 
   if (resolvedArticleItems.length === 0) {
     return null;
@@ -57,6 +59,26 @@ export function renderProjectArticleListSection({
       </ul>
     </section>
   );
+}
+
+export function renderProjectArticleListSection({
+  articleItems,
+  showSectionTitles = false,
+  articleSectionClassName,
+  articleListClassName,
+  testIdPrefix,
+}: Pick<
+  ProjectArticleDescriptionRendererProps,
+  "articleItems" | "showSectionTitles" | "articleSectionClassName" | "articleListClassName" | "testIdPrefix"
+>) {
+  return renderSelectiveProjectArticleListSection({
+    articleItems,
+    articleListOptions: { filter: "all", useShortCodes: false },
+    showSectionTitles,
+    articleSectionClassName,
+    articleListClassName,
+    testIdPrefix,
+  });
 }
 
 export function renderProjectNotesSection({
@@ -92,6 +114,7 @@ export function renderProjectNotesSection({
 export function ProjectArticleDescriptionRenderer({
   articleItems,
   descriptionHtml,
+  articleListOptions,
   showSectionTitles = false,
   articleSectionClassName,
   articleListClassName,
@@ -99,8 +122,9 @@ export function ProjectArticleDescriptionRenderer({
   descriptionHtmlClassName,
   testIdPrefix,
 }: ProjectArticleDescriptionRendererProps) {
-  const articleSection = renderProjectArticleListSection({
+  const articleSection = renderSelectiveProjectArticleListSection({
     articleItems,
+    articleListOptions,
     showSectionTitles,
     articleSectionClassName,
     articleListClassName,
