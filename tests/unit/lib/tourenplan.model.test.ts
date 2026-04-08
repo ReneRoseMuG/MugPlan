@@ -18,7 +18,9 @@ import { describe, expect, it } from "vitest";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Tag } from "@shared/schema";
 import {
+  buildTourenplanWeekGroups,
   buildTourenplanPrintPages,
+  paginateTourenplanWeekGroups,
   resolveTourenplanTagKind,
   type TourenplanAppointmentListItem,
   type TourenplanPreviewResponse,
@@ -380,8 +382,202 @@ describe("Tourenplan model", () => {
       }),
     ]);
 
+    expect(pages.length).toBeGreaterThanOrEqual(2);
+    expect(pages[0]?.weeks.every((week) => week.weekNumber === 17)).toBe(true);
+    const firstWeek18PageIndex = pages.findIndex((page) => page.weeks.some((week) => week.weekNumber === 18));
+    expect(firstWeek18PageIndex).toBeGreaterThan(0);
+    expect(pages.slice(0, firstWeek18PageIndex).every((page) => page.weeks.every((week) => week.weekNumber === 17))).toBe(true);
+  });
+
+  it("accounts for long print notes as a separate height block during pagination", () => {
+    const longProjectDescription = `<p>${Array.from({ length: 10 }, () => "Sehr langer Beschreibungstext fuer die Tourenplan-Karte mit vielen Montage- und Materialdetails.").join(" ")}</p>`;
+    const longPrintNoteBody = `<p>${Array.from({ length: 12 }, () => "Sehr lange Drucknotiz mit mehreren Zusatzinformationen, Massangaben, Montagehinweisen und Sonderwunschdetails fuer den Report.").join(" ")}</p>`;
+
+    const previewData: TourenplanPreviewResponse = {
+      fromDate: "2026-04-13",
+      toDate: "2026-04-19",
+      weeks: [
+        { weekStart: "2026-04-13", weekEnd: "2026-04-19", weekNotes: [] },
+      ],
+      tour: { id: 5, name: "Tour Alpha", color: "#2266aa" },
+      appointments: [
+        {
+          id: 30,
+          projectId: 40,
+          projectName: "Projekt 30",
+          startDate: "2026-04-13",
+          endDate: "2026-04-14",
+          startTime: null,
+          durationDays: 2,
+          saunaModel: null,
+          customer: { id: 130, customerNumber: "C-30", fullName: "Kunde 30", phone: "0123-30", addressLine1: null, addressLine2: null, postalCode: "26135", city: "Oldenburg", country: "Deutschland" },
+          employees: [{ id: 1, fullName: "Herold, Roy" }, { id: 2, fullName: "Winter, Dirk" }],
+          printNotes: Array.from({ length: 5 }, (_, index) => ({
+            id: 300 + index,
+            sourceType: "appointment" as const,
+            title: `Hinweis ${index + 1}`,
+            body: longPrintNoteBody,
+            cardColor: "#f97316",
+            updatedAt: "2026-04-13T08:00:00.000Z",
+          })),
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+        {
+          id: 31,
+          projectId: 41,
+          projectName: "Projekt 31",
+          startDate: "2026-04-15",
+          endDate: "2026-04-15",
+          startTime: null,
+          durationDays: 1,
+          saunaModel: null,
+          customer: { id: 131, customerNumber: "C-31", fullName: "Kunde 31", phone: "0123-31", addressLine1: null, addressLine2: null, postalCode: "26135", city: "Oldenburg", country: "Deutschland" },
+          employees: [{ id: 1, fullName: "Herold, Roy" }],
+          printNotes: [],
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+      ],
+    };
+
+    const pages = buildTourenplanPrintPages(previewData, [
+      createDetailedAppointmentListItem({
+        id: 30,
+        tourId: 5,
+        startDate: "2026-04-13",
+        endDate: "2026-04-14",
+        projectDescription: longProjectDescription,
+        projectArticleItems: Array.from({ length: 10 }, (_, index) => ({
+          label: `Komponente ${index + 1}`,
+          value: "Sehr langer Ausstattungseintrag fuer den Tourenplan Report",
+          source: "component",
+          shortCode: `K${index + 1}`,
+        })),
+      }),
+      createDetailedAppointmentListItem({
+        id: 31,
+        tourId: 5,
+        startDate: "2026-04-15",
+        endDate: "2026-04-15",
+        projectDescription: "<p>Knappe Beschreibung.</p>",
+        projectArticleItems: [{ label: "Ofen", value: "Harvia 20", source: "component", shortCode: "H20" }],
+      }),
+    ]);
+
     expect(pages).toHaveLength(2);
-    expect(pages[0]?.weeks.map((week) => week.weekNumber)).toEqual([17]);
-    expect(pages[1]?.weeks.map((week) => week.weekNumber)).toEqual([18]);
+    expect(pages[0]?.weeks[0]?.appointments.map((appointment) => appointment.id)).toEqual([30]);
+    expect(pages[1]?.weeks[0]?.appointments.map((appointment) => appointment.id)).toEqual([31]);
+  });
+
+  it("fills the current page with the next week when the measured card heights still fit", () => {
+    const previewData: TourenplanPreviewResponse = {
+      fromDate: "2026-04-13",
+      toDate: "2026-04-26",
+      weeks: [
+        { weekStart: "2026-04-13", weekEnd: "2026-04-19", weekNotes: [] },
+        { weekStart: "2026-04-20", weekEnd: "2026-04-26", weekNotes: [] },
+      ],
+      tour: { id: 5, name: "Tour Alpha", color: "#2266aa" },
+      appointments: [
+        {
+          id: 41,
+          projectId: 51,
+          projectName: "Projekt 41",
+          startDate: "2026-04-14",
+          endDate: "2026-04-14",
+          startTime: null,
+          durationDays: 1,
+          saunaModel: null,
+          customer: { id: 141, customerNumber: "C-41", fullName: "Kunde 41", phone: "0123-41", addressLine1: null, addressLine2: null, postalCode: "26135", city: "Oldenburg", country: "Deutschland" },
+          employees: [],
+          printNotes: [],
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+        {
+          id: 42,
+          projectId: 52,
+          projectName: "Projekt 42",
+          startDate: "2026-04-15",
+          endDate: "2026-04-15",
+          startTime: null,
+          durationDays: 1,
+          saunaModel: null,
+          customer: { id: 142, customerNumber: "C-42", fullName: "Kunde 42", phone: "0123-42", addressLine1: null, addressLine2: null, postalCode: "26135", city: "Oldenburg", country: "Deutschland" },
+          employees: [],
+          printNotes: [],
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+        {
+          id: 43,
+          projectId: 53,
+          projectName: "Projekt 43",
+          startDate: "2026-04-20",
+          endDate: "2026-04-20",
+          startTime: null,
+          durationDays: 1,
+          saunaModel: null,
+          customer: { id: 143, customerNumber: "C-43", fullName: "Kunde 43", phone: "0123-43", addressLine1: null, addressLine2: null, postalCode: "26135", city: "Oldenburg", country: "Deutschland" },
+          employees: [],
+          printNotes: [],
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+      ],
+    };
+
+    const weeks = buildTourenplanWeekGroups(previewData, [
+      createDetailedAppointmentListItem({
+        id: 41,
+        tourId: 5,
+        startDate: "2026-04-14",
+        endDate: "2026-04-14",
+        projectDescription: "<p>Kurz.</p>",
+        projectArticleItems: [],
+      }),
+      createDetailedAppointmentListItem({
+        id: 42,
+        tourId: 5,
+        startDate: "2026-04-15",
+        endDate: "2026-04-15",
+        projectDescription: "<p>Kurz.</p>",
+        projectArticleItems: [],
+      }),
+      createDetailedAppointmentListItem({
+        id: 43,
+        tourId: 5,
+        startDate: "2026-04-20",
+        endDate: "2026-04-20",
+        projectDescription: "<p>Kurz.</p>",
+        projectArticleItems: [],
+      }),
+    ]);
+
+    const pages = paginateTourenplanWeekGroups({
+      tourName: "Tour Alpha",
+      weeks,
+      pageCapacityPx: 420,
+      cardHeights: {
+        41: 120,
+        42: 120,
+        43: 120,
+      },
+    });
+
+    expect(pages).toHaveLength(1);
+    expect(pages[0]?.weeks.map((week) => ({
+      weekNumber: week.weekNumber,
+      ids: week.appointments.map((appointment) => appointment.id),
+    }))).toEqual([
+      { weekNumber: 16, ids: [41, 42] },
+      { weekNumber: 17, ids: [43] },
+    ]);
   });
 });

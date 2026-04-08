@@ -350,6 +350,10 @@ export function AppointmentForm({
   const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
   const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
+  const invalidateTourenplanReportQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["reports-tourenplan-preview"] });
+    await queryClient.invalidateQueries({ queryKey: ["reports-tourenplan-appointments"] });
+  };
   const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
     if (projectId) {
       const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
@@ -365,6 +369,7 @@ export function AppointmentForm({
       await queryClient.invalidateQueries({ queryKey: upcomingAppointmentsQueryKey });
       await queryClient.invalidateQueries({ queryKey: allAppointmentsQueryKey });
     }
+    await invalidateTourenplanReportQueries();
     await invalidateTagProjectionQueries();
   };
 

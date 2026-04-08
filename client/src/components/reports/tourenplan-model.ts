@@ -32,6 +32,13 @@ export type TourenplanWeekSection = {
   appointments: TourenplanResolvedAppointment[];
 };
 
+export type TourenplanWeekGroup = {
+  weekStart: string;
+  weekEnd: string;
+  weekNumber: number;
+  appointments: TourenplanResolvedAppointment[];
+};
+
 export type TourenplanPrintPageData = {
   pageNumber: number;
   tourName: string;
@@ -51,12 +58,21 @@ type TourenplanTagPresentation = {
 };
 
 const PAGE_CAPACITY_PX = 720;
-const WEEK_GAP_PX = 10;
-const CARD_BASE_HEIGHT_PX = 88;
 const WEEK_START_BUFFER_PX = 18;
+export const TOURENPLAN_CARD_GAP_PX = 6;
+export const TOURENPLAN_WEEK_SECTION_GAP_PX = 22;
 const TOURENPLAN_LOCATION_CHARS_PER_LINE = 18;
 const TOURENPLAN_ARTICLE_CHARS_PER_LINE = 34;
-const TOURENPLAN_NOTES_CHARS_PER_LINE = 26;
+const TOURENPLAN_DESCRIPTION_CHARS_PER_LINE = 26;
+const TOURENPLAN_NOTE_CHARS_PER_LINE = 28;
+const TOURENPLAN_HEADER_HEIGHT_PX = 32;
+const TOURENPLAN_BODY_LINE_HEIGHT_PX = 14;
+const TOURENPLAN_BODY_CELL_VERTICAL_PADDING_PX = 10;
+const TOURENPLAN_EMPLOYEE_BADGE_HEIGHT_PX = 18;
+const TOURENPLAN_EMPLOYEE_BADGE_GAP_PX = 2;
+const TOURENPLAN_NOTE_LINE_HEIGHT_PX = 12;
+const TOURENPLAN_NOTE_CARD_VERTICAL_PADDING_PX = 18;
+const TOURENPLAN_NOTE_SECTION_BASE_HEIGHT_PX = 18;
 
 function mergeUniqueTags(...collections: Array<readonly Tag[] | null | undefined>): Tag[] {
   const tagsById = new Map<number, Tag>();
@@ -239,30 +255,35 @@ function estimateArticleLineCount(appointment: TourenplanResolvedAppointment): n
   }, 0);
 }
 
-function estimateNotesLineCount(appointment: TourenplanResolvedAppointment): number {
-  const lines: string[] = [];
+function estimateDescriptionLineCount(appointment: TourenplanResolvedAppointment): number {
   const projectDescription = stripHtmlToText(appointment.projectDescription);
 
-  if (projectDescription.length > 0) {
-    lines.push(projectDescription);
-  }
-
-  for (const note of appointment.printNotes) {
-    const noteTitle = note.title?.trim();
-    const noteBody = stripHtmlToText(note.body);
-    if (noteTitle) {
-      lines.push(noteTitle);
-    }
-    if (noteBody.length > 0) {
-      lines.push(noteBody);
-    }
-  }
-
-  if (lines.length === 0) {
+  if (projectDescription.length === 0) {
     return 1;
   }
 
-  return lines.reduce((sum, line) => sum + estimateWrappedLineCount(line, TOURENPLAN_NOTES_CHARS_PER_LINE), 0);
+  return estimateWrappedLineCount(projectDescription, TOURENPLAN_DESCRIPTION_CHARS_PER_LINE);
+}
+
+function estimateVisiblePrintNotesHeight(appointment: TourenplanResolvedAppointment): number {
+  const visibleNotes = appointment.printNotes
+    .map((note) => ({
+      title: note.title?.trim() ?? "",
+      body: stripHtmlToText(note.body),
+    }))
+    .filter((note) => note.title.length > 0 || note.body.length > 0);
+
+  if (visibleNotes.length === 0) {
+    return 0;
+  }
+
+  const noteCardsHeight = visibleNotes.reduce((sum, note) => {
+    const titleLines = note.title.length > 0 ? estimateWrappedLineCount(note.title, TOURENPLAN_NOTE_CHARS_PER_LINE) : 0;
+    const bodyLines = note.body.length > 0 ? estimateWrappedLineCount(note.body, TOURENPLAN_NOTE_CHARS_PER_LINE) : 1;
+    return sum + TOURENPLAN_NOTE_CARD_VERTICAL_PADDING_PX + ((titleLines + bodyLines) * TOURENPLAN_NOTE_LINE_HEIGHT_PX);
+  }, 0);
+
+  return TOURENPLAN_NOTE_SECTION_BASE_HEIGHT_PX + noteCardsHeight + ((visibleNotes.length - 1) * 6);
 }
 
 function compareAppointments(left: TourenplanResolvedAppointment, right: TourenplanResolvedAppointment): number {
@@ -281,15 +302,22 @@ function compareAppointments(left: TourenplanResolvedAppointment, right: Tourenp
 }
 
 function estimateCardHeight(appointment: TourenplanResolvedAppointment): number {
-  const bodyLineCount = Math.max(
-    1,
-    estimateLocationLineCount(appointment),
-    estimateArticleLineCount(appointment),
-    estimateNotesLineCount(appointment),
-    Math.max(1, appointment.employees.length),
+  const locationHeight = estimateLocationLineCount(appointment) * TOURENPLAN_BODY_LINE_HEIGHT_PX;
+  const articleHeight = estimateArticleLineCount(appointment) * TOURENPLAN_BODY_LINE_HEIGHT_PX;
+  const descriptionHeight = estimateDescriptionLineCount(appointment) * TOURENPLAN_BODY_LINE_HEIGHT_PX;
+  const employeeHeight = appointment.employees.length > 0
+    ? (appointment.employees.length * TOURENPLAN_EMPLOYEE_BADGE_HEIGHT_PX)
+      + ((appointment.employees.length - 1) * TOURENPLAN_EMPLOYEE_BADGE_GAP_PX)
+    : TOURENPLAN_BODY_LINE_HEIGHT_PX;
+  const bodyHeight = TOURENPLAN_BODY_CELL_VERTICAL_PADDING_PX + Math.max(
+    locationHeight,
+    articleHeight,
+    descriptionHeight,
+    employeeHeight,
+    TOURENPLAN_BODY_LINE_HEIGHT_PX,
   );
 
-  return CARD_BASE_HEIGHT_PX + (bodyLineCount * 12) + Math.max(0, bodyLineCount - 2) * 2;
+  return TOURENPLAN_HEADER_HEIGHT_PX + bodyHeight + estimateVisiblePrintNotesHeight(appointment);
 }
 
 export function mergeTourenplanAppointments(
@@ -312,20 +340,30 @@ export function mergeTourenplanAppointments(
   });
 }
 
-export function buildTourenplanPrintPages(
+export function buildTourenplanWeekGroups(
   previewData: TourenplanPreviewResponse,
   appointmentItems: TourenplanAppointmentListItem[],
-): TourenplanPrintPageData[] {
+): TourenplanWeekGroup[] {
   const appointments = mergeTourenplanAppointments(previewData, appointmentItems);
-  const appointmentsByWeekStart = new Map<string, TourenplanResolvedAppointment[]>();
 
-  for (const week of previewData.weeks) {
-    const weekAppointments = appointments
-      .filter((appointment) => appointment.startDate >= week.weekStart && appointment.startDate <= week.weekEnd)
-      .sort(compareAppointments);
-    appointmentsByWeekStart.set(week.weekStart, weekAppointments);
-  }
+  return previewData.weeks
+    .map((week) => ({
+      weekStart: week.weekStart,
+      weekEnd: week.weekEnd,
+      weekNumber: getISOWeek(parseISO(week.weekStart)),
+      appointments: appointments
+        .filter((appointment) => appointment.startDate >= week.weekStart && appointment.startDate <= week.weekEnd)
+        .sort(compareAppointments),
+    }))
+    .filter((week) => week.appointments.length > 0);
+}
 
+export function paginateTourenplanWeekGroups(params: {
+  tourName: string;
+  weeks: TourenplanWeekGroup[];
+  pageCapacityPx: number;
+  cardHeights: Record<number, number>;
+}): TourenplanPrintPageData[] {
   const pages: TourenplanPrintPageData[] = [];
   let currentWeeks: TourenplanWeekSection[] = [];
   let usedCapacity = 0;
@@ -337,7 +375,7 @@ export function buildTourenplanPrintPages(
     }
     pages.push({
       pageNumber: pages.length + 1,
-      tourName: previewData.tour.name,
+      tourName: params.tourName,
       weeks: currentWeeks,
     });
     currentWeeks = [];
@@ -345,37 +383,69 @@ export function buildTourenplanPrintPages(
     markerOffset = 4;
   };
 
-  for (const week of previewData.weeks) {
-    const weekAppointments = appointmentsByWeekStart.get(week.weekStart) ?? [];
-    if (weekAppointments.length === 0) {
-      continue;
-    }
+  for (const week of params.weeks) {
+    let activeWeekSection: TourenplanWeekSection | null = null;
 
-    const weekHeight = weekAppointments.reduce((sum, appointment) => sum + estimateCardHeight(appointment) + 6, 0) + WEEK_GAP_PX;
-    if (currentWeeks.length > 0 && usedCapacity + weekHeight > PAGE_CAPACITY_PX - WEEK_START_BUFFER_PX) {
-      flushPage();
-    }
+    for (const appointment of week.appointments) {
+      const appointmentHeight = params.cardHeights[appointment.id] ?? 0;
+      const continuingWeekOnPage = activeWeekSection !== null;
+      const requiredGap = continuingWeekOnPage
+        ? TOURENPLAN_CARD_GAP_PX
+        : (currentWeeks.length > 0 ? TOURENPLAN_WEEK_SECTION_GAP_PX : 0);
+      const pageLimit = params.pageCapacityPx;
 
-    currentWeeks.push({
-      weekStart: week.weekStart,
-      weekEnd: week.weekEnd,
-      weekNumber: getISOWeek(parseISO(week.weekStart)),
-      markerTopPx: markerOffset,
-      appointments: weekAppointments,
-    });
-    usedCapacity += weekHeight;
-    markerOffset += weekHeight;
+      if (usedCapacity + requiredGap + appointmentHeight > pageLimit && usedCapacity > 0) {
+        flushPage();
+        activeWeekSection = null;
+      }
+
+      const gapAfterFlush = activeWeekSection !== null
+        ? TOURENPLAN_CARD_GAP_PX
+        : (currentWeeks.length > 0 ? TOURENPLAN_WEEK_SECTION_GAP_PX : 0);
+
+      if (gapAfterFlush > 0) {
+        usedCapacity += gapAfterFlush;
+        markerOffset += gapAfterFlush;
+      }
+
+      if (activeWeekSection === null) {
+        activeWeekSection = {
+          weekStart: week.weekStart,
+          weekEnd: week.weekEnd,
+          weekNumber: week.weekNumber,
+          markerTopPx: markerOffset,
+          appointments: [],
+        };
+        currentWeeks.push(activeWeekSection);
+      }
+
+      activeWeekSection.appointments.push(appointment);
+      usedCapacity += appointmentHeight;
+      markerOffset += appointmentHeight;
+    }
   }
 
   flushPage();
 
-  if (pages.length > 0) {
-    return pages;
-  }
-
-  return [{
+  return pages.length > 0 ? pages : [{
     pageNumber: 1,
-    tourName: previewData.tour.name,
+    tourName: params.tourName,
     weeks: [],
   }];
+}
+
+export function buildTourenplanPrintPages(
+  previewData: TourenplanPreviewResponse,
+  appointmentItems: TourenplanAppointmentListItem[],
+): TourenplanPrintPageData[] {
+  const weeks = buildTourenplanWeekGroups(previewData, appointmentItems);
+  const cardHeights = Object.fromEntries(
+    weeks.flatMap((week) => week.appointments.map((appointment) => [appointment.id, estimateCardHeight(appointment)])),
+  );
+  return paginateTourenplanWeekGroups({
+    tourName: previewData.tour.name,
+    weeks,
+    pageCapacityPx: PAGE_CAPACITY_PX,
+    cardHeights,
+  });
 }

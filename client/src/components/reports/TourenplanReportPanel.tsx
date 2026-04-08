@@ -5,10 +5,13 @@ import { de } from "date-fns/locale";
 import type { z } from "zod";
 import { api } from "@shared/routes";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { TourenplanPaginationMeasurement } from "@/components/reports/TourenplanPaginationMeasurement";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { TourenplanPrintPage } from "@/components/reports/TourenplanPrintPage";
 import {
+  buildTourenplanWeekGroups,
   buildTourenplanPrintPages,
+  paginateTourenplanWeekGroups,
   type TourenplanAppointmentListItem,
   type TourenplanOrientation,
   type TourenplanPreviewResponse,
@@ -243,7 +246,7 @@ export function TourenplanReportPanel({
     queryFn: () => fetchJson(`/api/tours/${selectedTourId}/print-preview?fromDate=${previewRequest.fromDate}&weekCount=${previewRequest.weekCount}`),
   });
 
-  const { data: appointmentDetails = [] } = useQuery<TourenplanAppointmentListItem[]>({
+  const { data: appointmentDetails = [], isLoading: isAppointmentDetailsLoading } = useQuery<TourenplanAppointmentListItem[]>({
     queryKey: ["reports-tourenplan-appointments", selectedTourId, previewData?.fromDate, previewData?.toDate],
     enabled: isPreviewOpen && selectedTourId !== null && Boolean(previewData?.fromDate && previewData?.toDate),
     queryFn: () => fetchAllTourenplanAppointmentDetails({
@@ -253,10 +256,45 @@ export function TourenplanReportPanel({
     }),
   });
 
-  const pages = React.useMemo(
+  const measuredWeeks = React.useMemo(
+    () => previewData ? buildTourenplanWeekGroups(previewData, appointmentDetails) : [],
+    [appointmentDetails, previewData],
+  );
+  const estimatedPages = React.useMemo(
     () => previewData ? buildTourenplanPrintPages(previewData, appointmentDetails) : [],
     [appointmentDetails, previewData],
   );
+  const [paginationMeasurement, setPaginationMeasurement] = React.useState<{
+    pageCapacityPx: number;
+    cardHeights: Record<number, number>;
+  } | null>(null);
+
+  React.useEffect(() => {
+    setPaginationMeasurement(null);
+  }, [measuredWeeks, orientation, printMode, useShortCodes]);
+
+  const measuredPages = React.useMemo(
+    () => (
+      previewData && paginationMeasurement
+        ? paginateTourenplanWeekGroups({
+            tourName: previewData.tour.name,
+            weeks: measuredWeeks,
+            pageCapacityPx: paginationMeasurement.pageCapacityPx,
+            cardHeights: paginationMeasurement.cardHeights,
+          })
+        : []
+    ),
+    [measuredWeeks, paginationMeasurement, previewData],
+  );
+  const pages = React.useMemo(
+    () => (typeof window === "undefined" ? estimatedPages : measuredPages),
+    [estimatedPages, measuredPages],
+  );
+  const isPaginationMeasuring = typeof window !== "undefined"
+    && isPreviewOpen
+    && Boolean(previewData)
+    && !isAppointmentDetailsLoading
+    && paginationMeasurement === null;
 
   React.useEffect(() => {
     setActivePageIndex(0);
@@ -571,6 +609,28 @@ export function TourenplanReportPanel({
         )}
       </ReportConfigPanel>
 
+      {isPreviewOpen && previewData && !isAppointmentDetailsLoading ? (
+        <TourenplanPaginationMeasurement
+          tourName={previewData.tour.name}
+          weeks={measuredWeeks}
+          printMode={printMode}
+          orientation={orientation}
+          useShortCodes={useShortCodes}
+          onMeasured={(nextMeasurement) => {
+            setPaginationMeasurement((currentMeasurement) => {
+              if (
+                currentMeasurement
+                && currentMeasurement.pageCapacityPx === nextMeasurement.pageCapacityPx
+                && JSON.stringify(currentMeasurement.cardHeights) === JSON.stringify(nextMeasurement.cardHeights)
+              ) {
+                return currentMeasurement;
+              }
+              return nextMeasurement;
+            });
+          }}
+        />
+      ) : null}
+
       <PrintPreviewDialog
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
@@ -624,7 +684,7 @@ export function TourenplanReportPanel({
             testId={`tourenplan-print-page-${page.pageNumber}`}
           />
         )}
-        loadingState={isPreviewLoading ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
+        loadingState={isPreviewLoading || isPaginationMeasuring ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
         errorState={isPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
       />
     </>
