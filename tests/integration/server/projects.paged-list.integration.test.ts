@@ -251,7 +251,7 @@ describe("FT30 integration: paged projects list", () => {
       .expect(200);
 
     expect(response.body.project.projectArticleItems).toEqual([
-      { label: "Saunamodell", value: "FT30 Meta Sauna", source: "product", shortCode: "FT30-SP" },
+      { label: "Sauna", value: "FT30 Meta Sauna", source: "product", shortCode: "FT30-SP" },
       { label: "Ofen", value: "FT30 Meta Ofen", source: "component", shortCode: "FT30-OC" },
     ]);
   });
