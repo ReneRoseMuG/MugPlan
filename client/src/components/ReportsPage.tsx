@@ -1258,7 +1258,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     toDate: auftragslisteToDate,
     kwRange: auftragslisteKwRange,
   }), [activeAuftragslisteTab, auftragslisteFromDate, auftragslisteKwRange, auftragslisteToDate]);
-  const reportsPrintPageSize = isAuftragslistePrintPreviewOpen ? "A4 portrait" : "A4 landscape";
   const isVorlauflisteGenerateDisabled = activeVorlauflisteTab === "calendarWeek"
     ? !vorlauflisteKwRange
     : vorlauflisteFromDate.trim().length === 0;
@@ -1430,10 +1429,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
             <style>
               {`
                 @media print {
-                  @page {
-                    size: ${reportsPrintPageSize};
-                    margin: 1cm;
-                  }
                   body * {
                     visibility: hidden !important;
                   }

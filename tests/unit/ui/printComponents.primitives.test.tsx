@@ -5,8 +5,9 @@
  * - PrintPageShell rendert konsistente A4-Maße für portrait und landscape.
  * - PrintDayColumn rendert einen domainblinden Spaltenkopf.
  * - PrintAppointmentSlot rendert header, body und optionalen footer-Slot.
- * - PrintDocumentRoot erzeugt einen dedizierten Print-Root mit mehreren Seiten.
+ * - PrintDocumentRoot erzeugt einen dedizierten, offscreen layoutbaren Print-Root mit mehreren Seiten.
  * - PrintPreviewDialog zeigt Seitenzähler, Navigation, aktive Seite und optionale Header-Aktionen.
+ * - PrintPreviewDialog aktiviert den dedizierten Print-Root im echten Print-CSS-Pfad.
  *
  * Fehlerfälle:
  * - Die generische Seitenschale fällt auf pixelbasierte Altklassen zurück.
@@ -116,6 +117,9 @@ describe("generisches Print-System", () => {
     expect(html).toContain("print-document-root");
     expect(html).toContain("@page");
     expect(html).toContain("A4 landscape");
+    expect(html).toContain("position:fixed");
+    expect(html).toContain("left:-200vw");
+    expect(html).not.toContain('class="hidden"');
     expect(html.match(/print-document-page/g)?.length).toBe(2);
     expect(html).toContain(">a<");
     expect(html).toContain(">b<");
@@ -203,5 +207,49 @@ describe("generisches Print-System", () => {
 
     expect(html).toContain("A4 portrait");
     expect(html).not.toContain("A4 landscape");
+  });
+
+  it("PrintPreviewDialog rendert keinen dedizierten Druckroot, solange die Vorschau geschlossen ist", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <PrintPreviewDialog
+        open={false}
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+      />,
+    );
+
+    expect(html).not.toContain('aria-hidden="true" data-testid="print-document-root"');
+    expect(html).not.toContain("A4 landscape");
+  });
+
+  it("PrintPreviewDialog hebt den dedizierten Druckroot im Print-CSS aus dem Offscreen-Modus", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <PrintPreviewDialog
+        open
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+      />,
+    );
+
+    expect(html).toContain("body &gt; [data-testid=&quot;print-document-root&quot;]");
+    expect(html).toContain("position: static !important");
+    expect(html).toContain("opacity: 1 !important");
+    expect(html).toContain("pointer-events: auto !important");
   });
 });

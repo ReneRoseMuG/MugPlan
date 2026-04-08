@@ -29,13 +29,35 @@ export function PrintDocumentRoot<TPage>({
           }
         `}
       </style>
-      <div className="hidden" data-testid="print-document-root">
+      <div
+        aria-hidden="true"
+        data-testid="print-document-root"
+        style={{
+          position: "fixed",
+          left: "-200vw",
+          top: 0,
+          opacity: 0,
+          pointerEvents: "none",
+        }}
+      >
         {pages.map((page, index) => (
           <div
             key={getPageKey ? getPageKey(page, index) : index}
             data-testid="print-document-page"
           >
-            {renderPage(page, index)}
+            <div
+              data-print-page-shell="true"
+              style={{
+                display: "flex",
+                minHeight: "100%",
+                alignItems: "flex-start",
+                justifyContent: "center",
+                padding: "16px",
+                boxSizing: "border-box",
+              }}
+            >
+              {renderPage(page, index)}
+            </div>
           </div>
         ))}
       </div>

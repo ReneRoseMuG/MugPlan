@@ -13,6 +13,7 @@ import {
   buildTourenplanPrintPages,
   paginateTourenplanWeekGroups,
   type TourenplanAppointmentListItem,
+  type TourenplanFontSize,
   type TourenplanOrientation,
   type TourenplanPreviewResponse,
   type TourenplanPrintMode,
@@ -48,6 +49,7 @@ type TourenplanReportPanelProps = {
 
 const TOURENPLAN_RANGE_SETTING_KEY = "reports.tourenplan.rangeConfig";
 const TOURENPLAN_PRINT_MODE_SETTING_KEY = "reports.tourenplan.printMode";
+const TOURENPLAN_FONT_SIZE_SETTING_KEY = "reports.tourenplan.fontSize";
 
 function parseDateOnlyInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -154,6 +156,7 @@ export function TourenplanReportPanel({
   const { setSetting } = useSettings();
   const rangeConfig = useSetting(TOURENPLAN_RANGE_SETTING_KEY) as TourenplanRangeConfig | undefined;
   const configuredPrintMode = useSetting(TOURENPLAN_PRINT_MODE_SETTING_KEY) as TourenplanPrintMode | undefined;
+  const configuredFontSize = useSetting(TOURENPLAN_FONT_SIZE_SETTING_KEY) as TourenplanFontSize | undefined;
   const [selectedTourId, setSelectedTourId] = React.useState<number | null>(null);
   const [activeTab, setActiveTab] = React.useState<ReportConfigPanelMode>("date");
   const [fromDate, setFromDate] = React.useState(defaultReportRange.fromDate);
@@ -162,6 +165,7 @@ export function TourenplanReportPanel({
   const [weekCount, setWeekCount] = React.useState(defaultReportRange.weekCount);
   const [useShortCodes, setUseShortCodes] = React.useState(false);
   const [printMode, setPrintMode] = React.useState<TourenplanPrintMode>("farbdruck");
+  const [fontSize, setFontSize] = React.useState<TourenplanFontSize>("medium");
   const [orientation, setOrientation] = React.useState<TourenplanOrientation>("landscape");
   const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
   const [activePageIndex, setActivePageIndex] = React.useState(0);
@@ -189,6 +193,10 @@ export function TourenplanReportPanel({
   React.useEffect(() => {
     setPrintMode(configuredPrintMode ?? "farbdruck");
   }, [configuredPrintMode]);
+
+  React.useEffect(() => {
+    setFontSize(configuredFontSize ?? "medium");
+  }, [configuredFontSize]);
 
   const persistRangeConfig = React.useCallback(async (next: Partial<TourenplanRangeConfig>) => {
     await setSetting({
@@ -271,7 +279,7 @@ export function TourenplanReportPanel({
 
   React.useEffect(() => {
     setPaginationMeasurement(null);
-  }, [measuredWeeks, orientation, printMode, useShortCodes]);
+  }, [fontSize, measuredWeeks, orientation, printMode, useShortCodes]);
 
   const measuredPages = React.useMemo(
     () => (
@@ -395,17 +403,40 @@ export function TourenplanReportPanel({
         )}
         optionsSlot={(
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
-                <Checkbox
-                  checked={useShortCodes}
-                  onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
-                  data-testid="checkbox-reports-tourenplan-use-shortcodes"
-                />
-                <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-              </label>
-              {isAdmin ? (
-                <div className="ml-auto flex items-center gap-2" data-testid="reports-tourenplan-print-mode-toggle">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-[220px] flex-1 flex-col gap-3">
+                <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
+                  <Checkbox
+                    checked={useShortCodes}
+                    onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
+                    data-testid="checkbox-reports-tourenplan-use-shortcodes"
+                  />
+                  <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+                </label>
+              </div>
+              <div className="ml-auto flex min-w-[220px] flex-col items-end gap-2">
+                <div className="flex items-center justify-end gap-2" data-testid="reports-tourenplan-font-size-option">
+                  <span className="text-right text-sm text-slate-600">Schriftgröße</span>
+                  <Select
+                    value={fontSize}
+                    onValueChange={(value) => {
+                      const nextFontSize = value === "small" || value === "large" ? value : "medium";
+                      setFontSize(nextFontSize);
+                      void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[132px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
+                      <SelectValue placeholder="Schriftgröße" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isAdmin ? (
+                  <div className="flex items-start gap-2" data-testid="reports-tourenplan-print-mode-toggle">
                   <Button
                     type="button"
                     variant={printMode === "farbdruck" ? "default" : "outline"}
@@ -430,8 +461,9 @@ export function TourenplanReportPanel({
                   >
                     Spardruck
                   </Button>
-                </div>
-              ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
             {quickRangeOptions}
           </div>
@@ -614,6 +646,7 @@ export function TourenplanReportPanel({
           tourName={previewData.tour.name}
           weeks={measuredWeeks}
           printMode={printMode}
+          fontSize={fontSize}
           orientation={orientation}
           useShortCodes={useShortCodes}
           onMeasured={(nextMeasurement) => {
@@ -679,6 +712,7 @@ export function TourenplanReportPanel({
           <TourenplanPrintPage
             page={page}
             printMode={printMode}
+            fontSize={fontSize}
             orientation={orientation}
             useShortCodes={useShortCodes}
             testId={`tourenplan-print-page-${page.pageNumber}`}

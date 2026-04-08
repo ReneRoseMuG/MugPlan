@@ -18,10 +18,12 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
+import type { CustomerFilters } from "@/lib/customer-filters";
 
 type ViewMode = "board" | "table";
-type SortDirection = "asc" | "desc";
-type CustomerSortKey = "customerNumber" | "lastName" | "firstName" | "relevantAppointment";
+export type SortDirection = "asc" | "desc";
+export type CustomerSortKey = "customerNumber" | "lastName" | "firstName" | "relevantAppointment";
+export type CustomerScope = "active" | "inactive";
 
 type CustomerListItem = Customer & {
   notesCount: number;
@@ -55,6 +57,16 @@ interface CustomersPageProps {
   title?: string;
   showCloseButton?: boolean;
   tableOnly?: boolean;
+  filters?: CustomerFilters;
+  onFilterChange?: <K extends keyof CustomerFilters>(key: K, value: CustomerFilters[K]) => void;
+  page?: number;
+  onPageChange?: React.Dispatch<React.SetStateAction<number>>;
+  customerScope?: CustomerScope;
+  onCustomerScopeChange?: (scope: CustomerScope) => void;
+  sortKey?: CustomerSortKey;
+  onSortKeyChange?: (key: CustomerSortKey) => void;
+  sortDirection?: SortDirection;
+  onSortDirectionChange?: (direction: SortDirection) => void;
 }
 
 function parseViewMode(value: unknown): ViewMode {
@@ -80,6 +92,16 @@ export function CustomersPage({
   title,
   showCloseButton = true,
   tableOnly = false,
+  filters: controlledFilters,
+  onFilterChange,
+  page: controlledPage,
+  onPageChange,
+  customerScope: controlledCustomerScope,
+  onCustomerScopeChange,
+  sortKey: controlledSortKey,
+  onSortKeyChange,
+  sortDirection: controlledSortDirection,
+  onSortDirectionChange,
 }: CustomersPageProps) {
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "customers";
@@ -87,26 +109,31 @@ export function CustomersPage({
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
-  const {
-    filters,
-    setFilter,
-    page,
-    setPage,
-  } = useListFilters({
+  const internalListFilters = useListFilters<CustomerFilters>({
     initialFilters: defaultCustomerFilters,
   });
-  const [sortKey, setSortKey] = useState<CustomerSortKey>("customerNumber");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [internalSortKey, setInternalSortKey] = useState<CustomerSortKey>("customerNumber");
+  const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
-  const [customerScope, setCustomerScope] = useState<"active" | "inactive">("active");
+  const [internalCustomerScope, setInternalCustomerScope] = useState<CustomerScope>("active");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
+  const filters = controlledFilters ?? internalListFilters.filters;
+  const setFilter = onFilterChange ?? internalListFilters.setFilter;
+  const page = controlledPage ?? internalListFilters.page;
+  const setPage = onPageChange ?? internalListFilters.setPage;
+  const customerScope = controlledCustomerScope ?? internalCustomerScope;
+  const setCustomerScope = onCustomerScopeChange ?? setInternalCustomerScope;
+  const sortKey = controlledSortKey ?? internalSortKey;
+  const setSortKey = onSortKeyChange ?? setInternalSortKey;
+  const sortDirection = controlledSortDirection ?? internalSortDirection;
+  const setSortDirection = onSortDirectionChange ?? setInternalSortDirection;
 
   useEffect(() => {
     setViewMode(tableOnly ? "table" : resolvedViewMode);
   }, [resolvedViewMode, tableOnly]);
 
-  const effectiveCustomerScope = isAdmin ? customerScope : "active";
+  const effectiveCustomerScope: CustomerScope = isAdmin ? customerScope : "active";
 
   const customersQueryParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -213,7 +240,7 @@ export function CustomersPage({
 
   const handleSortToggle = (key: CustomerSortKey) => {
     if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
       return;
     }
     setSortKey(key);

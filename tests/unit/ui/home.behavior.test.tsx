@@ -203,7 +203,7 @@ describe("PKG-08 home behavior wiring", () => {
     const onOpenAppointment = appointmentsListCalls[0].onOpenAppointment as (appointmentId: number) => void;
     onOpenAppointment(77);
 
-    expect(setters.get(11)).toHaveBeenCalledWith({
+    expect(setters.get(25)).toHaveBeenCalledWith({
       origin: "appointmentsList",
       appointmentId: 77,
       returnContext: { targetView: "appointmentsList" },
@@ -214,7 +214,7 @@ describe("PKG-08 home behavior wiring", () => {
     const { Home } = await loadHome({
       1: fixedDate,
       2: "employees",
-      13: true,
+      27: true,
     });
 
     const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
@@ -269,7 +269,7 @@ describe("PKG-08 home behavior wiring", () => {
     const { Home, setters } = await loadHome({
       1: fixedDate,
       2: "appointmentsList",
-      11: {
+      25: {
         origin: "monitoring",
         appointmentId: 91,
         returnContext: { targetView: "monitoring" },
@@ -286,14 +286,14 @@ describe("PKG-08 home behavior wiring", () => {
 
     const onSaved = appointmentFormCalls[0].onSaved as () => void;
     onSaved();
-    expect(setters.get(11)).toHaveBeenCalledWith(null);
+    expect(setters.get(25)).toHaveBeenCalledWith(null);
   });
 
   it("restores the week scroll position when returning from the fullscreen appointment form", async () => {
     const { Home, setters } = await loadHome({
       1: fixedDate,
       2: "appointment",
-      10: {
+      24: {
         appointmentId: 12,
         returnContext: { targetView: "week" },
         weekScrollLeft: 144,
@@ -305,8 +305,8 @@ describe("PKG-08 home behavior wiring", () => {
     const onSaved = appointmentFormCalls[0].onSaved as () => void;
     onSaved();
 
-    expect(setters.get(12)).toHaveBeenCalledWith(144);
-    expect(setters.get(10)).toHaveBeenCalledWith(null);
+    expect(setters.get(26)).toHaveBeenCalledWith(144);
+    expect(setters.get(24)).toHaveBeenCalledWith(null);
     expect(setters.get(2)).toHaveBeenCalledWith("week");
   });
 
@@ -314,7 +314,7 @@ describe("PKG-08 home behavior wiring", () => {
     const { Home } = await loadHome({
       1: fixedDate,
       2: "week",
-      12: 88,
+      26: 88,
     });
 
     renderToStaticMarkup(<Home onLogout={() => undefined} />);

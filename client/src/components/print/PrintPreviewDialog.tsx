@@ -108,14 +108,28 @@ export function PrintPreviewDialog<TPage>({
                       display: block !important;
                     }
                     [data-testid="print-document-root"] {
+                      display: block !important;
                       background: white !important;
                       padding: 0 !important;
                       margin: 0 !important;
+                      position: static !important;
+                      left: auto !important;
+                      top: auto !important;
+                      opacity: 1 !important;
+                      pointer-events: auto !important;
+                      overflow: visible !important;
                     }
                     [data-testid="print-document-page"] {
                       display: block !important;
                       break-after: page;
                       page-break-after: always;
+                    }
+                    [data-print-page-shell="true"] {
+                      display: flex !important;
+                      min-height: 0 !important;
+                      align-items: flex-start !important;
+                      justify-content: center !important;
+                      padding: 0 !important;
                     }
                     [data-testid="print-document-page"]:last-child {
                       break-after: auto;
@@ -162,12 +176,14 @@ export function PrintPreviewDialog<TPage>({
         </DialogContent>
       </Dialog>
 
-      <PrintDocumentRoot
-        pages={pages}
-        renderPage={renderPage}
-        getPageKey={getPageKey}
-        pageOrientation={pageOrientation}
-      />
+      {open && pages.length > 0 ? (
+        <PrintDocumentRoot
+          pages={pages}
+          renderPage={renderPage}
+          getPageKey={getPageKey}
+          pageOrientation={pageOrientation}
+        />
+      ) : null}
     </>
   );
 }

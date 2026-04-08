@@ -13,6 +13,7 @@ import { formatEmployeeShortName, stripHtmlToText } from "@/lib/tour-print-previ
 
 export type TourenplanPrintMode = "farbdruck" | "spardruck";
 export type TourenplanOrientation = "landscape" | "portrait";
+export type TourenplanFontSize = "small" | "medium" | "large";
 export type TourenplanPreviewResponse = z.infer<typeof api.tourPrintPreview.get.responses[200]>;
 export type TourenplanPreviewAppointment = TourenplanPreviewResponse["appointments"][number];
 export type TourenplanAppointmentListResponse = z.infer<typeof api.appointments.list.responses[200]>;

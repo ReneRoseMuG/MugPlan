@@ -50,6 +50,7 @@ type ListViewMode = (typeof listViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
+const tourenplanFontSizeOptions = ["small", "medium", "large"] as const;
 type VorlauflisteCategorySelection = {
   columnOrder?: string[];
   hiddenColumns?: string[];
@@ -65,6 +66,7 @@ type AuftragslisteSelection = {
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = (typeof tourenplanPrintModeOptions)[number];
+type TourenplanFontSize = (typeof tourenplanFontSizeOptions)[number];
 type LegacyProduktionsplanungSelection = {
   productCategoryIds: number[];
   componentCategoryIds: number[];
@@ -701,6 +703,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is TourenplanPrintMode =>
       typeof value === "string" && tourenplanPrintModeOptions.includes(value as TourenplanPrintMode),
+  },
+  reportsTourenplanFontSize: {
+    key: "reports.tourenplan.fontSize",
+    label: "Tourenplan Schriftgröße",
+    description: "Steuert benutzerspezifisch die Schriftgröße des Tourenplans in Vorschau und Druck.",
+    type: "enum",
+    options: tourenplanFontSizeOptions,
+    defaultValue: "medium",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is TourenplanFontSize =>
+      typeof value === "string" && tourenplanFontSizeOptions.includes(value as TourenplanFontSize),
   },
   reportsCategoryLayout: {
     key: "reports.categoryLayout",

@@ -21,6 +21,7 @@ type AuftragslisteSelection = {
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = "farbdruck" | "spardruck";
+type TourenplanFontSize = "small" | "medium" | "large";
 type ReportRangeConfig = {
   activeTab?: "date" | "calendarWeek";
   fromDate?: string;
@@ -69,6 +70,7 @@ export type UserSettingKey =
   | "reports.auftragsliste.rangeConfig"
   | "reports.tourenplan.rangeConfig"
   | "reports.tourenplan.printMode"
+  | "reports.tourenplan.fontSize"
   | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
@@ -99,6 +101,7 @@ type UserSettingValueByKey = {
   "reports.auftragsliste.rangeConfig": AuftragslisteRangeConfig;
   "reports.tourenplan.rangeConfig": TourenplanRangeConfig;
   "reports.tourenplan.printMode": TourenplanPrintMode;
+  "reports.tourenplan.fontSize": TourenplanFontSize;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
 
@@ -306,6 +309,13 @@ export function resolveTourenplanPrintMode(value: unknown): TourenplanPrintMode 
   return value === "spardruck" ? "spardruck" : "farbdruck";
 }
 
+export function resolveTourenplanFontSize(value: unknown): TourenplanFontSize {
+  if (value === "small" || value === "large") {
+    return value;
+  }
+  return "medium";
+}
+
 export function resolveLegacyProduktionsplanungSelection(value: unknown): LegacyProduktionsplanungSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false, sonderblockTagIds: [] };
@@ -444,6 +454,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "reports.tourenplan.printMode") {
       return resolveTourenplanPrintMode(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "reports.tourenplan.fontSize") {
+      return resolveTourenplanFontSize(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.categoryLayout") {
       return resolveCategoryLayoutConfig(setting?.resolvedValue) as UserSettingValueByKey[K];
