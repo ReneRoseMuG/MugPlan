@@ -33,6 +33,7 @@ import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
 import type { Employee, Tag, Team } from "@shared/schema";
+import type { EmployeeFilters } from "@/lib/employee-filters";
 
 interface EmployeesPageProps {
   onClose?: () => void;
@@ -40,11 +41,20 @@ interface EmployeesPageProps {
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
   initialEmployeeId?: number | null;
   onEditingChange?: (isEditing: boolean) => void;
+  filters?: EmployeeFilters;
+  onFilterChange?: <K extends keyof EmployeeFilters>(key: K, value: EmployeeFilters[K]) => void;
+  employeeScope?: EmployeeScope;
+  onEmployeeScopeChange?: (scope: EmployeeScope) => void;
+  sortKey?: EmployeeSortKey;
+  onSortKeyChange?: (key: EmployeeSortKey) => void;
+  sortDirection?: SortDirection;
+  onSortDirectionChange?: (direction: SortDirection) => void;
 }
 
 type ViewMode = "board" | "table";
-type SortDirection = "asc" | "desc";
-type EmployeeSortKey = "lastName" | "firstName" | "team";
+export type SortDirection = "asc" | "desc";
+export type EmployeeSortKey = "lastName" | "firstName" | "team";
+export type EmployeeScope = "active" | "inactive";
 type EmployeeAppointmentSummary = CalendarAppointment & { startTimeHour: number | null };
 type EmployeeListItem = Employee & { tags: Tag[]; notesCount: number; attachmentsCount: number };
 
@@ -91,7 +101,21 @@ function extractApiCode(error: unknown): string | null {
   return match?.[1] ?? null;
 }
 
-export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmployeeId = null, onEditingChange }: EmployeesPageProps) {
+export function EmployeesPage({
+  onClose,
+  onCancel,
+  onOpenAppointment,
+  initialEmployeeId = null,
+  onEditingChange,
+  filters: controlledFilters,
+  onFilterChange,
+  employeeScope: controlledEmployeeScope,
+  onEmployeeScopeChange,
+  sortKey: controlledSortKey,
+  onSortKeyChange,
+  sortDirection: controlledSortDirection,
+  onSortDirectionChange,
+}: EmployeesPageProps) {
   const handleClose = onClose || onCancel;
   const { toast } = useToast();
   const { settingsByKey, setSetting } = useSettings();
@@ -100,12 +124,12 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
 
   const [viewMode, setViewMode] = useState<ViewMode>(resolvedViewMode);
-  const [employeeScope, setEmployeeScope] = useState<"active" | "inactive">("active");
-  const { filters, setFilter } = useListFilters({
+  const [internalEmployeeScope, setInternalEmployeeScope] = useState<EmployeeScope>("active");
+  const internalListFilters = useListFilters<EmployeeFilters>({
     initialFilters: defaultEmployeeFilters,
   });
-  const [sortKey, setSortKey] = useState<EmployeeSortKey>("lastName");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [internalSortKey, setInternalSortKey] = useState<EmployeeSortKey>("lastName");
+  const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
   const berlinToday = getBerlinTodayDateString();
@@ -113,6 +137,14 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
   const [isCreating, setIsCreating] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importResetSignal, setImportResetSignal] = useState(0);
+  const filters = controlledFilters ?? internalListFilters.filters;
+  const setFilter = onFilterChange ?? internalListFilters.setFilter;
+  const employeeScope = controlledEmployeeScope ?? internalEmployeeScope;
+  const setEmployeeScope = onEmployeeScopeChange ?? setInternalEmployeeScope;
+  const sortKey = controlledSortKey ?? internalSortKey;
+  const setSortKey = onSortKeyChange ?? setInternalSortKey;
+  const sortDirection = controlledSortDirection ?? internalSortDirection;
+  const setSortDirection = onSortDirectionChange ?? setInternalSortDirection;
 
   useEffect(() => {
     if (typeof initialEmployeeId !== "number") return;
@@ -266,7 +298,7 @@ export function EmployeesPage({ onClose, onCancel, onOpenAppointment, initialEmp
 
   const handleSortToggle = (key: EmployeeSortKey) => {
     if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
       return;
     }
     setSortKey(key);

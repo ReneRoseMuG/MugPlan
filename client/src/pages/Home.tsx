@@ -4,14 +4,19 @@ import { CalendarWorkspace } from "@/components/CalendarWorkspace";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { CustomerData } from "@/components/CustomerData";
-import { CustomersPage } from "@/components/CustomersPage";
+import { CustomersPage, type CustomerScope, type CustomerSortKey, type SortDirection as CustomerSortDirection } from "@/components/CustomersPage";
 import { TourManagement } from "@/components/TourManagement";
 import { TeamManagement } from "@/components/TeamManagement";
-import { EmployeesPage } from "@/components/EmployeesPage";
+import { EmployeesPage, type EmployeeScope, type EmployeeSortKey, type SortDirection as EmployeeSortDirection } from "@/components/EmployeesPage";
 import { ProjectForm } from "@/components/ProjectForm";
-import { ProjectsPage } from "@/components/ProjectsPage";
+import { ProjectsPage, type ProjectSortKey, type SortDirection as ProjectSortDirection } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
-import { AppointmentsListPage } from "@/components/AppointmentsListPage";
+import {
+  AppointmentsListPage,
+  type AppointmentListFilters,
+  type AppointmentListSortDirection,
+  type AppointmentListSortKey,
+} from "@/components/AppointmentsListPage";
 import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
 import { DemoDataPage } from "@/components/DemoDataPage";
@@ -21,6 +26,10 @@ import { ReportsPage } from "@/components/ReportsPage";
 import { MonitoringPage } from "@/components/MonitoringPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
+import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
+import { defaultCustomerFilters, type CustomerFilters } from "@/lib/customer-filters";
+import { defaultEmployeeFilters, type EmployeeFilters } from "@/lib/employee-filters";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
@@ -105,6 +114,52 @@ export default function Home({ onLogout }: HomeProps) {
   const { filters: calendarFilters, setFilter: setCalendarFilter } = useListFilters({
     initialFilters: { employeeId: null as number | null },
   });
+  const {
+    filters: projectFilters,
+    setFilter: setProjectFilter,
+    page: projectPage,
+    setPage: setProjectPage,
+  } = useListFilters<ProjectFilters>({
+    initialFilters: defaultProjectFilters,
+  });
+  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
+  const [projectSortKey, setProjectSortKey] = useState<ProjectSortKey>("title");
+  const [projectSortDirection, setProjectSortDirection] = useState<ProjectSortDirection>("asc");
+  const {
+    filters: customerFilters,
+    setFilter: setCustomerFilter,
+    page: customerPage,
+    setPage: setCustomerPage,
+  } = useListFilters<CustomerFilters>({
+    initialFilters: defaultCustomerFilters,
+  });
+  const [customerScope, setCustomerScope] = useState<CustomerScope>("active");
+  const [customerSortKey, setCustomerSortKey] = useState<CustomerSortKey>("customerNumber");
+  const [customerSortDirection, setCustomerSortDirection] = useState<CustomerSortDirection>("asc");
+  const [appointmentListFilters, setAppointmentListFilters] = useState<AppointmentListFilters>({
+    employeeId: undefined,
+    projectTitle: "",
+    customerLastName: "",
+    customerNumber: "",
+    orderNumber: "",
+    tagIds: [],
+    tourId: undefined,
+    dateFrom: getBerlinTodayDateString(),
+    dateTo: undefined,
+  });
+  const [appointmentListPage, setAppointmentListPage] = useState(1);
+  const [appointmentListSortKey, setAppointmentListSortKey] = useState<AppointmentListSortKey>("date");
+  const [appointmentListSortDirection, setAppointmentListSortDirection] = useState<AppointmentListSortDirection>("asc");
+  const [appointmentListShowAll, setAppointmentListShowAll] = useState(false);
+  const {
+    filters: employeeFilters,
+    setFilter: setEmployeeFilter,
+  } = useListFilters<EmployeeFilters>({
+    initialFilters: defaultEmployeeFilters,
+  });
+  const [employeeScope, setEmployeeScope] = useState<EmployeeScope>("active");
+  const [employeeSortKey, setEmployeeSortKey] = useState<EmployeeSortKey>("lastName");
+  const [employeeSortDirection, setEmployeeSortDirection] = useState<EmployeeSortDirection>("asc");
   const [appointmentContext, setAppointmentContext] = useState<{
     initialDate?: string;
     initialTourId?: number | null;
@@ -270,6 +325,16 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === "customerList" ? (
             <CustomersPage
+              filters={customerFilters}
+              onFilterChange={setCustomerFilter}
+              page={customerPage}
+              onPageChange={setCustomerPage}
+              customerScope={customerScope}
+              onCustomerScopeChange={setCustomerScope}
+              sortKey={customerSortKey}
+              onSortKeyChange={setCustomerSortKey}
+              sortDirection={customerSortDirection}
+              onSortDirectionChange={setCustomerSortDirection}
               onNewCustomer={() => { setSelectedCustomerId(null); setView("customer"); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView("customer"); }}
             />
@@ -295,6 +360,14 @@ export default function Home({ onLogout }: HomeProps) {
             <EmployeesPage
               initialEmployeeId={selectedEmployeeId}
               onEditingChange={setEmployeeFormVisible}
+              filters={employeeFilters}
+              onFilterChange={setEmployeeFilter}
+              employeeScope={employeeScope}
+              onEmployeeScopeChange={setEmployeeScope}
+              sortKey={employeeSortKey}
+              onSortKeyChange={setEmployeeSortKey}
+              sortDirection={employeeSortDirection}
+              onSortDirectionChange={setEmployeeSortDirection}
               onOpenAppointment={(appointmentId, context) => {
                 setAppointmentOverlayContext({
                   origin: "employeeAppointments",
@@ -310,6 +383,16 @@ export default function Home({ onLogout }: HomeProps) {
             <AppointmentsListPage
               helpKey="appointments.list.mainNavigation"
               context={{ type: "standalone" }}
+              filters={appointmentListFilters}
+              onFiltersChange={(patch) => setAppointmentListFilters((current: AppointmentListFilters) => ({ ...current, ...patch }))}
+              page={appointmentListPage}
+              onPageChange={setAppointmentListPage}
+              sortKey={appointmentListSortKey}
+              onSortKeyChange={setAppointmentListSortKey}
+              sortDirection={appointmentListSortDirection}
+              onSortDirectionChange={setAppointmentListSortDirection}
+              showAllAppointments={appointmentListShowAll}
+              onShowAllAppointmentsChange={setAppointmentListShowAll}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentOverlayContext({
                   origin: "appointmentsList",
@@ -320,6 +403,16 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === "projectList" ? (
             <ProjectsPage
+              filters={projectFilters}
+              onFilterChange={setProjectFilter}
+              page={projectPage}
+              onPageChange={setProjectPage}
+              projectScope={projectScope}
+              onProjectScopeChange={setProjectScope}
+              sortKey={projectSortKey}
+              onSortKeyChange={setProjectSortKey}
+              sortDirection={projectSortDirection}
+              onSortDirectionChange={setProjectSortDirection}
               onNewProject={() => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />

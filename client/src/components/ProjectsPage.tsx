@@ -21,8 +21,8 @@ import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 
 type ViewMode = "board" | "table";
-type SortDirection = "asc" | "desc";
-type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
+export type SortDirection = "asc" | "desc";
+export type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
 
 type ProjectListItem = Project & {
   notesCount: number;
@@ -61,6 +61,16 @@ interface ProjectsPageProps {
   title?: string;
   showCloseButton?: boolean;
   tableOnly?: boolean;
+  filters?: ProjectFilters;
+  onFilterChange?: <K extends keyof ProjectFilters>(key: K, value: ProjectFilters[K]) => void;
+  page?: number;
+  onPageChange?: React.Dispatch<React.SetStateAction<number>>;
+  projectScope?: ProjectScope;
+  onProjectScopeChange?: (scope: ProjectScope) => void;
+  sortKey?: ProjectSortKey;
+  onSortKeyChange?: (key: ProjectSortKey) => void;
+  sortDirection?: SortDirection;
+  onSortDirectionChange?: (direction: SortDirection) => void;
 }
 
 function parseViewMode(value: unknown): ViewMode {
@@ -95,6 +105,16 @@ export function ProjectsPage({
   title,
   showCloseButton = true,
   tableOnly = false,
+  filters: controlledFilters,
+  onFilterChange,
+  page: controlledPage,
+  onPageChange,
+  projectScope: controlledProjectScope,
+  onProjectScopeChange,
+  sortKey: controlledSortKey,
+  onSortKeyChange,
+  sortDirection: controlledSortDirection,
+  onSortDirectionChange,
 }: ProjectsPageProps) {
   const { settingsByKey, setSetting } = useSettings();
   const viewModeKey = "projects";
@@ -103,17 +123,22 @@ export function ProjectsPage({
 
   const [viewMode, setViewMode] = useState<ViewMode>(tableOnly ? "table" : resolvedViewMode);
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const {
-    filters,
-    setFilter,
-    page,
-    setPage,
-  } = useListFilters<ProjectFilters>({
+  const internalListFilters = useListFilters<ProjectFilters>({
     initialFilters: defaultProjectFilters,
   });
-  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
-  const [sortKey, setSortKey] = useState<ProjectSortKey>("title");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [internalProjectScope, setInternalProjectScope] = useState<ProjectScope>("upcoming");
+  const [internalSortKey, setInternalSortKey] = useState<ProjectSortKey>("title");
+  const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
+  const filters = controlledFilters ?? internalListFilters.filters;
+  const setFilter = onFilterChange ?? internalListFilters.setFilter;
+  const page = controlledPage ?? internalListFilters.page;
+  const setPage = onPageChange ?? internalListFilters.setPage;
+  const projectScope = controlledProjectScope ?? internalProjectScope;
+  const setProjectScope = onProjectScopeChange ?? setInternalProjectScope;
+  const sortKey = controlledSortKey ?? internalSortKey;
+  const setSortKey = onSortKeyChange ?? setInternalSortKey;
+  const sortDirection = controlledSortDirection ?? internalSortDirection;
+  const setSortDirection = onSortDirectionChange ?? setInternalSortDirection;
 
   useEffect(() => {
     setViewMode(tableOnly ? "table" : resolvedViewMode);
@@ -184,7 +209,7 @@ export function ProjectsPage({
 
   const handleSortToggle = (key: ProjectSortKey) => {
     if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
       return;
     }
     setSortKey(key);

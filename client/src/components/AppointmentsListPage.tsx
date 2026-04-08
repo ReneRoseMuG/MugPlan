@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   AppointmentsFilterPanel,
   type AppointmentListFilters,
 } from "@/components/ui/filter-panels/appointments-filter-panel";
+export type { AppointmentListFilters } from "@/components/ui/filter-panels/appointments-filter-panel";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -32,8 +33,8 @@ type AppointmentListResponse = {
   items: AppointmentListItem[];
 };
 
-type SortDirection = "asc" | "desc";
-type SortKey = "date" | "customer" | "customerNumber" | "orderNumber";
+export type AppointmentListSortDirection = "asc" | "desc";
+export type AppointmentListSortKey = "date" | "customer" | "customerNumber" | "orderNumber";
 
 export type AppointmentsListContext =
   | { type: "standalone" }
@@ -59,11 +60,21 @@ interface AppointmentsListPageProps {
   className?: string;
   onRemoveEmployee?: (appointmentId: number, version: number) => void;
   splitDateRangeRow?: boolean;
+  filters?: AppointmentListFilters;
+  onFiltersChange?: (patch: Partial<AppointmentListFilters>) => void;
+  page?: number;
+  onPageChange?: React.Dispatch<React.SetStateAction<number>>;
+  sortKey?: AppointmentListSortKey;
+  onSortKeyChange?: (key: AppointmentListSortKey) => void;
+  sortDirection?: AppointmentListSortDirection;
+  onSortDirectionChange?: (direction: AppointmentListSortDirection) => void;
+  showAllAppointments?: boolean;
+  onShowAllAppointmentsChange?: (checked: boolean) => void;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
 
-function SortIcon({ direction }: { direction: SortDirection | null }) {
+function SortIcon({ direction }: { direction: AppointmentListSortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
   if (direction === "desc") return <ArrowDown className="w-3.5 h-3.5" />;
   return <ArrowUpDown className="w-3.5 h-3.5" />;
@@ -131,6 +142,16 @@ export function AppointmentsListPage({
   className,
   onRemoveEmployee,
   splitDateRangeRow = false,
+  filters: controlledFilters,
+  onFiltersChange,
+  page: controlledPage,
+  onPageChange,
+  sortKey: controlledSortKey,
+  onSortKeyChange,
+  sortDirection: controlledSortDirection,
+  onSortDirectionChange,
+  showAllAppointments: controlledShowAllAppointments,
+  onShowAllAppointmentsChange,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -143,14 +164,14 @@ export function AppointmentsListPage({
   const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
 
   const todayBerlin = getBerlinTodayDateString();
-  const [page, setPage] = useState(1);
-  const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [showAllAppointments, setShowAllAppointments] = useState(false);
+  const [internalPage, setInternalPage] = useState(1);
+  const [internalSortKey, setInternalSortKey] = useState<AppointmentListSortKey>("date");
+  const [internalSortDirection, setInternalSortDirection] = useState<AppointmentListSortDirection>("asc");
+  const [internalShowAllAppointments, setInternalShowAllAppointments] = useState(false);
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
-  const [filters, setFilters] = useState<AppointmentListFilters>({
+  const [internalFilters, setInternalFilters] = useState<AppointmentListFilters>({
     employeeId: resolvedEmployeeId,
     projectTitle: "",
     customerLastName: "",
@@ -161,26 +182,43 @@ export function AppointmentsListPage({
     dateFrom: todayBerlin,
     dateTo: undefined,
   });
+  const filters = controlledFilters ?? internalFilters;
+  const page = controlledPage ?? internalPage;
+  const setPage = onPageChange ?? setInternalPage;
+  const sortKey = controlledSortKey ?? internalSortKey;
+  const setSortKey = onSortKeyChange ?? setInternalSortKey;
+  const sortDirection = controlledSortDirection ?? internalSortDirection;
+  const setSortDirection = onSortDirectionChange ?? setInternalSortDirection;
+  const showAllAppointments = controlledShowAllAppointments ?? internalShowAllAppointments;
+  const setShowAllAppointments = onShowAllAppointmentsChange ?? setInternalShowAllAppointments;
+
+  const applyFiltersPatch = useCallback((patch: Partial<AppointmentListFilters>) => {
+    if (onFiltersChange) {
+      onFiltersChange(patch);
+      return;
+    }
+    setInternalFilters((current) => ({ ...current, ...patch }));
+  }, [onFiltersChange]);
 
   useEffect(() => {
-    setFilters((current) => ({ ...current, tourId: resolvedTourId ?? undefined }));
+    if (filters.tourId === (resolvedTourId ?? undefined)) return;
+    applyFiltersPatch({ tourId: resolvedTourId ?? undefined });
     setPage(1);
-  }, [resolvedTourId]);
+  }, [applyFiltersPatch, filters.tourId, resolvedTourId, setPage]);
 
   useEffect(() => {
     if (!isEmployeeContext) return;
-    setFilters((current) => ({ ...current, employeeId: resolvedEmployeeId }));
+    if (filters.employeeId === resolvedEmployeeId) return;
+    applyFiltersPatch({ employeeId: resolvedEmployeeId });
     setPage(1);
-  }, [isEmployeeContext, resolvedEmployeeId]);
+  }, [applyFiltersPatch, filters.employeeId, isEmployeeContext, resolvedEmployeeId, setPage]);
 
   useEffect(() => {
     if (showAllAppointments) return;
     if (!resolvedEnforceFromToday) return;
-    setFilters((current) => {
-      if (current.dateFrom === todayBerlin) return current;
-      return { ...current, dateFrom: todayBerlin };
-    });
-  }, [resolvedEnforceFromToday, showAllAppointments, todayBerlin]);
+    if (filters.dateFrom === todayBerlin) return;
+    applyFiltersPatch({ dateFrom: todayBerlin });
+  }, [applyFiltersPatch, filters.dateFrom, resolvedEnforceFromToday, showAllAppointments, todayBerlin]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -243,16 +281,16 @@ export function AppointmentsListPage({
     });
   }, [data?.items, resolvedTourId, sortDirection, sortKey]);
 
-  const toggleSort = (key: SortKey) => {
+  const toggleSort = (key: AppointmentListSortKey) => {
     if (sortKey === key) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
       return;
     }
     setSortKey(key);
     setSortDirection("asc");
   };
 
-  const renderSortHeader = (label: string, key: SortKey) => (
+  const renderSortHeader = (label: string, key: AppointmentListSortKey) => (
     <button
       type="button"
       className="inline-flex items-center gap-1 text-xs tracking-wide"
@@ -361,16 +399,15 @@ export function AppointmentsListPage({
     const nextPatch = resolvedEmployeeId == null
       ? patchWithTour
       : { ...patchWithTour, employeeId: resolvedEmployeeId };
-    setFilters((current) => ({ ...current, ...nextPatch }));
+    applyFiltersPatch(nextPatch);
     setPage(1);
   };
 
   const handleShowAllAppointmentsChange = (checked: boolean) => {
     setShowAllAppointments(checked);
-    setFilters((current) => ({
-      ...current,
+    applyFiltersPatch({
       dateFrom: checked ? undefined : todayBerlin,
-    }));
+    });
     setPage(1);
   };
 
