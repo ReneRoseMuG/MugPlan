@@ -52,53 +52,57 @@ export function TourenplanPrintPage({
     <PrintPageShell
       orientation={orientation}
       paddingMm={10}
+      pageGapClassName="gap-2.5"
+      contentGapClassName="gap-2"
       testId={testId}
       footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={testId ? `${testId}-footer` : undefined} />}
     >
-      <header
-        className="border-b border-slate-200 pb-1.5 text-[10px] font-medium text-slate-500"
-        data-testid={testId ? `${testId}-header` : undefined}
-      >
-        {page.tourName}
-      </header>
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <header
+          className="border-b border-slate-200 pb-1 text-[10px] font-medium text-slate-500"
+          data-testid={testId ? `${testId}-header` : undefined}
+        >
+          {page.tourName}
+        </header>
 
-      <div ref={contentRef} className="mt-3 flex min-h-0 flex-1 gap-0">
-        <aside className="relative mr-2.5 w-7 shrink-0" data-testid={testId ? `${testId}-kw-rail` : undefined}>
-          <div className="absolute bottom-1.5 left-[13px] top-1.5 w-0.5 rounded-sm bg-slate-200" />
-          {page.weeks.map((week) => (
-            <div
-              key={week.weekStart}
-              className="absolute left-0 flex flex-col items-center gap-[3px]"
-              style={{ top: markerTops[week.weekStart] ?? week.markerTopPx }}
-              data-testid={testId ? `${testId}-kw-marker-${week.weekNumber}` : undefined}
-            >
-              <div className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+        <div ref={contentRef} className="flex min-h-0 flex-1 gap-0">
+          <aside className="relative mr-2.5 w-7 shrink-0" data-testid={testId ? `${testId}-kw-rail` : undefined}>
+            <div className="absolute bottom-1 left-[13px] top-1 w-0.5 rounded-sm bg-slate-200" />
+            {page.weeks.map((week) => (
               <div
-                className="mt-0.5 text-[9px] font-semibold tracking-[0.05em] text-slate-500"
-                style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", lineHeight: 1 }}
+                key={week.weekStart}
+                className="absolute left-0 flex flex-col items-center gap-[3px]"
+                style={{ top: markerTops[week.weekStart] ?? week.markerTopPx }}
+                data-testid={testId ? `${testId}-kw-marker-${week.weekNumber}` : undefined}
               >
-                {`KW ${week.weekNumber}`}
+                <div className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                <div
+                  className="mt-0.5 text-[9px] font-semibold tracking-[0.05em] text-slate-500"
+                  style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", lineHeight: 1 }}
+                >
+                  {`KW ${week.weekNumber}`}
+                </div>
               </div>
-            </div>
-          ))}
-        </aside>
+            ))}
+          </aside>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-          {page.weeks.map((week, weekIndex) => (
-            <React.Fragment key={week.weekStart}>
-              {week.appointments.map((appointment, appointmentIndex) => (
-                <TourenplanAppointmentCard
-                  key={appointment.id}
-                  appointment={appointment}
-                  printMode={printMode}
-                  useShortCodes={useShortCodes}
-                  dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
-                  testId={testId ? `${testId}-appointment-${appointment.id}` : undefined}
-                />
-              ))}
-              {weekIndex < page.weeks.length - 1 ? <div className="h-2.5" /> : null}
-            </React.Fragment>
-          ))}
+          <div className="flex min-h-0 flex-1 flex-col gap-1.5">
+            {page.weeks.map((week, weekIndex) => (
+              <React.Fragment key={week.weekStart}>
+                {week.appointments.map((appointment, appointmentIndex) => (
+                  <TourenplanAppointmentCard
+                    key={appointment.id}
+                    appointment={appointment}
+                    printMode={printMode}
+                    useShortCodes={useShortCodes}
+                    dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
+                    testId={testId ? `${testId}-appointment-${appointment.id}` : undefined}
+                  />
+                ))}
+                {weekIndex < page.weeks.length - 1 ? <div className="h-2.5" /> : null}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
     </PrintPageShell>

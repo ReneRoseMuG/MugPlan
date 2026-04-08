@@ -5,11 +5,13 @@
  * - Die Tourenplan-Karte unterscheidet Farb- und Sparmodus sichtbar.
  * - Der Komponentenfilter blendet Sauna-Produkte aus.
  * - Der Shortcode-Modus ersetzt Artikelnamen nur bei vorhandenen Shortcodes.
+ * - Reklamation erscheint nicht mehr als Headertext, bleibt aber als Kartenmarkierung sichtbar.
  *
  * Fehlerfaelle:
  * - Der Kartenmodus rendert denselben Header fuer beide Druckvarianten.
  * - Sauna-Eintraege aus der Produktkategorie erscheinen in der Tourenplan-Artikelliste.
  * - Shortcodes werden ignoriert oder ersetzen leere Codes.
+ * - Reklamation wird im Datumsheader statt nur im Karteninhalt dargestellt.
  *
  * Ziel:
  * Die neue Tourenplan-Karte in Isolation regressionssicher absichern.
@@ -78,6 +80,7 @@ describe("UI: TourenplanAppointmentCard", () => {
     );
 
     expect(html).toContain('data-tourenplan-print-mode="farbdruck"');
+    expect(html).toContain("14.04.26 | 2 Tage");
     expect(html).toContain("Sondermaß");
     expect(html).toContain("Harvia 20");
     expect(html).toContain("Xenio 3");
@@ -108,5 +111,29 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).not.toContain("Harvia 20");
     expect(html).not.toContain("Xenio 3");
     expect(html).not.toContain("Panorama Sauna");
+  });
+
+  it("keeps Reklamation out of the header while showing the note content", () => {
+    const html = renderToStaticMarkup(
+      <TourenplanAppointmentCard
+        appointment={{
+          ...appointment,
+          durationDays: 1,
+          appointmentTags: [{ id: 8, name: "Reklamation", color: "#f97316", isDefault: false, version: 1 }],
+          customerTags: [],
+          projectTags: [],
+          projectDescription: null,
+        }}
+        printMode="farbdruck"
+        useShortCodes={false}
+        testId="tourenplan-card"
+      />,
+    );
+
+    expect(html).toContain("14.04.26 | 1 Tag");
+    expect(html).not.toContain("| Reklamation");
+    expect(html).toContain(">Reklamation<");
+    expect(html).toContain("Vorbesprechung Kunde");
+    expect(html).toContain("Kran erforderlich.");
   });
 });

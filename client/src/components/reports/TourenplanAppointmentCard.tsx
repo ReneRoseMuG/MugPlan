@@ -3,7 +3,7 @@ import { renderSelectiveProjectArticleListSection } from "@/components/ui/projec
 import type { TourenplanPrintMode, TourenplanResolvedAppointment } from "@/components/reports/tourenplan-model";
 import {
   formatTourenplanEmployeeBadges,
-  formatTourenplanHeaderDate,
+  formatTourenplanDate,
   formatTourenplanLocationLines,
   formatTourenplanProjectDescription,
   resolveTourenplanTagPresentation,
@@ -17,6 +17,8 @@ type TourenplanAppointmentCardProps = {
   dataKwStart?: string;
   testId?: string;
 };
+
+const TOURENPLAN_CARD_GRID_COLUMNS = "132px 164px minmax(0, 1.3fr) minmax(0, 1fr) 92px";
 
 function headerCellStyle(borderColor: string) {
   return {
@@ -45,12 +47,20 @@ export function TourenplanAppointmentCard({
   const tagPresentation = resolveTourenplanTagPresentation(appointment, printMode);
   const locationLines = formatTourenplanLocationLines(appointment.customer);
   const employeeBadges = formatTourenplanEmployeeBadges(appointment.employees);
+  const projectDescription = formatTourenplanProjectDescription(appointment.projectDescription);
+  const hasProjectDescription = stripHtmlToText(appointment.projectDescription).length > 0;
   const articleSection = renderSelectiveProjectArticleListSection({
     articleItems: appointment.projectArticleItems,
     articleListOptions: { filter: "components", useShortCodes },
     articleListClassName: "list-disc pl-3 text-[10px] leading-[1.4] text-slate-600",
     testIdPrefix: testId,
   });
+  const noteEntries = appointment.printNotes.map((note) => ({
+    ...note,
+    title: note.title?.trim() || null,
+    body: stripHtmlToText(note.body),
+  }));
+  const hasNotesColumnContent = hasProjectDescription || noteEntries.some((note) => note.title || note.body.length > 0);
 
   return (
     <article
@@ -64,13 +74,20 @@ export function TourenplanAppointmentCard({
       <div
         className="grid text-[11px] font-medium"
         style={{
-          gridTemplateColumns: "100px 1fr 1fr 1fr 90px",
+          gridTemplateColumns: TOURENPLAN_CARD_GRID_COLUMNS,
           background: tagPresentation.headerBackground,
           color: tagPresentation.headerTextColor,
         }}
       >
-        <div style={{ ...headerCellStyle(tagPresentation.headerDividerColor), color: tagPresentation.dateTextColor, fontWeight: 600 }}>
-          {formatTourenplanHeaderDate(appointment)}
+        <div
+          style={{
+            ...headerCellStyle(tagPresentation.headerDividerColor),
+            color: tagPresentation.dateTextColor,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          {`${formatTourenplanDate(appointment.startDate)} | ${appointment.durationDays} ${appointment.durationDays === 1 ? "Tag" : "Tage"}`}
         </div>
         <div style={headerCellStyle(tagPresentation.headerDividerColor)}>{appointment.customer.fullName ?? "—"}</div>
         <div style={headerCellStyle(tagPresentation.headerDividerColor)}>{appointment.projectName?.trim() || "—"}</div>
@@ -84,7 +101,7 @@ export function TourenplanAppointmentCard({
 
       <div
         className="grid bg-white"
-        style={{ gridTemplateColumns: "100px 1fr 1fr 1fr 90px" }}
+        style={{ gridTemplateColumns: TOURENPLAN_CARD_GRID_COLUMNS }}
       >
         <div style={bodyCellStyle()}>
           {tagPresentation.label ? (
@@ -107,10 +124,38 @@ export function TourenplanAppointmentCard({
           ) : "—"}
         </div>
         <div style={bodyCellStyle()}>
-          {articleSection ?? "—"}
+          <div className="min-w-0">
+            {articleSection ?? "—"}
+          </div>
         </div>
         <div style={bodyCellStyle()}>
-          {formatTourenplanProjectDescription(appointment.projectDescription)}
+          {hasNotesColumnContent ? (
+            <div className="space-y-1">
+              {hasProjectDescription ? (
+                <div className="whitespace-pre-wrap text-[10px] leading-[1.4] text-slate-600">
+                  {projectDescription}
+                </div>
+              ) : null}
+              {noteEntries.map((note) => {
+                if (!note.title && note.body.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <div key={note.id} className="border-t border-slate-200 pt-1 first:border-t-0 first:pt-0">
+                    {note.title ? (
+                      <div className="text-[9px] font-semibold" style={{ color: note.cardColor?.trim() || "#475569" }}>
+                        {note.title}
+                      </div>
+                    ) : null}
+                    <div className="whitespace-pre-wrap text-[9px] leading-[1.4] text-slate-500">
+                      {note.body || "—"}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : "—"}
         </div>
         <div style={{ ...bodyCellStyle(), borderRight: "none" }}>
           {employeeBadges.length > 0 ? (
@@ -133,33 +178,6 @@ export function TourenplanAppointmentCard({
         </div>
       </div>
 
-      {appointment.printNotes.length > 0 ? (
-        <div
-          className="flex gap-1.5 border-t border-slate-200 px-2 py-1.5"
-          style={{ background: printMode === "farbdruck" ? "#f8fafc" : "#ffffff" }}
-        >
-          {appointment.printNotes.map((note) => {
-            const color = note.cardColor?.trim() || "#94a3b8";
-            return (
-              <div
-                key={note.id}
-                className="min-w-0 flex-1 rounded-[5px] border px-1.5 py-1"
-                style={{
-                  borderColor: color,
-                  background: printMode === "farbdruck" ? `${color}1a` : "#ffffff",
-                }}
-              >
-                <div className="mb-0.5 text-[9px] font-medium" style={{ color }}>
-                  {note.title}
-                </div>
-                <div className="text-[9px] leading-[1.4] text-slate-500">
-                  {stripHtmlToText(note.body) || "—"}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
     </article>
   );
 }

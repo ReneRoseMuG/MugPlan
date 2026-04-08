@@ -53,7 +53,10 @@ type TourenplanTagPresentation = {
 const PAGE_CAPACITY_PX = 720;
 const WEEK_GAP_PX = 10;
 const CARD_BASE_HEIGHT_PX = 88;
-const NOTE_TILE_HEIGHT_PX = 42;
+const WEEK_START_BUFFER_PX = 18;
+const TOURENPLAN_LOCATION_CHARS_PER_LINE = 18;
+const TOURENPLAN_ARTICLE_CHARS_PER_LINE = 34;
+const TOURENPLAN_NOTES_CHARS_PER_LINE = 26;
 
 function mergeUniqueTags(...collections: Array<readonly Tag[] | null | undefined>): Tag[] {
   const tagsById = new Map<number, Tag>();
@@ -208,6 +211,60 @@ export function formatTourenplanEmployeeBadges(employees: Array<{ fullName: stri
   return employees.map((employee) => formatEmployeeShortName(employee.fullName)).filter((value) => value.trim().length > 0);
 }
 
+function estimateWrappedLineCount(text: string, charsPerLine: number): number {
+  const normalized = text.trim();
+  if (normalized.length === 0) {
+    return 1;
+  }
+  return Math.max(1, Math.ceil(normalized.length / charsPerLine));
+}
+
+function estimateLocationLineCount(appointment: TourenplanResolvedAppointment): number {
+  const locationLines = formatTourenplanLocationLines(appointment.customer);
+  if (locationLines.length === 0) {
+    return 1;
+  }
+
+  return locationLines.reduce((sum, line) => sum + estimateWrappedLineCount(line, TOURENPLAN_LOCATION_CHARS_PER_LINE), 0);
+}
+
+function estimateArticleLineCount(appointment: TourenplanResolvedAppointment): number {
+  if (appointment.projectArticleItems.length === 0) {
+    return 1;
+  }
+
+  return appointment.projectArticleItems.reduce((sum, item) => {
+    const articleLine = `${item.label}: ${item.value}`;
+    return sum + estimateWrappedLineCount(articleLine, TOURENPLAN_ARTICLE_CHARS_PER_LINE);
+  }, 0);
+}
+
+function estimateNotesLineCount(appointment: TourenplanResolvedAppointment): number {
+  const lines: string[] = [];
+  const projectDescription = stripHtmlToText(appointment.projectDescription);
+
+  if (projectDescription.length > 0) {
+    lines.push(projectDescription);
+  }
+
+  for (const note of appointment.printNotes) {
+    const noteTitle = note.title?.trim();
+    const noteBody = stripHtmlToText(note.body);
+    if (noteTitle) {
+      lines.push(noteTitle);
+    }
+    if (noteBody.length > 0) {
+      lines.push(noteBody);
+    }
+  }
+
+  if (lines.length === 0) {
+    return 1;
+  }
+
+  return lines.reduce((sum, line) => sum + estimateWrappedLineCount(line, TOURENPLAN_NOTES_CHARS_PER_LINE), 0);
+}
+
 function compareAppointments(left: TourenplanResolvedAppointment, right: TourenplanResolvedAppointment): number {
   const leftKind = resolveTourenplanTagKind(left);
   const rightKind = resolveTourenplanTagKind(right);
@@ -224,10 +281,15 @@ function compareAppointments(left: TourenplanResolvedAppointment, right: Tourenp
 }
 
 function estimateCardHeight(appointment: TourenplanResolvedAppointment): number {
-  const notesHeight = appointment.printNotes.length > 0 ? NOTE_TILE_HEIGHT_PX : 0;
-  const employeeHeight = Math.max(0, appointment.employees.length - 2) * 6;
-  const articleHeight = Math.max(0, appointment.projectArticleItems.length - 2) * 6;
-  return CARD_BASE_HEIGHT_PX + notesHeight + employeeHeight + articleHeight;
+  const bodyLineCount = Math.max(
+    1,
+    estimateLocationLineCount(appointment),
+    estimateArticleLineCount(appointment),
+    estimateNotesLineCount(appointment),
+    Math.max(1, appointment.employees.length),
+  );
+
+  return CARD_BASE_HEIGHT_PX + (bodyLineCount * 12) + Math.max(0, bodyLineCount - 2) * 2;
 }
 
 export function mergeTourenplanAppointments(
@@ -290,7 +352,7 @@ export function buildTourenplanPrintPages(
     }
 
     const weekHeight = weekAppointments.reduce((sum, appointment) => sum + estimateCardHeight(appointment) + 6, 0) + WEEK_GAP_PX;
-    if (currentWeeks.length > 0 && usedCapacity + weekHeight > PAGE_CAPACITY_PX) {
+    if (currentWeeks.length > 0 && usedCapacity + weekHeight > PAGE_CAPACITY_PX - WEEK_START_BUFFER_PX) {
       flushPage();
     }
 
