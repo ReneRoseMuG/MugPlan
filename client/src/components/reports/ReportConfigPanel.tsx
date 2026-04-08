@@ -44,7 +44,7 @@ export function ReportConfigPanel({
 }: ReportConfigPanelProps) {
   return (
     <section
-      className="flex w-[440px] min-w-[440px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className="flex w-[506px] min-w-[506px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       data-testid={testId}
     >
       <div

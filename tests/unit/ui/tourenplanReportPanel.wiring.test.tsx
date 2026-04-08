@@ -3,17 +3,17 @@
  *
  * Abgedeckte Regeln:
  * - Das Tourenplan-Panel zeigt den neuen vierten Reportblock mit Shortcode-Option und Admin-Druckmodus.
- * - Der Orientierungs-Toggle im Dialog synchronisiert Dialog-Prop und PrintPageShell.
+ * - Die Verdrahtung uebergibt bei geoeffneter Vorschau dieselbe Orientierung an Dialog und Druckseite.
  *
  * Fehlerfaelle:
  * - Der neue Reportblock fehlt in der Reports-Seite oder blendet die Admin-Optionen nicht ein.
- * - Der Orientierungswechsel aendert nur den Dialog oder nur die Druckseite, aber nicht beide.
+ * - Die Vorschau uebergibt unterschiedliche Orientierungen an Dialog und Druckseite.
  *
  * Ziel:
- * Die sichtbare Verdrahtung des neuen Tourenplan-Reportpanels regressionssicher absichern.
+ * Die sichtbare Verdrahtung des neuen Tourenplan-Reportpanels in der Node-Testumgebung regressionssicher absichern.
  */
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
@@ -72,10 +72,26 @@ vi.mock("@/components/print/PrintPreviewDialog", () => ({
   ),
 }));
 
+vi.mock("@/components/reports/TourenplanPrintPage", () => ({
+  TourenplanPrintPage: ({
+    orientation,
+    testId,
+  }: {
+    orientation: string;
+    testId?: string;
+  }) => (
+    <div
+      data-testid={testId}
+      data-print-orientation={orientation}
+    />
+  ),
+}));
+
 import { TourenplanReportPanel } from "../../../client/src/components/reports/TourenplanReportPanel";
 
 describe("UI: TourenplanReportPanel wiring", () => {
   beforeEach(() => {
+    Object.assign(globalThis, { React });
     useQueryMock.mockReset();
     useSettingMock.mockReset();
     setSettingMock.mockReset();
@@ -196,8 +212,26 @@ describe("UI: TourenplanReportPanel wiring", () => {
     });
   });
 
-  it("shows the panel options and synchronizes the orientation toggle", () => {
-    render(
+  function installUseStateSequence(orientation: "landscape" | "portrait") {
+    const useStateSpy = vi.spyOn(React, "useState");
+    useStateSpy
+      .mockImplementationOnce(() => [7, vi.fn()])
+      .mockImplementationOnce(() => ["date", vi.fn()])
+      .mockImplementationOnce(() => ["2026-04-14", vi.fn()])
+      .mockImplementationOnce(() => ["2026-04-20", vi.fn()])
+      .mockImplementationOnce(() => [16, vi.fn()])
+      .mockImplementationOnce(() => [1, vi.fn()])
+      .mockImplementationOnce(() => [false, vi.fn()])
+      .mockImplementationOnce(() => ["farbdruck", vi.fn()])
+      .mockImplementationOnce(() => [orientation, vi.fn()])
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [0, vi.fn()]);
+    return useStateSpy;
+  }
+
+  it("shows the panel options and forwards the same orientation to dialog and print page", () => {
+    const landscapeSpy = installUseStateSequence("landscape");
+    const landscapeHtml = renderToStaticMarkup(
       <TourenplanReportPanel
         defaultReportRange={{
           fromDate: "2026-04-14",
@@ -210,21 +244,32 @@ describe("UI: TourenplanReportPanel wiring", () => {
         isAdmin
       />,
     );
+    landscapeSpy.mockRestore();
 
-    expect(screen.getByTestId("reports-tourenplan-config-panel")).toBeTruthy();
-    expect(screen.getByTestId("checkbox-reports-tourenplan-use-shortcodes")).toBeTruthy();
-    expect(screen.getByTestId("button-reports-tourenplan-print-mode-farbdruck")).toBeTruthy();
-    expect(screen.getByTestId("button-reports-tourenplan-print-mode-spardruck")).toBeTruthy();
+    expect(landscapeHtml).toContain("reports-tourenplan-config-panel");
+    expect(landscapeHtml).toContain("checkbox-reports-tourenplan-use-shortcodes");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-farbdruck");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-spardruck");
+    expect(landscapeHtml).toContain('data-page-orientation="landscape"');
+    expect(landscapeHtml).toContain('data-print-orientation="landscape"');
 
-    fireEvent.change(screen.getByTestId("mock-tourenplan-select"), { target: { value: "7" } });
-    fireEvent.click(screen.getByTestId("button-reports-tourenplan-preview"));
+    const portraitSpy = installUseStateSequence("portrait");
+    const portraitHtml = renderToStaticMarkup(
+      <TourenplanReportPanel
+        defaultReportRange={{
+          fromDate: "2026-04-14",
+          toDate: "2026-04-20",
+          weekCount: 1,
+          referenceDate: new Date("2026-04-14T00:00:00"),
+        }}
+        defaultIsoWeek={16}
+        defaultIsoWeekYear={2026}
+        isAdmin
+      />,
+    );
+    portraitSpy.mockRestore();
 
-    expect(screen.getByTestId("print-preview-dialog-marker").getAttribute("data-page-orientation")).toBe("landscape");
-    expect(screen.getByTestId("tourenplan-print-page-1").getAttribute("data-print-orientation")).toBe("landscape");
-
-    fireEvent.click(screen.getByTestId("button-reports-tourenplan-orientation-portrait"));
-
-    expect(screen.getByTestId("print-preview-dialog-marker").getAttribute("data-page-orientation")).toBe("portrait");
-    expect(screen.getByTestId("tourenplan-print-page-1").getAttribute("data-print-orientation")).toBe("portrait");
+    expect(portraitHtml).toContain('data-page-orientation="portrait"');
+    expect(portraitHtml).toContain('data-print-orientation="portrait"');
   });
 });

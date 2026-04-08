@@ -191,6 +191,97 @@ vi.mock("@/components/ui/badge", () => ({
 
 import { ReportsPage } from "../../../client/src/components/ReportsPage";
 
+function buildQueryResponseOverrides(overrides: Record<string, unknown> = {}) {
+  const defaults: Record<string, unknown> = {
+    "reports-config-defaults": {
+      data: { latestProjectAppointmentDate: "2026-10-05" },
+      isLoading: false,
+    },
+    "/api/admin/master-data/product-categories?active=all": {
+      data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
+      isLoading: false,
+    },
+    "/api/admin/master-data/component-categories?active=all": {
+      data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
+      isLoading: false,
+    },
+    "/api/tours": {
+      data: [{ id: 7, name: "Tour Alpha", color: "#2266aa", isActive: true, version: 1 }],
+      isLoading: false,
+    },
+    "reports-vorlaufliste": {
+      data: {
+        page: 1,
+        pageSize: 100,
+        total: 1,
+        totalPages: 1,
+        productCategories: [{ id: 1, name: "Fass Saunen" }],
+        componentCategories: [{ id: 2, name: "Fenster" }],
+        items: [{
+          projectId: 10,
+          projectName: "Projekt",
+          isActive: true,
+          orderNumber: null,
+          customerId: 20,
+          customerNumber: null,
+          reportState: "default",
+          tags: [],
+          highlightTag: null,
+          amount: null,
+          customerFullName: "Kunde",
+          postalCode: null,
+          city: null,
+          country: null,
+          articleValues: [],
+          plannedDateText: null,
+          plannedWeek: null,
+          actualDate: "2026-03-29",
+          projectDescription: null,
+          notesCount: 0,
+          plannedAppointmentsCount: 0,
+          attachmentsCount: 0,
+        }],
+      },
+      isLoading: false,
+    },
+    "reports-vorlaufliste-print-preview": {
+      data: { items: [], productCategories: [], componentCategories: [] },
+      isLoading: false,
+      isError: false,
+    },
+    "reports-produktionsplanung": {
+      data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
+      isLoading: false,
+    },
+    "reports-auftragsliste": {
+      data: { productCategories: [], componentCategories: [], items: [] },
+      isLoading: false,
+    },
+    "reports-tourenplan-preview": {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    },
+    "reports-tourenplan-appointments": {
+      data: [],
+      isLoading: false,
+      isError: false,
+    },
+  };
+
+  return { ...defaults, ...overrides };
+}
+
+function installReportsPageQueryMock(overrides: Record<string, unknown> = {}) {
+  const responses = buildQueryResponseOverrides(overrides);
+  useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
+    const key = options.queryKey?.[0];
+    return (typeof key === "string" && key in responses)
+      ? responses[key]
+      : { data: [], isLoading: false, isError: false };
+  });
+}
+
 describe("FT26 UI: ReportsPage wiring", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
@@ -209,104 +300,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
       isSaving: false,
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
-    useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
-      const key = options.queryKey?.[0];
-      if (key === "reports-config-defaults") {
-        return {
-          data: { latestProjectAppointmentDate: "2026-10-05" },
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/product-categories?active=all") {
-        return {
-          data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/component-categories?active=all") {
-        return {
-          data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "/api/tours") {
-        return {
-          data: [{ id: 7, name: "Tour Alpha", color: "#2266aa", isActive: true, version: 1 }],
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste") {
-        return {
-          data: {
-            page: 1,
-            pageSize: 100,
-            total: 1,
-            totalPages: 1,
-            productCategories: [{ id: 1, name: "Fass Saunen" }],
-            componentCategories: [{ id: 2, name: "Fenster" }],
-            items: [{
-              projectId: 10,
-              projectName: "Projekt",
-              isActive: true,
-              orderNumber: null,
-              customerId: 20,
-              customerNumber: null,
-              reportState: "default",
-              tags: [],
-              highlightTag: null,
-              amount: null,
-              customerFullName: "Kunde",
-              postalCode: null,
-              city: null,
-              country: null,
-              articleValues: [],
-              plannedDateText: null,
-              plannedWeek: null,
-              actualDate: "2026-03-29",
-              projectDescription: null,
-              notesCount: 0,
-              plannedAppointmentsCount: 0,
-              attachmentsCount: 0,
-            }],
-          },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste-print-preview") {
-        return {
-          data: { items: [], productCategories: [], componentCategories: [] },
-          isLoading: false,
-          isError: false,
-        };
-      }
-      if (key === "reports-produktionsplanung") {
-        return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-auftragsliste") {
-        return {
-          data: { productCategories: [], componentCategories: [], items: [] },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-tourenplan-preview") {
-        return {
-          data: undefined,
-          isLoading: false,
-          isError: false,
-        };
-      }
-      if (key === "reports-tourenplan-appointments") {
-        return {
-          data: [],
-          isLoading: false,
-          isError: false,
-        };
-      }
-      return { data: [], isLoading: false, isError: false };
-    });
+    installReportsPageQueryMock();
   });
 
   it("renders the new prototype toggles and action buttons", () => {
@@ -353,87 +347,50 @@ describe("FT26 UI: ReportsPage wiring", () => {
   });
 
   it("renders the auftragsliste print preview in portrait with a narrower dialog shell", () => {
-    useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
-      const key = options.queryKey?.[0];
-      if (key === "reports-config-defaults") {
-        return {
-          data: { latestProjectAppointmentDate: "2026-10-05" },
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/product-categories?active=all") {
-        return {
-          data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/component-categories?active=all") {
-        return {
-          data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste") {
-        return {
-          data: {
-            page: 1,
-            pageSize: 100,
-            total: 0,
-            totalPages: 0,
-            productCategories: [],
-            componentCategories: [],
-            items: [],
-          },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste-print-preview") {
-        return {
-          data: { items: [], productCategories: [], componentCategories: [] },
-          isLoading: false,
-          isError: false,
-        };
-      }
-      if (key === "reports-produktionsplanung") {
-        return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-auftragsliste") {
-        return {
-          data: {
-            productCategories: [{ id: 1, name: "Fass Saunen" }],
-            componentCategories: [{ id: 2, name: "Fenster" }],
-            items: [{
-              projectId: 31,
-              customerId: 44,
-              appointmentId: 55,
-              projectName: "Projekt Auftragsliste",
-              orderNumber: "AO-31",
-              customerNumber: "K-31",
-              customerFullName: "Kunde Auftragsliste",
-              actualDate: "2026-04-07",
-              durationDays: 2,
-              tourName: "Tour 1",
-              employees: [],
-              customerNotesCount: 0,
-              projectNotesCount: 0,
-              appointmentNotesCount: 0,
-              notesCount: 0,
-              customerAttachmentsCount: 0,
-              projectAttachmentsCount: 0,
-              appointmentAttachmentsCount: 0,
-              attachmentsCount: 0,
-              tags: [],
-              articleValues: [{ categoryId: 1, value: "Sauna Alpha" }],
-              projectDescription: "Hinweis Alpha",
-            }],
-          },
-          isLoading: false,
-        };
-      }
-      return { data: [], isLoading: false, isError: false };
+    installReportsPageQueryMock({
+      "reports-vorlaufliste": {
+        data: {
+          page: 1,
+          pageSize: 100,
+          total: 0,
+          totalPages: 0,
+          productCategories: [],
+          componentCategories: [],
+          items: [],
+        },
+        isLoading: false,
+      },
+      "reports-auftragsliste": {
+        data: {
+          productCategories: [{ id: 1, name: "Fass Saunen" }],
+          componentCategories: [{ id: 2, name: "Fenster" }],
+          items: [{
+            projectId: 31,
+            customerId: 44,
+            appointmentId: 55,
+            projectName: "Projekt Auftragsliste",
+            orderNumber: "AO-31",
+            customerNumber: "K-31",
+            customerFullName: "Kunde Auftragsliste",
+            actualDate: "2026-04-07",
+            durationDays: 2,
+            tourName: "Tour 1",
+            employees: [],
+            customerNotesCount: 0,
+            projectNotesCount: 0,
+            appointmentNotesCount: 0,
+            notesCount: 0,
+            customerAttachmentsCount: 0,
+            projectAttachmentsCount: 0,
+            appointmentAttachmentsCount: 0,
+            attachmentsCount: 0,
+            tags: [],
+            articleValues: [{ categoryId: 1, value: "Sauna Alpha" }],
+            projectDescription: "Hinweis Alpha",
+          }],
+        },
+        isLoading: false,
+      },
     });
 
     const html = renderToStaticMarkup(
@@ -464,60 +421,23 @@ describe("FT26 UI: ReportsPage wiring", () => {
   });
 
   it("shows product and component category columns in the actual report table definition before report data exists", () => {
-    useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
-      const key = options.queryKey?.[0];
-      if (key === "reports-config-defaults") {
-        return {
-          data: { latestProjectAppointmentDate: "2026-10-05" },
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/product-categories?active=all") {
-        return {
-          data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "/api/admin/master-data/component-categories?active=all") {
-        return {
-          data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste") {
-        return {
-          data: {
-            page: 1,
-            pageSize: 100,
-            total: 0,
-            totalPages: 0,
-            productCategories: [],
-            componentCategories: [],
-            items: [],
-          },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-vorlaufliste-print-preview") {
-        return {
-          data: { items: [], productCategories: [], componentCategories: [] },
-          isLoading: false,
-          isError: false,
-        };
-      }
-      if (key === "reports-produktionsplanung") {
-        return {
-          data: { productCategoryGroups: [], componentCategoryGroups: [], projectRows: [] },
-          isLoading: false,
-        };
-      }
-      if (key === "reports-auftragsliste") {
-        return {
-          data: { productCategories: [], componentCategories: [], items: [] },
-          isLoading: false,
-        };
-      }
-      return { data: [], isLoading: false, isError: false };
+    installReportsPageQueryMock({
+      "reports-vorlaufliste": {
+        data: {
+          page: 1,
+          pageSize: 100,
+          total: 0,
+          totalPages: 0,
+          productCategories: [],
+          componentCategories: [],
+          items: [],
+        },
+        isLoading: false,
+      },
+      "reports-auftragsliste": {
+        data: { productCategories: [], componentCategories: [], items: [] },
+        isLoading: false,
+      },
     });
 
     const html = renderToStaticMarkup(<ReportsPage />);

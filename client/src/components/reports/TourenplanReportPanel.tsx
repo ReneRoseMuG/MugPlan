@@ -76,6 +76,32 @@ function buildQuickRange(referenceDate: Date, offsetWeeks: number) {
   };
 }
 
+function QuickRangeButton({
+  label,
+  dateLabel,
+  onClick,
+  testId,
+}: {
+  label: string;
+  dateLabel: string;
+  onClick: () => void;
+  testId: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      className="h-auto min-h-14 flex-1 flex-col items-start gap-1 px-3 py-2 text-left"
+      data-testid={testId}
+    >
+      <span className="text-xs font-semibold text-slate-800">{label}</span>
+      <span className="text-xs font-medium text-slate-500">{dateLabel}</span>
+    </Button>
+  );
+}
+
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
@@ -238,6 +264,65 @@ export function TourenplanReportPanel({
 
   const dialogWidthClassName = orientation === "portrait" ? "w-[calc(210mm+88px)]" : undefined;
   const isGenerateDisabled = selectedTourId === null || previewRequest.fromDate.length === 0;
+  const quickRangeOptions = (
+    <div className="hidden" data-testid="reports-tourenplan-quick-range-options">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Termine ab:</div>
+      <div className="flex flex-wrap gap-2">
+        <QuickRangeButton
+          label="Diese Woche"
+          dateLabel={buildQuickRangeLabel(defaultReportRange.referenceDate, 0)}
+          onClick={() => {
+            if (activeTab === "calendarWeek") {
+              setKwStart(currentWeekRange.kwStart);
+              setWeekCount(1);
+              void persistRangeConfig({ kwStart: currentWeekRange.kwStart, weekCount: 1 });
+              return;
+            }
+
+            setActiveTab("date");
+            setFromDate(currentWeekRange.fromDate);
+            setToDate(currentWeekRange.toDate);
+            setKwStart(currentWeekRange.kwStart);
+            setWeekCount(1);
+            void persistRangeConfig({
+              activeTab: "date",
+              fromDate: currentWeekRange.fromDate,
+              toDate: currentWeekRange.toDate,
+              kwStart: currentWeekRange.kwStart,
+              weekCount: 1,
+            });
+          }}
+          testId={activeTab === "calendarWeek" ? "button-reports-tourenplan-kw-current" : "button-reports-tourenplan-this-week"}
+        />
+        <QuickRangeButton
+          label="Nächste Woche"
+          dateLabel={buildQuickRangeLabel(defaultReportRange.referenceDate, 1)}
+          onClick={() => {
+            if (activeTab === "calendarWeek") {
+              setKwStart(nextWeekRange.kwStart);
+              setWeekCount(1);
+              void persistRangeConfig({ kwStart: nextWeekRange.kwStart, weekCount: 1 });
+              return;
+            }
+
+            setActiveTab("date");
+            setFromDate(nextWeekRange.fromDate);
+            setToDate(nextWeekRange.toDate);
+            setKwStart(nextWeekRange.kwStart);
+            setWeekCount(1);
+            void persistRangeConfig({
+              activeTab: "date",
+              fromDate: nextWeekRange.fromDate,
+              toDate: nextWeekRange.toDate,
+              kwStart: nextWeekRange.kwStart,
+              weekCount: 1,
+            });
+          }}
+          testId={activeTab === "calendarWeek" ? "button-reports-tourenplan-kw-next" : "button-reports-tourenplan-next-week"}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -272,42 +357,45 @@ export function TourenplanReportPanel({
         )}
         optionsSlot={(
           <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
-              <Checkbox
-                checked={useShortCodes}
-                onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
-                data-testid="checkbox-reports-tourenplan-use-shortcodes"
-              />
-              <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-            </label>
-            {isAdmin ? (
-              <div className="flex items-center gap-2" data-testid="reports-tourenplan-print-mode-toggle">
-                <Button
-                  type="button"
-                  variant={printMode === "farbdruck" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setPrintMode("farbdruck");
-                    void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "farbdruck" });
-                  }}
-                  data-testid="button-reports-tourenplan-print-mode-farbdruck"
-                >
-                  Farbdruck
-                </Button>
-                <Button
-                  type="button"
-                  variant={printMode === "spardruck" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => {
-                    setPrintMode("spardruck");
-                    void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "spardruck" });
-                  }}
-                  data-testid="button-reports-tourenplan-print-mode-spardruck"
-                >
-                  Spardruck
-                </Button>
-              </div>
-            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
+                <Checkbox
+                  checked={useShortCodes}
+                  onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
+                  data-testid="checkbox-reports-tourenplan-use-shortcodes"
+                />
+                <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+              </label>
+              {isAdmin ? (
+                <div className="ml-auto flex items-center gap-2" data-testid="reports-tourenplan-print-mode-toggle">
+                  <Button
+                    type="button"
+                    variant={printMode === "farbdruck" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setPrintMode("farbdruck");
+                      void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "farbdruck" });
+                    }}
+                    data-testid="button-reports-tourenplan-print-mode-farbdruck"
+                  >
+                    Farbdruck
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={printMode === "spardruck" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => {
+                      setPrintMode("spardruck");
+                      void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "spardruck" });
+                    }}
+                    data-testid="button-reports-tourenplan-print-mode-spardruck"
+                  >
+                    Spardruck
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+            {quickRangeOptions}
           </div>
         )}
         footer={(
@@ -326,7 +414,7 @@ export function TourenplanReportPanel({
         {activeTab === "date" ? (
           <div className="space-y-3" data-testid="reports-tourenplan-date-panel">
             <div className="grid gap-3">
-              <div className="flex gap-2">
+              <div className="hidden">
                 <Button
                   type="button"
                   variant="outline"
@@ -413,7 +501,7 @@ export function TourenplanReportPanel({
           </div>
         ) : (
           <div className="space-y-3" data-testid="reports-tourenplan-calendar-week-panel">
-            <div className="flex gap-2">
+            <div className="hidden">
               <Button
                 type="button"
                 variant="outline"

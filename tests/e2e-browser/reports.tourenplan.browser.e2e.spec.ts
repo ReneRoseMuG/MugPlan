@@ -81,6 +81,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
 
   const employeeA = await createEmployeeFixtureWithOverrides({ firstName: "Roy", lastName: "Herold" });
   const employeeB = await createEmployeeFixtureWithOverrides({ firstName: "Dirk", lastName: "Winter" });
+  const employeeC = await createEmployeeFixtureWithOverrides({ firstName: "Mira", lastName: "Beck" });
 
   const monday = getRelativeBerlinDate(1);
   const tuesday = getRelativeBerlinDate(2);
@@ -241,7 +242,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
     startDate: nextMonday,
     endDate: nextMonday,
     tourId: tour.id,
-    employeeIds: [employeeA.id],
+    employeeIds: [employeeC.id],
   });
   await attachAppointmentTagFixture(messeAppointment!.id, messeTag.id);
 
@@ -261,15 +262,15 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 
-  const firstPage = page.getByTestId("tourenplan-print-page-1");
-  await expect(firstPage).toContainText("Tour Alpha");
+  const firstPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
+  await expect(firstPage).toContainText(tour.name);
   await expect(firstPage).toContainText("Seite 1");
   await expect(firstPage).not.toContainText("Tourenplan");
 
-  await expect(page.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "sondermass");
-  await expect(page.getByTestId(`tourenplan-print-page-1-appointment-${reklAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "reklamation");
-  await expect(page.getByTestId(`tourenplan-print-page-1-appointment-${messeAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "messe");
-  await expect(page.getByTestId(`tourenplan-print-page-1-appointment-${neutralAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "neutral");
+  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "sondermass");
+  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${reklAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "reklamation");
+  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${messeAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "messe");
+  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${neutralAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "neutral");
 
   await expect(firstPage).toContainText("Harvia 20");
   await expect(firstPage).toContainText("Xenio 3");
@@ -291,7 +292,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 
-  const firstPageShortcodes = page.getByTestId("tourenplan-print-page-1");
+  const firstPageShortcodes = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
   await expect(firstPageShortcodes).toContainText("H20");
   await expect(firstPageShortcodes).toContainText("X3");
   await expect(firstPageShortcodes).toContainText("FD");
@@ -299,10 +300,10 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(firstPageShortcodes).toContainText("GT");
   await expect(firstPageShortcodes).not.toContainText("Harvia 20");
   await expect(firstPageShortcodes).not.toContainText("Xenio 3");
-  await expect(page.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-print-mode", "spardruck");
+  await expect(firstPageShortcodes.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-print-mode", "spardruck");
 
   await expect(page.getByTestId("button-reports-tourenplan-orientation-landscape")).toBeVisible();
   await expect(page.getByTestId("button-reports-tourenplan-orientation-portrait")).toBeVisible();
   await page.getByTestId("button-reports-tourenplan-orientation-portrait").click();
-  await expect(page.getByTestId("tourenplan-print-page-1")).toHaveAttribute("data-print-orientation", "portrait");
+  await expect(page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1")).toHaveAttribute("data-print-orientation", "portrait");
 });
