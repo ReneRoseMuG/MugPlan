@@ -168,6 +168,7 @@ export function AppointmentsFilterPanel({
           helpKey="appointments.filter.tags"
           addButtonTestId="button-add-appointment-tag-filter"
           testIdPrefix="appointment-filter-tag"
+          className="sm:min-w-[96px] sm:w-[96px]"
         />
         {!splitDateRangeRow ? dateRangeFilters : null}
       </FilterPanel>

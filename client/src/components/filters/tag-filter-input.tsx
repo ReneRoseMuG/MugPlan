@@ -3,6 +3,7 @@ import { HelpIcon } from "@/components/ui/help/help-icon";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
 import { TagBadge } from "@/components/ui/tag-badge";
+import { cn } from "@/lib/utils";
 import type { Tag } from "@shared/schema";
 
 interface TagFilterInputProps {
@@ -16,6 +17,7 @@ interface TagFilterInputProps {
   onRemoveTag: (tagId: number) => void;
   addButtonTestId?: string;
   testIdPrefix?: string;
+  className?: string;
 }
 
 export function TagFilterInput({
@@ -29,11 +31,12 @@ export function TagFilterInput({
   onRemoveTag,
   addButtonTestId,
   testIdPrefix = "tag-filter",
+  className,
 }: TagFilterInputProps) {
   return (
-    <div className="flex flex-col gap-2 sm:min-w-[280px]">
-      <div className="flex items-center gap-1">
-        <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+    <div className={cn("flex flex-col gap-1 sm:min-w-[280px]", className)}>
+      <div className="flex h-5 items-center gap-1">
+        <span className="text-xs text-slate-500">{label}</span>
         {helpKey ? <HelpIcon helpKey={helpKey} size="sm" /> : null}
       </div>
       <div className="flex items-start gap-2">
