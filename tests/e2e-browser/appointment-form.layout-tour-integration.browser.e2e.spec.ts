@@ -255,7 +255,7 @@ test("marks conflicting week employees as non-selectable for new appointments", 
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeDisabled();
 });
 
-test("uses replace mode when an existing appointment changes to another tour with week planning", async ({ page }) => {
+test("uses the already confirmed preview decision when an existing appointment changes to another tour with week planning", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const project = await createProjectFixture({ prefix: "FT04-APPT-REPLACE", name: "FT04 Appointment Replace" });
   const sourceTour = await createTourFixture("#0f766e");
@@ -285,22 +285,18 @@ test("uses replace mode when an existing appointment changes to another tour wit
 
   const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(immediateDialog).toBeVisible();
+  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
+    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+  );
+  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
+    "Kann aus der Wochenplanung uebernommen werden",
+  );
+  await page.getByTestId("button-appointment-week-mode-replace").click();
   await immediateDialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(immediateDialog).toHaveCount(0);
 
   await page.getByTestId("button-save-appointment").click();
-
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
-  );
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Bereits im Termin",
-  );
-
-  await page.getByTestId("button-appointment-week-mode-replace").click();
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);

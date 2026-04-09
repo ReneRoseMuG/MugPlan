@@ -894,7 +894,13 @@ export function CalendarWeekView({
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const dayPreview = tourLane.tourId == null
                                 ? null
-                                : weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${dayBucket.dateKey}`);
+                                : weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${dayBucket.dateKey}`) ?? {
+                                    date: dayBucket.dateKey,
+                                    weekStartDate: format(startOfWeek(parseISO(dayBucket.dateKey), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd"),
+                                    tourId: tourLane.tourId,
+                                    weekEmployees: [],
+                                    additionalDayEmployees: [],
+                                  };
 
                               return (
                                 <HoverPreview

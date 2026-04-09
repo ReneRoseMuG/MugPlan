@@ -161,6 +161,7 @@ type AppointmentWeekPreviewDialogState = {
   title: string;
   description: string;
   preview: AppointmentWeekEmployeePreviewResponse;
+  resolutionKey: string;
   selectedIds: number[];
   resolutionMode: "additive" | "replace";
   persistAfterConfirm: boolean;
@@ -284,6 +285,11 @@ const buildIsoWeekKey = (dateValue: string) => {
   return `${getISOWeekYear(parsedDate)}-${String(getISOWeek(parsedDate)).padStart(2, "0")}`;
 };
 
+const buildAppointmentWeekResolutionKey = (tourId: number | null, startDate: string) => {
+  if (tourId === null) return null;
+  return `${tourId}-${buildIsoWeekKey(startDate)}`;
+};
+
 const getDefaultPreviewSelection = (preview: AppointmentWeekEmployeePreviewResponse) =>
   preview.items
     .filter((item) => item.selectable && item.status === "will_add")
@@ -355,6 +361,7 @@ export function AppointmentForm({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
+  const [resolvedAppointmentWeekPlanKey, setResolvedAppointmentWeekPlanKey] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
@@ -829,13 +836,14 @@ export function AppointmentForm({
 
   const openAppointmentWeekPreviewDialog = (
     preview: AppointmentWeekEmployeePreviewResponse,
-    params: { title: string; description: string; persistAfterConfirm: boolean },
+    params: { title: string; description: string; persistAfterConfirm: boolean; resolutionKey: string },
   ) => {
     setAppointmentWeekPreviewDialog({
       open: true,
       title: params.title,
       description: params.description,
       preview,
+      resolutionKey: params.resolutionKey,
       selectedIds: getDefaultPreviewSelection(preview),
       resolutionMode: "additive",
       persistAfterConfirm: params.persistAfterConfirm,
@@ -853,19 +861,23 @@ export function AppointmentForm({
     if (tourId === selectedTourId) return;
     void (async () => {
       applyTourChange(tourId);
+      setResolvedAppointmentWeekPlanKey(null);
       if (tourId === null) {
         return;
       }
 
       try {
+        const resolutionKey = buildAppointmentWeekResolutionKey(tourId, startDate);
         const preview = await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
         if (!preview.hasWeekPlan) {
+          setResolvedAppointmentWeekPlanKey(resolutionKey);
           return;
         }
         openAppointmentWeekPreviewDialog(preview, {
           title: "Wochenplanung fuer Termin uebernehmen",
           description: "Die ausgewaehlte Tour hat fuer diese Kalenderwoche eine Planung. Waehlen Sie, welche Mitarbeiter uebernommen werden sollen.",
           persistAfterConfirm: false,
+          resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
@@ -1490,8 +1502,9 @@ export function AppointmentForm({
       const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
       const currentWeekKey = buildIsoWeekKey(startDate);
       const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
+      const currentResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, startDate);
 
-      if (requiresTourPreview) {
+      if (requiresTourPreview && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
         try {
           const preview = await loadAppointmentTourChangePreview();
           if (preview?.hasWeekPlan) {
@@ -1499,9 +1512,11 @@ export function AppointmentForm({
               title: "Wochenplanung vor dem Speichern pruefen",
               description: "Tour oder Kalenderwoche wurden geaendert. Pruefen Sie, welche Mitarbeiter aus der Zielplanung fuer diesen Termin uebernommen werden sollen.",
               persistAfterConfirm: true,
+              resolutionKey: currentResolutionKey ?? `${selectedTourId ?? "none"}-${preview.isoYear}-${preview.isoWeek}`,
             });
             return;
           }
+          setResolvedAppointmentWeekPlanKey(currentResolutionKey);
         } catch (error) {
           const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
           toast({
@@ -1890,6 +1905,7 @@ export function AppointmentForm({
     );
     setAssignedEmployeeIds(nextEmployeeIds);
     const persistAfterConfirm = appointmentWeekPreviewDialog.persistAfterConfirm;
+    setResolvedAppointmentWeekPlanKey(appointmentWeekPreviewDialog.resolutionKey);
     setAppointmentWeekPreviewDialog(null);
     if (persistAfterConfirm) {
       await persistAppointment(nextEmployeeIds);
