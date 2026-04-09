@@ -6,7 +6,7 @@
  * - Der Dump enthält genau den erlaubten Tabellensatz und schließt ausgeschlossene Tabellen aus.
  * - POST /api/admin/dumps/import spielt einen erzeugten Dump als echten Roundtrip wieder ein.
  * - Ein älterer Dump mit fehlenden neuen Tabellen kann weiterhin importiert werden.
- * - Touren und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
+ * - Touren, Wochenplanung und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
  * - Ausgeschlossene Tabellen wie users/roles bleiben vom Import unberührt.
  * - Admin-Endpunkte lehnen ungültige Dumps und Nicht-Admins korrekt ab.
  *
@@ -118,6 +118,7 @@ async function collectSnapshot() {
   return {
     tours: await getRowCount(schema.tours),
     teams: await getRowCount(schema.teams),
+    tourWeekEmployees: await getRowCount(schema.tourWeekEmployees),
     customers: await getRowCount(schema.customers),
     projects: await getRowCount(schema.projects),
     appointments: await getRowCount(schema.appointments),
@@ -199,6 +200,12 @@ describe("POST /api/admin/dumps/create und Download", () => {
       tourId: tour.id,
       employeeIds: [employee.id],
     });
+    await db.insert(schema.tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: 2026,
+      isoWeek: 16,
+      employeeId: employee.id,
+    });
     const tag = await createTagFixture("DUMP-TAG");
     await attachProjectTagFixture(project.id, tag.id);
 
@@ -234,6 +241,7 @@ describe("POST /api/admin/dumps/create und Download", () => {
     expect(Object.keys(dumpData.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
     expect(dumpData.tables["tours"].length).toBeGreaterThan(0);
     expect(dumpData.tables["teams"].length).toBeGreaterThan(0);
+    expect(dumpData.tables["tourWeekEmployees"].length).toBeGreaterThan(0);
     expect(manifest.formatVersion).toBe(DUMP_FORMAT_VERSION);
     expect(manifest.dumpId).toContain("dump_");
     expect(Object.keys(manifest.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
@@ -259,6 +267,12 @@ describe("POST /api/admin/dumps/import", () => {
       tourId: tour.id,
       employeeIds: [employee.id],
     });
+    const originalWeekInsert = await db.insert(schema.tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: 2026,
+      isoWeek: 17,
+      employeeId: employee.id,
+    });
     const tag = await createTagFixture("ROUNDTRIP-TAG");
     await attachProjectTagFixture(project.id, tag.id);
 
@@ -275,11 +289,19 @@ describe("POST /api/admin/dumps/import", () => {
 
     const extraTour = await createTourFixture("#cc2244");
     const extraTeam = await createTeamFixture("#cc7722");
+    const extraEmployee = await createEmployeeFixture("ROUNDTRIP-EXTRA-EMP");
     const extraCustomer = await createCustomerFixture("ROUNDTRIP-EXTRA");
+    const extraWeekInsert = await db.insert(schema.tourWeekEmployees).values({
+      tourId: extraTour.id,
+      isoYear: 2026,
+      isoWeek: 18,
+      employeeId: extraEmployee.id,
+    });
 
     const mutatedSnapshot = await collectSnapshot();
     expect(mutatedSnapshot.tours).toBe(beforeSnapshot.tours + 1);
     expect(mutatedSnapshot.teams).toBe(beforeSnapshot.teams + 1);
+    expect(mutatedSnapshot.tourWeekEmployees).toBe(beforeSnapshot.tourWeekEmployees + 1);
     expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
 
     const previewResponse = await previewDumpImport(admin, dumpBuffer).expect(200);
@@ -296,14 +318,22 @@ describe("POST /api/admin/dumps/import", () => {
     expect(afterSnapshot).toEqual(beforeSnapshot);
 
     const restoredTour = await db.select().from(schema.tours).where(eq(schema.tours.id, tour.id));
+    const restoredWeekAssignment = await db.select()
+      .from(schema.tourWeekEmployees)
+      .where(eq(schema.tourWeekEmployees.id, Number((originalWeekInsert as any)?.[0]?.insertId ?? (originalWeekInsert as any)?.insertId ?? 0)));
     expect(restoredTour).toHaveLength(1);
+    expect(restoredWeekAssignment).toHaveLength(1);
 
     const removedExtraTour = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
     const removedExtraTeam = await db.select().from(schema.teams).where(eq(schema.teams.id, extraTeam.id));
     const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
+    const removedExtraWeekAssignment = await db.select()
+      .from(schema.tourWeekEmployees)
+      .where(eq(schema.tourWeekEmployees.id, Number((extraWeekInsert as any)?.[0]?.insertId ?? (extraWeekInsert as any)?.insertId ?? 0)));
     expect(removedExtraTour).toHaveLength(0);
     expect(removedExtraTeam).toHaveLength(0);
     expect(removedExtraCustomer).toHaveLength(0);
+    expect(removedExtraWeekAssignment).toHaveLength(0);
   });
 
   it("akzeptiert Alt-Dumps mit fehlenden neuen Tabellen und ignoriert unbekannte Tabellen", async () => {
@@ -341,6 +371,7 @@ describe("POST /api/admin/dumps/import", () => {
     delete dumpData.tables["employeeNotes"];
     delete dumpData.tables["employeeAttachments"];
     delete dumpData.tables["employeeTags"];
+    delete dumpData.tables["tourWeekEmployees"];
     dumpData.tables["users"] = [];
 
     const legacyZipBuffer = await buildZipFromDataJson(dumpData);

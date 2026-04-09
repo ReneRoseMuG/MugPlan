@@ -97,6 +97,7 @@ const DUMP_TABLE_ENTRIES = [
   { key: "noteTemplates", table: schema.noteTemplates },
   { key: "notes", table: schema.notes },
   { key: "employees", table: schema.employees },
+  { key: "tourWeekEmployees", table: schema.tourWeekEmployees },
   { key: "customers", table: schema.customers },
   { key: "products", table: schema.products },
   { key: "components", table: schema.components },

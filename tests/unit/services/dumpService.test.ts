@@ -6,7 +6,8 @@
  * - Nicht-Admin-Rollen erhalten für alle Dump-Operationen einen 403-Fehler.
  * - Ungültige oder Path-Traversal-Dateinamen werden mit 422 abgelehnt.
  * - Fehlende Dump-Dateien werden mit 404 beantwortet.
- * - Der erlaubte Dump-Tabellensatz bleibt explizit, und ausgeschlossene Tabellen bleiben außen vor.
+ * - Der erlaubte Dump-Tabellensatz bleibt explizit, enthält neue Persistenz wie `tourWeekEmployees`
+ *   und lässt ausgeschlossene Tabellen außen vor.
  * - Das Dump-Format verlangt Version und gültige Arrays je bekannter Tabelle.
  * - Fehlende bekannte Tabellen werden beim Import tolerant als leer behandelt.
  * - Unbekannte Tabellen werden ignoriert und geloggt.
@@ -268,6 +269,7 @@ describe("dumpService – Environment-Guard", () => {
 describe("dumpService – Tabellenvertrag", () => {
   it("enthält tours im erlaubten Dump-Satz", () => {
     expect(DUMP_TABLE_KEYS).toContain("tours");
+    expect(DUMP_TABLE_KEYS).toContain("tourWeekEmployees");
   });
 
   it("schließt users und roles explizit aus", () => {
