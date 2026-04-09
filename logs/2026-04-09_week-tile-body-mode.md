@@ -18,6 +18,8 @@ Ein separates USER-Setting fuer den Body-Modus der Wochenkachel eingefuehrt. Die
 - Das vorhandene `displayMode`-Prop von `CalendarWeekSpanningTile` wurde nicht umgedeutet, sondern nur um `weekTileBodyMode` ergaenzt.
 - Der Default/Fallback fuer das neue Setting ist `semiexpanded`, damit das bisherige Verhalten der Wochenkachel erhalten bleibt.
 - Fuer den Kundenblock wurde die bestehende `CustomerInfoPanel`-Mode-Logik wiederverwendet, statt eine neue Kundenpanel-Variante einzufuehren.
+- Nach der ersten Umsetzung wurde `collapsed` nachgeschaerft: Beide Subpanels bleiben sichtbar, laufen jeweils im collapsed-Modus und der Body streckt sich in diesem Modus nicht mehr auf eine feste Hoehe.
+- Die fuenf Schaltflaechen der beiden Header-Toggles wurden danach auf Inhaltsbreite reduziert, indem die festen Mindestbreiten entfernt wurden.
 
 ## Betroffene Dateien
 
@@ -51,6 +53,7 @@ Erfolgreich ausgefuehrt:
 - `npm run audit`
 - `npm run secrets`
 - `npm run test:unit`
+- zusaetzlich gezielte Re-Runs fuer die Header- und Karten-Tests nach den Nachkorrekturen
 
 ## Bekannte Einschraenkungen
 

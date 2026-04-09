@@ -641,7 +641,7 @@ export function CalendarWeekView({
                 });
               }}
               data-testid="toggle-week-tile-body-mode-collapsed"
-              className={`min-w-[88px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 weekTileBodyMode === "collapsed"
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -659,7 +659,7 @@ export function CalendarWeekView({
                 });
               }}
               data-testid="toggle-week-tile-body-mode-semiexpanded"
-              className={`min-w-[88px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 weekTileBodyMode === "semiexpanded"
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -677,7 +677,7 @@ export function CalendarWeekView({
                 });
               }}
               data-testid="toggle-week-tile-body-mode-expanded"
-              className={`min-w-[88px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 weekTileBodyMode === "expanded"
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -692,7 +692,7 @@ export function CalendarWeekView({
               type="button"
               onClick={() => onWeekLanesCollapsedChange?.(false)}
               data-testid="toggle-week-lanes-expanded"
-              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 !isCollapsedMode
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -704,7 +704,7 @@ export function CalendarWeekView({
               type="button"
               onClick={() => onWeekLanesCollapsedChange?.(true)}
               data-testid="toggle-week-lanes-collapsed"
-              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 isCollapsedMode
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"

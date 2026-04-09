@@ -101,7 +101,8 @@ export function CalendarWeekSpanningTile({
   const resolvedStartTime = appointment.startTime?.trim().slice(0, 5) || null;
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
-  const showCustomerPanel = weekTileBodyMode !== "collapsed";
+  const isCollapsedBodyMode = weekTileBodyMode === "collapsed";
+  const showCustomerPanel = true;
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
   const projectCollapsed = weekTileBodyMode === "collapsed";
   const mergedTags = mergeUniqueTags(
@@ -166,8 +167,8 @@ export function CalendarWeekSpanningTile({
   );
 
   const bodyContent = (
-    <div className="flex h-full min-h-0 flex-col bg-white/90">
-      <div className="relative min-h-0 flex-1 px-1 pt-1" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+    <div className={`flex min-h-0 flex-col bg-white/90 ${isCollapsedBodyMode ? "" : "h-full"}`}>
+      <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-spanning-tile-content-${appointment.id}`}>
         {isConflict ? (
           <div
             className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
@@ -202,7 +203,7 @@ export function CalendarWeekSpanningTile({
         gridTemplateRows: "auto 1fr",
         borderColor: highlighted ? undefined : borderColor,
         boxShadow: uniformBorderShadow,
-        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
+        ...(!isCollapsedBodyMode && uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
         ...style,
       }}
       onDoubleClick={onDoubleClick}
