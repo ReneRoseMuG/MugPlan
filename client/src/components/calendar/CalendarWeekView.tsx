@@ -295,7 +295,7 @@ export function CalendarWeekView({
     laneHeightByKeyRef.current.clear();
     projectStatusHeightByWeekRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
-  }, [appointments, scrollResetKey]);
+  }, [appointments, scrollResetKey, weekTileBodyMode, weekAppointmentDisplayMode]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
