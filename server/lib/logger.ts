@@ -3,6 +3,7 @@ import path from "path";
 
 type LogLevel = "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG";
 type HttpLogMode = "off" | "errors" | "brief";
+type AuthLogEvent = "login_success" | "login_failed" | "logout" | "2fa_success" | "2fa_failed" | "quick_login";
 
 const levelPriority: Record<LogLevel, number> = {
   OFF: -1,
@@ -109,11 +110,33 @@ function writeToConsole(level: LogLevel, line: string): void {
   }
 }
 
-function appendToLogFile(line: string): void {
-  const logPath = path.resolve(process.cwd(), "server.log");
-  fs.appendFile(logPath, `${line}\n`, () => {
+function getLogDirPath(): string {
+  const logDir = (process.env.LOG_DIR ?? "./app-logs").trim() || "./app-logs";
+  return path.resolve(process.cwd(), logDir);
+}
+
+function ensureLogDirExists(logDirPath: string): void {
+  try {
+    fs.mkdirSync(logDirPath, { recursive: true });
+  } catch {
+    // Logging must never throw.
+  }
+}
+
+function appendLineToFile(filePath: string, line: string): void {
+  fs.appendFile(filePath, `${line}\n`, () => {
     // Logging must never throw.
   });
+}
+
+function appendToNamedLogFile(fileName: string, line: string): void {
+  const logDirPath = getLogDirPath();
+  ensureLogDirExists(logDirPath);
+  appendLineToFile(path.join(logDirPath, fileName), line);
+}
+
+function getDailyLogFileName(timestamp: string): string {
+  return `${timestamp.slice(0, 10)}.log`;
 }
 
 function emit(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
@@ -123,7 +146,10 @@ function emit(level: LogLevel, message: string, meta?: Record<string, unknown>):
   const payload = sanitizedMeta ? ` ${JSON.stringify(sanitizedMeta)}` : "";
   const line = `${timestamp} [${level}] ${message}${payload}`;
   writeToConsole(level, line);
-  appendToLogFile(line);
+  appendToNamedLogFile(getDailyLogFileName(timestamp), line);
+  if (level === "ERROR") {
+    appendToNamedLogFile("error.log", line);
+  }
 }
 
 export function logError(message: string, meta?: Record<string, unknown>): void {
@@ -140,6 +166,17 @@ export function logInfo(message: string, meta?: Record<string, unknown>): void {
 
 export function logDebug(message: string, meta?: Record<string, unknown>): void {
   emit("DEBUG", message, meta);
+}
+
+export function logAuth(event: AuthLogEvent, meta?: Record<string, unknown>): void {
+  const timestamp = new Date().toISOString();
+  const sanitizedMeta = meta ? sanitizeValue(meta) : undefined;
+  const payload = sanitizedMeta ? ` ${JSON.stringify(sanitizedMeta)}` : "";
+  const message = `[auth] ${event}`;
+  const line = `${timestamp} [INFO] ${message}${payload}`;
+
+  emit("INFO", message, meta);
+  appendToNamedLogFile("auth.log", line);
 }
 
 export function isSqlLoggingEnabled(): boolean {

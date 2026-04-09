@@ -4,6 +4,8 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
+| [tests/unit/auth/authController.logging.test.ts](../tests/unit/auth/authController.logging.test.ts) | Logging-System / Auth | Unit | Auth-Controller auf logAuth-Verdrahtung fuer Login-, 2FA-, Schnelllogin- und Logout-Pfade absichern | Neu |
+| [tests/unit/logger.test.ts](../tests/unit/logger.test.ts) | Logging-System | Unit | Tages-, Error- und Auth-Log-Routing inklusive `LOG_DIR`-Override und Verzeichnisanlage des zentralen Loggers absichern | Neu |
 | [tests/helpers/calendarConsistencyFixtures.ts](../tests/helpers/calendarConsistencyFixtures.ts) | Kalenderkonsistenz-Suite | Test Helper | Gemeinsame Kalender-Fixture fuer zwei Touren, fuenf Monate und definierte Sonderfalltermine der Konsistenz-Suite bereitstellen | Neu |
 | [tests/unit/lib/calendarConsistency.date-kw.test.ts](../tests/unit/lib/calendarConsistency.date-kw.test.ts) | Kalenderkonsistenz-Suite | Unit | ISO-KW-, Enddatum-, Dauer- und Sortierregeln fuer die gemeinsamen Kalender-Sonderfaelle isoliert absichern | Neu |
 | [tests/e2e-browser/calendar-consistency.week-month-dates.browser.e2e.spec.ts](../tests/e2e-browser/calendar-consistency.week-month-dates.browser.e2e.spec.ts) | Kalenderkonsistenz-Suite | E2E Browser | Datums- und KW-Konsistenz derselben Sonderfalltermine zwischen Wochen- und Monatskalender browserseitig absichern | Neu |

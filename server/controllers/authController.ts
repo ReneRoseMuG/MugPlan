@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as authService from "../services/authService";
+import { logAuth } from "../lib/logger";
 
 export async function getSetupStatus(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -57,6 +58,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     }
     if (result.payload.status === "authenticated") {
       req.session.userId = result.payload.userId;
+      logAuth("login_success", { userId: result.payload.userId });
     }
     res.json(result.payload);
   } catch (error) {
@@ -65,6 +67,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       return;
     }
     if (authService.isAuthError(error)) {
+      logAuth("login_failed", { code: error.code });
       res.status(error.status).json({ code: error.code });
       return;
     }
@@ -104,6 +107,7 @@ export async function verifyTwoFactor(req: Request, res: Response, next: NextFun
     });
     delete req.session.preAuth;
     req.session.userId = payload.userId;
+    logAuth("2fa_success", { userId: payload.userId });
     res.json(payload);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -111,6 +115,7 @@ export async function verifyTwoFactor(req: Request, res: Response, next: NextFun
       return;
     }
     if (authService.isAuthError(error)) {
+      logAuth("2fa_failed", { code: error.code });
       res.status(error.status).json({ code: error.code });
       return;
     }
@@ -137,6 +142,7 @@ export async function quickLogin(req: Request, res: Response, next: NextFunction
     const payload = await authService.quickLoginByRole(input);
     delete req.session.preAuth;
     req.session.userId = payload.userId;
+    logAuth("quick_login", { userId: payload.userId });
     res.json(payload);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -153,12 +159,14 @@ export async function quickLogin(req: Request, res: Response, next: NextFunction
 
 export async function logout(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const userId = req.session.userId;
     delete req.session.preAuth;
     req.session.destroy((error) => {
       if (error) {
         next(error);
         return;
       }
+      logAuth("logout", { userId });
       res.json({ ok: true });
     });
   } catch (error) {
