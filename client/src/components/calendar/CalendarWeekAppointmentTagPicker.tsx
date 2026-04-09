@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListChecks } from "lucide-react";
 import type { Tag } from "@shared/schema";
-import { EntityEditDialog } from "@/components/ui/entity-edit-dialog";
+import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
-import { TagBadge } from "@/components/ui/tag-badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
@@ -30,12 +29,12 @@ export function CalendarWeekAppointmentTagPicker({
 }: CalendarWeekAppointmentTagPickerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("appointment"),
     queryFn: () => fetchTagCatalog("appointment"),
-    enabled: dialogOpen,
+    enabled: pickerOpen,
     staleTime: 60_000,
   });
 
@@ -62,7 +61,7 @@ export function CalendarWeekAppointmentTagPicker({
     },
     onSuccess: async () => {
       await invalidateAfterMutation();
-      setDialogOpen(false);
+      setPickerOpen(false);
     },
     onError: (mutationError: Error) => {
       toast({
@@ -73,62 +72,44 @@ export function CalendarWeekAppointmentTagPicker({
     },
   });
 
-  const handleOpenDialogClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const stopPropagation = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    if (!canEdit) return;
-    setDialogOpen(true);
   };
 
   return (
-    <>
-      <div className="flex w-full items-start gap-2" data-testid={testId}>
-        <div className="min-w-0 flex-1">
-          <EntityTagFooterRow tags={tags} testId={`${testId}-badges`} />
-        </div>
-        {canEdit ? (
-          <PlusActionButton
-            className="mt-0.5 shrink-0"
-            onClick={handleOpenDialogClick}
-            onMouseDown={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onDoubleClick={(event) => event.stopPropagation()}
-            data-testid={`${testId}-button`}
-            aria-label="Tag-Picker öffnen"
-            title="Tag hinzufügen"
-          />
-        ) : null}
+    <div className="flex w-full items-start gap-2" data-testid={testId}>
+      <div className="min-w-0 flex-1">
+        <EntityTagFooterRow tags={tags} testId={`${testId}-badges`} />
       </div>
-
-      <EntityEditDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onCancel={() => setDialogOpen(false)}
-        title="Tag zu Termin hinzufügen"
-        icon={ListChecks}
-        maxWidth="max-w-4xl"
-        hideActions
-      >
-        <div className="space-y-3" data-testid={`${testId}-dialog`}>
-          {addableTags.length === 0 ? (
-            <p className="text-sm text-slate-400">Keine weiteren Tags verfügbar.</p>
-          ) : (
-            addableTags.map((tag) => (
-              <TagBadge
-                key={tag.id}
-                tag={tag}
-                action="add"
-                onAdd={() => addTagMutation.mutate(tag.id)}
-                fullWidth
-                testId={`${testId}-add-${tag.id}`}
+      {canEdit ? (
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverTrigger asChild>
+            <PlusActionButton
+              className="mt-0.5 shrink-0"
+              onClick={stopPropagation}
+              onMouseDown={stopPropagation}
+              onPointerDown={stopPropagation}
+              onDoubleClick={stopPropagation}
+              data-testid={`${testId}-button`}
+              aria-label="Tag-Picker öffnen"
+              title="Tag hinzufügen"
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-3" align="end">
+            <div data-testid={`${testId}-dialog`}>
+              <TagSelectionMenuContent
+                tags={addableTags}
+                onAddTag={(tagId) => addTagMutation.mutate(tagId)}
+                emptyText="Keine weiteren Tags verfügbar."
+                testIdPrefix={`${testId}-add`}
+                showVerboseLabels
+                pendingText={addTagMutation.isPending ? "Änderung wird gespeichert ..." : null}
+                title="Tag hinzufügen"
               />
-            ))
-          )}
-          {addTagMutation.isPending ? (
-            <p className="text-xs text-muted-foreground">Änderung wird gespeichert ...</p>
-          ) : null}
-        </div>
-      </EntityEditDialog>
-    </>
+            </div>
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    </div>
   );
 }

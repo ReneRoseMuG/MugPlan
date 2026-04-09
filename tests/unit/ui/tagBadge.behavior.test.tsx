@@ -5,6 +5,7 @@
  *
  * Abgedeckte Regeln:
  * - TagBadge nutzt den gekuerzten sichtbaren Namen inklusive Abkuerzungspunkt fuer lange Einwort-Tags.
+ * - Der Picker-Sondermodus rendert Shortcode als Primärlabel und den Vollnamen nur als Zusatzinfo in Klammern.
  * - Vorschau, Farbe und Aktions-Callbacks werden an die gemeinsame Badge-Basis weitergereicht.
  *
  * Fehlerfaelle:
@@ -64,5 +65,21 @@ describe("FT28 UI: TagBadge behavior", () => {
       testId: "tag-badge-7",
     });
     expect(html).toContain("Syst.");
+  });
+
+  it("renders picker labels as shortcode with full name in parentheses", () => {
+    renderToStaticMarkup(
+      <TagBadge
+        tag={{ id: 11, name: "Sondermaß", color: "#123456" } as any}
+        action="add"
+        displayMode="pickerVerbose"
+        testId="tag-badge-picker-11"
+      />,
+    );
+
+    const renderedLabel = renderToStaticMarkup(<>{badgeCalls[0]?.label as React.ReactNode}</>);
+    expect(renderedLabel).toContain("Sond.");
+    expect(renderedLabel).toContain("(Sondermaß)");
+    expect(renderedLabel.indexOf("Sond.")).toBeLessThan(renderedLabel.indexOf("(Sondermaß)"));
   });
 });

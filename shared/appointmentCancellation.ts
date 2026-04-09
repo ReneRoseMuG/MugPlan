@@ -43,20 +43,9 @@ export function isProtectedSystemTagName(value: string): boolean {
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
+  void domain;
   if (isReservedAppointmentCancellationTagName(value)) {
     return false;
-  }
-
-  if (isManagedReportExclusionTagName(value)) {
-    return domain === "project" || domain === "appointment";
-  }
-
-  if (isManagedSpecialMeasureTagName(value)) {
-    return domain === "project" || domain === "appointment";
-  }
-
-  if (isManagedMesseTagName(value)) {
-    return domain === "project" || domain === "appointment";
   }
 
   return true;

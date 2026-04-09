@@ -47,6 +47,21 @@ async function waitForFile(filePath: string): Promise<string> {
   throw new Error(`Timed out waiting for log file '${filePath}'.`);
 }
 
+async function waitForFileContent(filePath: string, expectedSnippet: string): Promise<string> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    try {
+      const content = await fs.readFile(filePath, "utf8");
+      if (content.includes(expectedSnippet)) {
+        return content;
+      }
+    } catch {
+      // Retry until the async append has flushed content.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  throw new Error(`Timed out waiting for '${expectedSnippet}' in log file '${filePath}'.`);
+}
+
 describe("logger runtime file routing", () => {
   beforeEach(async () => {
     vi.resetModules();
@@ -76,8 +91,8 @@ describe("logger runtime file routing", () => {
     const errorLogPath = path.join(logDir, "error.log");
 
     const [dailyContent, errorContent] = await Promise.all([
-      waitForFile(dailyLogPath),
-      waitForFile(errorLogPath),
+      waitForFileContent(dailyLogPath, "[ERROR] kaputt"),
+      waitForFileContent(errorLogPath, "[ERROR] kaputt"),
     ]);
 
     expect(await fs.stat(logDir)).toBeTruthy();
@@ -95,7 +110,7 @@ describe("logger runtime file routing", () => {
     const logDir = path.resolve(tempRoot!, "app-logs");
     const dailyLogPath = path.join(logDir, dailyFileName);
     const errorLogPath = path.join(logDir, "error.log");
-    const dailyContent = await waitForFile(dailyLogPath);
+    const dailyContent = await waitForFileContent(dailyLogPath, "[INFO] alles gut");
 
     expect(dailyContent).toContain("[INFO] alles gut");
     await expect(fs.access(errorLogPath)).rejects.toThrow();
@@ -112,8 +127,8 @@ describe("logger runtime file routing", () => {
     const authLogPath = path.join(logDir, "auth.log");
 
     const [dailyContent, authContent] = await Promise.all([
-      waitForFile(dailyLogPath),
-      waitForFile(authLogPath),
+      waitForFileContent(dailyLogPath, "[INFO] [auth] login_success"),
+      waitForFileContent(authLogPath, "[INFO] [auth] login_success"),
     ]);
 
     expect(dailyContent).toContain("[INFO] [auth] login_success");
@@ -130,7 +145,7 @@ describe("logger runtime file routing", () => {
 
     const logDir = path.resolve(tempRoot!, "app-logs");
     const dailyLogPath = path.join(logDir, expectedDailyFileName);
-    const dailyContent = await waitForFile(dailyLogPath);
+    const dailyContent = await waitForFileContent(dailyLogPath, "[WARN] achtung");
 
     expect(dailyContent).toContain("[WARN] achtung");
   });
@@ -144,7 +159,7 @@ describe("logger runtime file routing", () => {
     const dailyFileName = `${new Date().toISOString().slice(0, 10)}.log`;
     const customDir = path.resolve(tempRoot!, "custom-runtime-logs");
     const customDailyLogPath = path.join(customDir, dailyFileName);
-    const customDailyContent = await waitForFile(customDailyLogPath);
+    const customDailyContent = await waitForFileContent(customDailyLogPath, "[INFO] anderswo");
 
     expect(customDailyContent).toContain("[INFO] anderswo");
   });

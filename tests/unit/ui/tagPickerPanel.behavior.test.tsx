@@ -6,6 +6,7 @@
  * Abgedeckte Regeln:
  * - Zugewiesene Tags werden im Edit-Modus als entfernbar gerendert.
  * - Die Add-Liste enthaelt nur noch nicht zugewiesene Tags.
+ * - Picker-Optionen rendern den ausfuehrlichen Labelmodus mit dominantem Shortcode und Vollnamen in Klammern.
  * - Add/Remove-Aktionen loesen die beobachtbaren Callback-Effekte aus.
  *
  * Fehlerfaelle:
@@ -27,10 +28,10 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/entity-edit-dialog", () => ({
-  EntityEditDialog: ({ children, open }: { children?: React.ReactNode; open?: boolean }) => (
-    <section data-testid="tag-picker-dialog" data-open={String(open)}>{children}</section>
-  ),
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children?: React.ReactNode }) => <section data-testid="tag-picker-popover">{children}</section>,
+  PopoverTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  PopoverContent: ({ children }: { children?: React.ReactNode }) => <section data-testid="tag-picker-dialog">{children}</section>,
 }));
 
 vi.mock("@/components/ui/sidebar-child-panel", () => ({
@@ -97,7 +98,7 @@ describe("FT28 UI: TagPickerPanel behavior", () => {
     const addCall = tagBadgeCalls.find((call) => call.testId === "tags-add-tag-2");
 
     expect(assignedCall).toMatchObject({ action: "remove" });
-    expect(addCall).toMatchObject({ action: "add" });
+    expect(addCall).toMatchObject({ action: "add", displayMode: "pickerVerbose" });
     expect(tagBadgeCalls.find((call) => call.testId === "tags-add-tag-1")).toBeUndefined();
 
     (assignedCall?.onRemove as (() => void) | undefined)?.();
@@ -123,7 +124,7 @@ describe("FT28 UI: TagPickerPanel behavior", () => {
     const assignedCall = tagBadgeCalls.find((call) => call.testId === "readonly-tag-1");
     const addCall = tagBadgeCalls.find((call) => call.testId === "readonly-add-tag-2");
     expect(assignedCall).toMatchObject({ action: "none" });
-    expect(addCall).toMatchObject({ action: "add" });
+    expect(addCall).toBeUndefined();
     (addCall?.onAdd as (() => void) | undefined)?.();
     expect(onAdd).not.toHaveBeenCalled();
     expect(html).not.toContain("readonly-button-add");

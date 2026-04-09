@@ -4,6 +4,9 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
+| [tests/e2e-browser/tag-selection-unification.browser.e2e.spec.ts](../tests/e2e-browser/tag-selection-unification.browser.e2e.spec.ts) | FT28 | E2E Browser | Vereinheitlichte Tag-Auswahl an Projekt-Edit-Formular, Kundenliste mit Tag-Filter sowie regulären und mehrtägigen Wochen-Terminkarten browserseitig absichern | Neu |
+| [tests/unit/ui/tagPickerPanel.behavior.test.tsx](../tests/unit/ui/tagPickerPanel.behavior.test.tsx) | FT28 | Unit | TagPickerPanel auf unzugewiesene Add-Liste, Callback-Wiring und den ausführlichen Picker-Labelmodus mit Shortcode plus vollem Tag-Namen absichern | Erweitert |
+| [tests/unit/lib/appointmentCancellation.test.ts](../tests/unit/lib/appointmentCancellation.test.ts) | FT28 | Unit | Zentrale Picker-Sichtbarkeitsregeln für alle Domänen auf den vereinheitlichten Katalog „alles außer Storniert“ absichern | Erweitert |
 | [tests/unit/auth/authController.logging.test.ts](../tests/unit/auth/authController.logging.test.ts) | Logging-System / Auth | Unit | Auth-Controller auf logAuth-Verdrahtung fuer Login-, 2FA-, Schnelllogin- und Logout-Pfade absichern | Neu |
 | [tests/unit/logger.test.ts](../tests/unit/logger.test.ts) | Logging-System | Unit | Tages-, Error- und Auth-Log-Routing inklusive `LOG_DIR`-Override und Verzeichnisanlage des zentralen Loggers absichern | Neu |
 | [tests/helpers/calendarConsistencyFixtures.ts](../tests/helpers/calendarConsistencyFixtures.ts) | Kalenderkonsistenz-Suite | Test Helper | Gemeinsame Kalender-Fixture fuer zwei Touren, fuenf Monate und definierte Sonderfalltermine der Konsistenz-Suite bereitstellen | Neu |

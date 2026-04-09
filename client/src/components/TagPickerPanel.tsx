@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { EntityEditDialog } from "@/components/ui/entity-edit-dialog";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ListChecks, Plus, Tags } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
 import type { Tag } from "@shared/schema";
 
 export type TagRelationItem = {
@@ -21,7 +22,6 @@ interface TagPickerPanelProps {
   onRemove: (item: TagRelationItem) => void;
   title?: string;
   emptyText?: string;
-  addDialogTitle?: string;
   canEdit?: boolean;
   className?: string;
   testIdPrefix?: string;
@@ -36,47 +36,34 @@ export function TagPickerPanel({
   onRemove,
   title = "Tags",
   emptyText = "Keine Tags zugewiesen",
-  addDialogTitle = "Tag hinzufügen",
   canEdit = false,
   className,
   testIdPrefix = "tag-picker",
 }: TagPickerPanelProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-
   const assignedIds = useMemo(() => new Set(assignedTags.map((item) => item.tag.id)), [assignedTags]);
   const unassignedTags = useMemo(
     () => availableTags.filter((tag) => !assignedIds.has(tag.id)),
     [assignedIds, availableTags],
   );
 
-  const handleOpenDialog = () => {
-    if (!canEdit) return;
-    setDialogOpen(true);
-  };
-
-  const handleSelectTag = (tagId: number) => {
-    if (!canEdit) return;
-    onAdd(tagId);
-    setDialogOpen(false);
-  };
-
   return (
-    <>
-      <SidebarChildPanel
-        title={`${title} (${assignedTags.length})`}
-        icon={<Tags className="h-4 w-4" />}
-        className={className}
-        headerActions={canEdit ? (
+    <SidebarChildPanel
+      title={`${title} (${assignedTags.length})`}
+      icon={<Tags className="h-4 w-4" />}
+      className={className}
+      headerActions={canEdit ? (
+        <Popover>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={handleOpenDialog}
-                data-testid={`${testIdPrefix}-button-add`}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              <PopoverTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  data-testid={`${testIdPrefix}-button-add`}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
             </TooltipTrigger>
             <TooltipContent>
               {availableTags.length === 0
@@ -86,65 +73,48 @@ export function TagPickerPanel({
                   : "Tag hinzufügen"}
             </TooltipContent>
           </Tooltip>
-        ) : null}
-      >
-        <div className="space-y-2" data-testid={`${testIdPrefix}-assigned-list`}>
-          {isLoading ? (
-            <div className="animate-pulse space-y-2">
-              <div className="h-10 rounded-md bg-slate-200" />
-              <div className="h-10 rounded-md bg-slate-200" />
-            </div>
-          ) : (
-            <>
-              {loadErrorMessage ? (
-                <p className="py-2 text-center text-sm text-destructive" data-testid={`${testIdPrefix}-load-error`}>
-                  {loadErrorMessage}
-                </p>
-              ) : null}
-              {assignedTags.map((item) => (
-                <TagBadge
-                  key={item.tag.id}
-                  tag={item.tag}
-                  action={canEdit ? "remove" : "none"}
-                  onRemove={canEdit ? () => onRemove(item) : undefined}
-                  fullWidth
-                  testId={`${testIdPrefix}-tag-${item.tag.id}`}
-                />
-              ))}
-              {assignedTags.length === 0 ? (
-                <p className="py-2 text-center text-sm text-slate-400">{emptyText}</p>
-              ) : null}
-            </>
-          )}
-        </div>
-      </SidebarChildPanel>
-
-      <EntityEditDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onCancel={() => setDialogOpen(false)}
-        title={addDialogTitle}
-        icon={ListChecks}
-        maxWidth="max-w-4xl"
-        hideActions
-      >
-        <div className="space-y-3" data-testid={`${testIdPrefix}-available-list`}>
-          {unassignedTags.length === 0 ? (
-            <p className="text-sm text-slate-400">Alle Tags sind bereits zugewiesen.</p>
-          ) : (
-            unassignedTags.map((tag) => (
+          <PopoverContent className="w-72 p-3" align="end">
+            <TagSelectionMenuContent
+              tags={unassignedTags}
+              onAddTag={onAdd}
+              emptyText="Alle Tags sind bereits zugewiesen."
+              testIdPrefix={`${testIdPrefix}-add-tag`}
+              showVerboseLabels
+              title="Tag hinzufügen"
+            />
+          </PopoverContent>
+        </Popover>
+      ) : null}
+    >
+      <div className="space-y-2" data-testid={`${testIdPrefix}-assigned-list`}>
+        {isLoading ? (
+          <div className="animate-pulse space-y-2">
+            <div className="h-10 rounded-md bg-slate-200" />
+            <div className="h-10 rounded-md bg-slate-200" />
+          </div>
+        ) : (
+          <>
+            {loadErrorMessage ? (
+              <p className="py-2 text-center text-sm text-destructive" data-testid={`${testIdPrefix}-load-error`}>
+                {loadErrorMessage}
+              </p>
+            ) : null}
+            {assignedTags.map((item) => (
               <TagBadge
-                key={tag.id}
-                tag={tag}
-                action="add"
-                onAdd={() => handleSelectTag(tag.id)}
+                key={item.tag.id}
+                tag={item.tag}
+                action={canEdit ? "remove" : "none"}
+                onRemove={canEdit ? () => onRemove(item) : undefined}
                 fullWidth
-                testId={`${testIdPrefix}-add-tag-${tag.id}`}
+                testId={`${testIdPrefix}-tag-${item.tag.id}`}
               />
-            ))
-          )}
-        </div>
-      </EntityEditDialog>
-    </>
+            ))}
+            {assignedTags.length === 0 ? (
+              <p className="py-2 text-center text-sm text-slate-400">{emptyText}</p>
+            ) : null}
+          </>
+        )}
+      </div>
+    </SidebarChildPanel>
   );
 }

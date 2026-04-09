@@ -776,7 +776,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               loadErrorMessage={isEditMode && customerTagsError instanceof Error ? customerTagsError.message : null}
               canEdit={canManageCustomerTags}
               title="Tags"
-              addDialogTitle="Tag zu Kunden hinzufuegen"
               testIdPrefix="customer-tag-picker"
               onAdd={(tagId) => {
                 if (isEditMode) {

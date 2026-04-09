@@ -1485,7 +1485,6 @@ export function ProjectForm({
               loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
               canEdit={canManageProjectTags}
               title="Tags"
-              addDialogTitle="Tag zu Projekt hinzufuegen"
               testIdPrefix="project-tag-picker"
               onAdd={(tagId) => {
                 if (isEditing) {

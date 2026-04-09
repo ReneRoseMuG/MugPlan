@@ -716,7 +716,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               loadErrorMessage={isEditing && employeeTagsError instanceof Error ? employeeTagsError.message : null}
               canEdit={canManageEmployeeTags}
               title="Tags"
-              addDialogTitle="Tag zu Mitarbeiter hinzufuegen"
               testIdPrefix="employee-tag-picker"
               onAdd={(tagId) => {
                 if (isEditing) {

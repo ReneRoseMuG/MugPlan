@@ -12,6 +12,7 @@ interface TagBadgeProps {
   size?: "default" | "sm";
   fullWidth?: boolean;
   testId?: string;
+  displayMode?: "default" | "pickerVerbose";
 }
 
 export function TagBadge({
@@ -22,14 +23,25 @@ export function TagBadge({
   size = "default",
   fullWidth = false,
   testId,
+  displayMode = "default",
 }: TagBadgeProps) {
   const iconClassName = size === "sm" ? "h-3 w-3" : "h-4 w-4";
   const visualStyle = size === "sm" ? "footer" : "default";
+  const trimmedLabel = trimTagLabel(tag.name);
+  const fullName = tag.name.trim();
+  const label = displayMode === "pickerVerbose"
+    ? (
+      <span className="flex min-w-0 items-baseline gap-1.5">
+        <span className="shrink-0 font-semibold text-foreground">{trimmedLabel}</span>
+        <span className="min-w-0 truncate text-[11px] text-muted-foreground">({fullName})</span>
+      </span>
+    )
+    : trimmedLabel;
 
   return (
     <ColoredInfoBadge
       icon={<TagIcon className={iconClassName} />}
-      label={trimTagLabel(tag.name)}
+      label={label}
       color={tag.color}
       foregroundColor="#ffffff"
       action={action}

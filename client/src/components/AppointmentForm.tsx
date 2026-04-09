@@ -1785,7 +1785,6 @@ export function AppointmentForm({
               loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
               canEdit={canManageAppointmentTags && !isMutationLocked}
               title="Tags"
-              addDialogTitle="Tag zu Termin hinzufügen"
               testIdPrefix="appointment-tag-picker"
               onAdd={(tagId) => {
                 if (isEditing) {

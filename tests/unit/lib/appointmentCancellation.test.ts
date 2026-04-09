@@ -5,14 +5,14 @@
  * - Der reservierte Termin-Storno-Tag wird namensbasiert robust erkannt.
  * - Die systemverwalteten Report-Tags "Reklamation", "Sondermaß" und "Anmerkungen" werden robust erkannt.
  * - "Anmerkungen" bleibt sichtbar in allen Pickern und ist kein geschuetzter System-Tag.
- * - Die serverseitigen Filter blenden weiterhin nur den Termin-Storno-Tag aus.
+ * - Die serverseitigen Picker-Filter vereinheitlichen alle Domänen auf "alles außer Storniert".
  *
  * Fehlerfaelle:
  * - "Anmerkungen" wuerde wie ein geschuetzter oder versteckter System-Tag behandelt.
- * - Server-Filter verlieren sichtbare Managed-Tags oder erkennen deren Namen nicht mehr robust.
+ * - Picker-Filter behalten alte domänenspezifische Ausschlüsse für Managed-Tags bei.
  *
  * Ziel:
- * Die zentrale Tag-Hilfslogik fuer FT26 ohne DB-Abhaengigkeit regressionssicher absichern.
+ * Die zentrale Tag-Hilfslogik fuer die vereinheitlichte Picker-Sichtbarkeit ohne DB-Abhaengigkeit regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -86,6 +86,8 @@ describe("appointment cancellation helpers", () => {
     for (const domain of ["appointment", "project", "customer", "employee"] as const) {
       expect(isPickerVisibleForDomain("Info", domain)).toBe(true);
       expect(isPickerVisibleForDomain("Anmerkungen", domain)).toBe(true);
+      expect(isPickerVisibleForDomain("Reklamation", domain)).toBe(true);
+      expect(isPickerVisibleForDomain(MANAGED_SPECIAL_MEASURE_TAG_NAME, domain)).toBe(true);
     }
 
     expect(isPickerVisibleForDomain("Storniert", "appointment")).toBe(false);
@@ -100,6 +102,19 @@ describe("appointment cancellation helpers", () => {
       { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
       { name: MANAGED_REMARKS_TAG_NAME },
     ], "project")).toEqual([
+      { name: "Info" },
+      { name: "Reklamation" },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
+      { name: MANAGED_REMARKS_TAG_NAME },
+    ]);
+
+    expect(filterPickerTagsForDomain([
+      { name: "Info" },
+      { name: "Storniert" },
+      { name: "Reklamation" },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
+      { name: MANAGED_REMARKS_TAG_NAME },
+    ], "customer")).toEqual([
       { name: "Info" },
       { name: "Reklamation" },
       { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
