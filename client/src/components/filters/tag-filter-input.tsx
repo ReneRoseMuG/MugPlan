@@ -41,9 +41,7 @@ export function TagFilterInput({
       </div>
       <div className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-          {selectedTags.length === 0 ? (
-            <span className="text-xs text-slate-400">Kein Tagfilter</span>
-          ) : (
+          {selectedTags.length > 0 ? (
             selectedTags.map((tag) => (
               <TagBadge
                 key={tag.id}
@@ -54,7 +52,7 @@ export function TagFilterInput({
                 testId={`${testIdPrefix}-${tag.id}`}
               />
             ))
-          )}
+          ) : null}
         </div>
         <Popover open={isOpen} onOpenChange={onOpenChange}>
           <PopoverTrigger asChild>
