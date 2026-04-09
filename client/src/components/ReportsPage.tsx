@@ -1466,19 +1466,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     className="max-h-[90vh] max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
                     data-testid="dialog-reports-produktionsplanung-category-layout"
                   >
-                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">Kategorie-Layout</p>
-                        <p className="mt-0.5 text-xs text-slate-400">Bloecke und Spaltenaufteilung</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsProduktionsplanungCategoryLayoutDialogOpen(false)}
-                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                        data-testid="button-reports-produktionsplanung-category-layout-dismiss"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                    <div className="border-b border-slate-100 px-5 py-4">
+                      <p className="text-sm font-semibold text-slate-800">Kategorie-Layout</p>
+                      <p className="mt-0.5 text-xs text-slate-400">Bloecke und Spaltenaufteilung</p>
                     </div>
 
                     <div className="min-h-0 overflow-auto p-5">
