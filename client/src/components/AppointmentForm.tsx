@@ -1,6 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Calendar, Clock, FolderKanban, Users, X } from "lucide-react";
-import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
+import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
@@ -288,6 +288,27 @@ const buildIsoWeekKey = (dateValue: string) => {
 const buildAppointmentWeekResolutionKey = (tourId: number | null, startDate: string) => {
   if (tourId === null) return null;
   return `${tourId}-${buildIsoWeekKey(startDate)}`;
+};
+
+const shiftEndDateByStartDateChange = (
+  currentStartDate: string,
+  currentEndDate: string,
+  nextStartDate: string,
+) => {
+  const parsedCurrentStartDate = parseISO(currentStartDate);
+  const parsedCurrentEndDate = parseISO(currentEndDate);
+  const parsedNextStartDate = parseISO(nextStartDate);
+
+  if (
+    Number.isNaN(parsedCurrentStartDate.getTime())
+    || Number.isNaN(parsedCurrentEndDate.getTime())
+    || Number.isNaN(parsedNextStartDate.getTime())
+  ) {
+    return nextStartDate;
+  }
+
+  const durationDays = differenceInCalendarDays(parsedCurrentEndDate, parsedCurrentStartDate);
+  return format(addDays(parsedNextStartDate, Math.max(0, durationDays)), "yyyy-MM-dd");
 };
 
 const getDefaultPreviewSelection = (preview: AppointmentWeekEmployeePreviewResponse) =>
@@ -799,6 +820,13 @@ export function AppointmentForm({
 
   const removeEmployee = (employeeId: number) => {
     setAssignedEmployeeIds((prev) => prev.filter((id) => id !== employeeId));
+  };
+
+  const handleStartDateChange = (nextStartDate: string) => {
+    if (isEndDateEnabled && endDate) {
+      setEndDate(shiftEndDateByStartDateChange(startDate, endDate, nextStartDate));
+    }
+    setStartDate(nextStartDate);
   };
 
   const handleAssignTeam = (team: Team) => {
@@ -2106,7 +2134,7 @@ export function AppointmentForm({
                   id="startDate"
                   type="date"
                   value={startDate}
-                  onChange={(event) => setStartDate(event.target.value)}
+                  onChange={(event) => handleStartDateChange(event.target.value)}
                   disabled={isMutationLocked}
                   data-testid="input-start-date"
                 />
