@@ -2063,7 +2063,7 @@ export function AppointmentForm({
                       disabled={isMutationLocked || cancelAppointmentMutation.isPending}
                       data-testid="button-cancel-appointment"
                     >
-                      {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
+                      {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
                     </Button>
                   ) : null}
                   <Button
@@ -2073,7 +2073,7 @@ export function AppointmentForm({
                     disabled={isMutationLocked || deleteAppointmentMutation.isPending}
                     data-testid="button-delete-appointment"
                   >
-                    Termin löschen
+                    Löschen
                   </Button>
                 </>
               ) : null}
@@ -2084,7 +2084,7 @@ export function AppointmentForm({
                 onClick={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
                 data-testid="button-secondary-cancel-appointment"
               >
-                {isReadOnlyView ? "Schließen" : "Abbrechen"}
+                {isReadOnlyView ? "Schließen" : "Zurück"}
               </Button>
             </div>
 

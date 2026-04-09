@@ -1551,7 +1551,7 @@ export function ProjectForm({
                   disabled={deleteProjectMutation.isPending}
                   data-testid="button-delete-project"
                 >
-          {deleteProjectMutation.isPending ? "Projekt löschen..." : "Projekt löschen"}
+          {deleteProjectMutation.isPending ? "Löschen..." : "Löschen"}
         </Button>
               ) : null}
 
@@ -1561,7 +1561,7 @@ export function ProjectForm({
                 onClick={handleRequestClose}
                 data-testid="button-cancel-project"
               >
-                Abbrechen
+                Zurück
               </Button>
             </div>
 
@@ -1571,7 +1571,7 @@ export function ProjectForm({
               disabled={isSubmitPending}
               data-testid="button-save-project"
             >
-              {isSubmitPending ? "Projekt speichern..." : "Projekt speichern"}
+              {isSubmitPending ? "Speichern..." : "Speichern"}
             </Button>
           </div>
         )}

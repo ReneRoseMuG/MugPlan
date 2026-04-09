@@ -49,7 +49,7 @@ export function EntityFormShell({
         >
           <div
             data-testid="entity-form-shell-main-inner"
-            className="mx-auto min-h-full w-full px-6 py-6"
+            className="mx-auto h-full w-full px-6 py-6"
             style={{ maxWidth: effectiveContentMaxWidth }}
           >
             {children}
@@ -59,20 +59,30 @@ export function EntityFormShell({
         {sidebar && (
           <div
             data-testid="entity-form-shell-sidebar"
-            className="flex-shrink-0 overflow-y-auto border-l border-[hsl(var(--color-border))] bg-[hsl(var(--color-cream))]"
+            className="flex-shrink-0 flex flex-col border-l border-[hsl(var(--color-border))] bg-[hsl(var(--color-cream))]"
             style={{ width: effectiveSidebarWidth }}
           >
-            {sidebar}
+            <div className="flex-1 overflow-y-auto">
+              {sidebar}
+            </div>
+            <div
+              data-testid="entity-form-shell-footer"
+              className="flex-shrink-0 border-t border-[hsl(var(--color-border))] bg-[hsl(var(--color-beige))]"
+            >
+              {footer}
+            </div>
           </div>
         )}
       </div>
 
-      <div
-        data-testid="entity-form-shell-footer"
-        className="sticky bottom-0 z-10 flex-shrink-0 bg-[hsl(var(--color-beige))] border-t border-[hsl(var(--color-border))]"
-      >
-        {footer}
-      </div>
+      {!sidebar && (
+        <div
+          data-testid="entity-form-shell-footer"
+          className="sticky bottom-0 z-10 flex-shrink-0 bg-[hsl(var(--color-beige))] border-t border-[hsl(var(--color-border))]"
+        >
+          {footer}
+        </div>
+      )}
     </div>
   );
 }

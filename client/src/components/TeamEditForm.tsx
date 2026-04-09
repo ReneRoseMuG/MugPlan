@@ -102,7 +102,7 @@ export function TeamEditForm({
                   disabled={isSaving || isDeleting}
                   data-testid="button-delete-team-form"
                 >
-                  {isDeleting ? "Loeschen..." : "Team loeschen"}
+                  {isDeleting ? "Löschen..." : "Löschen"}
                 </Button>
               ) : null}
               <Button
@@ -111,7 +111,7 @@ export function TeamEditForm({
                 onClick={onCancel}
                 data-testid="button-cancel-team"
               >
-                Abbrechen
+                Zurück
               </Button>
             </div>
 

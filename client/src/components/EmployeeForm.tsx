@@ -676,6 +676,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
+        contentMaxWidth={9999}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -787,7 +788,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                   onClick={onCancel}
                   data-testid="button-cancel-employee"
                 >
-                  Abbrechen
+                  Zurück
                 </Button>
               ) : null}
             </div>
@@ -810,7 +811,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </TabsList>
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
-            <div className="space-y-6 min-h-0">
+            <div className="space-y-6 min-h-0 max-w-[520px] mx-auto">
               <div className="space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Users className="w-4 h-4" />
