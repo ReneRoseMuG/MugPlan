@@ -43,10 +43,10 @@ export function CalendarWeekTourLaneHeaderBar({
       aria-expanded={isExpanded}
     >
       <div className="flex h-full items-center gap-1.5 min-w-0">
-        {weekNotesIcon && <span className="flex-shrink-0 opacity-80">{weekNotesIcon}</span>}
+        {weekNotesIcon && <span className="relative z-10 flex-shrink-0 opacity-80">{weekNotesIcon}</span>}
         <span className="truncate">{label}</span>
         {weekNotesCount !== undefined && (
-          <span className="flex-shrink-0 opacity-80">({weekNotesCount})</span>
+          <span className="relative z-10 flex-shrink-0 opacity-80">({weekNotesCount})</span>
         )}
       </div>
     </button>
