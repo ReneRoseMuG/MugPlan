@@ -141,6 +141,8 @@ function configureDefaults(appointments: CalendarAppointment[]) {
         return 0;
       case "calendar.weekAppointmentDisplayMode":
         return "standard";
+      case "calendar.weekTileBodyMode":
+        return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":
         return false;
       case "calendar.weekLanes.expandedLaneId":

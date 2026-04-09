@@ -110,4 +110,22 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(markup).not.toContain("week-project-description-hover-trigger");
     expect(markup).not.toContain("week-project-hover-renderer");
   });
+
+  it("renders only the project header in collapsed mode", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWeekAppointmentPanelProject
+        projectName="Projekt Gamma"
+        projectOrderNumber="AUF-9"
+        projectArticleItems={[{ label: "Modell", value: "C" }]}
+        projectDescription="<p>Beschreibung</p>"
+        collapsed
+        enableFullDescriptionPreview
+      />,
+    );
+
+    expect(markup).toContain("AUF-9 - Projekt Gamma");
+    expect(markup).not.toContain("week-project-renderer");
+    expect(markup).not.toContain("week-project-description-hover-trigger");
+    expect(markup).not.toContain("week-project-hover-renderer");
+  });
 });

@@ -20,12 +20,21 @@ import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "..
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekSpanningTile";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 
+const customerPanelCalls: Array<Record<string, unknown>> = [];
+const projectPanelCalls: Array<Record<string, unknown>> = [];
+
 vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentPanelCustomer", () => ({
-  CalendarWeekAppointmentPanelCustomer: () => <div data-testid="mock-week-customer-panel" />,
+  CalendarWeekAppointmentPanelCustomer: (props: Record<string, unknown>) => {
+    customerPanelCalls.push(props);
+    return <div data-testid="mock-week-customer-panel" />;
+  },
 }));
 
 vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentPanelProject", () => ({
-  CalendarWeekAppointmentPanelProject: () => <div data-testid="mock-week-project-panel" />,
+  CalendarWeekAppointmentPanelProject: (props: Record<string, unknown>) => {
+    projectPanelCalls.push(props);
+    return <div data-testid="mock-week-project-panel" />;
+  },
 }));
 
 vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
@@ -94,6 +103,8 @@ function createAppointment(overrides: Partial<CalendarAppointment> = {}): Calend
 describe("calendar week appointment card layout", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
+    customerPanelCalls.length = 0;
+    projectPanelCalls.length = 0;
   });
 
   afterEach(() => {
@@ -148,7 +159,7 @@ describe("calendar week appointment card layout", () => {
     );
 
     expect(html).toContain('data-testid="week-appointment-content-42"');
-    expect(html).toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
+    expect(html).toContain('class="relative min-h-0 px-1 pt-1 flex-1"');
     expect(html).toContain('data-testid="week-spanning-tile-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
@@ -213,5 +224,36 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-spanning-tile-conflict-overlay-42"');
     expect(html).toContain("group-hover/calendar-card:opacity-25");
     expect(html).toContain("repeating-linear-gradient(135deg,rgba(226,75,74,0.26)");
+  });
+
+  it("keeps both sub panels visible in collapsed body mode and collapses the explicit height stretching", () => {
+    const appointment = createAppointment();
+
+    const html = renderToStaticMarkup(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          weekTileBodyMode="collapsed"
+          uniformHeightPx={240}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          weekTileBodyMode="collapsed"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          uniformHeightPx={240}
+        />
+      </>,
+    );
+
+    expect(customerPanelCalls).toHaveLength(2);
+    expect(customerPanelCalls.every((call) => call.mode === "collapsed")).toBe(true);
+    expect(projectPanelCalls).toHaveLength(2);
+    expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
+    expect(html.match(/height:260px/g)).toBeNull();
+    expect(html).not.toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
   });
 });

@@ -49,6 +49,8 @@ const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
+const weekTileBodyModeOptions = ["collapsed", "semiexpanded", "expanded"] as const;
+type WeekTileBodyMode = (typeof weekTileBodyModeOptions)[number];
 const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
 const tourenplanFontSizeOptions = ["small", "medium", "large"] as const;
 type VorlauflisteCategorySelection = {
@@ -615,6 +617,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is WeekAppointmentDisplayMode =>
       typeof value === "string" && weekAppointmentDisplayModeOptions.includes(value as WeekAppointmentDisplayMode),
+  },
+  calendarWeekTileBodyMode: {
+    key: "calendar.weekTileBodyMode",
+    label: "Wochenansicht Body-Modus",
+    description: "Steuert benutzerspezifisch, wie stark der Body der Wochenkacheln reduziert oder erweitert dargestellt wird.",
+    type: "enum",
+    options: weekTileBodyModeOptions,
+    defaultValue: "semiexpanded",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is WeekTileBodyMode =>
+      typeof value === "string" && weekTileBodyModeOptions.includes(value as WeekTileBodyMode),
   },
   reportsVorlauflisteCategorySelection: {
     key: "reports.vorlaufliste.categorySelection",

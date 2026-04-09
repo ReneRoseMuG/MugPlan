@@ -61,6 +61,7 @@ export type UserSettingKey =
   | "calendar.weekLanes.isCollapsed"
   | "calendar.weekLanes.expandedLaneId"
   | "calendar.weekAppointmentDisplayMode"
+  | "calendar.weekTileBodyMode"
   | "demoData.adminFormState"
   | "reports.vorlaufliste.categorySelection"
   | "reports.produktionsplanung.selection"
@@ -92,6 +93,7 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
+  "calendar.weekTileBodyMode": "collapsed" | "semiexpanded" | "expanded";
   "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
@@ -110,6 +112,13 @@ export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingVa
     return value;
   }
   return "standard";
+}
+
+export function resolveWeekTileBodyMode(value: unknown): UserSettingValueByKey["calendar.weekTileBodyMode"] {
+  if (value === "collapsed" || value === "semiexpanded" || value === "expanded") {
+    return value;
+  }
+  return "semiexpanded";
 }
 
 export function resolveToastDesktopPosition(value: unknown): ToastDesktopPosition {
@@ -430,6 +439,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekAppointmentDisplayMode") {
       return resolveWeekAppointmentDisplayMode(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekTileBodyMode") {
+      return resolveWeekTileBodyMode(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.vorlaufliste.categorySelection") {
       return resolveVorlauflisteCategorySelection(setting?.resolvedValue) as UserSettingValueByKey[K];

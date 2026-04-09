@@ -49,6 +49,8 @@ vi.mock("@/hooks/useSettings", () => ({
     switch (key) {
       case "calendar.weekAppointmentDisplayMode":
         return "standard";
+      case "calendar.weekTileBodyMode":
+        return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":
         return false;
       case "calendarWeekendColumnPercent":

@@ -3,14 +3,16 @@
  *
  * Abgedeckte Regeln:
  * - Der Week-Header zeigt weiterhin KW und Datumsbereich.
- * - Der Touren-Toggle erscheint rechts in derselben Titelzeile wie KW und Datumsbereich.
+ * - Der neue Kachel-Toggle erscheint links neben dem Touren-Toggle.
+ * - Der Touren-Toggle bleibt weiterhin rechts in derselben Titelzeile.
  *
- * Fehlerfälle:
+ * Fehlerfaelle:
  * - Die Titelzeile verliert KW oder Datumsinformation.
+ * - Der Kachel-Toggle erscheint an falscher Stelle oder fehlt.
  * - Der Touren-Toggle bleibt im Footer oder fehlt im Header.
  *
  * Ziel:
- * Die Header-Zeile der Wochenansicht mit inline Touren-Toggle absichern.
+ * Die Header-Zeile der Wochenansicht mit inline Kachel- und Touren-Toggles absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -19,6 +21,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const useQueryMock = vi.fn();
 const useCalendarAppointmentsMock = vi.fn();
 const useSettingMock = vi.fn();
+const setSettingMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
@@ -30,7 +33,7 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("@/hooks/useSettings", () => ({
-  useSettings: () => ({ setSetting: vi.fn() }),
+  useSettings: () => ({ setSetting: setSettingMock }),
   useSetting: (key: string) => useSettingMock(key),
 }));
 
@@ -81,6 +84,7 @@ describe("CalendarWeekView - header controls", () => {
     useQueryMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
     useSettingMock.mockReset();
+    setSettingMock.mockReset();
 
     useCalendarAppointmentsMock.mockReturnValue({ data: [] });
     useQueryMock.mockReturnValue({ data: [], isLoading: false });
@@ -92,6 +96,8 @@ describe("CalendarWeekView - header controls", () => {
           return 0;
         case "calendar.weekAppointmentDisplayMode":
           return "standard";
+        case "calendar.weekTileBodyMode":
+          return "semiexpanded";
         case "calendar.weekLanes.isCollapsed":
           return false;
         case "calendar.weekLanes.expandedLaneId":
@@ -109,17 +115,25 @@ describe("CalendarWeekView - header controls", () => {
     });
   });
 
-  it("keeps the title/date row and adds the lane toggle inline on the right", () => {
+  it("keeps the title row and renders the tile mode toggle left of the lane toggle", () => {
     const html = renderToStaticMarkup(
       <CalendarWeekView currentDate={new Date("2026-03-30T00:00:00Z")} />,
     );
 
     expect(html).toContain("KW 14");
-    expect(html).toContain("30. März");
+    expect(html).toContain("30. M");
+    expect(html).toContain("Kacheln");
+    expect(html).toContain("Kompakt");
+    expect(html).toContain("Standard");
+    expect(html).toContain("Detail");
+    expect(html).toContain("toggle-week-tile-body-mode-collapsed");
+    expect(html).toContain("toggle-week-tile-body-mode-semiexpanded");
+    expect(html).toContain("toggle-week-tile-body-mode-expanded");
     expect(html).toContain("Touren");
     expect(html).toContain("toggle-week-lanes-expanded");
     expect(html).toContain("toggle-week-lanes-collapsed");
     expect(html).not.toContain("Darstellungsmodus");
     expect(html).not.toContain("select-week-appointment-display-mode");
+    expect(html.indexOf("toggle-week-tile-body-mode-collapsed")).toBeLessThan(html.indexOf("toggle-week-lanes-expanded"));
   });
 });

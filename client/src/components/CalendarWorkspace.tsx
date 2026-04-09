@@ -69,6 +69,7 @@ export function CalendarWorkspace({
   );
   const [kwJumpError, setKwJumpError] = useState(false);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
+  const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const conflictAppointmentIds = useMemo(
     () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
@@ -169,6 +170,7 @@ export function CalendarWorkspace({
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
           weekAppointmentDisplayMode="detail"
+          weekTileBodyMode={weekTileBodyModeSetting ?? "semiexpanded"}
           weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
           onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
           conflictHighlightActive={conflictHighlightActive}

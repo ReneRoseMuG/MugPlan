@@ -46,6 +46,7 @@ type CalendarWeekViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
   weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
+  weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
   conflictHighlightActive?: boolean;
@@ -179,6 +180,7 @@ export function CalendarWeekView({
   currentDate,
   employeeFilterId,
   weekAppointmentDisplayMode: weekAppointmentDisplayModeProp,
+  weekTileBodyMode: weekTileBodyModeProp,
   weekLanesCollapsed: weekLanesCollapsedProp,
   onWeekLanesCollapsedChange,
   conflictHighlightActive = false,
@@ -213,6 +215,7 @@ export function CalendarWeekView({
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
+  const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
   const isAdmin = userRole === "ADMIN";
   const canWriteNotes = userRole !== "LESER";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
@@ -221,6 +224,7 @@ export function CalendarWeekView({
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
   const weekAppointmentDisplayMode = weekAppointmentDisplayModeProp ?? "detail";
+  const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
@@ -625,13 +629,70 @@ export function CalendarWeekView({
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kacheln</span>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                void setSetting({
+                  key: "calendar.weekTileBodyMode",
+                  scopeType: "USER",
+                  value: "collapsed",
+                });
+              }}
+              data-testid="toggle-week-tile-body-mode-collapsed"
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+                weekTileBodyMode === "collapsed"
+                  ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Kompakt
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void setSetting({
+                  key: "calendar.weekTileBodyMode",
+                  scopeType: "USER",
+                  value: "semiexpanded",
+                });
+              }}
+              data-testid="toggle-week-tile-body-mode-semiexpanded"
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+                weekTileBodyMode === "semiexpanded"
+                  ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Standard
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void setSetting({
+                  key: "calendar.weekTileBodyMode",
+                  scopeType: "USER",
+                  value: "expanded",
+                });
+              }}
+              data-testid="toggle-week-tile-body-mode-expanded"
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+                weekTileBodyMode === "expanded"
+                  ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Detail
+            </button>
+          </div>
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Touren</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
             <button
               type="button"
               onClick={() => onWeekLanesCollapsedChange?.(false)}
               data-testid="toggle-week-lanes-expanded"
-              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 !isCollapsedMode
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -643,7 +704,7 @@ export function CalendarWeekView({
               type="button"
               onClick={() => onWeekLanesCollapsedChange?.(true)}
               data-testid="toggle-week-lanes-collapsed"
-              className={`min-w-[96px] rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
+              className={`rounded-md px-3 py-1.5 text-left text-[10px] font-semibold leading-none transition-all ${
                 isCollapsedMode
                   ? "border border-slate-200 bg-white text-slate-800 shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
@@ -930,6 +991,7 @@ export function CalendarWeekView({
                                   appointment={appointment}
                                   spanColumns={columnSpan}
                                   displayMode={weekAppointmentDisplayMode ?? "standard"}
+                                  weekTileBodyMode={weekTileBodyMode}
                                   visibleStartDate={visibleStartDate}
                                   visibleDayNumberStart={visibleDayNumberStart}
                                   uniformHeightPx={laneUniformHeightPx}
@@ -978,6 +1040,7 @@ export function CalendarWeekView({
                                 >
                                   <CalendarWeekAppointmentPanel
                                     appointment={appointment}
+                                    weekTileBodyMode={weekTileBodyMode}
                                     context="week-calendar"
                                     segment="start"
                                     continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
@@ -1032,6 +1095,7 @@ export function CalendarWeekView({
                                       <CalendarWeekAppointmentPanel
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
                                         appointment={appointment}
+                                        weekTileBodyMode={weekTileBodyMode}
                                         context="week-calendar"
                                         segment="start"
                                         continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}

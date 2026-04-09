@@ -216,6 +216,35 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(displayModeSetting?.resolvedVersion).toBe(8);
   });
 
+  it("maps week tile body mode with USER scope and version", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "calendar.weekTileBodyMode",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: "expanded",
+        version: 11,
+        updatedAt: new Date("2026-04-09T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const bodyModeSetting = result.find((entry) => entry.key === "calendar.weekTileBodyMode");
+
+    expect(bodyModeSetting).toBeDefined();
+    expect(bodyModeSetting?.type).toBe("enum");
+    expect(bodyModeSetting?.userVersion).toBe(11);
+    expect(bodyModeSetting?.resolvedValue).toBe("expanded");
+    expect(bodyModeSetting?.resolvedScope).toBe("USER");
+    expect(bodyModeSetting?.resolvedVersion).toBe(11);
+  });
+
   it("maps user version and resolved value for helpTextPreviewSize", async () => {
     usersRepoMock.getUserWithRole.mockResolvedValue({
       id: 1,

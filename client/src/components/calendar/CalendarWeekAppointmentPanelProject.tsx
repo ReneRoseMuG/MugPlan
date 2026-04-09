@@ -10,6 +10,7 @@ export function CalendarWeekAppointmentPanelProject({
   projectOrderNumber,
   projectArticleItems,
   projectDescription,
+  collapsed = false,
   showSectionTitle = false,
   enableFullDescriptionPreview = false,
 }: {
@@ -17,6 +18,7 @@ export function CalendarWeekAppointmentPanelProject({
   projectOrderNumber: string | null;
   projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
+  collapsed?: boolean;
   showSectionTitle?: boolean;
   enableFullDescriptionPreview?: boolean;
 }) {
@@ -39,6 +41,8 @@ export function CalendarWeekAppointmentPanelProject({
     <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
       {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
       <div className="text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
+      {collapsed ? null : (
+        <>
       {!canOpenDescriptionPreview && hasProjectContent && (
         <div className={compactContentClassName}>
           <ProjectArticleDescriptionRenderer
@@ -83,6 +87,8 @@ export function CalendarWeekAppointmentPanelProject({
             />
           </div>
         </HoverPreview>
+      )}
+        </>
       )}
     </div>
   );

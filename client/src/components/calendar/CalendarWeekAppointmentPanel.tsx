@@ -20,6 +20,7 @@ export const WEEK_CARD_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_
 
 export function CalendarWeekAppointmentPanel({
   appointment,
+  weekTileBodyMode = "semiexpanded",
   onDoubleClick,
   isDragging,
   onDragStart,
@@ -43,6 +44,7 @@ export function CalendarWeekAppointmentPanel({
   testId,
 }: {
   appointment: CalendarAppointment;
+  weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   onDoubleClick?: () => void;
   isDragging?: boolean;
   onDragStart?: (event: React.DragEvent) => void;
@@ -79,6 +81,10 @@ export function CalendarWeekAppointmentPanel({
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
+  const isCollapsedBodyMode = weekTileBodyMode === "collapsed";
+  const showCustomerPanel = true;
+  const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
+  const projectCollapsed = weekTileBodyMode === "collapsed";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -88,7 +94,7 @@ export function CalendarWeekAppointmentPanel({
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
-    : uniformHeightPx && uniformHeightPx > 0
+    : !isCollapsedBodyMode && uniformHeightPx && uniformHeightPx > 0
       ? { height: `${uniformHeightPx + WEEK_CARD_FOOTER_SAFE_SPACE_PX}px` }
       : undefined;
 
@@ -110,7 +116,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className="flex h-full min-h-0 flex-col">
+        <div className={`flex min-h-0 flex-col ${isCollapsedBodyMode ? "" : "h-full"}`}>
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -137,7 +143,7 @@ export function CalendarWeekAppointmentPanel({
           </div>
           {!isCompact ? (
             <>
-              <div className="relative min-h-0 flex-1 px-1 pt-1" data-testid={`week-appointment-content-${appointment.id}`}>
+              <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-appointment-content-${appointment.id}`}>
                 {isConflict ? (
                   <div
                     className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
@@ -145,21 +151,25 @@ export function CalendarWeekAppointmentPanel({
                   />
                 ) : null}
                 <div className="min-h-0 space-y-1 overflow-hidden">
-                  <CalendarWeekAppointmentPanelCustomer
-                    fullName={appointment.customer.fullName ?? ""}
-                    customerNumber={appointment.customer.customerNumber}
-                    phone={appointment.customer.phone}
-                    email={appointment.customer.email}
-                    addressLine1={appointment.customer.addressLine1}
-                    postalCode={appointment.customer.postalCode}
-                    city={appointment.customer.city}
-                    country={appointment.customer.country}
-                  />
+                  {showCustomerPanel ? (
+                    <CalendarWeekAppointmentPanelCustomer
+                      mode={customerMode}
+                      fullName={appointment.customer.fullName ?? ""}
+                      customerNumber={appointment.customer.customerNumber}
+                      phone={appointment.customer.phone}
+                      email={appointment.customer.email}
+                      addressLine1={appointment.customer.addressLine1}
+                      postalCode={appointment.customer.postalCode}
+                      city={appointment.customer.city}
+                      country={appointment.customer.country}
+                    />
+                  ) : null}
                   <CalendarWeekAppointmentPanelProject
                     projectName={resolvedProjectName}
                     projectOrderNumber={appointment.projectOrderNumber}
                     projectArticleItems={appointment.projectArticleItems}
                     projectDescription={appointment.projectDescription}
+                    collapsed={projectCollapsed}
                     enableFullDescriptionPreview={context === "week-calendar"}
                   />
                 </div>
