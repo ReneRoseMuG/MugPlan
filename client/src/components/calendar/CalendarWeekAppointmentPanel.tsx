@@ -91,6 +91,37 @@ export function CalendarWeekAppointmentPanel({
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerTopRow = context === "week-calendar" ? (
+    <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+      <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+      <CalendarWeekAppointmentNotesHover
+        appointmentId={appointment.id}
+        customerId={appointment.customer.id}
+        projectId={appointment.projectId}
+        customerNotesCount={appointment.customerNotesCount ?? 0}
+        projectNotesCount={appointment.projectNotesCount ?? 0}
+        appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+      />
+      <CalendarWeekAppointmentAttachmentsHover
+        appointmentId={appointment.id}
+        totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+      />
+    </div>
+  ) : (
+    <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+  );
+  const footerTagRow = (
+    <div className="mt-auto">
+      <CalendarWeekAppointmentTagPicker
+        appointmentId={appointment.id}
+        tags={mergedTags}
+        appointmentTags={appointment.appointmentTags}
+        projectTags={appointment.projectTags}
+        canEdit={showTagActions && canEditTags}
+        testId={`week-appointment-tags-${appointment.id}`}
+      />
+    </div>
+  );
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
@@ -185,34 +216,9 @@ export function CalendarWeekAppointmentPanel({
                     data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
                   />
                 ) : null}
-                <div className="space-y-1">
-                  {context === "week-calendar" ? (
-                    <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
-                      <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-                      <CalendarWeekAppointmentNotesHover
-                        appointmentId={appointment.id}
-                        customerId={appointment.customer.id}
-                        projectId={appointment.projectId}
-                        customerNotesCount={appointment.customerNotesCount ?? 0}
-                        projectNotesCount={appointment.projectNotesCount ?? 0}
-                        appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
-                      />
-                      <CalendarWeekAppointmentAttachmentsHover
-                        appointmentId={appointment.id}
-                        totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
-                      />
-                    </div>
-                  ) : (
-                    <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
-                  )}
-                  <CalendarWeekAppointmentTagPicker
-                    appointmentId={appointment.id}
-                    tags={mergedTags}
-                    appointmentTags={appointment.appointmentTags}
-                    projectTags={appointment.projectTags}
-                    canEdit={showTagActions && canEditTags}
-                    testId={`week-appointment-tags-${appointment.id}`}
-                  />
+                <div className="flex min-h-full flex-col gap-1">
+                  {footerTopRow}
+                  {footerTagRow}
                 </div>
               </div>
             </>
@@ -228,30 +234,9 @@ export function CalendarWeekAppointmentPanel({
                   data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
                 />
               ) : null}
-              <div className="space-y-1">
-                <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
-                  <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-                  <CalendarWeekAppointmentNotesHover
-                    appointmentId={appointment.id}
-                    customerId={appointment.customer.id}
-                    projectId={appointment.projectId}
-                    customerNotesCount={appointment.customerNotesCount ?? 0}
-                    projectNotesCount={appointment.projectNotesCount ?? 0}
-                    appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
-                  />
-                  <CalendarWeekAppointmentAttachmentsHover
-                    appointmentId={appointment.id}
-                    totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
-                  />
-                </div>
-                <CalendarWeekAppointmentTagPicker
-                  appointmentId={appointment.id}
-                  tags={mergedTags}
-                  appointmentTags={appointment.appointmentTags}
-                  projectTags={appointment.projectTags}
-                  canEdit={showTagActions && canEditTags}
-                  testId={`week-appointment-tags-${appointment.id}`}
-                />
+              <div className="flex min-h-full flex-col gap-1">
+                {footerTopRow}
+                {footerTagRow}
               </div>
             </div>
           )}

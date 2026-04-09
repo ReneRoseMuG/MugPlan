@@ -199,6 +199,40 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-can-edit="false"');
   });
 
+  it("keeps the footer tag row bottom-docked on both week card variants", () => {
+    const appointment = createAppointment();
+
+    const html = renderToStaticMarkup(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          showTagActions
+          canEditTags
+          uniformHeightPx={240}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          showTagActions
+          canEditTags
+          uniformHeightPx={240}
+        />
+      </>,
+    );
+
+    expect(html.match(/class="flex min-h-full flex-col gap-1"/g)).toHaveLength(2);
+    expect(html.match(/class="mt-auto"/g)).toHaveLength(2);
+    expect(html).toContain('data-testid="week-spanning-tile-body-filled-42"');
+    expect(html).toContain('class="flex min-h-0 h-full flex-col bg-white/90"');
+    expect(html).toContain('class="flex min-h-0 flex-1 flex-col"');
+    expect(html).toContain('data-testid="week-appointment-tags-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-tags-42"');
+  });
+
   it("renders the schraffierte conflict overlay on both week card variants", () => {
     const appointment = createAppointment();
 
