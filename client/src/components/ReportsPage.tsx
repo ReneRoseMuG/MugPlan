@@ -722,6 +722,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   }, [auftragslisteRangeConfig?.activeTab]);
 
   useEffect(() => {
+    if (standaloneLaunch) return;
     setVorlauflisteFromDate(defaultReportRange.fromDate);
     setVorlauflisteToDate(defaultReportRange.toDate);
     setVorlauflisteKwStart(defaultIsoWeek);
@@ -734,7 +735,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     setAuftragslisteToDate(defaultReportRange.toDate);
     setAuftragslisteKwStart(defaultIsoWeek);
     setAuftragslisteWeekCount(defaultReportRange.weekCount);
-  }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
+  }, [standaloneLaunch, defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
 
   useEffect(() => {
     if (!standaloneLaunch || hasAppliedStandaloneLaunchRef.current) {
