@@ -15,7 +15,7 @@ export function FilterPanel({
 }: FilterPanelProps) {
   const layoutClassName = layout === "stack"
     ? "flex flex-col gap-1"
-    : "flex flex-col gap-1 sm:flex-row sm:items-end";
+    : "flex flex-col gap-2 sm:flex-row sm:items-end";
 
   return (
     <div className="flex flex-col gap-1">

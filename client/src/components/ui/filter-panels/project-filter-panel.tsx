@@ -126,6 +126,7 @@ export function ProjectFilterPanel({
           helpKey="projects.filter.tags"
           addButtonTestId="button-add-project-tag-filter"
           testIdPrefix="project-filter-tag"
+          className="sm:min-w-[96px] sm:w-[96px]"
         />
       </FilterPanel>
     </div>

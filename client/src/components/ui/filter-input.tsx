@@ -42,8 +42,8 @@ export function FilterInput({
   };
 
   return (
-    <div className={cn("space-y-1", className)}>
-      <div className="flex min-h-5 items-center gap-1">
+    <div className={cn("flex flex-col gap-1", className)}>
+      <div className="flex h-5 items-center gap-1">
         {labelAdornment}
         <Label htmlFor={id} className="text-xs tracking-wide text-slate-500">
           {label}
