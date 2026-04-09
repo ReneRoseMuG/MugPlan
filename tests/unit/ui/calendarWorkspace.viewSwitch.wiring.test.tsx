@@ -44,10 +44,6 @@ vi.mock("@/components/MonthSheetGrid", () => ({
   },
 }));
 
-vi.mock("@/components/calendar/CalendarTourPrintPreviewDialog", () => ({
-  CalendarTourPrintPreviewDialog: () => <div data-testid="tour-print-dialog-marker">dialog</div>,
-}));
-
 vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
   CalendarFilterPanel: () => <div data-testid="calendar-filter-panel-marker">filter</div>,
 }));
@@ -66,20 +62,10 @@ vi.mock("@/hooks/useSettings", () => ({
         return "collapsed";
       case "calendar.weekLanes.isCollapsed":
         return false;
-      case "calendarWeekendColumnPercent":
-        return 33;
       default:
         return null;
     }
   },
-}));
-
-vi.mock("@/lib/project-appointments", () => ({
-  getBerlinTodayDateString: () => "2099-01-01",
-}));
-
-vi.mock("@/lib/tour-print-preview", () => ({
-  normalizeTourPrintWeekCount: (value: number) => value,
 }));
 
 import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";

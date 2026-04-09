@@ -4,15 +4,15 @@
  * Feature: Docs Follow-up 2026-03-11
  *
  * Abgedeckte Regeln:
- * - Die geaenderten UI-Pfade fuer Kalenderfilter, Projektfilter und Projektformular zeigen korrekt kodierte Labels.
- * - Die sichtbaren Ziel-Labels der geaenderten Bereiche erscheinen korrekt und nicht als Mojibake.
+ * - Die geänderten UI-Pfade für Kalenderfilter, Projektfilter und Projektformular zeigen korrekt kodierte Labels.
+ * - Die sichtbaren Ziel-Labels der geänderten Bereiche erscheinen korrekt und nicht als Mojibake.
  *
- * Fehlerfaelle:
- * - Umlaute oder Bezeichner werden in den geaenderten Bereichen fehlerhaft kodiert dargestellt.
+ * Fehlerfälle:
+ * - Umlaute oder Bezeichner werden in den geänderten Bereichen fehlerhaft kodiert dargestellt.
  * - Relevante Labels in Kalender-, Projektlisten- oder Projektformular-Pfaden regressieren sichtbar.
  *
  * Ziel:
- * Die geaenderten UI-Pfade browserseitig gegen erneute Mojibake-Regressions absichern.
+ * Die geänderten UI-Pfade browserseitig gegen erneute Mojibake-Regressions absichern.
  */
 import { expect, test } from "@playwright/test";
 
@@ -44,9 +44,9 @@ test("keeps changed calendar and project labels free of mojibake", async ({ page
 
   await loginAsAdmin(page);
 
-  await expect(page.getByText("Planung drucken")).toBeVisible();
-  await expect(page.getByTestId("input-tour-print-week-count")).toBeVisible();
-  await expect(page.getByText("Nächste Woche")).toBeVisible();
+  await expect(page.getByText("Mitarbeiter")).toBeVisible();
+  await expect(page.getByTestId("input-calendar-kw-jump")).toBeVisible();
+  await expect(page.getByText("KW")).toBeVisible();
 
   await page.getByTestId("nav-projekte").click();
   await expect(page.getByText("Kunde Nr.")).toBeVisible();

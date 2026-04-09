@@ -20,6 +20,8 @@ import type { Tag } from "@shared/schema";
 import {
   buildTourenplanWeekGroups,
   buildTourenplanPrintPages,
+  formatTourenplanEmployeeBadges,
+  formatTourenplanProjectDescription,
   paginateTourenplanWeekGroups,
   resolveTourenplanTagKind,
   type TourenplanAppointmentListItem,
@@ -162,6 +164,18 @@ describe("Tourenplan model", () => {
     })).toBe("neutral");
   });
 
+  it("keeps helper-based employee badges and project descriptions stable after helper extraction", () => {
+    expect(formatTourenplanEmployeeBadges([
+      { fullName: "Herold, Roy" },
+      { fullName: "Winter, Dirk" },
+      { fullName: "" },
+    ])).toEqual(["Roy H.", "Dirk W."]);
+
+    expect(formatTourenplanProjectDescription("<p>Bitte&nbsp; Einfahrt <strong>freihalten</strong>.</p>"))
+      .toBe("Bitte Einfahrt freihalten .");
+    expect(formatTourenplanProjectDescription(null)).toBe("—");
+  });
+
   it("builds week-based print pages with a marker entry per week", () => {
     const previewData: TourenplanPreviewResponse = {
       fromDate: "2026-04-13",
@@ -236,6 +250,66 @@ describe("Tourenplan model", () => {
     expect(pages[0]?.weeks).toHaveLength(2);
     expect(pages[0]?.weeks.map((week) => week.weekNumber)).toEqual([16, 17]);
     expect(pages[0]?.weeks.every((week) => week.markerTopPx >= 4)).toBe(true);
+  });
+
+  it("merges note and description text into the page model without raw HTML leftovers", () => {
+    const previewData: TourenplanPreviewResponse = {
+      fromDate: "2026-04-13",
+      toDate: "2026-04-19",
+      weeks: [
+        { weekStart: "2026-04-13", weekEnd: "2026-04-19", weekNotes: [] },
+      ],
+      tour: { id: 5, name: "Tour Alpha", color: "#2266aa" },
+      appointments: [
+        {
+          id: 1,
+          projectId: 11,
+          projectName: "Projekt 1",
+          startDate: "2026-04-14",
+          endDate: "2026-04-15",
+          startTime: null,
+          durationDays: 2,
+          saunaModel: "Sauna 1",
+          customer: {
+            id: 101,
+            customerNumber: "C-1",
+            fullName: "Kunde 1",
+            phone: "0123-1",
+            addressLine1: null,
+            addressLine2: null,
+            postalCode: "26135",
+            city: "Oldenburg",
+            country: "Deutschland",
+          },
+          employees: [{ id: 3, fullName: "Herold, Roy" }],
+          printNotes: [{
+            id: 1,
+            sourceType: "appointment",
+            title: "Anreise",
+            body: "<p>Kunde&nbsp; informiert.</p>",
+            cardColor: "#f97316",
+            updatedAt: "2026-04-13T08:00:00.000Z",
+          }],
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+        },
+      ],
+    };
+
+    const [page] = buildTourenplanPrintPages(previewData, [
+      {
+        ...createAppointmentListItem(1, 5, []),
+        employees: [{ id: 3, fullName: "Herold, Roy" }],
+        projectDescription: "<p>Bitte <strong>Tor</strong> freihalten.</p>",
+        startDate: "2026-04-14",
+        endDate: "2026-04-15",
+      },
+    ]);
+
+    expect(page.weeks).toHaveLength(1);
+    expect(page.weeks[0]?.appointments[0]?.employees[0]?.fullName).toBe("Herold, Roy");
+    expect(page.weeks[0]?.appointments[0]?.printNotes[0]?.body).toContain("<p>");
   });
 
   it("moves the next calendar week to a new page when the current page is already filled", () => {

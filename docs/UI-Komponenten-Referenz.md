@@ -362,7 +362,7 @@ FT28-Ergaenzung:
 | Badge in Panels/Listen | TerminInfoBadge → AppointmentWeeklyPanelPreview |
 | Sidebar-Kompaktpanel (Projekt, Kunde) | AllAppointmentsPanel (Basiskomponente, Gruppierung aktuell/historisch) |
 | Kalenderansichten | WeekGrid, MonthSheetGrid (separate Logik, kein ListLayout) |
-| Tour-Druckvorschau | CalendarTourPrintPreviewDialog + CalendarTourPrintSummaryPage + CalendarTourPrintWeekPage + CalendarTourPrintDayColumn + CalendarTourPrintAppointmentCard + CalendarTourPrintNoteBlock |
+| Tourenplan-Report-Druck | TourenplanReportPanel + TourenplanPrintPage + TourenplanAppointmentCard + PrintPreviewDialog |
 
 ---
 

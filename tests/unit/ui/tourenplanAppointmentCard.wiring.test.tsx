@@ -52,7 +52,7 @@ const appointment: TourenplanResolvedAppointment = {
       id: 99,
       sourceType: "appointment",
       title: "Vorbesprechung Kunde",
-      body: "<p>Kran erforderlich.</p>",
+      body: "<p>Kran&nbsp; erforderlich.</p>",
       cardColor: "#f97316",
       updatedAt: "2026-04-14T08:00:00.000Z",
     },
@@ -66,7 +66,7 @@ const appointment: TourenplanResolvedAppointment = {
     { label: "Steuerung", value: "Xenio 3", source: "component", shortCode: "X3" },
     { label: "Dach", value: "Flachdach", source: "component", shortCode: null },
   ],
-  projectDescription: "<p>Bitte Einfahrt freihalten.</p>",
+  projectDescription: "<p>Bitte <strong>Einfahrt</strong> freihalten.</p>",
 };
 
 describe("UI: TourenplanAppointmentCard", () => {
@@ -92,6 +92,8 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).toContain("Dirk W.");
     expect(html).toContain("Bitte Einfahrt freihalten.");
     expect(html).toContain("Kran erforderlich.");
+    expect(html).not.toContain("<strong>");
+    expect(html).not.toContain("&nbsp;");
     expect(html).not.toContain("tourenplan-card-header-separator");
     expect(html).toContain('data-tourenplan-font-size="medium"');
     expect(html).toContain("print-color-adjust:exact");
@@ -143,5 +145,31 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).toContain(">Reklamation<");
     expect(html).toContain("Vorbesprechung Kunde");
     expect(html).toContain("Kran erforderlich.");
+  });
+
+  it("renders a fallback dash when description and visible notes are empty after normalization", () => {
+    const html = renderToStaticMarkup(
+      <TourenplanAppointmentCard
+        appointment={{
+          ...appointment,
+          printNotes: [{
+            id: 100,
+            sourceType: "appointment",
+            title: "",
+            body: "<p>&nbsp;</p>",
+            cardColor: null,
+            updatedAt: "2026-04-14T08:00:00.000Z",
+          }],
+          projectDescription: "<p> &nbsp; </p>",
+        }}
+        printMode="spardruck"
+        fontSize="medium"
+        useShortCodes={false}
+        testId="tourenplan-card"
+      />,
+    );
+
+    expect(html).toContain(">-<");
+    expect(html).not.toContain("tourenplan-card-note-");
   });
 });

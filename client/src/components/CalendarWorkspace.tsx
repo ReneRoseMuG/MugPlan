@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { addMonths, addWeeks, format, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
+import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
-import { CalendarTourPrintPreviewDialog } from "@/components/calendar/CalendarTourPrintPreviewDialog";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
-import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
-import { normalizeTourPrintWeekCount } from "@/lib/tour-print-preview";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
 
@@ -58,10 +55,6 @@ export function CalendarWorkspace({
 }: CalendarWorkspaceProps) {
   const { toast } = useToast();
   const { setSetting } = useSettings();
-  const [selectedPrintTourId, setSelectedPrintTourId] = useState<number | null>(null);
-  const [printWeekCount, setPrintWeekCount] = useState(1);
-  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
-  const [printStartNextWeek, setPrintStartNextWeek] = useState(false);
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
@@ -70,16 +63,11 @@ export function CalendarWorkspace({
   const [kwJumpError, setKwJumpError] = useState(false);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
-  const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const conflictAppointmentIds = useMemo(
     () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
     [monitoringItems],
   );
   const conflictAppointmentCount = conflictAppointmentIds.size;
-  const printFromDate = format(
-    addWeeks(startOfISOWeek(new Date(getBerlinTodayDateString())), printStartNextWeek ? 1 : 0),
-    "yyyy-MM-dd",
-  );
 
   useEffect(() => {
     if (conflictAppointmentCount === 0 && conflictHighlightActive) {
@@ -290,13 +278,6 @@ export function CalendarWorkspace({
             showWeekDisplayMode={activeView === "week"}
             weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
             onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
-            selectedPrintTourId={selectedPrintTourId}
-            onSelectedPrintTourIdChange={setSelectedPrintTourId}
-            printWeekCount={printWeekCount}
-            onPrintWeekCountChange={(value) => setPrintWeekCount(normalizeTourPrintWeekCount(value))}
-            onOpenPrintPreview={() => setIsPrintPreviewOpen(true)}
-            printStartNextWeek={printStartNextWeek}
-            onPrintStartNextWeekChange={setPrintStartNextWeek}
             conflictHighlightActive={conflictHighlightActive}
             conflictAppointmentCount={conflictAppointmentCount}
             onConflictHighlightChange={setConflictHighlightActive}
@@ -324,15 +305,6 @@ export function CalendarWorkspace({
           />
         </div>
       )}
-
-      <CalendarTourPrintPreviewDialog
-        open={isPrintPreviewOpen}
-        onOpenChange={setIsPrintPreviewOpen}
-        tourId={selectedPrintTourId}
-        weekCount={printWeekCount}
-        fromDate={printFromDate}
-        weekendColumnPercent={typeof weekendColumnPercentSetting === "number" ? weekendColumnPercentSetting : 33}
-      />
     </div>
   );
 }

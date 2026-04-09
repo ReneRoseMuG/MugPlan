@@ -9,7 +9,7 @@ import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Tag } from "@shared/schema";
 import type { z } from "zod";
 import { api } from "@shared/routes";
-import { formatEmployeeShortName, stripHtmlToText } from "@/lib/tour-print-preview";
+import { formatEmployeeShortName, stripHtmlToText } from "@/lib/printText";
 
 export type TourenplanPrintMode = "farbdruck" | "spardruck";
 export type TourenplanOrientation = "landscape" | "portrait";

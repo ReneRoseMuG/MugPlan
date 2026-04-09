@@ -8,7 +8,7 @@ import {
   formatTourenplanProjectDescription,
   resolveTourenplanTagPresentation,
 } from "@/components/reports/tourenplan-model";
-import { stripHtmlToText } from "@/lib/tour-print-preview";
+import { stripHtmlToText } from "@/lib/printText";
 
 type TourenplanAppointmentCardProps = {
   appointment: TourenplanResolvedAppointment;

@@ -254,10 +254,13 @@ describe("UI: TourenplanReportPanel wiring", () => {
     landscapeSpy.mockRestore();
 
     expect(landscapeHtml).toContain("reports-tourenplan-config-panel");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-preview");
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-use-shortcodes");
     expect(landscapeHtml).toContain("reports-tourenplan-font-size-option");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-farbdruck");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-spardruck");
+    expect(landscapeHtml).toContain("print-preview-dialog-marker");
+    expect(landscapeHtml).toContain("tourenplan-print-page-1");
     expect(landscapeHtml).toContain('data-page-orientation="landscape"');
     expect(landscapeHtml).toContain('data-print-orientation="landscape"');
     expect(landscapeHtml).toContain('data-tourenplan-font-size="medium"');
@@ -281,5 +284,6 @@ describe("UI: TourenplanReportPanel wiring", () => {
     expect(portraitHtml).toContain('data-page-orientation="portrait"');
     expect(portraitHtml).toContain('data-print-orientation="portrait"');
     expect(portraitHtml).toContain('data-tourenplan-font-size="medium"');
+    expect(portraitHtml).toContain("tourenplan-print-page-1");
   });
 });

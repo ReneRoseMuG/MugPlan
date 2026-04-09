@@ -28,10 +28,6 @@ vi.mock("@/components/MonthSheetGrid", () => ({
   MonthSheetGrid: () => <div data-testid="month-grid-marker">month-grid</div>,
 }));
 
-vi.mock("@/components/calendar/CalendarTourPrintPreviewDialog", () => ({
-  CalendarTourPrintPreviewDialog: () => <div data-testid="tour-print-dialog-marker">dialog</div>,
-}));
-
 vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
   CalendarFilterPanel: (props: Record<string, unknown>) => {
     filterPanelCalls.push(props);
@@ -53,20 +49,10 @@ vi.mock("@/hooks/useSettings", () => ({
         return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":
         return false;
-      case "calendarWeekendColumnPercent":
-        return 33;
       default:
         return null;
     }
   },
-}));
-
-vi.mock("@/lib/project-appointments", () => ({
-  getBerlinTodayDateString: () => "2099-01-01",
-}));
-
-vi.mock("@/lib/tour-print-preview", () => ({
-  normalizeTourPrintWeekCount: (value: number) => value,
 }));
 
 import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
@@ -99,6 +85,7 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
     expect(filterPanelCalls.at(-1)?.weekAppointmentDisplayMode).toBeUndefined();
     expect(filterPanelCalls.at(-1)?.weekLanesCollapsed).toBe(false);
+    expect(filterPanelCalls.at(-1)?.selectedPrintTourId).toBeUndefined();
   });
 
   it("updates the kw input when the visible week changes", () => {
