@@ -4,12 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Tag, Tour } from "@shared/schema";
 import { CustomerNameFilterInput } from "@/components/filters/customer-name-filter-input";
 import { CustomerNumberFilterInput } from "@/components/filters/customer-number-filter-input";
 import { ProjectOrderNumberFilterInput } from "@/components/filters/project-order-number-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
-import { BooleanToggleFilterInput } from "@/components/filters/boolean-toggle-filter-input";
 
 export type AppointmentListFilters = {
   employeeId?: number;
@@ -23,12 +23,14 @@ export type AppointmentListFilters = {
   dateTo?: string;
 };
 
+export type AppointmentListScope = "all" | "planned";
+
 interface AppointmentsFilterPanelProps {
   filters: AppointmentListFilters;
   onChange: (patch: Partial<AppointmentListFilters>) => void;
-  showAllAppointments: boolean;
-  onShowAllAppointmentsChange: (checked: boolean) => void;
-  showAllAppointmentsHelpKey?: string;
+  appointmentScope: AppointmentListScope;
+  onAppointmentScopeChange: (scope: AppointmentListScope) => void;
+  appointmentScopeHelpKey?: string;
   tours: Tour[];
   selectedTags: Tag[];
   availableTags: Tag[];
@@ -41,9 +43,9 @@ interface AppointmentsFilterPanelProps {
 export function AppointmentsFilterPanel({
   filters,
   onChange,
-  showAllAppointments,
-  onShowAllAppointmentsChange,
-  showAllAppointmentsHelpKey,
+  appointmentScope,
+  onAppointmentScopeChange,
+  appointmentScopeHelpKey,
   tours,
   selectedTags,
   availableTags,
@@ -150,14 +152,32 @@ export function AppointmentsFilterPanel({
             </Select>
           </div>
         ) : null}
-        <BooleanToggleFilterInput
-          id="appointments-show-all"
-          checked={showAllAppointments}
-          onCheckedChange={onShowAllAppointmentsChange}
-          label="Alle Termine"
-          labelAdornment={showAllAppointmentsHelpKey ? <HelpIcon helpKey={showAllAppointmentsHelpKey} size="sm" /> : null}
-          className="w-full sm:min-w-[10rem]"
-        />
+        <div className="flex w-full min-w-[18rem] flex-col gap-1">
+          <div className="flex min-h-5 items-center gap-1">
+            {appointmentScopeHelpKey ? <HelpIcon helpKey={appointmentScopeHelpKey} size="sm" /> : null}
+            <Label className="text-xs">Termine</Label>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={appointmentScope}
+            onValueChange={(value) => {
+              if (value === "all" || value === "planned") {
+                onAppointmentScopeChange(value);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            className="flex w-full flex-wrap justify-start"
+            data-testid="toggle-appointments-scope"
+          >
+            <ToggleGroupItem value="all" data-testid="toggle-appointments-scope-all">
+              Alle Termine
+            </ToggleGroupItem>
+            <ToggleGroupItem value="planned" data-testid="toggle-appointments-scope-planned">
+              Geplante Termine
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
         <TagFilterInput
           selectedTags={selectedTags}
           availableTags={availableTags}

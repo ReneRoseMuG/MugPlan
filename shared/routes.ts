@@ -2818,7 +2818,7 @@ export const api = {
             z.array(z.number()),
           ])
           .optional(),
-        scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
+        scope: z.enum(["upcoming", "noAppointments", "all", "withAppointments"]).default("upcoming"),
       }),
       responses: {
         200: z.array(projectListItemSchema),
@@ -2838,7 +2838,7 @@ export const api = {
             z.array(z.number()),
           ])
           .optional(),
-        scope: z.enum(["upcoming", "noAppointments", "all"]).default("upcoming"),
+        scope: z.enum(["upcoming", "noAppointments", "all", "withAppointments"]).default("upcoming"),
         title: z.string().trim().optional(),
         customerLastName: z.string().trim().optional(),
         customerNumber: z.string().trim().optional(),

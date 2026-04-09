@@ -44,7 +44,7 @@ function buildAttachmentPayload(prefix: string, extension = "pdf") {
 
 async function openProjectForm(page: Page, projectId: number) {
   await page.getByTestId("nav-projekte").click();
-  await page.getByLabel("Alle Projekte").click();
+  await page.getByTestId("toggle-project-scope-all").click();
   const card = page.getByTestId(`project-card-${projectId}`);
   await expect(card).toBeVisible({ timeout: 10_000 });
   await card.dblclick();

@@ -193,4 +193,16 @@ describe("FT30 projects page controlled state", () => {
     const rows = tableViewCalls[0].rows as Array<{ project: { id: number } }>;
     expect(rows.map((row) => row.project.id)).toEqual([1, 2]);
   });
+
+  it("uses all as the uncontrolled default scope", () => {
+    renderToStaticMarkup(<ProjectsPage tableOnly />);
+
+    expect(projectFilterPanelCalls[0]).toMatchObject({
+      projectScope: "all",
+    });
+    expect(useQueryMock.mock.calls[0]?.[0]?.queryKey).toEqual([
+      "/api/projects/list",
+      "scope=all&page=99&pageSize=50&title=internal&customerLastName=internal&customerNumber=0&orderNumber=0&tagIds=999",
+    ]);
+  });
 });

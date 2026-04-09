@@ -213,7 +213,7 @@ describe("FT02 projects page order number wiring", () => {
     expect(projectFilterPanelCalls).toHaveLength(1);
     expect(projectFilterPanelCalls[0]).toMatchObject({
       orderNumber: "ORD-1",
-      projectScope: "upcoming",
+      projectScope: "all",
     });
     expect(projectFilterPanelCalls[0].onOrderNumberChange).toEqual(expect.any(Function));
     expect(projectFilterPanelCalls[0].onOrderNumberClear).toEqual(expect.any(Function));

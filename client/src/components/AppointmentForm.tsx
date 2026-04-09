@@ -378,8 +378,8 @@ export function AppointmentForm({
     queryFn: () => fetchJson<AppointmentFormProject[]>("/api/projects?filter=all&scope=all"),
   });
 
-  // Fallback: project might not be in the list (e.g. newly created without appointments,
-  // which scope=all now excludes). Fetch it directly by ID in that case.
+  // Fallback: keep a direct detail fetch in case the list query is stale or the
+  // selected project is otherwise not present in the current response.
   const selectedProjectInList = projects.find((p) => p.id === selectedProjectId) ?? null;
   const { data: selectedProjectById = null } = useQuery<AppointmentFormProject | null>({
     queryKey: [`/api/projects/${selectedProjectId}`],

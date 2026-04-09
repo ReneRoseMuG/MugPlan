@@ -4,14 +4,14 @@
  * Feature: FT02 - Projektlistenfilter Layout
  *
  * Abgedeckte Regeln:
- * - Projektname, Nachname, Kundennummer, Auftragsnummer, Scope-Switches und Tagfilter liegen in einer gemeinsamen Reihenstruktur.
+ * - Projektname, Nachname, Kundennummer, Auftragsnummer, Scope-Toggle und Tagfilter liegen in einer gemeinsamen Reihenstruktur.
  * - Kundennummer und Auftragsnummer bleiben als sichtbare Labels mit Placeholder `Suche: Nr.` erhalten.
  * - Die sichtbaren Feldbreiten bleiben fuer die Nummernfelder begrenzt.
  *
  * Fehlerfaelle:
  * - Projektfilter zerfaellt wieder in mehrere Zeilen oder verliert Felder.
  * - Nummernfelder verlieren Label oder Placeholder.
- * - Die beiden Switches oder der Tagfilter fallen aus der gemeinsamen Reihe.
+ * - Das Scope-Toggle oder der Tagfilter fallen aus der gemeinsamen Reihe.
  *
  * Ziel:
  * Das Projektfilter-Panel ueber gerendertes Markup und Props statt ueber Quelltextmarker absichern.
@@ -40,9 +40,10 @@ vi.mock("@/components/ui/label", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/switch", () => ({
-  Switch: ({ id, checked }: { id: string; checked: boolean }) => (
-    <input type="checkbox" id={id} checked={checked} readOnly />
+vi.mock("@/components/ui/toggle-group", () => ({
+  ToggleGroup: ({ children }: { children?: React.ReactNode }) => <div data-testid="project-scope-toggle">{children}</div>,
+  ToggleGroupItem: ({ children, value, ...props }: { children?: React.ReactNode; value: string; [key: string]: unknown }) => (
+    <button type="button" data-value={value} {...props}>{children}</button>
   ),
 }));
 
@@ -121,7 +122,7 @@ describe("FT02 UI: project filter panel layout wiring", () => {
       onTagPickerOpenChange={noop}
       onAddTag={noop}
       onRemoveTag={noop}
-      projectScope="upcoming"
+      projectScope="all"
       onProjectScopeChange={noop}
       {...overrides}
     />,
@@ -135,7 +136,8 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     const customerNumberIndex = html.indexOf("filter-customer-number");
     const orderNumberIndex = html.indexOf("filter-project-order-number");
     const allProjectsIndex = html.indexOf("Alle Projekte");
-    const noAppointmentsIndex = html.indexOf("Ohne Termine");
+    const upcomingProjectsIndex = html.indexOf("Geplante Projekte");
+    const noAppointmentsIndex = html.indexOf("Projekte ohne Termin");
     const tagIndex = html.indexOf("filter-project-tag");
 
     expect(projectIndex).toBeGreaterThan(-1);
@@ -143,7 +145,8 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     expect(customerNumberIndex).toBeGreaterThan(customerIndex);
     expect(orderNumberIndex).toBeGreaterThan(customerNumberIndex);
     expect(allProjectsIndex).toBeGreaterThan(orderNumberIndex);
-    expect(noAppointmentsIndex).toBeGreaterThan(allProjectsIndex);
+    expect(upcomingProjectsIndex).toBeGreaterThan(allProjectsIndex);
+    expect(noAppointmentsIndex).toBeGreaterThan(upcomingProjectsIndex);
     expect(tagIndex).toBeGreaterThan(noAppointmentsIndex);
   });
 

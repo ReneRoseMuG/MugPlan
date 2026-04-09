@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - `AppointmentsListPage` nutzt controlled Filter-, Paging-, Sortier- und `showAllAppointments`-Props.
- * - Ohne controlled Props bleibt der Standalone-Fallback mit heutigem Datumsdefault erhalten.
+ * - `AppointmentsListPage` nutzt controlled Filter-, Paging-, Sortier- und `appointmentScope`-Props.
+ * - Ohne controlled Props startet der Standalone-Fallback mit der ungefilterten Terminmenge.
  *
  * Fehlerfaelle:
  * - Controlled Props werden ignoriert und interne Werte bleiben aktiv.
- * - Der uncontrolled Fallback verliert die bestehende Startlogik fuer `dateFrom`.
+ * - Der uncontrolled Fallback aktiviert unerwartet weiter einen Heute-Filter.
  *
  * Ziel:
  * Die Terminliste auf kontrollierten Zustand und stabilen Standalone-Fallback absichern.
@@ -119,7 +119,7 @@ describe("FT04 appointments list page controlled state", () => {
     });
   });
 
-  it("prefers controlled filters, paging, sorting and showAll state", () => {
+  it("prefers controlled filters, paging, sorting and appointment scope", () => {
     renderToStaticMarkup(
       <AppointmentsListPage
         context={{ type: "standalone" }}
@@ -141,8 +141,8 @@ describe("FT04 appointments list page controlled state", () => {
         onSortKeyChange={vi.fn()}
         sortDirection="desc"
         onSortDirectionChange={vi.fn()}
-        showAllAppointments
-        onShowAllAppointmentsChange={vi.fn()}
+        appointmentScope="all"
+        onAppointmentScopeChange={vi.fn()}
       />,
     );
 
@@ -156,10 +156,11 @@ describe("FT04 appointments list page controlled state", () => {
         dateFrom: undefined,
         dateTo: "2099-04-30",
       },
-      showAllAppointments: true,
+      appointmentScope: "all",
     });
     expect(useQueryMock.mock.calls[2]?.[0]?.queryKey).toEqual([
       "appointments-list",
+      "all",
       {
         employeeId: undefined,
         projectTitle: "Extern",
@@ -183,10 +184,10 @@ describe("FT04 appointments list page controlled state", () => {
     renderToStaticMarkup(<AppointmentsListPage context={{ type: "standalone" }} />);
 
     expect(filterPanelCalls[0]).toMatchObject({
-      showAllAppointments: false,
+      appointmentScope: "all",
     });
     expect(filterPanelCalls[0].filters).toMatchObject({
-      dateFrom: "2099-04-08",
+      dateFrom: undefined,
       projectTitle: "",
       customerLastName: "",
       customerNumber: "",

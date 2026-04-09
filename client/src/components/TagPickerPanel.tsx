@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ListChecks, Plus, Tags } from "lucide-react";
+import { Plus, Tags } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
 import type { Tag } from "@shared/schema";

@@ -81,15 +81,15 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=customer").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
     await admin.get("/api/tags?domain=employee").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
     let managedReportTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;

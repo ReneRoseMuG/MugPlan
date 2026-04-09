@@ -5,9 +5,10 @@ import { ProjectTitleFilterInput } from "@/components/filters/project-title-filt
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
+import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Tag } from "@shared/schema";
 import type { ProjectScope } from "@/lib/project-filters";
-import { BooleanToggleFilterInput } from "@/components/filters/boolean-toggle-filter-input";
 
 interface ProjectFilterPanelProps {
   title: string;
@@ -96,26 +97,35 @@ export function ProjectFilterPanel({
           label="Auftrag Nr."
           helpKey="projects.filter.orderNumber"
         />
-        <BooleanToggleFilterInput
-          id="project-scope-all"
-          checked={projectScope === "all"}
-          onCheckedChange={(checked) => {
-            onProjectScopeChange(checked ? "all" : "upcoming");
-          }}
-          label="Alle Projekte"
-          labelAdornment={<HelpIcon helpKey="projects.filter.scope.all" size="sm" />}
-          className="w-full sm:min-w-[10rem]"
-        />
-        <BooleanToggleFilterInput
-          id="project-scope-no-appointments"
-          checked={projectScope === "noAppointments"}
-          onCheckedChange={(checked) => {
-            onProjectScopeChange(checked ? "noAppointments" : "all");
-          }}
-          label="Ohne Termine"
-          labelAdornment={<HelpIcon helpKey="projects.filter.scope.noAppointments" size="sm" />}
-          className="w-full sm:min-w-[10rem]"
-        />
+        <div className="flex w-full min-w-[20rem] flex-col gap-1">
+          <div className="flex min-h-5 items-center gap-1">
+            <HelpIcon helpKey="projects.filter.scope.all" size="sm" />
+            <Label className="text-xs">Projekte</Label>
+          </div>
+          <ToggleGroup
+            type="single"
+            value={projectScope}
+            onValueChange={(value) => {
+              if (value === "all" || value === "upcoming" || value === "noAppointments") {
+                onProjectScopeChange(value);
+              }
+            }}
+            variant="outline"
+            size="sm"
+            className="flex w-full flex-wrap justify-start"
+            data-testid="toggle-project-scope"
+          >
+            <ToggleGroupItem value="all" data-testid="toggle-project-scope-all">
+              Alle Projekte
+            </ToggleGroupItem>
+            <ToggleGroupItem value="upcoming" data-testid="toggle-project-scope-upcoming">
+              Geplante Projekte
+            </ToggleGroupItem>
+            <ToggleGroupItem value="noAppointments" data-testid="toggle-project-scope-no-appointments">
+              Projekte ohne Termin
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
         <TagFilterInput
           selectedTags={selectedTags}
           availableTags={availableTags}

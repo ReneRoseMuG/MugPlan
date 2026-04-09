@@ -92,14 +92,14 @@ vi.mock("@/components/ui/list-paging-footer", () => ({
 vi.mock("@/components/ui/filter-panels/appointments-filter-panel", () => ({
   AppointmentsFilterPanel: ({
     hideTourFilter,
-    showAllAppointments,
+    appointmentScope,
   }: {
     hideTourFilter: boolean;
-    showAllAppointments: boolean;
+    appointmentScope: string;
   }) => (
     <div data-testid="appointments-filter-panel">
       <span>{hideTourFilter ? "tour-filter-hidden" : "tour-filter-visible"}</span>
-      <span>{showAllAppointments ? "show-all-on" : "show-all-off"}</span>
+      <span>{`scope-${appointmentScope}`}</span>
     </div>
   ),
 }));

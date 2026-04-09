@@ -5,8 +5,8 @@
  * Use Case: UC Sortierung/Spaltenstruktur/Scrollverhalten der Formular-Tabellen
  *
  * Abgedeckte Regeln:
- * - Datum startet aufsteigend und bleibt nach "Alle Termine" erhalten.
- * - Umschaltung "Alle Termine" behaelt die gewaehlte Datumssortierung.
+ * - Datum startet aufsteigend und bleibt nach Scope-Wechsel erhalten.
+ * - Umschaltung zwischen "Geplante Termine" und "Alle Termine" behaelt die gewaehlte Datumssortierung.
  * - Spalte "Ganztag" ist entfernt.
  * - Listenlayout zeigt die aktuell verdrahteten Zeit-, Auftrags- und Kunden-Spalten.
  * - Im Mitarbeiter-Formular bleibt der Tour-Filter ausgeblendet.
@@ -14,7 +14,7 @@
  * - Mitarbeiter-Terminliste scrollt vertikal innerhalb des Tabellenbereichs mit sticky Header.
  *
  * Fehlerfaelle:
- * - Sortierung springt nach "Alle Termine" auf die Standardsortierung zurueck.
+ * - Sortierung springt nach einem Scope-Wechsel auf die Standardsortierung zurueck.
  * - Verbotene Spalten/Filter sind weiterhin sichtbar.
  * - Projektspalte zeigt weiterhin den gespeicherten Prefix "K: <Nr> - <Name>".
  * - Tabelle laeuft im Mitarbeiter-Formular nach unten aus.
@@ -39,7 +39,7 @@ test.beforeEach(async () => {
   await resetDatabase();
 });
 
-test("tour form appointments table: date sorting persists after show-all and no all-day column", async ({ page }) => {
+test("tour form appointments table: date sorting persists across appointment scope toggles and no all-day column", async ({ page }) => {
   const tour = await createTourFixture("#1f8a70");
   const projectNear = await createProjectFixture({ prefix: "FT28-TOUR-NEAR", name: "Tour Near" });
   const projectFar = await createProjectFixture({ prefix: "FT28-TOUR-FAR", name: "Tour Far" });
@@ -79,13 +79,18 @@ test("tour form appointments table: date sorting persists after show-all and no 
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 
-  await page.getByRole("switch", { name: "Alle Termine" }).click();
+  await page.getByTestId("toggle-appointments-scope-planned").click();
+  await expect(rows).toHaveCount(2);
+  await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
+  await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
+
+  await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 });
 
-test("employee form appointments table: structure, sorting persistence and vertical inner scroll", async ({ page }) => {
+test("employee form appointments table: structure, scope toggle persistence and vertical inner scroll", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 620 });
 
   const employee = await createEmployeeFixture("FT28-EMP");
@@ -134,7 +139,9 @@ test("employee form appointments table: structure, sorting persistence and verti
   
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
   await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
-  await page.getByRole("switch", { name: "Alle Termine" }).click();
+  await page.getByTestId("toggle-appointments-scope-planned").click();
+  await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
+  await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
 
   const scrollViewport = table.locator(":scope > div").first();

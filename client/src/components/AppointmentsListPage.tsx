@@ -8,8 +8,10 @@ import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import {
   AppointmentsFilterPanel,
   type AppointmentListFilters,
+  type AppointmentListScope,
 } from "@/components/ui/filter-panels/appointments-filter-panel";
 export type { AppointmentListFilters } from "@/components/ui/filter-panels/appointments-filter-panel";
+export type { AppointmentListScope } from "@/components/ui/filter-panels/appointments-filter-panel";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -68,8 +70,8 @@ interface AppointmentsListPageProps {
   onSortKeyChange?: (key: AppointmentListSortKey) => void;
   sortDirection?: AppointmentListSortDirection;
   onSortDirectionChange?: (direction: AppointmentListSortDirection) => void;
-  showAllAppointments?: boolean;
-  onShowAllAppointmentsChange?: (checked: boolean) => void;
+  appointmentScope?: AppointmentListScope;
+  onAppointmentScopeChange?: (scope: AppointmentListScope) => void;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -95,10 +97,10 @@ function resolveAppointmentProjectDisplayName(storedProjectName: string): string
 function hasUserControlledAppointmentFilters(
   filters: AppointmentListFilters,
   options: {
+    appointmentScope: AppointmentListScope;
     todayBerlin: string;
     resolvedTourId: number | null | undefined;
     resolvedEmployeeId: number | undefined;
-    resolvedEnforceFromToday: boolean;
   },
 ): boolean {
   if (filters.projectTitle.trim().length > 0) return true;
@@ -116,15 +118,14 @@ function hasUserControlledAppointmentFilters(
     return true;
   }
 
-  if (filters.dateFrom === undefined) {
-    return false;
-  }
-
-  if (options.resolvedEnforceFromToday) {
+  if (options.appointmentScope === "planned") {
+    if (filters.dateFrom === undefined) {
+      return true;
+    }
     return filters.dateFrom !== options.todayBerlin;
   }
 
-  return true;
+  return filters.dateFrom !== undefined;
 }
 
 export function AppointmentsListPage({
@@ -150,8 +151,8 @@ export function AppointmentsListPage({
   onSortKeyChange,
   sortDirection: controlledSortDirection,
   onSortDirectionChange,
-  showAllAppointments: controlledShowAllAppointments,
-  onShowAllAppointmentsChange,
+  appointmentScope: controlledAppointmentScope,
+  onAppointmentScopeChange,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -161,13 +162,15 @@ export function AppointmentsListPage({
   const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;
   const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
   const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
-  const resolvedEnforceFromToday = contextType === "standalone" ? true : (isTourContext || isEmployeeContext || enforceFromToday);
+  const resolvedEnforceFromToday = enforceFromToday;
 
   const todayBerlin = getBerlinTodayDateString();
   const [internalPage, setInternalPage] = useState(1);
   const [internalSortKey, setInternalSortKey] = useState<AppointmentListSortKey>("date");
   const [internalSortDirection, setInternalSortDirection] = useState<AppointmentListSortDirection>("asc");
-  const [internalShowAllAppointments, setInternalShowAllAppointments] = useState(false);
+  const [internalAppointmentScope, setInternalAppointmentScope] = useState<AppointmentListScope>(
+    resolvedEnforceFromToday ? "planned" : "all",
+  );
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
@@ -179,7 +182,7 @@ export function AppointmentsListPage({
     orderNumber: "",
     tagIds: [],
     tourId: resolvedTourId ?? undefined,
-    dateFrom: todayBerlin,
+    dateFrom: resolvedEnforceFromToday ? todayBerlin : undefined,
     dateTo: undefined,
   });
   const filters = controlledFilters ?? internalFilters;
@@ -189,8 +192,8 @@ export function AppointmentsListPage({
   const setSortKey = onSortKeyChange ?? setInternalSortKey;
   const sortDirection = controlledSortDirection ?? internalSortDirection;
   const setSortDirection = onSortDirectionChange ?? setInternalSortDirection;
-  const showAllAppointments = controlledShowAllAppointments ?? internalShowAllAppointments;
-  const setShowAllAppointments = onShowAllAppointmentsChange ?? setInternalShowAllAppointments;
+  const appointmentScope = controlledAppointmentScope ?? internalAppointmentScope;
+  const setAppointmentScope = onAppointmentScopeChange ?? setInternalAppointmentScope;
 
   const applyFiltersPatch = useCallback((patch: Partial<AppointmentListFilters>) => {
     if (onFiltersChange) {
@@ -214,11 +217,10 @@ export function AppointmentsListPage({
   }, [applyFiltersPatch, filters.employeeId, isEmployeeContext, resolvedEmployeeId, setPage]);
 
   useEffect(() => {
-    if (showAllAppointments) return;
-    if (!resolvedEnforceFromToday) return;
+    if (appointmentScope !== "planned") return;
     if (filters.dateFrom === todayBerlin) return;
     applyFiltersPatch({ dateFrom: todayBerlin });
-  }, [applyFiltersPatch, filters.dateFrom, resolvedEnforceFromToday, showAllAppointments, todayBerlin]);
+  }, [appointmentScope, applyFiltersPatch, filters.dateFrom, todayBerlin]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -229,7 +231,7 @@ export function AppointmentsListPage({
   });
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({
-    queryKey: ["appointments-list", filters, page, DEFAULT_PAGE_SIZE, userRole],
+    queryKey: ["appointments-list", appointmentScope, filters, page, DEFAULT_PAGE_SIZE, userRole],
     enabled: resolvedTourId !== null,
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -390,7 +392,7 @@ export function AppointmentsListPage({
   }, [resolvedHideTourColumn, sortDirection, sortKey, onRemoveEmployee]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
-    const patchWithDate = (!showAllAppointments && resolvedEnforceFromToday)
+    const patchWithDate = (appointmentScope === "planned")
       ? { ...patch, dateFrom: todayBerlin }
       : patch;
     const patchWithTour = resolvedTourId == null
@@ -403,10 +405,10 @@ export function AppointmentsListPage({
     setPage(1);
   };
 
-  const handleShowAllAppointmentsChange = (checked: boolean) => {
-    setShowAllAppointments(checked);
+  const handleAppointmentScopeChange = (scope: AppointmentListScope) => {
+    setAppointmentScope(scope);
     applyFiltersPatch({
-      dateFrom: checked ? undefined : todayBerlin,
+      dateFrom: scope === "planned" ? todayBerlin : undefined,
     });
     setPage(1);
   };
@@ -426,10 +428,10 @@ export function AppointmentsListPage({
     [availableTags, selectedTagIds],
   );
   const hasUserControlledFilters = hasUserControlledAppointmentFilters(filters, {
+    appointmentScope,
     todayBerlin,
     resolvedTourId,
     resolvedEmployeeId,
-    resolvedEnforceFromToday,
   });
   const emptyState = hasUserControlledFilters ? (
     <ListEmptyState
@@ -477,9 +479,9 @@ export function AppointmentsListPage({
         <AppointmentsFilterPanel
           filters={filters}
           onChange={setFilterAndResetPage}
-          showAllAppointments={showAllAppointments}
-          onShowAllAppointmentsChange={handleShowAllAppointmentsChange}
-          showAllAppointmentsHelpKey="appointments.filter.showAll"
+          appointmentScope={appointmentScope}
+          onAppointmentScopeChange={handleAppointmentScopeChange}
+          appointmentScopeHelpKey="appointments.filter.showAll"
           tours={tours}
           selectedTags={selectedTags}
           availableTags={unselectedTags}

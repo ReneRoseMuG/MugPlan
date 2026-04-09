@@ -54,9 +54,9 @@ async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
 async function openProjectById(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
   await openProjects(page);
   if (scope === "noAppointments") {
-    await page.getByLabel("Ohne Termine").click();
+    await page.getByTestId("toggle-project-scope-no-appointments").click();
   } else {
-    await page.getByLabel("Alle Projekte").click();
+    await page.getByTestId("toggle-project-scope-all").click();
   }
   await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
   await page.getByTestId(`project-card-${projectId}`).dblclick();
@@ -218,7 +218,7 @@ test("creates a project via UI after customer selection and keeps validation err
   await page.getByTestId("button-save-project").click();
 
   await expect(page.getByTestId("button-new-project")).toBeVisible();
-  await page.getByLabel("Ohne Termine").click();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
   await expect(page.getByTestId("list-projects")).toContainText("FT02 Browser Projekt");
 });
 
@@ -274,7 +274,7 @@ test("creates a fully visible project, checks EntityFormShell and restores all v
   const createdProjectId = Number(createdProject.id);
   expect(createdProjectId).toBeGreaterThan(0);
 
-  await page.getByLabel("Ohne Termine").click();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
   const projectCard = page.getByTestId(`project-card-${createdProjectId}`);
   await expect(projectCard).toBeVisible();
   await expect(projectCard).toContainText(fixture.projectInput.name);
@@ -366,7 +366,7 @@ test("creates product and component entries in a new project form and restores t
   await expect(page.getByTestId("select-project-product-oven")).toHaveValue(String(createdComponentId));
 });
 
-test("switches project list scopes and keeps filters inside the selected ground set", async ({ page }) => {
+test("defaults to all projects and keeps filters inside the selected ground set while switching scopes", async ({ page }) => {
   const customer = await createCustomerFixture("FT02-BROWSER-SCOPE-CUST");
   const upcomingProject = await createProjectFixture({
     prefix: "FT02-BROWSER-UPCOMING",
@@ -386,9 +386,13 @@ test("switches project list scopes and keeps filters inside the selected ground 
 
   await openProjects(page);
   await expect(page.getByTestId("list-projects")).toContainText(upcomingProject.name);
+  await expect(page.getByTestId("list-projects")).toContainText(noAppointmentProject.name);
+
+  await page.getByTestId("toggle-project-scope-upcoming").click();
+  await expect(page.getByTestId("list-projects")).toContainText(upcomingProject.name);
   await expect(page.getByTestId("list-projects")).not.toContainText(noAppointmentProject.name);
 
-  await page.getByLabel("Ohne Termine").click();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
   await expect(page.getByTestId("list-projects")).toContainText(noAppointmentProject.name);
   await expect(page.getByTestId("list-projects")).not.toContainText(upcomingProject.name);
 
@@ -518,7 +522,7 @@ test("deletes projects without appointments and keeps projects with appointments
   }).toBe(200);
 
   await openProjects(page);
-  await page.getByLabel("Ohne Termine").click();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
   await page.getByTestId(`project-card-${deletableProject.id}`).dblclick();
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();

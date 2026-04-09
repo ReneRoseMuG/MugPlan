@@ -126,7 +126,7 @@ export function ProjectsPage({
   const internalListFilters = useListFilters<ProjectFilters>({
     initialFilters: defaultProjectFilters,
   });
-  const [internalProjectScope, setInternalProjectScope] = useState<ProjectScope>("upcoming");
+  const [internalProjectScope, setInternalProjectScope] = useState<ProjectScope>("all");
   const [internalSortKey, setInternalSortKey] = useState<ProjectSortKey>("title");
   const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
   const filters = controlledFilters ?? internalListFilters.filters;
@@ -324,7 +324,7 @@ export function ProjectsPage({
     || filters.customerNumber.trim().length > 0
     || filters.orderNumber.trim().length > 0
     || filters.tagIds.length > 0
-    || projectScope !== "upcoming";
+    || projectScope !== "all";
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
       helpKey="projects.emptyFiltered"

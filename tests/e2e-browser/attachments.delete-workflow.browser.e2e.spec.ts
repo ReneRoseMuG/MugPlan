@@ -53,9 +53,9 @@ function buildAttachmentPayload(prefix: string, label: string) {
 async function openProjectForm(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
   await page.getByTestId("nav-projekte").click();
   if (scope === "noAppointments") {
-    await page.getByLabel("Ohne Termine").click();
+    await page.getByTestId("toggle-project-scope-no-appointments").click();
   } else {
-    await page.getByLabel("Alle Projekte").click();
+    await page.getByTestId("toggle-project-scope-all").click();
   }
   const card = page.getByTestId(`project-card-${projectId}`);
   await expect(card).toBeVisible({ timeout: 10_000 });
@@ -204,7 +204,7 @@ test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anha
   await loginAsAdmin(page);
 
   await page.getByTestId("nav-termine").click();
-  await page.getByRole("switch", { name: "Alle Termine" }).click();
+  await expect(page.getByTestId("toggle-appointments-scope-all")).toHaveAttribute("data-state", "on");
   const appointmentRow = page.getByRole("row").filter({ hasText: "FT19 Historischer Termin" }).first();
   await expect(appointmentRow).toBeVisible({ timeout: 10_000 });
   await appointmentRow.dblclick();

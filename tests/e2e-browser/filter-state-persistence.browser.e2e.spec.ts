@@ -167,11 +167,11 @@ test("customers keep filters after closing the customer form", async ({ page }) 
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Kunde Andere" })).toHaveCount(0);
 });
 
-test("appointments keep filters and show-all toggle after closing the overlay", async ({ page }) => {
+test("appointments keep filters and the selected scope after closing the overlay", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByTestId("nav-termine").click();
 
-  await page.locator("#appointments-show-all").click();
+  await page.getByTestId("toggle-appointments-scope-planned").click();
   await page.locator("#appointments-filter-project-title").fill("Termin Tre");
 
   const table = page.getByTestId("table-appointments-list");
@@ -183,7 +183,7 @@ test("appointments keep filters and show-all toggle after closing the overlay", 
   await page.getByTestId("button-back-appointment").click();
 
   await expect(page.locator("#appointments-filter-project-title")).toHaveValue("Termin Tre");
-  await expect(page.locator("#appointments-show-all")).toHaveAttribute("aria-checked", "true");
+  await expect(page.getByTestId("toggle-appointments-scope-planned")).toHaveAttribute("data-state", "on");
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Termin Treffer" })).toHaveCount(1);
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Termin Andere" })).toHaveCount(0);
 });

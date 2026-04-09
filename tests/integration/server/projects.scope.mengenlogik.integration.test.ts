@@ -5,12 +5,14 @@
  * Use Case: UC 02/07 und UC 02/17
  *
  * Abgedeckte Regeln:
+ * - `scope=all` liefert die vollstaendige Projektmenge.
+ * - `scope=withAppointments` liefert Projekte mit mindestens einem Termin unabhaengig vom Datum.
  * - `scope=upcoming` liefert nur Projekte mit mindestens einem Termin ab heute.
  * - `scope=noAppointments` liefert nur Projekte ohne Termine.
- * - Grundmengen sind disjunkt.
+ * - Die Grundmengen sind sauber voneinander abgegrenzt.
  *
  * Fehlerfaelle:
- * - Vermischung der Grundmengen.
+ * - Vermischung oder Luecken zwischen den Grundmengen.
  * - Scope-Filter ignoriert Datumslogik.
  *
  * Ziel:
@@ -108,7 +110,7 @@ async function insertAppointmentRaw(params: { projectId: number; customerId: num
 }
 
 describe("FT02 integration: projects scope and mengenlogik", () => {
-  it("UC 02/07 + UC 02/17: keeps upcoming and noAppointments disjoint", async () => {
+  it("UC 02/07 + UC 02/17: partitions all projects into withAppointments and noAppointments while upcoming stays narrower", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("FT02-SCOPE");
 
@@ -146,11 +148,25 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
       employeeIds: [],
     });
 
+    const all = await admin.get("/api/projects?filter=all&scope=all").expect(200);
+    const withAppointments = await admin.get("/api/projects?filter=all&scope=withAppointments").expect(200);
     const upcoming = await admin.get("/api/projects?filter=all&scope=upcoming").expect(200);
     const noAppointments = await admin.get("/api/projects?filter=all&scope=noAppointments").expect(200);
 
+    const allIds = new Set((all.body as Array<{ id: number }>).map((row) => row.id));
+    const withAppointmentsIds = new Set((withAppointments.body as Array<{ id: number }>).map((row) => row.id));
     const upcomingIds = new Set((upcoming.body as Array<{ id: number }>).map((row) => row.id));
     const noAppointmentsIds = new Set((noAppointments.body as Array<{ id: number }>).map((row) => row.id));
+
+    expect(allIds.has(projectFuture.id)).toBe(true);
+    expect(allIds.has(projectPast.id)).toBe(true);
+    expect(allIds.has(projectMixed.id)).toBe(true);
+    expect(allIds.has(projectNone.id)).toBe(true);
+
+    expect(withAppointmentsIds.has(projectFuture.id)).toBe(true);
+    expect(withAppointmentsIds.has(projectPast.id)).toBe(true);
+    expect(withAppointmentsIds.has(projectMixed.id)).toBe(true);
+    expect(withAppointmentsIds.has(projectNone.id)).toBe(false);
 
     expect(upcomingIds.has(projectFuture.id)).toBe(true);
     expect(upcomingIds.has(projectMixed.id)).toBe(true);
@@ -162,12 +178,25 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
     expect(noAppointmentsIds.has(projectMixed.id)).toBe(false);
     expect(noAppointmentsIds.has(projectPast.id)).toBe(false);
 
+    for (const id of noAppointmentsIds) {
+      expect(withAppointmentsIds.has(id)).toBe(false);
+    }
+
+    for (const id of withAppointmentsIds) {
+      expect(allIds.has(id)).toBe(true);
+    }
+
+    for (const id of noAppointmentsIds) {
+      expect(allIds.has(id)).toBe(true);
+    }
+
     for (const id of upcomingIds) {
+      expect(withAppointmentsIds.has(id)).toBe(true);
       expect(noAppointmentsIds.has(id)).toBe(false);
     }
   });
 
-  it("scope=all: liefert Projekte mit Terminen (past+future), schliesst Projekte ohne Termine aus", async () => {
+  it("scope=withAppointments: liefert Projekte mit Terminen (past+future), schliesst Projekte ohne Termine aus", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("FT02-ALL");
 
@@ -188,11 +217,31 @@ describe("FT02 integration: projects scope and mengenlogik", () => {
       title: "All Past",
     });
 
+    const withAppointments = await admin.get("/api/projects?filter=all&scope=withAppointments").expect(200);
+    const withAppointmentsIds = new Set((withAppointments.body as Array<{ id: number }>).map((row) => row.id));
+
+    expect(withAppointmentsIds.has(projectFuture.id)).toBe(true);
+    expect(withAppointmentsIds.has(projectPast.id)).toBe(true);
+    expect(withAppointmentsIds.has(projectNone.id)).toBe(false);
+  });
+
+  it("scope=all: liefert auch Projekte ohne Termine", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("FT02-ALL-FULL");
+
+    const projectFuture = await createProject(customer.id, "All Full Future");
+    const projectNone = await createProject(customer.id, "All Full None");
+
+    await appointmentsService.createAppointment({
+      projectId: projectFuture.id,
+      startDate: relativeBerlinDate(1),
+      employeeIds: [],
+    });
+
     const all = await admin.get("/api/projects?filter=all&scope=all").expect(200);
     const allIds = new Set((all.body as Array<{ id: number }>).map((row) => row.id));
 
     expect(allIds.has(projectFuture.id)).toBe(true);
-    expect(allIds.has(projectPast.id)).toBe(true);
-    expect(allIds.has(projectNone.id)).toBe(false);
+    expect(allIds.has(projectNone.id)).toBe(true);
   });
 });

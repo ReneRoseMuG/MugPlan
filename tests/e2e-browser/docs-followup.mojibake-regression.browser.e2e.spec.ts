@@ -44,9 +44,9 @@ test("keeps changed calendar and project labels free of mojibake", async ({ page
 
   await loginAsAdmin(page);
 
-  await expect(page.getByText("Mitarbeiter")).toBeVisible();
+  await expect(page.getByTestId("nav-mitarbeiter")).toBeVisible();
   await expect(page.getByTestId("input-calendar-kw-jump")).toBeVisible();
-  await expect(page.getByText("KW")).toBeVisible();
+  await expect(page.getByTestId("calendar-week-view").getByText(/^KW \d+/)).toBeVisible();
 
   await page.getByTestId("nav-projekte").click();
   await expect(page.getByText("Kunde Nr.")).toBeVisible();

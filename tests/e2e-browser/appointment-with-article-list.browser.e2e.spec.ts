@@ -111,7 +111,7 @@ async function assignProjectWithoutAppointments(page: Page, project: { id: numbe
   await page.getByTestId("button-select-project").click();
   const table = page.getByTestId("table-projects");
   await expect(table).toBeVisible();
-  await page.getByLabel("Ohne Termine").click();
+  await expect(page.getByTestId("toggle-project-scope-all")).toHaveAttribute("data-state", "on");
   await page.locator("#project-filter-order-number").fill(project.orderNumber ?? "");
   await page.locator("#project-filter-title").fill(project.name);
   const row = table.locator("tbody tr")

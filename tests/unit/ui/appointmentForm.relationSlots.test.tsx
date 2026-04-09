@@ -7,7 +7,7 @@
  * Abgedeckte Regeln:
  * - Projektrelation im Terminformular nutzt RelationSlot mit Projektdaten.
  * - Die Projektdatenquelle des Formulars nutzt `scope=all`.
- * - Faellt das Projekt aus `scope=all` heraus, laedt das Formular den Detailpfad mit `projectArticleItems` nach.
+ * - Fehlt das Projekt in der Listenantwort, laedt das Formular den Detailpfad mit `projectArticleItems` nach.
  * - Ein gesetztes Projekt rendert im Terminformular keine Remove-Aktion mehr.
  * - Bei Projektkontext ist der Kundenslot readonly und zeigt die abgeleitete Kundenkarte.
  * - Ohne Projektkontext bleiben Projekt- und Kundenslot leer und selektierbar.
@@ -287,7 +287,7 @@ describe("FT01 appointment form relation slots", () => {
     });
   });
 
-  it("falls back to the project detail query with article items when scope=all does not contain the project", () => {
+  it("falls back to the project detail query with article items when the list response does not contain the project", () => {
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "/api/projects?filter=all&scope=all") {

@@ -57,9 +57,9 @@ async function openProjectEditForm(
   await loginAsAdmin(page);
   await page.getByTestId("nav-projekte").click();
   if (scope === "noAppointments") {
-    await page.getByLabel("Ohne Termine").click();
+    await page.getByTestId("toggle-project-scope-no-appointments").click();
   } else {
-    await page.getByLabel("Alle Projekte").click();
+    await page.getByTestId("toggle-project-scope-all").click();
   }
   await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
   await page.getByTestId(`project-card-${projectId}`).dblclick();

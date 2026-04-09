@@ -14,6 +14,7 @@ import { AppointmentForm } from "@/components/AppointmentForm";
 import {
   AppointmentsListPage,
   type AppointmentListFilters,
+  type AppointmentListScope,
   type AppointmentListSortDirection,
   type AppointmentListSortKey,
 } from "@/components/AppointmentsListPage";
@@ -29,7 +30,6 @@ import { useSetting } from "@/hooks/useSettings";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { defaultCustomerFilters, type CustomerFilters } from "@/lib/customer-filters";
 import { defaultEmployeeFilters, type EmployeeFilters } from "@/lib/employee-filters";
-import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
@@ -122,7 +122,7 @@ export default function Home({ onLogout }: HomeProps) {
   } = useListFilters<ProjectFilters>({
     initialFilters: defaultProjectFilters,
   });
-  const [projectScope, setProjectScope] = useState<ProjectScope>("upcoming");
+  const [projectScope, setProjectScope] = useState<ProjectScope>("all");
   const [projectSortKey, setProjectSortKey] = useState<ProjectSortKey>("title");
   const [projectSortDirection, setProjectSortDirection] = useState<ProjectSortDirection>("asc");
   const {
@@ -144,13 +144,13 @@ export default function Home({ onLogout }: HomeProps) {
     orderNumber: "",
     tagIds: [],
     tourId: undefined,
-    dateFrom: getBerlinTodayDateString(),
+    dateFrom: undefined,
     dateTo: undefined,
   });
   const [appointmentListPage, setAppointmentListPage] = useState(1);
   const [appointmentListSortKey, setAppointmentListSortKey] = useState<AppointmentListSortKey>("date");
   const [appointmentListSortDirection, setAppointmentListSortDirection] = useState<AppointmentListSortDirection>("asc");
-  const [appointmentListShowAll, setAppointmentListShowAll] = useState(false);
+  const [appointmentListScope, setAppointmentListScope] = useState<AppointmentListScope>("all");
   const {
     filters: employeeFilters,
     setFilter: setEmployeeFilter,
@@ -391,8 +391,8 @@ export default function Home({ onLogout }: HomeProps) {
               onSortKeyChange={setAppointmentListSortKey}
               sortDirection={appointmentListSortDirection}
               onSortDirectionChange={setAppointmentListSortDirection}
-              showAllAppointments={appointmentListShowAll}
-              onShowAllAppointmentsChange={setAppointmentListShowAll}
+              appointmentScope={appointmentListScope}
+              onAppointmentScopeChange={setAppointmentListScope}
               onOpenAppointment={(appointmentId) => {
                 setAppointmentOverlayContext({
                   origin: "appointmentsList",

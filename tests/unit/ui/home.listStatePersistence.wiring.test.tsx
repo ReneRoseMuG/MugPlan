@@ -198,7 +198,7 @@ describe("PKG-08 home list state persistence wiring", () => {
     expect(projectsPageCalls[0]).toMatchObject({
       filters: { title: "Projekt Persist", customerLastName: "", customerNumber: "", orderNumber: "4711", tagIds: [] },
       page: 3,
-      projectScope: "upcoming",
+      projectScope: "all",
       sortKey: "title",
       sortDirection: "asc",
     });
@@ -227,7 +227,7 @@ describe("PKG-08 home list state persistence wiring", () => {
       page: 1,
       sortKey: "date",
       sortDirection: "asc",
-      showAllAppointments: false,
+      appointmentScope: "all",
     });
     expect(appointmentsPageCalls[0].filters).toMatchObject({
       projectTitle: "",

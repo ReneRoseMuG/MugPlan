@@ -61,7 +61,7 @@ async function readSystemTags(page: Page) {
 
 async function openProject(page: Page, projectId: number) {
   await page.getByTestId("nav-projekte").click();
-  await page.getByLabel("Ohne Termine").click();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
   await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
   await page.getByTestId(`project-card-${projectId}`).dblclick();
   await expect(page.getByTestId("button-save-project")).toBeVisible();

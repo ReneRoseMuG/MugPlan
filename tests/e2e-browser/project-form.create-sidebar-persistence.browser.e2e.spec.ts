@@ -63,9 +63,9 @@ async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
 async function openProjectById(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
   await openProjects(page);
   if (scope === "noAppointments") {
-    await page.getByLabel("Ohne Termine").click();
+    await page.getByTestId("toggle-project-scope-no-appointments").click();
   } else {
-    await page.getByLabel("Alle Projekte").click();
+    await page.getByTestId("toggle-project-scope-all").click();
   }
   await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
   await page.getByTestId(`project-card-${projectId}`).dblclick();

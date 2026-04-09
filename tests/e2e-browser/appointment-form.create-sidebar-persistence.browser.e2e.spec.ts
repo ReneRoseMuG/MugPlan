@@ -192,7 +192,7 @@ async function selectProjectWithoutAppointments(page: Page, fixture: Appointment
   await page.getByTestId("button-select-project").click();
   const table = page.getByTestId("table-projects");
   await expect(table).toBeVisible();
-  await page.getByLabel("Ohne Termine").click();
+  await expect(page.getByTestId("toggle-project-scope-all")).toHaveAttribute("data-state", "on");
   await page.locator("#project-filter-order-number").fill(fixture.project.orderNumber ?? "");
   await page.locator("#project-filter-title").fill(fixture.project.name);
   const row = table.locator("tbody tr")

@@ -31,7 +31,7 @@ export class ProjectsError extends Error {
   }
 }
 
-export type ProjectScope = "upcoming" | "noAppointments" | "all";
+export type ProjectScope = "upcoming" | "noAppointments" | "all" | "withAppointments";
 export type ProjectListItem = projectsRepository.ProjectListItem;
 export type ProjectBoardListResult = projectsRepository.ProjectBoardListResult;
 
