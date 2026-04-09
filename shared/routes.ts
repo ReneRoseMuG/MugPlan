@@ -641,6 +641,7 @@ const tourPrintPreviewNoteSchema = z.object({
   title: z.string(),
   body: z.string().nullable(),
   cardColor: z.string().nullable(),
+  print: z.boolean(),
   updatedAt: z.string(),
 });
 

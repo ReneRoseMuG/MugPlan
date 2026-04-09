@@ -55,6 +55,7 @@ const page: TourenplanPrintPageData = {
         projectArticleItems: [],
         projectDescription: null,
       }],
+      weekNotes: [],
     },
     {
       weekStart: "2026-04-20",
@@ -89,6 +90,7 @@ const page: TourenplanPrintPageData = {
         projectArticleItems: [],
         projectDescription: null,
       }],
+      weekNotes: [],
     },
   ],
 };

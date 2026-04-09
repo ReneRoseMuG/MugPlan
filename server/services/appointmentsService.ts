@@ -800,12 +800,13 @@ export async function getTourPrintPreview(params: { tourId: number; fromDate: st
   const weeks = weekRanges.map(({ weekStart, weekEnd }, index) => ({
     weekStart: toDateOnlyString(weekStart) ?? "",
     weekEnd: toDateOnlyString(weekEnd) ?? "",
-    weekNotes: weekNotesByIndex[index].map((note) => ({
+    weekNotes: weekNotesByIndex[index].filter((note) => note.print).map((note) => ({
       id: note.id,
       sourceType: "appointment" as const,
       title: note.title,
       body: note.body ?? null,
       cardColor: note.cardColor ?? null,
+      print: note.print,
       updatedAt: new Date(note.updatedAt).toISOString(),
     })),
   }));

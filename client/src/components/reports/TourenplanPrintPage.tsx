@@ -2,6 +2,7 @@ import React from "react";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppointmentCard";
+import { TourenplanWeekNoteStrip } from "@/components/reports/TourenplanWeekNoteStrip";
 import type {
   TourenplanFontSize,
   TourenplanOrientation,
@@ -94,22 +95,39 @@ export function TourenplanPrintPage({
           </aside>
 
           <div className="flex min-h-0 flex-1 flex-col gap-1.5">
-            {page.weeks.map((week, weekIndex) => (
-              <React.Fragment key={week.weekStart}>
-                {week.appointments.map((appointment, appointmentIndex) => (
-                  <TourenplanAppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    printMode={printMode}
-                    fontSize={fontSize}
-                    useShortCodes={useShortCodes}
-                    dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
-                    testId={testId ? `${testId}-appointment-${appointment.id}` : undefined}
-                  />
-                ))}
-                {weekIndex < page.weeks.length - 1 ? <div className="h-2.5" /> : null}
-              </React.Fragment>
-            ))}
+            {page.weeks.map((week, weekIndex) => {
+              const printNotes = week.weekNotes.filter((note) => note.print);
+              return (
+                <React.Fragment key={week.weekStart}>
+                  {printNotes.length > 0 && (
+                    <div
+                      style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}
+                      data-testid={testId ? `${testId}-week-notes-${week.weekStart}` : undefined}
+                    >
+                      {printNotes.map((note) => (
+                        <TourenplanWeekNoteStrip
+                          key={note.id}
+                          note={note}
+                          printMode={printMode}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {week.appointments.map((appointment, appointmentIndex) => (
+                    <TourenplanAppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                      printMode={printMode}
+                      fontSize={fontSize}
+                      useShortCodes={useShortCodes}
+                      dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
+                      testId={testId ? `${testId}-appointment-${appointment.id}` : undefined}
+                    />
+                  ))}
+                  {weekIndex < page.weeks.length - 1 ? <div className="h-2.5" /> : null}
+                </React.Fragment>
+              );
+            })}
           </div>
         </div>
       </div>

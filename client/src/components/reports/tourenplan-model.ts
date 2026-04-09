@@ -16,6 +16,7 @@ export type TourenplanOrientation = "landscape" | "portrait";
 export type TourenplanFontSize = "small" | "medium" | "large";
 export type TourenplanPreviewResponse = z.infer<typeof api.tourPrintPreview.get.responses[200]>;
 export type TourenplanPreviewAppointment = TourenplanPreviewResponse["appointments"][number];
+export type TourenplanWeekNote = TourenplanPreviewResponse["weeks"][number]["weekNotes"][number];
 export type TourenplanAppointmentListResponse = z.infer<typeof api.appointments.list.responses[200]>;
 export type TourenplanAppointmentListItem = TourenplanAppointmentListResponse["items"][number];
 export type TourenplanResolvedTagKind = "reklamation" | "sondermass" | "messe" | "neutral";
@@ -31,6 +32,7 @@ export type TourenplanWeekSection = {
   weekNumber: number;
   markerTopPx: number;
   appointments: TourenplanResolvedAppointment[];
+  weekNotes: TourenplanWeekNote[];
 };
 
 export type TourenplanWeekGroup = {
@@ -38,6 +40,7 @@ export type TourenplanWeekGroup = {
   weekEnd: string;
   weekNumber: number;
   appointments: TourenplanResolvedAppointment[];
+  weekNotes: TourenplanWeekNote[];
 };
 
 export type TourenplanPrintPageData = {
@@ -354,6 +357,7 @@ export function buildTourenplanWeekGroups(
       appointments: appointments
         .filter((appointment) => appointment.startDate >= week.weekStart && appointment.startDate <= week.weekEnd)
         .sort(compareAppointments),
+      weekNotes: week.weekNotes,
     }))
     .filter((week) => week.appointments.length > 0);
 }
@@ -385,6 +389,7 @@ export function paginateTourenplanWeekGroups(params: {
 
   for (const week of params.weeks) {
     let activeWeekSection: TourenplanWeekSection | null = null;
+    let weekNotesAssigned = false;
 
     for (const appointment of week.appointments) {
       const appointmentHeight = params.cardHeights[appointment.id] ?? 0;
@@ -415,7 +420,9 @@ export function paginateTourenplanWeekGroups(params: {
           weekNumber: week.weekNumber,
           markerTopPx: markerOffset,
           appointments: [],
+          weekNotes: weekNotesAssigned ? [] : week.weekNotes,
         };
+        weekNotesAssigned = true;
         currentWeeks.push(activeWeekSection);
       }
 
