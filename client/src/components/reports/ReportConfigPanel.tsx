@@ -1,54 +1,39 @@
 import React, { type ReactNode } from "react";
-import { Calendar, CalendarDays } from "lucide-react";
 
 import { HelpIcon } from "@/components/ui/help/help-icon";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { defaultHeaderColor } from "@/lib/colors";
-import { cn } from "@/lib/utils";
 
 export type ReportConfigPanelMode = "date" | "calendarWeek";
 
 type ReportConfigPanelProps = {
   title: string;
   helpKey?: string;
-  mode: ReportConfigPanelMode;
-  onModeChange: (mode: ReportConfigPanelMode) => void;
   actionButton?: ReactNode;
   children: ReactNode;
   optionsSlot?: ReactNode;
+  secondaryOptionsSlot?: ReactNode;
   footer: ReactNode;
   testId?: string;
-  togglePrefix: string;
 };
-
-const modeOptions: Array<{
-  value: ReportConfigPanelMode;
-  label: string;
-  icon: ReactNode;
-}> = [
-  { value: "date", label: "Datum", icon: <Calendar className="h-3.5 w-3.5" /> },
-  { value: "calendarWeek", label: "Kalenderwoche", icon: <CalendarDays className="h-3.5 w-3.5" /> },
-];
 
 export function ReportConfigPanel({
   title,
   helpKey,
-  mode,
-  onModeChange,
   actionButton,
   children,
   optionsSlot,
+  secondaryOptionsSlot,
   footer,
   testId,
-  togglePrefix,
 }: ReportConfigPanelProps) {
   return (
     <section
-      className="flex w-[506px] min-w-[506px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className="flex w-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       data-testid={testId}
     >
+      {/* Header */}
       <div
-        className="flex items-center justify-between border-b border-border px-5 py-3"
+        className="flex items-center justify-between border-b border-border px-5 py-2"
         style={{ backgroundColor: defaultHeaderColor }}
       >
         <div className="flex min-w-0 items-center gap-2">
@@ -58,47 +43,22 @@ export function ReportConfigPanel({
         {actionButton}
       </div>
 
-      <div className="px-5 pb-4 pt-4">
-        <ToggleGroup
-          type="single"
-          value={mode}
-          onValueChange={(value) => {
-            if (value === "date" || value === "calendarWeek") {
-              onModeChange(value);
-            }
-          }}
-          className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
-          data-testid={`toggle-group-${togglePrefix}`}
-        >
-          {modeOptions.map((option) => (
-            <ToggleGroupItem
-              key={option.value}
-              value={option.value}
-              className={cn(
-                "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
-                "data-[state=on]:border-slate-200 data-[state=on]:bg-white data-[state=on]:text-slate-800 data-[state=on]:shadow-sm",
-              )}
-              data-testid={`toggle-${togglePrefix}-${option.value}`}
-            >
-              {option.icon}
-              {option.label}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+      {/* Body: linke Spalte (DateRange-Komponente) + rechte Spalte (Options) */}
+      <div className="grid grid-cols-[auto_1fr] gap-6 px-5 py-4">
+        {/* Linke Spalte: DateRange/KWRange Panel */}
+        <div className="shrink-0">{children}</div>
+
+        {/* Rechte Spalte: Options */}
+        <div className="flex flex-col gap-4">
+          {optionsSlot ? <div>{optionsSlot}</div> : null}
+          {secondaryOptionsSlot ? <div>{secondaryOptionsSlot}</div> : null}
+        </div>
       </div>
 
-      <div className="border-t border-slate-100" />
-
-      <div className="flex-1 px-5 py-4">{children}</div>
-
-      {optionsSlot ? (
-        <>
-          <div className="border-t border-slate-100" />
-          <div className="px-5 py-3">{optionsSlot}</div>
-        </>
-      ) : null}
-
-      <div className="mt-auto flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-3">{footer}</div>
+      {/* Footer */}
+      <div className="mt-auto flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-2">
+        {footer}
+      </div>
     </section>
   );
 }
