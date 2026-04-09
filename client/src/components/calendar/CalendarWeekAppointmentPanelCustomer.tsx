@@ -1,6 +1,7 @@
 import { CustomerInfoPanel } from "@/components/ui/customer-info-panel";
 
 export function CalendarWeekAppointmentPanelCustomer({
+  mode = "collapsed",
   fullName,
   customerNumber,
   phone,
@@ -10,6 +11,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   city,
   country,
 }: {
+  mode?: "collapsed" | "semiexpanded" | "expanded";
   fullName: string;
   customerNumber: string;
   phone?: string | null;
@@ -21,7 +23,7 @@ export function CalendarWeekAppointmentPanelCustomer({
 }) {
   return (
     <CustomerInfoPanel
-      mode="collapsed"
+      mode={mode}
       fullName={fullName || null}
       customerNumber={customerNumber}
       addressLine1={addressLine1}

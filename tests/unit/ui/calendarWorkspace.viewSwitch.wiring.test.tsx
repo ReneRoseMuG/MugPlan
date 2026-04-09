@@ -62,6 +62,8 @@ vi.mock("@/hooks/useSettings", () => ({
     switch (key) {
       case "calendar.weekAppointmentDisplayMode":
         return "standard";
+      case "calendar.weekTileBodyMode":
+        return "collapsed";
       case "calendar.weekLanes.isCollapsed":
         return false;
       case "calendarWeekendColumnPercent":
@@ -120,6 +122,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.employeeFilterId).toBe(17);
     expect(props?.restoreScrollLeft).toBe(144);
     expect(props?.weekAppointmentDisplayMode).toBe("detail");
+    expect(props?.weekTileBodyMode).toBe("collapsed");
     expect(props?.weekLanesCollapsed).toBe(false);
     expect(props?.conflictHighlightActive).toBe(false);
     expect(props?.conflictAppointmentIds).toEqual(new Set([91]));

@@ -20,6 +20,7 @@ type CalendarWeekSpanningTileProps = {
   appointment: CalendarAppointment;
   spanColumns: number;
   displayMode: "standard" | "compact" | "detail" | "split";
+  weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   visibleStartDate: string;
   visibleDayNumberStart: number;
   uniformHeightPx?: number | null;
@@ -45,6 +46,7 @@ export function CalendarWeekSpanningTile({
   appointment,
   spanColumns,
   displayMode,
+  weekTileBodyMode = "semiexpanded",
   visibleStartDate,
   visibleDayNumberStart,
   uniformHeightPx,
@@ -99,6 +101,9 @@ export function CalendarWeekSpanningTile({
   const resolvedStartTime = appointment.startTime?.trim().slice(0, 5) || null;
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
+  const showCustomerPanel = weekTileBodyMode !== "collapsed";
+  const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
+  const projectCollapsed = weekTileBodyMode === "collapsed";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -108,21 +113,25 @@ export function CalendarWeekSpanningTile({
 
   const mainContentPanels = (
     <>
-      <CalendarWeekAppointmentPanelCustomer
-        fullName={appointment.customer.fullName ?? ""}
-        customerNumber={appointment.customer.customerNumber}
-        phone={appointment.customer.phone}
-        email={appointment.customer.email}
-        addressLine1={appointment.customer.addressLine1}
-        postalCode={appointment.customer.postalCode}
-        city={appointment.customer.city}
-        country={appointment.customer.country}
-      />
+      {showCustomerPanel ? (
+        <CalendarWeekAppointmentPanelCustomer
+          mode={customerMode}
+          fullName={appointment.customer.fullName ?? ""}
+          customerNumber={appointment.customer.customerNumber}
+          phone={appointment.customer.phone}
+          email={appointment.customer.email}
+          addressLine1={appointment.customer.addressLine1}
+          postalCode={appointment.customer.postalCode}
+          city={appointment.customer.city}
+          country={appointment.customer.country}
+        />
+      ) : null}
       <CalendarWeekAppointmentPanelProject
         projectName={resolvedProjectName}
         projectOrderNumber={appointment.projectOrderNumber}
         projectArticleItems={appointment.projectArticleItems}
         projectDescription={appointment.projectDescription}
+        collapsed={projectCollapsed}
         enableFullDescriptionPreview
       />
     </>
