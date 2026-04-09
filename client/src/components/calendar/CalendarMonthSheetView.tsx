@@ -232,6 +232,9 @@ export function CalendarMonthSheetView({
     await queryClient.invalidateQueries({
       queryKey: ["calendarAppointments"],
     });
+    await queryClient.invalidateQueries({
+      queryKey: ["calendarWeekLaneEmployeePreviews"],
+    });
     await refreshMonitoringWithNotification(toast);
     console.info(`${logPrefix} drop success`, { appointmentId });
     return true;

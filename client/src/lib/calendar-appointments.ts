@@ -54,6 +54,14 @@ export type CalendarAppointment = {
   isCancelled: boolean;
 };
 
+export type CalendarWeekLaneEmployeePreview = {
+  date: string;
+  weekStartDate: string;
+  tourId: number;
+  weekEmployees: { id: number; fullName: string }[];
+  additionalDayEmployees: { id: number; fullName: string }[];
+};
+
 const logPrefix = "[calendar-appointments]";
 
 export const getCalendarAppointmentsQueryKey = ({
@@ -67,6 +75,14 @@ export const getCalendarAppointmentsQueryKey = ({
   employeeId?: number | null;
   userRole: string;
 }) => ["calendarAppointments", fromDate, toDate, employeeId ?? "all", userRole];
+
+export const getCalendarWeekLaneEmployeePreviewsQueryKey = ({
+  fromDate,
+  toDate,
+}: {
+  fromDate: string;
+  toDate: string;
+}) => ["calendarWeekLaneEmployeePreviews", fromDate, toDate];
 
 export function useCalendarAppointments({
   fromDate,
@@ -141,6 +157,32 @@ export function useCalendarAppointments({
       });
       console.info(`${logPrefix} fetch success`, { count: data.length });
       return data;
+    },
+  });
+}
+
+export function useCalendarWeekLaneEmployeePreviews({
+  fromDate,
+  toDate,
+  enabled,
+}: {
+  fromDate: string;
+  toDate: string;
+  enabled?: boolean;
+}) {
+  return useQuery<CalendarWeekLaneEmployeePreview[]>({
+    queryKey: getCalendarWeekLaneEmployeePreviewsQueryKey({ fromDate, toDate }),
+    enabled,
+    queryFn: async () => {
+      const params = new URLSearchParams({ fromDate, toDate });
+      const response = await fetch(`/api/calendar/week-lane-employee-previews?${params.toString()}`, {
+        headers: {},
+      });
+      if (!response.ok) {
+        throw new Error("Kalender-Lane-Previews konnten nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      return Array.isArray(payload) ? payload as CalendarWeekLaneEmployeePreview[] : [];
     },
   });
 }

@@ -37,9 +37,9 @@ function resolveNextEditableWeek() {
   return {
     weekStartDate: format(nextWeekStart, "yyyy-MM-dd"),
     weekSecondDate: format(secondDay, "yyyy-MM-dd"),
-    weekInputValue: `${getISOWeekYear(nextWeekStart)}-W${String(getISOWeek(nextWeekStart)).padStart(2, "0")}`,
     isoYear: getISOWeekYear(nextWeekStart),
     isoWeek: getISOWeek(nextWeekStart),
+    maxIsoWeek: getISOWeek(new Date(getISOWeekYear(nextWeekStart), 11, 28)),
   };
 }
 
@@ -48,7 +48,7 @@ async function openWeekPlanning(page: import("@playwright/test").Page, tourId: n
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tourId}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
-  await expect(page.getByTestId("grid-tour-week-planning")).toBeVisible();
+  await expect(page.getByTestId("button-add-tour-week-footer")).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -83,9 +83,12 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
 
   await openWeekPlanning(page, secondTour.id);
 
-  await page.getByTestId("card-tour-week-add").click();
-  await page.getByTestId("input-tour-week").fill(nextWeek.weekInputValue);
+  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
+  await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(
+    `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
+  ).click();
   await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
 
   await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
@@ -94,6 +97,30 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
     const response = await page.request.get(`/api/tours/${secondTour.id}/week-employees`);
     return response.json();
   }).toEqual([]);
+});
+
+test("validates the footer week picker against min and max bounds", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const tour = await createTourFixture("#556677");
+
+  await openWeekPlanning(page, tour.id);
+
+  await page.getByTestId("button-add-tour-week-footer").click();
+  await expect(page.getByTestId("text-tour-week-dialog-year")).toContainText(String(nextWeek.isoYear));
+
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek - 1));
+  await page.getByTestId("button-confirm-tour-week").click();
+  await expect(page.getByText("Kalenderwoche zu klein")).toBeVisible();
+  await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek - 1}`)).toHaveCount(0);
+
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.maxIsoWeek + 1));
+  await page.getByTestId("button-confirm-tour-week").click();
+  await expect(page.getByText("Kalenderwoche zu gross")).toBeVisible();
+  await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.maxIsoWeek + 1}`)).toHaveCount(0);
+
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
+  await page.getByTestId("button-confirm-tour-week").click();
+  await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`)).toBeVisible();
 });
 
 test("shows overlap conflicts in the week preview and only applies the selectable appointments", async ({ page }) => {
@@ -121,9 +148,12 @@ test("shows overlap conflicts in the week preview and only applies the selectabl
 
   await openWeekPlanning(page, tour.id);
 
-  await page.getByTestId("card-tour-week-add").click();
-  await page.getByTestId("input-tour-week").fill(nextWeek.weekInputValue);
+  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
+  await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(
+    `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
+  ).click();
   await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");

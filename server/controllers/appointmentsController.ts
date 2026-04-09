@@ -473,3 +473,40 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     next(err);
   }
 }
+
+export async function listCalendarWeekLaneEmployeePreviews(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+
+    if (!fromDate || !toDate) {
+      res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      logWarn(`${logPrefix} list calendar week lane previews rejected: invalid range ${fromDate}-${toDate}`);
+      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      return;
+    }
+    if (toDate < fromDate) {
+      res.status(400).json({ message: "toDate darf nicht vor fromDate liegen" });
+      return;
+    }
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const previews = await appointmentsService.listCalendarWeekLaneEmployeePreviews({
+      fromDate,
+      toDate,
+      roleKey,
+    });
+    res.json(previews);
+  } catch (err) {
+    next(err);
+  }
+}

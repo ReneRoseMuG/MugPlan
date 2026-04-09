@@ -2,14 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Terminnotiz-Updates invalidieren neben den Termin-Notiz-Queries auch die Tourenplan-Report-Caches.
+ * - Terminnotiz-Updates invalidieren die Termin-Notiz-Queries sowie kalendernahe Appointment-Queries.
+ * - Appointment-bezogene Invalidierung nimmt die neue Tour-Lane-Hover-Preview des Wochenkalenders mit.
  *
  * Fehlerfaelle:
- * - Die Tourenplan-Druckvorschau bleibt nach geaenderter Terminnotiz stale, weil nur lokale Notiz-Queries invalidiert werden.
- * - `reports-tourenplan-preview` oder `reports-tourenplan-appointments` werden nach Terminnotiz-Mutationen nicht aktualisiert.
+ * - Kalender- oder Lane-Hover-Daten bleiben nach geaenderter Terminnotiz stale, weil nur lokale Notiz-Queries invalidiert werden.
+ * - Die neue Lane-Hover-Preview wird nach Terminnotiz-Mutationen nicht aktualisiert.
  *
  * Ziel:
- * Die Invalidierungsverdrahtung fuer Terminnotiz-Updates gegen stale Tourenplan-Reportdaten absichern.
+ * Die Invalidierungsverdrahtung fuer Terminnotiz-Updates gegen stale Kalender- und Hoverdaten absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -327,7 +328,7 @@ describe("Tourenplan report invalidation wiring in AppointmentForm", () => {
     });
   });
 
-  it("invalidates Tourenplan report queries after an appointment note update", async () => {
+  it("invalidates appointment and hover preview queries after an appointment note update", async () => {
     renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
 
     const updateMutation = await findMutationByRequest(/\/api\/notes\/\d+$/, {
@@ -344,7 +345,7 @@ describe("Tourenplan report invalidation wiring in AppointmentForm", () => {
 
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["/api/appointments", 77, "notes"] });
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["/api/notes-preview"] });
-    expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["reports-tourenplan-preview"] });
-    expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["reports-tourenplan-appointments"] });
+    expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["calendarAppointments"] });
+    expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
   });
 });

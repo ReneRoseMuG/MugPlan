@@ -40,10 +40,6 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
-vi.mock("@/components/ui/input", () => ({
-  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
-}));
-
 import { TourEmployeeCascadeDialog } from "../../../client/src/components/TourEmployeeCascadeDialog";
 
 const basePreviewItems = [
@@ -108,6 +104,8 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("button-tour-employee-cascade-confirm");
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");
+    expect(html).not.toContain("input-tour-cascade-date-from");
+    expect(html).not.toContain("input-tour-cascade-date-to");
   });
 
   it("renders remove mode with the dedicated removal copy", () => {

@@ -3,13 +3,11 @@
  *
  * Abgedeckte Regeln:
  * - "Alle waehlen" uebernimmt nur eligible Termine.
- * - "Alle waehlen" arbeitet auf der aktuell gefilterten Ansicht statt auf allen Vorschauterminen.
  * - "Alle abwaehlen" leert die Auswahl vollstaendig.
  * - Die Sammelbuttons funktionieren in Add- und Remove-Modus gleich.
  *
  * Fehlerfaelle:
  * - Ineligible Termine werden durch "Alle waehlen" mitselektiert.
- * - Datumsfilter wird von den Sammelbuttons ignoriert.
  * - "Alle abwaehlen" laesst alte Auswahlreste stehen.
  *
  * Ziel:
@@ -41,10 +39,6 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
   DialogHeader: ({ children }: { children?: React.ReactNode }) => <header>{children}</header>,
   DialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
-}));
-
-vi.mock("@/components/ui/input", () => ({
-  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
 
 const previewItems = [
@@ -89,27 +83,8 @@ const previewItems = [
   },
 ];
 
-async function loadDialogWithFilters(filterDateFrom?: string, filterDateTo?: string) {
+async function loadDialog() {
   vi.resetModules();
-
-  let stateCall = 0;
-  vi.doMock("react", async () => {
-    const actual = await vi.importActual<typeof import("react")>("react");
-    return {
-      ...actual,
-      useState: (<T,>(initial: T) => {
-        stateCall += 1;
-        if (stateCall === 1) {
-          return [filterDateFrom, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
-        }
-        if (stateCall === 2) {
-          return [filterDateTo, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
-        }
-        return actual.useState(initial);
-      }) as typeof actual.useState,
-    };
-  });
-
   return import("../../../client/src/components/TourEmployeeCascadeDialog");
 }
 
@@ -126,7 +101,7 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
 
   it("selects only eligible appointments in add mode", async () => {
     const onSelectedAppointmentIdsChange = vi.fn();
-    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters();
+    const { TourEmployeeCascadeDialog } = await loadDialog();
 
     renderToStaticMarkup(
       <TourEmployeeCascadeDialog
@@ -147,32 +122,9 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
     expect(onSelectedAppointmentIdsChange).toHaveBeenCalledWith([51, 53]);
   });
 
-  it("limits select-all to the currently filtered view", async () => {
-    const onSelectedAppointmentIdsChange = vi.fn();
-    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters("2099-02-01", "2099-02-28");
-
-    renderToStaticMarkup(
-      <TourEmployeeCascadeDialog
-        open
-        mode="add"
-        employeeName="Mia Muster"
-        previewItems={previewItems}
-        selectedAppointmentIds={[]}
-        isSubmitting={false}
-        onSelectedAppointmentIdsChange={onSelectedAppointmentIdsChange}
-        onConfirm={() => undefined}
-        onClose={() => undefined}
-      />,
-    );
-
-    getButtonClickHandler("button-tour-cascade-select-all")?.();
-
-    expect(onSelectedAppointmentIdsChange).toHaveBeenCalledWith([51]);
-  });
-
   it("clears the complete selection in remove mode", async () => {
     const onSelectedAppointmentIdsChange = vi.fn();
-    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters();
+    const { TourEmployeeCascadeDialog } = await loadDialog();
 
     renderToStaticMarkup(
       <TourEmployeeCascadeDialog
@@ -195,7 +147,7 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
 
   it("selects only eligible appointments in remove mode as well", async () => {
     const onSelectedAppointmentIdsChange = vi.fn();
-    const { TourEmployeeCascadeDialog } = await loadDialogWithFilters();
+    const { TourEmployeeCascadeDialog } = await loadDialog();
 
     renderToStaticMarkup(
       <TourEmployeeCascadeDialog

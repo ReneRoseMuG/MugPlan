@@ -19,7 +19,7 @@
 import type express from "express";
 import type { SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
-import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
+import { addDays, addWeeks, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import { eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
@@ -49,6 +49,17 @@ function resolveIsoWeek(dateValue: Date | string) {
   return {
     isoYear: getISOWeekYear(parsed),
     isoWeek: getISOWeek(parsed),
+  };
+}
+
+function resolveNextEditableWeekDates() {
+  const targetWeekStart = startOfISOWeek(addWeeks(parseISO(getRelativeBerlinDate(0)), 3));
+  return {
+    isoYear: getISOWeekYear(targetWeekStart),
+    isoWeek: getISOWeek(targetWeekStart),
+    weekStartDate: targetWeekStart.toISOString().slice(0, 10),
+    weekMidDate: addDays(targetWeekStart, 3).toISOString().slice(0, 10),
+    previousWeekDate: addDays(targetWeekStart, -7).toISOString().slice(0, 10),
   };
 }
 
@@ -229,5 +240,46 @@ describe("tourWeekEmployees integration", () => {
           }),
         ]);
       });
+  });
+
+  it("limits week previews to appointments inside the selected ISO week for single-day appointments", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#447799");
+    const project = await createProjectFixture({ prefix: "TWE-WEEK-RANGE" });
+    const employee = await createEmployeeFixture("TWE-WEEK-RANGE-EMP");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    const beforeWeekAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.previousWeekDate,
+      tourId: tour.id,
+    });
+    const targetWeekAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekMidDate,
+      tourId: tour.id,
+    });
+
+    const preview = await admin
+      .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      })
+      .expect(200);
+
+    expect(preview.body.items).toEqual([
+      expect.objectContaining({
+        appointmentId: targetWeekAppointment!.id,
+      }),
+    ]);
+    expect(preview.body.items).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          appointmentId: beforeWeekAppointment!.id,
+        }),
+      ]),
+    );
   });
 });

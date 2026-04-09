@@ -15,7 +15,11 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
-import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
+import {
+  useCalendarAppointments,
+  useCalendarWeekLaneEmployeePreviews,
+  type CalendarAppointment,
+} from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
@@ -36,9 +40,11 @@ import {
   WEEK_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
+import { CalendarWeekTourLaneDayHoverPreview } from "./CalendarWeekTourLaneDayHoverPreview";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
+import { HoverPreview } from "@/components/ui/hover-preview";
 import type { CalendarNavCommand } from "@/pages/Home";
 import type { Tour } from "@shared/schema";
 
@@ -280,6 +286,10 @@ export function CalendarWeekView({
     detail: "full",
     userRole,
   });
+  const { data: weekLaneEmployeePreviews = [] } = useCalendarWeekLaneEmployeePreviews({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+  });
 
   useEffect(() => {
     laneHeightByKeyRef.current.clear();
@@ -294,6 +304,13 @@ export function CalendarWeekView({
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
+  );
+
+  const weekLaneEmployeePreviewByTourDay = useMemo(
+    () => new Map(
+      weekLaneEmployeePreviews.map((preview) => [`${preview.tourId}-${preview.date}`, preview] as const),
+    ),
+    [weekLaneEmployeePreviews],
   );
 
   const lanesByWeekStart = useMemo(() => {
@@ -504,6 +521,7 @@ export function CalendarWeekView({
     }
 
     await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
     await refreshMonitoringWithNotification(toast);
     console.info(`${logPrefix} drop success`, { appointmentId });
     return true;
@@ -873,44 +891,77 @@ export function CalendarWeekView({
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
                           >
-                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
-                              <div
-                                key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                className="relative flex items-center justify-end gap-1 px-1"
-                              >
-                                {dayAppointmentCounts[dayIdx] > 0 ? (
-                                  <span
-                                    className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold"
-                                    style={{ color: "#ffffff" }}
-                                    data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  >
-                                    {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
-                                  </span>
-                                ) : (
-                                  <span />
-                                )}
-                                {dayBucket.dateKey >= berlinToday ? (
-                                  <button
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
+                              const dayPreview = tourLane.tourId == null
+                                ? null
+                                : weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${dayBucket.dateKey}`);
+
+                              return (
+                                <HoverPreview
+                                  key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  preview={dayPreview ? (
+                                    <CalendarWeekTourLaneDayHoverPreview
+                                      weekEmployees={dayPreview.weekEmployees}
+                                      additionalDayEmployees={dayPreview.additionalDayEmployees}
+                                    />
+                                  ) : null}
+                                  side="bottom"
+                                  align="start"
+                                  maxWidth={320}
+                                  maxHeight={320}
+                                  className="z-[9999] w-[320px]"
+                                >
+                                  <div
+                                    className="pointer-events-auto relative flex h-full items-center justify-end gap-1 px-1"
+                                    data-testid={`week-tour-lane-day-hover-trigger-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                     onClick={() => {
-                                      const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
-                                      console.info(`${logPrefix} new appointment click`, {
-                                        date: dayBucket.dateKey,
-                                        tourId: tourLane.tourId,
-                                        laneKey: tourLane.laneKey,
-                                        scrollLeft,
+                                      if (!isCollapsedMode) return;
+                                      void handleLaneHeaderClick(tourLane.laneKey).catch((error) => {
+                                        console.error(`${logPrefix} lane day hover click failed`, error);
+                                        toast({
+                                          title: "Lane-Zustand konnte nicht gespeichert werden",
+                                          description: "Bitte erneut versuchen.",
+                                          variant: "destructive",
+                                        });
                                       });
-                                      onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft });
                                     }}
-                                    className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
-                                    style={{ color: "#ffffff" }}
-                                    data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
-                                    title={`Neuer Termin am ${dayBucket.dateKey}`}
                                   >
-                                    +
-                                  </button>
-                                ) : null}
-                              </div>
-                            ))}
+                                    {dayAppointmentCounts[dayIdx] > 0 ? (
+                                      <span
+                                        className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold"
+                                        style={{ color: "#ffffff" }}
+                                        data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                      >
+                                        {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
+                                      </span>
+                                    ) : (
+                                      <span />
+                                    )}
+                                    {dayBucket.dateKey >= berlinToday ? (
+                                      <button
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
+                                          console.info(`${logPrefix} new appointment click`, {
+                                            date: dayBucket.dateKey,
+                                            tourId: tourLane.tourId,
+                                            laneKey: tourLane.laneKey,
+                                            scrollLeft,
+                                          });
+                                          onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft });
+                                        }}
+                                        className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                        style={{ color: "#ffffff" }}
+                                        data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                        title={`Neuer Termin am ${dayBucket.dateKey}`}
+                                      >
+                                        +
+                                      </button>
+                                    ) : null}
+                                  </div>
+                                </HoverPreview>
+                              );
+                            })}
                           </div>
                         </div>
                         <div

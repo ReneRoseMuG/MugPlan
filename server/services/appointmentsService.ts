@@ -1,8 +1,9 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import type { InsertAppointment } from "@shared/schema";
-import { addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as notesRepository from "../repositories/notesRepository";
+import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
 import {
   getProjectArticleField,
   getProjectArticleFieldByCategoryName,
@@ -216,6 +217,9 @@ const buildEmployeesByAppointment = async (appointmentIds: number[]) => {
   }
   return employeesByAppointment;
 };
+
+const sortEmployeesByName = <T extends { fullName: string }>(employees: T[]): T[] =>
+  [...employees].sort((left, right) => left.fullName.localeCompare(right.fullName, "de", { sensitivity: "base" }));
 
 const PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
   "saunaModel",
@@ -978,6 +982,154 @@ export async function listCalendarAppointments({
 
     return baseAppointment;
   });
+}
+
+export async function listCalendarWeekLaneEmployeePreviews({
+  fromDate,
+  toDate,
+  roleKey: _roleKey,
+}: {
+  fromDate: string;
+  toDate: string;
+  roleKey: CanonicalRoleKey;
+}) {
+  const requestedFromDate = parseDateOnly(fromDate);
+  const requestedToDate = parseDateOnly(toDate);
+  if (requestedToDate < requestedFromDate) {
+    throw new AppointmentError("toDate darf nicht vor fromDate liegen", 422, "VALIDATION_ERROR");
+  }
+
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
+    fromDate: requestedFromDate,
+    toDate: requestedToDate,
+  });
+  const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const tours = await toursRepository.getTours();
+  const assignmentRows = tours.length > 0
+    ? await tourWeekEmployeesRepository.listAssignmentsByTourIds(tours.map((tour) => tour.id))
+    : [];
+
+  type PreviewAccumulator = {
+    date: string;
+    weekStartDate: string;
+    tourId: number;
+    weekEmployees: Map<number, string>;
+    additionalDayEmployees: Map<number, string>;
+  };
+
+  const previewByKey = new Map<string, PreviewAccumulator>();
+  const assignmentsByTourWeek = new Map<string, Array<{ id: number; fullName: string }>>();
+
+  for (const assignment of assignmentRows) {
+    const key = `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`;
+    const existing = assignmentsByTourWeek.get(key) ?? [];
+    existing.push({ id: assignment.employeeId, fullName: assignment.fullName });
+    assignmentsByTourWeek.set(key, existing);
+  }
+
+  for (const [key, employees] of Array.from(assignmentsByTourWeek.entries())) {
+    assignmentsByTourWeek.set(key, sortEmployeesByName(employees));
+  }
+
+  const getOrCreatePreview = (tourId: number, date: string) => {
+    const key = `${tourId}-${date}`;
+    const existing = previewByKey.get(key);
+    if (existing) return existing;
+
+    const weekStartDate = toDateOnlyString(startOfWeek(parseDateOnly(date), { weekStartsOn: 1 })) ?? date;
+    const created: PreviewAccumulator = {
+      date,
+      weekStartDate,
+      tourId,
+      weekEmployees: new Map<number, string>(),
+      additionalDayEmployees: new Map<number, string>(),
+    };
+    previewByKey.set(key, created);
+    return created;
+  };
+
+  const seedWeekEmployeesForDate = (tourId: number, date: string) => {
+    const preview = getOrCreatePreview(tourId, date);
+    const dateValue = parseDateOnly(date);
+    const assignmentKey = `${tourId}-${getISOWeekYear(dateValue)}-${getISOWeek(dateValue)}`;
+    for (const employee of assignmentsByTourWeek.get(assignmentKey) ?? []) {
+      preview.weekEmployees.set(employee.id, employee.fullName);
+    }
+    return preview;
+  };
+
+  for (const [key, employees] of Array.from(assignmentsByTourWeek.entries())) {
+    const [tourIdText, isoYearText, isoWeekText] = key.split("-");
+    const tourId = Number(tourIdText);
+    const isoYear = Number(isoYearText);
+    const isoWeek = Number(isoWeekText);
+    if (!Number.isInteger(tourId) || !Number.isInteger(isoYear) || !Number.isInteger(isoWeek)) continue;
+
+    const week = tourWeekEmployeesService.resolveIsoWeekWindow(isoYear, isoWeek);
+    const effectiveStartDate = week.weekStartDate < fromDate ? fromDate : week.weekStartDate;
+    const effectiveEndDate = week.weekEndDate > toDate ? toDate : week.weekEndDate;
+    if (effectiveEndDate < effectiveStartDate) continue;
+
+    let cursor = parseDateOnly(effectiveStartDate);
+    const endCursor = parseDateOnly(effectiveEndDate);
+    while (cursor <= endCursor) {
+      const date = toDateOnlyString(cursor);
+      if (date) {
+        const preview = getOrCreatePreview(tourId, date);
+        for (const employee of employees) {
+          preview.weekEmployees.set(employee.id, employee.fullName);
+        }
+      }
+      cursor = addDays(cursor, 1);
+    }
+  }
+
+  for (const row of rows) {
+    const tourId = row.appointment.tourId;
+    if (typeof tourId !== "number" || !Number.isInteger(tourId) || tourId <= 0) continue;
+    const resolvedTourId = Number(tourId);
+
+    const appointmentEmployees = employeesByAppointment.get(row.appointment.id) ?? [];
+    const appointmentStartDate = toDateOnlyString(row.appointment.startDate);
+    const appointmentEndDate = toDateOnlyString(row.appointment.endDate) ?? appointmentStartDate;
+    if (!appointmentStartDate || !appointmentEndDate) continue;
+
+    const effectiveStartDate = appointmentStartDate < fromDate ? fromDate : appointmentStartDate;
+    const effectiveEndDate = appointmentEndDate > toDate ? toDate : appointmentEndDate;
+    if (effectiveEndDate < effectiveStartDate) continue;
+
+    let cursor = parseDateOnly(effectiveStartDate);
+    const endCursor = parseDateOnly(effectiveEndDate);
+    while (cursor <= endCursor) {
+      const date = toDateOnlyString(cursor);
+      if (date) {
+        const preview = seedWeekEmployeesForDate(resolvedTourId, date);
+        for (const employee of appointmentEmployees) {
+          if (preview.weekEmployees.has(employee.id)) continue;
+          preview.additionalDayEmployees.set(employee.id, employee.fullName);
+        }
+      }
+      cursor = addDays(cursor, 1);
+    }
+  }
+
+  return Array.from(previewByKey.values())
+    .map((preview) => ({
+      date: preview.date,
+      weekStartDate: preview.weekStartDate,
+      tourId: preview.tourId,
+      weekEmployees: sortEmployeesByName(
+        Array.from(preview.weekEmployees.entries()).map(([id, fullName]) => ({ id, fullName })),
+      ),
+      additionalDayEmployees: sortEmployeesByName(
+        Array.from(preview.additionalDayEmployees.entries()).map(([id, fullName]) => ({ id, fullName })),
+      ),
+    }))
+    .sort((left, right) => {
+      if (left.date !== right.date) return left.date.localeCompare(right.date);
+      return left.tourId - right.tourId;
+    });
 }
 
 export async function listAppointmentsList(params: {

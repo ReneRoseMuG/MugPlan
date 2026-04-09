@@ -154,6 +154,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         const key = query.queryKey;
         return Array.isArray(key) && (
           key[0] === "calendarAppointments"
+          || key[0] === "calendarWeekLaneEmployeePreviews"
           || key[0] === "/api/calendar/appointments"
           || key[0] === "/api/appointments/list"
           || key[0] === "tour-management-appointments-count"

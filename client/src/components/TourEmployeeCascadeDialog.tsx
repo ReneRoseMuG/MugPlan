@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -9,7 +9,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 
 type WeekPreviewItem = {
   appointmentId: number;
@@ -118,8 +117,6 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
   const variant = props.variant ?? "week";
   const selectedIds = props.selectedIds ?? props.selectedAppointmentIds ?? [];
   const setSelectedIds = props.onSelectedIdsChange ?? props.onSelectedAppointmentIdsChange ?? (() => undefined);
-  const [filterDateFrom, setFilterDateFrom] = useState<string | undefined>(undefined);
-  const [filterDateTo, setFilterDateTo] = useState<string | undefined>(undefined);
 
   const weekPreviewItems = useMemo(
     () => variant === "week" ? props.previewItems as WeekPreviewItem[] : [],
@@ -130,28 +127,18 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
     [props.previewItems, variant],
   );
 
-  const filteredWeekItems = useMemo(() => {
-    if (variant !== "week") return weekPreviewItems;
-    return weekPreviewItems.filter((item) => {
-      if (filterDateFrom && item.startDate < filterDateFrom) return false;
-      if (filterDateTo && item.startDate > filterDateTo) return false;
-      return true;
-    });
-  }, [filterDateFrom, filterDateTo, variant, weekPreviewItems]);
-
   const allSelectableIds = useMemo(() => {
     if (variant === "week") {
-      return filteredWeekItems
+      return weekPreviewItems
         .filter((item) => item.selectable ?? item.eligible ?? false)
         .map((item) => item.appointmentId);
     }
     return appointmentPreviewItems
       .filter((item) => item.selectable)
       .map((item) => item.employeeId);
-  }, [appointmentPreviewItems, filteredWeekItems, variant]);
+  }, [appointmentPreviewItems, variant, weekPreviewItems]);
 
   const weekRangeLabel = variant === "week" ? buildRangeLabel(weekPreviewItems) : null;
-  const isFilterActive = filterDateFrom !== undefined || filterDateTo !== undefined;
 
   return (
     <Dialog open={props.open} onOpenChange={(nextOpen) => !nextOpen && props.onClose()}>
@@ -192,44 +179,6 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
           </div>
         ) : null}
 
-        {variant === "week" ? (
-          <div className="flex items-center gap-4" data-testid="filter-tour-cascade-date-range">
-            <label className="flex items-center gap-2 text-sm">
-              Datum von
-              <Input
-                type="date"
-                value={filterDateFrom ?? ""}
-                onChange={(event) => setFilterDateFrom(event.target.value || undefined)}
-                data-testid="input-tour-cascade-date-from"
-                className="w-36"
-              />
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              Datum bis
-              <Input
-                type="date"
-                value={filterDateTo ?? ""}
-                onChange={(event) => setFilterDateTo(event.target.value || undefined)}
-                data-testid="input-tour-cascade-date-to"
-                className="w-36"
-              />
-            </label>
-            {isFilterActive ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setFilterDateFrom(undefined);
-                  setFilterDateTo(undefined);
-                }}
-                data-testid="button-tour-cascade-date-filter-reset"
-              >
-                Zuruecksetzen
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
@@ -253,13 +202,13 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
 
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {variant === "week" ? (
-            filteredWeekItems.length === 0 ? (
+            weekPreviewItems.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">
                 Keine zukuenftigen Termine betroffen.
               </div>
             ) : (
               <div className="divide-y">
-                {filteredWeekItems.map((item) => {
+                {weekPreviewItems.map((item) => {
                   const checked = selectedIds.includes(item.appointmentId);
                   const selectable = item.selectable ?? item.eligible ?? false;
                   const projectLabel = item.orderNumber && item.projectName

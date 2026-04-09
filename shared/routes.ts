@@ -458,6 +458,19 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
   items: z.array(projectBoardListItemSchema),
 });
 
+const calendarWeekLaneEmployeePreviewMemberSchema = z.object({
+  id: z.number().int().positive(),
+  fullName: z.string(),
+});
+
+const calendarWeekLaneEmployeePreviewSchema = z.object({
+  date: z.string(),
+  weekStartDate: z.string(),
+  tourId: z.number().int().positive(),
+  weekEmployees: z.array(calendarWeekLaneEmployeePreviewMemberSchema),
+  additionalDayEmployees: z.array(calendarWeekLaneEmployeePreviewMemberSchema),
+});
+
 const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
 
 const reportVorlauflisteCategorySchema = z.object({
@@ -1444,6 +1457,17 @@ export const api = {
             isCancelled: z.boolean(),
           }),
         ),
+      },
+    },
+    weekLaneEmployeePreviews: {
+      method: "GET" as const,
+      path: "/api/calendar/week-lane-employee-previews",
+      input: z.object({
+        fromDate: z.string(),
+        toDate: z.string(),
+      }).strict(),
+      responses: {
+        200: z.array(calendarWeekLaneEmployeePreviewSchema),
       },
     },
   },

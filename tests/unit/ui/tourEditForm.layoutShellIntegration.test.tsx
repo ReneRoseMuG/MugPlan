@@ -107,6 +107,12 @@ vi.mock("@/components/EmployeePickerDialogList", () => ({
   EmployeePickerDialogList: () => <div>employee-picker</div>,
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
+
 import { TourEditForm } from "../../../client/src/components/TourEditForm";
 
 const tourFixture = {
@@ -219,7 +225,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("card-tour-week-2099-6");
     expect(markup).toContain("button-add-tour-week-member-2099-6");
     expect(markup).toContain("badge-tour-week-member-301");
-    expect(markup).toContain("card-tour-week-add");
+    expect(markup).toContain("text-tour-week-dialog-title");
+    expect(markup).toContain("text-tour-week-dialog-year");
+    expect(markup).toContain("input-tour-week");
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
   });

@@ -411,6 +411,8 @@ export function AppointmentForm({
     await queryClient.invalidateQueries({ queryKey: ["reports-tourenplan-appointments"] });
   };
   const invalidateRelatedAppointmentQueries = async (projectId: number | null | undefined) => {
+    await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
     if (projectId) {
       const upcomingAppointmentsQueryKey = getProjectAppointmentsQueryKey({
         projectId,

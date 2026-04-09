@@ -10,6 +10,7 @@ router.get(api.projectAppointments.list.path, appointmentsController.listProject
 router.get(api.tourAppointments.list.path, appointmentsController.listTourAppointments);
 router.get(api.tourPrintPreview.get.path, appointmentsController.getTourPrintPreview);
 router.get(api.calendarAppointments.list.path, appointmentsController.listCalendarAppointments);
+router.get(api.calendarAppointments.weekLaneEmployeePreviews.path, appointmentsController.listCalendarWeekLaneEmployeePreviews);
 router.post(api.appointments.create.path, appointmentsController.createAppointment);
 router.post(api.appointments.tourChangePreview.path, appointmentsController.previewAppointmentTourChange);
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);

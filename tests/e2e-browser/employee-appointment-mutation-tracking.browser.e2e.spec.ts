@@ -44,6 +44,8 @@ let nextWeekStartDate: string;
 let nextWeekSecondDate: string;
 let nextWeekThirdDate: string;
 let nextWeekInputValue: string;
+let nextWeekIsoYear: number;
+let nextWeekIsoWeek: number;
 
 function resolveNextEditableWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
@@ -53,7 +55,7 @@ function resolveNextEditableWeek() {
     weekStartDate: format(nextWeekStart, "yyyy-MM-dd"),
     weekSecondDate: format(secondDay, "yyyy-MM-dd"),
     weekThirdDate: format(addDays(nextWeekStart, 2), "yyyy-MM-dd"),
-    weekInputValue: `${getISOWeekYear(nextWeekStart)}-W${String(getISOWeek(nextWeekStart)).padStart(2, "0")}`,
+    weekInputValue: String(getISOWeek(nextWeekStart)),
     isoYear: getISOWeekYear(nextWeekStart),
     isoWeek: getISOWeek(nextWeekStart),
   };
@@ -64,7 +66,7 @@ async function openWeekPlanning(page: Parameters<typeof test>[0]["page"]) {
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
-  await expect(page.getByTestId("grid-tour-week-planning")).toBeVisible();
+  await expect(page.getByTestId("button-add-tour-week-footer")).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -75,6 +77,8 @@ test.beforeAll(async () => {
   nextWeekSecondDate = nextEditableWeek.weekSecondDate;
   nextWeekThirdDate = nextEditableWeek.weekThirdDate;
   nextWeekInputValue = nextEditableWeek.weekInputValue;
+  nextWeekIsoYear = nextEditableWeek.isoYear;
+  nextWeekIsoWeek = nextEditableWeek.isoWeek;
 
   tour = await createTourFixture("#226688");
   targetEmployee = await createEmployeeFixture("APMT-TARGET");
@@ -165,9 +169,12 @@ test("Test 1: Entfernen über Wochenplan-Dialog mit Datumsfilter", async ({ page
 test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ page }) => {
   await openWeekPlanning(page);
 
-  await page.getByTestId("card-tour-week-add").click();
+  await page.getByTestId("button-add-tour-week-footer").click();
   await page.getByTestId("input-tour-week").fill(nextWeekInputValue);
   await page.getByTestId("button-confirm-tour-week").click();
+  await page.getByTestId(`card-tour-week-${nextWeekIsoYear}-${nextWeekIsoWeek}`).getByTestId(
+    `button-add-tour-week-member-${nextWeekIsoYear}-${nextWeekIsoWeek}`,
+  ).click();
   await page.getByTestId(`employee-picker-card-${addCandidateEmployee.id}`).dblclick();
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");

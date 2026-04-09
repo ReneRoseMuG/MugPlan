@@ -6,6 +6,7 @@
  * - TourUpdate sendet Name, Farbe und Version als versionierten PATCH-Payload.
  * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
  * - Erfolgreiche Wochenplan-Mutationen bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
+ * - Erfolgreiche Wochenplan-Mutationen invalidieren auch die neue Tour-Lane-Hover-Preview des Wochenkalenders.
  * - Wochenplan-Dialoge starten mit sinnvoller Vorauswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
  *
  * Fehlerfaelle:
@@ -532,6 +533,11 @@ describe("FT07 TourManagement behavior", () => {
       .find((options) => typeof options.predicate === "function"
         && options.predicate?.({ queryKey: ["/api/tours/5/week-employees"] }));
     expect(activeMembersInvalidation).toBeTruthy();
+    const lanePreviewInvalidation = invalidateQueriesMock.mock.calls
+      .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
+      .find((options) => typeof options.predicate === "function"
+        && options.predicate?.({ queryKey: ["calendarWeekLaneEmployeePreviews", "2099-02-02", "2099-02-08"] }));
+    expect(lanePreviewInvalidation).toBeTruthy();
     expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
     expect(invalidateQueriesMock).toHaveBeenCalledWith(expect.objectContaining({
       queryKey: ["/api/tours"],

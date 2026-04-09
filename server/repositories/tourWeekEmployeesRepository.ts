@@ -72,6 +72,44 @@ export async function listAssignmentsByTour(tourId: number): Promise<TourWeekEmp
   }));
 }
 
+export async function listAssignmentsByTourIds(tourIds: number[]): Promise<TourWeekEmployeeAssignmentRow[]> {
+  const normalizedTourIds = Array.from(new Set(tourIds.filter((value) => Number.isInteger(value) && value > 0)));
+  if (normalizedTourIds.length === 0) return [];
+
+  const rows = await db
+    .select({
+      assignmentId: tourWeekEmployees.id,
+      tourId: tourWeekEmployees.tourId,
+      tourName: tours.name,
+      isoYear: tourWeekEmployees.isoYear,
+      isoWeek: tourWeekEmployees.isoWeek,
+      employeeId: tourWeekEmployees.employeeId,
+      fullName: employees.fullName,
+    })
+    .from(tourWeekEmployees)
+    .innerJoin(tours, eq(tourWeekEmployees.tourId, tours.id))
+    .innerJoin(employees, eq(tourWeekEmployees.employeeId, employees.id))
+    .where(inArray(tourWeekEmployees.tourId, normalizedTourIds))
+    .orderBy(
+      asc(tourWeekEmployees.tourId),
+      asc(tourWeekEmployees.isoYear),
+      asc(tourWeekEmployees.isoWeek),
+      asc(employees.lastName),
+      asc(employees.firstName),
+      asc(employees.id),
+    );
+
+  return rows.map((row) => ({
+    assignmentId: Number(row.assignmentId),
+    tourId: Number(row.tourId),
+    tourName: row.tourName,
+    isoYear: Number(row.isoYear),
+    isoWeek: Number(row.isoWeek),
+    employeeId: Number(row.employeeId),
+    fullName: row.fullName,
+  }));
+}
+
 export async function listAssignmentsByTourAndWeek(
   tourId: number,
   isoYear: number,
@@ -230,7 +268,10 @@ async function listAppointmentsByTourAndDateRangeInternal(
     .where(and(
       eq(appointments.tourId, tourId),
       lte(appointments.startDate, params.toDate),
-      or(isNull(appointments.endDate), gte(appointments.endDate, params.fromDate)),
+      or(
+        and(isNull(appointments.endDate), gte(appointments.startDate, params.fromDate)),
+        gte(appointments.endDate, params.fromDate),
+      ),
     ))
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 
