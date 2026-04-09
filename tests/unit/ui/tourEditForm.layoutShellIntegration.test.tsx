@@ -4,12 +4,12 @@
  * Abgedeckte Regeln:
  * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
  * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
- * - Im Edit-Modus bleibt die Delete-Aktion erhalten und aktive Tourmitarbeiter werden ueber die Abfrage gerendert.
+ * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Wochenplanung wird ueber die Abfrage gerendert.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
  * - Das Tourformular bleibt am alten Layout haengen oder rendert versehentlich eine leere Sidebar.
- * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Mitgliederbereich verschwinden nach dem Shell-Umbau.
+ * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Wochenplanung verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
  * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
  *
@@ -121,19 +121,22 @@ describe("FT04 tour form shell layout integration", () => {
 
   beforeEach(() => {
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
-      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/employees/active") {
+      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
         return {
           data: [
             {
-              id: 21,
-              firstName: "Mia",
-              lastName: "Muster",
-              fullName: "Muster, Mia",
-              email: null,
-              phone: null,
-              isActive: true,
-              teamId: null,
-              version: 1,
+              isoYear: 2099,
+              isoWeek: 6,
+              weekStartDate: "2099-02-02",
+              weekEndDate: "2099-02-08",
+              isLocked: false,
+              employees: [
+                {
+                  assignmentId: 301,
+                  employeeId: 21,
+                  fullName: "Muster, Mia",
+                },
+              ],
             },
           ],
           isLoading: false,
@@ -181,7 +184,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("tour-appointments-list-marker");
   });
 
-  it("keeps delete and existing member badges visible in edit mode", () => {
+  it("keeps delete and existing week planning cards visible in edit mode", () => {
     const markup = renderToStaticMarkup(
       <TourEditForm
         tour={tourFixture}
@@ -212,11 +215,11 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("input-tour-name");
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
-    expect(markup).not.toContain("Bestehende Touren aendern Mitarbeiter nur ueber explizites Hinzufuegen oder Abziehen mit Vorschau.");
-    expect(markup).toContain("button-add-tour-member");
-    expect(markup).toContain("tour-members-section-header");
-    expect(markup).toContain("badge-tour-member-21");
-    expect(markup).toContain("Diese Liste zeigt alle Mitarbeiter, die auf mindestens einem aktuellen oder zukuenftigen Termin dieser Tour eingeplant sind.");
+    expect(markup).toContain("tab-tour-wochenplanung");
+    expect(markup).toContain("card-tour-week-2099-6");
+    expect(markup).toContain("button-add-tour-week-member-2099-6");
+    expect(markup).toContain("badge-tour-week-member-301");
+    expect(markup).toContain("card-tour-week-add");
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
   });

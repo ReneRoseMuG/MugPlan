@@ -2,20 +2,23 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Neue Touren speichern ohne direkte Mitarbeitermitgliedschaft im Formular.
- * - Bestehende Touren fuehren Mitarbeiter-Hinzufuegen und -Abziehen nur ueber den selektiven Vorschau-Dialog aus.
- * - Die Sammelbuttons starten aus leerer Auswahl und steuern die Kaskadenselektion sichtbar.
+ * - Neue Touren zeigen die Wochenplanung erst nach dem ersten Speichern im Edit-Modus.
+ * - Die KW-Unique-Regel blockiert Mehrfachzuordnungen desselben Mitarbeiters über zwei Touren hinweg.
+ * - Wochenplan-Previews markieren Terminüberschneidungen sichtbar und übernehmen nur konfliktfreie Termine.
  *
- * Fehlerfaelle:
- * - Neue Touren suggerieren weiterhin eine direkte persistierte Mitarbeitermitgliedschaft.
- * - Bestehende Touren mutieren Mitarbeiter weiter still ueber den normalen Save-Flow.
- * - Die selektive Checkbox-Auswahl wird bei der Kaskade ignoriert.
+ * Fehlerfälle:
+ * - Der Wochenplanung-Tab erscheint bereits im Create-Modus.
+ * - Mitarbeiter können trotz bestehender KW-Zuordnung still in eine zweite Tour eingeplant werden.
+ * - Der Preview-Dialog unterscheidet Konflikttermine nicht mehr von konfliktfreien Terminen.
  *
  * Ziel:
- * Die sichtbare FT04-UX fuer berechnete Tour-Mitarbeiter und bestaetigungspflichtige Kaskaden browserseitig regressionssicher absichern.
+ * Die neue FT04-Wochenplan-UX mit ihren wichtigsten Konfliktpfaden browserseitig absichern.
  */
 import { expect, test } from "@playwright/test";
+import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
+import { db } from "../../server/db";
+import { tourWeekEmployees } from "../../shared/schema";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
@@ -27,105 +30,124 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
+function resolveNextEditableWeek() {
+  const today = parseISO(getRelativeBerlinDate(0));
+  const nextWeekStart = startOfISOWeek(addWeeks(today, 1));
+  const secondDay = addDays(nextWeekStart, 1);
+  return {
+    weekStartDate: format(nextWeekStart, "yyyy-MM-dd"),
+    weekSecondDate: format(secondDay, "yyyy-MM-dd"),
+    weekInputValue: `${getISOWeekYear(nextWeekStart)}-W${String(getISOWeek(nextWeekStart)).padStart(2, "0")}`,
+    isoYear: getISOWeekYear(nextWeekStart),
+    isoWeek: getISOWeek(nextWeekStart),
+  };
+}
+
+async function openWeekPlanning(page: import("@playwright/test").Page, tourId: number) {
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tourId}`).dblclick();
+  await page.getByTestId("tab-tour-wochenplanung").click();
+  await expect(page.getByTestId("grid-tour-week-planning")).toBeVisible();
+}
+
 test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
 
-test("creates a new tour without a persisted members section in create mode", async ({ page }) => {
+test("creates a new tour without a Wochenplanung tab in create mode", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByTestId("nav-touren").click();
   await page.getByTestId("button-new-tour").click();
+
+  await expect(page.getByTestId("tab-tour-wochenplanung")).toHaveCount(0);
+  await expect(page.getByTestId("grid-tour-week-planning")).toHaveCount(0);
   await expect(page.getByTestId("button-add-tour-member")).toHaveCount(0);
-  await expect(page.getByText("Aktuelle Mitarbeitermenge")).toHaveCount(0);
+
   await page.getByTestId("button-save-tour").click();
   await expect(page.getByTestId("button-new-tour")).toBeVisible();
 });
 
-test("uses the cascade dialog for adding and removing members on existing tours", async ({ page }) => {
-  const tour = await createTourFixture("#4477aa");
-  const candidate = await createEmployeeFixture("FT04-BROWSER-CANDIDATE");
+test("blocks assigning the same employee to a second tour in the same ISO week", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const firstTour = await createTourFixture("#4477aa");
+  const secondTour = await createTourFixture("#aa7744");
+  const employee = await createEmployeeFixture("FT04-BROWSER-UNIQUE");
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: firstTour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: employee.id,
+  });
+
+  await openWeekPlanning(page, secondTour.id);
+
+  await page.getByTestId("card-tour-week-add").click();
+  await page.getByTestId("input-tour-week").fill(nextWeek.weekInputValue);
+  await page.getByTestId("button-confirm-tour-week").click();
+  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
+
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/tours/${secondTour.id}/week-employees`);
+    return response.json();
+  }).toEqual([]);
+});
+
+test("shows overlap conflicts in the week preview and only applies the selectable appointments", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const tour = await createTourFixture("#335577");
   const project = await createProjectFixture({ prefix: "FT04-BROWSER", name: "FT04 Browser Projekt" });
+  const employee = await createEmployeeFixture("FT04-BROWSER-CONFLICT");
 
-  const firstAppointment = await createAppointmentFixture({
+  const conflictAppointment = await createAppointmentFixture({
     projectId: project.id,
-    startDate: getRelativeBerlinDate(1),
+    startDate: nextWeek.weekStartDate,
     tourId: tour.id,
   });
-  const secondAppointment = await createAppointmentFixture({
+  const safeAppointment = await createAppointmentFixture({
     projectId: project.id,
-    startDate: getRelativeBerlinDate(2),
+    startDate: nextWeek.weekSecondDate,
     tourId: tour.id,
   });
 
-  await loginAsAdmin(page);
-  await page.getByTestId("nav-touren").click();
-  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekStartDate,
+    employeeIds: [employee.id],
+  });
 
-  await page.getByTestId("button-add-tour-member").click();
-  await page.getByTestId(`employee-picker-card-${candidate.id}`).dblclick();
+  await openWeekPlanning(page, tour.id);
+
+  await page.getByTestId("card-tour-week-add").click();
+  await page.getByTestId("input-tour-week").fill(nextWeek.weekInputValue);
+  await page.getByTestId("button-confirm-tour-week").click();
+  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter zu Tour-Terminen hinzufügen");
-  await expect(dialog.getByTestId("text-tour-employee-cascade-range")).toContainText("Termine (2) - Termine im Zeitraum von");
-  await expect(dialog).not.toContainText("Mitarbeiter:");
-  await expect(dialog).toContainText("FT04 Browser Projekt");
-  await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`tour-employee-cascade-row-${secondAppointment!.id}`)).toBeVisible();
-  await expect(dialog.getByTestId("button-tour-cascade-select-all")).toBeVisible();
-  await expect(dialog.getByTestId("button-tour-cascade-deselect-all")).toBeVisible();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`)).not.toBeChecked();
-  await dialog.getByTestId("button-tour-cascade-select-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).toBeChecked();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`)).toBeChecked();
-  await dialog.getByTestId(`tour-employee-cascade-checkbox-${secondAppointment!.id}`).click();
+  await expect(dialog).toContainText("Mitarbeiter in Wochenplanung aufnehmen");
+  await expect(dialog.getByTestId(`tour-employee-cascade-status-${conflictAppointment.id}`)).toContainText(
+    "Ueberschneidung mit bestehendem Termin",
+  );
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).not.toBeChecked();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).toBeDisabled();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${safeAppointment.id}`)).toBeChecked();
+
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(dialog).toHaveCount(0);
 
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/appointments/${firstAppointment!.id}`);
-    const payload = await response.json();
-    return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
-  }).toEqual([candidate.id]);
-
-  await expect.poll(async () => {
-    const response = await page.request.get(`/api/appointments/${secondAppointment!.id}`);
+    const response = await page.request.get(`/api/appointments/${conflictAppointment.id}`);
     const payload = await response.json();
     return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
   }).toEqual([]);
 
-  await expect(page.getByText("mindestens einem aktuellen oder zukuenftigen Termin dieser Tour")).toBeVisible();
-
-  await page.getByTestId("button-close-tour").click();
-  await page.getByTestId("nav-mitarbeiter").click();
-  const employeeCard = page.getByTestId(`employee-card-${candidate.id}`);
-  await expect(employeeCard.getByTestId(`badge-employee-tour-${candidate.id}`)).toHaveCount(0);
-  await expect(employeeCard.getByTestId(`text-employee-current-appointments-${candidate.id}`)).toContainText("1");
-
-  await page.getByTestId("nav-touren").click();
-  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
-
-  await page.getByTestId(`badge-tour-member-${candidate.id}-remove`).click();
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter von Tour-Terminen abziehen");
-  await expect(dialog.getByTestId("text-tour-employee-cascade-range")).toContainText("Termine (1) - Termine im Zeitraum von");
-  await expect(dialog.getByTestId(`tour-employee-cascade-row-${firstAppointment!.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
-  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).not.toBeChecked();
-  await dialog.getByTestId("button-tour-cascade-select-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${firstAppointment!.id}`)).toBeChecked();
-  await expect(dialog.getByTestId("button-tour-employee-cascade-confirm")).toBeVisible();
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
-
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/tours/${tour.id}/employees/active`);
+    const response = await page.request.get(`/api/appointments/${safeAppointment.id}`);
     const payload = await response.json();
-    return (payload as Array<{ id: number }>).map((entry) => entry.id);
-  }).toEqual([]);
-
-  await page.getByTestId("button-close-tour").click();
-  await page.getByTestId("nav-mitarbeiter").click();
-  await expect(page.getByTestId(`badge-employee-tour-${candidate.id}`)).toHaveCount(0);
-  await expect(page.getByTestId(`text-employee-current-appointments-${candidate.id}`)).toContainText("0");
+    return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
+  }).toEqual([employee.id]);
 });

@@ -21,6 +21,7 @@ import {
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
+import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -1272,6 +1273,18 @@ export async function cancelAppointment(
   });
 
   return result;
+}
+
+export async function previewAppointmentTourChange(
+  appointmentId: number,
+  params: {
+    newTourId: number | null;
+    newStartDate: string;
+    newEndDate?: string | null;
+    newStartTime?: string | null;
+  },
+) {
+  return tourWeekEmployeesService.previewAppointmentTourChange(appointmentId, params);
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

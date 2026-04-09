@@ -763,6 +763,27 @@ export type Employee = typeof employees.$inferSelect;
 export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
 export type UpdateEmployee = z.infer<typeof updateEmployeeSchema>;
 
+export const tourWeekEmployees = mysqlTable("tour_week_employees", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  tourId: int("tour_id").notNull().references(() => tours.id, { onDelete: "cascade", onUpdate: "restrict" }),
+  isoYear: int("iso_year").notNull(),
+  isoWeek: int("iso_week").notNull(),
+  employeeId: bigint("employee_id", { mode: "number" })
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade", onUpdate: "restrict" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  uniqueEmployeeWeek: uniqueIndex("uq_twe_year_week_employee").on(table.isoYear, table.isoWeek, table.employeeId),
+  byTourWeek: index("idx_twe_tour_year_week").on(table.tourId, table.isoYear, table.isoWeek),
+  weekNumberValid: check(
+    "chk_twe_week_valid",
+    sql`${table.isoWeek} >= 1 AND ${table.isoWeek} <= 53`,
+  ),
+}));
+
+export type TourWeekEmployee = typeof tourWeekEmployees.$inferSelect;
+export type InsertTourWeekEmployee = typeof tourWeekEmployees.$inferInsert;
+
 export const employeeNotes = mysqlTable("employee_note", {
   employeeId: bigint("employee_id", { mode: "number" }).notNull().references(() => employees.id, { onDelete: "cascade" }),
   noteId: bigint("note_id", { mode: "number" }).notNull().references(() => notes.id, { onDelete: "cascade" }),

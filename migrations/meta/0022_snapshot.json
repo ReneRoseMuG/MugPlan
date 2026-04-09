@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "9d4a7d65-4d4a-4cb4-8d1d-39347a7ceccf",
+  "prevId": "65a1a7f4-a810-47a2-91f6-f7096f2838ec",
+  "note": "Manual snapshot placeholder for 0022_tour_week_employees. Authoritative migration logic lives in migrations/0022_tour_week_employees.sql."
+}

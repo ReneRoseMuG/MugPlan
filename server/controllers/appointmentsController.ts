@@ -91,6 +91,36 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
   }
 }
 
+export async function previewAppointmentTourChange(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
+    const appointmentId = Number(req.params.id);
+    const input = api.appointments.tourChangePreview.input.parse(req.body);
+    const preview = await appointmentsService.previewAppointmentTourChange(appointmentId, input);
+    res.json(preview);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    if (err instanceof Error && "status" in err && "code" in err) {
+      const typedErr = err as Error & { status: number; code: string };
+      res.status(typedErr.status).json({ code: typedErr.code, message: typedErr.message });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function setAppointmentDisplayMode(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.setDisplayMode.input.parse(req.body);

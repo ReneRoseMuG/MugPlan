@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Calendar, Clock, FolderKanban, Users, X } from "lucide-react";
+import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
@@ -28,6 +29,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import {
   AppointmentAttachmentsPanel,
   type PendingAppointmentAttachmentItem,
@@ -136,6 +138,32 @@ type ProjectOrderNumberResolutionResponse = {
 
 type DraftAppointmentNote = Note & {
   templateId?: number;
+};
+
+type AppointmentWeekEmployeePreviewItem = {
+  employeeId: number;
+  employeeName: string;
+  status: "will_add" | "conflict" | "already_present" | "current_only";
+  selectable: boolean;
+  conflictReason: string | null;
+};
+
+type AppointmentWeekEmployeePreviewResponse = {
+  isoYear: number;
+  isoWeek: number;
+  hasWeekPlan: boolean;
+  currentEmployeeIds: number[];
+  items: AppointmentWeekEmployeePreviewItem[];
+};
+
+type AppointmentWeekPreviewDialogState = {
+  open: boolean;
+  title: string;
+  description: string;
+  preview: AppointmentWeekEmployeePreviewResponse;
+  selectedIds: number[];
+  resolutionMode: "additive" | "replace";
+  persistAfterConfirm: boolean;
 };
 
 const logPrefix = "[AppointmentForm]";
@@ -251,6 +279,33 @@ const isPastStartDate = (startDate: string) => {
   return startDateValue < today;
 };
 
+const buildIsoWeekKey = (dateValue: string) => {
+  const parsedDate = parseISO(dateValue);
+  return `${getISOWeekYear(parsedDate)}-${String(getISOWeek(parsedDate)).padStart(2, "0")}`;
+};
+
+const getDefaultPreviewSelection = (preview: AppointmentWeekEmployeePreviewResponse) =>
+  preview.items
+    .filter((item) => item.selectable && item.status === "will_add")
+    .map((item) => item.employeeId);
+
+const buildEmployeeIdsFromPreviewSelection = (
+  preview: AppointmentWeekEmployeePreviewResponse,
+  selectedIds: number[],
+  resolutionMode: "additive" | "replace",
+) => {
+  if (resolutionMode === "additive") {
+    return Array.from(new Set([...preview.currentEmployeeIds, ...selectedIds]));
+  }
+
+  const selectedSet = new Set(selectedIds);
+  return Array.from(new Set(
+    preview.items
+      .filter((item) => item.status === "already_present" || selectedSet.has(item.employeeId))
+      .map((item) => item.employeeId),
+  ));
+};
+
 const fetchJson = async <T,>(url: string) => {
   console.info(`${logPrefix} request`, { url });
   const response = await fetch(url, { credentials: "include" });
@@ -299,6 +354,7 @@ export function AppointmentForm({
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
+  const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
@@ -624,7 +680,7 @@ export function AppointmentForm({
     if (initialTourId === null || initialTourId === undefined) return;
     if (weekTourPrefillAppliedRef.current) return;
 
-    setSelectedTourId(initialTourId);
+    handleTourChange(initialTourId);
     weekTourPrefillAppliedRef.current = true;
 
     console.info(`${logPrefix} week-prefill applied`, {
@@ -744,6 +800,46 @@ export function AppointmentForm({
     addEmployees(teamEmployees);
   };
 
+  const loadTourAssignmentPreview = async (
+    tourId: number,
+    existingEmployeeIds: number[],
+  ): Promise<AppointmentWeekEmployeePreviewResponse> => {
+    const response = await apiRequest("POST", `/api/tours/${tourId}/week-employees/assignment-preview`, {
+      startDate,
+      endDate: isEndDateEnabled ? endDate : null,
+      startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
+      existingEmployeeIds,
+    });
+    return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
+  };
+
+  const loadAppointmentTourChangePreview = async (): Promise<AppointmentWeekEmployeePreviewResponse | null> => {
+    if (!appointmentId) return null;
+    const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tour-change-preview`, {
+      newTourId: selectedTourId,
+      newStartDate: startDate,
+      newEndDate: isEndDateEnabled ? endDate : null,
+      newStartTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
+      currentEmployeeIds: assignedEmployeeIds,
+    });
+    return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
+  };
+
+  const openAppointmentWeekPreviewDialog = (
+    preview: AppointmentWeekEmployeePreviewResponse,
+    params: { title: string; description: string; persistAfterConfirm: boolean },
+  ) => {
+    setAppointmentWeekPreviewDialog({
+      open: true,
+      title: params.title,
+      description: params.description,
+      preview,
+      selectedIds: getDefaultPreviewSelection(preview),
+      resolutionMode: "additive",
+      persistAfterConfirm: params.persistAfterConfirm,
+    });
+  };
+
   const applyTourChange = (tourId: number | null) => {
     setSelectedTourId(tourId);
     console.info(`${logPrefix} tour change applied`, {
@@ -753,7 +849,31 @@ export function AppointmentForm({
 
   const handleTourChange = (tourId: number | null) => {
     if (tourId === selectedTourId) return;
-    applyTourChange(tourId);
+    void (async () => {
+      applyTourChange(tourId);
+      if (tourId === null) {
+        return;
+      }
+
+      try {
+        const preview = await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
+        if (!preview.hasWeekPlan) {
+          return;
+        }
+        openAppointmentWeekPreviewDialog(preview, {
+          title: "Wochenplanung fuer Termin uebernehmen",
+          description: "Die ausgewaehlte Tour hat fuer diese Kalenderwoche eine Planung. Waehlen Sie, welche Mitarbeiter uebernommen werden sollen.",
+          persistAfterConfirm: false,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        toast({
+          title: "Wochenplanung konnte nicht geladen werden",
+          description: message,
+          variant: "destructive",
+        });
+      }
+    })();
   };
 
   const handleProjectSelect = (id: number) => {
@@ -1363,6 +1483,35 @@ export function AppointmentForm({
       return;
     }
 
+    if (isEditing && appointmentId && appointmentDetail) {
+      const originalTourId = appointmentDetail.tourId ?? null;
+      const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
+      const currentWeekKey = buildIsoWeekKey(startDate);
+      const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
+
+      if (requiresTourPreview) {
+        try {
+          const preview = await loadAppointmentTourChangePreview();
+          if (preview?.hasWeekPlan) {
+            openAppointmentWeekPreviewDialog(preview, {
+              title: "Wochenplanung vor dem Speichern pruefen",
+              description: "Tour oder Kalenderwoche wurden geaendert. Pruefen Sie, welche Mitarbeiter aus der Zielplanung fuer diesen Termin uebernommen werden sollen.",
+              persistAfterConfirm: true,
+            });
+            return;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+          toast({
+            title: "Wochenplanung konnte nicht geladen werden",
+            description: message,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+    }
+
     await persistAppointment();
   };
 
@@ -1530,7 +1679,7 @@ export function AppointmentForm({
     await persistDraftAppointmentAttachments(targetAppointmentId);
   };
 
-  const persistAppointment = async () => {
+  const persistAppointment = async (employeeIdsOverride?: number[]) => {
     const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
     if (!resolvedPayloadCustomerId) {
       toast({
@@ -1547,7 +1696,7 @@ export function AppointmentForm({
       startDate,
       endDate: isEndDateEnabled ? endDate : null,
       startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
-      employeeIds: assignedEmployeeIds,
+      employeeIds: employeeIdsOverride ?? assignedEmployeeIds,
     };
 
     const method = isEditing ? "PATCH" : "POST";
@@ -1653,7 +1802,7 @@ export function AppointmentForm({
       setAssignedEmployeeIds(
         Array.isArray(data?.employees)
           ? data.employees.map((employee) => employee.id)
-          : assignedEmployeeIds,
+          : (employeeIdsOverride ?? assignedEmployeeIds),
       );
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
       console.info(`${logPrefix} save success`, {
@@ -1727,6 +1876,21 @@ export function AppointmentForm({
       toast({ title: "Fehler", description: message, variant: "destructive" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConfirmAppointmentWeekPreview = async () => {
+    if (!appointmentWeekPreviewDialog) return;
+    const nextEmployeeIds = buildEmployeeIdsFromPreviewSelection(
+      appointmentWeekPreviewDialog.preview,
+      appointmentWeekPreviewDialog.selectedIds,
+      appointmentWeekPreviewDialog.resolutionMode,
+    );
+    setAssignedEmployeeIds(nextEmployeeIds);
+    const persistAfterConfirm = appointmentWeekPreviewDialog.persistAfterConfirm;
+    setAppointmentWeekPreviewDialog(null);
+    if (persistAfterConfirm) {
+      await persistAppointment(nextEmployeeIds);
     }
   };
 
@@ -2070,6 +2234,30 @@ export function AppointmentForm({
           ) : null}
         </div>
       </EntityFormShell>
+
+      {appointmentWeekPreviewDialog ? (
+        <TourEmployeeCascadeDialog
+          variant="appointment"
+          open={appointmentWeekPreviewDialog.open}
+          title={appointmentWeekPreviewDialog.title}
+          description={appointmentWeekPreviewDialog.description}
+          previewItems={appointmentWeekPreviewDialog.preview.items}
+          selectedIds={appointmentWeekPreviewDialog.selectedIds}
+          resolutionMode={appointmentWeekPreviewDialog.resolutionMode}
+          showResolutionMode
+          isSubmitting={isSaving}
+          onSelectedIdsChange={(selectedIds) => {
+            setAppointmentWeekPreviewDialog((current) => current ? { ...current, selectedIds } : current);
+          }}
+          onResolutionModeChange={(resolutionMode) => {
+            setAppointmentWeekPreviewDialog((current) => current ? { ...current, resolutionMode } : current);
+          }}
+          onConfirm={() => {
+            void handleConfirmAppointmentWeekPreview();
+          }}
+          onClose={() => setAppointmentWeekPreviewDialog(null)}
+        />
+      ) : null}
 
       <DocumentExtractionDialog
         open={documentExtractionOpen}

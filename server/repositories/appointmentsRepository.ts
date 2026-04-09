@@ -110,6 +110,19 @@ export async function getAppointmentEmployeesByAppointmentIds(appointmentIds: nu
     .where(inArray(appointmentEmployees.appointmentId, appointmentIds));
 }
 
+export async function getAppointmentEmployeesByAppointmentIdsTx(tx: DbTx, appointmentIds: number[]) {
+  if (appointmentIds.length === 0) return [];
+
+  return tx
+    .select({
+      appointmentId: appointmentEmployees.appointmentId,
+      employee: employees,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(employees, eq(appointmentEmployees.employeeId, employees.id))
+    .where(inArray(appointmentEmployees.appointmentId, appointmentIds));
+}
+
 export async function listProjectArticleRowsByProjectIds(projectIds: number[]) {
   const uniqueProjectIds = Array.from(new Set(projectIds.filter((value) => Number.isFinite(value) && value > 0)));
   if (uniqueProjectIds.length === 0) return [];

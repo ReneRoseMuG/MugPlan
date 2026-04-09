@@ -1,3 +1,4 @@
+import React from "react";
 import { EntityCard } from "@/components/ui/entity-card";
 import type { ReactNode } from "react";
 

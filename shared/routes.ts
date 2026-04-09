@@ -180,6 +180,111 @@ const tourEmployeeCascadeConflictResponseSchema = z.object({
   conflictEmployees: z.array(tourEmployeeCascadeAppointmentEmployeeSchema).optional(),
 }).passthrough();
 
+const tourWeekEmployeeMemberSchema = z.object({
+  assignmentId: z.number().int().positive(),
+  employeeId: z.number().int().positive(),
+  fullName: z.string(),
+});
+
+const tourWeekEmployeesWeekSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  isLocked: z.boolean(),
+  employees: z.array(tourWeekEmployeeMemberSchema),
+});
+
+const tourWeekAppointmentPreviewStatusSchema = z.enum([
+  "will_add",
+  "conflict",
+  "already_assigned",
+  "will_remove",
+  "understaffed",
+  "keep",
+]);
+
+const tourWeekAppointmentPreviewItemSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  projectName: z.string().nullable(),
+  customerName: z.string().nullable(),
+  status: tourWeekAppointmentPreviewStatusSchema,
+  selectable: z.boolean(),
+  conflictReason: z.string().nullable(),
+  isUnderstaffed: z.boolean().optional(),
+});
+
+const tourWeekAddPreviewInputSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  employeeId: z.number().int().positive(),
+});
+
+const tourWeekExecuteInputSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  employeeId: z.number().int().positive().optional(),
+  selectedAppointmentIds: z.array(z.number().int().positive()),
+});
+
+const tourWeekRemovePreviewInputSchema = z.object({
+  assignmentId: z.number().int().positive(),
+});
+
+const tourWeekExecuteResponseSchema = z.object({
+  assignmentId: z.number().int().positive().optional(),
+  updatedAppointmentCount: z.number().int().min(0),
+  skipped: z.array(z.object({
+    appointmentId: z.number().int().positive(),
+    reason: z.string(),
+  })),
+});
+
+const tourWeekConflictResponseSchema = z.object({
+  code: z.enum(["BUSINESS_CONFLICT", "PAST_WEEK_READONLY"]),
+  message: z.string().optional(),
+}).passthrough();
+
+const appointmentWeekEmployeePreviewStatusSchema = z.enum([
+  "will_add",
+  "conflict",
+  "already_present",
+  "current_only",
+]);
+
+const appointmentWeekEmployeePreviewItemSchema = z.object({
+  employeeId: z.number().int().positive(),
+  employeeName: z.string(),
+  status: appointmentWeekEmployeePreviewStatusSchema,
+  selectable: z.boolean(),
+  conflictReason: z.string().nullable(),
+});
+
+const tourAssignmentPreviewInputSchema = z.object({
+  startDate: z.string(),
+  endDate: z.string().nullable().optional(),
+  startTime: z.string().nullable().optional(),
+  existingEmployeeIds: z.array(z.number().int().positive()),
+}).strict();
+
+const appointmentTourChangePreviewInputSchema = z.object({
+  newTourId: z.number().int().positive().nullable(),
+  newStartDate: z.string(),
+  newEndDate: z.string().nullable().optional(),
+  newStartTime: z.string().nullable().optional(),
+  currentEmployeeIds: z.array(z.number().int().positive()).optional(),
+}).strict();
+
+const appointmentWeekEmployeePreviewResponseSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  hasWeekPlan: z.boolean(),
+  currentEmployeeIds: z.array(z.number().int().positive()),
+  items: z.array(appointmentWeekEmployeePreviewItemSchema),
+});
+
 const employeeAbsenceBulkReplaceSkippedReasonSchema = z.enum([
   "EMPLOYEE_ABSENCE",
   "EMPLOYEE_EXIT_DATE",
@@ -1169,6 +1274,17 @@ export const api = {
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLATION_TAG_NOT_CONFIGURED"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    tourChangePreview: {
+      method: "POST" as const,
+      path: "/api/appointments/:id/tour-change-preview",
+      input: appointmentTourChangePreviewInputSchema,
+      responses: {
+        200: appointmentWeekEmployeePreviewResponseSchema,
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
@@ -2609,6 +2725,85 @@ export const api = {
         200: tourEmployeeCascadeExecuteResponseSchema,
         404: errorSchemas.notFound,
         409: tourEmployeeCascadeConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
+  tourWeekEmployees: {
+    list: {
+      method: "GET" as const,
+      path: "/api/tours/:tourId/week-employees",
+      responses: {
+        200: z.array(tourWeekEmployeesWeekSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    addPreview: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/week-employees/add/preview",
+      input: tourWeekAddPreviewInputSchema,
+      responses: {
+        200: z.object({
+          isoYear: z.number().int().min(1),
+          isoWeek: z.number().int().min(1).max(53),
+          weekStartDate: z.string(),
+          weekEndDate: z.string(),
+          employee: tourWeekEmployeeMemberSchema.omit({ assignmentId: true }),
+          items: z.array(tourWeekAppointmentPreviewItemSchema),
+        }),
+        404: errorSchemas.notFound,
+        409: tourWeekConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    addExecute: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/week-employees/add",
+      input: tourWeekExecuteInputSchema,
+      responses: {
+        200: tourWeekExecuteResponseSchema,
+        404: errorSchemas.notFound,
+        409: tourWeekConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    removePreview: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/week-employees/remove/preview",
+      input: tourWeekRemovePreviewInputSchema,
+      responses: {
+        200: z.object({
+          assignmentId: z.number().int().positive(),
+          isoYear: z.number().int().min(1),
+          isoWeek: z.number().int().min(1).max(53),
+          weekStartDate: z.string(),
+          weekEndDate: z.string(),
+          employee: tourWeekEmployeeMemberSchema,
+          items: z.array(tourWeekAppointmentPreviewItemSchema),
+        }),
+        404: errorSchemas.notFound,
+        409: tourWeekConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    removeExecute: {
+      method: "DELETE" as const,
+      path: "/api/tours/:tourId/week-employees/:assignmentId",
+      input: tourWeekExecuteInputSchema.omit({ employeeId: true }),
+      responses: {
+        200: tourWeekExecuteResponseSchema,
+        404: errorSchemas.notFound,
+        409: tourWeekConflictResponseSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    tourAssignmentPreview: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/week-employees/assignment-preview",
+      input: tourAssignmentPreviewInputSchema,
+      responses: {
+        200: appointmentWeekEmployeePreviewResponseSchema,
+        404: errorSchemas.notFound,
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

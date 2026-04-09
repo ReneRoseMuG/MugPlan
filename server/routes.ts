@@ -31,6 +31,7 @@ import teamEmployeesRoutes from "./routes/teamEmployeesRoutes";
 import teamsRoutes from "./routes/teamsRoutes";
 import tagsRoutes from "./routes/tagsRoutes";
 import tourEmployeesRoutes from "./routes/tourEmployeesRoutes";
+import tourWeekEmployeesRoutes from "./routes/tourWeekEmployeesRoutes";
 import toursRoutes from "./routes/toursRoutes";
 import userSettingsRoutes from "./routes/userSettingsRoutes";
 import usersRoutes from "./routes/usersRoutes";
@@ -69,6 +70,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(employeesRoutes);
   app.use(employeeAttachmentsRoutes);
   app.use(tourEmployeesRoutes);
+  app.use(tourWeekEmployeesRoutes);
   app.use(teamEmployeesRoutes);
   app.use(projectsRoutes);
   app.use(reportsRoutes);

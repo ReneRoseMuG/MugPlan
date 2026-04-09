@@ -78,6 +78,17 @@ export async function getAllEmployees(): Promise<Employee[]> {
     .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
 }
 
+export async function getEmployeesByIds(employeeIds: number[]): Promise<Employee[]> {
+  const normalizedEmployeeIds = Array.from(new Set(employeeIds.filter((value) => Number.isInteger(value) && value > 0)));
+  if (normalizedEmployeeIds.length === 0) return [];
+
+  return db
+    .select()
+    .from(employees)
+    .where(inArray(employees.id, normalizedEmployeeIds))
+    .orderBy(asc(employees.lastName), asc(employees.firstName), asc(employees.id));
+}
+
 export async function getEmployee(id: number): Promise<Employee | null> {
   const [employee] = await db.select().from(employees).where(eq(employees.id, id));
   return employee || null;

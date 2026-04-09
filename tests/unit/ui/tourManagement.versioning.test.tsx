@@ -5,17 +5,17 @@
  * - TourCreate sendet nur den Create-Request ohne direkte Mitarbeiterzuweisung.
  * - TourUpdate sendet Name, Farbe und Version als versionierten PATCH-Payload.
  * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
- * - Erfolgreiche Kaskaden bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
- * - Kaskadendialoge starten mit leerer Auswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
+ * - Erfolgreiche Wochenplan-Mutationen bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
+ * - Wochenplan-Dialoge starten mit sinnvoller Vorauswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
  *
  * Fehlerfaelle:
  * - Versiondaten fehlen in Tour-Mutationen.
  * - Der Tourname wird im Update-Payload nicht mitgesendet.
  * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
- * - Erfolgreiche Kaskaden lassen Monitoring- und Query-Refresh aus.
+ * - Erfolgreiche Wochenplan-Aktionen lassen Monitoring- und Query-Refresh aus.
  *
  * Ziel:
- * TourManagement ueber beobachtbare Mutations- und Folgeeffekte statt ueber Quelltextstrings absichern.
+ * TourManagement ueber beobachtbare Mutations- und Folgeeffekte der Wochenplanung statt ueber Quelltextstrings absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -360,22 +360,29 @@ describe("FT07 TourManagement behavior", () => {
     });
   });
 
-  it("opens cascade dialogs with an empty initial selection after preview loading", async () => {
+  it("opens week planning dialogs with a preselected conflict-free selection after preview loading", async () => {
     apiRequestMock.mockResolvedValue({
       ok: true,
-      json: async () => ([{
-        appointmentId: 900,
-        startDate: "2099-02-01",
-        endDate: null,
-        tourName: "Nordtour",
-        customerNumber: "C-1",
-        customerName: "Kunde Eins",
-        projectName: "Projekt Eins",
-        orderNumber: "A-1",
-        currentEmployees: [],
-        eligible: true,
-        conflictReason: null,
-      }]),
+      json: async () => ({
+        isoYear: 2099,
+        isoWeek: 6,
+        weekStartDate: "2099-02-02",
+        weekEndDate: "2099-02-08",
+        employee: {
+          employeeId: 11,
+          fullName: "Mia Tour",
+        },
+        items: [{
+          appointmentId: 900,
+          startDate: "2099-02-03",
+          endDate: null,
+          customerName: "Kunde Eins",
+          projectName: "Projekt Eins",
+          status: "will_add",
+          selectable: true,
+          conflictReason: null,
+        }],
+      }),
     });
 
     const { TourManagement } = await loadTourManagement({
@@ -386,16 +393,20 @@ describe("FT07 TourManagement behavior", () => {
 
     renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
 
-    const onAddMember = tourEditFormCalls[0].onAddMember as (employeeId: number) => Promise<void>;
-    await onAddMember(11);
+    const onAddWeekEmployee = tourEditFormCalls[0].onAddWeekEmployee as (params: { isoYear: number; isoWeek: number; employeeId: number }) => Promise<void>;
+    await onAddWeekEmployee({ isoYear: 2099, isoWeek: 6, employeeId: 11 });
 
-    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/employees/cascade-add/preview", {
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add/preview", {
+      isoYear: 2099,
+      isoWeek: 6,
       employeeId: 11,
     });
     expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
       open: true,
       mode: "add",
-      selectedAppointmentIds: [],
+      isoYear: 2099,
+      isoWeek: 6,
+      selectedIds: [900],
     }));
   });
 
@@ -458,9 +469,9 @@ describe("FT07 TourManagement behavior", () => {
     });
   });
 
-  it("executes cascade updates and refreshes dependent views after success", async () => {
+  it("executes week planning updates and refreshes dependent views after success", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
-      if (method === "POST" && url === "/api/tours/5/employees/cascade-add") {
+      if (method === "POST" && url === "/api/tours/5/week-employees/add") {
         return {
           ok: true,
           json: async () => ({
@@ -482,22 +493,22 @@ describe("FT07 TourManagement behavior", () => {
         open: true,
         mode: "add",
         tourId: 5,
+        isoYear: 2099,
+        isoWeek: 6,
+        weekLabel: "KW 06 / 2099",
         employeeId: 11,
         employeeName: "Mia Tour",
         previewItems: [{
           appointmentId: 900,
-          startDate: "2099-02-01",
+          startDate: "2099-02-03",
           endDate: null,
-          tourName: "Nordtour",
-          customerNumber: "C-1",
           customerName: "Kunde Eins",
           projectName: "Projekt Eins",
-          orderNumber: "A-1",
-          currentEmployees: [],
-          eligible: true,
+          status: "will_add",
+          selectable: true,
           conflictReason: null,
         }],
-        selectedAppointmentIds: [900],
+        selectedIds: [900],
       },
     });
 
@@ -510,14 +521,16 @@ describe("FT07 TourManagement behavior", () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/employees/cascade-add", {
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add", {
+      isoYear: 2099,
+      isoWeek: 6,
       employeeId: 11,
       selectedAppointmentIds: [900],
     });
     const activeMembersInvalidation = invalidateQueriesMock.mock.calls
       .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
       .find((options) => typeof options.predicate === "function"
-        && options.predicate?.({ queryKey: ["/api/tours/5/employees/active"] }));
+        && options.predicate?.({ queryKey: ["/api/tours/5/week-employees"] }));
     expect(activeMembersInvalidation).toBeTruthy();
     expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
     expect(invalidateQueriesMock).toHaveBeenCalledWith(expect.objectContaining({
@@ -525,7 +538,7 @@ describe("FT07 TourManagement behavior", () => {
     }));
     expect(refreshMonitoringWithNotificationMock).toHaveBeenCalledWith(toastMock);
     expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Kaskade abgeschlossen",
+      title: "Wochenplanung gespeichert",
       description: "1 Termine wurden aktualisiert.",
     }));
   });
