@@ -10,22 +10,10 @@ import { logWarn } from "../lib/logger";
 type AdminEndpointCategory = "destructive" | "write_non_destructive" | "sensitive_read" | "none";
 
 function classifyAdminEndpoint(method: string, path: string): AdminEndpointCategory {
-  if (method === "POST" && path === "/admin/reset-database") {
-    return "destructive";
-  }
   if (method === "POST" && path === "/admin/dumps/import/apply") {
     return "destructive";
   }
   if (method === "POST" && path === "/admin/dumps/import/preview") {
-    return "sensitive_read";
-  }
-  if (method === "POST" && path === "/admin/demo-seed-runs") {
-    return "destructive";
-  }
-  if (method === "DELETE" && /^\/admin\/demo-seed-runs\/[^/]+$/.test(path)) {
-    return "destructive";
-  }
-  if (method === "GET" && path === "/admin/demo-seed-runs") {
     return "sensitive_read";
   }
   if (method === "GET" && path === "/admin/backups/logs") {

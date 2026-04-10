@@ -129,8 +129,6 @@ export const EXCLUDED_DUMP_TABLE_KEYS = [
   "users",
   "roles",
   "employeeAbsences",
-  "seedRuns",
-  "seedRunEntities",
 ] as const;
 
 type DumpTableKey = (typeof DUMP_TABLE_KEYS)[number];

@@ -28,7 +28,6 @@
     "db:migrate:project-names": "tsx script/migrate-project-names-with-customer-number.ts",
     "db:seed:roles": "tsx script/seed-roles.ts",
     "test:template-render": "tsx script/test-template-render.ts",
-    "verify:demo-seed": "tsx script/verify-demo-seed.ts",
     "test": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest",
     "test:run": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run",
     "test:extraction:mock": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run tests/integration/server/documentExtraction.routes.test.ts tests/unit/validation/extractionValidator.structure.test.ts tests/unit/services/documentProcessing.customerResolution.test.ts tests/unit/ui/projectForm.documentExtractionFlow.test.tsx tests/unit/ui/appointmentForm.documentExtractionFlow.test.tsx tests/unit/extraction/documentTextExtractor.test.ts tests/unit/validation/dtoValidators.test.ts",

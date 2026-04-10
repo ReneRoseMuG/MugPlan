@@ -1,4 +1,3 @@
-import { sql } from "drizzle-orm";
 import {
   appointments,
   backupLog,
@@ -18,8 +17,6 @@ import {
   projectOrderItems,
   projectTags,
   projects,
-  seedRunEntities,
-  seedRuns,
   tags,
   teams,
   tours,
@@ -52,8 +49,6 @@ export type ResetDomainDataCounts = {
   teams: number;
   tours: number;
   notes: number;
-  seedRuns: number;
-  seedRunEntities: number;
 };
 
 export type AttachmentFileRef = {
@@ -88,11 +83,6 @@ export async function listAllAttachmentFileRefs(): Promise<AttachmentFileRef[]> 
 
 export async function resetDomainData(): Promise<ResetDomainDataCounts> {
   return db.transaction(async (tx) => {
-    const [seedRunEntityCountRow] = await tx
-      .select({ count: sql<number>`count(*)` })
-      .from(seedRunEntities);
-    const seedRunEntitiesCount = Number(seedRunEntityCountRow?.count ?? 0);
-
     const deletedAppointments = affectedRows(await tx.delete(appointments));
     const deletedHelpTexts = affectedRows(await tx.delete(helpTexts));
     const deletedUserSettingsValues = affectedRows(await tx.delete(userSettingsValue));
@@ -117,8 +107,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
     const deletedTeams = affectedRows(await tx.delete(teams));
     const deletedTours = affectedRows(await tx.delete(tours));
 
-    const deletedSeedRuns = affectedRows(await tx.delete(seedRuns));
-
     return {
       appointments: deletedAppointments,
       noteTemplates: deletedNoteTemplates,
@@ -140,8 +128,6 @@ export async function resetDomainData(): Promise<ResetDomainDataCounts> {
       teams: deletedTeams,
       tours: deletedTours,
       notes: deletedNotes,
-      seedRuns: deletedSeedRuns,
-      seedRunEntities: seedRunEntitiesCount,
     };
   });
 }

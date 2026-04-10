@@ -240,7 +240,6 @@ export function Sidebar({
             <NavButton icon={AdminIcon} label="Stammdaten" isActive={currentView === "masterData" || currentView === "noteTemplates" || currentView === "helpTexts"} onClick={() => onViewChange("masterData")} />
             <NavButton icon={AdminIcon} label="Benutzerverwaltung" isActive={currentView === "users"} onClick={() => onViewChange("users")} />
             <NavButton icon={AdminIcon} label="Einstellungen" isActive={currentView === "settings"} onClick={() => onViewChange("settings")} />
-            <NavButton icon={AdminIcon} label="Demo-Daten" isActive={currentView === "demoData"} onClick={() => onViewChange("demoData")} />
           </NavGroup>
         ) : null}
 

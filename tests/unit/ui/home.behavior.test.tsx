@@ -108,10 +108,6 @@ vi.mock("@/components/SettingsPage", () => ({
   SettingsPage: () => <div>settings-page</div>,
 }));
 
-vi.mock("@/components/DemoDataPage", () => ({
-  DemoDataPage: () => <div>demo-data-page</div>,
-}));
-
 vi.mock("@/components/UsersPage", () => ({
   UsersPage: () => <div>users-page</div>,
 }));

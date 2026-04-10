@@ -54,8 +54,6 @@ DROP TABLE IF EXISTS `project_attachment`;
 DROP TABLE IF EXISTS `project_note`;
 DROP TABLE IF EXISTS `project`;
 DROP TABLE IF EXISTS `roles`;
-DROP TABLE IF EXISTS `seed_run_entity`;
-DROP TABLE IF EXISTS `seed_run`;
 DROP TABLE IF EXISTS `teams`;
 DROP TABLE IF EXISTS `tours`;
 DROP TABLE IF EXISTS `user_settings_value`;
@@ -261,22 +259,6 @@ CREATE TABLE `roles` (
   CONSTRAINT `roles_code_unique` UNIQUE(`code`)
 );
 
-CREATE TABLE `seed_run_entity` (
-  `seed_run_id` varchar(36) NOT NULL,
-  `entity_type` varchar(64) NOT NULL,
-  `entity_id` bigint NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT `seed_run_entity_seed_run_id_entity_type_entity_id_pk` PRIMARY KEY(`seed_run_id`,`entity_type`,`entity_id`)
-);
-
-CREATE TABLE `seed_run` (
-  `id` varchar(36) NOT NULL,
-  `config_json` json NOT NULL,
-  `summary_json` json,
-  `created_at` timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT `seed_run_id` PRIMARY KEY(`id`)
-);
-
 CREATE TABLE `teams` (
   `id` int AUTO_INCREMENT NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -344,7 +326,6 @@ ALTER TABLE `project_attachment` ADD CONSTRAINT `project_attachment_project_id_p
 ALTER TABLE `project_note` ADD CONSTRAINT `project_note_project_id_project_id_fk` FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `project_note` ADD CONSTRAINT `project_note_note_id_note_id_fk` FOREIGN KEY (`note_id`) REFERENCES `note`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `project` ADD CONSTRAINT `project_customer_id_customer_id_fk` FOREIGN KEY (`customer_id`) REFERENCES `customer`(`id`) ON DELETE restrict ON UPDATE no action;
-ALTER TABLE `seed_run_entity` ADD CONSTRAINT `seed_run_entity_seed_run_id_seed_run_id_fk` FOREIGN KEY (`seed_run_id`) REFERENCES `seed_run`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `users` ADD CONSTRAINT `users_role_id_roles_id_fk` FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE restrict ON UPDATE no action;
 
 CREATE INDEX `idx_ae_employee_appointment` ON `appointment_employee` (`employee_id`,`appointment_id`);
@@ -356,9 +337,6 @@ CREATE INDEX `idx_backup_created_id` ON `backup_log` (`created_at`,`id`);
 CREATE INDEX `idx_backup_status_created_id` ON `backup_log` (`status`,`created_at`,`id`);
 CREATE INDEX `idx_employee_active_name_id` ON `employee` (`is_active`,`last_name`,`first_name`,`id`);
 CREATE INDEX `idx_project_customer_active_updated` ON `project` (`customer_id`,`is_active`,`updated_at`);
-CREATE INDEX `seed_run_entity_seed_run_idx` ON `seed_run_entity` (`seed_run_id`);
-CREATE INDEX `seed_run_entity_entity_idx` ON `seed_run_entity` (`entity_type`,`entity_id`);
-
 -- ============================================================================
 -- BLOCK: SEED (STANDARD ROLES)
 -- ============================================================================
@@ -392,8 +370,6 @@ WHERE t.table_schema = DATABASE()
     'project_attachment',
     'project_note',
     'roles',
-    'seed_run',
-    'seed_run_entity',
     'teams',
     'tours',
     'user_settings_value',

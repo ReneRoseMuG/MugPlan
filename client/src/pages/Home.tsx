@@ -20,7 +20,6 @@ import {
 } from "@/components/AppointmentsListPage";
 import { HelpTextForm } from "@/components/HelpTextForm";
 import { SettingsPage } from "@/components/SettingsPage";
-import { DemoDataPage } from "@/components/DemoDataPage";
 import { UsersPage } from "@/components/UsersPage";
 import { MasterDataPage } from "@/components/MasterDataPage";
 import { ReportsPage } from "@/components/ReportsPage";
@@ -54,7 +53,6 @@ export type ViewType =
   | "helpTexts"
   | "helpTextForm"
   | "settings"
-  | "demoData"
   | "masterData"
   | "users"
   | "reports"
@@ -454,8 +452,6 @@ export default function Home({ onLogout }: HomeProps) {
             />
           ) : view === "settings" && isAdmin ? (
             <SettingsPage />
-          ) : view === "demoData" && isAdmin ? (
-            <DemoDataPage />
           ) : view === "masterData" && isAdmin ? (
             <MasterDataPage
               initialTabId="products"

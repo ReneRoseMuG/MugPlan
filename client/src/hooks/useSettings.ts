@@ -62,7 +62,6 @@ export type UserSettingKey =
   | "calendar.weekLanes.expandedLaneId"
   | "calendar.weekAppointmentDisplayMode"
   | "calendar.weekTileBodyMode"
-  | "demoData.adminFormState"
   | "reports.vorlaufliste.categorySelection"
   | "reports.produktionsplanung.selection"
   | "reports.auftragsliste.selection"
@@ -94,7 +93,6 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.expandedLaneId": string;
   "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
   "calendar.weekTileBodyMode": "collapsed" | "semiexpanded" | "expanded";
-  "demoData.adminFormState": string;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
   "reports.auftragsliste.selection": AuftragslisteSelection;
