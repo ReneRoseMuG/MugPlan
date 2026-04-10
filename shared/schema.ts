@@ -959,32 +959,6 @@ export type HelpText = typeof helpTexts.$inferSelect;
 export type InsertHelpText = z.infer<typeof insertHelpTextSchema>;
 export type UpdateHelpText = z.infer<typeof updateHelpTextSchema>;
 
-export const seedRuns = mysqlTable("seed_run", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  configJson: json("config_json").$type<unknown>().notNull(),
-  summaryJson: json("summary_json").$type<unknown>(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const seedRunEntities = mysqlTable(
-  "seed_run_entity",
-  {
-    seedRunId: varchar("seed_run_id", { length: 36 })
-      .notNull()
-      .references(() => seedRuns.id, { onDelete: "cascade" }),
-    entityType: varchar("entity_type", { length: 64 }).notNull(),
-    entityId: bigint("entity_id", { mode: "number" }).notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.seedRunId, table.entityType, table.entityId] }),
-    bySeedRun: index("seed_run_entity_seed_run_idx").on(table.seedRunId),
-    byEntity: index("seed_run_entity_entity_idx").on(table.entityType, table.entityId),
-  }),
-);
-
-export type SeedRun = typeof seedRuns.$inferSelect;
-export type SeedRunEntity = typeof seedRunEntities.$inferSelect;
 
 export const userSettingsValue = mysqlTable(
   "user_settings_value",

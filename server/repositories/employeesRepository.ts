@@ -272,7 +272,6 @@ export async function setEmployeeTeamWithVersionTx(
   return { kind: "updated", employee };
 }
 
-// Technical exception for demo-seed flow (excluded from hardening scope).
 export async function setEmployeeTeam(employeeId: number, teamId: number | null): Promise<Employee | null> {
   await db
     .update(employees)

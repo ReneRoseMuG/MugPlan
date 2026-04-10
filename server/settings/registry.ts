@@ -166,39 +166,6 @@ function isValidBackupLaneTourIds(value: unknown): value is string {
   return new Set(parsed).size === parsed.length;
 }
 
-function isValidDemoDataAdminFormState(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-
-  try {
-    const parsed = JSON.parse(value) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
-
-    const integerKeys = [
-      "baseCustomers",
-      "baseProjects",
-      "appointmentsPerProject",
-      "seedWindowDaysMin",
-      "seedWindowDaysMax",
-      "reklDelayDaysMin",
-      "reklDelayDaysMax",
-    ] as const;
-    for (const key of integerKeys) {
-      if (!Number.isInteger(parsed[key])) return false;
-    }
-
-    if (typeof parsed.baseGenerateAttachments !== "boolean") return false;
-    if (typeof parsed.baseRandomSeed !== "string") return false;
-    if (typeof parsed.baseLocale !== "string") return false;
-    if (typeof parsed.appointmentBaseSeedRunId !== "string") return false;
-    if (typeof parsed.appointmentsRandomSeed !== "string") return false;
-    if (typeof parsed.appointmentsLocale !== "string") return false;
-    if (typeof parsed.reklShare !== "number" || !Number.isFinite(parsed.reklShare)) return false;
-
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function isValidPositiveIntegerArray(value: unknown): value is number[] {
   if (!Array.isArray(value)) return false;
@@ -794,16 +761,6 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is ListViewMode =>
       typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
-  },
-  demoDataAdminFormState: {
-    key: "demoData.adminFormState",
-    label: "Demo-Daten Formularzustand",
-    description: "Speichert den zuletzt verwendeten Formularzustand der Demo-Daten-Adminansicht.",
-    type: "string",
-    defaultValue: "",
-    allowedScopes: ["USER"],
-    placeholderWhitelist: [],
-    validate: isValidDemoDataAdminFormState,
   },
   templatesProjectTitle: {
     key: "templates.project.title",

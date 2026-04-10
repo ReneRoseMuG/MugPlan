@@ -162,6 +162,13 @@
       "when": 1775692800000,
       "tag": "0022_tour_week_employees",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1744329600000,
+      "tag": "0023_drop_seed_run_tables",
+      "breakpoints": true
     }
   ]
 }

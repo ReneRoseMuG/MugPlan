@@ -10,33 +10,6 @@ router.put(api.masterData.productCategories.update.path, masterDataController.up
 router.delete(api.masterData.productCategories.delete.path, masterDataController.deleteProductCategory);
 router.post(api.masterData.productCategories.importCsv.path, masterDataController.importProductCategoryCsv);
 router.delete(api.masterData.productCategories.deleteProducts.path, masterDataController.deleteProductsByCategory);
-router.get(api.masterData.seed.employees.status.path, masterDataController.getEmployeesSeedStatusController);
-router.post(api.masterData.seed.employees.apply.path, masterDataController.applyEmployeesSeedController);
-router.post(api.masterData.seed.employees.export.path, masterDataController.exportEmployeesSeedController);
-
-router.get(api.masterData.seed.helpTexts.status.path, masterDataController.getHelpTextsSeedStatusController);
-router.post(api.masterData.seed.helpTexts.apply.path, masterDataController.applyHelpTextsSeedController);
-router.post(api.masterData.seed.helpTexts.export.path, masterDataController.exportHelpTextsSeedController);
-
-router.get(api.masterData.seed.productManagement.status.path, masterDataController.getProductManagementSeedStatusController);
-router.post(api.masterData.seed.productManagement.apply.path, masterDataController.applyProductManagementSeedController);
-router.post(api.masterData.seed.productManagement.export.path, masterDataController.exportProductManagementSeedController);
-
-router.get(api.masterData.seed.noteTemplates.status.path, masterDataController.getNoteTemplatesSeedStatusController);
-router.post(api.masterData.seed.noteTemplates.apply.path, masterDataController.applyNoteTemplatesSeedController);
-router.post(api.masterData.seed.noteTemplates.export.path, masterDataController.exportNoteTemplatesSeedController);
-
-router.get(api.masterData.seed.tags.status.path, masterDataController.getTagsSeedStatusController);
-router.post(api.masterData.seed.tags.apply.path, masterDataController.applyTagsSeedController);
-router.post(api.masterData.seed.tags.export.path, masterDataController.exportTagsSeedController);
-
-router.get(api.masterData.seed.tours.status.path, masterDataController.getToursSeedStatusController);
-router.post(api.masterData.seed.tours.apply.path, masterDataController.applyToursSeedController);
-router.post(api.masterData.seed.tours.export.path, masterDataController.exportToursSeedController);
-
-router.get(api.masterData.seed.users.status.path, masterDataController.getUsersSeedStatusController);
-router.post(api.masterData.seed.users.apply.path, masterDataController.applyUsersSeedController);
-router.post(api.masterData.seed.users.export.path, masterDataController.exportUsersSeedController);
 
 router.get(api.masterData.componentCategories.list.path, masterDataController.listComponentCategories);
 router.post(api.masterData.componentCategories.create.path, masterDataController.createComponentCategory);
