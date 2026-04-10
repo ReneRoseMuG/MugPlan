@@ -60,7 +60,10 @@ test("shows week employees and additional day employees in the lane header hover
 
   const mondayTrigger = page.getByTestId(`week-tour-lane-day-hover-trigger-tour-${fixture.tour.id}-${monday}`);
   await expect(mondayTrigger).toBeVisible();
-  await mondayTrigger.hover();
+  await mondayTrigger.evaluate((element) => {
+    element.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, cancelable: true }));
+    element.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, cancelable: true }));
+  });
 
   const preview = page.getByTestId("week-tour-lane-day-hover-preview");
   await expect(preview).toBeVisible();
@@ -71,7 +74,10 @@ test("shows week employees and additional day employees in the lane header hover
 
   const tuesdayTrigger = page.getByTestId(`week-tour-lane-day-hover-trigger-tour-${fixture.tour.id}-${tuesday}`);
   await expect(tuesdayTrigger).toBeVisible();
-  await tuesdayTrigger.hover();
+  await tuesdayTrigger.evaluate((element) => {
+    element.dispatchEvent(new MouseEvent("mouseover", { bubbles: true, cancelable: true }));
+    element.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, cancelable: true }));
+  });
 
   await expect(preview).toContainText(fixture.employees[0].fullName);
   await expect(preview).toContainText("Keine zusätzlichen Tageszuweisungen.");

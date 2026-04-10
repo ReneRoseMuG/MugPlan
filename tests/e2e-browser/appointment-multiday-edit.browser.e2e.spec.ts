@@ -155,7 +155,7 @@ test("creates a multi-day appointment from a tour lane and keeps start and end d
 
   const spanningTile = page.getByTestId(`week-spanning-tile-${appointmentId}`).filter({ hasText: "Tag 2" }).first();
   await expect(spanningTile).toBeVisible();
-  await expect(page.getByTestId(`week-spanning-tile-header-${appointmentId}`)).toContainText("Tag 2");
+  await expect(spanningTile.getByTestId(`week-spanning-tile-header-${appointmentId}`)).toContainText("Tag 2");
   await expect(spanningTile).toContainText("Tag 2");
   await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.orderNumber ?? "");
   await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.name);

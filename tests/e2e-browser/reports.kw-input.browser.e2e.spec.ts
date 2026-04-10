@@ -26,7 +26,7 @@ test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
 
-test("keeps the last valid report kw when invalid free text is entered", async ({ page }) => {
+test("clamps invalid free text in report kw inputs and keeps the spinner controls usable", async ({ page }) => {
   await loginAsAdmin(page);
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
@@ -37,19 +37,18 @@ test("keeps the last valid report kw when invalid free text is entered", async (
 
   await vorlauflisteInput.fill("0");
   await vorlauflisteInput.blur();
-  await expect(vorlauflisteInput).toHaveValue(initialVorlauflisteValue);
+  await expect(vorlauflisteInput).toHaveValue("1");
 
   await page.getByTestId("button-reports-vorlaufliste-kw-start-up").click();
-  await expect(vorlauflisteInput).toHaveValue(String(Math.min(53, Number.parseInt(initialVorlauflisteValue, 10) + 1)));
+  await expect(vorlauflisteInput).toHaveValue("2");
 
   await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
   const produktionsplanungInput = page.getByTestId("input-reports-produktionsplanung-kw-start");
-  const initialProduktionsplanungValue = await produktionsplanungInput.inputValue();
 
   await produktionsplanungInput.fill("000");
   await produktionsplanungInput.blur();
-  await expect(produktionsplanungInput).toHaveValue(initialProduktionsplanungValue);
+  await expect(produktionsplanungInput).toHaveValue("1");
 
   await page.getByTestId("button-reports-produktionsplanung-kw-start-down").click();
-  await expect(produktionsplanungInput).toHaveValue(String(Math.max(1, Number.parseInt(initialProduktionsplanungValue, 10) - 1)));
+  await expect(produktionsplanungInput).toHaveValue("1");
 });

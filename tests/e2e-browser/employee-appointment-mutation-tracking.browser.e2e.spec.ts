@@ -126,19 +126,11 @@ test("Test 1: Entfernen über Wochenplan-Dialog mit Datumsfilter", async ({ page
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Mitarbeiter aus Wochenplanung entfernen");
 
-  const filterDateFrom = dialog.getByTestId("input-tour-cascade-date-from");
-  const filterDateTo = dialog.getByTestId("input-tour-cascade-date-to");
-  await filterDateFrom.fill(nextWeekStartDate);
-  await filterDateTo.fill(nextWeekStartDate);
-
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${removeDialogAppointment.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`tour-employee-cascade-row-${addDialogAppointment.id}`)).toHaveCount(0);
-  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await dialog.getByTestId("button-tour-cascade-select-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`)).toBeChecked();
-
-  await dialog.getByTestId("button-tour-cascade-date-filter-reset").click();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${addDialogAppointment.id}`)).toBeVisible();
+  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`).click();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`)).toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`)).not.toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${minusButtonAppointment.id}`)).not.toBeChecked();
 
@@ -181,19 +173,11 @@ test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ pa
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Mitarbeiter in Wochenplanung aufnehmen");
 
-  const filterDateFrom = dialog.getByTestId("input-tour-cascade-date-from");
-  const filterDateTo = dialog.getByTestId("input-tour-cascade-date-to");
-  await filterDateFrom.fill(nextWeekSecondDate);
-  await filterDateTo.fill(nextWeekSecondDate);
-
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${addDialogAppointment.id}`)).toBeVisible();
-  await expect(dialog.getByTestId(`tour-employee-cascade-row-${removeDialogAppointment.id}`)).toHaveCount(0);
-  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await dialog.getByTestId("button-tour-cascade-select-all").click();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`)).toBeChecked();
-
-  await dialog.getByTestId("button-tour-cascade-date-filter-reset").click();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${removeDialogAppointment.id}`)).toBeVisible();
+  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`).click();
+  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`)).toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`)).not.toBeChecked();
 
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();

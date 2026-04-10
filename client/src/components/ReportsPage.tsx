@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
 import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
 import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } from "@shared/routes";
 import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
