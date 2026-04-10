@@ -188,7 +188,13 @@ async function createBrowserReportProjectFixture(params: {
 }
 
 async function openReports(page: Page) {
-  await loginAsAdmin(page);
+  try {
+    await loginAsAdmin(page);
+  } catch (error) {
+    await page.goto("/");
+    await page.reload();
+    await loginAsAdmin(page);
+  }
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
 }

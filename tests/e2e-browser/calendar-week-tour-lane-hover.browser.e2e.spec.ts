@@ -65,7 +65,7 @@ test("shows week employees and additional day employees in the lane header hover
     element.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, cancelable: true }));
   });
 
-  const preview = page.getByTestId("week-tour-lane-day-hover-preview");
+  const preview = page.getByTestId("week-tour-lane-day-hover-preview").last();
   await expect(preview).toBeVisible();
   await expect(preview).toContainText("Aus Wochenplanung");
   await expect(preview).toContainText(fixture.employees[0].fullName);
@@ -79,6 +79,8 @@ test("shows week employees and additional day employees in the lane header hover
     element.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true, cancelable: true }));
   });
 
-  await expect(preview).toContainText(fixture.employees[0].fullName);
-  await expect(preview).toContainText("Keine zusätzlichen Tageszuweisungen.");
+  const tuesdayPreview = page.getByTestId("week-tour-lane-day-hover-preview").last();
+  await expect(tuesdayPreview).toBeVisible();
+  await expect(tuesdayPreview).toContainText(fixture.employees[0].fullName);
+  await expect(tuesdayPreview.getByTestId("week-tour-lane-day-hover-additional-employees")).toContainText("Keine zusätzlichen Tageszuweisungen.");
 });
