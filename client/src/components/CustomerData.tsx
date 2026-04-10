@@ -814,7 +814,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                   onClick={onCancel}
                   data-testid="button-cancel-customer"
                 >
-                  Abbrechen
+                  Zurück
                 </Button>
               ) : null}
             </div>
@@ -825,7 +825,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               disabled={isSubmitPending}
               data-testid="button-save-customer"
             >
-              {isSubmitPending ? "Kunde speichern..." : "Kunde speichern"}
+              {isSubmitPending ? "Speichern..." : "Speichern"}
             </Button>
           </div>
         )}

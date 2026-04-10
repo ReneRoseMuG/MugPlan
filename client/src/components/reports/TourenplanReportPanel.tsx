@@ -20,9 +20,10 @@ import {
 } from "@/components/reports/tourenplan-model";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RangeSummary } from "@/components/ui/RangeSummary";
+import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SpinField } from "@/components/ui/SpinField";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 
@@ -150,7 +151,6 @@ async function fetchAllTourenplanAppointmentDetails(params: {
 export function TourenplanReportPanel({
   defaultReportRange,
   defaultIsoWeek,
-  defaultIsoWeekYear,
   isAdmin,
 }: TourenplanReportPanelProps) {
   const { setSetting } = useSettings();
@@ -375,11 +375,6 @@ export function TourenplanReportPanel({
       <ReportConfigPanel
         title="Tourenplan"
         helpKey="report-tourenplan"
-        mode={activeTab}
-        onModeChange={(nextMode) => {
-          setActiveTab(nextMode);
-          void persistRangeConfig({ activeTab: nextMode });
-        }}
         actionButton={(
           <div className="min-w-[150px]">
             <Select
@@ -403,69 +398,74 @@ export function TourenplanReportPanel({
         )}
         optionsSlot={(
           <div className="space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex min-w-[220px] flex-1 flex-col gap-3">
-                <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
-                  <Checkbox
-                    checked={useShortCodes}
-                    onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
-                    data-testid="checkbox-reports-tourenplan-use-shortcodes"
-                  />
-                  <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-                </label>
-              </div>
-              <div className="ml-auto flex min-w-[220px] flex-col items-end gap-2">
-                <div className="flex items-center justify-end gap-2" data-testid="reports-tourenplan-font-size-option">
-                  <span className="text-right text-sm text-slate-600">Schriftgröße</span>
-                  <Select
-                    value={fontSize}
-                    onValueChange={(value) => {
-                      const nextFontSize = value === "small" || value === "large" ? value : "medium";
-                      setFontSize(nextFontSize);
-                      void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
-                    }}
-                  >
-                    <SelectTrigger className="h-8 w-[132px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
-                      <SelectValue placeholder="Schriftgröße" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="small">Small</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="large">Large</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {isAdmin ? (
-                  <div className="flex items-start gap-2" data-testid="reports-tourenplan-print-mode-toggle">
-                  <Button
-                    type="button"
-                    variant={printMode === "farbdruck" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setPrintMode("farbdruck");
-                      void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "farbdruck" });
-                    }}
-                    data-testid="button-reports-tourenplan-print-mode-farbdruck"
-                  >
-                    Farbdruck
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={printMode === "spardruck" ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => {
-                      setPrintMode("spardruck");
-                      void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value: "spardruck" });
-                    }}
-                    data-testid="button-reports-tourenplan-print-mode-spardruck"
-                  >
-                    Spardruck
-                  </Button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
+            <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
+              <Checkbox
+                checked={useShortCodes}
+                onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
+                data-testid="checkbox-reports-tourenplan-use-shortcodes"
+              />
+              <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+            </label>
             {quickRangeOptions}
+          </div>
+        )}
+        secondaryOptionsSlot={(
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
+              <span className="text-sm text-slate-600">Schriftgröße</span>
+              <Select
+                value={fontSize}
+                onValueChange={(value) => {
+                  const nextFontSize = value === "small" || value === "large" ? value : "medium";
+                  setFontSize(nextFontSize);
+                  void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
+                }}
+              >
+                <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
+                  <SelectValue placeholder="Schriftgröße" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">Small</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="large">Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {isAdmin ? (
+              <ToggleGroup
+                type="single"
+                value={printMode}
+                onValueChange={(value) => {
+                  if (value === "farbdruck" || value === "spardruck") {
+                    setPrintMode(value);
+                    void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
+                  }
+                }}
+                className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
+                data-testid="reports-tourenplan-print-mode-toggle"
+              >
+                <ToggleGroupItem
+                  value="farbdruck"
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                    "data-[state=on]:border-amber-200 data-[state=on]:bg-amber-50 data-[state=on]:text-amber-700 data-[state=on]:shadow-sm",
+                  )}
+                  data-testid="button-reports-tourenplan-print-mode-farbdruck"
+                >
+                  Farbdruck
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="spardruck"
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                    "data-[state=on]:border-slate-400 data-[state=on]:bg-white data-[state=on]:text-slate-700 data-[state=on]:shadow-sm",
+                  )}
+                  data-testid="button-reports-tourenplan-print-mode-spardruck"
+                >
+                  Spardruck
+                </ToggleGroupItem>
+              </ToggleGroup>
+            ) : null}
           </div>
         )}
         footer={(
@@ -479,166 +479,45 @@ export function TourenplanReportPanel({
           </Button>
         )}
         testId="reports-tourenplan-config-panel"
-        togglePrefix="reports-tourenplan"
       >
-        {activeTab === "date" ? (
-          <div className="space-y-3" data-testid="reports-tourenplan-date-panel">
-            <div className="grid gap-3">
-              <div className="hidden">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setActiveTab("date");
-                    setFromDate(currentWeekRange.fromDate);
-                    setToDate(currentWeekRange.toDate);
-                    setKwStart(currentWeekRange.kwStart);
-                    setWeekCount(1);
-                    void persistRangeConfig({
-                      activeTab: "date",
-                      fromDate: currentWeekRange.fromDate,
-                      toDate: currentWeekRange.toDate,
-                      kwStart: currentWeekRange.kwStart,
-                      weekCount: 1,
-                    });
-                  }}
-                  data-testid="button-reports-tourenplan-this-week"
-                >
-                  Diese Woche
-                  <span className="ml-2 text-xs text-slate-500">{buildQuickRangeLabel(defaultReportRange.referenceDate, 0)}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setActiveTab("date");
-                    setFromDate(nextWeekRange.fromDate);
-                    setToDate(nextWeekRange.toDate);
-                    setKwStart(nextWeekRange.kwStart);
-                    setWeekCount(1);
-                    void persistRangeConfig({
-                      activeTab: "date",
-                      fromDate: nextWeekRange.fromDate,
-                      toDate: nextWeekRange.toDate,
-                      kwStart: nextWeekRange.kwStart,
-                      weekCount: 1,
-                    });
-                  }}
-                  data-testid="button-reports-tourenplan-next-week"
-                >
-                  Nächste Woche
-                  <span className="ml-2 text-xs text-slate-500">{buildQuickRangeLabel(defaultReportRange.referenceDate, 1)}</span>
-                </Button>
-              </div>
-              <div className="flex w-full flex-wrap items-end justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      setFromDate(nextValue);
-                      void persistRangeConfig({ fromDate: nextValue });
-                    }}
-                    className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    data-testid="reports-tourenplan-from-date"
-                  />
-                </div>
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(event) => {
-                      const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
-                      setToDate(nextValue);
-                      void persistRangeConfig({ toDate: nextValue });
-                    }}
-                    className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    data-testid="reports-tourenplan-to-date"
-                  />
-                </div>
-              </div>
-            </div>
-            <RangeSummary
-              fromDate={fromDate}
-              toDate={toDate}
-              testId="reports-tourenplan-date-summary"
-            />
-          </div>
-        ) : (
-          <div className="space-y-3" data-testid="reports-tourenplan-calendar-week-panel">
-            <div className="hidden">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setKwStart(currentWeekRange.kwStart);
-                  setWeekCount(1);
-                  void persistRangeConfig({ kwStart: currentWeekRange.kwStart, weekCount: 1 });
-                }}
-                data-testid="button-reports-tourenplan-kw-current"
-              >
-                Diese Woche
-                <span className="ml-2 text-xs text-slate-500">{buildQuickRangeLabel(defaultReportRange.referenceDate, 0)}</span>
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setKwStart(nextWeekRange.kwStart);
-                  setWeekCount(1);
-                  void persistRangeConfig({ kwStart: nextWeekRange.kwStart, weekCount: 1 });
-                }}
-                data-testid="button-reports-tourenplan-kw-next"
-              >
-                Nächste Woche
-                <span className="ml-2 text-xs text-slate-500">{buildQuickRangeLabel(defaultReportRange.referenceDate, 1)}</span>
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-start gap-4">
-              <SpinField
-                label="KW Start"
-                value={kwStart ?? defaultIsoWeek}
-                onChange={(nextValue) => {
-                  setKwStart(nextValue);
-                  void persistRangeConfig({ kwStart: nextValue });
-                }}
-                min={1}
-                max={53}
-                strictTextBounds
-                hint={`KW ${String(kwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
-                inputTestId="input-reports-tourenplan-kw-start"
-                incrementTestId="button-reports-tourenplan-kw-start-up"
-                decrementTestId="button-reports-tourenplan-kw-start-down"
-              />
-              <SpinField
-                label="Anzahl Wochen"
-                value={weekCount}
-                onChange={(nextValue) => {
-                  setWeekCount(nextValue);
-                  void persistRangeConfig({ weekCount: nextValue });
-                }}
-                min={1}
-                max={52}
-                hint={`${weekCount} ${weekCount === 1 ? "Woche" : "Wochen"}`}
-                inputTestId="input-reports-tourenplan-week-count"
-                incrementTestId="button-reports-tourenplan-week-count-up"
-                decrementTestId="button-reports-tourenplan-week-count-down"
-              />
-            </div>
-            <RangeSummary
-              fromDate={kwRange?.fromDate ?? ""}
-              toDate={kwRange?.toDate ?? ""}
-              testId="reports-tourenplan-calendar-week-summary"
-            />
-          </div>
-        )}
+        <DateRangeKwRangePanel
+          mode={activeTab}
+          onModeChange={(nextMode) => {
+            setActiveTab(nextMode);
+            void persistRangeConfig({ activeTab: nextMode });
+          }}
+          fromDate={activeTab === "date" ? fromDate : (kwRange?.fromDate ?? "")}
+          toDate={activeTab === "date" ? toDate : (kwRange?.toDate ?? "")}
+          onFromDateChange={(nextValue) => {
+            setFromDate(nextValue);
+            void persistRangeConfig({ fromDate: nextValue });
+          }}
+          onToDateChange={(nextValue) => {
+            const resolved = resolveRequiredToDate(nextValue, defaultReportRange.toDate);
+            setToDate(resolved);
+            void persistRangeConfig({ toDate: resolved });
+          }}
+          kwStart={kwStart ?? defaultIsoWeek}
+          weekCount={weekCount}
+          onKwStartChange={(nextValue) => {
+            setKwStart(nextValue);
+            void persistRangeConfig({ kwStart: nextValue });
+          }}
+          onWeekCountChange={(nextValue) => {
+            setWeekCount(nextValue);
+            void persistRangeConfig({ weekCount: nextValue });
+          }}
+          togglePrefix="reports-tourenplan"
+          fromDateTestId="reports-tourenplan-from-date"
+          toDateTestId="reports-tourenplan-to-date"
+          kwStartInputTestId="input-reports-tourenplan-kw-start"
+          kwStartIncrementTestId="button-reports-tourenplan-kw-start-up"
+          kwStartDecrementTestId="button-reports-tourenplan-kw-start-down"
+          weekCountInputTestId="input-reports-tourenplan-week-count"
+          weekCountIncrementTestId="button-reports-tourenplan-week-count-up"
+          weekCountDecrementTestId="button-reports-tourenplan-week-count-down"
+          rangeSummaryTestId="reports-tourenplan-date-summary"
+        />
       </ReportConfigPanel>
 
       {isPreviewOpen && previewData && !isAppointmentDetailsLoading ? (

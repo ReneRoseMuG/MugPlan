@@ -56,7 +56,7 @@ export function ListLayout({
 
   return (
     <Card
-      className={cn("bg-card h-full flex flex-col overflow-hidden", className)}
+      className={cn("bg-card h-full flex flex-col overflow-visible", className)}
       data-view-mode-key={viewModeKey}
     >
       {!hideHeader && (
@@ -98,7 +98,7 @@ export function ListLayout({
       )}
 
       {footerSlot && (
-        <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+        <div className="sticky bottom-0 z-10 flex-shrink-0 border-t border-border px-6 py-4 bg-card">
           {footerSlot}
         </div>
       )}

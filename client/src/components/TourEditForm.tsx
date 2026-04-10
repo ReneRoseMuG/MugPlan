@@ -258,7 +258,7 @@ export function TourEditForm({
                   disabled={isSaving || isDeleting}
                   data-testid="button-delete-tour-form"
                 >
-                  {isDeleting ? "Loeschen..." : "Tour loeschen"}
+                  {isDeleting ? "Löschen..." : "Löschen"}
                 </Button>
               ) : null}
               <Button
@@ -267,7 +267,7 @@ export function TourEditForm({
                 onClick={onCancel}
                 data-testid="button-cancel-tour"
               >
-                Abbrechen
+                Zurück
               </Button>
             </div>
 
@@ -428,7 +428,7 @@ export function TourEditForm({
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setWeekPickerOpen(false)}>
-                Abbrechen
+                Zurück
               </Button>
               <Button type="button" onClick={confirmWeekInputSelection} data-testid="button-confirm-tour-week">
                 Weiter

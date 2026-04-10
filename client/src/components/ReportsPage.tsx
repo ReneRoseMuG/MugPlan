@@ -12,6 +12,7 @@ import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProj
 import { AuftragslistePrintLayout } from "@/components/reports/AuftragslistePrintLayout";
 import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
+import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
@@ -32,8 +33,6 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RangeSummary } from "@/components/ui/RangeSummary";
-import { SpinField } from "@/components/ui/SpinField";
 import {
   buildVorlauflistePreviewProject,
   VORLAUFLISTE_WRAPPED_TEXT_CLASSNAME,
@@ -723,6 +722,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   }, [auftragslisteRangeConfig?.activeTab]);
 
   useEffect(() => {
+    if (standaloneLaunch) return;
     setVorlauflisteFromDate(defaultReportRange.fromDate);
     setVorlauflisteToDate(defaultReportRange.toDate);
     setVorlauflisteKwStart(defaultIsoWeek);
@@ -735,7 +735,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     setAuftragslisteToDate(defaultReportRange.toDate);
     setAuftragslisteKwStart(defaultIsoWeek);
     setAuftragslisteWeekCount(defaultReportRange.weekCount);
-  }, [defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
+  }, [standaloneLaunch, defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
 
   useEffect(() => {
     if (!standaloneLaunch || hasAppliedStandaloneLaunchRef.current) {
@@ -1467,19 +1467,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     className="max-h-[90vh] max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
                     data-testid="dialog-reports-produktionsplanung-category-layout"
                   >
-                    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">Kategorie-Layout</p>
-                        <p className="mt-0.5 text-xs text-slate-400">Bloecke und Spaltenaufteilung</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsProduktionsplanungCategoryLayoutDialogOpen(false)}
-                        className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-                        data-testid="button-reports-produktionsplanung-category-layout-dismiss"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
+                    <div className="border-b border-slate-100 px-5 py-4">
+                      <p className="text-sm font-semibold text-slate-800">Kategorie-Layout</p>
+                      <p className="mt-0.5 text-xs text-slate-400">Bloecke und Spaltenaufteilung</p>
                     </div>
 
                     <div className="min-h-0 overflow-auto p-5">
@@ -1525,15 +1515,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 </Dialog>
               ) : null}
 
-              <div className="grid items-stretch gap-5 pb-2 md:grid-cols-2">
+              <div className="flex flex-col gap-5 pb-2">
                 <ReportConfigPanel
                   title="Vorlaufliste"
                   helpKey="reports-vorlaufliste"
-                  mode={activeVorlauflisteTab}
-                  onModeChange={(nextMode) => {
-                    setActiveVorlauflisteTab(nextMode);
-                    void persistVorlauflisteRangeConfig({ activeTab: nextMode });
-                  }}
                   actionButton={(
                     <button
                       type="button"
@@ -1571,96 +1556,50 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     />
                   )}
                   testId="reports-vorlaufliste-config-panel"
-                  togglePrefix="reports-vorlaufliste"
                 >
-                  {activeVorlauflisteTab === "date" ? (
-                    <div className="space-y-3" data-testid="reports-vorlaufliste-date-panel">
-                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
-                          <input
-                            type="date"
-                            value={vorlauflisteFromDate}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setVorlauflisteFromDate(nextValue);
-                              void persistVorlauflisteRangeConfig({ fromDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-vorlaufliste-from-date"
-                          />
-                        </div>
-                        <div className="flex flex-col items-end gap-1 text-right">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                          <input
-                            type="date"
-                            value={vorlauflisteToDate}
-                            onChange={(event) => {
-                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
-                              setVorlauflisteToDate(nextValue);
-                              void persistVorlauflisteRangeConfig({ toDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-vorlaufliste-to-date"
-                          />
-                        </div>
-                      </div>
-                      <RangeSummary
-                        fromDate={vorlauflisteFromDate}
-                        toDate={vorlauflisteToDate}
-                        testId="reports-vorlaufliste-date-summary"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3" data-testid="reports-vorlaufliste-calendar-week-panel">
-                      <div className="flex flex-wrap items-start gap-4">
-                        <SpinField
-                          label="KW Start"
-                          value={vorlauflisteKwStart ?? defaultIsoWeek}
-                          onChange={(nextValue) => {
-                            setVorlauflisteKwStart(nextValue);
-                            void persistVorlauflisteRangeConfig({ kwStart: nextValue });
-                          }}
-                          min={1}
-                          max={53}
-                          strictTextBounds
-                          hint={`KW ${String(vorlauflisteKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
-                          inputTestId="input-reports-vorlaufliste-kw-start"
-                          incrementTestId="button-reports-vorlaufliste-kw-start-up"
-                          decrementTestId="button-reports-vorlaufliste-kw-start-down"
-                        />
-                        <SpinField
-                          label="Anzahl Wochen"
-                          value={vorlauflisteWeekCount}
-                          onChange={(nextValue) => {
-                            setVorlauflisteWeekCount(nextValue);
-                            void persistVorlauflisteRangeConfig({ weekCount: nextValue });
-                          }}
-                          min={1}
-                          max={52}
-                          hint={`${vorlauflisteWeekCount} ${vorlauflisteWeekCount === 1 ? "Woche" : "Wochen"}`}
-                          inputTestId="input-reports-vorlaufliste-week-count"
-                          incrementTestId="button-reports-vorlaufliste-week-count-up"
-                          decrementTestId="button-reports-vorlaufliste-week-count-down"
-                        />
-                      </div>
-                      <RangeSummary
-                        fromDate={vorlauflisteKwRange?.fromDate ?? ""}
-                        toDate={vorlauflisteKwRange?.toDate ?? ""}
-                        testId="reports-vorlaufliste-calendar-week-summary"
-                      />
-                    </div>
-                  )}
+                  <DateRangeKwRangePanel
+                    mode={activeVorlauflisteTab}
+                    onModeChange={(nextMode) => {
+                      setActiveVorlauflisteTab(nextMode);
+                      void persistVorlauflisteRangeConfig({ activeTab: nextMode });
+                    }}
+                    fromDate={activeVorlauflisteTab === "date" ? vorlauflisteFromDate : (vorlauflisteKwRange?.fromDate ?? "")}
+                    toDate={activeVorlauflisteTab === "date" ? vorlauflisteToDate : (vorlauflisteKwRange?.toDate ?? "")}
+                    onFromDateChange={(nextValue) => {
+                      setVorlauflisteFromDate(nextValue);
+                      void persistVorlauflisteRangeConfig({ fromDate: nextValue });
+                    }}
+                    onToDateChange={(nextValue) => {
+                      const resolved = resolveRequiredToDate(nextValue, defaultReportRange.toDate);
+                      setVorlauflisteToDate(resolved);
+                      void persistVorlauflisteRangeConfig({ toDate: resolved });
+                    }}
+                    kwStart={vorlauflisteKwStart ?? defaultIsoWeek}
+                    weekCount={vorlauflisteWeekCount}
+                    onKwStartChange={(nextValue) => {
+                      setVorlauflisteKwStart(nextValue);
+                      void persistVorlauflisteRangeConfig({ kwStart: nextValue });
+                    }}
+                    onWeekCountChange={(nextValue) => {
+                      setVorlauflisteWeekCount(nextValue);
+                      void persistVorlauflisteRangeConfig({ weekCount: nextValue });
+                    }}
+                    togglePrefix="reports-vorlaufliste"
+                    fromDateTestId="reports-vorlaufliste-from-date"
+                    toDateTestId="reports-vorlaufliste-to-date"
+                    kwStartInputTestId="input-reports-vorlaufliste-kw-start"
+                    kwStartIncrementTestId="button-reports-vorlaufliste-kw-start-up"
+                    kwStartDecrementTestId="button-reports-vorlaufliste-kw-start-down"
+                    weekCountInputTestId="input-reports-vorlaufliste-week-count"
+                    weekCountIncrementTestId="button-reports-vorlaufliste-week-count-up"
+                    weekCountDecrementTestId="button-reports-vorlaufliste-week-count-down"
+                    rangeSummaryTestId="reports-vorlaufliste-date-summary"
+                  />
                 </ReportConfigPanel>
 
                 <ReportConfigPanel
                   title="Produktionsplanung"
                   helpKey="reports-produkte"
-                  mode={activeProduktionsplanungTab}
-                  onModeChange={(nextMode) => {
-                    setActiveProduktionsplanungTab(nextMode);
-                    void persistProduktionsplanungRangeConfig({ activeTab: nextMode });
-                  }}
                   actionButton={isAdmin ? (
                     <button
                       type="button"
@@ -1698,96 +1637,50 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     />
                   )}
                   testId="reports-produktionsplanung-config-panel"
-                  togglePrefix="reports-produktionsplanung"
                 >
-                  {activeProduktionsplanungTab === "date" ? (
-                    <div className="space-y-3" data-testid="reports-produktionsplanung-date-panel">
-                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
-                          <input
-                            type="date"
-                            value={produktionsplanungFromDate}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setProduktionsplanungFromDate(nextValue);
-                              void persistProduktionsplanungRangeConfig({ fromDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-produktionsplanung-from-date"
-                          />
-                        </div>
-                        <div className="flex flex-col items-end gap-1 text-right">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                          <input
-                            type="date"
-                            value={produktionsplanungToDate}
-                            onChange={(event) => {
-                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
-                              setProduktionsplanungToDate(nextValue);
-                              void persistProduktionsplanungRangeConfig({ toDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-produktionsplanung-to-date"
-                          />
-                        </div>
-                      </div>
-                      <RangeSummary
-                        fromDate={produktionsplanungFromDate}
-                        toDate={produktionsplanungToDate}
-                        testId="reports-produktionsplanung-date-summary"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3" data-testid="reports-produktionsplanung-calendar-week-panel">
-                      <div className="flex flex-wrap items-start gap-4">
-                        <SpinField
-                          label="KW Start"
-                          value={produktionsplanungKwStart ?? defaultIsoWeek}
-                          onChange={(nextValue) => {
-                            setProduktionsplanungKwStart(nextValue);
-                            void persistProduktionsplanungRangeConfig({ kwStart: nextValue });
-                          }}
-                          min={1}
-                          max={53}
-                          strictTextBounds
-                          hint={`KW ${String(produktionsplanungKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
-                          inputTestId="input-reports-produktionsplanung-kw-start"
-                          incrementTestId="button-reports-produktionsplanung-kw-start-up"
-                          decrementTestId="button-reports-produktionsplanung-kw-start-down"
-                        />
-                        <SpinField
-                          label="Anzahl Wochen"
-                          value={produktionsplanungWeekCount}
-                          onChange={(nextValue) => {
-                            setProduktionsplanungWeekCount(nextValue);
-                            void persistProduktionsplanungRangeConfig({ weekCount: nextValue });
-                          }}
-                          min={1}
-                          max={52}
-                          hint={`${produktionsplanungWeekCount} ${produktionsplanungWeekCount === 1 ? "Woche" : "Wochen"}`}
-                          inputTestId="input-reports-produktionsplanung-week-count"
-                          incrementTestId="button-reports-produktionsplanung-week-count-up"
-                          decrementTestId="button-reports-produktionsplanung-week-count-down"
-                        />
-                      </div>
-                      <RangeSummary
-                        fromDate={produktionsplanungKwRange?.fromDate ?? ""}
-                        toDate={produktionsplanungKwRange?.toDate ?? ""}
-                        testId="reports-produktionsplanung-calendar-week-summary"
-                      />
-                    </div>
-                  )}
+                  <DateRangeKwRangePanel
+                    mode={activeProduktionsplanungTab}
+                    onModeChange={(nextMode) => {
+                      setActiveProduktionsplanungTab(nextMode);
+                      void persistProduktionsplanungRangeConfig({ activeTab: nextMode });
+                    }}
+                    fromDate={activeProduktionsplanungTab === "date" ? produktionsplanungFromDate : (produktionsplanungKwRange?.fromDate ?? "")}
+                    toDate={activeProduktionsplanungTab === "date" ? produktionsplanungToDate : (produktionsplanungKwRange?.toDate ?? "")}
+                    onFromDateChange={(nextValue) => {
+                      setProduktionsplanungFromDate(nextValue);
+                      void persistProduktionsplanungRangeConfig({ fromDate: nextValue });
+                    }}
+                    onToDateChange={(nextValue) => {
+                      const resolved = resolveRequiredToDate(nextValue, defaultReportRange.toDate);
+                      setProduktionsplanungToDate(resolved);
+                      void persistProduktionsplanungRangeConfig({ toDate: resolved });
+                    }}
+                    kwStart={produktionsplanungKwStart ?? defaultIsoWeek}
+                    weekCount={produktionsplanungWeekCount}
+                    onKwStartChange={(nextValue) => {
+                      setProduktionsplanungKwStart(nextValue);
+                      void persistProduktionsplanungRangeConfig({ kwStart: nextValue });
+                    }}
+                    onWeekCountChange={(nextValue) => {
+                      setProduktionsplanungWeekCount(nextValue);
+                      void persistProduktionsplanungRangeConfig({ weekCount: nextValue });
+                    }}
+                    togglePrefix="reports-produktionsplanung"
+                    fromDateTestId="reports-produktionsplanung-from-date"
+                    toDateTestId="reports-produktionsplanung-to-date"
+                    kwStartInputTestId="input-reports-produktionsplanung-kw-start"
+                    kwStartIncrementTestId="button-reports-produktionsplanung-kw-start-up"
+                    kwStartDecrementTestId="button-reports-produktionsplanung-kw-start-down"
+                    weekCountInputTestId="input-reports-produktionsplanung-week-count"
+                    weekCountIncrementTestId="button-reports-produktionsplanung-week-count-up"
+                    weekCountDecrementTestId="button-reports-produktionsplanung-week-count-down"
+                    rangeSummaryTestId="reports-produktionsplanung-date-summary"
+                  />
                 </ReportConfigPanel>
 
                 <ReportConfigPanel
                   title="Auftragsliste"
                   helpKey="report-auftragsliste"
-                  mode={activeAuftragslisteTab}
-                  onModeChange={(nextMode) => {
-                    setActiveAuftragslisteTab(nextMode);
-                    void persistAuftragslisteRangeConfig({ activeTab: nextMode });
-                  }}
                   actionButton={(
                     <Popover open={isAuftragslisteCategoryPopoverOpen} onOpenChange={setIsAuftragslisteCategoryPopoverOpen}>
                       <PopoverTrigger asChild>
@@ -1875,86 +1768,45 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     />
                   )}
                   testId="reports-auftragsliste-config-panel"
-                  togglePrefix="reports-auftragsliste"
                 >
-                  {activeAuftragslisteTab === "date" ? (
-                    <div className="space-y-3" data-testid="reports-auftragsliste-date-panel">
-                      <div className="flex w-full flex-wrap items-end justify-between gap-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Beginn</span>
-                          <input
-                            type="date"
-                            value={auftragslisteFromDate}
-                            onChange={(event) => {
-                              const nextValue = event.target.value;
-                              setAuftragslisteFromDate(nextValue);
-                              void persistAuftragslisteRangeConfig({ fromDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-auftragsliste-from-date"
-                          />
-                        </div>
-                        <div className="flex flex-col items-end gap-1 text-right">
-                          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Datum Ende</span>
-                          <input
-                            type="date"
-                            value={auftragslisteToDate}
-                            onChange={(event) => {
-                              const nextValue = resolveRequiredToDate(event.target.value, defaultReportRange.toDate);
-                              setAuftragslisteToDate(nextValue);
-                              void persistAuftragslisteRangeConfig({ toDate: nextValue });
-                            }}
-                            className="w-40 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            data-testid="reports-auftragsliste-to-date"
-                          />
-                        </div>
-                      </div>
-                      <RangeSummary
-                        fromDate={auftragslisteFromDate}
-                        toDate={auftragslisteToDate}
-                        testId="reports-auftragsliste-date-summary"
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-3" data-testid="reports-auftragsliste-calendar-week-panel">
-                      <div className="flex flex-wrap items-start gap-4">
-                        <SpinField
-                          label="KW Start"
-                          value={auftragslisteKwStart ?? defaultIsoWeek}
-                          onChange={(nextValue) => {
-                            setAuftragslisteKwStart(nextValue);
-                            void persistAuftragslisteRangeConfig({ kwStart: nextValue });
-                          }}
-                          min={1}
-                          max={53}
-                          strictTextBounds
-                          hint={`KW ${String(auftragslisteKwStart ?? defaultIsoWeek).padStart(2, "0")} · ${defaultIsoWeekYear}`}
-                          inputTestId="input-reports-auftragsliste-kw-start"
-                          incrementTestId="button-reports-auftragsliste-kw-start-up"
-                          decrementTestId="button-reports-auftragsliste-kw-start-down"
-                        />
-                        <SpinField
-                          label="Anzahl Wochen"
-                          value={auftragslisteWeekCount}
-                          onChange={(nextValue) => {
-                            setAuftragslisteWeekCount(nextValue);
-                            void persistAuftragslisteRangeConfig({ weekCount: nextValue });
-                          }}
-                          min={1}
-                          max={52}
-                          hint={`${auftragslisteWeekCount} ${auftragslisteWeekCount === 1 ? "Woche" : "Wochen"}`}
-                          inputTestId="input-reports-auftragsliste-week-count"
-                          incrementTestId="button-reports-auftragsliste-week-count-up"
-                          decrementTestId="button-reports-auftragsliste-week-count-down"
-                        />
-                      </div>
-                      <RangeSummary
-                        fromDate={auftragslisteKwRange?.fromDate ?? ""}
-                        toDate={auftragslisteKwRange?.toDate ?? ""}
-                        testId="reports-auftragsliste-calendar-week-summary"
-                      />
-                    </div>
-                  )}
+                  <DateRangeKwRangePanel
+                    mode={activeAuftragslisteTab}
+                    onModeChange={(nextMode) => {
+                      setActiveAuftragslisteTab(nextMode);
+                      void persistAuftragslisteRangeConfig({ activeTab: nextMode });
+                    }}
+                    fromDate={activeAuftragslisteTab === "date" ? auftragslisteFromDate : (auftragslisteKwRange?.fromDate ?? "")}
+                    toDate={activeAuftragslisteTab === "date" ? auftragslisteToDate : (auftragslisteKwRange?.toDate ?? "")}
+                    onFromDateChange={(nextValue) => {
+                      setAuftragslisteFromDate(nextValue);
+                      void persistAuftragslisteRangeConfig({ fromDate: nextValue });
+                    }}
+                    onToDateChange={(nextValue) => {
+                      const resolved = resolveRequiredToDate(nextValue, defaultReportRange.toDate);
+                      setAuftragslisteToDate(resolved);
+                      void persistAuftragslisteRangeConfig({ toDate: resolved });
+                    }}
+                    kwStart={auftragslisteKwStart ?? defaultIsoWeek}
+                    weekCount={auftragslisteWeekCount}
+                    onKwStartChange={(nextValue) => {
+                      setAuftragslisteKwStart(nextValue);
+                      void persistAuftragslisteRangeConfig({ kwStart: nextValue });
+                    }}
+                    onWeekCountChange={(nextValue) => {
+                      setAuftragslisteWeekCount(nextValue);
+                      void persistAuftragslisteRangeConfig({ weekCount: nextValue });
+                    }}
+                    togglePrefix="reports-auftragsliste"
+                    fromDateTestId="reports-auftragsliste-from-date"
+                    toDateTestId="reports-auftragsliste-to-date"
+                    kwStartInputTestId="input-reports-auftragsliste-kw-start"
+                    kwStartIncrementTestId="button-reports-auftragsliste-kw-start-up"
+                    kwStartDecrementTestId="button-reports-auftragsliste-kw-start-down"
+                    weekCountInputTestId="input-reports-auftragsliste-week-count"
+                    weekCountIncrementTestId="button-reports-auftragsliste-week-count-up"
+                    weekCountDecrementTestId="button-reports-auftragsliste-week-count-down"
+                    rangeSummaryTestId="reports-auftragsliste-date-summary"
+                  />
                 </ReportConfigPanel>
 
                 <TourenplanReportPanel
