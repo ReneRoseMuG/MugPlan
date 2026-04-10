@@ -1,4 +1,5 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import type { InsertAppointment } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
@@ -1401,7 +1402,14 @@ export async function cancelAppointment(
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
 
-  const cancellationTag = await tagRelationsService.ensureAppointmentCancellationTag();
+  const cancellationTag = await tagRelationsService.getTagByName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+  if (!cancellationTag) {
+    throw new AppointmentError(
+      "System-Tag 'Storniert' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      409,
+      "BUSINESS_CONFLICT",
+    );
+  }
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;

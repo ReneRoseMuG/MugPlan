@@ -22,7 +22,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
 import {
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -50,14 +50,14 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
     await admin.get("/api/tags?domain=appointment").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
@@ -66,7 +66,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string; color: string }>)).toContainEqual(
         expect.objectContaining({
-          name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
+          name: MANAGED_COMPLAINT_TAG_NAME,
           color: "#f97316",
         }),
       );
@@ -81,14 +81,14 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=customer").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
     await admin.get("/api/tags?domain=employee").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
-      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
 
@@ -100,7 +100,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
         (tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
       );
       managedReportTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean }>).find(
-        (tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME,
+        (tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME,
       );
       managedSpecialMeasureTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
         (tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME,

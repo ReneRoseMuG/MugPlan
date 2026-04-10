@@ -44,7 +44,7 @@ import {
 import * as projectsService from "../../../server/services/projectsService";
 import {
   MANAGED_REMARKS_TAG_NAME,
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -350,7 +350,7 @@ describe("FT26 integration: report produktionsplanung", () => {
 
   it("excludes cancelled and reklamation projects from groups and projectRows", async () => {
     const admin = await loginAdminAgent(app);
-    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+    const reportExclusionTag = await ensureExactTag(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
     const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
     const specialMeasureTag = await ensureManagedSpecialMeasureTag();
     const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");

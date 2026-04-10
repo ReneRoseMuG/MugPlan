@@ -34,11 +34,11 @@ import {
 } from "../../helpers/testDataFactory";
 import {
   MANAGED_REMARKS_TAG_NAME,
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   isManagedRemarksTagName,
-  isManagedReportExclusionTagName,
+  isManagedComplaintTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
 } from "../../../shared/appointmentCancellation";
@@ -118,7 +118,7 @@ describe("integration: produktionsplanung project rows consistency", () => {
   it("matches a DB reference with strict exclusion for Reklamation and Storno", async () => {
     const admin = await loginAdminAgent(app);
     const cancellationTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
-    const reportExclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+    const reportExclusionTag = await ensureExactTag(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
     const specialMeasureTag = await ensureExactTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
     const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
     const tourA = await createTourFixture("#1d4ed8");
@@ -226,7 +226,7 @@ describe("integration: produktionsplanung project rows consistency", () => {
             isManagedSpecialMeasureTagName(tagName) || isManagedRemarksTagName(tagName));
 
           return hasCardReason && !combinedTagNames.some((tagName) =>
-            isManagedReportExclusionTagName(tagName) || isReservedAppointmentCancellationTagName(tagName));
+            isManagedComplaintTagName(tagName) || isReservedAppointmentCancellationTagName(tagName));
         })
         .map((row) => row.projectId),
     )).sort((left, right) => left - right);
@@ -240,4 +240,3 @@ describe("integration: produktionsplanung project rows consistency", () => {
     ]));
   });
 });
-

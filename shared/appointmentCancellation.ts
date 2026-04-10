@@ -1,12 +1,15 @@
 export const RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME = "Storniert";
-export const RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR = "#ef4444";
-export const MANAGED_REPORT_EXCLUSION_TAG_NAME = "Reklamation";
-export const MANAGED_REPORT_EXCLUSION_TAG_COLOR = "#f97316";
+export const RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR = "#2C2C2A";
+export const MANAGED_COMPLAINT_TAG_NAME = "Reklamation";
+export const MANAGED_COMPLAINT_TAG_COLOR = "#FF011B";
 export const MANAGED_SPECIAL_MEASURE_TAG_NAME = "Sondermaß";
-export const MANAGED_SPECIAL_MEASURE_TAG_COLOR = "#1e3a8a";
+export const MANAGED_SPECIAL_MEASURE_TAG_COLOR = "#BA7517";
 export const MANAGED_MESSE_TAG_NAME = "Messe Aufbau/Abbau";
-export const MANAGED_MESSE_TAG_COLOR = "#4a7c3f";
+export const MANAGED_MESSE_TAG_COLOR = "#3465A4";
 export const MANAGED_REMARKS_TAG_NAME = "Anmerkungen";
+export const MANAGED_REMARKS_TAG_COLOR = "#888780";
+export const RESERVED_VACANT_TAG_NAME = "Vakant";
+export const RESERVED_VACANT_TAG_COLOR = "#D4537E";
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
 export type TagPickerDomain = "appointment" | "project" | "customer" | "employee";
@@ -19,8 +22,8 @@ export function isReservedAppointmentCancellationTagName(value: string): boolean
   return normalizeTagName(value) === normalizeTagName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
 }
 
-export function isManagedReportExclusionTagName(value: string): boolean {
-  return normalizeTagName(value) === normalizeTagName(MANAGED_REPORT_EXCLUSION_TAG_NAME);
+export function isManagedComplaintTagName(value: string): boolean {
+  return normalizeTagName(value) === normalizeTagName(MANAGED_COMPLAINT_TAG_NAME);
 }
 
 export function isManagedSpecialMeasureTagName(value: string): boolean {
@@ -37,9 +40,10 @@ export function isManagedRemarksTagName(value: string): boolean {
 
 export function isProtectedSystemTagName(value: string): boolean {
   return isReservedAppointmentCancellationTagName(value)
-    || isManagedReportExclusionTagName(value)
+    || isManagedComplaintTagName(value)
     || isManagedSpecialMeasureTagName(value)
-    || isManagedMesseTagName(value);
+    || isManagedMesseTagName(value)
+    || normalizeTagName(value) === normalizeTagName(RESERVED_VACANT_TAG_NAME);
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {

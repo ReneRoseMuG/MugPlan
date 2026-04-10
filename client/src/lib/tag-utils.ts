@@ -1,5 +1,5 @@
 import {
-  isManagedReportExclusionTagName,
+  isManagedComplaintTagName,
   isManagedSpecialMeasureTagName,
 } from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
@@ -46,7 +46,7 @@ export function mergeUniqueTags(...collections: Array<readonly Tag[] | null | un
 
 export function filterTourPrintTags(tags: readonly Tag[]): Tag[] {
   return tags.filter((tag) => (
-    isManagedReportExclusionTagName(tag.name)
+    isManagedComplaintTagName(tag.name)
     || isManagedSpecialMeasureTagName(tag.name)
   ));
 }

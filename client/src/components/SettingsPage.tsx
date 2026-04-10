@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
 
@@ -192,6 +192,34 @@ export function SettingsPage() {
     },
   });
 
+  const systemSeedMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(api.admin.systemSeed.path, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "System-Seed konnte nicht ausgeführt werden");
+      }
+      return response.json() as Promise<{ logLines: string[] }>;
+    },
+    onMutate: () => {
+      setSystemSeedError(null);
+      setSystemSeedLogLines([]);
+    },
+    onSuccess: (payload) => {
+      setSystemSeedLogLines(payload.logLines);
+    },
+    onError: (error) => {
+      setSystemSeedError(error instanceof Error ? error.message : "System-Seed konnte nicht ausgeführt werden");
+    },
+  });
+
   const resolvedPreviewValue = useMemo(() => {
     const value = previewSetting?.resolvedValue;
     if (value === "small" || value === "medium" || value === "large") {
@@ -317,6 +345,8 @@ export function SettingsPage() {
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
   const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
   const [authTwoFactorEnabledSaved, setAuthTwoFactorEnabledSaved] = useState(false);
+  const [systemSeedError, setSystemSeedError] = useState<string | null>(null);
+  const [systemSeedLogLines, setSystemSeedLogLines] = useState<string[]>([]);
   const [isRunningBackupNow, setIsRunningBackupNow] = useState(false);
   const [backupRunInfo, setBackupRunInfo] = useState<string | null>(null);
   const [backupRunError, setBackupRunError] = useState<string | null>(null);
@@ -1113,6 +1143,31 @@ export function SettingsPage() {
                     </div>
                     {authTwoFactorEnabledSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {authTwoFactorEnabledError && <p className="mt-1 text-xs text-destructive">{authTwoFactorEnabledError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="settings-system-seed-section">
+                    <p className="font-semibold text-slate-900 text-sm">System-Stammdaten</p>
+                    <p className="mb-3 text-xs text-slate-500">
+                      Führt den System-Seed für Tags, Touren und Notizvorlagen auf den definierten Sollzustand aus.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        size="sm"
+                        onClick={() => systemSeedMutation.mutate()}
+                        disabled={systemSeedMutation.isPending || isSaving}
+                        data-testid="button-run-system-seed"
+                      >
+                        {systemSeedMutation.isPending ? "System-Seed läuft..." : "System-Seed ausführen"}
+                      </Button>
+                    </div>
+                    {systemSeedError && <p className="mt-2 text-xs text-destructive">{systemSeedError}</p>}
+                    {systemSeedLogLines.length > 0 ? (
+                      <ul className="mt-3 space-y-1 text-xs text-slate-700" data-testid="system-seed-log-lines">
+                        {systemSeedLogLines.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </div>
                 </div>
               ) : (

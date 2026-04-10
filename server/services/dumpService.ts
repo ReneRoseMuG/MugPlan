@@ -369,6 +369,7 @@ function buildDumpManifest(
     exportedAt,
     schemaRevision: getSchemaRevision(),
     tables,
+    missingTableKeys: [],
     uploads: buildUploadsSummary(uploads),
   };
 }

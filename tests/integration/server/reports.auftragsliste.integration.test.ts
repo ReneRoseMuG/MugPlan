@@ -35,7 +35,7 @@ import {
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 import {
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import { tags, type Tag } from "../../../shared/schema";
@@ -210,7 +210,7 @@ describe("integration: report auftragsliste", () => {
 
   it("excludes reklamation projects and falls back to the earliest cancelled appointment", async () => {
     const admin = await loginAdminAgent(app);
-    const exclusionTag = await ensureExactTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#dc2626");
+    const exclusionTag = await ensureExactTag(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
     const cancelledTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
     const excludedProject = await createAuftragslisteProjectFixture({
       prefix: "AL-EXCLUDED",

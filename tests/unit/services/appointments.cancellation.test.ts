@@ -34,7 +34,7 @@ vi.mock("../../../server/repositories/projectsRepository", () => ({
 }));
 
 vi.mock("../../../server/services/tagRelationsService", () => ({
-  ensureAppointmentCancellationTag: vi.fn(),
+  getTagByName: vi.fn(),
 }));
 
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
@@ -56,10 +56,10 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
     });
     appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
 
-    tagRelationsServiceMock.ensureAppointmentCancellationTag.mockResolvedValue({
+    tagRelationsServiceMock.getTagByName.mockResolvedValue({
       id: 77,
       name: "Storniert",
-      color: "#ef4444",
+      color: "#2C2C2A",
       isDefault: true,
       version: 1,
       createdAt: new Date(),

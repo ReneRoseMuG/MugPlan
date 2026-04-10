@@ -14,12 +14,6 @@
   UpdateProductCategory,
 } from "@shared/schema";
 import {
-  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-  MANAGED_REPORT_EXCLUSION_TAG_COLOR,
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
-  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
-  MANAGED_SPECIAL_MEASURE_TAG_NAME,
-  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   isProtectedSystemTagName,
 } from "@shared/appointmentCancellation";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -131,24 +125,6 @@ function normalizeOptionalText(value: string | null | undefined): string | null 
 function isProtectedSystemTag(tag: Pick<Tag, "name" | "isDefault"> | null | undefined): boolean {
   if (!tag) return false;
   return Boolean(tag.isDefault) || isProtectedSystemTagName(tag.name);
-}
-
-async function ensureProtectedTagDefaults(): Promise<void> {
-  await masterDataRepository.ensureTagDefinition({
-    name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
-    color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-    isDefault: true,
-  });
-  await masterDataRepository.ensureTagDefinition({
-    name: MANAGED_REPORT_EXCLUSION_TAG_NAME,
-    color: MANAGED_REPORT_EXCLUSION_TAG_COLOR,
-    isDefault: true,
-  });
-  await masterDataRepository.ensureTagDefinition({
-    name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
-    color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
-    isDefault: true,
-  });
 }
 
 function normalizeProductInput(input: InsertProduct): InsertProduct {
@@ -836,13 +812,11 @@ export async function deleteComponentsByCategory(
 
 export async function listTags(roleKey: CanonicalRoleKey): Promise<Tag[]> {
   requireAdmin(roleKey);
-  await ensureProtectedTagDefaults();
   return masterDataRepository.listTags();
 }
 
 export async function createTag(input: { name: string; color: string }, roleKey: CanonicalRoleKey): Promise<Tag> {
   requireAdmin(roleKey);
-  await ensureProtectedTagDefaults();
   try {
     return await masterDataRepository.createTag(input);
   } catch (error) {

@@ -20,7 +20,7 @@ import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
 import {
   hasAppointmentCancellationTag,
   isManagedRemarksTag,
-  hasManagedReportExclusionTag,
+  hasManagedComplaintTag,
   isAppointmentCancellationTag,
   isManagedSpecialMeasureTag,
 } from "../lib/appointmentCancellation";
@@ -190,7 +190,7 @@ type ProjectAppointmentTagRow = {
 };
 
 type ProjectReportTagState = {
-  hasReportExclusion: boolean;
+  hasComplaintTag: boolean;
   cancellationTag: Tag | null;
   specialMeasureTag: Tag | null;
   remarksTag: Tag | null;
@@ -275,7 +275,7 @@ export async function getReportConfigDefaults(): Promise<ReportConfigDefaults> {
 
 function createEmptyProjectReportTagState(): ProjectReportTagState {
   return {
-    hasReportExclusion: false,
+    hasComplaintTag: false,
     cancellationTag: null,
     specialMeasureTag: null,
     remarksTag: null,
@@ -297,7 +297,7 @@ function buildProjectReportTagStateByProjectId(
   for (const projectId of projectIds) {
     const projectTags = projectTagsByProjectId.get(projectId) ?? [];
     stateByProjectId.set(projectId, {
-      hasReportExclusion: hasManagedReportExclusionTag(projectTags),
+      hasComplaintTag: hasManagedComplaintTag(projectTags),
       cancellationTag: findFirstMatchingTag(projectTags, isAppointmentCancellationTag),
       specialMeasureTag: findFirstMatchingTag(projectTags, isManagedSpecialMeasureTag),
       remarksTag: findFirstMatchingTag(projectTags, isManagedRemarksTag),
@@ -308,7 +308,7 @@ function buildProjectReportTagStateByProjectId(
     const current = stateByProjectId.get(row.projectId) ?? createEmptyProjectReportTagState();
     const appointmentTags = appointmentTagsByAppointmentId.get(row.appointmentId) ?? [];
 
-    current.hasReportExclusion ||= hasManagedReportExclusionTag(appointmentTags);
+    current.hasComplaintTag ||= hasManagedComplaintTag(appointmentTags);
     current.cancellationTag ??= findFirstMatchingTag(appointmentTags, isAppointmentCancellationTag);
     current.specialMeasureTag ??= findFirstMatchingTag(appointmentTags, isManagedSpecialMeasureTag);
     current.remarksTag ??= findFirstMatchingTag(appointmentTags, isManagedRemarksTag);
@@ -402,7 +402,7 @@ async function buildVorlauflisteProjectMeta(params: {
 
   for (const row of normalizedAppointmentRows) {
     const projectTagState = projectReportTagStateByProjectId.get(row.projectId) ?? createEmptyProjectReportTagState();
-    if (projectTagState.hasReportExclusion) {
+    if (projectTagState.hasComplaintTag) {
       continue;
     }
 
@@ -682,7 +682,7 @@ export async function getProduktionsplanung(params: {
 
   const eligibleProjectIds = projectMeta.sortedProjectIds.filter((projectId) => {
     const tagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
-    return !tagState.hasReportExclusion && !tagState.cancellationTag;
+    return !tagState.hasComplaintTag && !tagState.cancellationTag;
   });
 
   if (eligibleProjectIds.length === 0) {
@@ -946,7 +946,7 @@ export async function getAuftragsliste(params: {
   const componentCategoryIdsForReport = new Set(componentCategoriesForReport.map((category) => category.id));
   const eligibleProjectIds = projectMeta.sortedProjectIds.filter((projectId) => {
     const tagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
-    return !tagState.hasReportExclusion;
+    return !tagState.hasComplaintTag;
   });
 
   if (eligibleProjectIds.length === 0) {

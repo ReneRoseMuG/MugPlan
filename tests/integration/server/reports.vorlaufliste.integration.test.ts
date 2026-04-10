@@ -26,7 +26,7 @@ import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import {
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
@@ -211,21 +211,21 @@ async function ensureReservedCancellationTag() {
   return createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
 }
 
-async function ensureManagedReportExclusionTag() {
+async function ensureManagedComplaintTag() {
   const [existing] = await db
     .select({
       id: tags.id,
       name: tags.name,
     })
     .from(tags)
-    .where(eq(tags.name, MANAGED_REPORT_EXCLUSION_TAG_NAME))
+    .where(eq(tags.name, MANAGED_COMPLAINT_TAG_NAME))
     .limit(1);
 
   if (existing) {
     return existing;
   }
 
-  return createExactTagFixture(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+  return createExactTagFixture(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
 }
 
 async function ensureManagedSpecialMeasureTag() {
@@ -561,7 +561,7 @@ describe("FT26 integration: report vorlaufliste", () => {
 
   it("excludes projects tagged with Reklamation on project or appointment level from the report", async () => {
     const admin = await loginAdminAgent(app);
-    const managedReportTag = await ensureManagedReportExclusionTag();
+    const managedReportTag = await ensureManagedComplaintTag();
 
     const projectExcludedByProjectTag = await createReportProjectFixture({
       prefix: "FT26-REKL-PROJECT",

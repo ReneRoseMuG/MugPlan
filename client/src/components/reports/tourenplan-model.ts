@@ -2,7 +2,7 @@ import { format, getISOWeek, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import {
   isManagedMesseTagName,
-  isManagedReportExclusionTagName,
+  isManagedComplaintTagName,
   isManagedSpecialMeasureTagName,
 } from "@shared/appointmentCancellation";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
@@ -91,7 +91,7 @@ function mergeUniqueTags(...collections: Array<readonly Tag[] | null | undefined
 
 export function resolveTourenplanTagKind(appointment: Pick<TourenplanPreviewAppointment, "appointmentTags" | "customerTags" | "projectTags">): TourenplanResolvedTagKind {
   const tags = mergeUniqueTags(appointment.appointmentTags, appointment.customerTags, appointment.projectTags);
-  if (tags.some((tag) => isManagedReportExclusionTagName(tag.name))) {
+  if (tags.some((tag) => isManagedComplaintTagName(tag.name))) {
     return "reklamation";
   }
   if (tags.some((tag) => isManagedSpecialMeasureTagName(tag.name))) {
@@ -114,24 +114,24 @@ export function resolveTourenplanTagPresentation(
       ? {
           kind,
           label: "Reklamation",
-          borderColor: "#f97316",
-          headerBackground: "#fed7aa",
-          headerTextColor: "#7c2d12",
-          headerDividerColor: "rgba(124,45,18,0.18)",
-          dateTextColor: "#7c2d12",
-          pillBackground: "#ffedd5",
-          pillTextColor: "#9a3412",
+          borderColor: "#FF011B",
+          headerBackground: "#ffe1e5",
+          headerTextColor: "#8f0010",
+          headerDividerColor: "rgba(143,0,16,0.18)",
+          dateTextColor: "#8f0010",
+          pillBackground: "#fff1f3",
+          pillTextColor: "#b00014",
         }
       : {
           kind,
           label: "Reklamation",
-          borderColor: "#f97316",
+          borderColor: "#FF011B",
           headerBackground: "#ffffff",
           headerTextColor: "#0f172a",
           headerDividerColor: "#e2e8f0",
-          dateTextColor: "#c2410c",
-          pillBackground: "#ffedd5",
-          pillTextColor: "#9a3412",
+          dateTextColor: "#b00014",
+          pillBackground: "#fff1f3",
+          pillTextColor: "#b00014",
         };
   }
 
@@ -140,24 +140,24 @@ export function resolveTourenplanTagPresentation(
       ? {
           kind,
           label: "Sondermaß",
-          borderColor: "#3b5bc8",
-          headerBackground: "#3b5bc8",
+          borderColor: "#BA7517",
+          headerBackground: "#BA7517",
           headerTextColor: "#ffffff",
           headerDividerColor: "rgba(255,255,255,0.22)",
           dateTextColor: "#ffffff",
-          pillBackground: "#dbeafe",
-          pillTextColor: "#1e3a8a",
+          pillBackground: "#f7e7d1",
+          pillTextColor: "#7a4b08",
         }
       : {
           kind,
           label: "Sondermaß",
-          borderColor: "#3b5bc8",
+          borderColor: "#BA7517",
           headerBackground: "#ffffff",
           headerTextColor: "#0f172a",
           headerDividerColor: "#e2e8f0",
-          dateTextColor: "#1e3a8a",
-          pillBackground: "#dbeafe",
-          pillTextColor: "#1e3a8a",
+          dateTextColor: "#7a4b08",
+          pillBackground: "#f7e7d1",
+          pillTextColor: "#7a4b08",
         };
   }
 
@@ -166,24 +166,24 @@ export function resolveTourenplanTagPresentation(
       ? {
           kind,
           label: "Messe Aufbau/Abbau",
-          borderColor: "#4a7c3f",
-          headerBackground: "#4a7c3f",
+          borderColor: "#3465A4",
+          headerBackground: "#3465A4",
           headerTextColor: "#ffffff",
           headerDividerColor: "rgba(255,255,255,0.22)",
           dateTextColor: "#ffffff",
-          pillBackground: "#dcfce7",
-          pillTextColor: "#166534",
+          pillBackground: "#dce9f8",
+          pillTextColor: "#234b7c",
         }
       : {
           kind,
           label: "Messe Aufbau/Abbau",
-          borderColor: "#4a7c3f",
+          borderColor: "#3465A4",
           headerBackground: "#ffffff",
           headerTextColor: "#0f172a",
           headerDividerColor: "#e2e8f0",
-          dateTextColor: "#3a6130",
-          pillBackground: "#dcfce7",
-          pillTextColor: "#166534",
+          dateTextColor: "#234b7c",
+          pillBackground: "#dce9f8",
+          pillTextColor: "#234b7c",
         };
   }
 

@@ -61,26 +61,12 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.listTags).not.toHaveBeenCalled();
   });
 
-  it("ensures all protected system tags before listing tags", async () => {
+  it("listet Tags ohne implizites Nachziehen von System-Tags", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
     await listTags("ADMIN");
 
-    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
-      name: "Storniert",
-      color: "#ef4444",
-      isDefault: true,
-    });
-    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
-      name: "Reklamation",
-      color: "#f97316",
-      isDefault: true,
-    });
-    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
-      name: "Sondermaß",
-      color: "#1e3a8a",
-      isDefault: true,
-    });
+    expect(repositoryMocks.ensureTagDefinition).not.toHaveBeenCalled();
     expect(repositoryMocks.listTags).toHaveBeenCalledOnce();
   });
 
@@ -307,20 +293,11 @@ describe("FT28 unit: masterDataService tags", () => {
     expect(repositoryMocks.deleteTagWithVersion).not.toHaveBeenCalled();
   });
 
-  it("ensures the reserved cancellation tag with managed color and isDefault", async () => {
+  it("erzwingt den System-Seed nicht mehr beim Tag-Listing", async () => {
     repositoryMocks.listTags.mockResolvedValueOnce([]);
 
     await listTags("ADMIN");
 
-    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
-      name: "Storniert",
-      color: "#ef4444",
-      isDefault: true,
-    });
-    expect(repositoryMocks.ensureTagDefinition).toHaveBeenCalledWith({
-      name: "Sondermaß",
-      color: "#1e3a8a",
-      isDefault: true,
-    });
+    expect(repositoryMocks.ensureTagDefinition).not.toHaveBeenCalled();
   });
 });

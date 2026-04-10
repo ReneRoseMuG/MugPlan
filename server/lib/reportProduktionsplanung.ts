@@ -1,6 +1,6 @@
 import {
+  isManagedComplaintTagName,
   isManagedRemarksTagName,
-  isManagedReportExclusionTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
 } from "@shared/appointmentCancellation";
@@ -88,7 +88,7 @@ export function collectManagedReportCardReasonTags(params: {
 }): Tag[] {
   const reasons = [...params.projectTags, ...params.appointmentTags]
     .filter((tag) =>
-      !isManagedReportExclusionTagName(tag.name)
+      !isManagedComplaintTagName(tag.name)
       && !isReservedAppointmentCancellationTagName(tag.name)
       && (isManagedSpecialMeasureTagName(tag.name) || isManagedRemarksTagName(tag.name)));
 

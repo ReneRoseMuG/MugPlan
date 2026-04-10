@@ -110,11 +110,11 @@ describe("FT27 integration: master data admin API", () => {
     "Dachvarianten",
     "Fenster",
     "Inneneinrichtung",
-    "Ã–fen",
-    "RÃ¼ckwÃ¤nde",
+    "Öfen",
+    "Rückwände",
     "Steuerungen",
-    "TÃ¼ren",
-    "VorderwÃ¤nde",
+    "Türen",
+    "Vorderwände",
   ] as const;
 
   it("creates, updates and deletes a product category as admin", async () => {

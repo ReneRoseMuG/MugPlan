@@ -3544,6 +3544,17 @@ export const api = {
         413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
       },
     },
+    systemSeed: {
+      method: "POST" as const,
+      path: "/api/admin/system-seed",
+      input: z.object({}).strict(),
+      responses: {
+        200: z.object({
+          logLines: z.array(z.string()),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
   },
   backups: {
     runNow: {

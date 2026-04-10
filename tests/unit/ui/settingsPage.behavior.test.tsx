@@ -22,6 +22,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useSettingsMock = vi.fn();
 const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
@@ -29,6 +30,7 @@ vi.mock("@/hooks/useSettings", () => ({
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  useMutation: (options: unknown) => useMutationMock(options),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -59,6 +61,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     });
     useSettingsMock.mockReset();
     useQueryMock.mockReset();
+    useMutationMock.mockReset();
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map([
         ["helpTextPreviewSize", { resolvedValue: "large", resolvedScope: "DEFAULT" }],
@@ -83,6 +86,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
       error: null,
       refetch: vi.fn(),
     });
+    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false });
   });
 
   it("rendert die Sidebar-Navigation mit allen vier Eintraegen", () => {

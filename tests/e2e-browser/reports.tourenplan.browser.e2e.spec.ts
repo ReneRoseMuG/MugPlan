@@ -22,7 +22,7 @@ import * as customerNotesService from "../../server/services/customerNotesServic
 import * as projectNotesService from "../../server/services/projectNotesService";
 import {
   MANAGED_MESSE_TAG_NAME,
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
 } from "../../shared/appointmentCancellation";
 import { tags, type Tag } from "../../shared/schema";
@@ -92,7 +92,7 @@ async function ensureTag(name: string, color: string): Promise<Tag> {
 
 test("renders the Tourenplan report with real tag, shortcode and print-note data", async ({ page }) => {
   const tour = await createTourFixture("#2266aa");
-  const reklamationTag = await ensureTag(MANAGED_REPORT_EXCLUSION_TAG_NAME, "#f97316");
+  const reklamationTag = await ensureTag(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
   const sondermassTag = await ensureTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
   const messeTag = await ensureTag(MANAGED_MESSE_TAG_NAME, "#4a7c3f");
 

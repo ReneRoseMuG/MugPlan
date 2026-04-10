@@ -16,7 +16,7 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 import {
-  MANAGED_REPORT_EXCLUSION_TAG_NAME,
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../shared/appointmentCancellation";
@@ -44,7 +44,7 @@ async function readSystemTags(page: Page) {
   const tagsResponse = await page.request.get("/api/admin/master-data/tags");
   expect(tagsResponse.ok()).toBeTruthy();
   const allTags = await tagsResponse.json() as Array<{ id: number; name: string }>;
-  const reportExclusionTag = allTags.find((tag) => tag.name === MANAGED_REPORT_EXCLUSION_TAG_NAME);
+  const reportExclusionTag = allTags.find((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME);
   const specialMeasureTag = allTags.find((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME);
   const cancellationTag = allTags.find((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
 
