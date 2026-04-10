@@ -6,12 +6,14 @@
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
  * - Monitoring wird live aus Terminmutationen berechnet, nicht aus dem Auth-Flow.
  * - Stornierte Termine werden im Monitoring ignoriert.
+ * - FT04-Wochenplan-Entfernungen machen unterbesetzte Tour-Termine unmittelbar im Monitoring sichtbar.
  *
  * Fehlerfaelle:
  * - Reader kann Monitoring lesen oder konfigurieren.
  * - Vergangene bzw. ausserhalb des Horizonts liegende Termine erscheinen in der Trefferliste.
  * - Terminmutationen spiegeln sich nicht im anschliessenden Monitoring wider.
  * - Stornierte Termine bleiben trotz Storno als Treffer sichtbar.
+ * - Unterbesetzungen aus der Wochenplanung bleiben fuer FT31 unsichtbar.
  *
  * Ziel:
  * FT31 end-to-end ueber API-, Persistenz- und Mutationspfad absichern.
@@ -22,7 +24,7 @@ import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
-import { appointments, tags } from "../../../shared/schema";
+import { appointments, tags, tourWeekEmployees } from "../../../shared/schema";
 import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "../../../shared/appointmentCancellation";
 import { createApiTestApp, loginAgent } from "../../helpers/apiTestHarness";
 import {
@@ -33,6 +35,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
+import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 
 let app: Awaited<ReturnType<typeof createApiTestApp>>;
 let userCounter = 1;
@@ -301,6 +304,63 @@ describe("FT31 integration: monitoring", () => {
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
       expect(body).toEqual([]);
+    });
+  });
+
+  it("surfaces under-staffing after a FT04 week-plan removal", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const customer = await createCustomerFixture("FT31-WEEK-REMOVE-CUST");
+    const tour = await createTourFixture("#227799");
+    const weekEmployee = await createEmployeeFixture("FT31-WEEK-REMOVE");
+    const sideEmployee = await createEmployeeFixture("FT31-WEEK-SIDE");
+    const startDate = getRelativeBerlinDate(15);
+    const parsedStartDate = parseISO(startDate);
+    const isoYear = getISOWeekYear(parsedStartDate);
+    const isoWeek = getISOWeek(parsedStartDate);
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: false,
+      horizonDays: 30,
+      minimumEmployees: 2,
+    });
+
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      tourId: tour.id,
+      startDate,
+      employeeIds: [weekEmployee.id, sideEmployee.id],
+    });
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toEqual([]);
+    });
+
+    const insertResult = await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear,
+      isoWeek,
+      employeeId: weekEmployee.id,
+    });
+    const assignmentId = Number((insertResult as any)?.[0]?.insertId ?? (insertResult as any)?.insertId);
+
+    await admin.agent
+      .delete(`/api/tours/${tour.id}/week-employees/${assignmentId}`)
+      .send({
+        isoYear,
+        isoWeek,
+        selectedAppointmentIds: [appointment.id],
+      })
+      .expect(200);
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        appointmentId: appointment.id,
+        startDate,
+        tourName: tour.name,
+        employeeCount: 1,
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      });
     });
   });
 });

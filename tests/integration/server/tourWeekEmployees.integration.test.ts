@@ -6,12 +6,14 @@
  * - Die neue KW-Unique-Regel blockiert Mehrfachzuordnungen ueber Touren hinweg.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
  * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Pruefung fuer Konfliktfaelle.
+ * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
  * - Ein Mitarbeiter kann trotz bestehender KW-Zuordnung in eine zweite Tour derselben Woche eingeplant werden.
  * - Remove-Preview verliert die Unterbesetzungswarnung.
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
+ * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -281,5 +283,61 @@ describe("tourWeekEmployees integration", () => {
         }),
       ]),
     );
+  });
+
+  it("bumps the appointment version so stale saves are rejected after a week-plan removal", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#114488");
+    const project = await createProjectFixture({ prefix: "TWE-VERSION" });
+    const employee = await createEmployeeFixture("TWE-VERSION-EMP");
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(22),
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const isoWeek = resolveIsoWeek(appointment!.startDate);
+
+    const detailBeforeRemoval = await admin.get(`/api/appointments/${appointment!.id}`).expect(200);
+    const staleVersion = Number(detailBeforeRemoval.body.version);
+
+    const insertResult = await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: isoWeek.isoYear,
+      isoWeek: isoWeek.isoWeek,
+      employeeId: employee.id,
+    });
+    const assignmentId = Number((insertResult as any)?.[0]?.insertId ?? (insertResult as any)?.insertId);
+
+    await admin
+      .delete(`/api/tours/${tour.id}/week-employees/${assignmentId}`)
+      .send({
+        isoYear: isoWeek.isoYear,
+        isoWeek: isoWeek.isoWeek,
+        selectedAppointmentIds: [appointment!.id],
+      })
+      .expect(200);
+
+    await admin.get(`/api/appointments/${appointment!.id}`).expect(200).expect(({ body }) => {
+      expect(body.version).toBe(staleVersion + 1);
+      expect((body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
+    });
+
+    await admin
+      .patch(`/api/appointments/${appointment!.id}`)
+      .send({
+        version: staleVersion,
+        projectId: project.id,
+        customerId: detailBeforeRemoval.body.customerId,
+        tourId: tour.id,
+        startDate: detailBeforeRemoval.body.startDate,
+        endDate: detailBeforeRemoval.body.endDate,
+        startTime: detailBeforeRemoval.body.startTime,
+        employeeIds: [employee.id],
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("VERSION_CONFLICT");
+      });
   });
 });

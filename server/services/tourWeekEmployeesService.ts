@@ -516,6 +516,13 @@ export async function executeAddWeekEmployee(
       }
 
       await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, [...existingEmployeeIds, params.employeeId!]);
+      const versionResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
+        appointmentId,
+        expectedVersion: Number(appointment.version),
+      });
+      if (versionResult.kind === "version_conflict") {
+        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geaendert");
+      }
       changedAppointmentIds.push(appointmentId);
     }
 
@@ -650,6 +657,13 @@ export async function executeRemoveWeekEmployee(
         appointmentId,
         existingEmployeeIds.filter((employeeId) => employeeId !== assignment.employeeId),
       );
+      const versionResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
+        appointmentId,
+        expectedVersion: Number(appointment.version),
+      });
+      if (versionResult.kind === "version_conflict") {
+        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geaendert");
+      }
       changedAppointmentIds.push(appointmentId);
     }
 

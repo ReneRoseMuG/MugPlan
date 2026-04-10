@@ -23,6 +23,22 @@
  * Ziel:
  * Die neue Tour-Integration inklusive Wochenplan-Preview im echten Browser für Kern- und Konfliktpfade absichern.
  */
+/**
+ * Test Scope Update:
+ *
+ * Abgedeckte Regeln:
+ * - Das Setzen einer Tour ohne Wochenplanung laesst bestehende Termin-Mitarbeiter unveraendert.
+ * - Eine Datumsverschiebung in eine andere ISO-KW bewertet die Wochenplanung derselben Tour neu.
+ * - Das manuelle Hinzufuegen eines Mitarbeiters zu einem bestehenden Termin bleibt ueber den echten Formular-Speicherpfad versioniert konsistent.
+ *
+ * Fehlerfaelle:
+ * - Eine Tour ohne Wochenplanung loest trotzdem einen Preview-Dialog oder eine automatische Uebernahme aus.
+ * - Ein KW-Wechsel auf derselben Tour verwendet weiter die alte Wochenplanung.
+ * - Ein manuell hinzugefuegter Mitarbeiter wird im Formular sichtbar, aber nicht persistent gespeichert.
+ *
+ * Ziel:
+ * Die neuen FT01/FT04-Ergaenzungen fuer Tour-Setzen ohne Wochenplanung, KW-Wechsel und manuelle Mitarbeiter-Ergaenzungen im Browser sichtbar absichern.
+ */
 import { expect, test, type Page } from "@playwright/test";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
@@ -118,6 +134,20 @@ async function saveAppointmentAndResolveId(page: Page) {
   return Number(body.id);
 }
 
+async function saveExistingAppointment(page: Page, appointmentId: number) {
+  const saveResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/appointments/${appointmentId}`
+  ));
+  await page.getByTestId("button-save-appointment").click();
+  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
+  if (await confirmSaveButton.isVisible().catch(() => false)) {
+    await confirmSaveButton.click();
+  }
+  const response = await saveResponsePromise;
+  expect(response.ok()).toBeTruthy();
+}
+
 test("shows the tour picker inside the employee panel and persists a newly selected tour", async ({ page }) => {
   const customer = await createCustomerFixture("FT01-LAYOUT-CUST");
   const team = await createTeamFixture("#7c3aed");
@@ -182,6 +212,38 @@ test("renders an existing tour as a separate badge and restores the picker after
     const body = await response.json();
     return body.tourId;
   }).toBe(null);
+});
+
+test("assigns a tour without week planning and keeps the existing employees unchanged", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT04-NO-WEEKPLAN-CUST");
+  const tour = await createTourFixture("#225566");
+  const existingEmployee = await createEmployeeFixture("FT04-NO-WEEKPLAN-EMP");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    employeeIds: [existingEmployee.id],
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+
+  await expect(page.getByTestId(`badge-employee-${existingEmployee.id}`)).toBeVisible();
+  await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    tourId: tour.id,
+    employeeIds: [existingEmployee.id],
+  });
 });
 
 test("opens the week preview for a new next-week appointment and applies the planned employee", async ({ page }) => {
@@ -308,5 +370,105 @@ test("uses the already confirmed preview decision when an existing appointment c
   }).toEqual({
     tourId: targetTour.id,
     employeeIds: [weekEmployee.id],
+  });
+});
+
+test("rechecks week planning when the start date moves into another ISO week on the same tour", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const targetWeekStart = startOfISOWeek(addWeeks(parseISO(nextWeek.weekStartDate), 1));
+  const targetWeekSecondDate = format(addDays(targetWeekStart, 1), "yyyy-MM-dd");
+  const project = await createProjectFixture({ prefix: "FT04-APPT-DATE-KW", name: "FT04 Appointment Date Shift" });
+  const tour = await createTourFixture("#336688");
+  const currentEmployee = await createEmployeeFixture("FT04-APPT-DATE-CURRENT");
+  const plannedEmployee = await createEmployeeFixture("FT04-APPT-DATE-WEEK");
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: getISOWeekYear(targetWeekStart),
+    isoWeek: getISOWeek(targetWeekStart),
+    employeeId: plannedEmployee.id,
+  });
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [currentEmployee.id],
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId("input-start-date").fill(targetWeekSecondDate);
+
+  const saveResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/appointments/${appointment.id}`
+  ));
+  await page.getByTestId("button-save-appointment").click();
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Wochenplanung vor dem Speichern pruefen");
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
+    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+  );
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
+    "Kann aus der Wochenplanung uebernommen werden",
+  );
+  await page.getByTestId("button-appointment-week-mode-replace").click();
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      startDate: body.startDate,
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    startDate: targetWeekSecondDate,
+    tourId: tour.id,
+    employeeIds: [plannedEmployee.id],
+  });
+});
+
+test("allows manually adding an employee to an existing appointment through the appointment form", async ({ page }) => {
+  const customer = await createCustomerFixture("FT01-MANUAL-SWAP-CUST");
+  const replacementEmployee = await createEmployeeFixture("FT01-MANUAL-SWAP-B");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(4),
+    employeeIds: [],
+  });
+
+  await openExistingAppointment(page, appointment.id);
+
+  const detailBefore = await page.request.get(`/api/appointments/${appointment.id}`);
+  expect(detailBefore.ok()).toBeTruthy();
+  const beforePayload = await detailBefore.json() as { version: number };
+  await expect(page.getByText("Keine Mitarbeiter zugewiesen")).toBeVisible();
+
+  await page.getByTestId("button-add-employee").click();
+  await expect(page.getByTestId("list-employee-picker")).toBeVisible();
+  await page.getByLabel("Nachname").fill(replacementEmployee.lastName);
+  await expect(page.locator('[data-testid^="employee-picker-card-"]')).toHaveCount(1);
+  await page.getByTestId(`employee-picker-card-${replacementEmployee.id}`).dblclick();
+  await expect(page.getByTestId(`badge-employee-${replacementEmployee.id}`)).toBeVisible();
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      version: body.version,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    version: beforePayload.version + 1,
+    employeeIds: [replacementEmployee.id],
   });
 });
