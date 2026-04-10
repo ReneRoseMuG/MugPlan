@@ -73,8 +73,6 @@ DROP TABLE IF EXISTS `project_tags`;
 DROP TABLE IF EXISTS `project_order`;
 DROP TABLE IF EXISTS `project`;
 DROP TABLE IF EXISTS `roles`;
-DROP TABLE IF EXISTS `seed_run_entity`;
-DROP TABLE IF EXISTS `seed_run`;
 DROP TABLE IF EXISTS `tags`;
 DROP TABLE IF EXISTS `teams`;
 DROP TABLE IF EXISTS `tours`;
@@ -432,22 +430,6 @@ CREATE TABLE `help_texts` (
   CONSTRAINT `help_texts_help_key_unique` UNIQUE(`help_key`)
 );
 
-CREATE TABLE `seed_run` (
-  `id` varchar(36) NOT NULL,
-  `config_json` json NOT NULL,
-  `summary_json` json,
-  `created_at` timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT `seed_run_id` PRIMARY KEY(`id`)
-);
-
-CREATE TABLE `seed_run_entity` (
-  `seed_run_id` varchar(36) NOT NULL,
-  `entity_type` varchar(64) NOT NULL,
-  `entity_id` bigint NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT (now()),
-  CONSTRAINT `seed_run_entity_seed_run_id_entity_type_entity_id_pk` PRIMARY KEY(`seed_run_id`,`entity_type`,`entity_id`)
-);
-
 CREATE TABLE `user_settings_value` (
   `id` bigint AUTO_INCREMENT NOT NULL,
   `setting_key` varchar(128) NOT NULL,
@@ -534,8 +516,6 @@ ALTER TABLE `appointment_employee` ADD CONSTRAINT `appointment_employee_employee
 ALTER TABLE `appointment_note` ADD CONSTRAINT `appointment_note_appointment_id_appointments_id_fk` FOREIGN KEY (`appointment_id`) REFERENCES `appointments`(`id`) ON DELETE cascade ON UPDATE no action;
 ALTER TABLE `appointment_note` ADD CONSTRAINT `appointment_note_note_id_note_id_fk` FOREIGN KEY (`note_id`) REFERENCES `note`(`id`) ON DELETE cascade ON UPDATE no action;
 
-ALTER TABLE `seed_run_entity` ADD CONSTRAINT `seed_run_entity_seed_run_id_seed_run_id_fk` FOREIGN KEY (`seed_run_id`) REFERENCES `seed_run`(`id`) ON DELETE cascade ON UPDATE no action;
-
 -- ============================================================================
 -- BLOCK: INDEXES
 -- ============================================================================
@@ -555,8 +535,6 @@ CREATE INDEX `idx_appointment_tags_tag_appointment` ON `appointment_tags` (`tag_
 CREATE INDEX `idx_employee_active_name_id` ON `employee` (`is_active`,`last_name`,`first_name`,`id`);
 CREATE INDEX `idx_ae_employee_appointment` ON `appointment_employee` (`employee_id`,`appointment_id`);
 CREATE INDEX `idx_an_note_appointment` ON `appointment_note` (`note_id`,`appointment_id`);
-CREATE INDEX `seed_run_entity_seed_run_idx` ON `seed_run_entity` (`seed_run_id`);
-CREATE INDEX `seed_run_entity_entity_idx` ON `seed_run_entity` (`entity_type`,`entity_id`);
 CREATE INDEX `idx_backup_created_id` ON `backup_log` (`created_at`,`id`);
 CREATE INDEX `idx_backup_status_created_id` ON `backup_log` (`status`,`created_at`,`id`);
 CREATE INDEX `idx_calendar_sync_appointment_created` ON `calendar_sync_log` (`appointment_id`,`created_at`);
@@ -624,8 +602,6 @@ WHERE t.table_schema = DATABASE()
     'project_order_items',
     'project_tags',
     'roles',
-    'seed_run',
-    'seed_run_entity',
     'tags',
     'teams',
     'tours',

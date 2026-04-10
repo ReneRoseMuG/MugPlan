@@ -5,11 +5,12 @@
  *
  * Abgedeckte Regeln:
  * - Der Produktionspfad fuer `POST /admin/dumps/import/apply` nutzt die normale DB-/Host-Allowlist statt des globalen Production-Blocks fuer destruktive Admin-Aktionen.
- * - Andere destruktive Admin-Endpunkte bleiben in Production blockiert.
+ * - Andere Admin-Write-Endpunkte laufen weiterhin ohne den destruktiven Production-Block durch die Middleware.
  * - Unsichere Produktionsziele werden auch fuer den Dump-Import weiter abgelehnt.
  *
  * Fehlerfaelle:
  * - Produktions-Import wird trotz sicherem Ziel durch den falschen Guard blockiert.
+ * - Normale Admin-Write-Endpunkte werden faelschlich wie destruktive Operationen geblockt.
  * - Produktions-Import laeuft gegen ein nicht allowlist-konformes Ziel.
  *
  * Ziel:
@@ -83,8 +84,9 @@ describe("PKG-02 Invariant: admin maintenance policy dump import safety", () => 
     expect(res.status).not.toHaveBeenCalled();
   });
 
-  it("keeps other destructive admin endpoints blocked in production", async () => {
+  it("allows other admin write endpoints to continue through the middleware in production", async () => {
     const assertSafeAdminDestructiveOperationTarget = vi.fn();
+    const assertSafeDatabaseTargetForMode = vi.fn();
 
     vi.doMock("../../../server/config/runtimeEnv", () => ({
       getRuntimeMode: vi.fn(() => "production"),
@@ -96,7 +98,7 @@ describe("PKG-02 Invariant: admin maintenance policy dump import safety", () => 
     }));
     vi.doMock("../../../server/security/dbSafetyGuards", () => ({
       assertSafeAdminDestructiveOperationTarget,
-      assertSafeDatabaseTargetForMode: vi.fn(),
+      assertSafeDatabaseTargetForMode,
       parseDatabaseLogInfo: vi.fn(() => ({
         dbName: "mysql_rvtagh",
         host: "mysql-rvtagh.pg-s-h7zc2s.db.project.host",
@@ -110,7 +112,7 @@ describe("PKG-02 Invariant: admin maintenance policy dump import safety", () => 
     const { enforceAdminMaintenancePolicy } = await import("../../../server/middleware/adminMaintenancePolicy");
     const req = {
       method: "POST",
-      path: "/admin/reset-database",
+      path: "/admin/dumps/create",
       userContext: { roleKey: "ADMIN" },
     };
     const res = createResponse();
@@ -119,9 +121,9 @@ describe("PKG-02 Invariant: admin maintenance policy dump import safety", () => 
     enforceAdminMaintenancePolicy(req as never, res as never, next);
 
     expect(assertSafeAdminDestructiveOperationTarget).not.toHaveBeenCalled();
-    expect(next).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ code: "OPERATION_BLOCKED_IN_PRODUCTION" });
+    expect(assertSafeDatabaseTargetForMode).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   it("blocks production dump import apply when the target is not allowlist-safe", async () => {

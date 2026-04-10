@@ -127,7 +127,7 @@ function parseCreateTableStatement(statement: string) {
 
 function parseCreateIndexStatement(statement: string) {
   const normalized = statement.trim().replace(/;$/, "");
-  const match = /^CREATE INDEX\s+`([^`]+)`\s+ON\s+`([^`]+)`\s*\(/i.exec(normalized);
+  const match = /^CREATE(?: UNIQUE)? INDEX\s+`([^`]+)`\s+ON\s+`([^`]+)`\s*\(/i.exec(normalized);
   if (!match) {
     return null;
   }
