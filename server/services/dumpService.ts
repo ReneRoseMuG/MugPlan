@@ -170,7 +170,8 @@ type DumpManifest = {
   formatVersion: typeof DUMP_FORMAT_VERSION;
   exportedAt: string;
   schemaRevision: string;
-  tables: Record<DumpTableKey, DumpTableManifestEntry>;
+  tables: Partial<Record<DumpTableKey, DumpTableManifestEntry>>;
+  missingTableKeys: DumpTableKey[];
   uploads: DumpUploadsManifest;
 };
 
@@ -453,9 +454,14 @@ function parseDumpManifest(raw: unknown): DumpManifest {
     throw new DumpServiceError("manifest.json enthaelt keine Upload-Beschreibung", 422, "VALIDATION_ERROR");
   }
 
-  const tables = {} as Record<DumpTableKey, DumpTableManifestEntry>;
+  const tables = {} as Partial<Record<DumpTableKey, DumpTableManifestEntry>>;
+  const missingTableKeys: DumpTableKey[] = [];
   for (const key of DUMP_TABLE_KEYS) {
     const value = candidate.tables[key];
+    if (value === undefined) {
+      missingTableKeys.push(key);
+      continue;
+    }
     if (!value || typeof value !== "object" || Array.isArray(value)) {
       throw new DumpServiceError(`manifest.json enthaelt keinen gueltigen Tabellen-Eintrag fuer '${key}'`, 422, "VALIDATION_ERROR");
     }
@@ -512,6 +518,7 @@ function parseDumpManifest(raw: unknown): DumpManifest {
     exportedAt: candidate.exportedAt,
     schemaRevision: candidate.schemaRevision,
     tables,
+    missingTableKeys,
     uploads: {
       fileCount,
       totalBytes,
@@ -664,8 +671,8 @@ function buildConfirmationPhrase(dumpId: string, targetDatabaseName: string): st
 function summarizeTablesFromManifest(manifest: DumpManifest): TableSummary[] {
   return DUMP_TABLE_KEYS.map((key) => ({
     key,
-    rowCount: manifest.tables[key].rowCount,
-    sha256: manifest.tables[key].sha256,
+    rowCount: manifest.tables[key]?.rowCount ?? 0,
+    sha256: manifest.tables[key]?.sha256 ?? sha256Json([]),
   }));
 }
 
@@ -795,8 +802,14 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
   if (!manifest) {
     warnings.push("Legacy-Dump ohne manifest.json erkannt.");
   } else {
+    for (const key of manifest.missingTableKeys) {
+      warnings.push(`Legacy-Dump: Tabelle '${key}' fehlt in manifest.json und wird tolerant behandelt.`);
+    }
     for (const table of expectedTables) {
       const actualRows = payload.tables[table.key] ?? [];
+      if (manifest.missingTableKeys.includes(table.key)) {
+        continue;
+      }
       if (actualRows.length !== table.rowCount) {
         blockingIssues.push(`Manifest-Count stimmt fuer Tabelle '${table.key}' nicht mit data.json ueberein.`);
       }

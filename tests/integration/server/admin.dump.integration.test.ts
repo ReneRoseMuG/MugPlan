@@ -72,6 +72,19 @@ async function buildZipFromDataJson(data: unknown): Promise<Buffer> {
   });
 }
 
+async function buildZipFromDumpArtifacts(data: unknown, manifest: unknown): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const archive = archiver("zip");
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", reject);
+    archive.append(JSON.stringify(data), { name: "data.json" });
+    archive.append(JSON.stringify(manifest), { name: "manifest.json" });
+    void archive.finalize();
+  });
+}
+
 async function parseDumpDataJson(zipBuffer: Buffer): Promise<unknown> {
   const directory = await (await import("unzipper")).Open.buffer(zipBuffer);
   const file = directory.files.find((entry) => entry.path === "data.json");
@@ -397,6 +410,88 @@ describe("POST /api/admin/dumps/import", () => {
 
     const restoredTour = await db.select().from(schema.tours).where(eq(schema.tours.id, tour.id));
     expect(restoredTour).toHaveLength(1);
+
+    const removedExtraTour = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
+    const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
+    expect(removedExtraTour).toHaveLength(0);
+    expect(removedExtraCustomer).toHaveLength(0);
+  });
+
+  it("akzeptiert versionierte Dumps mit fehlenden neuen Tabellen im manifest.json als Warning", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const team = await createTeamFixture("#4455aa");
+    const tour = await createTourFixture("#3388bb");
+    const employee = await createEmployeeFixture("VERSIONED-LEGACY-EMP");
+    const customer = await createCustomerFixture("VERSIONED-LEGACY-CUST");
+    const project = await createProjectFixture({ prefix: "VERSIONED-LEGACY-PROJ", customerId: customer.id });
+    await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    const beforeSnapshot = await collectSnapshot();
+
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      dumpId?: string;
+      tables: Record<string, unknown[]>;
+    };
+    const manifest = await parseDumpManifest(downloadResponse.body as Buffer) as {
+      dumpId: string;
+      formatVersion: number;
+      exportedAt: string;
+      schemaRevision: string;
+      tables: Record<string, { rowCount: number; sha256: string }>;
+      uploads: {
+        fileCount: number;
+        totalBytes: number;
+        sha256: string;
+        files: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
+      };
+    };
+
+    delete dumpData.tables["tourWeekEmployees"];
+    delete manifest.tables["tourWeekEmployees"];
+
+    const versionedLegacyZipBuffer = await buildZipFromDumpArtifacts(dumpData, manifest);
+
+    const extraTour = await createTourFixture("#aa5533");
+    const extraCustomer = await createCustomerFixture("VERSIONED-LEGACY-EXTRA");
+
+    const mutatedSnapshot = await collectSnapshot();
+    expect(mutatedSnapshot.tours).toBe(beforeSnapshot.tours + 1);
+    expect(mutatedSnapshot.customers).toBe(beforeSnapshot.customers + 1);
+
+    const previewResponse = await previewDumpImport(admin, versionedLegacyZipBuffer).expect(200);
+    expect(previewResponse.body.transferReadiness).toBe("warning");
+    expect(Array.isArray(previewResponse.body.blockingIssues)).toBe(true);
+    expect(previewResponse.body.blockingIssues).toHaveLength(0);
+    expect(
+      (previewResponse.body.warnings as string[]).some((entry) => entry.includes("tourWeekEmployees")),
+    ).toBe(true);
+
+    const importResponse = await applyDumpImport(admin, versionedLegacyZipBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(200);
+
+    expect(importResponse.body.verificationPassed).toBe(true);
+    expect(importResponse.body.importStatus).toBe("warning");
+
+    const afterSnapshot = await collectSnapshot();
+    expect(afterSnapshot).toEqual(beforeSnapshot);
 
     const removedExtraTour = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
     const removedExtraCustomer = await db.select().from(schema.customers).where(eq(schema.customers.id, extraCustomer.id));
