@@ -10,6 +10,7 @@
  *   und lässt ausgeschlossene Tabellen außen vor.
  * - Das Dump-Format verlangt Version und gültige Arrays je bekannter Tabelle.
  * - Fehlende bekannte Tabellen werden beim Import tolerant als leer behandelt.
+ * - Fehlende bekannte Tabellen im manifest.json eines versionierten Legacy-Dumps führen nur zu einer Warnung.
  * - Unbekannte Tabellen werden ignoriert und geloggt.
  *
  * Fehlerfälle:
@@ -175,6 +176,42 @@ describe("dumpService preview/apply safety", () => {
     expect(preview.isLegacyDump).toBe(true);
     expect(preview.manifestPresent).toBe(false);
     expect(preview.warnings.some((entry) => entry.includes("Legacy-Dump"))).toBe(true);
+  });
+
+  it("previewDumpImport toleriert fehlende bekannte Tabellen in manifest.json mit Warnung", async () => {
+    const exportedAt = new Date().toISOString();
+    const dumpId = "dump-missing-manifest-table";
+    const tables = Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []]));
+    const manifestTables = Object.fromEntries(
+      DUMP_TABLE_KEYS
+        .filter((key) => key !== "tourWeekEmployees")
+        .map((key) => [key, { rowCount: 0, sha256: emptyArrayHash }]),
+    );
+    const zipBuffer = await buildZipFromDumpArtifacts({
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      dumpId,
+      tables,
+    }, {
+      dumpId,
+      formatVersion: DUMP_FORMAT_VERSION,
+      exportedAt,
+      schemaRevision: "0021_customer_country",
+      tables: manifestTables,
+      uploads: {
+        fileCount: 0,
+        totalBytes: 0,
+        sha256: emptyArrayHash,
+        files: [],
+      },
+    });
+
+    const preview = await previewDumpImport(adminCtx, zipBuffer);
+
+    expect(preview.transferReadiness).toBe("warning");
+    expect(preview.manifestPresent).toBe(true);
+    expect(preview.blockingIssues).toEqual([]);
+    expect(preview.warnings.some((entry) => entry.includes("tourWeekEmployees"))).toBe(true);
   });
 
   it("previewDumpImport blocks legacy dumps in production", async () => {
