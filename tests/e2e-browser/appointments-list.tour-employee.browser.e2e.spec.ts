@@ -24,7 +24,7 @@
  */
 import { expect, test } from "@playwright/test";
 import { loginAsAdmin } from "../helpers/browserE2e";
-import { resetDatabase } from "../helpers/resetDatabase";
+import { applyTestSystemSeed, resetDatabase } from "../helpers/resetDatabase";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
@@ -37,6 +37,7 @@ import {
 test.beforeEach(async () => {
   resetTestDataFactoryState();
   await resetDatabase();
+  await applyTestSystemSeed();
 });
 
 test("tour form appointments table: date sorting persists across appointment scope toggles and no all-day column", async ({ page }) => {
@@ -61,6 +62,12 @@ test("tour form appointments table: date sorting persists across appointment sco
   await page.getByTestId("tab-tour-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
+  const ensurePeriodPickerOpen = async () => {
+    const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
+    if (await allScopeToggle.isVisible()) return;
+    await page.getByTestId("button-appointment-period-picker").click();
+    await expect(allScopeToggle).toBeVisible();
+  };
   await expect(table).toBeVisible();
   await expect(page.getByTestId("text-appointments-page-state")).toBeVisible();
   const headerTexts = await table.locator("thead th").allTextContents();
@@ -79,11 +86,13 @@ test("tour form appointments table: date sorting persists across appointment sco
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-planned").click();
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
   await expect(rows.nth(1).locator("td").nth(3)).toContainText("Tour Near");
 
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(rows).toHaveCount(2);
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Tour Far");
@@ -123,6 +132,12 @@ test("employee form appointments table: structure, scope toggle persistence and 
   await page.getByTestId("tab-employee-termine").click();
 
   const table = page.getByTestId("table-appointments-list");
+  const ensurePeriodPickerOpen = async () => {
+    const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
+    if (await allScopeToggle.isVisible()) return;
+    await page.getByTestId("button-appointment-period-picker").click();
+    await expect(allScopeToggle).toBeVisible();
+  };
   await expect(table).toBeVisible();
   await expect(page.getByTestId("text-appointments-page-state")).toBeVisible();
   const headerTexts = await table.locator("thead th").allTextContents();
@@ -139,8 +154,10 @@ test("employee form appointments table: structure, scope toggle persistence and 
   
   await table.locator("thead").getByRole("button", { name: "Datum" }).click();
   await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-planned").click();
   await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(rows.first().locator("td").nth(3)).toContainText("Emp Filler");
 

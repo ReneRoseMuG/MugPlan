@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear, getISOWeeksInYear } from "date-fns";
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
@@ -584,6 +584,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   );
   const defaultIsoWeek = useMemo(() => getISOWeek(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
   const defaultIsoWeekYear = useMemo(() => getISOWeekYear(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
+  const defaultKwStartMax = useMemo(() => getISOWeeksInYear(new Date(defaultIsoWeekYear, 0, 4)), [defaultIsoWeekYear]);
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(defaultReportRange.fromDate);
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState(defaultReportRange.toDate);
   const [produktionsplanungFromDate, setProduktionsplanungFromDate] = useState(defaultReportRange.fromDate);
@@ -1575,6 +1576,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       void persistVorlauflisteRangeConfig({ toDate: resolved });
                     }}
                     kwStart={vorlauflisteKwStart ?? defaultIsoWeek}
+                    kwStartMax={defaultKwStartMax}
                     weekCount={vorlauflisteWeekCount}
                     onKwStartChange={(nextValue) => {
                       setVorlauflisteKwStart(nextValue);
@@ -1656,6 +1658,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       void persistProduktionsplanungRangeConfig({ toDate: resolved });
                     }}
                     kwStart={produktionsplanungKwStart ?? defaultIsoWeek}
+                    kwStartMax={defaultKwStartMax}
                     weekCount={produktionsplanungWeekCount}
                     onKwStartChange={(nextValue) => {
                       setProduktionsplanungKwStart(nextValue);
@@ -1787,6 +1790,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       void persistAuftragslisteRangeConfig({ toDate: resolved });
                     }}
                     kwStart={auftragslisteKwStart ?? defaultIsoWeek}
+                    kwStartMax={defaultKwStartMax}
                     weekCount={auftragslisteWeekCount}
                     onKwStartChange={(nextValue) => {
                       setAuftragslisteKwStart(nextValue);

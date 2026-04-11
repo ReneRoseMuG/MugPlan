@@ -6,11 +6,13 @@
  * - Der Scope "Geplante Termine" blendet historische Termine aus.
  * - Gueltige Projekt- und Auftragsnummernfilter verengen die Ergebnismenge innerhalb des aktiven Scopes korrekt.
  * - Ungueltige Filterwerte fuehren sichtbar in den Nichttreffer-Empty-State.
+ * - Der Reset im Zeitraum-Picker stellt die ungefilterte Grundmenge wieder her.
  *
  * Fehlerfaelle:
  * - Der Default-Scope blendet historische Termine weiterhin aus.
  * - Scope-Wechsel verlieren oder vermischen Past-/Future-Termine.
  * - Gueltige Filter liefern falsche Treffermengen oder Nichttreffer zeigen keinen Empty-State.
+ * - Der Zeitraum-Reset behaelt freie Filter oder den geplanten Scope faelschlich bei.
  *
  * Ziel:
  * Browserseitig mit echten historischen und zukuenftigen Terminen absichern, dass das neue Termin-Toggle die Ergebnismengen korrekt steuert.
@@ -65,6 +67,12 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   const rows = table.locator("tbody tr");
   const projectTitleFilter = page.locator("#appointments-filter-project-title");
   const orderNumberFilter = page.locator("#appointments-filter-order-number");
+  const ensurePeriodPickerOpen = async () => {
+    const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
+    if (await allScopeToggle.isVisible()) return;
+    await page.getByTestId("button-appointment-period-picker").click();
+    await expect(allScopeToggle).toBeVisible();
+  };
 
   await expect(table).toBeVisible();
 
@@ -73,10 +81,14 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
 
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-planned").click();
   await expect(rows).toHaveCount(1);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
+  await expect(page.getByTestId("input-appointment-period-from")).not.toHaveValue("");
+  await expect(page.getByTestId("input-appointment-period-to")).not.toHaveValue("");
+  await expect(page.getByTestId("appointment-period-summary")).toContainText(/\S/);
 
   await orderNumberFilter.fill(futureProject.orderNumber ?? "");
   await expect(rows).toHaveCount(1);
@@ -89,8 +101,23 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
 
   await projectTitleFilter.fill("FT04 Scope Browser");
+  await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(rows).toHaveCount(2);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
+
+  await ensurePeriodPickerOpen();
+  await page.getByTestId("button-appointment-period-reset-all").click();
+  await expect(projectTitleFilter).toHaveValue("");
+  await expect(orderNumberFilter).toHaveValue("");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
+
+  await ensurePeriodPickerOpen();
+  await page.getByTestId("toggle-appointments-scope-planned").click();
+  await expect(page.getByTestId("input-appointment-period-from")).not.toHaveValue("");
+  await expect(page.getByTestId("input-appointment-period-to")).not.toHaveValue("");
+  await expect(page.getByTestId("appointment-period-summary")).toContainText(/\S/);
 });

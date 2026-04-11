@@ -979,6 +979,12 @@ export async function listAppointmentsForList(
 ) {
   const conditions = buildAppointmentListConditions(filters);
   const whereClause = conditions.length > 0 ? and(...(conditions as Parameters<typeof and>)) : undefined;
+  const rangeConditions = buildAppointmentListConditions({
+    ...filters,
+    dateFrom: undefined,
+    dateTo: undefined,
+  });
+  const rangeWhereClause = rangeConditions.length > 0 ? and(...(rangeConditions as Parameters<typeof and>)) : undefined;
   const offset = (paging.page - 1) * paging.pageSize;
 
   const [totalResult] = await db
@@ -989,6 +995,18 @@ export async function listAppointmentsForList(
     .innerJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(whereClause);
+
+  const [availableRangeResult] = await db
+    .select({
+      dateFrom: sql<string | null>`date_format(min(${appointments.startDate}), '%Y-%m-%d')`,
+      dateTo: sql<string | null>`date_format(max(${appointments.startDate}), '%Y-%m-%d')`,
+    })
+    .from(appointments)
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(rangeWhereClause);
 
   const rows = await db
     .select({
@@ -1011,6 +1029,10 @@ export async function listAppointmentsForList(
   return {
     rows,
     total: Number(totalResult?.total ?? 0),
+    availableRange: {
+      dateFrom: availableRangeResult?.dateFrom ?? null,
+      dateTo: availableRangeResult?.dateTo ?? null,
+    },
   };
 }
 
@@ -1026,14 +1048,18 @@ export async function listAppointmentsForMonitoring(params: {
     .select({
       appointmentId: appointments.id,
       startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
-      endDate: sql<string | null>`case when ${appointments.endDate} is null then null else date_format(${appointments.endDate}, '%Y-%m-%d') end`,
+      startTime: appointments.startTime,
       tourName: tours.name,
+      projectName: projects.name,
+      customerName: customers.lastName,
       employeeCount: sql<number>`cast(count(${appointmentEmployees.employeeId}) as signed)`,
     })
     .from(appointments)
     .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(appointmentEmployees, eq(appointmentEmployees.appointmentId, appointments.id))
     .where(whereClause)
-    .groupBy(appointments.id, appointments.startDate, appointments.endDate, tours.name)
+    .groupBy(appointments.id, appointments.startDate, appointments.startTime, tours.name, projects.name, customers.lastName)
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }

@@ -233,9 +233,9 @@ export function TourEditForm({
           </div>
         )}
         footer={(
-          <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
-            <div className="flex flex-wrap items-center gap-3">
-              {!isCreate && activeTab === "wochenplanung" ? (
+          <div className="flex flex-col gap-2 px-6 py-4">
+            {!isCreate && activeTab === "wochenplanung" ? (
+              <div>
                 <Button
                   type="button"
                   variant="outline"
@@ -245,44 +245,49 @@ export function TourEditForm({
                 >
                   KW einfuegen
                 </Button>
-              ) : null}
-              {!isCreate && canDelete && tour && onDelete ? (
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {!isCreate && canDelete && tour && onDelete ? (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      void onDelete().catch(() => {
+                        // errors are handled via mutation toasts in parent
+                      });
+                    }}
+                    disabled={isSaving || isDeleting}
+                    data-testid="button-delete-tour-form"
+                  >
+                    {isDeleting ? "Löschen..." : "Löschen"}
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
-                  variant="destructive"
-                  onClick={() => {
-                    void onDelete().catch(() => {
-                      // errors are handled via mutation toasts in parent
-                    });
-                  }}
-                  disabled={isSaving || isDeleting}
-                  data-testid="button-delete-tour-form"
+                  variant="outline"
+                  onClick={onCancel}
+                  data-testid="button-cancel-tour"
                 >
-                  {isDeleting ? "Löschen..." : "Löschen"}
+                  Zurück
                 </Button>
-              ) : null}
+              </div>
               <Button
                 type="button"
-                variant="outline"
-                onClick={onCancel}
-                data-testid="button-cancel-tour"
+                onClick={() => {
+                  void handleSubmit();
+                }}
+                disabled={isSaving || !selectedName.trim()}
+                data-testid="button-save-tour"
               >
-                Zurück
+                {isSaving ? "Speichern..." : "Speichern"}
               </Button>
             </div>
-
-            <Button
-              type="button"
-              onClick={() => {
-                void handleSubmit();
-              }}
-              disabled={isSaving || !selectedName.trim()}
-              data-testid="button-save-tour"
-            >
-              {isSaving ? "Speichern..." : "Speichern"}
-            </Button>
           </div>
         )}
+        sidebar={<div className="min-w-0 p-6" data-testid="tour-form-sidebar" />}
+        contentMaxWidth={99999}
       >
       <Tabs
         value={activeTab}
@@ -343,7 +348,6 @@ export function TourEditForm({
             emptyStateOverride={<></>}
             onOpenAppointment={onOpenAppointment}
             className="min-h-0 flex-1"
-            splitDateRangeRow
           />
         </TabsContent>
 

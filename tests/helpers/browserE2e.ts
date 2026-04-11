@@ -1,12 +1,13 @@
 import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
-import { resetDatabase } from "./resetDatabase";
+import { applyTestSystemSeed, resetDatabase } from "./resetDatabase";
 import { resetTestDataFactoryState } from "./testDataFactory";
 
 export async function resetBrowserSuiteState() {
   resetTestDataFactoryState();
   await resetDatabase();
+  await applyTestSystemSeed();
 }
 
 async function isVisible(locator: ReturnType<Page["getByTestId"]> | ReturnType<Page["getByLabel"]>) {

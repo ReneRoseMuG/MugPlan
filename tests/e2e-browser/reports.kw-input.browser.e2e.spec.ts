@@ -5,12 +5,12 @@
  * - Reports-KW-Eingaben im Browser
  *
  * Abgedeckte Regeln:
- * - KW-Startfelder der Reports übernehmen KW 0 nicht still als gültigen Wert.
+ * - KW-Startfelder der Reports übernehmen KW 0 nicht still als gültigen Wert, sondern behalten den letzten gueltigen Stand.
  * - Ungültige Freitexte lassen den letzten gültigen KW-Start unverändert.
  * - Spinner-Klicks bleiben für gültige KW-Starts weiterhin bedienbar.
  *
  * Fehlerfälle:
- * - Reports speichern oder zeigen KW 0 fälschlich als KW 1 an.
+ * - Reports überschreiben ungültige Eingaben fälschlich mit einem künstlichen Default.
  * - Die strikte Freitextbehandlung blockiert die gewohnten Spinner-Klicks.
  *
  * Ziel:
@@ -37,18 +37,19 @@ test("clamps invalid free text in report kw inputs and keeps the spinner control
 
   await vorlauflisteInput.fill("0");
   await vorlauflisteInput.blur();
-  await expect(vorlauflisteInput).toHaveValue("1");
+  await expect(vorlauflisteInput).toHaveValue(initialVorlauflisteValue);
 
   await page.getByTestId("button-reports-vorlaufliste-kw-start-up").click();
-  await expect(vorlauflisteInput).toHaveValue("2");
+  await expect(vorlauflisteInput).toHaveValue(String(Number(initialVorlauflisteValue) + 1));
 
   await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
   const produktionsplanungInput = page.getByTestId("input-reports-produktionsplanung-kw-start");
+  const initialProduktionsplanungValue = await produktionsplanungInput.inputValue();
 
   await produktionsplanungInput.fill("000");
   await produktionsplanungInput.blur();
-  await expect(produktionsplanungInput).toHaveValue("1");
+  await expect(produktionsplanungInput).toHaveValue(initialProduktionsplanungValue);
 
   await page.getByTestId("button-reports-produktionsplanung-kw-start-down").click();
-  await expect(produktionsplanungInput).toHaveValue("1");
+  await expect(produktionsplanungInput).toHaveValue(String(Math.max(1, Number(initialProduktionsplanungValue) - 1)));
 });

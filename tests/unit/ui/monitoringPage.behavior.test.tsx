@@ -4,7 +4,7 @@
  * Feature: FT31 - MonitoringPage
  *
  * Abgedeckte Regeln:
- * - Admins sehen den sichtbaren Konfigurationsbereich mit Toggle und Eingabefeldern.
+ * - Admins sehen den sichtbaren Konfigurationsbereich mit Mindestmitarbeiter-Eingabe und Save-Aktion.
  * - Die Tabellenansicht leitet Row-Doppelklicks in den Termin-Open-Flow weiter.
  *
  * Fehlerfaelle:
@@ -40,7 +40,12 @@ vi.mock("@/lib/queryClient", () => ({
 }));
 
 vi.mock("@/components/ui/list-layout", () => ({
-  ListLayout: ({ contentSlot }: { contentSlot?: React.ReactNode }) => <section>{contentSlot}</section>,
+  ListLayout: ({ contentSlot, footerSlot }: { contentSlot?: React.ReactNode; footerSlot?: React.ReactNode }) => (
+    <section>
+      {contentSlot}
+      {footerSlot}
+    </section>
+  ),
 }));
 
 vi.mock("@/components/ui/table-view", () => ({
@@ -55,7 +60,9 @@ vi.mock("@/components/ui/list-empty-state", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
 }));
 
 vi.mock("@/components/ui/input", () => ({
@@ -91,8 +98,10 @@ describe("FT31 UI: MonitoringPage behavior", () => {
           {
             appointmentId: 77,
             startDate: "2099-01-01",
-            endDate: null,
+            startTime: null,
             tourName: "Tour 7",
+            projectName: null,
+            customerName: null,
             employeeCount: 1,
             triggerName: "TR01",
             problemDescription: "Zu wenig Mitarbeiter",
@@ -110,8 +119,9 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     );
 
     expect(html).toContain("monitoring-config-panel");
-    expect(html).toContain("switch-monitoring-all-appointments");
-    expect(html).toContain("alle Termine");
+    expect(html).toContain("input-monitoring-minimum-employees");
+    expect(html).toContain("button-monitoring-save-config");
+    expect(html).toContain("Mindestzahl Mitarbeiter");
     expect(html).toContain("table-monitoring");
 
     (tableViewCalls[0].onRowDoubleClick as ((row: { appointmentId: number }) => void) | undefined)?.({ appointmentId: 77 });

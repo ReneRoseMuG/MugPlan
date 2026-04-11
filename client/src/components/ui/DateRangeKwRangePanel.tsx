@@ -3,6 +3,7 @@ import { getISOWeek } from "date-fns";
 
 import { type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { parseIsoWeekInput } from "@/lib/isoWeekInput";
 import { cn } from "@/lib/utils";
 
 const WEEKDAY_LABELS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"] as const;
@@ -47,6 +48,7 @@ type DateRangeKwRangePanelProps = {
   onFromDateChange: (value: string) => void;
   onToDateChange: (value: string) => void;
   kwStart: number;
+  kwStartMax: number;
   weekCount: number;
   onKwStartChange: (value: number) => void;
   onWeekCountChange: (value: number) => void;
@@ -85,6 +87,7 @@ export function DateRangeKwRangePanel({
   onFromDateChange,
   onToDateChange,
   kwStart,
+  kwStartMax,
   weekCount,
   onKwStartChange,
   onWeekCountChange,
@@ -183,8 +186,10 @@ export function DateRangeKwRangePanel({
                   maxLength={3}
                   value={String(kwStart)}
                   onChange={(e) => {
-                    const parsed = Number.parseInt(e.target.value.replace(/\D/g, ""), 10);
-                    if (!Number.isNaN(parsed)) onKwStartChange(clamp(parsed, 1, 53));
+                    const parsed = parseIsoWeekInput(e.target.value);
+                    if (typeof parsed === "number" && parsed <= kwStartMax) {
+                      onKwStartChange(parsed);
+                    }
                   }}
                   className={SPIN_INPUT_CLASS}
                   data-testid={kwStartInputTestId}
@@ -192,7 +197,7 @@ export function DateRangeKwRangePanel({
                 <div className="flex flex-col border-l border-slate-200">
                   <button
                     type="button"
-                    onClick={() => onKwStartChange(clamp(kwStart + 1, 1, 53))}
+                    onClick={() => onKwStartChange(clamp(kwStart + 1, 1, kwStartMax))}
                     className="flex flex-1 items-center justify-center border-b border-slate-200 px-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                     data-testid={kwStartIncrementTestId}
                   >
@@ -200,7 +205,7 @@ export function DateRangeKwRangePanel({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onKwStartChange(clamp(kwStart - 1, 1, 53))}
+                    onClick={() => onKwStartChange(clamp(kwStart - 1, 1, kwStartMax))}
                     className="flex flex-1 items-center justify-center px-1.5 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700"
                     data-testid={kwStartDecrementTestId}
                   >

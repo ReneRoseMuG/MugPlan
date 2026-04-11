@@ -105,3 +105,8 @@ export async function resetDatabase() {
     }
   }
 }
+
+export async function applyTestSystemSeed() {
+  const { applySystemSeed } = await import("../../server/services/systemSeedService");
+  await applySystemSeed();
+}

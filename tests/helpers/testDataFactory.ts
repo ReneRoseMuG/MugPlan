@@ -119,6 +119,8 @@ export async function createExactTagFixture(name: string, color = "#2563eb") {
 }
 
 export async function ensureSystemTagsFixture() {
+  const { applySystemSeed } = await import("../../server/services/systemSeedService");
+  await applySystemSeed();
   const allTags = await masterDataService.listTags("ADMIN");
   return {
     allTags,

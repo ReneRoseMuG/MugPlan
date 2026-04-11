@@ -8,7 +8,6 @@ import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 type MonitoringPageProps = {
@@ -71,11 +70,10 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
   const resolvedConfig = draftConfig ?? (configQuery.data
     ? toDraftConfig(configQuery.data.tr01)
     : {
-        allAppointments: false,
+        allAppointments: true,
         horizonDays: "14",
         minimumEmployees: "1",
       });
-  const allAppointments = resolvedConfig.allAppointments;
   const horizonDays = resolvedConfig.horizonDays;
   const minimumEmployees = resolvedConfig.minimumEmployees;
 
@@ -103,29 +101,25 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
 
   const columns = useMemo<TableViewColumnDef<MonitoringListResponse[number]>[]>(() => [
     {
-      id: "startDate",
-      header: "Startdatum",
-      accessor: (row) => row.startDate,
-      minWidth: 140,
+      id: "startTime",
+      header: "Startzeit",
+      accessor: (row) => row.startTime ? row.startTime.slice(0, 5) : null,
+      minWidth: 80,
     },
     {
-      id: "endDate",
-      header: "Enddatum",
-      accessor: (row) => row.endDate ?? "-",
-      minWidth: 140,
+      id: "startDate",
+      header: "Startdatum",
+      accessor: (row) => {
+        const [year, month, day] = row.startDate.split("-");
+        return `${day}.${month}.${year?.slice(2)}`;
+      },
+      minWidth: 110,
     },
     {
       id: "tourName",
       header: "Tour",
-      accessor: (row) => row.tourName ?? "-",
-      minWidth: 180,
-    },
-    {
-      id: "employeeCount",
-      header: "Mitarbeiter",
-      accessor: (row) => row.employeeCount,
-      minWidth: 120,
-      align: "right",
+      accessor: (row) => row.tourName ?? null,
+      minWidth: 20,
     },
     {
       id: "triggerName",
@@ -156,7 +150,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     await saveConfigMutation.mutateAsync({
       payload: {
         tr01: {
-          allAppointments,
+          allAppointments: true,
           horizonDays: parsedHorizonDays,
           minimumEmployees: parsedMinimumEmployees,
         },
@@ -167,121 +161,51 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     });
   };
 
-  const handleToggleAllAppointments = async (checked: boolean) => {
-    const parsedHorizonDays = Number(horizonDays);
-    const parsedMinimumEmployees = Number(minimumEmployees);
-
-    if (!Number.isInteger(parsedHorizonDays) || parsedHorizonDays < 1) {
-      toast({ title: "Vorlaufhorizont muss mindestens 1 Tag sein", variant: "destructive" });
-      return;
-    }
-    if (!Number.isInteger(parsedMinimumEmployees) || parsedMinimumEmployees < 1) {
-      toast({ title: "Mindestzahl Mitarbeiter muss mindestens 1 sein", variant: "destructive" });
-      return;
-    }
-
-    const nextDraft = {
-      allAppointments: checked,
-      horizonDays,
-      minimumEmployees,
-    };
-    setDraftConfig(nextDraft);
-
-    try {
-      await saveConfigMutation.mutateAsync({
-        payload: {
-          tr01: {
-            allAppointments: checked,
-            horizonDays: parsedHorizonDays,
-            minimumEmployees: parsedMinimumEmployees,
-          },
-        },
-        options: {
-          showSuccessToast: false,
-        },
-      });
-    } catch {
-      setDraftConfig((current) => current ?? nextDraft);
-    }
-  };
-
-  const content = (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-6">
-      {isAdmin ? (
-        <section className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="monitoring-config-panel">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={allAppointments}
-                onCheckedChange={(checked) => {
-                  void handleToggleAllAppointments(checked);
-                }}
-                disabled={(configQuery.isLoading && !configQuery.data) || saveConfigMutation.isPending}
-                data-testid="switch-monitoring-all-appointments"
-              />
-              <span className="text-sm text-slate-700">alle Termine</span>
-            </div>
-            {!allAppointments ? (
-              <div className="flex w-28 flex-col gap-1">
-                <span className="text-sm font-medium text-slate-700">Vorlaufhorizont</span>
-                <Input
-                  type="number"
-                  min={1}
-                  value={horizonDays}
-                  onChange={(event) => {
-                    setDraftConfig((current) => ({
-                      ...toDraftConfig(current ?? configQuery.data?.tr01 ?? resolvedConfig),
-                      horizonDays: event.target.value,
-                    }));
-                  }}
-                  data-testid="input-monitoring-horizon-days"
-                />
-              </div>
-            ) : null}
-            <div className="flex w-44 flex-col gap-1">
-              <span className="whitespace-nowrap text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
-              <Input
-                type="number"
-                min={1}
-                value={minimumEmployees}
-                onChange={(event) => {
-                  setDraftConfig((current) => ({
-                    ...toDraftConfig(current ?? configQuery.data?.tr01 ?? resolvedConfig),
-                    minimumEmployees: event.target.value,
-                  }));
-                }}
-                data-testid="input-monitoring-minimum-employees"
-              />
-            </div>
-            <div className="ml-auto flex items-end">
-              <Button
-                onClick={() => void handleSaveConfig()}
-                disabled={saveConfigMutation.isPending || configQuery.isLoading}
-                data-testid="button-monitoring-save-config"
-              >
-                Speichern
-              </Button>
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <div className="min-h-0 flex-1">
-        <TableView
-          columns={columns}
-          rows={monitoringQuery.data ?? []}
-          rowKey={(row) => `${row.appointmentId}-${row.triggerName}`}
-          onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
-          testId="table-monitoring"
-          stickyHeader
-          emptyState={(
-            <ListEmptyState
-              fallbackTitle="Keine problematischen Termine gefunden."
-              fallbackBody="Derzeit liegen keine aktiven Monitoring-Treffer vor."
-            />
-          )}
+  const configPanel = isAdmin ? (
+    <div className="flex flex-wrap items-end gap-4" data-testid="monitoring-config-panel">
+      <div className="flex w-44 flex-col gap-1">
+        <span className="whitespace-nowrap text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
+        <Input
+          type="number"
+          min={1}
+          value={minimumEmployees}
+          onChange={(event) => {
+            setDraftConfig((current) => ({
+              ...toDraftConfig(current ?? configQuery.data?.tr01 ?? resolvedConfig),
+              minimumEmployees: event.target.value,
+            }));
+          }}
+          data-testid="input-monitoring-minimum-employees"
         />
       </div>
+      <div className="ml-auto flex items-end">
+        <Button
+          onClick={() => void handleSaveConfig()}
+          disabled={saveConfigMutation.isPending || configQuery.isLoading}
+          data-testid="button-monitoring-save-config"
+        >
+          Speichern
+        </Button>
+      </div>
+    </div>
+  ) : null;
+
+  const content = (
+    <div className="flex h-full min-h-0 flex-col p-6">
+      <TableView
+        columns={columns}
+        rows={monitoringQuery.data ?? []}
+        rowKey={(row) => `${row.appointmentId}-${row.triggerName}`}
+        onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
+        testId="table-monitoring"
+        stickyHeader
+        emptyState={(
+          <ListEmptyState
+            fallbackTitle="Keine problematischen Termine gefunden."
+            fallbackBody="Derzeit liegen keine aktiven Monitoring-Treffer vor."
+          />
+        )}
+      />
     </div>
   );
 
@@ -292,6 +216,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       helpKey="monitoring"
       isLoading={isInitialLoading && !initialItems}
       contentSlot={content}
+      footerSlot={configPanel}
     />
   );
 }

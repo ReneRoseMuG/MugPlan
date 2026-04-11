@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, startOfISOWeek } from "date-fns";
+import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import type { z } from "zod";
 import { api } from "@shared/routes";
@@ -151,6 +151,7 @@ async function fetchAllTourenplanAppointmentDetails(params: {
 export function TourenplanReportPanel({
   defaultReportRange,
   defaultIsoWeek,
+  defaultIsoWeekYear,
   isAdmin,
 }: TourenplanReportPanelProps) {
   const { setSetting } = useSettings();
@@ -214,6 +215,7 @@ export function TourenplanReportPanel({
 
   const currentWeekRange = React.useMemo(() => buildQuickRange(defaultReportRange.referenceDate, 0), [defaultReportRange.referenceDate]);
   const nextWeekRange = React.useMemo(() => buildQuickRange(defaultReportRange.referenceDate, 1), [defaultReportRange.referenceDate]);
+  const kwStartMax = React.useMemo(() => getISOWeeksInYear(new Date(defaultIsoWeekYear, 0, 4)), [defaultIsoWeekYear]);
 
   const kwRange = React.useMemo(() => resolveReportRangeFromKw({
     kwStart,
@@ -498,6 +500,7 @@ export function TourenplanReportPanel({
             void persistRangeConfig({ toDate: resolved });
           }}
           kwStart={kwStart ?? defaultIsoWeek}
+          kwStartMax={kwStartMax}
           weekCount={weekCount}
           onKwStartChange={(nextValue) => {
             setKwStart(nextValue);

@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - TR-01 meldet zukuenftige Termine innerhalb des konfigurierten Horizonts oder optional alle zukuenftigen Termine.
- * - Unterbesetzte Termine liefern Triggername und Problemtext stabil.
+ * - Unterbesetzte Termine liefern Triggername, Problemtext und die aktuelle Monitoring-Item-Struktur stabil.
  * - Ohne Lese-Rolle bleibt das Ergebnis gesperrt.
  *
  * Fehlerfaelle:
@@ -82,8 +82,10 @@ describe("FT31 unit: monitoringService", () => {
       {
         appointmentId: 11,
         startDate: "2099-01-01",
-        endDate: null,
+        startTime: undefined,
         tourName: "Nord",
+        projectName: undefined,
+        customerName: undefined,
         employeeCount: 1,
         triggerName: "TR-01 Ressourcenunterschreitung",
         problemDescription: "Nur 1 Mitarbeiter zugewiesen; mindestens 2 erforderlich.",
@@ -91,8 +93,10 @@ describe("FT31 unit: monitoringService", () => {
       {
         appointmentId: 13,
         startDate: "2099-01-03",
-        endDate: "2099-01-04",
+        startTime: undefined,
         tourName: null,
+        projectName: undefined,
+        customerName: undefined,
         employeeCount: 0,
         triggerName: "TR-01 Ressourcenunterschreitung",
         problemDescription: "Nur 0 Mitarbeiter zugewiesen; mindestens 2 erforderlich.",
@@ -127,8 +131,10 @@ describe("FT31 unit: monitoringService", () => {
       {
         appointmentId: 50,
         startDate: "2099-02-15",
-        endDate: null,
+        startTime: undefined,
         tourName: null,
+        projectName: undefined,
+        customerName: undefined,
         employeeCount: 0,
         triggerName: "TR-01 Ressourcenunterschreitung",
         problemDescription: "Nur 0 Mitarbeiter zugewiesen; mindestens 2 erforderlich.",

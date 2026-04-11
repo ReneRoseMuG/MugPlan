@@ -103,7 +103,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   const monday = getRelativeBerlinDate(1);
   const tuesday = getRelativeBerlinDate(2);
   const nextMonday = getRelativeBerlinDate(8);
-  const nextTuesday = getRelativeBerlinDate(9);
+  const finalPreviewDate = getRelativeBerlinDate(9);
 
   const neutralCustomer = await createCustomerFixtureWithOverrides({
     prefix: "TP-NEUTRAL",
@@ -227,8 +227,8 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   });
   const reklAppointment = await createAppointmentFixture({
     projectId: reklProject.id,
-    startDate: nextTuesday,
-    endDate: nextTuesday,
+    startDate: monday,
+    endDate: monday,
     tourId: tour.id,
     employeeIds: [employeeB.id],
   });
@@ -275,7 +275,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await page.getByTestId("select-reports-tourenplan-tour").click();
   await page.getByRole("option", { name: tour.name }).click();
   await page.getByTestId("reports-tourenplan-from-date").fill(monday);
-  await page.getByTestId("reports-tourenplan-to-date").fill(nextTuesday);
+  await page.getByTestId("reports-tourenplan-to-date").fill(finalPreviewDate);
 
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();

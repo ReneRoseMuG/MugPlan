@@ -8,11 +8,13 @@
  * - /api/appointments/list liefert im Tour-Kontext standardmaessig aufsteigend nach Datum/Zeit/ID.
  * - /api/appointments/list liefert im Mitarbeiter-Kontext standardmaessig aufsteigend nach Datum.
  * - /api/appointments/list filtert optional ueber Auftragsnummer per Teiltreffer.
+ * - availableRange ignoriert aktive Datumseinschraenkungen und beschreibt weiter die volle Basismenge.
  *
  * Fehlerfaelle:
  * - Liste wird nicht aufsteigend ausgeliefert.
  * - Filterkontext (tourId/employeeId) liefert Fremdtermine.
  * - Auftragsnummer-Filter schliesst gueltige Teiltreffer aus.
+ * - availableRange wird auf den aktuell gefilterten Zeitraum zusammengestutzt.
  *
  * Ziel:
  * Serverseitigen Sortiervertrag der Formular-Terminlisten regressionssicher absichern.
@@ -133,6 +135,10 @@ describe("FT28 integration: appointments list default sorting", () => {
     const items = response.body.items as Array<{ id: number; employees: Array<{ id: number }> }>;
     expect(items.map((entry) => entry.id)).toEqual([oldest.id, middle.id, newest.id]);
     expect(items.every((entry) => entry.employees.some((assigned) => assigned.id === employee.id))).toBe(true);
+    expect(response.body.availableRange).toEqual({
+      dateFrom: "2099-11-01",
+      dateTo: "2099-11-03",
+    });
   });
 
   it("filters list by orderNumber using partial matches", async () => {
@@ -177,5 +183,38 @@ describe("FT28 integration: appointments list default sorting", () => {
       .expect(200);
     const noMatchItems = noMatchResponse.body.items as Array<{ id: number }>;
     expect(noMatchItems).toHaveLength(0);
+  });
+
+  it("keeps availableRange on the full base set when date filters narrow the visible rows", async () => {
+    const agent = await loginAdminAgent(app);
+    const tour = await createTourFixture("#1188aa");
+    const { project } = await createProjectFixture("FT28-RANGE-A");
+    const { project: secondProject } = await createProjectFixture("FT28-RANGE-B");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-08-01",
+      startTime: "08:00:00",
+      tourId: tour.id,
+      employeeIds: [],
+    });
+    const visible = await createAppointmentFixture({
+      projectId: secondProject.id,
+      startDate: "2099-08-15",
+      startTime: "10:00:00",
+      tourId: tour.id,
+      employeeIds: [],
+    });
+
+    const response = await agent
+      .get(`/api/appointments/list?tourId=${tour.id}&dateFrom=2099-08-10&dateTo=2099-08-20&page=1&pageSize=50`)
+      .expect(200);
+
+    const items = response.body.items as Array<{ id: number }>;
+    expect(items.map((entry) => entry.id)).toEqual([visible.id]);
+    expect(response.body.availableRange).toEqual({
+      dateFrom: "2099-08-01",
+      dateTo: "2099-08-15",
+    });
   });
 });

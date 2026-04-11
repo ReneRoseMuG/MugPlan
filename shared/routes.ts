@@ -618,8 +618,10 @@ const authenticatedResponseSchema = z.object({
 const monitoringItemSchema = z.object({
   appointmentId: z.number().int().positive(),
   startDate: z.string(),
-  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
   tourName: z.string().nullable(),
+  projectName: z.string().nullable(),
+  customerName: z.string().nullable(),
   employeeCount: z.number().int().min(0),
   triggerName: z.string().min(1),
   problemDescription: z.string().min(1),
@@ -1068,6 +1070,10 @@ export const api = {
           pageSize: z.number().int().min(1),
           total: z.number().int().min(0),
           totalPages: z.number().int().min(0),
+          availableRange: z.object({
+            dateFrom: z.string().nullable(),
+            dateTo: z.string().nullable(),
+          }),
           items: z.array(
             z.object({
               id: z.number(),

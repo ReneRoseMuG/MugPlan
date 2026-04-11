@@ -30,6 +30,10 @@ vi.mock("@tanstack/react-query", () => ({
           pageSize: 25,
           total: appointmentItems.length,
           totalPages: 1,
+          availableRange: {
+            dateFrom: "2099-02-01",
+            dateTo: "2099-02-02",
+          },
           items: appointmentItems,
         },
         isLoading: false,

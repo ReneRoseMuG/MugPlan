@@ -2,13 +2,13 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
+ * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich, Sidebar und Footer.
  * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Wochenplanung wird ueber die Abfrage gerendert.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
- * - Das Tourformular bleibt am alten Layout haengen oder rendert versehentlich eine leere Sidebar.
+ * - Das Tourformular verliert die erwartete Sidebar oder rendert die Shell-Struktur unvollständig.
  * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Wochenplanung verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
  * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
@@ -156,7 +156,7 @@ describe("FT04 tour form shell layout integration", () => {
     });
   });
 
-  it("renders the expected create elements in shell mode without a sidebar", () => {
+  it("renders the expected create elements in shell mode with the sidebar", () => {
     const markup = renderToStaticMarkup(
       <TourEditForm
         tour={null}
@@ -173,7 +173,8 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell-header");
     expect(markup).toContain("tour-form-main-column");
     expect(markup).toContain("entity-form-shell-footer");
-    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("tour-form-sidebar");
     expect(markup).toContain("button-close-tour");
     expect(markup).toContain("button-cancel-tour");
     expect(markup).toContain("button-save-tour");
@@ -216,7 +217,8 @@ describe("FT04 tour form shell layout integration", () => {
     );
 
     expect(markup).toContain("entity-form-shell");
-    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("tour-form-sidebar");
     expect(markup).toContain("button-delete-tour-form");
     expect(markup).toContain("input-tour-name");
     expect(markup).toContain("Nordtour");

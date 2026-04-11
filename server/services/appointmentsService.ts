@@ -1166,7 +1166,7 @@ export async function listAppointmentsList(params: {
   const normalizedCustomerLastName = params.customerLastName?.trim();
   const normalizedCustomerNumber = params.customerNumber?.trim();
 
-  const { rows, total } = await appointmentsRepository.listAppointmentsForList(
+  const { rows, total, availableRange } = await appointmentsRepository.listAppointmentsForList(
     {
       employeeId: params.employeeId,
       projectId: params.projectId,
@@ -1269,6 +1269,7 @@ export async function listAppointmentsList(params: {
     pageSize: params.pageSize,
     total,
     totalPages,
+    availableRange,
     items,
   };
 }

@@ -166,7 +166,7 @@ test("keeps visible tag rows on regular and spanning week appointment cards", as
   await expect(page.getByTestId(`week-appointment-tags-${regularAppointment.id}-badges-tag-${customerTag.id}`)).toBeVisible();
   await expect(page.getByTestId(`week-appointment-tags-${regularAppointment.id}-badges-tag-${projectTag.id}`)).toBeVisible();
 
-  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${appointmentTag.id}`)).toBeVisible();
-  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${customerTag.id}`)).toBeVisible();
-  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${projectTag.id}`)).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${appointmentTag.id}`).first()).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${customerTag.id}`).first()).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-tags-${spanningAppointment.id}-badges-tag-${projectTag.id}`).first()).toBeVisible();
 });

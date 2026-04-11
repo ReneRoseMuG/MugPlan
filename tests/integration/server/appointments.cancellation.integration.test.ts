@@ -5,13 +5,14 @@
  * - Der Public-Tagkatalog filtert geschuetzte System-Tags domänenspezifisch fuer Picker.
  * - Ohne Domain-Query entspricht `/api/tags` der restriktiven appointment-Sicht.
  * - Die Admin-Tagverwaltung normalisiert geschuetzte System-Tags auf isDefault=true und blockiert Update/Delete.
- * - Der Einweg-Storno setzt den reservierten Tag idempotent, zieht Mitarbeiter ab und setzt den Projektbetrag auf 0.
+ * - Der Einweg-Storno benötigt den reservierten Tag aus dem System-Seed, zieht danach Mitarbeiter ab und setzt den Projektbetrag auf 0.
  * - Das Entfernen des reservierten Tags ueber den generischen Termin-Tag-Pfad ist blockiert.
  *
  * Fehlerfaelle:
  * - System-Tags erscheinen im falschen Picker-Kontext.
  * - Der reservierte Tag kann in den Stammdaten umbenannt oder geloescht werden.
  * - Projektgebundene Stornos behalten den bisherigen Projektbetrag.
+ * - Ein fehlender reservierter Tag wird im Storno-Flow stillschweigend vorausgesetzt.
  * - Ein stornierter Termin bleibt ueber normale Mutationspfade veraenderbar.
  *
  * Ziel:
@@ -22,12 +23,15 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
 import {
+  MANAGED_COMPLAINT_TAG_COLOR,
   MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import * as projectsService from "../../../server/services/projectsService";
+import { applySystemSeed } from "../../../server/services/systemSeedService";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
@@ -46,6 +50,7 @@ beforeAll(async () => {
 describe("FT01/FT28 integration: appointment cancellation workflow", () => {
   it("filters protected system tags per picker domain, auto-creates them, and keeps them protected in admin master data", async () => {
     const admin = await loginAdminAgent(app);
+    await applySystemSeed();
 
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
@@ -67,13 +72,13 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       expect((body as Array<{ name: string; color: string }>)).toContainEqual(
         expect.objectContaining({
           name: MANAGED_COMPLAINT_TAG_NAME,
-          color: "#f97316",
+          color: MANAGED_COMPLAINT_TAG_COLOR,
         }),
       );
       expect((body as Array<{ name: string; color: string }>)).toContainEqual(
         expect.objectContaining({
           name: MANAGED_SPECIAL_MEASURE_TAG_NAME,
-          color: "#1e3a8a",
+          color: MANAGED_SPECIAL_MEASURE_TAG_COLOR,
         }),
       );
     });
@@ -112,7 +117,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     expect(managedReportTag).toBeDefined();
     expect(managedReportTag?.isDefault).toBe(true);
     expect(managedSpecialMeasureTag).toBeDefined();
-    expect(managedSpecialMeasureTag?.color).toBe("#1e3a8a");
+    expect(managedSpecialMeasureTag?.color).toBe(MANAGED_SPECIAL_MEASURE_TAG_COLOR);
     expect(managedSpecialMeasureTag?.isDefault).toBe(true);
 
     await admin
@@ -164,8 +169,9 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       });
   });
 
-  it("cancels an appointment versioniert and rejects stale repeats afterwards", async () => {
+  it("requires the seeded cancellation tag, then cancels versioniert and rejects stale repeats afterwards", async () => {
     const admin = await loginAdminAgent(app);
+    await applySystemSeed();
     const [existingCancellationTag] = await db
       .select({ id: tags.id })
       .from(tags)
@@ -191,6 +197,15 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       employeeIds: [employeeA.id, employeeB.id],
     });
 
+    await admin
+      .post(`/api/appointments/${appointment.id}/cancel`)
+      .send({ version: appointment.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await applySystemSeed();
     await admin.post(`/api/appointments/${appointment.id}/cancel`).send({ version: appointment.version }).expect(204);
     await admin
       .post(`/api/appointments/${appointment.id}/cancel`)
@@ -281,6 +296,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
 
   it("repairs pre-existing cancelled appointments by clearing lingering employee assignments", async () => {
     const admin = await loginAdminAgent(app);
+    await applySystemSeed();
     await admin.get("/api/admin/master-data/tags").expect(200);
     const customer = await createCustomerFixture("FT28-CANCEL-REPAIR");
     const employee = await createEmployeeFixture("FT28-CANCEL-REPAIR-EMP");

@@ -204,6 +204,10 @@ test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anha
   await loginAsAdmin(page);
 
   await page.getByTestId("nav-termine").click();
+  const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
+  if (!(await allScopeToggle.isVisible())) {
+    await page.getByTestId("button-appointment-period-picker").click();
+  }
   await expect(page.getByTestId("toggle-appointments-scope-all")).toHaveAttribute("data-state", "on");
   const appointmentRow = page.getByRole("row").filter({ hasText: "FT19 Historischer Termin" }).first();
   await expect(appointmentRow).toBeVisible({ timeout: 10_000 });

@@ -4,13 +4,13 @@
  * Abgedeckte Regeln:
  * - TourEditForm bindet die eingebettete Terminliste mit Tour-Kontext und dem tour-spezifischen helpKey an.
  * - Die terminbasierte Mitarbeiterabfrage blockiert die Terminlisten-Verdrahtung nicht.
- * - Das Tourformular rendert im neuen Shell-Layout bewusst keine Sidebar.
+ * - Das Tourformular rendert im neuen Shell-Layout die leere Sidebar-Spalte.
  * - Veraltete Legacy-Props werden nicht mehr an die Terminliste weitergereicht.
  *
  * Fehlerfaelle:
  * - Die Terminliste verliert ihren Tour-Kontext oder den spezifischen helpKey.
  * - Der leere Neuanlagezustand verschwindet aus dem Formular oder landet ausserhalb des Hauptbereichs.
- * - Die Shell rendert versehentlich wieder eine Sidebar.
+ * - Die Shell verliert die vorgesehene Sidebar-Spalte wieder.
  * - Alte Prop-Pfade tauchen wieder an der Terminliste auf.
  *
  * Ziel:
@@ -146,13 +146,12 @@ describe("FT04 TourEditForm appointments list behavior", () => {
       />,
     );
 
-    expect(entityFormShellCalls[0]?.sidebar).toBeUndefined();
+    expect(entityFormShellCalls[0]?.sidebar).toBeTruthy();
     expect(appointmentsListPageCalls[0]).toMatchObject({
       title: "Termine",
       helpKey: "appointments.list.tourForm",
       context: { type: "tour", tourId: null },
       className: "min-h-0 flex-1",
-      splitDateRangeRow: true,
     });
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("hideTourFilter");
     expect(appointmentsListPageCalls[0]).not.toHaveProperty("lockedTourId");
@@ -161,7 +160,7 @@ describe("FT04 TourEditForm appointments list behavior", () => {
     expect(html).toContain("entity-form-shell-header");
     expect(html).toContain("tour-form-main-column");
     expect(html).toContain("entity-form-shell-footer");
-    expect(html).not.toContain("entity-form-shell-sidebar");
+    expect(html).toContain("entity-form-shell-sidebar");
     expect(html).not.toContain("Nach dem Speichern der Tour werden Termine angezeigt.");
   });
 

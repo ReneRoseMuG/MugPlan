@@ -14,8 +14,10 @@ export type MonitoringConfig = {
 export type MonitoringItem = {
   appointmentId: number;
   startDate: string;
-  endDate: string | null;
+  startTime: string | null;
   tourName: string | null;
+  projectName: string | null;
+  customerName: string | null;
   employeeCount: number;
   triggerName: string;
   problemDescription: string;
@@ -66,13 +68,6 @@ function parseDateOnly(input: string): Date {
   return new Date(year, month - 1, day);
 }
 
-function addDaysToDateOnly(dateOnly: string, days: number): string {
-  const [year, month, day] = dateOnly.split("-").map((value) => Number.parseInt(value, 10));
-  const date = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
-  date.setUTCDate(date.getUTCDate() + days);
-  return formatBerlinDate(date);
-}
-
 function assertMonitoringReadRole(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
     throw new MonitoringError(403, "FORBIDDEN");
@@ -110,10 +105,8 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
 
   const config = await readMonitoringConfig();
   const todayBerlin = getBerlinTodayDateString();
-  const tr01HorizonEnd = addDaysToDateOnly(todayBerlin, config.tr01.horizonDays);
   const rows = await appointmentsRepository.listAppointmentsForMonitoring({
     fromDate: parseDateOnly(todayBerlin),
-    toDate: config.tr01.allAppointments ? undefined : parseDateOnly(tr01HorizonEnd),
   });
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(
     rows.map((row) => row.appointmentId),
@@ -127,9 +120,6 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
     if (row.startDate < todayBerlin) {
       continue;
     }
-    if (!config.tr01.allAppointments && row.startDate > tr01HorizonEnd) {
-      continue;
-    }
     if (row.employeeCount >= config.tr01.minimumEmployees) {
       continue;
     }
@@ -137,8 +127,10 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
     items.push({
       appointmentId: row.appointmentId,
       startDate: row.startDate,
-      endDate: row.endDate,
+      startTime: row.startTime,
       tourName: row.tourName,
+      projectName: row.projectName,
+      customerName: row.customerName,
       employeeCount: row.employeeCount,
       triggerName: "TR-01 Ressourcenunterschreitung",
       problemDescription: buildProblemDescription(row.employeeCount, config.tr01.minimumEmployees),

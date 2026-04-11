@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TeamEditForm rendert im EntityFormShell-Layout Header, Hauptbereich und Footer ohne Sidebar.
+ * - TeamEditForm rendert im EntityFormShell-Layout Header, Hauptbereich, Sidebar und Footer.
  * - Im Create-Modus bleiben die erwarteten Bedienelemente fuer Farbauswahl, Mitgliederbereich und Footer sichtbar.
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Mitglieder werden weiter sichtbar gerendert.
  *
  * Fehlerfaelle:
- * - Das Teamformular bleibt am alten Layout haengen oder rendert versehentlich eine leere Sidebar.
+ * - Das Teamformular verliert die erwartete Sidebar oder rendert die Shell-Struktur unvollständig.
  * - Erwartete Team-Elemente wie Save/Cancel, Farbauswahl oder Mitgliederbereich verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
  *
@@ -101,7 +101,7 @@ const teamFixture = {
 describe("FT06/FT07 team form shell layout integration", () => {
   const noop = async () => undefined;
 
-  it("renders the expected create elements in shell mode without a sidebar", () => {
+  it("renders the expected create elements in shell mode with the sidebar", () => {
     const markup = renderToStaticMarkup(
       <TeamEditForm
         team={null}
@@ -118,7 +118,8 @@ describe("FT06/FT07 team form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell-header");
     expect(markup).toContain("team-form-main-column");
     expect(markup).toContain("entity-form-shell-footer");
-    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("team-form-sidebar");
     expect(markup).toContain("button-close-team");
     expect(markup).toContain("button-cancel-team");
     expect(markup).toContain("button-save-team");
@@ -143,7 +144,8 @@ describe("FT06/FT07 team form shell layout integration", () => {
     );
 
     expect(markup).toContain("entity-form-shell");
-    expect(markup).not.toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("entity-form-shell-sidebar");
+    expect(markup).toContain("team-form-sidebar");
     expect(markup).toContain("button-delete-team-form");
     expect(markup).toContain("badge-team-member-33");
   });

@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - `AppointmentsListPage` nutzt controlled Filter-, Paging-, Sortier- und `appointmentScope`-Props.
  * - Ohne controlled Props startet der Standalone-Fallback mit der ungefilterten Terminmenge.
+ * - Reset stellt Scope und freie Terminfilter auf die ungefilterte Grundmenge zurueck.
  *
  * Fehlerfaelle:
  * - Controlled Props werden ignoriert und interne Werte bleiben aktiv.
  * - Der uncontrolled Fallback aktiviert unerwartet weiter einen Heute-Filter.
+ * - Der Reset behaelt freie Text-/Tag-/Datumsfilter oder den Scope faelschlich bei.
  *
  * Ziel:
  * Die Terminliste auf kontrollierten Zustand und stabilen Standalone-Fallback absichern.
@@ -87,6 +89,10 @@ describe("FT04 appointments list page controlled state", () => {
             pageSize: 25,
             total: 2,
             totalPages: 2,
+            availableRange: {
+              dateFrom: "2099-04-01",
+              dateTo: "2099-04-30",
+            },
             items: [
               {
                 id: 7,
@@ -194,5 +200,50 @@ describe("FT04 appointments list page controlled state", () => {
       orderNumber: "",
       tagIds: [],
     });
+  });
+
+  it("resets scope and free filters back to the base appointments set", () => {
+    const onFiltersChange = vi.fn();
+    const onPageChange = vi.fn();
+    const onAppointmentScopeChange = vi.fn();
+
+    renderToStaticMarkup(
+      <AppointmentsListPage
+        context={{ type: "standalone" }}
+        filters={{
+          employeeId: undefined,
+          projectTitle: "Extern",
+          customerLastName: "Kunde",
+          customerNumber: "33",
+          orderNumber: "77",
+          tagIds: [4],
+          tourId: 4,
+          dateFrom: "2099-04-10",
+          dateTo: "2099-04-30",
+        }}
+        onFiltersChange={onFiltersChange}
+        page={2}
+        onPageChange={onPageChange}
+        appointmentScope="planned"
+        onAppointmentScopeChange={onAppointmentScopeChange}
+      />,
+    );
+
+    expect(typeof filterPanelCalls[0]?.onResetAll).toBe("function");
+    (filterPanelCalls[0]?.onResetAll as () => void)();
+
+    expect(onAppointmentScopeChange).toHaveBeenCalledWith("all");
+    expect(onFiltersChange).toHaveBeenCalledWith({
+      employeeId: undefined,
+      projectTitle: "",
+      customerLastName: "",
+      customerNumber: "",
+      orderNumber: "",
+      tagIds: [],
+      tourId: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+    });
+    expect(onPageChange).toHaveBeenCalledWith(1);
   });
 });
