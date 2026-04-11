@@ -148,6 +148,31 @@ async function saveExistingAppointment(page: Page, appointmentId: number) {
   expect(response.ok()).toBeTruthy();
 }
 
+async function seedAppointmentFormNoise(prefix: string, referenceDate: string) {
+  const noiseCustomer = await createCustomerFixture(`${prefix}-NOISE-CUST`);
+  const noiseProject = await createProjectFixture({
+    prefix: `${prefix}-NOISE-PROJ`,
+    customerId: noiseCustomer.id,
+    name: `${prefix} Noise Projekt`,
+  });
+  const noiseTour = await createTourFixture("#64748b");
+  const noiseEmployeeA = await createEmployeeFixture(`${prefix}-NOISE-A`);
+  const noiseEmployeeB = await createEmployeeFixture(`${prefix}-NOISE-B`);
+
+  await createAppointmentFixture({
+    projectId: noiseProject.id,
+    startDate: referenceDate,
+    tourId: noiseTour.id,
+    employeeIds: [noiseEmployeeA.id],
+  });
+  await createAppointmentFixture({
+    projectId: noiseProject.id,
+    startDate: getRelativeBerlinDate(35),
+    tourId: null,
+    employeeIds: [noiseEmployeeB.id],
+  });
+}
+
 test("shows the tour picker inside the employee panel and persists a newly selected tour", async ({ page }) => {
   const customer = await createCustomerFixture("FT01-LAYOUT-CUST");
   const team = await createTeamFixture("#7c3aed");
@@ -156,6 +181,7 @@ test("shows the tour picker inside the employee panel and persists a newly selec
     customerId: customer.id,
     startDate: getRelativeBerlinDate(2),
   });
+  await seedAppointmentFormNoise("FT01-LAYOUT-CUST", getRelativeBerlinDate(2));
 
   await openExistingAppointment(page, appointment.id);
 
@@ -190,6 +216,7 @@ test("renders an existing tour as a separate badge and restores the picker after
     startDate: getRelativeBerlinDate(3),
     tourId: tour.id,
   });
+  await seedAppointmentFormNoise("FT01-LAYOUT-CUST-TOUR", getRelativeBerlinDate(3));
 
   await openExistingAppointment(page, appointment.id);
 
@@ -219,15 +246,18 @@ test("assigns a tour without week planning and keeps the existing employees unch
   const customer = await createCustomerFixture("FT04-NO-WEEKPLAN-CUST");
   const tour = await createTourFixture("#225566");
   const existingEmployee = await createEmployeeFixture("FT04-NO-WEEKPLAN-EMP");
+  const sideEmployee = await createEmployeeFixture("FT04-NO-WEEKPLAN-SIDE");
   const appointment = await createAppointmentFixture({
     customerId: customer.id,
     startDate: nextWeek.weekSecondDate,
-    employeeIds: [existingEmployee.id],
+    employeeIds: [existingEmployee.id, sideEmployee.id],
   });
+  await seedAppointmentFormNoise("FT04-NO-WEEKPLAN", nextWeek.weekSecondDate);
 
   await openExistingAppointmentInNextWeek(page, appointment.id);
 
   await expect(page.getByTestId(`badge-employee-${existingEmployee.id}`)).toBeVisible();
+  await expect(page.getByTestId(`badge-employee-${sideEmployee.id}`)).toBeVisible();
   await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
   await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
 
@@ -242,7 +272,7 @@ test("assigns a tour without week planning and keeps the existing employees unch
     };
   }).toEqual({
     tourId: tour.id,
-    employeeIds: [existingEmployee.id],
+    employeeIds: [existingEmployee.id, sideEmployee.id].sort((a, b) => a - b),
   });
 });
 
@@ -251,6 +281,7 @@ test("opens the week preview for a new next-week appointment and applies the pla
   const project = await createProjectFixture({ prefix: "FT04-APPT-NEW", name: "FT04 Appointment New" });
   const tour = await createTourFixture("#225588");
   const weekEmployee = await createEmployeeFixture("FT04-APPT-WEEK");
+  await seedAppointmentFormNoise("FT04-APPT-NEW", nextWeek.weekStartDate);
 
   await db.insert(tourWeekEmployees).values({
     tourId: tour.id,
@@ -287,11 +318,52 @@ test("opens the week preview for a new next-week appointment and applies the pla
   });
 });
 
+test("keeps the selected tour but no employees when the week preview is canceled for a new lane appointment", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "FT04-APPT-CANCEL", name: "FT04 Appointment Cancel" });
+  const tour = await createTourFixture("#0f766e");
+  const weekEmployee = await createEmployeeFixture("FT04-APPT-CANCEL-WEEK");
+  await seedAppointmentFormNoise("FT04-APPT-CANCEL", nextWeek.weekStartDate);
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: weekEmployee.id,
+  });
+
+  await openNewAppointmentFromNextWeekTourLane(page, nextWeek.weekStartDate, tour.id);
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId("badge-tour")).toBeVisible();
+  await expect(page.getByTestId(`badge-employee-${weekEmployee.id}`)).toHaveCount(0);
+
+  await selectProject(page, project);
+  const createdAppointmentId = await saveAppointmentAndResolveId(page);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${createdAppointmentId}`);
+    const body = await response.json();
+    return {
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    tourId: tour.id,
+    employeeIds: [],
+  });
+});
+
 test("marks conflicting week employees as non-selectable for new appointments", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const project = await createProjectFixture({ prefix: "FT04-APPT-CONFLICT", name: "FT04 Appointment Conflict" });
   const tour = await createTourFixture("#1d4ed8");
   const weekEmployee = await createEmployeeFixture("FT04-APPT-CONFLICT-EMP");
+  await seedAppointmentFormNoise("FT04-APPT-CONFLICT", nextWeek.weekStartDate);
 
   await db.insert(tourWeekEmployees).values({
     tourId: tour.id,
@@ -324,6 +396,8 @@ test("uses the already confirmed preview decision when an existing appointment c
   const targetTour = await createTourFixture("#7c3aed");
   const currentEmployee = await createEmployeeFixture("FT04-APPT-CURRENT");
   const weekEmployee = await createEmployeeFixture("FT04-APPT-REPLACE-WEEK");
+  const sideEmployee = await createEmployeeFixture("FT04-APPT-REPLACE-SIDE");
+  await seedAppointmentFormNoise("FT04-APPT-REPLACE", nextWeek.weekSecondDate);
 
   await db.insert(tourWeekEmployees).values({
     tourId: targetTour.id,
@@ -336,7 +410,7 @@ test("uses the already confirmed preview decision when an existing appointment c
     projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: sourceTour.id,
-    employeeIds: [currentEmployee.id],
+    employeeIds: [currentEmployee.id, sideEmployee.id],
   });
 
   await openExistingAppointmentInNextWeek(page, appointment.id);
@@ -348,6 +422,9 @@ test("uses the already confirmed preview decision when an existing appointment c
   const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(immediateDialog).toBeVisible();
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
+    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+  );
+  await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
     "Bleibt nur durch aktuelle Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
@@ -381,6 +458,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
   const tour = await createTourFixture("#336688");
   const currentEmployee = await createEmployeeFixture("FT04-APPT-DATE-CURRENT");
   const plannedEmployee = await createEmployeeFixture("FT04-APPT-DATE-WEEK");
+  await seedAppointmentFormNoise("FT04-APPT-DATE-KW", targetWeekSecondDate);
 
   await db.insert(tourWeekEmployees).values({
     tourId: tour.id,
@@ -443,6 +521,7 @@ test("allows manually adding an employee to an existing appointment through the 
     startDate: getRelativeBerlinDate(4),
     employeeIds: [],
   });
+  await seedAppointmentFormNoise("FT01-MANUAL-SWAP", getRelativeBerlinDate(4));
 
   await openExistingAppointment(page, appointment.id);
 
@@ -470,5 +549,86 @@ test("allows manually adding an employee to an existing appointment through the 
   }).toEqual({
     version: beforePayload.version + 1,
     employeeIds: [replacementEmployee.id],
+  });
+});
+
+test("keeps existing employees when removing the tour from an existing appointment", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT04-REMOVE-TOUR-CUST");
+  const tour = await createTourFixture("#7c3aed");
+  const employeeA = await createEmployeeFixture("FT04-REMOVE-TOUR-A");
+  const employeeB = await createEmployeeFixture("FT04-REMOVE-TOUR-B");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [employeeA.id, employeeB.id],
+  });
+  await seedAppointmentFormNoise("FT04-REMOVE-TOUR", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await expect(page.getByTestId(`badge-employee-${employeeA.id}`)).toBeVisible();
+  await expect(page.getByTestId(`badge-employee-${employeeB.id}`)).toBeVisible();
+
+  await page.getByTestId("badge-tour-remove").click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    tourId: null,
+    employeeIds: [employeeA.id, employeeB.id].sort((a, b) => a - b),
+  });
+});
+
+test("opens the week preview when an existing appointment without tour later gets a tour with week planning and keeps employees empty after cancel", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "FT04-NO-LANE", name: "FT04 No Lane Projekt" });
+  const tour = await createTourFixture("#2563eb");
+  const weekEmployee = await createEmployeeFixture("FT04-NO-LANE-WEEK");
+  await seedAppointmentFormNoise("FT04-NO-LANE", nextWeek.weekSecondDate);
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: weekEmployee.id,
+  });
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: null,
+    employeeIds: [],
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Wochenplanung fuer Termin uebernehmen");
+  await dialog.getByRole("button", { name: "Abbrechen" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(page.getByTestId("badge-tour")).toBeVisible();
+  await expect(page.getByTestId(`badge-employee-${weekEmployee.id}`)).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    tourId: tour.id,
+    employeeIds: [],
   });
 });
