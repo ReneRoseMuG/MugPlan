@@ -115,7 +115,7 @@ test("validates the footer week picker against min and max bounds", async ({ pag
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.maxIsoWeek + 1));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByText("Kalenderwoche zu gross")).toBeVisible();
+  await expect(page.getByText("Kalenderwoche zu gross", { exact: true })).toBeVisible();
   await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.maxIsoWeek + 1}`)).toHaveCount(0);
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));

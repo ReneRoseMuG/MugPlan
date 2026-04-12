@@ -344,7 +344,7 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(vorlauflisteTable).toContainText("Fenster Klein Voll");
   await expect(vorlauflisteTable).not.toContainText("KOL");
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
-  await expect(page.getByTestId(`reports-vorlaufliste-indicator-${specialProject.project.id}`)).toHaveCSS("background-color", "rgb(30, 58, 138)");
+  await expect(page.getByTestId(`reports-vorlaufliste-indicator-${specialProject.project.id}`)).toHaveCSS("background-color", "rgb(186, 117, 23)");
   await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Storniert");
   await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Sondermaß / Info-Tag");
   expect(await rowByText(vorlauflisteTable, specialProject.customer.fullName ?? "").getAttribute("style")).toBeNull();

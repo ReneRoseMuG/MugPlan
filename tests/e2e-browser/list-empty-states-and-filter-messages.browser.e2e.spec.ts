@@ -93,13 +93,14 @@ test.describe("empty states on empty datasets", () => {
     await expect(boardEmptyMessage(board, "Keine Mitarbeiter vorhanden.")).toBeVisible();
   });
 
-  test("tours list: empty state is visible on empty data", async ({ page }) => {
+  test("tours list: reset baseline shows seeded system tours instead of an empty state", async ({ page }) => {
     await loginAsAdmin(page);
     await page.getByTestId("nav-touren").click();
 
     const board = page.getByTestId("list-tours");
     await expect(board).toBeVisible();
-    await expect(board.getByText("Keine Touren vorhanden")).toBeVisible();
+    await expect(board.getByText("Keine Touren vorhanden")).toHaveCount(0);
+    await expect(board.getByTestId(/card-tour-/).first()).toBeVisible();
   });
 
   test("teams list: empty state is visible on empty data", async ({ page }) => {

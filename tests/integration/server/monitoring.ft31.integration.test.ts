@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - FT31 liefert Disponent/Admin frische Monitoring-Treffer nur fuer zukuenftige Termine im Horizont.
+ * - FT31 liefert Disponent/Admin frische Monitoring-Treffer aus der aktuellen Standardgrundmenge aller Termine.
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
  * - Monitoring wird live aus Terminmutationen berechnet, nicht aus dem Auth-Flow.
  * - Stornierte Termine werden im Monitoring ignoriert.
@@ -10,7 +10,7 @@
  *
  * Fehlerfaelle:
  * - Reader kann Monitoring lesen oder konfigurieren.
- * - Vergangene bzw. ausserhalb des Horizonts liegende Termine erscheinen in der Trefferliste.
+ * - Vergangene Termine oder ausreichend besetzte Termine erscheinen faelschlich in der Trefferliste.
  * - Terminmutationen spiegeln sich nicht im anschliessenden Monitoring wider.
  * - Stornierte Termine bleiben trotz Storno als Treffer sichtbar.
  * - Unterbesetzungen aus der Wochenplanung bleiben fuer FT31 unsichtbar.
@@ -98,7 +98,7 @@ async function ensureReservedCancellationTag() {
 }
 
 describe("FT31 integration: monitoring", () => {
-  it("returns under-staffed future appointments within the configured horizon for dispatcher/admin and rejects readers", async () => {
+  it("returns under-staffed appointments from the default appointment scope for dispatcher/admin and rejects readers", async () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
@@ -143,16 +143,24 @@ describe("FT31 integration: monitoring", () => {
     });
 
     const dispatcherResponse = await dispatcher.agent.get("/api/monitoring").expect(200);
-    expect(dispatcherResponse.body).toHaveLength(1);
-    expect(dispatcherResponse.body[0]).toMatchObject({
-      startDate: getRelativeBerlinDate(1),
-      tourName: tour.name,
-      employeeCount: 0,
-      triggerName: "TR-01 Ressourcenunterschreitung",
-    });
+    expect(dispatcherResponse.body).toHaveLength(2);
+    expect(dispatcherResponse.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        startDate: getRelativeBerlinDate(1),
+        tourName: tour.name,
+        employeeCount: 0,
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      }),
+      expect.objectContaining({
+        startDate: getRelativeBerlinDate(5),
+        tourName: tour.name,
+        employeeCount: 0,
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      }),
+    ]));
 
     const adminResponse = await admin.agent.get("/api/monitoring").expect(200);
-    expect(adminResponse.body).toHaveLength(1);
+    expect(adminResponse.body).toHaveLength(2);
 
     await reader.agent.get("/api/monitoring").expect(403).expect(({ body }) => {
       expect(body.code).toBe("FORBIDDEN");
@@ -227,7 +235,12 @@ describe("FT31 integration: monitoring", () => {
       employeeIds: [],
     });
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toEqual([]);
+      expect(body).toHaveLength(1);
+      expect(body[0]).toMatchObject({
+        appointmentId: appointment.id,
+        startDate: getRelativeBerlinDate(5),
+        triggerName: "TR-01 Ressourcenunterschreitung",
+      });
     });
 
     const detailResponse = await admin.agent.get(`/api/appointments/${appointment.id}`).expect(200);

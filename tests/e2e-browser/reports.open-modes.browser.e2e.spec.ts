@@ -19,7 +19,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
 import { MANAGED_SPECIAL_MEASURE_TAG_NAME } from "../../shared/appointmentCancellation";
-import { componentCategories, productCategories } from "../../shared/schema";
+import { componentCategories, productCategories, tags } from "../../shared/schema";
 import {
   attachProjectTagFixture,
   createAppointmentFixture,
@@ -73,6 +73,26 @@ async function openReportPopup(page: Page, testId: string) {
   await expect(popup.getByTestId("standalone-header")).toBeVisible();
   await expect(popup.getByTestId("sidebar")).toHaveCount(0);
   return popup;
+}
+
+async function ensureManagedSpecialMeasureTag() {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
+      isDefault: tags.isDefault,
+      version: tags.version,
+    })
+    .from(tags)
+    .where(eq(tags.name, MANAGED_SPECIAL_MEASURE_TAG_NAME))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createExactTagFixture(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
 }
 
 async function createReportProject(params: {
@@ -193,7 +213,7 @@ test("opens the vorlaufliste both inline and in a standalone tab with real repor
 test("opens the produktionsplanung both inline and in a standalone tab with real category and card content", async ({ page }) => {
   const inRangeDate = getRelativeBerlinDate(3);
   const outOfRangeDate = getRelativeBerlinDate(45);
-  const specialMeasureTag = await createExactTagFixture(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
+  const specialMeasureTag = await ensureManagedSpecialMeasureTag();
   const reportProduct = await createProductFixture({ categoryName: "Fass Saunen", name: "OpenMode PP Lookup Sauna" });
   const reportComponent = await createComponentFixture({ categoryName: "Fenster", name: "OpenMode PP Lookup Fenster" });
 
