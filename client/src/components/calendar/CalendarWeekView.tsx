@@ -47,6 +47,7 @@ import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection
 import { HoverPreview } from "@/components/ui/hover-preview";
 import type { CalendarNavCommand } from "@/pages/Home";
 import type { Tour } from "@shared/schema";
+import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -56,7 +57,7 @@ type CalendarWeekViewProps = {
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
   conflictHighlightActive?: boolean;
-  conflictAppointmentIds?: Set<number>;
+  conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
@@ -190,7 +191,7 @@ export function CalendarWeekView({
   weekLanesCollapsed: weekLanesCollapsedProp,
   onWeekLanesCollapsedChange,
   conflictHighlightActive = false,
-  conflictAppointmentIds = new Set<number>(),
+  conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   navCommand: _navCommand,
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
@@ -1036,7 +1037,8 @@ export function CalendarWeekView({
                                   ),
                                 ) + 1;
                               const isHighlighted = hoveredAppointmentId === appointment.id;
-                              const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
+                              const conflictMeta = conflictAppointmentMap.get(appointment.id);
+                              const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -1065,6 +1067,7 @@ export function CalendarWeekView({
                                   isLocked={isSegmentLocked}
                                   highlighted={isHighlighted}
                                   isConflict={isConflict}
+                                  conflictColor={conflictMeta?.color}
                                   onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                   onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                   onDragEnd={canDragSegment ? handleDragEnd : undefined}
@@ -1084,7 +1087,8 @@ export function CalendarWeekView({
                               if (!appointment) return null;
 
                               const isHighlighted = hoveredAppointmentId === appointment.id;
-                              const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
+                              const conflictMeta = conflictAppointmentMap.get(appointment.id);
+                              const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -1112,6 +1116,7 @@ export function CalendarWeekView({
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
                                     isConflict={isConflict}
+                                    conflictColor={conflictMeta?.color}
                                     onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
@@ -1142,7 +1147,8 @@ export function CalendarWeekView({
                                     if (!appointment) return null;
 
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
-                                    const isConflict = conflictHighlightActive && conflictAppointmentIds.has(appointment.id);
+                                    const conflictMeta = conflictAppointmentMap.get(appointment.id);
+                                    const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                                     const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isSegmentLocked && !isHistoricalSource;
@@ -1167,6 +1173,7 @@ export function CalendarWeekView({
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
                                         isConflict={isConflict}
+                                        conflictColor={conflictMeta?.color}
                                         onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                         onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                         onDragEnd={canDragSegment ? handleDragEnd : undefined}

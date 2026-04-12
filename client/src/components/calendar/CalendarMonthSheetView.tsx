@@ -27,12 +27,13 @@ import {
 } from "./monthLaneState";
 import { buildMonthSheetMatrix, type MonthSheetMatrix } from "./monthSheetModel";
 import type { Tour } from "@shared/schema";
+import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
 type CalendarMonthSheetViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
   conflictHighlightActive?: boolean;
-  conflictAppointmentIds?: Set<number>;
+  conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
@@ -68,7 +69,7 @@ export function CalendarMonthSheetView({
   currentDate,
   employeeFilterId,
   conflictHighlightActive = false,
-  conflictAppointmentIds = new Set<number>(),
+  conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthSheetViewProps) {
@@ -334,7 +335,7 @@ export function CalendarMonthSheetView({
           dayGridTemplate={dayGridTemplate}
           appointmentsById={appointmentsById}
           conflictHighlightActive={conflictHighlightActive}
-          conflictAppointmentIds={conflictAppointmentIds}
+          conflictAppointmentMap={conflictAppointmentMap}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
           draggedAppointmentId={draggedAppointmentId}
@@ -358,7 +359,7 @@ function MonthSheetSection({
   dayGridTemplate,
   appointmentsById,
   conflictHighlightActive,
-  conflictAppointmentIds,
+  conflictAppointmentMap,
   berlinToday,
   isAdmin,
   draggedAppointmentId,
@@ -376,7 +377,7 @@ function MonthSheetSection({
   dayGridTemplate: string;
   appointmentsById: Map<number, CalendarAppointment>;
   conflictHighlightActive: boolean;
-  conflictAppointmentIds: Set<number>;
+  conflictAppointmentMap: Map<number, MonitoringConflictMeta>;
   berlinToday: string;
   isAdmin: boolean;
   draggedAppointmentId: number | null;
@@ -580,6 +581,7 @@ function MonthSheetSection({
                         const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
                         const canDrag = !isLocked && !isHistoricalSource;
+                        const conflictMeta = conflictAppointmentMap.get(appointment.id);
 
                         return (
                           <div
@@ -596,7 +598,8 @@ function MonthSheetSection({
                               appointment={appointment}
                               isFirstDay={isSameDay(segmentStart, appointmentStart)}
                               isLastDay={isSameDay(segmentEnd, appointmentEnd)}
-                              isConflict={conflictHighlightActive && conflictAppointmentIds.has(appointment.id)}
+                              isConflict={conflictHighlightActive && Boolean(conflictMeta)}
+                              conflictColor={conflictMeta?.color}
                               hideOrderNumber={true}
                               showPopover={true}
                               isLocked={isLocked}

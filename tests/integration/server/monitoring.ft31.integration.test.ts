@@ -2,21 +2,20 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - FT31 liefert Disponent/Admin frische Monitoring-Treffer aus der aktuellen Standardgrundmenge aller Termine.
+ * - FT31 liefert Disponent/Admin frische Monitoring-Treffer fuer TR-01 und TR-02 aus echten Termindaten.
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
- * - Monitoring wird live aus Terminmutationen berechnet, nicht aus dem Auth-Flow.
- * - Stornierte Termine werden im Monitoring ignoriert.
+ * - Ein Termin mit beiden Triggern erscheint genau einmal mit kombinierter Triggeranzeige.
+ * - Stornierte und historische Termine werden fuer beide Trigger ignoriert.
  * - FT04-Wochenplan-Entfernungen machen unterbesetzte Tour-Termine unmittelbar im Monitoring sichtbar.
  *
  * Fehlerfaelle:
  * - Reader kann Monitoring lesen oder konfigurieren.
- * - Vergangene Termine oder ausreichend besetzte Termine erscheinen faelschlich in der Trefferliste.
- * - Terminmutationen spiegeln sich nicht im anschliessenden Monitoring wider.
- * - Stornierte Termine bleiben trotz Storno als Treffer sichtbar.
- * - Unterbesetzungen aus der Wochenplanung bleiben fuer FT31 unsichtbar.
+ * - Geparkte Termine fehlen trotz System-Tag im Monitoring.
+ * - Stornierte oder historische Treffer bleiben sichtbar.
+ * - TR-01-Konfiguration beeinflusst faelschlich den Geparkt-Trigger.
  *
  * Ziel:
- * FT31 end-to-end ueber API-, Persistenz- und Mutationspfad absichern.
+ * FT31 end-to-end ueber API-, Persistenz- und Mutationspfad fuer beide Trigger absichern.
  */
 
 import { eq } from "drizzle-orm";
@@ -25,7 +24,10 @@ import { db } from "../../../server/db";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { appointments, tags, tourWeekEmployees } from "../../../shared/schema";
-import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "../../../shared/appointmentCancellation";
+import {
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  RESERVED_VACANT_TAG_NAME,
+} from "../../../shared/appointmentCancellation";
 import { createApiTestApp, loginAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
@@ -36,6 +38,7 @@ import {
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
+import { applySystemSeed } from "../../../server/services/systemSeedService";
 
 let app: Awaited<ReturnType<typeof createApiTestApp>>;
 let userCounter = 1;
@@ -97,8 +100,13 @@ async function ensureReservedCancellationTag() {
   return createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
 }
 
+async function parkAppointment(agent: Awaited<ReturnType<typeof createRoleAgent>>["agent"], appointmentId: number, version: number) {
+  await applySystemSeed();
+  await agent.post(`/api/appointments/${appointmentId}/park`).send({ version }).expect(204);
+}
+
 describe("FT31 integration: monitoring", () => {
-  it("returns under-staffed appointments from the default appointment scope for dispatcher/admin and rejects readers", async () => {
+  it("returns TR-01 only for under-staffed appointments and rejects readers", async () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
@@ -113,7 +121,7 @@ describe("FT31 integration: monitoring", () => {
       minimumEmployees: 2,
     });
 
-    await createAppointmentFixture({
+    const underStaffed = await createAppointmentFixture({
       customerId: customer.id,
       tourId: tour.id,
       startDate: getRelativeBerlinDate(1),
@@ -135,35 +143,87 @@ describe("FT31 integration: monitoring", () => {
       .update(appointments)
       .set({ startDate: getRelativeBerlinDate(-1) })
       .where(eq(appointments.id, historicalAppointment.id));
-    await createAppointmentFixture({
-      customerId: customer.id,
-      tourId: tour.id,
-      startDate: getRelativeBerlinDate(5),
-      employeeIds: [],
-    });
 
     const dispatcherResponse = await dispatcher.agent.get("/api/monitoring").expect(200);
-    expect(dispatcherResponse.body).toHaveLength(2);
-    expect(dispatcherResponse.body).toEqual(expect.arrayContaining([
+    expect(dispatcherResponse.body).toEqual([
       expect.objectContaining({
+        appointmentId: underStaffed.id,
         startDate: getRelativeBerlinDate(1),
         tourName: tour.name,
         employeeCount: 0,
-        triggerName: "TR-01 Ressourcenunterschreitung",
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01"],
+        triggerName: "Mindestzahl Mitarbeiter",
       }),
-      expect.objectContaining({
-        startDate: getRelativeBerlinDate(5),
-        tourName: tour.name,
-        employeeCount: 0,
-        triggerName: "TR-01 Ressourcenunterschreitung",
-      }),
-    ]));
+    ]);
 
     const adminResponse = await admin.agent.get("/api/monitoring").expect(200);
-    expect(adminResponse.body).toHaveLength(2);
+    expect(adminResponse.body).toHaveLength(1);
 
     await reader.agent.get("/api/monitoring").expect(403).expect(({ body }) => {
       expect(body.code).toBe("FORBIDDEN");
+    });
+  });
+
+  it("returns one row per parked appointment and combines both triggers on under-staffed parked appointments", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const customer = await createCustomerFixture("FT31-PARK-CUST");
+    const employeeA = await createEmployeeFixture("FT31-PARK-A");
+    const employeeB = await createEmployeeFixture("FT31-PARK-B");
+    const employeeC = await createEmployeeFixture("FT31-PARK-C");
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: false,
+      horizonDays: 10,
+      minimumEmployees: 2,
+    });
+
+    const parkedOnly = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(2),
+      employeeIds: [employeeA.id, employeeB.id],
+    });
+    const parkedAndUnderStaffed = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(3),
+      employeeIds: [employeeA.id],
+    });
+
+    await parkAppointment(admin.agent, parkedOnly.id, parkedOnly.version);
+    const parkedOnlyDetail = await admin.agent.get(`/api/appointments/${parkedOnly.id}`).expect(200);
+    await admin.agent
+      .patch(`/api/appointments/${parkedOnly.id}`)
+      .send({
+        version: parkedOnlyDetail.body.version,
+        projectId: parkedOnlyDetail.body.projectId,
+        customerId: parkedOnlyDetail.body.customerId,
+        tourId: parkedOnlyDetail.body.tourId,
+        startDate: parkedOnlyDetail.body.startDate,
+        endDate: parkedOnlyDetail.body.endDate,
+        startTime: parkedOnlyDetail.body.startTime,
+        employeeIds: [employeeB.id, employeeC.id],
+      })
+      .expect(200);
+    const parkedUnderStaffedDetail = await admin.agent.get(`/api/appointments/${parkedAndUnderStaffed.id}`).expect(200);
+    await parkAppointment(admin.agent, parkedAndUnderStaffed.id, parkedUnderStaffedDetail.body.version);
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          appointmentId: parkedOnly.id,
+          triggerCode: "TR-02",
+          triggerCodes: ["TR-02"],
+          triggerName: "Geparkt",
+        }),
+        expect.objectContaining({
+          appointmentId: parkedAndUnderStaffed.id,
+          triggerCode: "TR-01",
+          triggerCodes: ["TR-01", "TR-02"],
+          triggerName: "Mindestzahl Mitarbeiter + Geparkt",
+        }),
+      ]));
+      expect((body as Array<{ appointmentId: number; triggerCode: string }>).filter((item) => item.appointmentId === parkedOnly.id)).toHaveLength(1);
+      expect((body as Array<{ appointmentId: number }>).filter((item) => item.appointmentId === parkedAndUnderStaffed.id)).toHaveLength(1);
     });
   });
 
@@ -220,9 +280,9 @@ describe("FT31 integration: monitoring", () => {
     expect((dispatcherResolved.body as Array<{ key: string }>).some((entry) => entry.key.startsWith("monitoring."))).toBe(false);
   });
 
-  it("recomputes monitoring live after a relevant appointment update", async () => {
+  it("recomputes monitoring live after a relevant appointment update and honors allAppointments for far-future hits", async () => {
     const admin = await createRoleAgent("ADMIN");
-    const customer = await createCustomerFixture("FT31-2FA-CUST");
+    const customer = await createCustomerFixture("FT31-UPDATE-CUST");
 
     await configureMonitoring(admin.agent, {
       allAppointments: false,
@@ -235,12 +295,7 @@ describe("FT31 integration: monitoring", () => {
       employeeIds: [],
     });
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toHaveLength(1);
-      expect(body[0]).toMatchObject({
-        appointmentId: appointment.id,
-        startDate: getRelativeBerlinDate(5),
-        triggerName: "TR-01 Ressourcenunterschreitung",
-      });
+      expect(body).toEqual([]);
     });
 
     const detailResponse = await admin.agent.get(`/api/appointments/${appointment.id}`).expect(200);
@@ -257,24 +312,23 @@ describe("FT31 integration: monitoring", () => {
     }).expect(200);
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toHaveLength(1);
-      expect(body[0]).toMatchObject({
-        appointmentId: appointment.id,
-        startDate: getRelativeBerlinDate(1),
-        triggerName: "TR-01 Ressourcenunterschreitung",
-      });
+      expect(body).toEqual([
+        expect.objectContaining({
+          appointmentId: appointment.id,
+          startDate: getRelativeBerlinDate(1),
+          triggerCode: "TR-01",
+          triggerCodes: ["TR-01"],
+          triggerName: "Mindestzahl Mitarbeiter",
+        }),
+      ]);
     });
-  });
-
-  it("ignores the configured horizon when all appointments is enabled", async () => {
-    const admin = await createRoleAgent("ADMIN");
-    const customer = await createCustomerFixture("FT31-ALL-CUST");
 
     await configureMonitoring(admin.agent, {
       allAppointments: true,
       horizonDays: 1,
       minimumEmployees: 1,
     });
+
     const farFutureAppointment = await createAppointmentFixture({
       customerId: customer.id,
       startDate: getRelativeBerlinDate(40),
@@ -282,41 +336,114 @@ describe("FT31 integration: monitoring", () => {
     });
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toHaveLength(1);
-      expect(body[0]).toMatchObject({
-        appointmentId: farFutureAppointment.id,
-        startDate: getRelativeBerlinDate(40),
-        triggerName: "TR-01 Ressourcenunterschreitung",
-      });
+      expect(body).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          appointmentId: farFutureAppointment.id,
+          startDate: getRelativeBerlinDate(40),
+          triggerCode: "TR-01",
+          triggerCodes: ["TR-01"],
+        }),
+      ]));
     });
   });
 
-  it("ignores cancelled appointments after the one-way cancellation workflow", async () => {
+  it("ignores cancelled and historical parked appointments", async () => {
     const admin = await createRoleAgent("ADMIN");
     const customer = await createCustomerFixture("FT31-CANCEL-CUST");
     await ensureReservedCancellationTag();
+    await applySystemSeed();
 
     await configureMonitoring(admin.agent, {
       allAppointments: false,
-      horizonDays: 3,
+      horizonDays: 10,
       minimumEmployees: 1,
     });
 
-    const appointment = await createAppointmentFixture({
+    const cancelled = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(1),
+      employeeIds: [],
+    });
+    const historical = await createAppointmentFixture({
       customerId: customer.id,
       startDate: getRelativeBerlinDate(1),
       employeeIds: [],
     });
 
-    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toHaveLength(1);
-      expect(body[0].appointmentId).toBe(appointment.id);
-    });
+    await parkAppointment(admin.agent, cancelled.id, cancelled.version);
+    const cancelledDetail = await admin.agent.get(`/api/appointments/${cancelled.id}`).expect(200);
+    await admin.agent.post(`/api/appointments/${cancelled.id}/cancel`).send({ version: cancelledDetail.body.version }).expect(204);
 
-    await admin.agent.post(`/api/appointments/${appointment.id}/cancel`).send({ version: appointment.version }).expect(204);
+    await parkAppointment(admin.agent, historical.id, historical.version);
+    await db
+      .update(appointments)
+      .set({ startDate: getRelativeBerlinDate(-1) })
+      .where(eq(appointments.id, historical.id));
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
       expect(body).toEqual([]);
+    });
+  });
+
+  it("keeps TR-02 stable while TR-01 reacts to config changes", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const customer = await createCustomerFixture("FT31-CONFIG-CUST");
+    const employeeA = await createEmployeeFixture("FT31-CONFIG-A");
+    const employeeB = await createEmployeeFixture("FT31-CONFIG-B");
+    const employeeC = await createEmployeeFixture("FT31-CONFIG-C");
+
+    const underStaffed = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(2),
+      employeeIds: [employeeA.id],
+    });
+    const parkedOnly = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(3),
+      employeeIds: [employeeB.id, employeeC.id],
+    });
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: false,
+      horizonDays: 10,
+      minimumEmployees: 2,
+    });
+    await parkAppointment(admin.agent, parkedOnly.id, parkedOnly.version);
+    const parkedOnlyDetail = await admin.agent.get(`/api/appointments/${parkedOnly.id}`).expect(200);
+    await admin.agent
+      .patch(`/api/appointments/${parkedOnly.id}`)
+      .send({
+        version: parkedOnlyDetail.body.version,
+        projectId: parkedOnlyDetail.body.projectId,
+        customerId: parkedOnlyDetail.body.customerId,
+        tourId: parkedOnlyDetail.body.tourId,
+        startDate: parkedOnlyDetail.body.startDate,
+        endDate: parkedOnlyDetail.body.endDate,
+        startTime: parkedOnlyDetail.body.startTime,
+        employeeIds: [employeeB.id, employeeC.id],
+      })
+      .expect(200);
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toEqual(expect.arrayContaining([
+        expect.objectContaining({ appointmentId: underStaffed.id, triggerCode: "TR-01", triggerCodes: ["TR-01"] }),
+        expect.objectContaining({ appointmentId: parkedOnly.id, triggerCode: "TR-02", triggerCodes: ["TR-02"] }),
+      ]));
+    });
+
+    await configureMonitoring(admin.agent, {
+      allAppointments: false,
+      horizonDays: 10,
+      minimumEmployees: 1,
+    });
+
+    await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ appointmentId: underStaffed.id, triggerCode: "TR-01" }),
+      ]));
+      expect(body).toEqual([
+        expect.objectContaining({ appointmentId: parkedOnly.id, triggerCode: "TR-02", triggerCodes: ["TR-02"] }),
+      ]);
     });
   });
 
@@ -372,7 +499,9 @@ describe("FT31 integration: monitoring", () => {
         startDate,
         tourName: tour.name,
         employeeCount: 1,
-        triggerName: "TR-01 Ressourcenunterschreitung",
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01"],
+        triggerName: "Mindestzahl Mitarbeiter",
       });
     });
   });

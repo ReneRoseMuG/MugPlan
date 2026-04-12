@@ -1,10 +1,11 @@
 import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheetView";
+import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
 interface MonthSheetGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
   conflictHighlightActive?: boolean;
-  conflictAppointmentIds?: Set<number>;
+  conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 }
@@ -13,7 +14,7 @@ export function MonthSheetGrid({
   currentDate,
   employeeFilterId,
   conflictHighlightActive = false,
-  conflictAppointmentIds = new Set<number>(),
+  conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
   onOpenAppointment,
 }: MonthSheetGridProps) {
@@ -22,7 +23,7 @@ export function MonthSheetGrid({
       currentDate={currentDate}
       employeeFilterId={employeeFilterId}
       conflictHighlightActive={conflictHighlightActive}
-      conflictAppointmentIds={conflictAppointmentIds}
+      conflictAppointmentMap={conflictAppointmentMap}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
     />

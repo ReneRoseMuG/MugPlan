@@ -122,7 +122,19 @@ test("parks a future appointment via the park button and shows correct state in 
 
   const parkedAppointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
   await expect(parkedAppointmentPanel).toBeVisible();
-  await parkedAppointmentPanel.dblclick();
+  await expect(page.getByTestId("monitoring-pill-TR-01")).toContainText("TR-01");
+  await expect(page.getByTestId("monitoring-pill-TR-02")).toContainText("TR-02");
+
+  await page.getByTestId("button-conflict-highlight").click();
+  const overlay = page.getByTestId(`week-appointment-conflict-overlay-${appointment.id}`).first();
+  await expect(overlay).toBeVisible();
+  await expect(overlay).toHaveAttribute("style", /220, 38, 38/);
+
+  await page.getByTestId("nav-monitoring").click();
+  const combinedTriggerCell = page.getByRole("cell", { name: "Mindestzahl Mitarbeiter + Geparkt" });
+  await expect(combinedTriggerCell).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Geparkt", exact: true })).toHaveCount(0);
+  await combinedTriggerCell.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("button-park-appointment")).toHaveCount(0);
 });

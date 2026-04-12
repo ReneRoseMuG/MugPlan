@@ -37,6 +37,7 @@ import {
   getWeekAppointmentFooterStyle,
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./weekAppointmentCardStyles";
+import { toAlphaColor } from "@/lib/monitoring-ui";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -58,6 +59,7 @@ type CalendarWeekSpanningTileProps = {
   isLocked?: boolean;
   highlighted?: boolean;
   isConflict?: boolean;
+  conflictColor?: string;
   onDoubleClick?: () => void;
   onDragStart?: (event: DragEvent) => void;
   onDragEnd?: () => void;
@@ -84,6 +86,7 @@ export function CalendarWeekSpanningTile({
   isLocked,
   highlighted = false,
   isConflict = false,
+  conflictColor,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -231,6 +234,11 @@ export function CalendarWeekSpanningTile({
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const conflictOverlayStyle = conflictColor
+    ? {
+        backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
+      }
+    : undefined;
 
   const mainContentPanels = (
     <>
@@ -293,7 +301,8 @@ export function CalendarWeekSpanningTile({
       <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-spanning-tile-content-${appointment.id}`}>
         {isConflict ? (
           <div
-            className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            style={conflictOverlayStyle}
             data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
           />
         ) : null}
@@ -308,7 +317,8 @@ export function CalendarWeekSpanningTile({
       >
         {isConflict ? (
           <div
-            className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+            style={conflictOverlayStyle}
             data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
           />
         ) : null}

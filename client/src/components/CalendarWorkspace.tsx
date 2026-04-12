@@ -8,6 +8,7 @@ import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
+import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 
@@ -63,11 +64,11 @@ export function CalendarWorkspace({
   const [kwJumpError, setKwJumpError] = useState(false);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
-  const conflictAppointmentIds = useMemo(
-    () => new Set((monitoringItems ?? []).map((item) => item.appointmentId)),
+  const conflictAppointmentMap = useMemo(
+    () => buildMonitoringConflictMap(monitoringItems),
     [monitoringItems],
   );
-  const conflictAppointmentCount = conflictAppointmentIds.size;
+  const conflictAppointmentCount = conflictAppointmentMap.size;
 
   useEffect(() => {
     if (conflictAppointmentCount === 0 && conflictHighlightActive) {
@@ -162,7 +163,7 @@ export function CalendarWorkspace({
           weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
           onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
           conflictHighlightActive={conflictHighlightActive}
-          conflictAppointmentIds={conflictAppointmentIds}
+          conflictAppointmentMap={conflictAppointmentMap}
           onNewAppointment={(date, options) => {
             onOpenAppointmentForm({
               initialDate: date,
@@ -189,7 +190,7 @@ export function CalendarWorkspace({
         currentDate={currentDate}
         employeeFilterId={employeeFilterId}
         conflictHighlightActive={conflictHighlightActive}
-        conflictAppointmentIds={conflictAppointmentIds}
+        conflictAppointmentMap={conflictAppointmentMap}
         onNewAppointment={(date) => {
           onOpenAppointmentForm({
             initialDate: date,

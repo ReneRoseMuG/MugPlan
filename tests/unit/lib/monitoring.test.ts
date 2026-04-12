@@ -5,6 +5,7 @@
  * - Monitoring-Refresh informiert nur bei neuen oder verschaerften Treffern.
  * - Gleichstand oder Verbesserung erzeugen keinen Toast.
  * - Rollen ohne Monitoring-Zugriff triggern weder Fetch noch Toast.
+ * - Triggerbeschreibungen fuer Toasts verwenden die verkuerzten Triggernamen.
  *
  * Fehlerfaelle:
  * - Jeder Refresh erzeugt Spam-Toast trotz unveraendertem Stand.
@@ -62,11 +63,14 @@ describe("FT31 unit: monitoring refresh helper", () => {
     const nextItems: MonitoringListResponse = [{
       appointmentId: 11,
       startDate: "2099-10-01",
-      endDate: null,
+      startTime: null,
       tourName: "Tour 1",
+      projectName: null,
+      customerName: "Kunde",
       employeeCount: 0,
-      triggerName: "TR-01 Ressourcenunterschreitung",
-      problemDescription: "Nur 0 Mitarbeiter zugewiesen; mindestens 1 erforderlich.",
+      triggerCode: "TR-01",
+      triggerCodes: ["TR-01"],
+      triggerName: "Mindestzahl Mitarbeiter",
     }];
     queryClient.setQueryData([api.monitoring.list.path], previousItems);
     global.fetch = vi.fn().mockResolvedValue({
@@ -81,7 +85,7 @@ describe("FT31 unit: monitoring refresh helper", () => {
     });
     expect(toast).toHaveBeenCalledWith({
       title: "1 problematische Termine im Monitoring",
-      description: "TR-01 Ressourcenunterschreitung",
+      description: "Mindestzahl Mitarbeiter",
     });
   });
 
@@ -89,15 +93,16 @@ describe("FT31 unit: monitoring refresh helper", () => {
     const previousItems: MonitoringListResponse = [{
       appointmentId: 11,
       startDate: "2099-10-01",
-      endDate: null,
+      startTime: null,
       tourName: "Tour 1",
+      projectName: null,
+      customerName: "Kunde",
       employeeCount: 0,
-      triggerName: "TR-01 Ressourcenunterschreitung",
-      problemDescription: "Nur 0 Mitarbeiter zugewiesen; mindestens 1 erforderlich.",
+      triggerCode: "TR-01",
+      triggerCodes: ["TR-01"],
+      triggerName: "Mindestzahl Mitarbeiter",
     }];
-    const nextItems: MonitoringListResponse = [{
-      ...previousItems[0],
-    }];
+    const nextItems: MonitoringListResponse = [{ ...previousItems[0] }];
     queryClient.setQueryData([api.monitoring.list.path], previousItems);
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,

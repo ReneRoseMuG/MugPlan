@@ -221,11 +221,14 @@ describe("calendar month sheet view wiring", () => {
       <CalendarMonthSheetView
         currentDate={new Date("2026-03-15T00:00:00Z")}
         conflictHighlightActive
-        conflictAppointmentIds={new Set([77])}
+        conflictAppointmentMap={new Map([
+          [77, { triggerCode: "TR-02", triggerName: "Geparkt", color: "#D4537E" }],
+        ])}
       />,
     );
 
     const conflictBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 77);
     expect(conflictBar?.isConflict).toBe(true);
+    expect(conflictBar?.conflictColor).toBe("#D4537E");
   });
 });

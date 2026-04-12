@@ -2,6 +2,14 @@ import type { DbRoleCode, CanonicalRoleKey } from "../settings/registry";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import { hasAppointmentCancellationTag } from "../lib/appointmentCancellation";
 import * as userSettingsService from "./userSettingsService";
+import {
+  MONITORING_TRIGGER_COLORS,
+  MONITORING_TRIGGER_NAMES,
+  MONITORING_TRIGGER_PRIORITY,
+  type MonitoringTriggerCode,
+  type MonitoringTriggerSummaryItem,
+} from "@shared/monitoring";
+import { isReservedVacantTagName } from "@shared/appointmentCancellation";
 
 export type MonitoringConfig = {
   tr01: {
@@ -19,13 +27,14 @@ export type MonitoringItem = {
   projectName: string | null;
   customerName: string | null;
   employeeCount: number;
+  triggerCode: MonitoringTriggerCode;
+  triggerCodes: MonitoringTriggerCode[];
   triggerName: string;
-  problemDescription: string;
 };
 
 export type MonitoringSummary = {
   count: number;
-  triggerNames: string[];
+  triggers: MonitoringTriggerSummaryItem[];
 };
 
 export class MonitoringError extends Error {
@@ -68,6 +77,12 @@ function parseDateOnly(input: string): Date {
   return new Date(year, month - 1, day);
 }
 
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
 function assertMonitoringReadRole(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
     throw new MonitoringError(403, "FORBIDDEN");
@@ -96,8 +111,22 @@ async function readMonitoringConfig(): Promise<MonitoringConfig> {
   };
 }
 
-function buildProblemDescription(employeeCount: number, minimumEmployees: number): string {
-  return `Nur ${employeeCount} Mitarbeiter zugewiesen; mindestens ${minimumEmployees} erforderlich.`;
+function buildTriggerSummary(items: MonitoringItem[]): MonitoringTriggerSummaryItem[] {
+  const countByCode = new Map<MonitoringTriggerCode, number>();
+  for (const item of items) {
+    for (const triggerCode of item.triggerCodes) {
+      countByCode.set(triggerCode, (countByCode.get(triggerCode) ?? 0) + 1);
+    }
+  }
+
+  return Array.from(countByCode.entries())
+    .sort(([leftCode], [rightCode]) => MONITORING_TRIGGER_PRIORITY[leftCode] - MONITORING_TRIGGER_PRIORITY[rightCode])
+    .map(([triggerCode, count]) => ({
+      triggerCode,
+      triggerName: MONITORING_TRIGGER_NAMES[triggerCode],
+      count,
+      color: MONITORING_TRIGGER_COLORS[triggerCode],
+    }));
 }
 
 export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<MonitoringItem[]> {
@@ -105,8 +134,11 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
 
   const config = await readMonitoringConfig();
   const todayBerlin = getBerlinTodayDateString();
+  const fromDate = parseDateOnly(todayBerlin);
+  const toDate = config.tr01.allAppointments ? undefined : addDays(fromDate, config.tr01.horizonDays - 1);
   const rows = await appointmentsRepository.listAppointmentsForMonitoring({
-    fromDate: parseDateOnly(todayBerlin),
+    fromDate,
+    toDate,
   });
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(
     rows.map((row) => row.appointmentId),
@@ -114,27 +146,38 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
 
   const items: MonitoringItem[] = [];
   for (const row of rows) {
-    if (hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(row.appointmentId) ?? [])) {
+    const appointmentTags = appointmentTagsByAppointmentId.get(row.appointmentId) ?? [];
+    if (hasAppointmentCancellationTag(appointmentTags)) {
       continue;
     }
     if (row.startDate < todayBerlin) {
       continue;
     }
-    if (row.employeeCount >= config.tr01.minimumEmployees) {
-      continue;
+
+    const triggerCodes: MonitoringTriggerCode[] = [];
+    if (row.employeeCount < config.tr01.minimumEmployees) {
+      triggerCodes.push("TR-01");
     }
 
-    items.push({
-      appointmentId: row.appointmentId,
-      startDate: row.startDate,
-      startTime: row.startTime,
-      tourName: row.tourName,
-      projectName: row.projectName,
-      customerName: row.customerName,
-      employeeCount: row.employeeCount,
-      triggerName: "TR-01 Ressourcenunterschreitung",
-      problemDescription: buildProblemDescription(row.employeeCount, config.tr01.minimumEmployees),
-    });
+    if (appointmentTags.some((tag) => isReservedVacantTagName(tag.name))) {
+      triggerCodes.push("TR-02");
+    }
+
+    if (triggerCodes.length > 0) {
+      triggerCodes.sort((leftCode, rightCode) => MONITORING_TRIGGER_PRIORITY[leftCode] - MONITORING_TRIGGER_PRIORITY[rightCode]);
+      items.push({
+        appointmentId: row.appointmentId,
+        startDate: row.startDate,
+        startTime: row.startTime,
+        tourName: row.tourName,
+        projectName: row.projectName,
+        customerName: row.customerName,
+        employeeCount: row.employeeCount,
+        triggerCode: triggerCodes[0],
+        triggerCodes,
+        triggerName: triggerCodes.map((triggerCode) => MONITORING_TRIGGER_NAMES[triggerCode]).join(" + "),
+      });
+    }
   }
 
   return items;
@@ -153,7 +196,7 @@ export async function getMonitoringSummaryForRole(roleCode: DbRoleCode): Promise
 
   return {
     count: items.length,
-    triggerNames: Array.from(new Set(items.map((item) => item.triggerName))),
+    triggers: buildTriggerSummary(items),
   };
 }
 

@@ -1,4 +1,5 @@
 import { api, type MonitoringListResponse } from "@shared/routes";
+import { MONITORING_TRIGGER_NAMES, type MonitoringTriggerCode } from "@shared/monitoring";
 import { queryClient } from "@/lib/queryClient";
 import type { useToast } from "@/hooks/use-toast";
 
@@ -9,8 +10,8 @@ function canAccessMonitoring(): boolean {
   return role === "ADMIN" || role === "DISPATCHER" || role === "DISPONENT";
 }
 
-function buildTriggerSet(items: MonitoringListResponse | undefined): Set<string> {
-  return new Set((items ?? []).map((item) => item.triggerName));
+function buildTriggerSet(items: MonitoringListResponse | undefined): Set<MonitoringTriggerCode> {
+  return new Set((items ?? []).flatMap((item) => item.triggerCodes));
 }
 
 function shouldNotify(previousItems: MonitoringListResponse | undefined, nextItems: MonitoringListResponse): boolean {
@@ -19,9 +20,9 @@ function shouldNotify(previousItems: MonitoringListResponse | undefined, nextIte
     return true;
   }
 
-  const previousTriggerNames = buildTriggerSet(previousItems);
-  for (const triggerName of Array.from(buildTriggerSet(nextItems))) {
-    if (!previousTriggerNames.has(triggerName)) {
+  const previousTriggerCodes = buildTriggerSet(previousItems);
+  for (const triggerCode of Array.from(buildTriggerSet(nextItems))) {
+    if (!previousTriggerCodes.has(triggerCode)) {
       return true;
     }
   }
@@ -57,7 +58,8 @@ export async function refreshMonitoringWithNotification(toast: ToastFn): Promise
     return;
   }
 
-  const triggerNames = Array.from(new Set(nextItems.map((item) => item.triggerName)));
+  const triggerNames = Array.from(new Set(nextItems.flatMap((item) => item.triggerCodes)))
+    .map((triggerCode) => MONITORING_TRIGGER_NAMES[triggerCode]);
   toast({
     title: `${nextItems.length} problematische Termine im Monitoring`,
     description: triggerNames.join(", "),

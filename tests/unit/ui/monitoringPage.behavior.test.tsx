@@ -6,10 +6,13 @@
  * Abgedeckte Regeln:
  * - Admins sehen den sichtbaren Konfigurationsbereich mit Mindestmitarbeiter-Eingabe und Save-Aktion.
  * - Die Tabellenansicht leitet Row-Doppelklicks in den Termin-Open-Flow weiter.
+ * - Monitoring-Zeilen erhalten triggerabhaengige Highlight-Farben.
+ * - Die Tabelle rendert nur die neue Trigger-Spaltenstruktur ohne Problem-Spalte.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsoberflaeche verschwindet fuer Admins.
  * - Monitoring-Zeilen verlieren ihre Oeffnen-Aktion.
+ * - Triggerfarben oder Spaltenkonfiguration gehen verloren.
  *
  * Ziel:
  * Das sichtbare Monitoring-Seitenverhalten ueber gerenderte Props und Markup absichern.
@@ -69,8 +72,11 @@ vi.mock("@/components/ui/input", () => ({
   Input: (props: Record<string, unknown>) => <input data-testid={String(props["data-testid"] ?? "")} value={String(props.value ?? "")} readOnly />,
 }));
 
-vi.mock("@/components/ui/switch", () => ({
-  Switch: (props: Record<string, unknown>) => <input type="checkbox" data-testid={String(props["data-testid"] ?? "")} checked={Boolean(props.checked)} readOnly />,
+vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
+  createAppointmentWeeklyPanelPreview: vi.fn(() => ({
+    content: <div data-testid="monitoring-row-preview-content">preview</div>,
+    options: {},
+  })),
 }));
 
 import { MonitoringPage } from "../../../client/src/components/MonitoringPage";
@@ -103,8 +109,9 @@ describe("FT31 UI: MonitoringPage behavior", () => {
             projectName: null,
             customerName: null,
             employeeCount: 1,
-            triggerName: "TR01",
-            problemDescription: "Zu wenig Mitarbeiter",
+            triggerCode: "TR-01",
+            triggerCodes: ["TR-01", "TR-02"],
+            triggerName: "Mindestzahl Mitarbeiter + Geparkt",
           },
         ],
         isLoading: false,
@@ -112,7 +119,7 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     });
   });
 
-  it("renders the admin config panel and forwards monitoring row opens", () => {
+  it("renders the admin config panel, forwards row opens and exposes trigger row styling", () => {
     const onOpenAppointment = vi.fn();
     const html = renderToStaticMarkup(
       <MonitoringPage isAdmin initialItems={[]} onOpenAppointment={onOpenAppointment} />,
@@ -124,7 +131,21 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     expect(html).toContain("Mindestzahl Mitarbeiter");
     expect(html).toContain("table-monitoring");
 
-    (tableViewCalls[0].onRowDoubleClick as ((row: { appointmentId: number }) => void) | undefined)?.({ appointmentId: 77 });
+    const props = tableViewCalls[0];
+    expect((props.columns as Array<{ id: string }>).map((column) => column.id)).toEqual([
+      "startTime",
+      "startDate",
+      "tourName",
+      "triggerName",
+    ]);
+    expect(typeof props.rowPreviewRenderer).toBe("function");
+
+    const rowStyle = (props.rowStyle as ((row: { triggerCode: string }) => Record<string, string>) | undefined)?.({
+      triggerCode: "TR-01",
+    });
+    expect(rowStyle).toEqual({ backgroundColor: "rgba(220, 38, 38, 0.14)" });
+
+    (props.onRowDoubleClick as ((row: { appointmentId: number }) => void) | undefined)?.({ appointmentId: 77 });
     expect(onOpenAppointment).toHaveBeenCalledWith(77);
   });
 });

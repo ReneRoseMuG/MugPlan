@@ -5,6 +5,7 @@ import { Calendar, CalendarDays, ExternalLink, LogOut, RefreshCw } from "lucide-
 
 import { domainIcons } from "@/lib/domain-icons";
 import type { ViewType } from "@/pages/Home";
+import type { MonitoringTriggerSummaryItemResponse } from "@shared/routes";
 
 interface SidebarProps {
   onViewChange: (view: ViewType) => void;
@@ -13,7 +14,7 @@ interface SidebarProps {
   currentDate?: Date;
   userRole?: string;
   backupDisabled?: boolean;
-  monitoringCount?: number;
+  monitoringSummary?: MonitoringTriggerSummaryItemResponse[];
 }
 
 function NavGroup({ title, children }: { title: string; children: ReactNode }) {
@@ -37,7 +38,6 @@ function NavButton({
   label,
   isActive,
   onClick,
-  count,
   testId,
   standaloneUrl,
 }: {
@@ -45,7 +45,6 @@ function NavButton({
   label: string;
   isActive?: boolean;
   onClick?: () => void;
-  count?: number;
   testId?: string;
   standaloneUrl?: string;
 }) {
@@ -68,11 +67,6 @@ function NavButton({
         >
           <Icon className="h-4 w-4 shrink-0 opacity-80" />
           <span className="min-w-0 truncate whitespace-nowrap">{label}</span>
-          {typeof count === "number" ? (
-            <span className="ml-auto rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`${resolvedTestId}-count`}>
-              {count}
-            </span>
-          ) : null}
         </button>
         {standaloneUrl ? (
           <button
@@ -108,7 +102,7 @@ export function Sidebar({
   currentDate = new Date(),
   userRole,
   backupDisabled = false,
-  monitoringCount,
+  monitoringSummary = [],
 }: SidebarProps) {
   const queryClient = useQueryClient();
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
@@ -198,13 +192,28 @@ export function Sidebar({
         {canAccessReports ? (
           <NavGroup title="Reports">
             <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} />
-            <NavButton
-              icon={MonitoringIcon}
-              label="Monitoring"
-              isActive={currentView === "monitoring"}
-              onClick={() => onViewChange("monitoring")}
-              count={monitoringCount}
-            />
+            <div className="flex flex-col gap-2">
+              <NavButton
+                icon={MonitoringIcon}
+                label="Monitoring"
+                isActive={currentView === "monitoring"}
+                onClick={() => onViewChange("monitoring")}
+              />
+              {monitoringSummary.length > 0 ? (
+                <div className="flex flex-wrap gap-2 px-3" data-testid="monitoring-trigger-pills">
+                  {monitoringSummary.map((item) => (
+                    <span
+                      key={item.triggerCode}
+                      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold text-white shadow-sm"
+                      style={{ backgroundColor: item.color }}
+                      data-testid={`monitoring-pill-${item.triggerCode}`}
+                    >
+                      {item.triggerCode}: {item.count}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </NavGroup>
         ) : null}
 

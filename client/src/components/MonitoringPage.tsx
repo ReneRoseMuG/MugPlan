@@ -9,6 +9,9 @@ import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
+import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type MonitoringPageProps = {
   isAdmin: boolean;
@@ -33,6 +36,39 @@ function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConf
     horizonDays: String(config.horizonDays),
     minimumEmployees: String(config.minimumEmployees),
   };
+}
+
+function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appointmentId: number; startDate: string }) {
+  const previewQuery = useQuery<CalendarAppointment | null>({
+    queryKey: ["monitoring-row-preview", appointmentId, startDate],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        fromDate: startDate,
+        toDate: startDate,
+        detail: "full",
+      });
+      const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Termin-Preview konnte nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      const appointments = Array.isArray(payload) ? (payload as CalendarAppointment[]) : [];
+      return appointments.find((appointment) => appointment.id === appointmentId) ?? null;
+    },
+  });
+
+  if (!previewQuery.data) {
+    return (
+      <div className="w-[320px] rounded-lg bg-white px-4 py-3 text-sm text-slate-500">
+        Termin-Preview wird geladen...
+      </div>
+    );
+  }
+
+  const preview = createAppointmentWeeklyPanelPreview(previewQuery.data, { sizeProfile: "sidebarTable" });
+  return <>{preview.content}</>;
 }
 
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
@@ -127,12 +163,6 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       accessor: (row) => row.triggerName,
       minWidth: 220,
     },
-    {
-      id: "problemDescription",
-      header: "Problem",
-      accessor: (row) => row.problemDescription,
-      minWidth: 320,
-    },
   ], []);
 
   const handleSaveConfig = async () => {
@@ -195,8 +225,14 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       <TableView
         columns={columns}
         rows={monitoringQuery.data ?? []}
-        rowKey={(row) => `${row.appointmentId}-${row.triggerName}`}
+        rowKey={(row) => row.appointmentId}
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
+        rowPreviewRenderer={(row) => (
+          <MonitoringAppointmentRowPreview appointmentId={row.appointmentId} startDate={row.startDate} />
+        )}
+        rowStyle={(row) => ({
+          backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
+        })}
         testId="table-monitoring"
         stickyHeader
         emptyState={(

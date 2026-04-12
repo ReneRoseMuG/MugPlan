@@ -15,6 +15,7 @@ type CompactBarProps = {
   isFirstDay: boolean;
   isLastDay: boolean;
   isConflict?: boolean;
+  conflictColor?: string;
   hideOrderNumber?: boolean;
   showPopover?: boolean;
   isLocked?: boolean;
@@ -32,6 +33,7 @@ export function CalendarAppointmentCompactBar({
   isFirstDay,
   isLastDay,
   isConflict = false,
+  conflictColor,
   hideOrderNumber = false,
   showPopover = isFirstDay,
   isLocked,
@@ -88,7 +90,10 @@ export function CalendarAppointmentCompactBar({
           className="pointer-events-none absolute -right-1 -top-1 z-20"
           data-testid={`appointment-bar-conflict-icon-${appointment.id}`}
         >
-          <span className="inline-flex items-center gap-1 rounded-full bg-destructive px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-destructive-foreground shadow-md ring-2 ring-white">
+          <span
+            className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white shadow-md ring-2 ring-white"
+            style={{ backgroundColor: conflictColor }}
+          >
             <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
             <span>Konflikt</span>
           </span>

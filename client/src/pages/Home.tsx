@@ -33,6 +33,7 @@ import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
 
 export type ViewType =
   | "month"
@@ -291,6 +292,7 @@ export default function Home({ onLogout }: HomeProps) {
     (view === "employees" && employeeFormVisible) ||
     (view === "tours" && tourFormVisible) ||
     (view === "teams" && teamFormVisible);
+  const monitoringSummary = canAccessMonitoring ? buildMonitoringTriggerSummary(monitoringItems) : [];
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background font-body">
@@ -303,7 +305,7 @@ export default function Home({ onLogout }: HomeProps) {
             currentDate={currentDate}
             userRole={userRole}
             backupDisabled={backupDisabled}
-            monitoringCount={canAccessMonitoring ? monitoringItems?.length ?? 0 : undefined}
+            monitoringSummary={monitoringSummary}
           />
         </aside>
       )}

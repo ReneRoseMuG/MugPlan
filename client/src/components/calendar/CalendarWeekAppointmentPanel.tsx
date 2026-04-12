@@ -38,6 +38,7 @@ import {
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./weekAppointmentCardStyles";
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
+import { toAlphaColor } from "@/lib/monitoring-ui";
 
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
@@ -54,6 +55,7 @@ export function CalendarWeekAppointmentPanel({
   interactive = true,
   highlighted = false,
   isConflict = false,
+  conflictColor,
   onMouseEnter,
   onMouseLeave,
   segment = "start",
@@ -78,6 +80,7 @@ export function CalendarWeekAppointmentPanel({
   interactive?: boolean;
   highlighted?: boolean;
   isConflict?: boolean;
+  conflictColor?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   segment?: "start" | "continuation";
@@ -212,6 +215,11 @@ export function CalendarWeekAppointmentPanel({
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const conflictOverlayStyle = conflictColor
+    ? {
+        backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
+      }
+    : undefined;
   const footerTopRow = context === "week-calendar" ? (
     <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
       <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
@@ -300,7 +308,8 @@ export function CalendarWeekAppointmentPanel({
               <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-appointment-content-${appointment.id}`}>
                 {isConflict ? (
                   <div
-                    className="pointer-events-none absolute inset-0 rounded-sm bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    style={conflictOverlayStyle}
                     data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
                   />
                 ) : null}
@@ -335,7 +344,8 @@ export function CalendarWeekAppointmentPanel({
               >
                 {isConflict ? (
                   <div
-                    className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                    style={conflictOverlayStyle}
                     data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
                   />
                 ) : null}
@@ -353,7 +363,8 @@ export function CalendarWeekAppointmentPanel({
             >
               {isConflict ? (
                 <div
-                  className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(135deg,rgba(226,75,74,0.26)_0_10px,rgba(226,75,74,0.08)_10px_20px)] opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                  className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                  style={conflictOverlayStyle}
                   data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
                 />
               ) : null}

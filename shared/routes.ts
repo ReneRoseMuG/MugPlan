@@ -1,5 +1,6 @@
 ﻿import { z } from 'zod';
 import { appointmentDisplayModes } from "./appointmentDisplayMode";
+import { MONITORING_TRIGGER_CODES, MONITORING_TRIGGER_COLORS, MONITORING_TRIGGER_NAMES } from "./monitoring";
 import { 
   insertTourSchema, updateTourSchema, tours, 
   insertTeamSchema, updateTeamSchema, teams,
@@ -623,8 +624,16 @@ const monitoringItemSchema = z.object({
   projectName: z.string().nullable(),
   customerName: z.string().nullable(),
   employeeCount: z.number().int().min(0),
+  triggerCode: z.enum(MONITORING_TRIGGER_CODES),
+  triggerCodes: z.array(z.enum(MONITORING_TRIGGER_CODES)).min(1),
   triggerName: z.string().min(1),
-  problemDescription: z.string().min(1),
+});
+
+const monitoringTriggerSummaryItemSchema = z.object({
+  triggerCode: z.enum(MONITORING_TRIGGER_CODES),
+  triggerName: z.string().min(1),
+  count: z.number().int().min(0),
+  color: z.string().min(1),
 });
 
 const monitoringTriggerConfigSchema = z.object({
@@ -4001,6 +4010,12 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
+export type MonitoringTriggerSummaryItemResponse = z.infer<typeof monitoringTriggerSummaryItemSchema>;
+export const monitoringTriggerMetadata = {
+  codes: MONITORING_TRIGGER_CODES,
+  names: MONITORING_TRIGGER_NAMES,
+  colors: MONITORING_TRIGGER_COLORS,
+} as const;
 export type ReportAuftragslisteProjectRow = z.infer<typeof reportAuftragslisteProjectRowSchema>;
 export type ReportAuftragslisteResponse = z.infer<typeof reportAuftragslisteResponseSchema>;
 export type ReportProduktionsplanungCategoryGroup = z.infer<typeof reportProduktionsplanungCategoryGroupSchema>;

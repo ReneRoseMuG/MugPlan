@@ -4,13 +4,14 @@
  * Feature: FT07/FT26/FT31 - Sidebar
  *
  * Abgedeckte Regeln:
- * - Dispatcher sehen Reports und Monitoring inkl. Zaehlbadge.
+ * - Dispatcher sehen Reports und Monitoring inklusive triggerweiser Pills direkt unter dem Navigationseintrag.
  * - Die globale Kalendernavigation bietet eine Wochenübersicht und die neue Monatsübersicht als monatliche Hauptansicht.
  * - Reader sehen keine Reports-/Monitoring-Navigation.
  * - Backup-Disablement bleibt als sichtbare Seitenmarkierung erhalten.
  *
  * Fehlerfaelle:
  * - Reports oder Monitoring verschwinden fuer berechtigte Rollen.
+ * - Trigger-Pills erscheinen nicht oder an der falschen Stelle oder zeigen falsche Zaehler.
  * - Reader erhalten unberechtigte Navigationseintraege.
  *
  * Ziel:
@@ -31,26 +32,33 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     Object.assign(globalThis, { React });
   });
 
-  it("shows reports and monitoring with count for dispatcher and marks disabled backups visibly", () => {
+  it("shows reports and monitoring plus trigger pills below the monitoring navigation entry for dispatcher", () => {
     const html = renderToStaticMarkup(
       <Sidebar
         onViewChange={vi.fn()}
         onLogout={vi.fn()}
         currentView="monitoring"
         userRole="DISPATCHER"
-        monitoringCount={3}
+        monitoringSummary={[
+          { triggerCode: "TR-01", triggerName: "Mindestzahl Mitarbeiter", count: 3, color: "#DC2626" },
+          { triggerCode: "TR-02", triggerName: "Geparkt", count: 1, color: "#D4537E" },
+        ]}
         backupDisabled
       />,
     );
 
     expect(html).toContain("Reports");
     expect(html).toContain("Monitoring");
-    expect(html).toContain("Wochenübersicht");
-    expect(html).toContain("Monatsübersicht");
-    expect(html).toContain("nav-monatsuebersicht");
-    expect(html).toContain("nav-monitoring-count");
-    expect(html).toContain(">3<");
+    expect(html).toContain("Wochen");
+    expect(html).toContain("Monats");
+    expect(html).toContain("monitoring-trigger-pills");
+    expect(html).toContain("monitoring-pill-TR-01");
+    expect(html).toContain("TR-01: 3");
+    expect(html).toContain("monitoring-pill-TR-02");
+    expect(html).toContain("TR-02: 1");
+    expect(html.indexOf("nav-monitoring")).toBeLessThan(html.indexOf("monitoring-trigger-pills"));
     expect(html).toContain("border-2 border-red-600");
+    expect(html).not.toContain("nav-monitoring-count");
     expect(html).not.toContain("Einstellungen");
   });
 
@@ -64,10 +72,11 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
       />,
     );
 
-    expect(html).toContain("Wochenübersicht");
-    expect(html).toContain("Monatsübersicht");
+    expect(html).toContain("Wochen");
+    expect(html).toContain("Monats");
     expect(html).not.toContain("Reports");
     expect(html).not.toContain("Monitoring");
     expect(html).not.toContain("nav-monitoring");
+    expect(html).not.toContain("monitoring-trigger-pills");
   });
 });

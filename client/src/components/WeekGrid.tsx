@@ -1,5 +1,6 @@
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import type { CalendarNavCommand } from "@/pages/Home";
+import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
 interface WeekGridProps {
   currentDate: Date;
@@ -9,7 +10,7 @@ interface WeekGridProps {
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
   conflictHighlightActive?: boolean;
-  conflictAppointmentIds?: Set<number>;
+  conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
@@ -26,7 +27,7 @@ export function WeekGrid({
   weekLanesCollapsed,
   onWeekLanesCollapsedChange,
   conflictHighlightActive = false,
-  conflictAppointmentIds = new Set<number>(),
+  conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   navCommand,
   onVisibleDateChange,
   onNewAppointment,
@@ -44,7 +45,7 @@ export function WeekGrid({
         weekLanesCollapsed={weekLanesCollapsed}
         onWeekLanesCollapsedChange={onWeekLanesCollapsedChange}
         conflictHighlightActive={conflictHighlightActive}
-        conflictAppointmentIds={conflictAppointmentIds}
+        conflictAppointmentMap={conflictAppointmentMap}
         navCommand={navCommand}
         onVisibleDateChange={onVisibleDateChange}
         onNewAppointment={onNewAppointment}

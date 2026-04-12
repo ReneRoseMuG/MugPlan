@@ -5,10 +5,12 @@
  * - CalendarWorkspace rendert im Wochenmodus sichtbar das WeekGrid.
  * - CalendarWorkspace rendert Monatsansichten sichtbar nur noch ueber MonthSheetGrid.
  * - New/Open-Callbacks werden mit dem passenden Rueckkehrkontext weitergereicht.
+ * - Monitoring-Treffer werden als triggerbezogene Konflikt-Metadaten in Woche und Monat weitergereicht.
  *
  * Fehlerfaelle:
  * - Falsches Grid wird fuer die aktive Ansicht gerendert.
  * - Week- und Month-Callbacks verlieren ihren View-Kontext.
+ * - Triggerprioritaet oder Konfliktfarbe gehen auf dem Weg in die Grids verloren.
  *
  * Ziel:
  * Wrapper-Verhalten fuer Woche und Monat ueber gerenderten Laufzeitkontext absichern.
@@ -20,15 +22,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const weekGridCalls: Array<Record<string, unknown>> = [];
 const monthSheetGridCalls: Array<Record<string, unknown>> = [];
 const openAppointmentFormMock = vi.fn();
-const monitoringItems = [{
-  appointmentId: 91,
-  startDate: "2099-01-07",
-  endDate: null,
-  tourName: "Tour 9",
-  employeeCount: 0,
-  triggerName: "TR-01",
-  problemDescription: "Konflikt",
-}];
+const monitoringItems = [
+  {
+    appointmentId: 91,
+    startDate: "2099-01-07",
+    startTime: null,
+    tourName: "Tour 9",
+    projectName: null,
+    customerName: null,
+    employeeCount: 0,
+    triggerCode: "TR-01" as const,
+    triggerCodes: ["TR-01", "TR-02"] as const,
+    triggerName: "Mindestzahl Mitarbeiter + Geparkt",
+  },
+];
 
 vi.mock("@/components/WeekGrid", () => ({
   WeekGrid: (props: Record<string, unknown>) => {
@@ -111,7 +118,12 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.weekTileBodyMode).toBe("collapsed");
     expect(props?.weekLanesCollapsed).toBe(false);
     expect(props?.conflictHighlightActive).toBe(false);
-    expect(props?.conflictAppointmentIds).toEqual(new Set([91]));
+    expect(props?.conflictAppointmentMap).toBeInstanceOf(Map);
+    expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string; color: string }>).get(91)).toEqual({
+      triggerCode: "TR-01",
+      triggerName: "Mindestzahl Mitarbeiter",
+      color: "#DC2626",
+    });
 
     (props?.onNewAppointment as (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void)(
       "2099-01-10",
@@ -152,7 +164,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(markup).not.toContain("week-grid-marker");
 
     const props = monthSheetGridCalls.at(-1);
-    expect(props?.conflictAppointmentIds).toEqual(new Set([91]));
+    expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string }>).get(91)?.triggerCode).toBe("TR-01");
     (props?.onNewAppointment as (date: string) => void)("2099-01-12");
     (props?.onOpenAppointment as (appointmentId: number) => void)(601);
 
