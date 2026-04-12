@@ -8,6 +8,9 @@
  * - applySystemSeed legt fehlende Notizvorlagen an.
  * - applySystemSeed ueberschreibt bestehende Notizvorlagen-Bodies nicht.
  * - applySystemSeed arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen.
+ * - applySystemSeed migriert einen Tag mit Namen "Vakant" zu "Geparkt" vor dem normalen Seed-Lauf.
+ * - applySystemSeed migriert eine Tour mit Namen "Vakant" zu "Parkplatz" vor dem normalen Seed-Lauf.
+ * - Migration ist idempotent: kein Fehler wenn weder Tag noch Tour "Vakant" existieren.
  *
  * Fehlerfaelle:
  * - Tour-Farben bleiben bei bestehender Tour trotz Sollabweichung unveraendert.
@@ -21,6 +24,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const ensureTagDefinitionMock = vi.fn();
 const getTagByNormalizedNameMock = vi.fn();
+const updateTagWithVersionMock = vi.fn();
 const getToursMock = vi.fn();
 const createTourMock = vi.fn();
 const updateTourWithVersionMock = vi.fn();
@@ -31,6 +35,7 @@ const updateNoteTemplateWithVersionMock = vi.fn();
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   getTagByNormalizedName: (...args: unknown[]) => getTagByNormalizedNameMock(...args),
   ensureTagDefinition: (...args: unknown[]) => ensureTagDefinitionMock(...args),
+  updateTagWithVersion: (...args: unknown[]) => updateTagWithVersionMock(...args),
 }));
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
@@ -51,6 +56,7 @@ describe("systemSeedService", () => {
   beforeEach(() => {
     ensureTagDefinitionMock.mockReset();
     getTagByNormalizedNameMock.mockReset();
+    updateTagWithVersionMock.mockReset();
     getToursMock.mockReset();
     createTourMock.mockReset();
     updateTourWithVersionMock.mockReset();
@@ -64,11 +70,12 @@ describe("systemSeedService", () => {
       ...input,
     }));
     getTagByNormalizedNameMock.mockResolvedValue(null);
+    updateTagWithVersionMock.mockResolvedValue({ kind: "updated", row: { id: 1, name: "Geparkt", color: "#D4537E", version: 2 } });
     getToursMock.mockResolvedValue([]);
-    createTourMock.mockResolvedValue({ id: 1, name: "Vakant", color: "#D4537E", version: 1 });
+    createTourMock.mockResolvedValue({ id: 1, name: "Parkplatz", color: "#D4537E", version: 1 });
     updateTourWithVersionMock.mockResolvedValue({
       kind: "updated",
-      tour: { id: 1, name: "Vakant", color: "#D4537E", version: 2 },
+      tour: { id: 1, name: "Parkplatz", color: "#D4537E", version: 2 },
     });
     getNoteTemplatesMock.mockResolvedValue([]);
     createNoteTemplateMock.mockResolvedValue({
@@ -105,7 +112,7 @@ describe("systemSeedService", () => {
       isDefault: true,
     }));
     expect(result.logLines).toContain("Tag angelegt: Reklamation");
-    expect(result.logLines).toContain("Tag angelegt: Vakant");
+    expect(result.logLines).toContain("Tag angelegt: Geparkt");
   });
 
   it("behandelt vorhandene Tags idempotent", async () => {
@@ -137,15 +144,15 @@ describe("systemSeedService", () => {
 
     const result = await applySystemSeed();
 
-    expect(createTourMock).toHaveBeenCalledWith("Vakant", "#D4537E");
+    expect(createTourMock).toHaveBeenCalledWith("Parkplatz", "#D4537E");
     expect(createTourMock).toHaveBeenCalledWith("Schröder Halle", "#5C3317");
-    expect(result.logLines).toContain("Tour angelegt: Vakant");
+    expect(result.logLines).toContain("Tour angelegt: Parkplatz");
   });
 
   it("aktualisiert bestehende Tour-Farben auf den Sollzustand", async () => {
     getToursMock
       .mockResolvedValueOnce([
-        { id: 1, name: "Vakant", color: "#D4537E", version: 1 },
+        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
         { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
         { id: 7, name: "Tour 1", color: "#999999", version: 4 },
         { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
@@ -153,7 +160,7 @@ describe("systemSeedService", () => {
         { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
       ])
       .mockResolvedValue([
-        { id: 1, name: "Vakant", color: "#D4537E", version: 1 },
+        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
         { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
         { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
         { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
@@ -199,6 +206,67 @@ describe("systemSeedService", () => {
       print: true,
       sortOrder: 10,
     });
+  });
+
+  it("migriert Tag Vakant zu Geparkt und protokolliert die Migration", async () => {
+    getTagByNormalizedNameMock.mockImplementation(async (name: string) => {
+      if (name === "Vakant") {
+        return { id: 99, name: "Vakant", color: "#D4537E", isDefault: true, version: 3 };
+      }
+      return null;
+    });
+
+    const result = await applySystemSeed();
+
+    expect(updateTagWithVersionMock).toHaveBeenCalledWith(99, 3, { name: "Geparkt" });
+    expect(result.logLines).toContain("Tag migriert: Vakant → Geparkt");
+  });
+
+  it("migriert Tour Vakant zu Parkplatz und protokolliert die Migration", async () => {
+    getToursMock.mockResolvedValueOnce([
+      { id: 42, name: "Vakant", color: "#D4537E", version: 5 },
+    ]).mockResolvedValue([
+      { id: 42, name: "Parkplatz", color: "#D4537E", version: 6 },
+    ]);
+    updateTourWithVersionMock.mockResolvedValue({ kind: "updated", tour: { id: 42, name: "Parkplatz", color: "#D4537E", version: 6 } });
+
+    const result = await applySystemSeed();
+
+    expect(updateTourWithVersionMock).toHaveBeenCalledWith(42, 5, "Parkplatz", "#D4537E");
+    expect(result.logLines).toContain("Tour migriert: Vakant → Parkplatz");
+  });
+
+  it("laeuft fehlerfrei wenn kein Vakant-Tag existiert (idempotent)", async () => {
+    getTagByNormalizedNameMock.mockResolvedValue(null);
+
+    await expect(applySystemSeed()).resolves.not.toThrow();
+    expect(updateTagWithVersionMock).not.toHaveBeenCalled();
+  });
+
+  it("laeuft fehlerfrei wenn keine Vakant-Tour existiert (idempotent)", async () => {
+    getToursMock.mockResolvedValue([
+      { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
+    ]);
+
+    const result = await applySystemSeed();
+
+    const migrateCall = (result.logLines as string[]).find((line) => line.includes("Tour migriert"));
+    expect(migrateCall).toBeUndefined();
+  });
+
+  it("legt Parkplatz-Tour nach Migration als regulaere Soll-Tour an wenn nicht vorhanden", async () => {
+    getToursMock.mockResolvedValueOnce([
+      { id: 42, name: "Vakant", color: "#D4537E", version: 1 },
+    ]).mockResolvedValue([
+      { id: 42, name: "Parkplatz", color: "#D4537E", version: 2 },
+    ]);
+    updateTourWithVersionMock.mockResolvedValue({ kind: "updated", tour: { id: 42, name: "Parkplatz", color: "#D4537E", version: 2 } });
+
+    const result = await applySystemSeed();
+
+    expect(result.logLines).toContain("Tour migriert: Vakant → Parkplatz");
+    expect(result.logLines).toContain("Tour unverändert: Parkplatz");
+    expect(createTourMock).not.toHaveBeenCalledWith("Parkplatz", expect.anything());
   });
 
   it("arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen", async () => {

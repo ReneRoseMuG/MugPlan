@@ -30,6 +30,7 @@ import {
   isPickerVisibleForDomain,
   isProtectedSystemTagName,
   isReservedAppointmentCancellationTagName,
+  isReservedVacantTagName,
 } from "../../../shared/appointmentCancellation";
 import {
   filterPickerTagsForDomain,
@@ -70,6 +71,12 @@ describe("appointment cancellation helpers", () => {
     expect(isProtectedSystemTagName("Sondermaß")).toBe(true);
     expect(isProtectedSystemTagName(RESERVED_VACANT_TAG_NAME)).toBe(true);
     expect(isProtectedSystemTagName("Anmerkungen")).toBe(false);
+
+    expect(RESERVED_VACANT_TAG_NAME).toBe("Geparkt");
+    expect(isReservedVacantTagName("Geparkt")).toBe(true);
+    expect(isReservedVacantTagName(" geparkt ")).toBe(true);
+    expect(isReservedVacantTagName("GEPARKT")).toBe(true);
+    expect(isReservedVacantTagName("Vakant")).toBe(false);
   });
 
   it("detects managed tags across server-side helpers", () => {
@@ -96,6 +103,11 @@ describe("appointment cancellation helpers", () => {
     expect(isPickerVisibleForDomain("Storniert", "project")).toBe(false);
     expect(isPickerVisibleForDomain("Storniert", "customer")).toBe(false);
     expect(isPickerVisibleForDomain("Storniert", "employee")).toBe(false);
+
+    expect(isPickerVisibleForDomain("Geparkt", "appointment")).toBe(false);
+    expect(isPickerVisibleForDomain("Geparkt", "project")).toBe(false);
+    expect(isPickerVisibleForDomain("Geparkt", "customer")).toBe(false);
+    expect(isPickerVisibleForDomain("Geparkt", "employee")).toBe(false);
 
     expect(filterPickerTagsForDomain([
       { name: "Info" },

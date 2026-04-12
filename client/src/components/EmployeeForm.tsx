@@ -196,16 +196,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       if (code === "FORBIDDEN") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Aenderung nicht erlaubt.",
+          title: "Speichern nicht möglich",
+          description: "Änderung nicht erlaubt.",
           variant: "destructive",
         });
         return;
@@ -228,21 +228,21 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Aktiv-Status nicht moeglich",
-          description: "Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Aktiv-Status nicht möglich",
+          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       if (code === "FORBIDDEN") {
         toast({
-          title: "Aktiv-Status nicht moeglich",
-          description: "Nur Admin darf den Aktiv-Status aendern.",
+          title: "Aktiv-Status nicht möglich",
+          description: "Nur Admin darf den Aktiv-Status ändern.",
           variant: "destructive",
         });
         return;
       }
-      toast({ title: "Aktiv-Status konnte nicht geaendert werden", variant: "destructive" });
+      toast({ title: "Aktiv-Status konnte nicht geändert werden", variant: "destructive" });
     },
   });
 
@@ -262,7 +262,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Entfernen fehlgeschlagen",
-          description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Termin wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -283,7 +283,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       const code = extractApiCode(error);
       toast({
         title: code === "FORBIDDEN" ? "Tag kann nicht zugewiesen werden" : "Tag-Zuweisung fehlgeschlagen",
-        description: code === "FORBIDDEN" ? "Keine Berechtigung fuer Tag-Aenderungen." : error.message,
+        description: code === "FORBIDDEN" ? "Keine Berechtigung für Tag-Änderungen." : error.message,
         variant: "destructive",
       });
     },
@@ -299,7 +299,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     onError: (error: Error) => {
       const code = extractApiCode(error);
       toast({
-        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geaendert" : "Tag konnte nicht entfernt werden",
+        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geändert" : "Tag konnte nicht entfernt werden",
         description: error.message,
         variant: "destructive",
       });
@@ -358,7 +358,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -380,7 +380,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -400,13 +400,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Notiz konnte nicht geloescht werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Notiz konnte nicht gelöscht werden",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
-      toast({ title: "Notiz konnte nicht geloescht werden", description: error.message, variant: "destructive" });
+      toast({ title: "Notiz konnte nicht gelöscht werden", description: error.message, variant: "destructive" });
     },
   });
 
@@ -565,8 +565,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       const version = employeeDetails.employee.version;
       if (!Number.isInteger(version) || (version ?? 0) < 1) {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Mitarbeiterdaten sind unvollstaendig. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Mitarbeiterdaten sind unvollständig. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -598,7 +598,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
         setDraftEmployeeAttachments([]);
       } catch (error) {
         toast({
-          title: "Mitarbeiter gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          title: "Mitarbeiter gespeichert, Sidebar-Daten konnten nicht vollständig persistiert werden",
           description: error instanceof Error ? error.message : "Unbekannter Fehler",
           variant: "destructive",
         });
@@ -751,7 +751,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 Tour
               </h4>
               <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                <p className="text-sm text-slate-400 italic">Keine direkte Tourzugehoerigkeit</p>
+                <p className="text-sm text-slate-400 italic">Keine direkte Tourzugehörigkeit</p>
               </div>
             </div>
 

@@ -120,7 +120,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
     } catch (submitError) {
       const code = submitError instanceof Error ? submitError.message : "QUICK_LOGIN_FAILED";
       if (code === "USER_NOT_FOUND_FOR_ROLE") {
-        setQuickError("Fuer diese Rolle existiert kein aktiver Benutzer.");
+        setQuickError("Für diese Rolle existiert kein aktiver Benutzer.");
       } else if (code === "QUICK_LOGIN_DISABLED") {
         setQuickError("Schnelllogin ist deaktiviert.");
       } else if (code === "SETUP_REQUIRED") {
@@ -173,7 +173,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
       } else if (code === "USER_INACTIVE") {
         setError("Benutzer ist deaktiviert.");
       } else if (code === "SETUP_REQUIRED") {
-        setError("Es ist noch kein Admin eingerichtet. Bitte zuerst Admin-Setup ausfuehren.");
+        setError("Es ist noch kein Admin eingerichtet. Bitte zuerst Admin-Setup ausführen.");
       } else {
         setError("Anmeldung fehlgeschlagen.");
       }
@@ -205,12 +205,12 @@ export default function Login({ onAuthenticated }: LoginProps) {
     } catch (submitError) {
       const code = submitError instanceof Error ? submitError.message : "TWO_FACTOR_FAILED";
       if (code === "INVALID_TWO_FACTOR_CODE") {
-        setError("Der 2FA-Code ist ungueltig.");
+        setError("Der 2FA-Code ist ungültig.");
       } else if (code === "TWO_FACTOR_CHALLENGE_MISSING") {
         setStep({ kind: "password" });
         setPassword("");
         setTwoFactorCode("");
-        setError("Die 2FA-Pruefung ist abgelaufen. Bitte erneut anmelden.");
+        setError("Die 2FA-Prüfung ist abgelaufen. Bitte erneut anmelden.");
       } else {
         setError("2FA-Pruefung fehlgeschlagen.");
       }
@@ -265,8 +265,8 @@ export default function Login({ onAuthenticated }: LoginProps) {
     >
       <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
         {step.kind === "setup"
-          ? "2FA ist global aktiviert. Sie muessen jetzt Ihre Authenticator-App einrichten."
-          : "2FA ist global aktiviert. Bitte bestaetigen Sie die Anmeldung mit Ihrem 6-stelligen Code."}
+          ? "2FA ist global aktiviert. Sie müssen jetzt Ihre Authenticator-App einrichten."
+          : "2FA ist global aktiviert. Bitte bestätigen Sie die Anmeldung mit Ihrem 6-stelligen Code."}
       </div>
 
       {step.kind === "setup" ? (
@@ -316,10 +316,10 @@ export default function Login({ onAuthenticated }: LoginProps) {
             setError(null);
           }}
         >
-          Zurueck
+          Zurück
         </Button>
         <Button className="flex-1" type="submit" disabled={isSubmitting}>
-          Bestaetigen
+          Bestätigen
         </Button>
       </div>
     </form>
@@ -333,7 +333,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
           <CardDescription>
             {step.kind === "password"
               ? "Bitte melde dich mit Benutzername oder E-Mail und Passwort an."
-              : "Bitte schliesse die Zwei-Faktor-Anmeldung ab."}
+              : "Bitte schließe die Zwei-Faktor-Anmeldung ab."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -360,10 +360,10 @@ export default function Login({ onAuthenticated }: LoginProps) {
                         <span className="text-base font-black">{entry.label}</span>
                         <span className="text-xs text-slate-500">
                           {quickTargetsLoading
-                            ? "Pruefe Benutzer..."
+                            ? "Prüfe Benutzer..."
                             : target?.available
                               ? `Benutzer: ${target.username ?? "-"}`
-                              : "Kein aktiver Benutzer fuer diese Rolle"}
+                              : "Kein aktiver Benutzer für diese Rolle"}
                         </span>
                       </span>
                     </Button>

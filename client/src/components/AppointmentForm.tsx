@@ -62,6 +62,8 @@ import {
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
 import type { Note } from "@shared/schema";
+import { isReservedVacantTagName } from "@shared/appointmentCancellation";
+import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -379,6 +381,9 @@ export function AppointmentForm({
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
@@ -542,13 +547,17 @@ export function AppointmentForm({
     [draftAppointmentAttachments, draftAppointmentNotes, draftAppointmentTags],
   );
   const addAppointmentTagMutation = useMutation({
-    mutationFn: async (tagId: number) => {
+    mutationFn: async ({ tagId }: { tagId: number; tagName: string }) => {
       const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tags`, { tagId });
       return response.json();
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, { tagName }) => {
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
       await invalidateRelatedAppointmentQueries(selectedProjectId);
+      const action = computeTagAddedAction(tagName, appointmentId, visibleAppointmentNotes.map((n) => ({ title: n.title })));
+      if (action.kind === "show_note_suggestion_dialog") {
+        setNoteSuggestionDialog({ templateTitle: action.templateTitle });
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Tag-Zuweisung fehlgeschlagen", description: error.message, variant: "destructive" });
@@ -558,9 +567,19 @@ export function AppointmentForm({
     mutationFn: async (item: TagRelationItem) => {
       await apiRequest("DELETE", `/api/appointments/${appointmentId}/tags/${item.tag.id}`, { version: item.relationVersion });
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, item) => {
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
       await invalidateRelatedAppointmentQueries(selectedProjectId);
+      const action = computeTagRemovedAction(item.tag.name, visibleAppointmentNotes.map((n) => ({ title: n.title })));
+      if (action.kind === "show_note_removal_dialog") {
+        const normalizeTitle = (v: string) => v.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+        const matchingNote = visibleAppointmentNotes.find(
+          (n) => normalizeTitle(n.title) === normalizeTitle(action.templateTitle),
+        );
+        if (matchingNote) {
+          setNoteRemovalDialog({ templateTitle: action.templateTitle, noteId: matchingNote.id, noteVersion: matchingNote.version });
+        }
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Tag konnte nicht entfernt werden", description: error.message, variant: "destructive" });
@@ -615,7 +634,7 @@ export function AppointmentForm({
       const err = error as AppointmentApiError;
       if (err.code === "PAST_APPOINTMENT_READONLY") {
         toast({
-          title: "Stornieren nicht moeglich",
+          title: "Stornieren nicht möglich",
           description: "Termin ist gesperrt.",
           variant: "destructive",
         });
@@ -623,7 +642,7 @@ export function AppointmentForm({
       }
       if (err.code === "CANCELLATION_TAG_NOT_CONFIGURED") {
         toast({
-          title: "Stornieren nicht moeglich",
+          title: "Stornieren nicht möglich",
           description: "Der reservierte Storno-Tag ist in den Stammdaten nicht vorhanden.",
           variant: "destructive",
         });
@@ -631,17 +650,73 @@ export function AppointmentForm({
       }
       if (err.code === "VERSION_CONFLICT") {
         toast({
-          title: "Stornieren nicht moeglich",
+          title: "Stornieren nicht möglich",
           description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       toast({
-        title: "Stornieren nicht moeglich",
+        title: "Stornieren nicht möglich",
         description: err.message || "Termin konnte nicht storniert werden.",
         variant: "destructive",
       });
+    },
+  });
+
+  const parkAppointmentMutation = useMutation({
+    mutationFn: async ({ appointmentId: targetId, version }: { appointmentId: number; version: number }) => {
+      const response = await fetch(`/api/appointments/${targetId}/park`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+        credentials: "include",
+      });
+      if (response.ok) return targetId;
+      const rawBody = await response.text();
+      const parsed = parseErrorPayload(rawBody);
+      if (parsed?.code === "ALREADY_PARKED") {
+        throw buildApiError("Termin ist bereits geparkt.", response.status, "ALREADY_PARKED");
+      }
+      if (parsed?.code === "VERSION_CONFLICT") {
+        throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
+      }
+      if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
+        throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
+      }
+      if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
+        throw buildApiError("Stornierte Termine koennen nicht geparkt werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+      }
+      throw buildApiError(parsed?.message ?? (response.statusText || "Parken fehlgeschlagen"), response.status, parsed?.code);
+    },
+    onSuccess: async () => {
+      if (!appointmentId) return;
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Termin geparkt" });
+      onSaved?.();
+    },
+    onError: (error) => {
+      const err = error as AppointmentApiError;
+      if (err.code === "ALREADY_PARKED") {
+        toast({ title: "Parken nicht moeglich", description: "Termin ist bereits geparkt.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "VERSION_CONFLICT") {
+        toast({ title: "Parken nicht moeglich", description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "PAST_APPOINTMENT_READONLY") {
+        toast({ title: "Parken nicht moeglich", description: "Termin ist gesperrt.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
+        toast({ title: "Parken nicht moeglich", description: "Stornierte Termine koennen nicht geparkt werden.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Parken nicht moeglich", description: err.message || "Termin konnte nicht geparkt werden.", variant: "destructive" });
     },
   });
 
@@ -784,6 +859,7 @@ export function AppointmentForm({
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate);
   const isCancelled = appointmentDetail?.isCancelled === true;
+  const isParked = isEditing && appointmentTagRelations.some((item) => isReservedVacantTagName(item.tag.name));
   const isReadOnlyView = isHistoricalReadOnly || isCancelled;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
@@ -903,7 +979,7 @@ export function AppointmentForm({
         }
         openAppointmentWeekPreviewDialog(preview, {
           title: "Wochenplanung fuer Termin uebernehmen",
-          description: "Die ausgewaehlte Tour hat fuer diese Kalenderwoche eine Planung. Waehlen Sie, welche Mitarbeiter uebernommen werden sollen.",
+          description: "Die ausgewählte Tour hat für diese Kalenderwoche eine Planung. Wählen Sie, welche Mitarbeiter übernommen werden sollen.",
           persistAfterConfirm: false,
           resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
         });
@@ -1538,7 +1614,7 @@ export function AppointmentForm({
           if (preview?.hasWeekPlan) {
             openAppointmentWeekPreviewDialog(preview, {
               title: "Wochenplanung vor dem Speichern pruefen",
-              description: "Tour oder Kalenderwoche wurden geaendert. Pruefen Sie, welche Mitarbeiter aus der Zielplanung fuer diesen Termin uebernommen werden sollen.",
+              description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
               persistAfterConfirm: true,
               resolutionKey: currentResolutionKey ?? `${selectedTourId ?? "none"}-${preview.isoYear}-${preview.isoWeek}`,
             });
@@ -1804,7 +1880,7 @@ export function AppointmentForm({
           });
           toast({
             title: "Speichern nicht moeglich",
-            description: `${parsed.message ?? "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
+            description: `${parsed.message ?? "Termin überschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
             variant: "destructive",
           });
           return;
@@ -1998,7 +2074,8 @@ export function AppointmentForm({
               testIdPrefix="appointment-tag-picker"
               onAdd={(tagId) => {
                 if (isEditing) {
-                  addAppointmentTagMutation.mutate(tagId);
+                  const tagName = availableTags.find((t) => t.id === tagId)?.name ?? "";
+                  addAppointmentTagMutation.mutate({ tagId, tagName });
                   return;
                 }
                 addDraftAppointmentTag(tagId);
@@ -2064,6 +2141,17 @@ export function AppointmentForm({
                       data-testid="button-cancel-appointment"
                     >
                       {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
+                    </Button>
+                  ) : null}
+                  {!isCancelled && !isParked ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setParkConfirmOpen(true)}
+                      disabled={isMutationLocked || parkAppointmentMutation.isPending}
+                      data-testid="button-park-appointment"
+                    >
+                      {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
                     </Button>
                   ) : null}
                   <Button
@@ -2413,7 +2501,7 @@ export function AppointmentForm({
             teams={teams}
             tours={tours}
             isLoading={employeesLoading}
-            title="Mitarbeiter auswaehlen"
+            title="Mitarbeiter auswählen"
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);
               setEmployeePickerOpen(false);
@@ -2470,6 +2558,31 @@ export function AppointmentForm({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
+        <AlertDialogContent data-testid="dialog-park-appointment">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin parken?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Termin wird in die Parkplatz-Tour verschoben, alle Mitarbeiter werden abgezogen und der Geparkt-Tag wird gesetzt. Die Aktion kann durch Neuzuweisung einer Tour rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={parkAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
+              onClick={() => {
+                if (!appointmentId) return;
+                const version = appointmentDetail?.version;
+                if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
+                parkAppointmentMutation.mutate({ appointmentId, version });
+              }}
+            >
+              {parkAppointmentMutation.isPending ? "Termin parken..." : "Termin parken"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -2489,6 +2602,59 @@ export function AppointmentForm({
               }}
             >
               {deleteAppointmentMutation.isPending ? "Termin löschen..." : "Termin löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-suggestion">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für diesen Termin angelegt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-suggestion-skip">Überspringen</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-suggestion-confirm"
+              onClick={() => {
+                if (!noteSuggestionDialog) return;
+                createAppointmentNoteMutation.mutate({
+                  title: noteSuggestionDialog.templateTitle,
+                  body: "",
+                  cardColor: null,
+                  print: false,
+                });
+                setNoteSuggestionDialog(null);
+              }}
+            >
+              Jetzt anlegen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={noteRemovalDialog !== null} onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-removal">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz entfernen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}" ebenfalls entfernt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-removal-keep">Behalten</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-removal-confirm"
+              onClick={() => {
+                if (!noteRemovalDialog) return;
+                deleteAppointmentNoteMutation.mutate({ noteId: noteRemovalDialog.noteId, version: noteRemovalDialog.noteVersion });
+                setNoteRemovalDialog(null);
+              }}
+            >
+              Entfernen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

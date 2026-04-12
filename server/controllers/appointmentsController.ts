@@ -360,6 +360,34 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
   }
 }
 
+export async function parkAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+    const input = api.appointments.park.input.parse(req.body);
+    const appointmentId = Number(req.params.id);
+    const result = await appointmentsService.parkAppointment(appointmentId, input.version, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function removeEmployeeFromAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);

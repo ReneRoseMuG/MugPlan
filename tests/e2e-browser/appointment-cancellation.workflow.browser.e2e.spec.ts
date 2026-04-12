@@ -15,16 +15,22 @@
  * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
  * - Der Produktionsplanung listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
  *
+ * - Der Geparkt-Tag erscheint nicht im Termin-Tag-Picker (isPickerVisibleForDomain schließt ihn aus).
+ *
  * Ziel:
  * Den kompletten fachlichen Storno-Flow aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
+ * Ergaenzend: Picker-Schutz fuer den reservierten Geparkt-Tag browser-seitig absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
+import { RESERVED_VACANT_TAG_NAME } from "../../shared/appointmentCancellation";
 
 import {
+  createAppointmentFixture,
   createComponentFixture,
   createCustomerFixture,
   createEmployeeFixture,
   createProductFixture,
+  createProjectFixture,
   createProjectOrderItemFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
@@ -239,4 +245,36 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Keine passenden Kategorien im gewählten Zeitraum gefunden.");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
+});
+
+test("Geparkt-Tag erscheint nicht im Termin-Tag-Picker", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-PICKER-GUARD-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-PICKER-GUARD",
+    customerId: customer.id,
+    name: "FT06 Picker Guard Projekt",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(3),
+  });
+
+  await loginAsAdmin(page);
+
+  const tagsResponse = await page.request.get("/api/admin/master-data/tags");
+  expect(tagsResponse.ok()).toBeTruthy();
+  const allTags = await tagsResponse.json() as Array<{ id: number; name: string }>;
+  const geparktTag = allTags.find((t) => t.name === RESERVED_VACANT_TAG_NAME);
+  expect(geparktTag?.id).toBeTruthy();
+
+  const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(appointmentPanel).toBeVisible();
+  await appointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+
+  await page.getByTestId("appointment-tag-picker-button-add").click();
+  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
+
+  await expect(page.getByTestId(`appointment-tag-picker-add-tag-${geparktTag!.id}`)).toHaveCount(0);
 });

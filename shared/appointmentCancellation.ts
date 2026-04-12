@@ -8,7 +8,7 @@ export const MANAGED_MESSE_TAG_NAME = "Messe Aufbau/Abbau";
 export const MANAGED_MESSE_TAG_COLOR = "#3465A4";
 export const MANAGED_REMARKS_TAG_NAME = "Anmerkungen";
 export const MANAGED_REMARKS_TAG_COLOR = "#888780";
-export const RESERVED_VACANT_TAG_NAME = "Vakant";
+export const RESERVED_VACANT_TAG_NAME = "Geparkt";
 export const RESERVED_VACANT_TAG_COLOR = "#D4537E";
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
@@ -38,17 +38,24 @@ export function isManagedRemarksTagName(value: string): boolean {
   return normalizeTagName(value) === normalizeTagName(MANAGED_REMARKS_TAG_NAME);
 }
 
+export function isReservedVacantTagName(value: string): boolean {
+  return normalizeTagName(value) === normalizeTagName(RESERVED_VACANT_TAG_NAME);
+}
+
 export function isProtectedSystemTagName(value: string): boolean {
   return isReservedAppointmentCancellationTagName(value)
     || isManagedComplaintTagName(value)
     || isManagedSpecialMeasureTagName(value)
     || isManagedMesseTagName(value)
-    || normalizeTagName(value) === normalizeTagName(RESERVED_VACANT_TAG_NAME);
+    || isReservedVacantTagName(value);
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
   void domain;
   if (isReservedAppointmentCancellationTagName(value)) {
+    return false;
+  }
+  if (isReservedVacantTagName(value)) {
     return false;
   }
 

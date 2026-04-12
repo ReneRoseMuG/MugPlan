@@ -1,5 +1,5 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
-import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, RESERVED_VACANT_TAG_NAME } from "@shared/appointmentCancellation";
 import type { InsertAppointment } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
@@ -20,6 +20,7 @@ import {
   filterVisibleAppointmentTagRelations,
   hasAppointmentCancellationTag,
   isAppointmentCancellationTag,
+  isReservedVacantTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
@@ -48,7 +49,8 @@ class AppointmentError extends Error {
     | "PAST_APPOINTMENT_READONLY"
     | "CANCELLATION_TAG_NOT_CONFIGURED"
     | "CANCELLATION_TAG_PROTECTED"
-    | "CANCELLED_APPOINTMENT_READONLY";
+    | "CANCELLED_APPOINTMENT_READONLY"
+    | "ALREADY_PARKED";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
   constructor(
@@ -65,7 +67,8 @@ class AppointmentError extends Error {
       | "PAST_APPOINTMENT_READONLY"
       | "CANCELLATION_TAG_NOT_CONFIGURED"
       | "CANCELLATION_TAG_PROTECTED"
-      | "CANCELLED_APPOINTMENT_READONLY",
+      | "CANCELLED_APPOINTMENT_READONLY"
+      | "ALREADY_PARKED",
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
     },
@@ -586,8 +589,22 @@ export async function updateAppointment(
 
     await assertNoInactiveEmployeesTx(tx, employeeIds);
 
-    if (existing.tourId !== (data.tourId ?? null)) {
+    const newTourId = data.tourId ?? null;
+    const tourChanged = existing.tourId !== newTourId;
+    if (tourChanged) {
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
+    }
+
+    let geparktTagIdForRemoval: number | null = null;
+    if (tourChanged && existing.tourId != null) {
+      const allTours = await toursRepository.getTours();
+      const parkplatzTour = findParkplatzTour(allTours);
+      if (parkplatzTour && existing.tourId === parkplatzTour.id) {
+        const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
+        if (geparktTag) {
+          geparktTagIdForRemoval = geparktTag.id;
+        }
+      }
     }
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
@@ -623,6 +640,9 @@ export async function updateAppointment(
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    if (geparktTagIdForRemoval !== null) {
+      await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, geparktTagIdForRemoval);
+    }
     return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
   });
 
@@ -1327,6 +1347,9 @@ export async function addAppointmentTag(
   if (isAppointmentCancellationTag(tag)) {
     throw new AppointmentError("Der Storno-Tag kann nur ueber die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
+  if (isReservedVacantTag(tag)) {
+    throw new AppointmentError("Der Geparkt-Tag kann nur ueber die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  }
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
 
@@ -1351,6 +1374,9 @@ export async function removeAppointmentTag(
   }
   if (isAppointmentCancellationTag(tag)) {
     throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  }
+  if (isReservedVacantTag(tag)) {
+    throw new AppointmentError("Der Geparkt-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   await assertAppointmentNotCancelled(appointmentId);
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
@@ -1431,6 +1457,78 @@ export async function cancelAppointment(
       await projectsRepository.setProjectOrderAmountTx(tx, existing.projectId, "0.00");
     }
     await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, cancellationTag.id);
+    return { found: true } as const;
+  });
+
+  return result;
+}
+
+function normalizeTourName(value: string): string {
+  return value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+}
+
+function findParkplatzTour(tours: Awaited<ReturnType<typeof toursRepository.getTours>>) {
+  return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz")) ?? null;
+}
+
+export async function parkAppointment(
+  appointmentId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean }> {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
+
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return { found: false };
+
+  if (isStartDateLocked(appointment.startDate)) {
+    throw new AppointmentError("Historische Termine koennen nicht geparkt werden", 409, "PAST_APPOINTMENT_READONLY");
+  }
+
+  await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht geparkt werden");
+
+  const allTours = await toursRepository.getTours();
+  const parkplatzTour = findParkplatzTour(allTours);
+  if (!parkplatzTour) {
+    throw new AppointmentError(
+      "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausfuehren.",
+      409,
+      "BUSINESS_CONFLICT",
+    );
+  }
+
+  const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
+  if (!geparktTag) {
+    throw new AppointmentError(
+      "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      409,
+      "BUSINESS_CONFLICT",
+    );
+  }
+
+  const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return { found: false } as const;
+
+    if (existing.tourId === parkplatzTour.id) {
+      throw new AppointmentError("Termin ist bereits geparkt", 409, "ALREADY_PARKED");
+    }
+
+    const parkResult = await appointmentsRepository.setAppointmentParkTx(tx, {
+      appointmentId,
+      expectedVersion,
+      tourId: parkplatzTour.id,
+    });
+    if (parkResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    }
+
+    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
+    await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, geparktTag.id);
+
     return { found: true } as const;
   });
 

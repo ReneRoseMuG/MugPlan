@@ -5,6 +5,7 @@ import {
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
+  isReservedVacantTagName,
   type TagPickerDomain,
 } from "@shared/appointmentCancellation";
 import type { TagRelationItem } from "../repositories/tagRelationsRepository";
@@ -43,6 +44,15 @@ export function isManagedRemarksTag(tag: Pick<Tag, "name"> | null | undefined): 
 
 export function hasManagedRemarksTag(tags: Array<Pick<Tag, "name">>): boolean {
   return tags.some((tag) => isManagedRemarksTag(tag));
+}
+
+export function isReservedVacantTag(tag: Pick<Tag, "name"> | null | undefined): boolean {
+  if (!tag) return false;
+  return isReservedVacantTagName(tag.name);
+}
+
+export function hasReservedVacantTag(tags: Array<Pick<Tag, "name">>): boolean {
+  return tags.some((tag) => isReservedVacantTag(tag));
 }
 
 export function filterPickerTagsForDomain<TTag extends Pick<Tag, "name">>(

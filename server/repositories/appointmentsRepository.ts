@@ -524,6 +524,38 @@ export async function addAppointmentTagTx(
   `);
 }
 
+export async function removeAppointmentTagByTagIdTx(
+  tx: DbTx,
+  appointmentId: number,
+  tagId: number,
+): Promise<void> {
+  await tx.execute(sql`
+    delete from appointment_tags
+    where appointment_id = ${appointmentId}
+      and tag_id = ${tagId}
+  `);
+}
+
+export async function setAppointmentParkTx(
+  tx: DbTx,
+  params: {
+    appointmentId: number;
+    expectedVersion: number;
+    tourId: number;
+  },
+): Promise<{ kind: "updated" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update appointments
+    set
+      tour_id = ${params.tourId},
+      version = version + 1
+    where id = ${params.appointmentId}
+      and version = ${params.expectedVersion}
+  `);
+
+  return getAffectedRows(result) === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
 function getAffectedRows(result: unknown): number {
   const raw = result as any;
   return Number(raw?.[0]?.affectedRows ?? raw?.affectedRows ?? 0);

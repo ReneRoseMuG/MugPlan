@@ -382,14 +382,14 @@ export function EmployeesPage({
     onError: (error: Error) => {
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
-        toast({ title: "Aktiv-Status nicht moeglich", description: "Mitarbeiter wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        toast({ title: "Aktiv-Status nicht möglich", description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.", variant: "destructive" });
         return;
       }
       if (code === "FORBIDDEN") {
-        toast({ title: "Aktiv-Status nicht moeglich", description: "Nur Admin darf den Aktiv-Status aendern.", variant: "destructive" });
+        toast({ title: "Aktiv-Status nicht möglich", description: "Nur Admin darf den Aktiv-Status ändern.", variant: "destructive" });
         return;
       }
-      toast({ title: "Aktiv-Status konnte nicht geaendert werden", variant: "destructive" });
+      toast({ title: "Aktiv-Status konnte nicht geändert werden", variant: "destructive" });
     },
   });
 
@@ -446,7 +446,7 @@ export function EmployeesPage({
     <ListEmptyState
       helpKey="employees.emptyFiltered"
       fallbackTitle="Keine Treffer gefunden."
-      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+      fallbackBody="Für die gewählte Filtereinstellung konnten keine Treffer ermittelt werden."
     />
   ) : (
     <ListEmptyState

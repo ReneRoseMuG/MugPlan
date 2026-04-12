@@ -62,7 +62,7 @@ export function EmployeeAbsencesPage({ onOpenAppointment }: EmployeeAbsencesPage
             onValueChange={(value) => setSelectedEmployeeId(value ? Number(value) : null)}
           >
             <SelectTrigger id="employee-absences-employee-select" data-testid="select-employee-absences-employee">
-              <SelectValue placeholder="Mitarbeiter waehlen" />
+              <SelectValue placeholder="Mitarbeiter wählen" />
             </SelectTrigger>
             <SelectContent>
               {employees.map((employee) => (
@@ -79,8 +79,8 @@ export function EmployeeAbsencesPage({ onOpenAppointment }: EmployeeAbsencesPage
           <div className="h-full p-6">
             <ListEmptyState
               helpKey="employees.absences.navigation.empty"
-              fallbackTitle="Kein Mitarbeiter gewaehlt."
-              fallbackBody="Waehlen Sie einen aktiven Mitarbeiter, um Abwesenheiten anzuzeigen oder zu bearbeiten."
+              fallbackTitle="Kein Mitarbeiter gewählt."
+              fallbackBody="Wählen Sie einen aktiven Mitarbeiter, um Abwesenheiten anzuzeigen oder zu bearbeiten."
             />
           </div>
         ) : (

@@ -1289,6 +1289,20 @@ export const api = {
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
+    park: {
+      method: "POST" as const,
+      path: "/api/appointments/:id/park",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLED_APPOINTMENT_READONLY", "ALREADY_PARKED", "BUSINESS_CONFLICT"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
     tourChangePreview: {
       method: "POST" as const,
       path: "/api/appointments/:id/tour-change-preview",

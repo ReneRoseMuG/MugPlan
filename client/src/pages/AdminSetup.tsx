@@ -37,7 +37,7 @@ export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupP
         return;
       }
       if (code === "VALIDATION_ERROR") {
-        setError("Eingaben sind ungueltig (Passwort mind. 10 Zeichen).");
+        setError("Eingaben sind ungültig (Passwort mind. 10 Zeichen).");
       } else {
         setError("Admin-Setup fehlgeschlagen.");
       }

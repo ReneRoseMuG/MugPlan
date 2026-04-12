@@ -16,6 +16,7 @@ router.post(api.appointments.tourChangePreview.path, appointmentsController.prev
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);
 router.patch(api.appointments.setDisplayMode.path, appointmentsController.setAppointmentDisplayMode);
 router.post(api.appointments.cancel.path, appointmentsController.cancelAppointment);
+router.post(api.appointments.park.path, appointmentsController.parkAppointment);
 router.delete(api.appointments.delete.path, appointmentsController.deleteAppointment);
 router.delete(api.appointmentEmployees.remove.path, appointmentsController.removeEmployeeFromAppointment);
 router.get(api.appointmentTags.list.path, appointmentsController.listAppointmentTags);

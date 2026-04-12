@@ -50,7 +50,7 @@ const SYSTEM_TAGS: SeedTagDefinition[] = [
 ];
 
 const SYSTEM_TOURS: SeedTourDefinition[] = [
-  { name: "Vakant", color: "#D4537E" },
+  { name: "Parkplatz", color: "#D4537E" },
   { name: "Schröder Halle", color: "#5C3317" },
   { name: "Tour 1", color: "#006B6F" },
   { name: "Tour 2", color: "#00ACB1" },
@@ -85,6 +85,14 @@ function buildTemplateCreateInput(definition: SeedNoteTemplateDefinition): Inser
 }
 
 async function seedTags(logLines: string[]): Promise<void> {
+  const vakantTag = await masterDataRepository.getTagByNormalizedName("Vakant");
+  if (vakantTag) {
+    const migrateResult = await masterDataRepository.updateTagWithVersion(vakantTag.id, vakantTag.version, { name: "Geparkt" });
+    if (migrateResult.kind === "updated") {
+      logLines.push("Tag migriert: Vakant → Geparkt");
+    }
+  }
+
   for (const definition of SYSTEM_TAGS) {
     const before = await masterDataRepository.getTagByNormalizedName(definition.name);
     const seeded = await masterDataRepository.ensureTagDefinition(definition);
@@ -106,6 +114,20 @@ function findTourByName(tours: Tour[], name: string): Tour | undefined {
 
 async function seedTours(logLines: string[]): Promise<void> {
   let currentTours = await toursRepository.getTours();
+
+  const vakantTour = findTourByName(currentTours, "Vakant");
+  if (vakantTour) {
+    const migrateResult = await toursRepository.updateTourWithVersion(
+      vakantTour.id,
+      vakantTour.version,
+      "Parkplatz",
+      vakantTour.color,
+    );
+    if (migrateResult.kind === "updated") {
+      logLines.push("Tour migriert: Vakant → Parkplatz");
+      currentTours = await toursRepository.getTours();
+    }
+  }
 
   for (const definition of SYSTEM_TOURS) {
     const existing = findTourByName(currentTours, definition.name);
