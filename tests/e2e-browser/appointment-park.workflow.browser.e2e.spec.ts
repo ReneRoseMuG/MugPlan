@@ -46,7 +46,7 @@ async function readSystemTagByName(page: Page, name: string): Promise<{ id: numb
 }
 
 async function readSystemTourByName(page: Page, name: string): Promise<{ id: number; name: string }> {
-  const response = await page.request.get("/api/admin/master-data/tours");
+  const response = await page.request.get("/api/tours");
   expect(response.ok()).toBeTruthy();
   const allTours = await response.json() as Array<{ id: number; name: string }>;
   const tour = allTours.find((t) => t.name === name);

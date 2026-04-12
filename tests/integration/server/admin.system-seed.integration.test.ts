@@ -72,19 +72,19 @@ describe("integration: admin system seed", () => {
 
     expect(response.body.logLines).toEqual(expect.arrayContaining([
       "Tag angelegt: Storniert",
-      "Tour angelegt: Vakant",
+      "Tour angelegt: Parkplatz",
       "Notizvorlage angelegt: Reklamation",
     ]));
 
     const complaintTag = await masterDataRepository.getTagByNormalizedName("Reklamation");
-    const vacantTag = await masterDataRepository.getTagByNormalizedName("Vakant");
+    const vacantTag = await masterDataRepository.getTagByNormalizedName("Geparkt");
     const tours = await toursRepository.getTours();
     const templates = await noteTemplatesRepository.getNoteTemplates(false);
 
     expect(complaintTag).toMatchObject({ color: "#FF011B", isDefault: true });
     expect(vacantTag).toMatchObject({ color: "#D4537E", isDefault: true });
     expect(tours).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: "Vakant", color: "#D4537E" }),
+      expect.objectContaining({ name: "Parkplatz", color: "#D4537E" }),
       expect.objectContaining({ name: "Tour 1", color: "#006B6F" }),
     ]));
     expect(templates).toEqual(expect.arrayContaining([
@@ -111,7 +111,7 @@ describe("integration: admin system seed", () => {
 
     expect(secondRun.body.logLines).toEqual(expect.arrayContaining([
       "Tag unverändert: Reklamation",
-      "Tour unverändert: Vakant",
+      "Tour unverändert: Parkplatz",
       "Notizvorlage unverändert: Reklamation",
     ]));
 

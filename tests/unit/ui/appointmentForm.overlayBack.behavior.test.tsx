@@ -187,6 +187,9 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
   if (key === "/api/projects?filter=all&scope=all" || key === "/api/customers" || key === "/api/tours" || key === "/api/teams" || key === "/api/employees" || key === "/api/tags") {
     return { data: [], isLoading: false };
   }
+  if (key === "/api/appointments" && Array.isArray(queryKey) && queryKey[1] === 77 && queryKey[2] === "tags") {
+    return { data: [], isLoading: false };
+  }
   if (key === "/api/appointments" && Array.isArray(queryKey) && queryKey[1] === 77) {
     return {
       data: {
@@ -208,10 +211,25 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
       isLoading: false,
     };
   }
+  if (key === "/api/appointments" && Array.isArray(queryKey) && queryKey[1] === 77 && queryKey[2] === "notes") {
+    return { data: [], isLoading: false };
+  }
   if (typeof key === "string" && key.startsWith("/api/admin/master-data/")) {
     return { data: [], isLoading: false };
   }
   return { data: [], isLoading: false };
+}
+
+function getCancelMutationConfig() {
+  return mutationConfigs.find((config) => {
+    const mutationFn = config.mutationFn;
+    return typeof mutationFn === "function" && mutationFn.toString().includes("/cancel");
+  }) as
+    | {
+        mutationFn?: (payload: { appointmentId: number; version: number }) => Promise<unknown>;
+        onSuccess?: () => Promise<void>;
+      }
+    | undefined;
 }
 
 function findElementByTestId(node: React.ReactNode, testId: string): React.ReactElement | null {
@@ -273,7 +291,7 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
     const onSaved = vi.fn();
     renderToStaticMarkup(<AppointmentForm appointmentId={77} onSaved={onSaved} />);
 
-    const cancelMutationConfig = mutationConfigs[2] as { onSuccess?: () => Promise<void> } | undefined;
+    const cancelMutationConfig = getCancelMutationConfig();
     expect(cancelMutationConfig?.onSuccess).toBeTypeOf("function");
 
     await cancelMutationConfig?.onSuccess?.();
@@ -290,9 +308,7 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
 
     renderToStaticMarkup(<AppointmentForm appointmentId={77} />);
 
-    const cancelMutationConfig = mutationConfigs[2] as {
-      mutationFn?: (payload: { appointmentId: number; version: number }) => Promise<unknown>;
-    } | undefined;
+    const cancelMutationConfig = getCancelMutationConfig();
 
     await cancelMutationConfig?.mutationFn?.({ appointmentId: 77, version: 6 });
 

@@ -62,7 +62,7 @@ async function openAppointmentInCalendar(page: Page, appointmentId: number): Pro
 async function addTagViaPickerAndClose(page: Page, tagId: number): Promise<void> {
   await page.getByTestId("appointment-tag-picker-button-add").click();
   await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
-  await page.getByTestId(`appointment-tag-picker-add-tag-${tagId}`).click();
+  await page.getByTestId(`appointment-tag-picker-add-tag-${tagId}-add`).click();
 }
 
 async function removeTagViaBadge(page: Page, tagId: number): Promise<void> {

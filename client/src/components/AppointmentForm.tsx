@@ -552,12 +552,12 @@ export function AppointmentForm({
       return response.json();
     },
     onSuccess: async (_data, { tagName }) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
-      await invalidateRelatedAppointmentQueries(selectedProjectId);
       const action = computeTagAddedAction(tagName, appointmentId, visibleAppointmentNotes.map((n) => ({ title: n.title })));
       if (action.kind === "show_note_suggestion_dialog") {
         setNoteSuggestionDialog({ templateTitle: action.templateTitle });
       }
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
     },
     onError: (error: Error) => {
       toast({ title: "Tag-Zuweisung fehlgeschlagen", description: error.message, variant: "destructive" });
@@ -568,8 +568,6 @@ export function AppointmentForm({
       await apiRequest("DELETE", `/api/appointments/${appointmentId}/tags/${item.tag.id}`, { version: item.relationVersion });
     },
     onSuccess: async (_data, item) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
-      await invalidateRelatedAppointmentQueries(selectedProjectId);
       const action = computeTagRemovedAction(item.tag.name, visibleAppointmentNotes.map((n) => ({ title: n.title })));
       if (action.kind === "show_note_removal_dialog") {
         const normalizeTitle = (v: string) => v.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
@@ -580,6 +578,8 @@ export function AppointmentForm({
           setNoteRemovalDialog({ templateTitle: action.templateTitle, noteId: matchingNote.id, noteVersion: matchingNote.version });
         }
       }
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
     },
     onError: (error: Error) => {
       toast({ title: "Tag konnte nicht entfernt werden", description: error.message, variant: "destructive" });

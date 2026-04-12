@@ -261,8 +261,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehoerigkeit"));
-    expect(getIndex(markup, "Keine direkte Tourzugehoerigkeit")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehörigkeit"));
+    expect(getIndex(markup, "Keine direkte Tourzugehörigkeit")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: 17,
@@ -289,8 +289,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehoerigkeit"));
-    expect(getIndex(markup, "Keine direkte Tourzugehoerigkeit")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehörigkeit"));
+    expect(getIndex(markup, "Keine direkte Tourzugehörigkeit")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: undefined,

@@ -110,11 +110,6 @@ describe("FT06 integration: POST /api/appointments/:id/park", () => {
     expect(detail.appointmentTags.some((t: { name: string }) => t.name === RESERVED_VACANT_TAG_NAME)).toBe(true);
     expect(await hasGeparktTag(appointment.id)).toBe(true);
 
-    const [parkplatzTour] = await db.execute<{ id: number; name: string }>(
-      db.select({ id: tags.id, name: tags.name }).from(tags).toSQL() as any,
-    );
-    void parkplatzTour;
-
     const toursRes = await admin.get("/api/tours").expect(200);
     const parkplatz = (toursRes.body as Array<{ id: number; name: string }>).find((t) => t.name === "Parkplatz");
     expect(parkplatz).toBeDefined();
