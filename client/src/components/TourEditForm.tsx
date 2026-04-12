@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
-import { Route, X } from "lucide-react";
+import { CalendarPlus2, Route, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Toggle } from "@/components/ui/toggle";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
@@ -96,6 +97,7 @@ export function TourEditForm({
   const [draftWeeks, setDraftWeeks] = useState<DraftTourWeek[]>([]);
   const [pendingWeekInput, setPendingWeekInput] = useState(String(nextEditableWeek.isoWeek));
   const [pendingWeekSelection, setPendingWeekSelection] = useState<{ isoYear: number; isoWeek: number } | null>(null);
+  const [pendingWeekScrollTarget, setPendingWeekScrollTarget] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedName(tour?.name ?? defaultName);
@@ -108,7 +110,16 @@ export function TourEditForm({
   useEffect(() => {
     setDraftWeeks([]);
     setPendingWeekInput(String(nextEditableWeek.isoWeek));
+    setPendingWeekScrollTarget(null);
   }, [nextEditableWeek.isoWeek, tour?.id]);
+
+  useEffect(() => {
+    if (activeTab !== "wochenplanung") return;
+
+    const mainContainer = document.querySelector<HTMLElement>('[data-testid="entity-form-shell-main"]');
+    if (!mainContainer) return;
+    mainContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [activeTab]);
 
   const { data: plannedWeeks = [] } = useQuery<TourWeekEmployeesWeek[]>({
     queryKey: [`/api/tours/${tour?.id}/week-employees`],
@@ -144,6 +155,24 @@ export function TourEditForm({
     const assignedIds = new Set((week?.employees ?? []).map((employee) => employee.employeeId));
     return allEmployees.filter((employee) => employee.isActive && !assignedIds.has(employee.id));
   }, [allEmployees, allWeeks, pendingWeekSelection]);
+
+  useEffect(() => {
+    if (!pendingWeekScrollTarget) return;
+
+    const scrollToWeekCard = () => {
+      const mainContainer = document.querySelector<HTMLElement>('[data-testid="entity-form-shell-main"]');
+      const target = document.querySelector<HTMLElement>(`[data-testid="${pendingWeekScrollTarget}"]`);
+      if (!mainContainer || !target) return;
+      const containerRect = mainContainer.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const nextTop = mainContainer.scrollTop + (targetRect.top - containerRect.top) - 16;
+      mainContainer.scrollTo({ top: Math.max(0, nextTop), left: 0, behavior: "auto" });
+      setPendingWeekScrollTarget(null);
+    };
+
+    const frameId = window.requestAnimationFrame(scrollToWeekCard);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [allWeeks, pendingWeekScrollTarget]);
 
   const openEmployeePickerForWeek = (isoYear: number, isoWeek: number) => {
     setPendingWeekSelection({ isoYear, isoWeek });
@@ -202,6 +231,7 @@ export function TourEditForm({
       isLocked: false,
       employees: [],
     }]);
+    setPendingWeekScrollTarget(`card-tour-week-${nextEditableWeek.isoYear}-${isoWeek}`);
     setPendingWeekInput(String(isoWeek));
     setWeekPickerOpen(false);
   };
@@ -234,19 +264,6 @@ export function TourEditForm({
         )}
         footer={(
           <div className="flex flex-col gap-2 px-6 py-4">
-            {!isCreate && activeTab === "wochenplanung" ? (
-              <div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setWeekPickerOpen(true)}
-                  disabled={isSaving || isMutatingMembers}
-                  data-testid="button-add-tour-week-footer"
-                >
-                  KW einfuegen
-                </Button>
-              </div>
-            ) : null}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
                 {!isCreate && canDelete && tour && onDelete ? (
@@ -286,13 +303,36 @@ export function TourEditForm({
             </div>
           </div>
         )}
-        sidebar={<div className="min-w-0 p-6" data-testid="tour-form-sidebar" />}
+        sidebar={(
+          <div className="min-w-0 p-6" data-testid="tour-form-sidebar">
+            {!isCreate && activeTab === "wochenplanung" ? (
+              <div
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                data-testid="tour-week-planning-sidebar-panel"
+              >
+                <div className="mb-3 text-sm font-semibold text-slate-900">Neue Wochenplanung</div>
+                <Toggle
+                  pressed={weekPickerOpen}
+                  onPressedChange={(pressed) => setWeekPickerOpen(pressed)}
+                  disabled={isSaving || isMutatingMembers}
+                  className="flex w-full items-center justify-start gap-2 border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 data-[state=on]:border-transparent data-[state=on]:text-white"
+                  style={weekPickerOpen ? { backgroundColor: selectedColor } : { color: selectedColor, borderColor: selectedColor }}
+                  data-testid="toggle-tour-week-picker"
+                  aria-label="Neue Wochenplanung"
+                >
+                  <CalendarPlus2 className="h-4 w-4" />
+                  <span>KW einfügen</span>
+                </Toggle>
+              </div>
+            ) : null}
+          </div>
+        )}
         contentMaxWidth={99999}
       >
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="flex h-full min-h-0 w-full flex-col space-y-4"
+        className={`flex min-h-0 w-full flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
         data-testid="tour-form-main-column"
       >
         <TabsList>
@@ -352,8 +392,8 @@ export function TourEditForm({
         </TabsContent>
 
         {!isCreate ? (
-          <TabsContent value="wochenplanung" className="w-full">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
+          <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
+            <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
               {allWeeks.map((week) => (
                 <ColoredEntityCard
                   key={`${week.isoYear}-${week.isoWeek}`}

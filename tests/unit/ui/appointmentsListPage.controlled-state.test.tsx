@@ -246,4 +246,37 @@ describe("FT04 appointments list page controlled state", () => {
     });
     expect(onPageChange).toHaveBeenCalledWith(1);
   });
+
+  it("does not clear a standalone tour filter back to all tours", () => {
+    const onFiltersChange = vi.fn();
+    const onPageChange = vi.fn();
+
+    renderToStaticMarkup(
+      <AppointmentsListPage
+        context={{ type: "standalone" }}
+        filters={{
+          employeeId: undefined,
+          projectTitle: "",
+          customerLastName: "",
+          customerNumber: "",
+          orderNumber: "",
+          tagIds: [],
+          tourId: 4,
+          dateFrom: undefined,
+          dateTo: undefined,
+        }}
+        onFiltersChange={onFiltersChange}
+        page={1}
+        onPageChange={onPageChange}
+      />,
+    );
+
+    expect(onFiltersChange).not.toHaveBeenCalledWith({ tourId: undefined });
+    expect(onPageChange).not.toHaveBeenCalled();
+    expect(filterPanelCalls[0]).toMatchObject({
+      filters: {
+        tourId: 4,
+      },
+    });
+  });
 });

@@ -103,6 +103,12 @@ vi.mock("@/components/ui/tabs", () => ({
   TabsContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
 }));
 
+vi.mock("@/components/ui/toggle", () => ({
+  Toggle: ({ children, pressed, ...props }: { children?: React.ReactNode; pressed?: boolean; [key: string]: unknown }) => (
+    <button type="button" data-state={pressed ? "on" : "off"} {...props}>{children}</button>
+  ),
+}));
+
 vi.mock("@/components/EmployeePickerDialogList", () => ({
   EmployeePickerDialogList: () => <div>employee-picker</div>,
 }));
@@ -232,5 +238,6 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("input-tour-week");
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
+    expect(markup).not.toContain("button-add-tour-week-footer");
   });
 });

@@ -48,7 +48,8 @@ async function openWeekPlanning(page: import("@playwright/test").Page, tourId: n
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tourId}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
-  await expect(page.getByTestId("button-add-tour-week-footer")).toBeVisible();
+  await expect(page.getByTestId("toggle-tour-week-picker")).toBeVisible();
+  await expect(page.getByTestId("tour-week-planning-sidebar-panel")).toContainText("Neue Wochenplanung");
 }
 
 test.beforeAll(async () => {
@@ -83,7 +84,7 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
 
   await openWeekPlanning(page, secondTour.id);
 
-  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("toggle-tour-week-picker").click();
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
   await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(
@@ -105,7 +106,7 @@ test("validates the footer week picker against min and max bounds", async ({ pag
 
   await openWeekPlanning(page, tour.id);
 
-  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("toggle-tour-week-picker").click();
   await expect(page.getByTestId("text-tour-week-dialog-year")).toContainText(String(nextWeek.isoYear));
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek - 1));
@@ -120,7 +121,8 @@ test("validates the footer week picker against min and max bounds", async ({ pag
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`)).toBeVisible();
+  const insertedWeekCard = page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`);
+  await expect(insertedWeekCard).toBeVisible();
 });
 
 test("shows overlap conflicts in the week preview and only applies the selectable appointments", async ({ page }) => {
@@ -148,7 +150,7 @@ test("shows overlap conflicts in the week preview and only applies the selectabl
 
   await openWeekPlanning(page, tour.id);
 
-  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("toggle-tour-week-picker").click();
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
   await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(

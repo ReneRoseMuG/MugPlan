@@ -6,9 +6,10 @@ import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { Button } from "@/components/ui/button";
+import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -36,6 +37,7 @@ import {
 } from "@/components/AppointmentAttachmentsPanel";
 import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { NotesSection } from "@/components/NotesSection";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
   DocumentExtractionDialog,
@@ -62,12 +64,14 @@ import {
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
 import type { Note } from "@shared/schema";
+import type { NoteTemplate } from "@shared/schema";
 import {
   isReservedVacantTagName,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
+import { Switch } from "@/components/ui/switch";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
@@ -388,6 +392,14 @@ export function AppointmentForm({
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
+  const [templateNoteEditorOpen, setTemplateNoteEditorOpen] = useState(false);
+  const [templateNoteEditorId, setTemplateNoteEditorId] = useState<number | null>(null);
+  const [templateNoteEditorVersion, setTemplateNoteEditorVersion] = useState<number>(1);
+  const [templateNoteTitle, setTemplateNoteTitle] = useState("");
+  const [templateNoteBody, setTemplateNoteBody] = useState("");
+  const [templateNoteCardColor, setTemplateNoteCardColor] = useState("#f8fafc");
+  const [templateNotePrint, setTemplateNotePrint] = useState(false);
+  const [templateNoteCardColorLocked, setTemplateNoteCardColorLocked] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
@@ -530,6 +542,11 @@ export function AppointmentForm({
   const { data: appointmentNotes = [], isLoading: appointmentNotesLoading } = useQuery<Note[]>({
     queryKey: ["/api/appointments", appointmentId, "notes"],
     queryFn: () => fetchJson<Note[]>(`/api/appointments/${appointmentId}/notes`),
+    enabled: Boolean(appointmentId),
+  });
+  const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
+    queryKey: ["/api/note-templates"],
+    queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
     enabled: Boolean(appointmentId),
   });
   const createSidebarDraftSignature = useMemo(
@@ -1461,10 +1478,18 @@ export function AppointmentForm({
       const res = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (createdNote: Note) => {
       if (!appointmentId) return;
       void invalidateAppointmentNotesQueries(appointmentId);
       void invalidateRelatedAppointmentQueries(selectedProjectId);
+      setTemplateNoteEditorId(createdNote.id);
+      setTemplateNoteEditorVersion(createdNote.version);
+      setTemplateNoteTitle(createdNote.title);
+      setTemplateNoteBody(createdNote.body ?? "");
+      setTemplateNoteCardColor(createdNote.cardColor ?? "#f8fafc");
+      setTemplateNotePrint(createdNote.print);
+      setTemplateNoteCardColorLocked(createdNote.cardColorLocked);
+      setTemplateNoteEditorOpen(true);
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -1476,10 +1501,12 @@ export function AppointmentForm({
       const res = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedNote: Note) => {
       if (!appointmentId) return;
       void invalidateAppointmentNotesQueries(appointmentId);
       void invalidateRelatedAppointmentQueries(selectedProjectId);
+      setTemplateNoteEditorVersion(updatedNote.version);
+      setTemplateNoteEditorOpen(false);
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
@@ -1796,6 +1823,29 @@ export function AppointmentForm({
         throw new Error(text || "Terminanhang konnte nicht hochgeladen werden");
       }
     }
+  };
+
+  const handleCreateTemplateNoteFromSuggestion = () => {
+    if (!noteSuggestionDialog) return;
+    const template = noteTemplates.find(
+      (entry) => entry.title.trim().toLocaleLowerCase("de") === noteSuggestionDialog.templateTitle.trim().toLocaleLowerCase("de"),
+    );
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    createAppointmentNoteMutation.mutate({
+      title: template.title,
+      body: template.body,
+      cardColor: template.cardColor,
+      print: template.print,
+      templateId: template.id,
+    });
+    setNoteSuggestionDialog(null);
   };
 
   const persistCreateSidebarDrafts = async (targetAppointmentId: number) => {
@@ -2640,16 +2690,7 @@ export function AppointmentForm({
             <AlertDialogCancel data-testid="button-note-suggestion-skip">Überspringen</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-note-suggestion-confirm"
-              onClick={() => {
-                if (!noteSuggestionDialog) return;
-                createAppointmentNoteMutation.mutate({
-                  title: noteSuggestionDialog.templateTitle,
-                  body: "",
-                  cardColor: null,
-                  print: false,
-                });
-                setNoteSuggestionDialog(null);
-              }}
+              onClick={handleCreateTemplateNoteFromSuggestion}
             >
               Jetzt anlegen
             </AlertDialogAction>
@@ -2680,6 +2721,86 @@ export function AppointmentForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={templateNoteEditorOpen} onOpenChange={setTemplateNoteEditorOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Notiz bearbeiten</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="template-note-title">Titel *</Label>
+              <Input
+                id="template-note-title"
+                value={templateNoteTitle}
+                onChange={(event) => setTemplateNoteTitle(event.target.value)}
+                placeholder="Titel der Notiz..."
+                data-testid="input-note-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Inhalt</Label>
+              <RichTextEditor
+                key={`template-note-editor-${templateNoteEditorId ?? "new"}`}
+                value={templateNoteBody}
+                onChange={setTemplateNoteBody}
+                placeholder="Notizinhalt eingeben..."
+                className="min-h-[150px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Kartenfarbe</Label>
+              <ColorSelectButton
+                color={templateNoteCardColor}
+                onChange={setTemplateNoteCardColor}
+                testId="button-note-card-color-picker"
+                disabled={templateNoteCardColorLocked}
+              />
+              {templateNoteCardColorLocked ? (
+                <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">
+                  Die Kartenfarbe stammt aus der Vorlage und kann fuer diese Notiz nicht geaendert werden.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+              <div>
+                <Label htmlFor="template-note-print" className="text-sm font-medium">Drucken</Label>
+                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben beruecksichtigt wird.</p>
+              </div>
+              <Switch
+                id="template-note-print"
+                checked={templateNotePrint}
+                onCheckedChange={setTemplateNotePrint}
+                data-testid="switch-note-print"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTemplateNoteEditorOpen(false)} data-testid="button-cancel-note">
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => {
+                if (!templateNoteEditorId || !templateNoteTitle.trim()) return;
+                updateAppointmentNoteMutation.mutate({
+                  noteId: templateNoteEditorId,
+                  title: templateNoteTitle,
+                  body: templateNoteBody,
+                  cardColor: templateNoteCardColor,
+                  print: templateNotePrint,
+                  version: templateNoteEditorVersion,
+                });
+              }}
+              disabled={!templateNoteTitle.trim()}
+              data-testid="button-save-note"
+            >
+              Aktualisieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>

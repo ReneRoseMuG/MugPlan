@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Ein Zukunftstermin kann über den „Parken"-Button im Terminformular in die Parkplatz-Tour verschoben werden.
+ * - Ein Zukunftstermin kann über den „Parken"-Button im Terminformular oder über das Kalender-Menü in die Parkplatz-Tour verschoben werden.
  * - Nach dem Parken trägt der Termin den Geparkt-Tag, hat keine Mitarbeiter mehr und liegt in der Parkplatz-Tour.
  * - Der Park-Button ist nach erfolgtem Parken nicht mehr sichtbar (Termin bereits geparkt).
  * - Der Geparkt-Tag-Badge ist auf der Wochenkalender-Terminkarte sichtbar.
@@ -14,7 +14,7 @@
  * - Die Tour wurde nicht auf Parkplatz geändert.
  *
  * Ziel:
- * Den vollständigen Park-Workflow im Browser absichern: vom offenen Terminformular bis zum verifizierten Parkzustand in Kalender und API.
+ * Den vollständigen Park-Workflow im Browser absichern: vom offenen Terminformular oder Kalender-Menü bis zum verifizierten Parkzustand in Kalender, Monitoring und API.
  */
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -137,4 +137,44 @@ test("parks a future appointment via the park button and shows correct state in 
   await combinedTriggerCell.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("button-park-appointment")).toHaveCount(0);
+});
+
+test("parks a future appointment via the calendar menu and refreshes monitoring immediately", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-PARK-MENU-CUST");
+  const employee = await createEmployeeFixture("FT06-PARK-MENU-EMP");
+  const tour = await createTourFixture("#226688");
+  const project = await createProjectFixture({
+    prefix: "FT06-PARK-MENU",
+    customerId: customer.id,
+    name: "FT06 Park Menu Projekt",
+  });
+  const startDate = getRelativeBerlinDate(2);
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    tourId: tour.id,
+    startDate,
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+
+  const parkResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes(`/api/appointments/${appointment.id}/park`)
+  ));
+
+  await page.getByTestId(`week-appointment-menu-trigger-${appointment.id}`).click();
+  await page.getByRole("menuitem", { name: "Parken" }).click();
+  await expect(page.getByRole("alertdialog")).toContainText("Termin parken?");
+  await page.getByRole("button", { name: "Parken" }).click();
+
+  const parkResponse = await parkResponsePromise;
+  expect(parkResponse.status()).toBe(204);
+
+  await expect(page.getByTestId("monitoring-pill-TR-01")).toContainText("TR-01");
+  await expect(page.getByTestId("monitoring-pill-TR-02")).toContainText("TR-02");
+
+  await page.getByTestId("nav-monitoring").click();
+  await expect(page.getByRole("cell", { name: "Mindestzahl Mitarbeiter + Geparkt" }).first()).toBeVisible();
 });

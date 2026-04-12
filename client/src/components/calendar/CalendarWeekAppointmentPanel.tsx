@@ -25,6 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { mergeUniqueTags } from "@/lib/tag-utils";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
 import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
@@ -133,6 +134,7 @@ export function CalendarWeekAppointmentPanel({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
       toast({ title: "Termin geparkt" });
     },
     onError: () => {

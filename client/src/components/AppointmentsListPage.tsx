@@ -224,10 +224,11 @@ export function AppointmentsListPage({
   }, [onFiltersChange]);
 
   useEffect(() => {
+    if (!isTourContext) return;
     if (filters.tourId === (resolvedTourId ?? undefined)) return;
     applyFiltersPatch({ tourId: resolvedTourId ?? undefined });
     setPage(1);
-  }, [applyFiltersPatch, filters.tourId, resolvedTourId, setPage]);
+  }, [applyFiltersPatch, filters.tourId, isTourContext, resolvedTourId, setPage]);
 
   useEffect(() => {
     if (!isEmployeeContext) return;
