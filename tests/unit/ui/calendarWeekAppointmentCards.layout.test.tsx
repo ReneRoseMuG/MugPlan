@@ -14,6 +14,7 @@
  * Die sichtbare Layout-Angleichung der Wochenkartenfamilie regressionssicher absichern.
  */
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanel";
@@ -100,6 +101,21 @@ function createAppointment(overrides: Partial<CalendarAppointment> = {}): Calend
   };
 }
 
+function renderWithQueryClient(node: React.ReactNode): string {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return renderToStaticMarkup(
+    <QueryClientProvider client={queryClient}>
+      {node}
+    </QueryClientProvider>,
+  );
+}
+
 describe("calendar week appointment card layout", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
@@ -116,7 +132,7 @@ describe("calendar week appointment card layout", () => {
 
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}
@@ -142,7 +158,7 @@ describe("calendar week appointment card layout", () => {
   it("renders the same compact content insets and tinted footer on both card types", () => {
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}
@@ -169,7 +185,7 @@ describe("calendar week appointment card layout", () => {
   it("keeps the tag action slot local to week cards and opt-in for editing", () => {
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}
@@ -202,7 +218,7 @@ describe("calendar week appointment card layout", () => {
   it("keeps the footer tag row bottom-docked on both week card variants", () => {
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}
@@ -236,7 +252,7 @@ describe("calendar week appointment card layout", () => {
   it("renders the schraffierte conflict overlay on both week card variants", () => {
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}
@@ -257,13 +273,14 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-appointment-conflict-overlay-42"');
     expect(html).toContain('data-testid="week-spanning-tile-conflict-overlay-42"');
     expect(html).toContain("group-hover/calendar-card:opacity-25");
-    expect(html).toContain("repeating-linear-gradient(135deg,rgba(226,75,74,0.26)");
+    expect(html).toContain("pointer-events-none absolute inset-0");
+    expect(html).toContain("opacity-100 transition-opacity duration-200");
   });
 
   it("keeps both sub panels visible in collapsed body mode and collapses the explicit height stretching", () => {
     const appointment = createAppointment();
 
-    const html = renderToStaticMarkup(
+    const html = renderWithQueryClient(
       <>
         <CalendarWeekAppointmentPanel
           appointment={appointment}

@@ -629,13 +629,6 @@ const monitoringItemSchema = z.object({
   triggerName: z.string().min(1),
 });
 
-const monitoringTriggerSummaryItemSchema = z.object({
-  triggerCode: z.enum(MONITORING_TRIGGER_CODES),
-  triggerName: z.string().min(1),
-  count: z.number().int().min(0),
-  color: z.string().min(1),
-});
-
 const monitoringTriggerConfigSchema = z.object({
   allAppointments: z.boolean(),
   horizonDays: z.number().int().min(1),
@@ -4010,7 +4003,12 @@ export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.resp
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
-export type MonitoringTriggerSummaryItemResponse = z.infer<typeof monitoringTriggerSummaryItemSchema>;
+export type MonitoringTriggerSummaryItemResponse = {
+  triggerCode: (typeof MONITORING_TRIGGER_CODES)[number];
+  triggerName: string;
+  count: number;
+  color: string;
+};
 export const monitoringTriggerMetadata = {
   codes: MONITORING_TRIGGER_CODES,
   names: MONITORING_TRIGGER_NAMES,

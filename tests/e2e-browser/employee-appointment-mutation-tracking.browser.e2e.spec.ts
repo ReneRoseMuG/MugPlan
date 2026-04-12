@@ -66,7 +66,8 @@ async function openWeekPlanning(page: Parameters<typeof test>[0]["page"]) {
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
-  await expect(page.getByTestId("button-add-tour-week-footer")).toBeVisible();
+  await expect(page.getByTestId("toggle-tour-week-picker")).toBeVisible();
+  await expect(page.getByTestId("tour-week-planning-sidebar-panel")).toContainText("Neue Wochenplanung");
 }
 
 test.beforeAll(async () => {
@@ -161,7 +162,7 @@ test("Test 1: Entfernen über Wochenplan-Dialog mit Datumsfilter", async ({ page
 test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ page }) => {
   await openWeekPlanning(page);
 
-  await page.getByTestId("button-add-tour-week-footer").click();
+  await page.getByTestId("toggle-tour-week-picker").click();
   await page.getByTestId("input-tour-week").fill(nextWeekInputValue);
   await page.getByTestId("button-confirm-tour-week").click();
   await page.getByTestId(`card-tour-week-${nextWeekIsoYear}-${nextWeekIsoWeek}`).getByTestId(

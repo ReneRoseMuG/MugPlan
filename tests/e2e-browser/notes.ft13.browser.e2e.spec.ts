@@ -68,6 +68,12 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   }
   await expect(printSwitch).toHaveAttribute("data-state", "checked");
   await dialog.getByTestId("button-save-note").click();
+  const templateEditorCancelButton = page.getByTestId("button-cancel-note");
+  if (await templateEditorCancelButton.count()) {
+    await expect(templateEditorCancelButton.last()).toBeVisible();
+    await templateEditorCancelButton.last().click({ force: true });
+    await expect(templateEditorCancelButton).toHaveCount(0);
+  }
 }
 
 async function verifyNoteEditDialog(page: Page, input: { title: string; cardColorRgb: string }) {

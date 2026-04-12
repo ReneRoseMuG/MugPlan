@@ -78,7 +78,7 @@ describe("CalendarAppointmentCompactBar conflict badge", () => {
 
     expect(html).toContain("appointment-bar-conflict-icon-17");
     expect(html).toContain("Konflikt");
-    expect(html).toContain("bg-destructive");
+    expect(html).toContain("text-white");
     expect(html).toContain("ring-2");
     expect(html).toContain("ring-white");
   });

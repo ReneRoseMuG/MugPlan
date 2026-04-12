@@ -103,6 +103,9 @@ vi.mock("@/components/ui/label", () => ({
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/alert", () => ({
@@ -340,7 +343,7 @@ describe("Tourenplan report invalidation wiring in AppointmentForm", () => {
       version: 3,
     });
 
-    updateMutation.onSuccess?.();
+    updateMutation.onSuccess?.({ version: 4 });
     await flushAsyncInvalidations();
 
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["/api/appointments", 77, "notes"] });
