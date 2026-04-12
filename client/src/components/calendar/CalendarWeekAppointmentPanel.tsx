@@ -1,3 +1,28 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  isReservedVacantTagName,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_VACANT_TAG_COLOR,
+} from "@shared/appointmentCancellation";
+import { useToast } from "@/hooks/use-toast";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
 import { mergeUniqueTags } from "@/lib/tag-utils";
@@ -67,6 +92,102 @@ export function CalendarWeekAppointmentPanel({
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
+
+  const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Stornieren fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      toast({ title: "Termin storniert" });
+    },
+    onError: () => {
+      toast({ title: "Stornieren nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const parkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/park`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Parken fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      toast({ title: "Termin geparkt" });
+    },
+    onError: () => {
+      toast({ title: "Parken nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const menuSlot = interactive ? (
+    <span
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center justify-center rounded p-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 transition-opacity focus:outline-none"
+            aria-label="Terminaktionen"
+            data-testid={`week-appointment-menu-trigger-${appointment.id}`}
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          {onDoubleClick && (
+            <DropdownMenuItem
+              onClick={onDoubleClick}
+              className="gap-2 text-xs cursor-pointer"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              Termin öffnen
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && (
+            <DropdownMenuItem
+              onClick={() => setCancelConfirmOpen(true)}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR }}
+            >
+              <Ban className="h-3.5 w-3.5 shrink-0" />
+              Stornieren
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && !isParked && (
+            <DropdownMenuItem
+              onClick={() => setParkConfirmOpen(true)}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: RESERVED_VACANT_TAG_COLOR }}
+            >
+              <ParkingCircle className="h-3.5 w-3.5 shrink-0" />
+              Parken
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  ) : undefined;
+
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
   const isCompact = appointment.displayMode === "compact";
@@ -130,6 +251,7 @@ export function CalendarWeekAppointmentPanel({
       : undefined;
 
   return (
+  <>
     <div
       className={`group/calendar-card relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
@@ -157,6 +279,7 @@ export function CalendarWeekAppointmentPanel({
               endDate={appointment.endDate}
               startTime={appointment.startTime}
               connectedToNextRow={showPreviewTourNameLine}
+              menuSlot={menuSlot}
             />
             {showPreviewTourNameLine && (
               <div
@@ -253,5 +376,54 @@ export function CalendarWeekAppointmentPanel({
         />
       )}
     </div>
+
+    <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Termin wird als storniert markiert. Zugewiesene Mitarbeiter werden entfernt. Stornierte Termine sind nur noch lesbar.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={cancelMutation.isPending}>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+            style={{
+              backgroundColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+              borderColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+            }}
+          >
+            {cancelMutation.isPending ? "Stornieren…" : "Stornieren"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Termin parken?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Termin wird in die Parkplatz-Tour verschoben und als geparkt markiert. Zugewiesene Mitarbeiter werden entfernt.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={parkMutation.isPending}>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => parkMutation.mutate()}
+            disabled={parkMutation.isPending}
+            style={{
+              backgroundColor: RESERVED_VACANT_TAG_COLOR,
+              borderColor: RESERVED_VACANT_TAG_COLOR,
+            }}
+          >
+            {parkMutation.isPending ? "Parken…" : "Parken"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

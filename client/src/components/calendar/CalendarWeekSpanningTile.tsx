@@ -1,4 +1,29 @@
+import { useState } from "react";
 import type { CSSProperties, DragEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  isReservedVacantTagName,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_VACANT_TAG_COLOR,
+} from "@shared/appointmentCancellation";
+import { useToast } from "@/hooks/use-toast";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 import { mergeUniqueTags } from "@/lib/tag-utils";
@@ -8,7 +33,6 @@ import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointme
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
-import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 import {
   getWeekAppointmentFooterStyle,
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
@@ -67,6 +91,102 @@ export function CalendarWeekSpanningTile({
   onMouseLeave,
   testId,
 }: CalendarWeekSpanningTileProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
+
+  const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Stornieren fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      toast({ title: "Termin storniert" });
+    },
+    onError: () => {
+      toast({ title: "Stornieren nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const parkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/park`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Parken fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      toast({ title: "Termin geparkt" });
+    },
+    onError: () => {
+      toast({ title: "Parken nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const menuSlot = (
+    <span
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center justify-center rounded p-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 transition-opacity focus:outline-none"
+            aria-label="Terminaktionen"
+            data-testid={`week-spanning-tile-menu-trigger-${appointment.id}`}
+          >
+            <MoreVertical className="h-3.5 w-3.5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[160px]">
+          {onDoubleClick && (
+            <DropdownMenuItem
+              onClick={onDoubleClick}
+              className="gap-2 text-xs cursor-pointer"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              Termin öffnen
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && (
+            <DropdownMenuItem
+              onClick={() => setCancelConfirmOpen(true)}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR }}
+            >
+              <Ban className="h-3.5 w-3.5 shrink-0" />
+              Stornieren
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && !isParked && (
+            <DropdownMenuItem
+              onClick={() => setParkConfirmOpen(true)}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: RESERVED_VACANT_TAG_COLOR }}
+            >
+              <ParkingCircle className="h-3.5 w-3.5 shrink-0" />
+              Parken
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+
   const canDrag = Boolean(onDragStart);
   const interactiveClass = isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md";
   const borderColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
@@ -198,6 +318,7 @@ export function CalendarWeekSpanningTile({
   );
 
   return (
+  <>
     <div
       className={`group/calendar-card relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       style={{
@@ -242,7 +363,7 @@ export function CalendarWeekSpanningTile({
               borderLeft: headerDay.isFirst ? undefined : "1px solid rgba(255,255,255,0.16)",
             }}
           >
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+            <div className={`grid items-center gap-1 ${headerDay.isLast ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
               {headerDay.isFirst ? (
                 <>
                   <span
@@ -260,6 +381,9 @@ export function CalendarWeekSpanningTile({
                 </>
               )}
               <span className="shrink-0 text-right justify-self-end">{headerDay.dayLabel}</span>
+              {headerDay.isLast && (
+                <span className="shrink-0 flex items-center justify-center">{menuSlot}</span>
+              )}
             </div>
             <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/20 pt-1">
               {headerDay.isFirst ? <span className="truncate">K: {resolvedCustomerNumber}</span> : <span />}
@@ -344,5 +468,54 @@ export function CalendarWeekSpanningTile({
         </>
       )}
     </div>
+
+    <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Termin wird als storniert markiert. Zugewiesene Mitarbeiter werden entfernt. Stornierte Termine sind nur noch lesbar.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={cancelMutation.isPending}>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => cancelMutation.mutate()}
+            disabled={cancelMutation.isPending}
+            style={{
+              backgroundColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+              borderColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+            }}
+          >
+            {cancelMutation.isPending ? "Stornieren…" : "Stornieren"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Termin parken?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Der Termin wird in die Parkplatz-Tour verschoben und als geparkt markiert. Zugewiesene Mitarbeiter werden entfernt.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={parkMutation.isPending}>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => parkMutation.mutate()}
+            disabled={parkMutation.isPending}
+            style={{
+              backgroundColor: RESERVED_VACANT_TAG_COLOR,
+              borderColor: RESERVED_VACANT_TAG_COLOR,
+            }}
+          >
+            {parkMutation.isPending ? "Parken…" : "Parken"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 }

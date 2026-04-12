@@ -348,6 +348,32 @@ describe("FT01 appointment form layout tour integration", () => {
     expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
   });
 
+  it("keeps cancel and park actions in edit mode without rendering the former tooltip texts", () => {
+    appointmentDetailOverride = {
+      id: 77,
+      version: 4,
+      projectId: 11,
+      customerId: 21,
+      displayMode: "standard",
+      tourId: null,
+      title: "Termin A",
+      description: null,
+      startDate: "2099-01-02",
+      startTime: "08:00:00",
+      endDate: "2099-01-02",
+      endTime: "09:00:00",
+      employees: [],
+      isCancelled: false,
+    };
+
+    const markup = renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
+
+    expect(markup).toContain("button-cancel-appointment");
+    expect(markup).toContain("button-park-appointment");
+    expect(markup).not.toContain("Markiert den Termin als storniert");
+    expect(markup).not.toContain("Verschiebt den Termin in die Parkplatz-Tour");
+  });
+
   it("keeps document extraction in create mode only, while edit mode stays focused on sidebar content", () => {
     appointmentDetailOverride = {
       id: 77,

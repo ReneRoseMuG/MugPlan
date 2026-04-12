@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Calendar, Clock, FolderKanban, Users, X } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Clock, FolderKanban, ParkingCircle, Users, X } from "lucide-react";
 import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
@@ -62,7 +62,11 @@ import {
   getProjectAppointmentsQueryKey,
 } from "@/lib/project-appointments";
 import type { Note } from "@shared/schema";
-import { isReservedVacantTagName } from "@shared/appointmentCancellation";
+import {
+  isReservedVacantTagName,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_VACANT_TAG_COLOR,
+} from "@shared/appointmentCancellation";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 
 interface AppointmentFormProps {
@@ -2054,6 +2058,45 @@ export function AppointmentForm({
         )}
         sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="appointment-form-sidebar">
+            {isEditing && appointmentId && !isReadOnlyView ? (
+              <div className="flex flex-col gap-2">
+                {!isCancelled ? (
+                  <Button
+                    type="button"
+                    className="w-full justify-start gap-2 border"
+                    style={{
+                      backgroundColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "22",
+                      borderColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "66",
+                      color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+                    }}
+                    onClick={() => setCancelConfirmOpen(true)}
+                    disabled={isMutationLocked || cancelAppointmentMutation.isPending}
+                    data-testid="button-cancel-appointment"
+                  >
+                    <Ban className="w-4 h-4" />
+                    {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
+                  </Button>
+                ) : null}
+                {!isCancelled && !isParked ? (
+                  <Button
+                    type="button"
+                    className="w-full justify-start gap-2 border"
+                    style={{
+                      backgroundColor: RESERVED_VACANT_TAG_COLOR + "22",
+                      borderColor: RESERVED_VACANT_TAG_COLOR + "66",
+                      color: RESERVED_VACANT_TAG_COLOR,
+                    }}
+                    onClick={() => setParkConfirmOpen(true)}
+                    disabled={isMutationLocked || parkAppointmentMutation.isPending}
+                    data-testid="button-park-appointment"
+                  >
+                    <ParkingCircle className="w-4 h-4" />
+                    {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
             <AppointmentAttachmentsPanel
               appointmentId={appointmentId}
               customerId={resolvedCustomerId}
@@ -2132,28 +2175,6 @@ export function AppointmentForm({
             <div className="flex flex-wrap items-center gap-3">
               {isEditing && appointmentId && !isReadOnlyView ? (
                 <>
-                  {!isCancelled ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setCancelConfirmOpen(true)}
-                      disabled={isMutationLocked || cancelAppointmentMutation.isPending}
-                      data-testid="button-cancel-appointment"
-                    >
-                      {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
-                    </Button>
-                  ) : null}
-                  {!isCancelled && !isParked ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setParkConfirmOpen(true)}
-                      disabled={isMutationLocked || parkAppointmentMutation.isPending}
-                      data-testid="button-park-appointment"
-                    >
-                      {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
-                    </Button>
-                  ) : null}
                   <Button
                     type="button"
                     variant="destructive"

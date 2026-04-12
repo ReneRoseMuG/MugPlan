@@ -8,6 +8,7 @@ export function CalendarWeekAppointmentPanelHeader({
   endDate,
   startTime,
   connectedToNextRow = false,
+  menuSlot,
 }: {
   customerNumber: string;
   postalCode: string | null;
@@ -16,6 +17,7 @@ export function CalendarWeekAppointmentPanelHeader({
   endDate: string | null;
   startTime: string | null;
   connectedToNextRow?: boolean;
+  menuSlot?: React.ReactNode;
 }) {
   const resolvedCustomerNumber = customerNumber.trim() || "-";
   const resolvedPostalCode = postalCode?.trim() || "-";
@@ -51,7 +53,7 @@ export function CalendarWeekAppointmentPanelHeader({
       }}
     >
       <div className="space-y-1 text-[10px] font-semibold tracking-wide">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2">
+        <div className={`grid items-center gap-1 ${menuSlot ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
           <span
             className="inline-flex items-center justify-center"
             title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
@@ -67,6 +69,11 @@ export function CalendarWeekAppointmentPanelHeader({
           >
             {dayCountLabel}
           </span>
+          {menuSlot && (
+            <span className="shrink-0 flex items-center justify-center">
+              {menuSlot}
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
           <span className="truncate">K: {resolvedCustomerNumber}</span>
