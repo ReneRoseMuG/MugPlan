@@ -12,7 +12,8 @@
  * - PATCH /api/appointments/:id entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war.
  * - Tag Geparkt erscheint nicht im Picker-Katalog (GET /api/tags?domain=appointment).
  * - Tag Geparkt kann nicht manuell ueber POST /api/appointments/:id/tags gesetzt werden (409 PROTECTED).
- * - Tag Geparkt kann nicht manuell ueber DELETE /api/appointments/:id/tags/:tagId entfernt werden (409 PROTECTED).
+ * - Tag Geparkt kann manuell entfernt werden, wenn der Termin ausserhalb der Parkplatz-Tour liegt.
+ * - Tag Geparkt kann nicht manuell entfernt werden, wenn der Termin noch in der Parkplatz-Tour liegt (409 PROTECTED).
  *
  * Fehlerfaelle:
  * - Gleichzeitiges Parken desselben Termins mit gleicher Version: zweiter Aufruf liefert VERSION_CONFLICT.
@@ -295,7 +296,7 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       });
   });
 
-  it("Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden", async () => {
+  it("Tag Geparkt kann manuell entfernt werden, wenn der Termin ausserhalb der Parkplatz-Tour liegt", async () => {
     const admin = await loginAdminAgent(app);
     await applySystemSeed();
 
@@ -303,9 +304,54 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
     expect(geparktTagId).not.toBeNull();
 
     const customer = await createCustomerFixture("PARK-09");
+    const regularTour = await createTourFixture("#0A7C66");
     const appointment = await createAppointmentFixture({
       customerId: customer.id,
       startDate: getRelativeBerlinDate(11),
+    });
+
+    await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);
+
+    const parkedDetail = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+
+    await admin
+      .patch(`/api/appointments/${appointment.id}`)
+      .send({
+        version: parkedDetail.body.version,
+        startDate: getRelativeBerlinDate(11),
+        customerId: customer.id,
+        tourId: regularTour.id,
+      })
+      .expect(200);
+
+    const afterTourChange = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+    expect(afterTourChange.body.appointmentTags.some((tag: { name: string }) => tag.name === RESERVED_VACANT_TAG_NAME)).toBe(false);
+
+    await db.insert(appointmentTags).values({
+      appointmentId: appointment.id,
+      tagId: geparktTagId!,
+      version: 1,
+    });
+
+    await admin
+      .delete(`/api/appointments/${appointment.id}/tags/${geparktTagId}`)
+      .send({ version: 1 })
+      .expect(204);
+
+    expect(await hasGeparktTag(appointment.id)).toBe(false);
+  });
+
+  it("Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden, solange der Termin in Parkplatz liegt", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const geparktTagId = await getGeparktTagId();
+    expect(geparktTagId).not.toBeNull();
+
+    const customer = await createCustomerFixture("PARK-10");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(12),
     });
 
     await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);

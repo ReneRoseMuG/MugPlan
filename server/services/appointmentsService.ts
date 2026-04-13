@@ -1376,7 +1376,15 @@ export async function removeAppointmentTag(
     throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    const allTours = await toursRepository.getTours();
+    const parkplatzTour = findParkplatzTour(allTours);
+    if (parkplatzTour && appointment.tourId === parkplatzTour.id) {
+      throw new AppointmentError(
+        "Der Geparkt-Tag kann nur bei Terminen ausserhalb der Parkplatz-Tour manuell entfernt werden",
+        409,
+        "CANCELLATION_TAG_PROTECTED",
+      );
+    }
   }
   await assertAppointmentNotCancelled(appointmentId);
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
