@@ -56,6 +56,19 @@ vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentTagPicke
   ),
 }));
 
+vi.mock("../../../client/src/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-dropdown-content">{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    ...props
+  }: {
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  }) => <button type="button" {...props}>{children}</button>,
+}));
+
 function createAppointment(overrides: Partial<CalendarAppointment> = {}): CalendarAppointment {
   return {
     id: 42,
@@ -306,5 +319,53 @@ describe("calendar week appointment card layout", () => {
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
     expect(html.match(/height:260px/g)).toBeNull();
     expect(html).not.toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
+  });
+
+  it("hides the header menu trigger for historical week appointments on both card types", () => {
+    const appointment = createAppointment({ startDate: "2000-01-01" });
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2000-01-01"
+          visibleDayNumberStart={1}
+        />
+      </>,
+    );
+
+    expect(html).not.toContain('week-appointment-menu-trigger-42');
+    expect(html).not.toContain('week-spanning-tile-menu-trigger-42');
+    expect(html).not.toContain("Termin löschen");
+  });
+
+  it("renders the delete menu action for editable week appointments on both card types", () => {
+    const appointment = createAppointment();
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+        />
+      </>,
+    );
+
+    expect(html).toContain('week-appointment-menu-trigger-42');
+    expect(html).toContain('week-spanning-tile-menu-trigger-42');
+    expect(html.match(/Termin löschen/g)).toHaveLength(2);
   });
 });

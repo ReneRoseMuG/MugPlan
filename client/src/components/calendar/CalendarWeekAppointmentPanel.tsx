@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Ban, ParkingCircle, ExternalLink } from "lucide-react";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +44,50 @@ import { toAlphaColor } from "@/lib/monitoring-ui";
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
 export const WEEK_CARD_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
+
+type AppointmentApiError = Error & { status?: number; code?: string };
+
+const isPastStartDate = (startDate: string) => {
+  const startDateValue = new Date(`${startDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return startDateValue < today;
+};
+
+const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
+  const error = new Error(message) as AppointmentApiError;
+  error.status = status;
+  error.code = code;
+  return error;
+};
+
+const parseJsonBody = (rawBody: string): unknown | null => {
+  const trimmedBody = rawBody.trim();
+  if (
+    !trimmedBody ||
+    !(
+      (trimmedBody.startsWith("{") && trimmedBody.endsWith("}")) ||
+      (trimmedBody.startsWith("[") && trimmedBody.endsWith("]"))
+    )
+  ) {
+    return null;
+  }
+  try {
+    return JSON.parse(trimmedBody);
+  } catch {
+    return null;
+  }
+};
+
+const parseErrorPayload = (rawBody: string): { message?: string; code?: string } | null => {
+  const parsed = parseJsonBody(rawBody);
+  if (!parsed || typeof parsed !== "object") return null;
+  const payload = parsed as { message?: unknown; code?: unknown };
+  return {
+    message: typeof payload.message === "string" && payload.message.trim().length > 0 ? payload.message : undefined,
+    code: typeof payload.code === "string" ? payload.code : undefined,
+  };
+};
 
 export function CalendarWeekAppointmentPanel({
   appointment,
@@ -100,8 +144,10 @@ export function CalendarWeekAppointmentPanel({
   const queryClient = useQueryClient();
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+  const isHistoricalReadOnly = isPastStartDate(appointment.startDate);
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -142,7 +188,126 @@ export function CalendarWeekAppointmentPanel({
     },
   });
 
-  const menuSlot = interactive ? (
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const fetchFreshVersion = async (): Promise<number> => {
+        const detail = await queryClient.fetchQuery({
+          queryKey: ["/api/appointments", appointment.id],
+          queryFn: async () => {
+            const response = await fetch(`/api/appointments/${appointment.id}`, {
+              credentials: "include",
+            });
+            if (!response.ok) {
+              throw new Error("Termindetails konnten nicht geladen werden");
+            }
+            return response.json() as Promise<{ version?: number }>;
+          },
+          staleTime: 0,
+        });
+        const version = detail?.version;
+        if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+          throw buildApiError("Termin kann derzeit nicht gelöscht werden. Bitte neu laden.", 422, "VALIDATION_ERROR");
+        }
+        return version;
+      };
+
+      const requestDelete = async (version: number) => {
+        const response = await fetch(`/api/appointments/${appointment.id}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ version }),
+        });
+        if (response.ok) return;
+
+        const rawBody = await response.text();
+        const parsed = parseErrorPayload(rawBody);
+        if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
+          throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
+        }
+        if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
+          throw buildApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+        }
+        if (parsed?.code === "VERSION_CONFLICT") {
+          throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
+        }
+        if (parsed?.code === "VALIDATION_ERROR") {
+          throw buildApiError("Ungültige Löschdaten. Bitte neu laden.", response.status, "VALIDATION_ERROR");
+        }
+        throw buildApiError(parsed?.message ?? (response.statusText || "Löschen fehlgeschlagen"), response.status, parsed?.code);
+      };
+
+      try {
+        const freshVersion = await fetchFreshVersion();
+        await requestDelete(freshVersion);
+      } catch (error) {
+        const err = error as AppointmentApiError;
+        if (err.code !== "VERSION_CONFLICT") throw error;
+
+        const freshVersion = await fetchFreshVersion();
+        try {
+          await requestDelete(freshVersion);
+        } catch (retryError) {
+          const retryErr = retryError as AppointmentApiError;
+          if (retryErr.code === "VERSION_CONFLICT") {
+            throw buildApiError(
+              "Termin wurde parallel geändert. Bitte Termin neu öffnen.",
+              retryErr.status,
+              "VERSION_CONFLICT",
+            );
+          }
+          throw retryError;
+        }
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Termin gelöscht" });
+    },
+    onError: (error) => {
+      const err = error as AppointmentApiError;
+      if (err.code === "PAST_APPOINTMENT_READONLY" || err.status === 403) {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Termin ist gesperrt.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Stornierte Termine können nicht gelöscht werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: err.message || "Termin wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "VALIDATION_ERROR") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Ungültige Löschdaten. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const message = error instanceof Error ? error.message : "Löschen fehlgeschlagen";
+      toast({ title: "Fehler", description: message, variant: "destructive" });
+    },
+  });
+
+  const menuSlot = interactive && !isHistoricalReadOnly ? (
     <span
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
@@ -188,6 +353,13 @@ export function CalendarWeekAppointmentPanel({
               Parken
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            onClick={() => setDeleteConfirmOpen(true)}
+            className="gap-2 text-xs cursor-pointer text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-3.5 w-3.5 shrink-0" />
+            Termin löschen
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </span>
@@ -433,6 +605,27 @@ export function CalendarWeekAppointmentPanel({
             }}
           >
             {parkMutation.isPending ? "Parken…" : "Parken"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Termin löschen?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Dieser Termin wird dauerhaft gelöscht und kann nicht rückgängig gemacht werden.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleteMutation.isPending}>Abbrechen</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => deleteMutation.mutate()}
+            disabled={deleteMutation.isPending}
+            className="bg-destructive text-destructive-foreground border border-destructive-border hover:bg-destructive/90"
+          >
+            {deleteMutation.isPending ? "Termin löschen..." : "Termin löschen"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
