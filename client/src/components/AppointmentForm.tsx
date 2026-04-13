@@ -2378,16 +2378,33 @@ export function AppointmentForm({
               <div className="space-y-2">
                 <Label htmlFor="startTime">Startzeit (optional)</Label>
                 {startTimeEnabled ? (
-                  <Input
-                    id="startTime"
-                    type="time"
-                    step={60}
-                    value={startTimeValue}
-                    onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
-                    placeholder="HH:mm"
-                    disabled={isMutationLocked}
-                    data-testid="input-start-time"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="startTime"
+                      type="time"
+                      step={60}
+                      value={startTimeValue}
+                      onChange={(event) => setStartTimeValue(normalizeTimeInput(event.target.value))}
+                      placeholder="HH:mm"
+                      disabled={isMutationLocked}
+                      data-testid="input-start-time"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => {
+                        setStartTimeValue("");
+                        setStartTimeEnabled(false);
+                      }}
+                      disabled={isMutationLocked}
+                      aria-label="Startzeit entfernen"
+                      data-testid="button-remove-start-time"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     variant="ghost"
@@ -2414,6 +2431,34 @@ export function AppointmentForm({
               </div>
             </div>
           </div>
+
+          {selectedTour ? (
+            <TourInfoBadge
+              id={selectedTour.id}
+              name={selectedTour.name}
+              color={selectedTour.color}
+              members={tourMembersById.get(selectedTour.id) ?? []}
+              action={isReadOnlyView ? "none" : "remove"}
+              onRemove={() => handleTourChange(null)}
+              fullWidth
+              testId="badge-tour"
+            />
+          ) : null}
+
+          <AppointmentEmployeeSlot
+            teams={teams}
+            assignedEmployees={assignedEmployees}
+            teamMembersById={teamMembersById}
+            isLocked={isMutationLocked}
+            readOnly={isReadOnlyView}
+            onAssignTeam={handleAssignTeam}
+            onAddEmployee={() => setEmployeePickerOpen(true)}
+            onRemoveEmployee={removeEmployee}
+            tours={tours}
+            tourMembersById={tourMembersById}
+            selectedTour={selectedTour}
+            onTourChange={handleTourChange}
+          />
 
           <RelationSlot
             title="Projekt"
@@ -2448,34 +2493,6 @@ export function AppointmentForm({
               <CustomerDetailCard customer={selectedCustomer} testId="badge-customer" variant="relationCompact" />
             ) : null}
           </RelationSlot>
-
-          {selectedTour ? (
-            <TourInfoBadge
-              id={selectedTour.id}
-              name={selectedTour.name}
-              color={selectedTour.color}
-              members={tourMembersById.get(selectedTour.id) ?? []}
-              action={isReadOnlyView ? "none" : "remove"}
-              onRemove={() => handleTourChange(null)}
-              fullWidth
-              testId="badge-tour"
-            />
-          ) : null}
-
-          <AppointmentEmployeeSlot
-            teams={teams}
-            assignedEmployees={assignedEmployees}
-            teamMembersById={teamMembersById}
-            isLocked={isMutationLocked}
-            readOnly={isReadOnlyView}
-            onAssignTeam={handleAssignTeam}
-            onAddEmployee={() => setEmployeePickerOpen(true)}
-            onRemoveEmployee={removeEmployee}
-            tours={tours}
-            tourMembersById={tourMembersById}
-            selectedTour={selectedTour}
-            onTourChange={handleTourChange}
-          />
 
           {selectedProjectId === null ? (
             <DocumentExtractionDropzone
