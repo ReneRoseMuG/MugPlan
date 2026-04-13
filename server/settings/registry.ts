@@ -47,6 +47,8 @@ const toastDesktopPositionOptions = ["top-left", "top-right", "bottom-left", "bo
 type ToastDesktopPosition = (typeof toastDesktopPositionOptions)[number];
 const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
+const employeePickerViewModeOptions = ["board", "list"] as const;
+type EmployeePickerViewMode = (typeof employeePickerViewModeOptions)[number];
 const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
 type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 const weekTileBodyModeOptions = ["collapsed", "semiexpanded", "expanded"] as const;
@@ -761,6 +763,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is ListViewMode =>
       typeof value === "string" && listViewModeOptions.includes(value as ListViewMode),
+  },
+  appointmentEmployeePickerViewMode: {
+    key: "appointmentEmployeePicker.viewMode",
+    label: "Termin Mitarbeiter-Picker Ansicht",
+    description: "Steuert den Ansichtsmodus im Mitarbeiter-Picker des Terminformulars (Board oder Liste).",
+    type: "enum",
+    options: employeePickerViewModeOptions,
+    defaultValue: "board",
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is EmployeePickerViewMode =>
+      typeof value === "string" && employeePickerViewModeOptions.includes(value as EmployeePickerViewMode),
   },
   templatesProjectTitle: {
     key: "templates.project.title",
