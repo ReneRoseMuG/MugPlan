@@ -48,8 +48,10 @@ async function openWeekPlanning(page: import("@playwright/test").Page, tourId: n
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${tourId}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
+  await expect(page.getByTestId("tour-form-functions-panel")).toBeVisible();
   await expect(page.getByTestId("toggle-tour-week-picker")).toBeVisible();
-  await expect(page.getByTestId("tour-week-planning-sidebar-panel")).toContainText("Neue Wochenplanung");
+  await expect(page.getByTestId("tour-form-functions-panel")).toContainText("Funktionen");
+  await expect(page.getByTestId("tour-form-functions-panel")).toContainText("KW einfügen");
 }
 
 test.beforeAll(async () => {

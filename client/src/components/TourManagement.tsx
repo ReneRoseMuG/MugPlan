@@ -441,9 +441,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     if (!currentTour || !Number.isInteger(currentTour.version) || currentTour.version < 1) {
       throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing tour version"}');
     }
-    if (!window.confirm(`Wollen Sie die Tour ${currentTour.name} wirklich loeschen?`)) {
-      return;
-    }
     await deleteMutation.mutateAsync({ id: currentTour.id, version: currentTour.version });
     handleCloseDialog();
   };

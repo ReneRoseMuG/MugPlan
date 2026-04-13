@@ -318,11 +318,13 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(createMarkup).toContain("button-close-project");
     expect(createMarkup).toContain("button-cancel-project");
     expect(createMarkup).toContain("button-save-project");
+    expect(createMarkup).not.toContain("project-form-functions-panel");
     expect(createMarkup).not.toContain("button-delete-project");
     expect(getIndex(createMarkup, "button-cancel-project")).toBeLessThan(getIndex(createMarkup, "button-save-project"));
 
+    expect(editMarkup).toContain("project-form-functions-panel");
     expect(editMarkup).toContain("button-delete-project");
-    expect(getIndex(editMarkup, "button-delete-project")).toBeLessThan(getIndex(editMarkup, "button-cancel-project"));
+    expect(getIndex(editMarkup, "project-form-functions-panel")).toBeLessThan(getIndex(editMarkup, "project-appointments-panel-marker"));
     expect(getIndex(editMarkup, "button-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));
   });
 });

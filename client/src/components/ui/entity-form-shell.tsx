@@ -23,7 +23,7 @@ export function EntityFormShell({
   const resolvedSidebarWidth = useSetting("entityFormShell.sidebarWidthPx");
   const resolvedContentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx");
   const effectiveSidebarWidth = sidebarWidth ?? resolvedSidebarWidth ?? 360;
-  const effectiveContentMaxWidth = contentMaxWidth ?? resolvedContentMaxWidth ?? 760;
+  const effectiveContentMaxWidth = contentMaxWidth ?? resolvedContentMaxWidth ?? 960;
 
   return (
     <div

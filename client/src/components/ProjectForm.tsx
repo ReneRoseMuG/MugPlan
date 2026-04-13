@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
@@ -26,6 +26,7 @@ import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
+  Trash2,
   UserCircle,
   X,
 } from "lucide-react";
@@ -1459,6 +1460,31 @@ export function ProjectForm({
         )}
         sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="project-form-sidebar">
+            {isEditing ? (
+              <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                    style={{
+                      "--action-bg": "hsl(var(--destructive) / 0.14)",
+                      "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                      "--action-border": "hsl(var(--destructive) / 0.35)",
+                      "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                      "--action-fg": "hsl(var(--destructive))",
+                    } as CSSProperties}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={deleteProjectMutation.isPending}
+                    data-testid="button-delete-project"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {deleteProjectMutation.isPending ? "Löschen..." : "Löschen"}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
             <ProjectAppointmentsPanel
               projectId={effectiveProjectId}
               projectName={projectNamePreview}
@@ -1543,18 +1569,6 @@ export function ProjectForm({
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
-              {isEditing ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={deleteProjectMutation.isPending}
-                  data-testid="button-delete-project"
-                >
-          {deleteProjectMutation.isPending ? "Löschen..." : "Löschen"}
-        </Button>
-              ) : null}
-
               <Button
                 type="button"
                 variant="outline"

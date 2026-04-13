@@ -82,6 +82,17 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
+vi.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogAction: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  AlertDialogCancel: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  AlertDialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
     <button type="button" {...props}>{children}</button>
@@ -181,6 +192,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell-footer");
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("tour-form-sidebar");
+    expect(markup).not.toContain("tour-form-functions-panel");
     expect(markup).toContain("button-close-tour");
     expect(markup).toContain("button-cancel-tour");
     expect(markup).toContain("button-save-tour");
@@ -225,7 +237,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell");
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("tour-form-sidebar");
+    expect(markup).toContain("tour-form-functions-panel");
     expect(markup).toContain("button-delete-tour-form");
+    expect(markup).not.toContain("toggle-tour-week-picker");
     expect(markup).toContain("input-tour-name");
     expect(markup).toContain("Nordtour");
     expect(markup).not.toContain("text-tour-generated-name-hint");
@@ -240,4 +254,5 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain('class="w-full"');
     expect(markup).not.toContain("button-add-tour-week-footer");
   });
+
 });

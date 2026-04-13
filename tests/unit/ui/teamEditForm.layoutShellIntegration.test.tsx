@@ -65,6 +65,17 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
+vi.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogAction: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  AlertDialogCancel: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  AlertDialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
     <button type="button" {...props}>{children}</button>
@@ -120,6 +131,7 @@ describe("FT06/FT07 team form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell-footer");
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("team-form-sidebar");
+    expect(markup).not.toContain("team-form-functions-panel");
     expect(markup).toContain("button-close-team");
     expect(markup).toContain("button-cancel-team");
     expect(markup).toContain("button-save-team");
@@ -146,6 +158,7 @@ describe("FT06/FT07 team form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell");
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("team-form-sidebar");
+    expect(markup).toContain("team-form-functions-panel");
     expect(markup).toContain("button-delete-team-form");
     expect(markup).toContain("badge-team-member-33");
   });

@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Ban, Calendar, Clock, FolderKanban, ParkingCircle, Users, X } from "lucide-react";
+import { ArrowLeft, Ban, Calendar, Clock, FolderKanban, ParkingCircle, Trash2, Users, X } from "lucide-react";
 import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
@@ -2109,41 +2109,65 @@ export function AppointmentForm({
         sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="appointment-form-sidebar">
             {isEditing && appointmentId && !isReadOnlyView ? (
-              <div className="flex flex-col gap-2">
-                {!isCancelled ? (
+              <div className="sub-panel space-y-3" data-testid="appointment-form-functions-panel">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                <div className="flex flex-col gap-2">
+                  {!isCancelled ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "22",
+                        "--action-bg-hover": RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "33",
+                        "--action-border": RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "66",
+                        "--action-border-hover": RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "99",
+                        "--action-fg": RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+                      } as React.CSSProperties}
+                      onClick={() => setCancelConfirmOpen(true)}
+                      disabled={isMutationLocked || cancelAppointmentMutation.isPending}
+                      data-testid="button-cancel-appointment"
+                    >
+                      <Ban className="w-4 h-4" />
+                      {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
+                    </Button>
+                  ) : null}
+                  {!isCancelled && !isParked ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": RESERVED_VACANT_TAG_COLOR + "22",
+                        "--action-bg-hover": RESERVED_VACANT_TAG_COLOR + "33",
+                        "--action-border": RESERVED_VACANT_TAG_COLOR + "66",
+                        "--action-border-hover": RESERVED_VACANT_TAG_COLOR + "99",
+                        "--action-fg": RESERVED_VACANT_TAG_COLOR,
+                      } as React.CSSProperties}
+                      onClick={() => setParkConfirmOpen(true)}
+                      disabled={isMutationLocked || parkAppointmentMutation.isPending}
+                      data-testid="button-park-appointment"
+                    >
+                      <ParkingCircle className="w-4 h-4" />
+                      {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
-                    className="w-full justify-start gap-2 border"
+                    className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
                     style={{
-                      backgroundColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "22",
-                      borderColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR + "66",
-                      color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-                    }}
-                    onClick={() => setCancelConfirmOpen(true)}
-                    disabled={isMutationLocked || cancelAppointmentMutation.isPending}
-                    data-testid="button-cancel-appointment"
+                      "--action-bg": "hsl(var(--destructive) / 0.14)",
+                      "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                      "--action-border": "hsl(var(--destructive) / 0.35)",
+                      "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                      "--action-fg": "hsl(var(--destructive))",
+                    } as React.CSSProperties}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+                    data-testid="button-delete-appointment"
                   >
-                    <Ban className="w-4 h-4" />
-                    {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
+                    <Trash2 className="w-4 h-4" />
+                    {deleteAppointmentMutation.isPending ? "Löschen..." : "Löschen"}
                   </Button>
-                ) : null}
-                {!isCancelled && !isParked ? (
-                  <Button
-                    type="button"
-                    className="w-full justify-start gap-2 border"
-                    style={{
-                      backgroundColor: RESERVED_VACANT_TAG_COLOR + "22",
-                      borderColor: RESERVED_VACANT_TAG_COLOR + "66",
-                      color: RESERVED_VACANT_TAG_COLOR,
-                    }}
-                    onClick={() => setParkConfirmOpen(true)}
-                    disabled={isMutationLocked || parkAppointmentMutation.isPending}
-                    data-testid="button-park-appointment"
-                  >
-                    <ParkingCircle className="w-4 h-4" />
-                    {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
-                  </Button>
-                ) : null}
+                </div>
               </div>
             ) : null}
 
@@ -2223,20 +2247,6 @@ export function AppointmentForm({
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
-              {isEditing && appointmentId && !isReadOnlyView ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    disabled={isMutationLocked || deleteAppointmentMutation.isPending}
-                    data-testid="button-delete-appointment"
-                  >
-                    Löschen
-                  </Button>
-                </>
-              ) : null}
-
               <Button
                 type="button"
                 variant="outline"

@@ -1,11 +1,21 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Users, X } from "lucide-react";
+import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { Trash2, Users, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { Team, Employee } from "@shared/schema";
@@ -44,6 +54,7 @@ export function TeamEditForm({
   const [selectedMembers, setSelectedMembers] = useState<number[]>(() => team?.members.map((member) => member.id) ?? []);
   const [selectedColor, setSelectedColor] = useState<string>(() => team?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const memberIdsKey = (team?.members ?? []).map((member) => member.id).join(",");
 
   useEffect(() => {
@@ -94,17 +105,6 @@ export function TeamEditForm({
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
-              {!isCreate && canDelete && team && onDelete ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onClick={onDelete}
-                  disabled={isSaving || isDeleting}
-                  data-testid="button-delete-team-form"
-                >
-                  {isDeleting ? "Löschen..." : "Löschen"}
-                </Button>
-              ) : null}
               <Button
                 type="button"
                 variant="outline"
@@ -127,80 +127,130 @@ export function TeamEditForm({
             </Button>
           </div>
         )}
-        sidebar={<div className="min-w-0 p-6" data-testid="team-form-sidebar" />}
+        sidebar={(
+          <div className="min-w-0 space-y-6 p-6" data-testid="team-form-sidebar">
+            {!isCreate && canDelete && team && onDelete ? (
+              <div className="sub-panel space-y-3" data-testid="team-form-functions-panel">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                    style={{
+                      "--action-bg": "hsl(var(--destructive) / 0.14)",
+                      "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                      "--action-border": "hsl(var(--destructive) / 0.35)",
+                      "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                      "--action-fg": "hsl(var(--destructive))",
+                    } as CSSProperties}
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={isSaving || isDeleting}
+                    data-testid="button-delete-team-form"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    {isDeleting ? "Löschen..." : "Löschen"}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
         contentMaxWidth={99999}
       >
-      <div className="w-full space-y-4" data-testid="team-form-main-column">
-        <div className="sub-panel space-y-3">
-          <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
-            <Users className="w-4 h-4" />
-            Farbe
-          </h3>
-          <ColorSelectButton
-            color={selectedColor}
-            onChange={setSelectedColor}
-            testId="button-team-color-picker"
-            disabled={isSaving}
-          />
-        </div>
+        <div className="w-full space-y-4" data-testid="team-form-main-column">
+          <div className="sub-panel space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
+              <Users className="w-4 h-4" />
+              Farbe
+            </h3>
+            <ColorSelectButton
+              color={selectedColor}
+              onChange={setSelectedColor}
+              testId="button-team-color-picker"
+              disabled={isSaving}
+            />
+          </div>
 
-        <div
-          className="overflow-hidden border border-border bg-slate-50 border-l-4"
-          style={{ borderLeftColor: selectedColor }}
-        >
-          <MembersSectionHeader
-            className="border-b border-border bg-slate-50 px-3 py-1.5"
-            action={(
-              <PlusActionButton
-                onClick={() => setEmployeePickerOpen(true)}
-                aria-label="Mitarbeiter hinzufuegen"
-                data-testid="button-add-team-member"
-                disabled={isSaving}
-              />
-            )}
-          />
-          <div className="space-y-2 bg-slate-50 p-3">
-            {selectedMembers.map((memberId) => {
-              const employee = allEmployees.find((entry) => entry.id === memberId);
-              if (!employee) return null;
-              return (
-                <EmployeeInfoBadge
-                  key={employee.id}
-                  id={employee.id}
-                  firstName={employee.firstName}
-                  lastName={employee.lastName}
-                  action="remove"
-                  onRemove={() => setSelectedMembers((prev) => prev.filter((id) => id !== employee.id))}
-                  size="sm"
-                  fullWidth
-                  testId={`badge-team-member-${employee.id}`}
+          <div
+            className="overflow-hidden border border-border bg-slate-50 border-l-4"
+            style={{ borderLeftColor: selectedColor }}
+          >
+            <MembersSectionHeader
+              className="border-b border-border bg-slate-50 px-3 py-1.5"
+              action={(
+                <PlusActionButton
+                  onClick={() => setEmployeePickerOpen(true)}
+                  aria-label="Mitarbeiter hinzufügen"
+                  data-testid="button-add-team-member"
+                  disabled={isSaving}
                 />
-              );
-            })}
-            {selectedMembers.length === 0 && (
-              <div className="text-sm italic text-slate-400">
-                Keine Mitarbeiter zugewiesen
-              </div>
-            )}
+              )}
+            />
+            <div className="space-y-2 bg-slate-50 p-3">
+              {selectedMembers.map((memberId) => {
+                const employee = allEmployees.find((entry) => entry.id === memberId);
+                if (!employee) return null;
+                return (
+                  <EmployeeInfoBadge
+                    key={employee.id}
+                    id={employee.id}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    action="remove"
+                    onRemove={() => setSelectedMembers((prev) => prev.filter((id) => id !== employee.id))}
+                    size="sm"
+                    fullWidth
+                    testId={`badge-team-member-${employee.id}`}
+                  />
+                );
+              })}
+              {selectedMembers.length === 0 && (
+                <div className="text-sm italic text-slate-400">
+                  Keine Mitarbeiter zugewiesen
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
-          <EmployeePickerDialogList
-            employees={availableEmployees}
-            teams={[]}
-            tours={[]}
-            title="Mitarbeiter auswaehlen"
-            onSelectEmployee={(employeeId) => {
-              setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
-              setEmployeePickerOpen(false);
-            }}
-            onClose={() => setEmployeePickerOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+        <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
+          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+            <EmployeePickerDialogList
+              employees={availableEmployees}
+              teams={[]}
+              tours={[]}
+              title="Mitarbeiter auswählen"
+              onSelectEmployee={(employeeId) => {
+                setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
+                setEmployeePickerOpen(false);
+              }}
+              onClose={() => setEmployeePickerOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Team wirklich löschen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Diese Aktion ist endgültig. Das Team wird gelöscht und die aktuelle Bearbeitung geschlossen.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  onDelete?.();
+                }}
+                data-testid="button-confirm-delete-team"
+              >
+                Team löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </EntityFormShell>
     </div>
   );

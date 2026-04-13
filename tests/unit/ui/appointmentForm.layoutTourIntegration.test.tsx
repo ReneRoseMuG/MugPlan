@@ -371,8 +371,10 @@ describe("FT01 appointment form layout tour integration", () => {
 
     const markup = renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
 
+    expect(markup).toContain("appointment-form-functions-panel");
     expect(markup).toContain("button-cancel-appointment");
     expect(markup).toContain("button-park-appointment");
+    expect(markup).toContain("button-delete-appointment");
     expect(markup).not.toContain("Markiert den Termin als storniert");
     expect(markup).not.toContain("Verschiebt den Termin in die Parkplatz-Tour");
   });

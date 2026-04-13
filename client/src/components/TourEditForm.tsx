@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
-import { CalendarPlus2, Route, X } from "lucide-react";
+import { CalendarPlus2, Route, Trash2, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
@@ -9,6 +9,16 @@ import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,6 +104,7 @@ export function TourEditForm({
   const [activeTab, setActiveTab] = useState("stammdaten");
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [draftWeeks, setDraftWeeks] = useState<DraftTourWeek[]>([]);
   const [pendingWeekInput, setPendingWeekInput] = useState(String(nextEditableWeek.isoWeek));
   const [pendingWeekSelection, setPendingWeekSelection] = useState<{ isoYear: number; isoWeek: number } | null>(null);
@@ -184,7 +195,7 @@ export function TourEditForm({
     if (!Number.isInteger(isoWeek)) {
       toast({
         title: "Kalenderwoche fehlt",
-        description: "Bitte eine gueltige Kalenderwoche auswaehlen.",
+        description: "Bitte eine gültige Kalenderwoche auswählen.",
         variant: "destructive",
       });
       return;
@@ -193,7 +204,7 @@ export function TourEditForm({
     if (isoWeek < nextEditableWeek.isoWeek) {
       toast({
         title: "Kalenderwoche zu klein",
-        description: `Fruehestens KW ${String(nextEditableWeek.isoWeek).padStart(2, "0")} ist zulaessig.`,
+        description: `Frühestens KW ${String(nextEditableWeek.isoWeek).padStart(2, "0")} ist zulässig.`,
         variant: "destructive",
       });
       return;
@@ -201,8 +212,8 @@ export function TourEditForm({
 
     if (isoWeek > nextEditableWeek.maxIsoWeek) {
       toast({
-        title: "Kalenderwoche zu gross",
-        description: `Fuer ${nextEditableWeek.isoYear} ist spaetestens KW ${String(nextEditableWeek.maxIsoWeek).padStart(2, "0")} zulaessig.`,
+        title: "Kalenderwoche zu groß",
+        description: `Für ${nextEditableWeek.isoYear} ist spätestens KW ${String(nextEditableWeek.maxIsoWeek).padStart(2, "0")} zulässig.`,
         variant: "destructive",
       });
       return;
@@ -238,6 +249,9 @@ export function TourEditForm({
 
   const title = isCreate ? defaultName : (tour?.name ?? "Tour bearbeiten");
   const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
+  const showWeekInsertAction = !isCreate && activeTab === "wochenplanung";
+  const showDeleteAction = !isCreate && canDelete && tour && onDelete;
+  const showFunctionsPanel = showWeekInsertAction || showDeleteAction;
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
@@ -266,21 +280,6 @@ export function TourEditForm({
           <div className="flex flex-col gap-2 px-6 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                {!isCreate && canDelete && tour && onDelete ? (
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    onClick={() => {
-                      void onDelete().catch(() => {
-                        // errors are handled via mutation toasts in parent
-                      });
-                    }}
-                    disabled={isSaving || isDeleting}
-                    data-testid="button-delete-tour-form"
-                  >
-                    {isDeleting ? "Löschen..." : "Löschen"}
-                  </Button>
-                ) : null}
                 <Button
                   type="button"
                   variant="outline"
@@ -304,209 +303,267 @@ export function TourEditForm({
           </div>
         )}
         sidebar={(
-          <div className="min-w-0 p-6" data-testid="tour-form-sidebar">
-            {!isCreate && activeTab === "wochenplanung" ? (
-              <div
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
-                data-testid="tour-week-planning-sidebar-panel"
-              >
-                <div className="mb-3 text-sm font-semibold text-slate-900">Neue Wochenplanung</div>
-                <Toggle
-                  pressed={weekPickerOpen}
-                  onPressedChange={(pressed) => setWeekPickerOpen(pressed)}
-                  disabled={isSaving || isMutatingMembers}
-                  className="flex w-full items-center justify-start gap-2 border border-slate-200 bg-white px-3 py-2 text-left text-sm font-medium text-slate-700 data-[state=on]:border-transparent data-[state=on]:text-white"
-                  style={weekPickerOpen ? { backgroundColor: selectedColor } : { color: selectedColor, borderColor: selectedColor }}
-                  data-testid="toggle-tour-week-picker"
-                  aria-label="Neue Wochenplanung"
-                >
-                  <CalendarPlus2 className="h-4 w-4" />
-                  <span>KW einfügen</span>
-                </Toggle>
+          <div className="min-w-0 space-y-6 p-6" data-testid="tour-form-sidebar">
+            {showFunctionsPanel ? (
+              <div className="sub-panel space-y-3" data-testid="tour-form-functions-panel">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                <div className="flex flex-col gap-2">
+                  {showWeekInsertAction ? (
+                    <Toggle
+                      pressed={weekPickerOpen}
+                      onPressedChange={(pressed) => setWeekPickerOpen(pressed)}
+                      disabled={isSaving || isMutatingMembers}
+                      className="flex w-full items-center justify-start gap-2 border bg-[var(--action-bg)] px-3 py-2 text-left text-sm font-medium text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm data-[state=on]:border-transparent data-[state=on]:text-white"
+                      style={weekPickerOpen
+                        ? ({
+                            backgroundColor: selectedColor,
+                            "--action-bg-hover": selectedColor,
+                            "--action-border-hover": selectedColor,
+                          } as CSSProperties)
+                        : ({
+                            "--action-bg": `${selectedColor}14`,
+                            "--action-bg-hover": `${selectedColor}22`,
+                            "--action-border": `${selectedColor}66`,
+                            "--action-border-hover": `${selectedColor}99`,
+                            "--action-fg": selectedColor,
+                          } as CSSProperties)}
+                      data-testid="toggle-tour-week-picker"
+                      aria-label="Neue Wochenplanung"
+                    >
+                      <CalendarPlus2 className="h-4 w-4" />
+                      <span>KW einfügen</span>
+                    </Toggle>
+                  ) : null}
+
+                  {showDeleteAction ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": "hsl(var(--destructive) / 0.14)",
+                        "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                        "--action-border": "hsl(var(--destructive) / 0.35)",
+                        "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                        "--action-fg": "hsl(var(--destructive))",
+                      } as CSSProperties}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      disabled={isSaving || isDeleting}
+                      data-testid="button-delete-tour-form"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {isDeleting ? "Löschen..." : "Löschen"}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </div>
         )}
         contentMaxWidth={99999}
       >
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className={`flex min-h-0 w-full flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
-        data-testid="tour-form-main-column"
-      >
-        <TabsList>
-          <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
-          <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
-          {!isCreate ? (
-            <TabsTrigger value="wochenplanung" data-testid="tab-tour-wochenplanung">Wochenplanung</TabsTrigger>
-          ) : null}
-        </TabsList>
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className={`flex min-h-0 w-full flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
+          data-testid="tour-form-main-column"
+        >
+          <TabsList>
+            <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
+            <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
+            {!isCreate ? (
+              <TabsTrigger value="wochenplanung" data-testid="tab-tour-wochenplanung">Wochenplanung</TabsTrigger>
+            ) : null}
+          </TabsList>
 
-        <TabsContent value="stammdaten" className="w-full">
-          <div className="w-full space-y-4">
-            <div className="sub-panel space-y-3">
-              <div className="space-y-2">
-                <Label htmlFor="tour-name">Name</Label>
-                <Input
-                  id="tour-name"
-                  value={selectedName}
-                  readOnly={isCreate}
+          <TabsContent value="stammdaten" className="w-full">
+            <div className="w-full space-y-4">
+              <div className="sub-panel space-y-3">
+                <div className="space-y-2">
+                  <Label htmlFor="tour-name">Name</Label>
+                  <Input
+                    id="tour-name"
+                    value={selectedName}
+                    readOnly={isCreate}
+                    disabled={isSaving}
+                    onChange={(event) => setSelectedName(event.target.value)}
+                    placeholder="Tourname eingeben"
+                    data-testid="input-tour-name"
+                  />
+                </div>
+                {isCreate ? (
+                  <p className="text-sm text-slate-500" data-testid="text-tour-generated-name-hint">
+                    Der Tourname wird beim Speichern serverseitig vergeben. Die Anzeige zeigt den nächsten freien Namen.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="sub-panel space-y-3">
+                <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
+                  <Route className="w-4 h-4" />
+                  Farbe
+                </h3>
+                <ColorSelectButton
+                  color={selectedColor}
+                  onChange={setSelectedColor}
+                  testId="button-tour-color-picker"
                   disabled={isSaving}
-                  onChange={(event) => setSelectedName(event.target.value)}
-                  placeholder="Tourname eingeben"
-                  data-testid="input-tour-name"
                 />
               </div>
-              {isCreate ? (
-                <p className="text-sm text-slate-500" data-testid="text-tour-generated-name-hint">
-                  Der Tourname wird beim Speichern serverseitig vergeben. Die Anzeige zeigt den naechsten freien Namen.
-                </p>
-              ) : null}
-            </div>
-
-            <div className="sub-panel space-y-3">
-              <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
-                <Route className="w-4 h-4" />
-                Farbe
-              </h3>
-              <ColorSelectButton
-                color={selectedColor}
-                onChange={setSelectedColor}
-                testId="button-tour-color-picker"
-                disabled={isSaving}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
-          <AppointmentsListPage
-            title="Termine"
-            helpKey="appointments.list.tourForm"
-            context={{ type: "tour", tourId: tour?.id ?? null }}
-            emptyStateOverride={<></>}
-            onOpenAppointment={onOpenAppointment}
-            className="min-h-0 flex-1"
-          />
-        </TabsContent>
-
-        {!isCreate ? (
-          <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
-            <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
-              {allWeeks.map((week) => (
-                <ColoredEntityCard
-                  key={`${week.isoYear}-${week.isoWeek}`}
-                  title={`KW ${String(week.isoWeek).padStart(2, "0")} / ${week.isoYear}`}
-                  icon={<Route className="w-4 h-4" />}
-                  borderColor={selectedColor}
-                  testId={`card-tour-week-${week.isoYear}-${week.isoWeek}`}
-                  actions={!week.isLocked ? (
-                    <PlusActionButton
-                      onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
-                      aria-label="Mitarbeiter zur KW hinzufuegen"
-                      disabled={isSaving || isMutatingMembers}
-                      data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
-                    />
-                  ) : undefined}
-                  footerVisibility="visible"
-                  footer={(
-                    <div className="text-xs text-slate-500">
-                      {week.isLocked ? "Schreibgeschuetzt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
-                    </div>
-                  )}
-                >
-                  <div className="space-y-2">
-                    {week.employees.map((employee) => (
-                      <EmployeeInfoBadge
-                        key={employee.assignmentId}
-                        id={employee.employeeId}
-                        fullName={employee.fullName}
-                        action={week.isLocked ? "none" : "remove"}
-                        onRemove={() => {
-                          void onRemoveWeekEmployee?.({
-                            ...employee,
-                            isoYear: week.isoYear,
-                            isoWeek: week.isoWeek,
-                          });
-                        }}
-                        size="sm"
-                        fullWidth
-                        testId={`badge-tour-week-member-${employee.assignmentId}`}
-                      />
-                    ))}
-                    {week.employees.length === 0 ? (
-                      <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
-                    ) : null}
-                  </div>
-                </ColoredEntityCard>
-              ))}
             </div>
           </TabsContent>
-        ) : null}
-      </Tabs>
 
-      <Dialog open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
-        <DialogContent className="sm:max-w-md">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="text-base font-semibold text-slate-900" data-testid="text-tour-week-dialog-title">
-                KW einfuegen
-              </h3>
-              <p className="text-sm text-slate-500" data-testid="text-tour-week-dialog-year">
-                Jahr {nextEditableWeek.isoYear}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="tour-week-input">Kalenderwoche</Label>
-              <Input
-                id="tour-week-input"
-                type="number"
-                value={pendingWeekInput}
-                min={nextEditableWeek.isoWeek}
-                max={nextEditableWeek.maxIsoWeek}
-                step={1}
-                onChange={(event) => setPendingWeekInput(event.target.value)}
-                data-testid="input-tour-week"
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setWeekPickerOpen(false)}>
-                Zurück
-              </Button>
-              <Button type="button" onClick={confirmWeekInputSelection} data-testid="button-confirm-tour-week">
-                Weiter
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
+            <AppointmentsListPage
+              title="Termine"
+              helpKey="appointments.list.tourForm"
+              context={{ type: "tour", tourId: tour?.id ?? null }}
+              emptyStateOverride={<></>}
+              onOpenAppointment={onOpenAppointment}
+              className="min-h-0 flex-1"
+            />
+          </TabsContent>
 
-      <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
-          <EmployeePickerDialogList
-            employees={availableEmployees}
-            teams={[]}
-            tours={[]}
-            title="Mitarbeiter auswaehlen"
-            onSelectEmployee={(employeeId) => {
-              if (pendingWeekSelection) {
-                void onAddWeekEmployee?.({
-                  isoYear: pendingWeekSelection.isoYear,
-                  isoWeek: pendingWeekSelection.isoWeek,
-                  employeeId,
-                });
-              }
-              setEmployeePickerOpen(false);
-              setPendingWeekSelection(null);
-            }}
-            onClose={() => {
-              setEmployeePickerOpen(false);
-              setPendingWeekSelection(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+          {!isCreate ? (
+            <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
+              <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
+                {allWeeks.map((week) => (
+                  <ColoredEntityCard
+                    key={`${week.isoYear}-${week.isoWeek}`}
+                    title={`KW ${String(week.isoWeek).padStart(2, "0")} / ${week.isoYear}`}
+                    icon={<Route className="w-4 h-4" />}
+                    borderColor={selectedColor}
+                    testId={`card-tour-week-${week.isoYear}-${week.isoWeek}`}
+                    actions={!week.isLocked ? (
+                      <PlusActionButton
+                        onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
+                        aria-label="Mitarbeiter zur KW hinzufügen"
+                        disabled={isSaving || isMutatingMembers}
+                        data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
+                      />
+                    ) : undefined}
+                    footerVisibility="visible"
+                    footer={(
+                      <div className="text-xs text-slate-500">
+                        {week.isLocked ? "Schreibgeschützt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
+                      </div>
+                    )}
+                  >
+                    <div className="space-y-2">
+                      {week.employees.map((employee) => (
+                        <EmployeeInfoBadge
+                          key={employee.assignmentId}
+                          id={employee.employeeId}
+                          fullName={employee.fullName}
+                          action={week.isLocked ? "none" : "remove"}
+                          onRemove={() => {
+                            void onRemoveWeekEmployee?.({
+                              ...employee,
+                              isoYear: week.isoYear,
+                              isoWeek: week.isoWeek,
+                            });
+                          }}
+                          size="sm"
+                          fullWidth
+                          testId={`badge-tour-week-member-${employee.assignmentId}`}
+                        />
+                      ))}
+                      {week.employees.length === 0 ? (
+                        <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
+                      ) : null}
+                    </div>
+                  </ColoredEntityCard>
+                ))}
+              </div>
+            </TabsContent>
+          ) : null}
+        </Tabs>
+
+        <Dialog open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
+          <DialogContent className="sm:max-w-md">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-slate-900" data-testid="text-tour-week-dialog-title">
+                  KW einfügen
+                </h3>
+                <p className="text-sm text-slate-500" data-testid="text-tour-week-dialog-year">
+                  Jahr {nextEditableWeek.isoYear}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tour-week-input">Kalenderwoche</Label>
+                <Input
+                  id="tour-week-input"
+                  type="number"
+                  value={pendingWeekInput}
+                  min={nextEditableWeek.isoWeek}
+                  max={nextEditableWeek.maxIsoWeek}
+                  step={1}
+                  onChange={(event) => setPendingWeekInput(event.target.value)}
+                  data-testid="input-tour-week"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setWeekPickerOpen(false)}>
+                  Zurück
+                </Button>
+                <Button type="button" onClick={confirmWeekInputSelection} data-testid="button-confirm-tour-week">
+                  Weiter
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
+          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+            <EmployeePickerDialogList
+              employees={availableEmployees}
+              teams={[]}
+              tours={[]}
+              title="Mitarbeiter auswählen"
+              onSelectEmployee={(employeeId) => {
+                if (pendingWeekSelection) {
+                  void onAddWeekEmployee?.({
+                    isoYear: pendingWeekSelection.isoYear,
+                    isoWeek: pendingWeekSelection.isoWeek,
+                    employeeId,
+                  });
+                }
+                setEmployeePickerOpen(false);
+                setPendingWeekSelection(null);
+              }}
+              onClose={() => {
+                setEmployeePickerOpen(false);
+                setPendingWeekSelection(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tour wirklich löschen?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Diese Aktion ist endgültig. Die Tour wird nur gelöscht, wenn keine blockierenden Verknüpfungen bestehen.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  void onDelete?.().catch(() => {
+                    // errors are handled via mutation toasts in parent
+                  });
+                }}
+                data-testid="button-confirm-delete-tour"
+              >
+                Tour löschen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </EntityFormShell>
     </div>
   );
