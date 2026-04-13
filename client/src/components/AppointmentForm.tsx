@@ -1660,7 +1660,7 @@ export function AppointmentForm({
           const preview = await loadAppointmentTourChangePreview();
           if (preview?.hasWeekPlan) {
             openAppointmentWeekPreviewDialog(preview, {
-              title: "Wochenplanung vor dem Speichern pruefen",
+              title: "Wochenplanung vor dem Speichern prüfen",
               description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
               persistAfterConfirm: true,
               resolutionKey: currentResolutionKey ?? `${selectedTourId ?? "none"}-${preview.isoYear}-${preview.isoWeek}`,

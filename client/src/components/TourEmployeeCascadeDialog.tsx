@@ -155,7 +155,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
 
         {variant === "appointment" && props.showResolutionMode ? (
           <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="appointment-week-resolution-mode">
-            <span className="text-sm font-medium text-slate-700">Uebernahme:</span>
+            <span className="text-sm font-medium text-slate-700">Übernahme:</span>
             <Button
               type="button"
               variant={props.resolutionMode === "additive" ? "default" : "outline"}
@@ -187,7 +187,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
             disabled={props.isSubmitting}
             data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
           >
-            Alle waehlen
+            Alle wählen
           </Button>
           <Button
             variant="outline"
@@ -196,7 +196,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
             disabled={props.isSubmitting}
             data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
           >
-            Alle abwaehlen
+            Alle abwählen
           </Button>
         </div>
 
@@ -307,7 +307,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
             Abbrechen
           </Button>
           <Button onClick={props.onConfirm} disabled={props.isSubmitting} data-testid="button-tour-employee-cascade-confirm">
-            {props.isSubmitting ? "Speichern..." : (props.confirmLabel ?? "Bestaetigen")}
+            {props.isSubmitting ? "Speichern..." : (props.confirmLabel ?? "Bestätigen")}
           </Button>
         </DialogFooter>
       </DialogContent>
