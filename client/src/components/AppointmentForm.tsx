@@ -2271,7 +2271,6 @@ export function AppointmentForm({
             ) : null}
           </div>
         )}
-        contentMaxWidth={99999}
       >
         <div className="w-full space-y-6" data-testid="appointment-form-main-column">
           {isCancelled && (

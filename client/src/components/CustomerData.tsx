@@ -728,12 +728,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
+        mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <User className="w-6 h-6" />
-                {isEditMode ? "Kundendaten bearbeiten" : "Neuer Kunde"}
+                {isEditMode ? "Kunde bearbeiten" : "Neuer Kunde"}
               </h2>
             </div>
 
@@ -830,8 +831,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           </div>
         )}
       >
-        <div className="space-y-6" data-testid="customer-form-main-column">
-              <div className="space-y-4">
+        <div className="w-full space-y-6" data-testid="customer-form-main-column">
+              <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
                   Stammdaten
@@ -878,7 +879,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Phone className="w-4 h-4" />
                   Kontakt
@@ -907,7 +908,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
                   Adresse
@@ -971,7 +972,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               ) : null}
 
               {isEditMode && isAdmin && (
-                <div className="space-y-4">
+                <div className="sub-panel space-y-4">
                   <h3 className="text-sm font-bold tracking-wider text-primary">
                     Status
                   </h3>

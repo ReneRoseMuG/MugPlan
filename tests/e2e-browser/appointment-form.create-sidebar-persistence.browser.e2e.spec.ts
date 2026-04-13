@@ -467,7 +467,7 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
   await expect(page.getByTestId("appointment-project-overlay")).toBeVisible();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
-  await expect(page.getByText("Projektdaten bearbeiten")).toBeVisible();
+  await expect(page.getByText("Projekt bearbeiten")).toBeVisible();
 
   const updateProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "PATCH"

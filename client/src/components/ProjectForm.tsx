@@ -1443,7 +1443,7 @@ export function ProjectForm({
             <div className="flex min-w-0 items-center gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <FolderKanban className="w-6 h-6" />
-                {isEditing ? "Projektdaten bearbeiten" : "Neues Projekt"}
+                {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
               </h2>
             </div>
 
@@ -1589,7 +1589,6 @@ export function ProjectForm({
             </Button>
           </div>
         )}
-        contentMaxWidth={99999}
       >
         <div className="w-full space-y-6" data-testid="project-form-main-column">
         {isEditing ? (

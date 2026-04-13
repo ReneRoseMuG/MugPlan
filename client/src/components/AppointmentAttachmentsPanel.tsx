@@ -187,7 +187,7 @@ export function AppointmentAttachmentsPanel({
         },
         {
           id: "appointment",
-          title: "Terminanhaenge",
+          title: "Termindokumente",
           items: resolvedAppointmentAttachments,
           isLoading: resolvedAppointmentLoading,
           emptyText: "Keine Terminanhaenge vorhanden",

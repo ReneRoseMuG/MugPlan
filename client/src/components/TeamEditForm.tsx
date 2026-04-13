@@ -76,12 +76,13 @@ export function TeamEditForm({
     [allEmployees, selectedMembers, team?.id],
   );
 
-  const title = isCreate ? defaultName : (team?.name ?? "Team bearbeiten");
+  const title = isCreate ? defaultName : "Team bearbeiten";
   const handleSubmit = async () => onSubmit(team?.id ?? null, selectedMembers, selectedColor);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
+        mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -155,7 +156,6 @@ export function TeamEditForm({
             ) : null}
           </div>
         )}
-        contentMaxWidth={99999}
       >
         <div className="w-full space-y-4" data-testid="team-form-main-column">
           <div className="sub-panel space-y-3">
@@ -172,11 +172,11 @@ export function TeamEditForm({
           </div>
 
           <div
-            className="overflow-hidden border border-border bg-slate-50 border-l-4"
+            className="sub-panel overflow-hidden space-y-0 border-l-4"
             style={{ borderLeftColor: selectedColor }}
           >
             <MembersSectionHeader
-              className="border-b border-border bg-slate-50 px-3 py-1.5"
+              className="border-b border-border bg-transparent px-3 py-1.5"
               action={(
                 <PlusActionButton
                   onClick={() => setEmployeePickerOpen(true)}
@@ -186,7 +186,7 @@ export function TeamEditForm({
                 />
               )}
             />
-            <div className="space-y-2 bg-slate-50 p-3">
+            <div className="space-y-2 bg-transparent p-3">
               {selectedMembers.map((memberId) => {
                 const employee = allEmployees.find((entry) => entry.id === memberId);
                 if (!employee) return null;

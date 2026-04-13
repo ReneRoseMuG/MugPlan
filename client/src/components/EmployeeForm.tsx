@@ -668,15 +668,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     deleteEmployeeNoteMutation.mutate({ noteId, version });
   };
 
-  const title = isEditing
-    ? (employeeDetails ? `${employeeDetails.employee.lastName}, ${employeeDetails.employee.firstName}` : "Mitarbeiter bearbeiten")
-    : "Neuer Mitarbeiter";
+  const title = isEditing ? "Mitarbeiter bearbeiten" : "Neuer Mitarbeiter";
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
-        contentMaxWidth={9999}
+        mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -811,8 +809,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </TabsList>
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
-            <div className="space-y-6 min-h-0 max-w-[520px] mx-auto">
-              <div className="space-y-4">
+            <div className="w-full space-y-6 min-h-0">
+              <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Stammdaten
@@ -839,6 +837,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                     />
                   </div>
                 </div>
+              </div>
+
+              <div className="sub-panel space-y-4">
+                <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  Kontakt
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="flex items-center gap-1">
@@ -868,7 +873,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                     />
                   </div>
                 </div>
-                {isAdmin && isEditing && employeeDetails ? (
+              </div>
+
+              {isAdmin && isEditing && employeeDetails ? (
+                <div className="sub-panel space-y-4">
+                  <h3 className="text-sm font-bold tracking-wider text-primary">
+                    Status
+                  </h3>
                   <div className="flex items-center gap-3">
                     <Checkbox
                       id="employee-is-active"
@@ -879,8 +890,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                       Aktiv
                     </Label>
                   </div>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
             </div>
           </TabsContent>
 

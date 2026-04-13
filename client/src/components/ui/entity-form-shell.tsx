@@ -9,6 +9,7 @@ interface EntityFormShellProps {
   sidebarWidth?: number;
   contentMaxWidth?: number;
   className?: string;
+  mainClassName?: string;
 }
 
 export function EntityFormShell({
@@ -19,6 +20,7 @@ export function EntityFormShell({
   sidebarWidth,
   contentMaxWidth,
   className,
+  mainClassName,
 }: EntityFormShellProps) {
   const resolvedSidebarWidth = useSetting("entityFormShell.sidebarWidthPx");
   const resolvedContentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx");
@@ -45,7 +47,7 @@ export function EntityFormShell({
       >
         <div
           data-testid="entity-form-shell-main"
-          className="flex-1 min-h-0 overflow-y-auto"
+          className={`flex-1 min-h-0 overflow-y-auto${mainClassName ? ` ${mainClassName}` : ""}`}
         >
           <div
             data-testid="entity-form-shell-main-inner"

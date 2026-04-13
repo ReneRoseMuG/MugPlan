@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { useSetting } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
 
@@ -88,6 +89,7 @@ export function TourEditForm({
   onOpenAppointment,
 }: TourEditFormProps) {
   const { toast } = useToast();
+  const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
   const nextEditableWeek = useMemo(() => {
     const nextWeek = addWeeks(startOfISOWeek(new Date()), 1);
     const isoYear = getISOWeekYear(nextWeek);
@@ -247,7 +249,7 @@ export function TourEditForm({
     setWeekPickerOpen(false);
   };
 
-  const title = isCreate ? defaultName : (tour?.name ?? "Tour bearbeiten");
+  const title = isCreate ? defaultName : "Tour bearbeiten";
   const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
   const showWeekInsertAction = !isCreate && activeTab === "wochenplanung";
   const showDeleteAction = !isCreate && canDelete && tour && onDelete;
@@ -256,6 +258,7 @@ export function TourEditForm({
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
+        mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -376,7 +379,10 @@ export function TourEditForm({
           </TabsList>
 
           <TabsContent value="stammdaten" className="w-full">
-            <div className="w-full space-y-4">
+            <div
+              className="mx-auto w-full max-w-[var(--tour-stammdaten-max-width)] space-y-4"
+              style={{ "--tour-stammdaten-max-width": `${contentMaxWidth}px` } as React.CSSProperties}
+            >
               <div className="sub-panel space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="tour-name">Name</Label>

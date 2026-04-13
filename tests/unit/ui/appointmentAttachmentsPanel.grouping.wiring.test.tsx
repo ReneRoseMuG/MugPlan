@@ -129,7 +129,7 @@ describe("FT24 UI: appointment attachments panel grouping wiring", () => {
     expect(markup).toContain("appointments.sidebar.attachments");
     expect(markup).toContain("Kundendokumente");
     expect(markup).toContain("Projektdokumente");
-    expect(markup).toContain("Terminanhaenge");
+    expect(markup).toContain("Termindokumente");
     expect(markup).toContain("kunde.pdf");
     expect(markup).toContain("projekt.pdf");
     expect(markup).toContain("termin.pdf");
@@ -165,7 +165,7 @@ describe("FT24 UI: appointment attachments panel grouping wiring", () => {
 
     const markup = renderToStaticMarkup(<AppointmentAttachmentsPanel appointmentId={77} readOnly />);
 
-    expect(markup).toContain("Terminanhaenge");
+    expect(markup).toContain("Termindokumente");
     expect(markup).toContain("appointment:upload-disabled");
   });
 });

@@ -375,7 +375,7 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
   await expect(page.getByTestId("button-save-project")).toBeVisible();
-  await expect(page.getByText("Projektdaten bearbeiten")).toBeVisible();
+  await expect(page.getByText("Projekt bearbeiten")).toBeVisible();
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
 
   const updateProjectResponsePromise = page.waitForResponse((response) => (
@@ -416,7 +416,7 @@ test("keeps the extraction overlay open when a duplicate project without appoint
 
   await expect(page.getByTestId("project-duplicate-resolution-dialog")).toHaveCount(0);
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await expect(page.getByText("Projektdaten bearbeiten")).toHaveCount(0);
+  await expect(page.getByText("Projekt bearbeiten")).toHaveCount(0);
   await expect(page.getByTestId("button-save-project")).toBeVisible();
 });
 
