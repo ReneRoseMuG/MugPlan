@@ -27,7 +27,7 @@ export function CalendarWeekTourLaneHeaderBar({
     <button
       type="button"
       onClick={interactive ? onClick : undefined}
-      className={`h-7 w-full rounded-md border px-3 text-xs font-semibold tracking-wide shadow-sm transition ${
+      className={`h-7 w-full rounded-md border text-xs font-semibold tracking-wide shadow-sm transition ${
         interactive ? "cursor-pointer hover:-translate-y-[1px] hover:shadow-md" : "cursor-default"
       }`}
       style={{
@@ -42,12 +42,23 @@ export function CalendarWeekTourLaneHeaderBar({
       data-testid={testId}
       aria-expanded={isExpanded}
     >
-      <div className="flex h-full items-center gap-1.5 min-w-0">
-        {weekNotesIcon && <span className="relative z-10 flex-shrink-0 opacity-80">{weekNotesIcon}</span>}
-        <span className="truncate">{label}</span>
-        {weekNotesCount !== undefined && (
-          <span className="relative z-10 flex-shrink-0 opacity-80">({weekNotesCount})</span>
-        )}
+      <div className="grid h-full min-w-0 grid-cols-[2.4rem_minmax(0,1fr)]">
+        <span
+          className="flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
+          aria-hidden={weekNotesIcon === undefined && weekNotesCount === undefined}
+        >
+          {weekNotesIcon ? (
+            <span className="relative z-10 flex h-full flex-shrink-0 items-center opacity-85">{weekNotesIcon}</span>
+          ) : null}
+          {weekNotesCount !== undefined ? (
+            <span className="relative z-10 flex h-full flex-shrink-0 items-center tabular-nums opacity-90">
+              {weekNotesCount}
+            </span>
+          ) : null}
+        </span>
+        <span className="flex min-w-0 items-center px-2.5">
+          <span className="truncate">{label}</span>
+        </span>
       </div>
     </button>
   );
