@@ -88,10 +88,17 @@ test.describe("FT07: Backup & Dump Inner-Tabs", () => {
     await openBackupPane(page);
     await page.getByTestId("backup-inner-tab-dumps").click();
     await expect(page.getByTestId("button-dump-create")).toBeVisible();
+    const dumpRowLocator = page.locator("[data-testid^='dump-row-']");
+    const initialDumpCount = await dumpRowLocator.count();
 
     await page.getByTestId("button-dump-create").click();
-    await expect(page.getByTestId("dump-create-success")).toBeVisible({ timeout: 30000 });
-    await expect(page.getByTestId("table-dump-list")).toBeVisible();
+    const successMessage = page.getByTestId("dump-create-success");
+    await expect(successMessage).toBeVisible({ timeout: 30000 });
+
+    await expect.poll(async () => {
+      await page.getByTestId("button-dumps-refresh").click();
+      return await page.locator("[data-testid^='dump-row-']").count();
+    }, { timeout: 30000 }).toBeGreaterThan(initialDumpCount);
   });
 
   test("wechselt zum Import-Inner-Tab nach Klick", async ({ page }) => {

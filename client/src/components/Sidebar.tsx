@@ -245,7 +245,7 @@ export function Sidebar({
         </NavGroup>
 
         <NavGroup title="Konto">
-          <NavButton icon={AdminIcon} label="Meine Einstellungen" isActive={currentView === "settings"} onClick={() => onViewChange("settings")} />
+          <NavButton icon={AdminIcon} label="Meine Einstellungen" testId="nav-einstellungen" isActive={currentView === "settings"} onClick={() => onViewChange("settings")} />
         </NavGroup>
 
         {isAdmin ? (

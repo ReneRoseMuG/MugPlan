@@ -2,13 +2,13 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - `Home` delegiert Listen- und Monitoring-Oeffnungen in den Termin-Overlay-State.
+ * - `Home` delegiert Listen- und Monitoring-Oeffnungen in den jeweils vorgesehenen Termin-Kontext.
  * - Bearbeitete Formularviews blenden die Sidebar sichtbar aus.
  * - Projektformulare koennen den Kontextkalender oeffnen.
  * - Rueckkehr aus dem Terminformular setzt den Wochen-Scroll-Restore ueber `returnContext`.
  *
  * Fehlerfaelle:
- * - Overlay- oder Rueckwegzustand gehen beim View-Wechsel verloren.
+ * - Termin-Kontext oder Rueckwegzustand gehen beim View-Wechsel verloren.
  * - Die Sidebar bleibt trotz aktivem Formular sichtbar.
  * - Der Kontextkalender oeffnet nicht mit Projektbindung.
  *
@@ -188,7 +188,7 @@ describe("PKG-08 home behavior wiring", () => {
     employeesPageCalls.length = 0;
   });
 
-  it("opens the appointment overlay from the standalone appointments list", async () => {
+  it("opens the appointment form from the standalone appointments list with return context", async () => {
     const { Home, setters } = await loadHome({
       1: fixedDate,
       2: "appointmentsList",
@@ -199,11 +199,11 @@ describe("PKG-08 home behavior wiring", () => {
     const onOpenAppointment = appointmentsListCalls[0].onOpenAppointment as (appointmentId: number) => void;
     onOpenAppointment(77);
 
-    expect(setters.get(25)).toHaveBeenCalledWith({
-      origin: "appointmentsList",
+    expect(setters.get(24)).toHaveBeenCalledWith({
       appointmentId: 77,
       returnContext: { targetView: "appointmentsList" },
     });
+    expect(setters.get(2)).toHaveBeenCalledWith("appointment");
   });
 
   it("hides the sidebar while the employees form is visible", async () => {

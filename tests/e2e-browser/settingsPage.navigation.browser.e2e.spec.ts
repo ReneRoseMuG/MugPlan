@@ -10,7 +10,7 @@
  * - Klick auf "Sicherheit" zeigt den Sicherheits-Pane mit dem 2FA-Toggle.
  * - Klick auf "Backup & Dump" zeigt den Backup-Pane mit Inner-Tab-Leiste.
  * - Zurueck zu "Oberflaeche" zeigt den Datei-Vorschau-Setting.
- * - Nicht-Admins sehen die Einstellungsseite nicht.
+ * - Der allgemeine Settings-Einstieg bleibt fuer Browser-Tests ueber einen stabilen Test-Selector erreichbar.
  *
  * Fehlerfaelle:
  * - Ein Nav-Eintrag fehlt oder zeigt keinen Pane-Wechsel.

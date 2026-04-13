@@ -277,7 +277,7 @@ describe("FT01/FT04 UI: appointment form overlay back behavior", () => {
 
     expect(withoutBack).not.toContain("button-back-appointment");
     expect(withBack).toContain("button-back-appointment");
-    expect(withBack).toContain("Zurück");
+    expect(withBack).toContain("Schließen");
   });
 
   it("passes one shared close handler into close and cancel slots", () => {

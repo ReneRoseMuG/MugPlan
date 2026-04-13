@@ -23,6 +23,11 @@ Der Einstellungsbereich sollte für Nicht-Admins benutzerspezifische Einstellung
 - `client/src/components/Sidebar.tsx`
 - `client/src/pages/Home.tsx`
 - `client/src/components/SettingsPage.tsx`
+- `tests/unit/ui/sidebar.behavior.test.tsx`
+- `tests/unit/ui/appointmentForm.overlayBack.behavior.test.tsx`
+- `tests/unit/ui/home.behavior.test.tsx`
+- `tests/e2e-browser/settingsPage.navigation.browser.e2e.spec.ts`
+- `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts`
 
 ## Hinweise zum Testen
 
@@ -30,8 +35,11 @@ Der Einstellungsbereich sollte für Nicht-Admins benutzerspezifische Einstellung
 - Als Nicht-Admin prüfen, dass nur benutzerspezifische Einstellungen sichtbar sind
 - Als Admin prüfen, dass die vollständigen Einstellungsbereiche weiterhin sichtbar sind
 - Routing in den View `settings` sowohl für Admin als auch Nicht-Admin prüfen
+- Nach UI-Änderungen die betroffenen Unit-Tests für Sidebar, Appointment-Overlay-Back-Button und Home-Settings-Routing erneut ausführen
+- Die Browser-Specs `settingsPage.navigation`, `settingsPage.controls` und `settingsPage.backup` erneut ausführen
 
 ## Bekannte Einschränkungen
 
 - Die serverseitige Absicherung für globale Settings wurde in diesem Auftrag ausdrücklich ausgeklammert
 - Audit und Testlauf erfolgen getrennt nach dem Speichern des aktuellen Arbeitsstands
+- Im Browser-Test für Dump-Erstellung wurde die Erwartung auf ein robusteres beobachtbares Ergebnis umgestellt: Zeilenanzahl der Dump-Liste statt sofortiger Sichtbarkeit eines spezifischen Dateinamens
