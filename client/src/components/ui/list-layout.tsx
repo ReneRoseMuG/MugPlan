@@ -56,7 +56,7 @@ export function ListLayout({
 
   return (
     <Card
-      className={cn("bg-card h-full flex flex-col overflow-visible", className)}
+      className={cn("bg-card h-full min-h-0 flex flex-col overflow-visible", className)}
       data-view-mode-key={viewModeKey}
     >
       {!hideHeader && (

@@ -2639,8 +2639,14 @@ export function AppointmentForm({
             tours={tours}
             isLoading={employeesLoading}
             title="Mitarbeiter auswählen"
+            allowBulkSelection
+            viewModeSettingKey="appointmentEmployeePicker.viewMode"
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);
+              setEmployeePickerOpen(false);
+            }}
+            onConfirmSelection={(employeeIds) => {
+              addEmployees(employeeIds);
               setEmployeePickerOpen(false);
             }}
             onClose={() => setEmployeePickerOpen(false)}

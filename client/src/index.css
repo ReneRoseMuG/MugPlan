@@ -171,4 +171,30 @@
   .visible-horizontal-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--color-blue-dark) / 0.96);
   }
+
+  .visible-vertical-scrollbar {
+    scrollbar-width: auto;
+    scrollbar-color: hsl(var(--color-blue-dark) / 0.88) hsl(var(--color-beige) / 0.92);
+    scrollbar-gutter: stable;
+  }
+
+  .visible-vertical-scrollbar::-webkit-scrollbar {
+    width: 18px;
+  }
+
+  .visible-vertical-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--color-beige) / 0.92);
+    border-radius: 9999px;
+  }
+
+  .visible-vertical-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--color-blue-dark) / 0.88);
+    border-radius: 9999px;
+    border: 2px solid hsl(var(--color-cream));
+    min-height: 72px;
+  }
+
+  .visible-vertical-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--color-blue-dark) / 0.96);
+  }
 }
