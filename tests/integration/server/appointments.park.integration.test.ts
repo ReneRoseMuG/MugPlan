@@ -10,6 +10,9 @@
  * - POST /api/appointments/:id/park ist nur fuer DISPONENT und ADMIN erlaubt, nicht fuer READER (403).
  * - PATCH /api/appointments/:id entfernt Tag Geparkt still wenn Tour von Parkplatz auf regulaere Tour wechselt.
  * - PATCH /api/appointments/:id entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war.
+ * - POST /api/appointments setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird.
+ * - PATCH /api/appointments/:id setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird.
+ * - PATCH /api/appointments/:id entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird.
  * - Tag Geparkt erscheint nicht im Picker-Katalog (GET /api/tags?domain=appointment).
  * - Tag Geparkt kann nicht manuell ueber POST /api/appointments/:id/tags gesetzt werden (409 PROTECTED).
  * - Tag Geparkt kann manuell entfernt werden, wenn der Termin ausserhalb der Parkplatz-Tour liegt.
@@ -23,9 +26,10 @@
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
-import { appointmentTags, appointments, tags } from "../../../shared/schema";
+import { appointmentTags, appointments, tags, tours } from "../../../shared/schema";
 import { and, eq } from "drizzle-orm";
 import {
+  MANAGED_MESSE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
@@ -75,15 +79,35 @@ async function getGeparktTagId(): Promise<number | null> {
   return row?.id ?? null;
 }
 
-async function hasGeparktTag(appointmentId: number): Promise<boolean> {
-  const geparktTagId = await getGeparktTagId();
-  if (!geparktTagId) return false;
+async function getTagIdByName(name: string): Promise<number | null> {
+  const [row] = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(eq(tags.name, name))
+    .limit(1);
+  return row?.id ?? null;
+}
+
+async function hasAppointmentTag(appointmentId: number, tagName: string): Promise<boolean> {
+  const tagId = await getTagIdByName(tagName);
+  if (!tagId) return false;
   const [row] = await db
     .select({ appointmentId: appointmentTags.appointmentId })
     .from(appointmentTags)
-    .where(and(eq(appointmentTags.appointmentId, appointmentId), eq(appointmentTags.tagId, geparktTagId)))
+    .where(and(eq(appointmentTags.appointmentId, appointmentId), eq(appointmentTags.tagId, tagId)))
     .limit(1);
   return row != null;
+}
+
+async function hasGeparktTag(appointmentId: number): Promise<boolean> {
+  return hasAppointmentTag(appointmentId, RESERVED_VACANT_TAG_NAME);
+}
+
+async function renameTourToMesse(tourId: number): Promise<void> {
+  await db
+    .update(tours)
+    .set({ name: "Tour Messe" })
+    .where(eq(tours.id, tourId));
 }
 
 describe("FT06 integration: POST /api/appointments/:id/park", () => {
@@ -260,6 +284,87 @@ describe("FT06 integration: Geparkt-Tag-Entzug bei Tour-Wechsel", () => {
       .expect(200);
 
     expect(await hasGeparktTag(appointment.id)).toBe(false);
+  });
+});
+
+describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
+  it("setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("MESSE-00");
+    const messeTour = await createTourFixture("#3465A4");
+    await renameTourToMesse(messeTour.id);
+
+    const createResponse = await admin
+      .post("/api/appointments")
+      .send({
+        customerId: customer.id,
+        startDate: getRelativeBerlinDate(12),
+        tourId: messeTour.id,
+        employeeIds: [],
+      })
+      .expect(201);
+
+    expect(await hasAppointmentTag(createResponse.body.id as number, MANAGED_MESSE_TAG_NAME)).toBe(true);
+  });
+
+  it("setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("MESSE-01");
+    const messeTour = await createTourFixture("#3465A4");
+    await renameTourToMesse(messeTour.id);
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(13),
+    });
+
+    const detailBefore = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+
+    await admin
+      .patch(`/api/appointments/${appointment.id}`)
+      .send({
+        version: detailBefore.body.version,
+        startDate: getRelativeBerlinDate(13),
+        customerId: customer.id,
+        tourId: messeTour.id,
+      })
+      .expect(200);
+
+    expect(await hasAppointmentTag(appointment.id, MANAGED_MESSE_TAG_NAME)).toBe(true);
+  });
+
+  it("entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("MESSE-02");
+    const messeTour = await createTourFixture("#3465A4");
+    const regularTour = await createTourFixture("#006B6F");
+    await renameTourToMesse(messeTour.id);
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(14),
+      tourId: messeTour.id,
+    });
+
+    expect(await hasAppointmentTag(appointment.id, MANAGED_MESSE_TAG_NAME)).toBe(true);
+
+    const detailBefore = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+
+    await admin
+      .patch(`/api/appointments/${appointment.id}`)
+      .send({
+        version: detailBefore.body.version,
+        startDate: getRelativeBerlinDate(14),
+        customerId: customer.id,
+        tourId: regularTour.id,
+      })
+      .expect(200);
+
+    expect(await hasAppointmentTag(appointment.id, MANAGED_MESSE_TAG_NAME)).toBe(false);
   });
 });
 

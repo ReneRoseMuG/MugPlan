@@ -8,7 +8,10 @@
  * - parkAppointment bumpt die Version atomar ueber setAppointmentParkTx.
  * - parkAppointment blockiert historische Termine.
  * - parkAppointment blockiert stornierte Termine.
+ * - createAppointment setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird.
  * - updateAppointment entfernt Tag Geparkt still wenn Tour von Parkplatz auf andere wechselt.
+ * - updateAppointment setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird.
+ * - updateAppointment entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird.
  * - updateAppointment entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war.
  * - updateAppointment erlaubt historische Parkplatz-Termine weiterhin fuer Umplanung und Bearbeitung.
  *
@@ -29,6 +32,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointment: vi.fn(),
   getAppointmentTx: vi.fn(),
   withAppointmentTransaction: vi.fn(),
+  createAppointmentTx: vi.fn(),
   setAppointmentParkTx: vi.fn(),
   replaceAppointmentEmployeesTx: vi.fn(),
   addAppointmentTagTx: vi.fn(),
@@ -62,14 +66,16 @@ vi.mock("../../../server/services/caldavSyncDispatcher", () => ({
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
 import * as toursRepository from "../../../server/repositories/toursRepository";
 import * as tagRelationsService from "../../../server/services/tagRelationsService";
-import { parkAppointment, updateAppointment } from "../../../server/services/appointmentsService";
+import { createAppointment, parkAppointment, updateAppointment } from "../../../server/services/appointmentsService";
 
 const repoMock = vi.mocked(appointmentsRepository);
 const toursMock = vi.mocked(toursRepository);
 const tagServiceMock = vi.mocked(tagRelationsService);
 
 const PARKPLATZ_TOUR = { id: 10, name: "Parkplatz", color: "#D4537E", version: 1 };
+const MESSE_TOUR = { id: 11, name: "Tour Messe", color: "#3465A4", version: 1 };
 const GEPARKT_TAG = { id: 77, name: "Geparkt", color: "#D4537E", isDefault: true, version: 1 };
+const MESSE_TAG = { id: 88, name: "Messe Aufbau/Abbau", color: "#3465A4", isDefault: true, version: 1 };
 const FUTURE_DATE = "2099-12-31";
 
 describe("FT06 unit: parkAppointment", () => {
@@ -84,6 +90,7 @@ describe("FT06 unit: parkAppointment", () => {
     toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR]);
     tagServiceMock.getTagByName.mockImplementation(async (name: string) => {
       if (name === "Geparkt") return GEPARKT_TAG;
+      if (name === "Messe Aufbau/Abbau") return MESSE_TAG;
       if (name === "Storniert") return null;
       return null;
     });
@@ -200,7 +207,55 @@ describe("FT06 unit: parkAppointment", () => {
   });
 });
 
-describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
+describe("FT06 unit: createAppointment Tour-Sonderregeln", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    repoMock.withAppointmentTransaction.mockImplementation(async (handler) => {
+      const fakeTx = {} as Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0];
+      return handler(fakeTx);
+    });
+
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR]);
+    tagServiceMock.getTagByName.mockImplementation(async (name: string) => {
+      if (name === "Messe Aufbau/Abbau") return MESSE_TAG;
+      if (name === "Storniert") return null;
+      return null;
+    });
+    repoMock.getConflictingEmployeesTx.mockResolvedValue([]);
+    repoMock.getInactiveEmployeesByIdsTx.mockResolvedValue([]);
+    repoMock.createAppointmentTx.mockResolvedValue(123 as never);
+    repoMock.replaceAppointmentEmployeesTx.mockResolvedValue(undefined);
+    repoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 123, employees: [] } as any);
+    repoMock.getProjectTx.mockResolvedValue(null);
+  });
+
+  it("setzt Messe-Tag still wenn ein Termin direkt auf Tour Messe angelegt wird", async () => {
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 1,
+        customerNumber: "K001",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await createAppointment({
+      customerId: 1,
+      tourId: MESSE_TOUR.id,
+      startDate: FUTURE_DATE,
+      employeeIds: [],
+    });
+
+    expect(repoMock.addAppointmentTagTx).toHaveBeenCalledWith(
+      expect.anything(),
+      123,
+      MESSE_TAG.id,
+    );
+  });
+});
+
+describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
   const BASE_APPOINTMENT = {
     id: 20,
     startDate: FUTURE_DATE,
@@ -220,9 +275,10 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
       return handler(fakeTx);
     });
 
-    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR]);
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR]);
     tagServiceMock.getTagByName.mockImplementation(async (name: string) => {
       if (name === "Geparkt") return GEPARKT_TAG;
+      if (name === "Messe Aufbau/Abbau") return MESSE_TAG;
       if (name === "Storniert") return null;
       return null;
     });
@@ -241,7 +297,7 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
 
   it("entfernt Geparkt-Tag still wenn Tour von Parkplatz auf andere Tour wechselt", async () => {
     const OTHER_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
-    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, OTHER_TOUR]);
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR, OTHER_TOUR]);
 
     repoMock.getAppointmentTx.mockResolvedValue({ ...BASE_APPOINTMENT, tourId: PARKPLATZ_TOUR.id } as any);
 
@@ -274,7 +330,7 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
 
   it("erlaubt historische Parkplatz-Termine fuer Update, Zukunftsumplanung und Rueckdatierung", async () => {
     const OTHER_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
-    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, OTHER_TOUR]);
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR, OTHER_TOUR]);
 
     repoMock.getAppointmentTx.mockResolvedValue({
       ...BASE_APPOINTMENT,
@@ -319,7 +375,7 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
   it("entfernt Geparkt-Tag nicht wenn Tour nicht Parkplatz war", async () => {
     const TOUR_A = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
     const TOUR_B = { id: 6, name: "Tour 2", color: "#00ACB1", version: 1 };
-    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, TOUR_A, TOUR_B]);
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR, TOUR_A, TOUR_B]);
 
     repoMock.getAppointmentTx.mockResolvedValue({ ...BASE_APPOINTMENT, tourId: TOUR_A.id } as any);
 
@@ -344,5 +400,103 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
     );
 
     expect(repoMock.removeAppointmentTagByTagIdTx).not.toHaveBeenCalled();
+  });
+
+  it("setzt Messe-Tag still wenn auf Tour Messe gewechselt wird", async () => {
+    const REGULAR_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, REGULAR_TOUR, MESSE_TOUR]);
+    repoMock.getAppointmentTx.mockResolvedValue({ ...BASE_APPOINTMENT, tourId: REGULAR_TOUR.id } as any);
+
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 1,
+        customerNumber: "K001",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await updateAppointment(
+      20,
+      {
+        version: 2,
+        startDate: FUTURE_DATE,
+        tourId: MESSE_TOUR.id,
+        customerId: 1,
+      },
+      "ADMIN",
+    );
+
+    expect(repoMock.addAppointmentTagTx).toHaveBeenCalledWith(
+      expect.anything(),
+      20,
+      MESSE_TAG.id,
+    );
+  });
+
+  it("entfernt Messe-Tag still wenn von Tour Messe auf andere Tour gewechselt wird", async () => {
+    const REGULAR_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR, REGULAR_TOUR]);
+    repoMock.getAppointmentTx.mockResolvedValue({ ...BASE_APPOINTMENT, tourId: MESSE_TOUR.id } as any);
+
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 1,
+        customerNumber: "K001",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await updateAppointment(
+      20,
+      {
+        version: 2,
+        startDate: FUTURE_DATE,
+        tourId: REGULAR_TOUR.id,
+        customerId: 1,
+      },
+      "ADMIN",
+    );
+
+    expect(repoMock.removeAppointmentTagByTagIdTx).toHaveBeenCalledWith(
+      expect.anything(),
+      20,
+      MESSE_TAG.id,
+    );
+  });
+
+  it("veraendert Messe-Tag nicht wenn kein Messe-Tourwechsel stattfindet", async () => {
+    const TOUR_A = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
+    const TOUR_B = { id: 6, name: "Tour 2", color: "#00ACB1", version: 1 };
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, MESSE_TOUR, TOUR_A, TOUR_B]);
+    repoMock.getAppointmentTx.mockResolvedValue({ ...BASE_APPOINTMENT, tourId: TOUR_A.id } as any);
+
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 1,
+        customerNumber: "K001",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await updateAppointment(
+      20,
+      {
+        version: 2,
+        startDate: FUTURE_DATE,
+        tourId: TOUR_B.id,
+        customerId: 1,
+      },
+      "ADMIN",
+    );
+
+    expect(repoMock.addAppointmentTagTx).not.toHaveBeenCalled();
+    expect(repoMock.removeAppointmentTagByTagIdTx).not.toHaveBeenCalledWith(
+      expect.anything(),
+      20,
+      MESSE_TAG.id,
+    );
   });
 });

@@ -1,5 +1,9 @@
 ﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
-import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, RESERVED_VACANT_TAG_NAME } from "@shared/appointmentCancellation";
+import {
+  MANAGED_MESSE_TAG_NAME,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  RESERVED_VACANT_TAG_NAME,
+} from "@shared/appointmentCancellation";
 import type { InsertAppointment } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
@@ -111,6 +115,23 @@ function isStartDateLocked(startDate: Date | string | null | undefined): boolean
 
 function isParkplatzTourId(tourId: number | null | undefined, parkplatzTourId: number | null): boolean {
   return typeof tourId === "number" && Number.isInteger(tourId) && parkplatzTourId != null && tourId === parkplatzTourId;
+}
+
+function normalizeComparableTourName(value: string | null | undefined): string {
+  return (value ?? "").trim().toLocaleLowerCase("de");
+}
+
+function isMesseTourName(value: string | null | undefined): boolean {
+  const normalized = normalizeComparableTourName(value);
+  return normalized === normalizeComparableTourName("Messe")
+    || normalized === normalizeComparableTourName("Tour Messe");
+}
+
+async function shouldTreatTourAsMesse(tourId: number | null | undefined): Promise<boolean> {
+  if (tourId == null) return false;
+  const allTours = await toursRepository.getTours();
+  const tour = allTours.find((entry) => entry.id === tourId) ?? null;
+  return isMesseTourName(tour?.name);
 }
 
 function allowsHistoricalParkplatzMutation(
@@ -554,6 +575,13 @@ export async function createAppointment(
 
     const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    if (await shouldTreatTourAsMesse(appointmentData.tourId ?? null)) {
+      const messeTag = await tagRelationsService.getTagByName(MANAGED_MESSE_TAG_NAME);
+      if (!messeTag) {
+        throw new AppointmentError("Messe-Tag ist nicht konfiguriert", 409, "BUSINESS_CONFLICT");
+      }
+      await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, messeTag.id);
+    }
     return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
   });
 
@@ -618,6 +646,8 @@ export async function updateAppointment(
     }
 
     let geparktTagIdForRemoval: number | null = null;
+    let shouldAddMesseTag = false;
+    let shouldRemoveMesseTag = false;
     if (tourChanged && existing.tourId != null) {
       const allTours = await toursRepository.getTours();
       const parkplatzTour = findParkplatzTour(allTours);
@@ -627,6 +657,18 @@ export async function updateAppointment(
           geparktTagIdForRemoval = geparktTag.id;
         }
       }
+
+      const previousTour = allTours.find((tour) => tour.id === existing.tourId) ?? null;
+      const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
+      const wasMesseTour = isMesseTourName(previousTour?.name);
+      const isNowMesseTour = isMesseTourName(nextTour?.name);
+
+      shouldAddMesseTag = !wasMesseTour && isNowMesseTour;
+      shouldRemoveMesseTag = wasMesseTour && !isNowMesseTour;
+    } else if (tourChanged && newTourId != null) {
+      const allTours = await toursRepository.getTours();
+      const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
+      shouldAddMesseTag = isMesseTourName(nextTour?.name);
     }
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
@@ -664,6 +706,19 @@ export async function updateAppointment(
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     if (geparktTagIdForRemoval !== null) {
       await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, geparktTagIdForRemoval);
+    }
+    if (shouldAddMesseTag || shouldRemoveMesseTag) {
+      const messeTag = await tagRelationsService.getTagByName(MANAGED_MESSE_TAG_NAME);
+      if (!messeTag) {
+        throw new AppointmentError("Messe-Tag ist nicht konfiguriert", 409, "BUSINESS_CONFLICT");
+      }
+
+      if (shouldAddMesseTag) {
+        await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, messeTag.id);
+      }
+      if (shouldRemoveMesseTag) {
+        await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, messeTag.id);
+      }
     }
     return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
   });

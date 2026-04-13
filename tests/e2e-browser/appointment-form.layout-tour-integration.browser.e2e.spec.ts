@@ -28,6 +28,8 @@
  *
  * Abgedeckte Regeln:
  * - Das Setzen einer Tour ohne Wochenplanung laesst bestehende Termin-Mitarbeiter unveraendert.
+ * - Das Setzen der Tour `Tour Messe` traegt still den Termin-Tag `Messe Aufbau/Abbau` nach.
+ * - Das Entfernen oder Wechseln weg von `Tour Messe` entfernt den Termin-Tag `Messe Aufbau/Abbau` wieder.
  * - Eine Datumsverschiebung in eine andere ISO-KW bewertet die Wochenplanung derselben Tour neu.
  * - Das manuelle Hinzufuegen eines Mitarbeiters zu einem bestehenden Termin bleibt ueber den echten Formular-Speicherpfad versioniert konsistent.
  *
@@ -41,9 +43,11 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
+import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
-import { tourWeekEmployees } from "../../shared/schema";
+import { MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
+import { tags, tourWeekEmployees, tours } from "../../shared/schema";
 import {
   createAppointmentFixture,
   createCustomerFixture,
@@ -146,6 +150,48 @@ async function saveExistingAppointment(page: Page, appointmentId: number) {
   }
   const response = await saveResponsePromise;
   expect(response.ok()).toBeTruthy();
+}
+
+async function renameTourToMesse(tourId: number) {
+  await db
+    .update(tours)
+    .set({ name: "Tour Messe" })
+    .where(eq(tours.id, tourId));
+}
+
+async function ensureMesseTour(color = "#3465A4") {
+  const [existing] = await db
+    .select({ id: tours.id, name: tours.name, color: tours.color, version: tours.version })
+    .from(tours)
+    .where(eq(tours.name, "Tour Messe"))
+    .limit(1);
+  if (existing) {
+    return existing;
+  }
+
+  const createdTour = await createTourFixture(color);
+  await renameTourToMesse(createdTour.id);
+  return {
+    ...createdTour,
+    name: "Tour Messe",
+  };
+}
+
+async function readAppointmentTagNames(page: Page, appointmentId: number): Promise<string[]> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/tags`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as Array<{ tag: { name: string } }>;
+  return body.map((item) => item.tag.name);
+}
+
+async function readSystemTagIdByName(name: string): Promise<number> {
+  const [tag] = await db
+    .select({ id: tags.id, name: tags.name })
+    .from(tags)
+    .where(eq(tags.name, name))
+    .limit(1);
+  expect(tag?.id).toBeTruthy();
+  return tag!.id;
 }
 
 async function seedAppointmentFormNoise(prefix: string, referenceDate: string) {
@@ -274,6 +320,72 @@ test("assigns a tour without week planning and keeps the existing employees unch
     tourId: tour.id,
     employeeIds: [existingEmployee.id, sideEmployee.id].sort((a, b) => a - b),
   });
+});
+
+test("adds the managed Messe tag when an appointment is switched to Tour Messe", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT06-MESSE-BROWSER-CUST");
+  const messeTour = await ensureMesseTour("#3465A4");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+  });
+  await seedAppointmentFormNoise("FT06-MESSE-BROWSER", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId(`badge-tour-select-${messeTour.id}-add`).click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
+
+  const followDialog = page.getByRole("alertdialog");
+  if (await followDialog.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: "Nicht folgen" }).click();
+  }
+
+  await page.getByTestId(`week-appointment-panel-${appointment.id}`).dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId(`appointment-tag-picker-tag-${await readSystemTagIdByName(MANAGED_MESSE_TAG_NAME)}`)).toBeVisible();
+});
+
+test("removes the managed Messe tag when an appointment leaves Tour Messe", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT06-MESSE-REMOVE-CUST");
+  const messeTour = await ensureMesseTour("#3465A4");
+  const regularTour = await createTourFixture("#006B6F");
+  const messeTagId = await readSystemTagIdByName(MANAGED_MESSE_TAG_NAME);
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: messeTour.id,
+  });
+  await seedAppointmentFormNoise("FT06-MESSE-REMOVE", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId("badge-tour-remove").click();
+  await page.getByTestId(`badge-tour-select-${regularTour.id}-add`).click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_MESSE_TAG_NAME);
+  }).toBe(false);
+
+  const followDialog = page.getByRole("alertdialog");
+  if (await followDialog.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: "Nicht folgen" }).click();
+  }
+
+  await page.getByTestId(`week-appointment-panel-${appointment.id}`).dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId(`appointment-tag-picker-tag-${messeTagId}`)).toHaveCount(0);
 });
 
 test("opens the week preview for a new next-week appointment and applies the planned employee", async ({ page }) => {
@@ -485,7 +597,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Wochenplanung vor dem Speichern pruefen");
+  await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
     "Bleibt nur durch aktuelle Terminzuweisung erhalten",
   );
