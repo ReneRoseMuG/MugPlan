@@ -452,7 +452,7 @@ export default function Home({ onLogout }: HomeProps) {
                 setView("helpTexts");
               }}
             />
-          ) : view === "settings" && isAdmin ? (
+          ) : view === "settings" ? (
             <SettingsPage />
           ) : view === "masterData" && isAdmin ? (
             <MasterDataPage

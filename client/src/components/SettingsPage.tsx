@@ -808,6 +808,11 @@ export function SettingsPage() {
         : "border-transparent text-slate-500 hover:text-slate-700"
     }`;
 
+  const pageTitle = isAdmin ? "Einstellungen" : "Meine Einstellungen";
+  const pageIntro = isAdmin
+    ? "Benutzerbezogene und systemweite Einstellungen"
+    : "Benutzerspezifische Einstellungen für Vorschau, Layout und persönliche Anzeige";
+
   return (
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white flex flex-col" data-testid="settings-landing-page">
       <div className="flex min-h-0 flex-1">
@@ -819,7 +824,7 @@ export function SettingsPage() {
           aria-label="Einstellungen Navigation"
         >
           <div className="px-4 py-4 border-b border-slate-200">
-            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">Einstellungen</p>
+            <p className="text-[11px] font-medium text-slate-500 uppercase tracking-widest">{pageTitle}</p>
           </div>
 
           <div className="py-2">
@@ -832,46 +837,58 @@ export function SettingsPage() {
             >
               Oberfläche
             </button>
-            <button
-              className={navItemClass("kalender")}
-              onClick={() => setActivePane("kalender")}
-              data-testid="nav-item-kalender"
-              aria-current={activePane === "kalender" ? "page" : undefined}
-            >
-              Kalender
-            </button>
+            {isAdmin ? (
+              <button
+                className={navItemClass("kalender")}
+                onClick={() => setActivePane("kalender")}
+                data-testid="nav-item-kalender"
+                aria-current={activePane === "kalender" ? "page" : undefined}
+              >
+                Kalender
+              </button>
+            ) : null}
           </div>
 
-          <div className="py-2 border-t border-slate-200">
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest px-4 pt-2 pb-1">System</p>
-            <button
-              className={navItemClass("sicherheit")}
-              onClick={() => setActivePane("sicherheit")}
-              data-testid="nav-item-sicherheit"
-              aria-current={activePane === "sicherheit" ? "page" : undefined}
-            >
-              Sicherheit
-            </button>
-            <button
-              className={navItemClass("backup")}
-              onClick={() => setActivePane("backup")}
-              data-testid="nav-item-backup"
-              aria-current={activePane === "backup" ? "page" : undefined}
-            >
-              Backup &amp; Dump
-            </button>
-          </div>
+          {isAdmin ? (
+            <div className="py-2 border-t border-slate-200">
+              <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest px-4 pt-2 pb-1">System</p>
+              <button
+                className={navItemClass("sicherheit")}
+                onClick={() => setActivePane("sicherheit")}
+                data-testid="nav-item-sicherheit"
+                aria-current={activePane === "sicherheit" ? "page" : undefined}
+              >
+                Sicherheit
+              </button>
+              <button
+                className={navItemClass("backup")}
+                onClick={() => setActivePane("backup")}
+                data-testid="nav-item-backup"
+                aria-current={activePane === "backup" ? "page" : undefined}
+              >
+                Backup &amp; Dump
+              </button>
+            </div>
+          ) : null}
         </nav>
 
         {/* Content */}
         <div className="flex-1 min-h-0 overflow-y-auto p-6">
+          <div className="mb-5 pb-3 border-b border-slate-200">
+            <h2 className="text-base font-medium text-slate-900">{pageTitle}</h2>
+            <p className="text-xs text-slate-500 mt-1">{pageIntro}</p>
+          </div>
 
           {/* ── Oberfläche ── */}
           {activePane === "oberflaeche" && (
             <div data-testid="settings-pane-oberflaeche">
               <div className="mb-5 pb-3 border-b border-slate-200">
                 <h2 className="text-base font-medium text-slate-900">Oberfläche</h2>
-                <p className="text-xs text-slate-500 mt-1">Vorschau, Spalten, Formular-Layout und Toast-Position</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {isAdmin
+                    ? "Vorschau, Spalten, Formular-Layout und Toast-Position"
+                    : "Vorschau, Spalten und Formular-Layout für deinen Benutzer"}
+                </p>
               </div>
 
               {/* USER settings */}
@@ -984,7 +1001,8 @@ export function SettingsPage() {
               </div>
 
               {/* GLOBAL settings */}
-              <div>
+              {isAdmin ? (
+                <div>
                 <p className="text-[11px] font-medium text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                   Global
                   <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-300 tracking-normal normal-case ml-1">GLOBAL</span>
@@ -1032,12 +1050,13 @@ export function SettingsPage() {
                   </div>
 
                 </div>
-              </div>
+                </div>
+              ) : null}
             </div>
           )}
 
           {/* ── Kalender ── */}
-          {activePane === "kalender" && (
+          {activePane === "kalender" && isAdmin && (
             <div data-testid="settings-pane-kalender">
               <div className="mb-5 pb-3 border-b border-slate-200">
                 <h2 className="text-base font-medium text-slate-900">Kalender</h2>
@@ -1107,7 +1126,7 @@ export function SettingsPage() {
           )}
 
           {/* ── Sicherheit ── */}
-          {activePane === "sicherheit" && (
+          {activePane === "sicherheit" && isAdmin && (
             <div data-testid="settings-pane-sicherheit">
               <div className="mb-5 pb-3 border-b border-slate-200">
                 <h2 className="text-base font-medium text-slate-900">Sicherheit</h2>
@@ -1177,7 +1196,7 @@ export function SettingsPage() {
           )}
 
           {/* ── Backup & Dump ── */}
-          {activePane === "backup" && (
+          {activePane === "backup" && isAdmin && (
             <div data-testid="settings-pane-backup">
               <div className="mb-5 pb-3 border-b border-slate-200">
                 <h2 className="text-base font-medium text-slate-900">Backup &amp; Dump</h2>
