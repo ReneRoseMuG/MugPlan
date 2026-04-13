@@ -95,6 +95,52 @@ type HomeProps = {
   onLogout: () => void;
 };
 
+function resolveViewTitle(view: ViewType): string {
+  switch (view) {
+    case "week":
+      return "Wochenübersicht";
+    case "month":
+    case "monthSheet":
+      return "Monatsübersicht";
+    case "year":
+      return "Jahresübersicht";
+    case "calendarContextual":
+      return "Projektkalender";
+    case "customer":
+    case "customerList":
+      return "Kunden";
+    case "tours":
+      return "Touren";
+    case "teams":
+      return "Teams";
+    case "employees":
+      return "Mitarbeiter";
+    case "project":
+    case "projectList":
+      return "Projekte";
+    case "appointment":
+    case "appointmentsList":
+      return "Termine";
+    case "noteTemplates":
+      return "Notizvorlagen";
+    case "helpTexts":
+    case "helpTextForm":
+      return "Hilfetexte";
+    case "settings":
+      return "Meine Einstellungen";
+    case "masterData":
+      return "Stammdaten";
+    case "users":
+      return "Benutzerverwaltung";
+    case "reports":
+      return "Reports";
+    case "monitoring":
+      return "Monitoring";
+    default:
+      return "MuG Plan";
+  }
+}
+
 export default function Home({ onLogout }: HomeProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("week");
@@ -202,6 +248,10 @@ export default function Home({ onLogout }: HomeProps) {
     if (view !== "monitoring" || !canAccessMonitoring) return;
     void refetchMonitoring();
   }, [canAccessMonitoring, refetchMonitoring, view]);
+
+  useEffect(() => {
+    document.title = `MuG Plan | ${resolveViewTitle(view)}`;
+  }, [view]);
 
   const handleWeekScrollRestoreApplied = useCallback(() => {
     if (view === "week") {

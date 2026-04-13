@@ -76,6 +76,25 @@ function App() {
   const [stage, setStage] = useState<AuthStage>("loading");
 
   useEffect(() => {
+    if (stage === "authed") return;
+
+    switch (stage) {
+      case "loading":
+        document.title = "MuG Plan | Laden";
+        break;
+      case "setup":
+        document.title = "MuG Plan | Admin-Setup";
+        break;
+      case "login":
+        document.title = "MuG Plan | Login";
+        break;
+      default:
+        document.title = "MuG Plan";
+        break;
+    }
+  }, [stage]);
+
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
