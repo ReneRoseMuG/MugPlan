@@ -2062,6 +2062,7 @@ export function AppointmentForm({
       await refreshMonitoringWithNotification(toast);
       if (isEditing && appointmentId) {
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
       }
       toast({
         title: isEditing ? "Termin gespeichert" : "Termin erstellt",

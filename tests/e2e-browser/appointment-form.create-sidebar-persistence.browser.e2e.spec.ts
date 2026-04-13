@@ -32,6 +32,10 @@
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
+import { eq } from "drizzle-orm";
+import { db } from "../../server/db";
+import { MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
+import { tags, tours } from "../../shared/schema";
 import {
   createAppointmentFixture,
   createAppointmentBrowserFixture,
@@ -224,6 +228,23 @@ async function saveNewAppointmentAndResolveId(page: Page) {
   return Number(body.id);
 }
 
+async function renameTourToMesse(tourId: number) {
+  await db
+    .update(tours)
+    .set({ name: "Tour Messe" })
+    .where(eq(tours.id, tourId));
+}
+
+async function readSystemTagIdByName(name: string): Promise<number> {
+  const [tag] = await db
+    .select({ id: tags.id })
+    .from(tags)
+    .where(eq(tags.name, name))
+    .limit(1);
+  expect(tag?.id).toBeTruthy();
+  return tag!.id;
+}
+
 test("creates a relation-complete single-day appointment from a tour lane and reloads the same values in edit mode", async ({ page }) => {
   const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-CREATE-EDIT", targetDayOffset: 2 });
 
@@ -247,6 +268,33 @@ test("creates a relation-complete single-day appointment from a tour lane and re
   await appointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate });
+});
+
+test("creates a new appointment on Tour Messe and persists the managed Messe tag", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT06-CREATE-MESSE", targetDayOffset: 3 });
+  await renameTourToMesse(fixture.tour.id);
+  const messeTagId = await readSystemTagIdByName(MANAGED_MESSE_TAG_NAME);
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await selectProjectWithoutAppointments(page, fixture);
+
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${createdAppointmentId}/tags`);
+    if (!response.ok()) return false;
+    const body = await response.json() as Array<{ tag: { name: string } }>;
+    return body.some((item) => item.tag.name === MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
+
+  const followDialog = page.getByRole("alertdialog");
+  if (await followDialog.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: "Nicht folgen" }).click();
+  }
+
+  await page.getByTestId(`week-appointment-panel-${createdAppointmentId}`).dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId(`appointment-tag-picker-tag-${messeTagId}`)).toBeVisible();
 });
 
 test("persists tag, note and appointment attachment from the new appointment form and restores them on reopen", async ({ page }) => {
