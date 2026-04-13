@@ -12,6 +12,7 @@
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
+ * - Speichert das Overlay-Projekt eine sichtbare Beschreibung, traegt der Projekt-Save still das Tag `Anmerkungen` nach.
  * - Nach Save des neu angelegten Overlay-Projekts zeigt der Projektslot im Terminformular die persistierte Artikelliste statt des Fallbacktexts.
  * - Beim Abbrechen des aus der Dokumentextraktion geoeffneten Projektformulars bleibt die Datei als Termin-Draft sichtbar.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
@@ -22,11 +23,12 @@
  * - Ein aus der Tour-Lane gestarteter Termin verliert vor oder nach dem Save Projekt-, Kunden- oder Tour-Relationen.
  * - Das Formular weist durch eine gesetzte Tour unerwartet Mitarbeiter automatisch zu.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
+ * - Die Overlay-Projektbeschreibung bleibt ohne das erwartete Projekt-Tag `Anmerkungen`.
  * - Der Projektslot faellt nach dem Overlay-Rueckweg auf `nicht hinterlegt` zurueck, obwohl Order-Items gespeichert wurden.
  * - Das Edit-Formular setzt lokales Startdatum oder Startzeit nach Tag-Auswahl wieder auf den Serverstand zurueck.
  *
  * Ziel:
- * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins sowie die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
+ * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins, den Projekt-Overlay-Rueckweg inklusive stiller `Anmerkungen`-Regel und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
@@ -352,10 +354,21 @@ test("shows an extracted document only as project attachment after successful pr
   await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
+  await page.getByRole("tab", { name: "Anmerkungen" }).click();
+  await page.getByTestId("project-description-editor-panel").getByTestId("richtext-editor").fill("Extrahierte Projektbeschreibung fuer den Overlay-Save");
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
 
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/projects"
+  ));
   await page.getByTestId("button-save-project").click();
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+  const createdProject = (await createdProjectResponse.json()) as { id: number };
+  const createdProjectId = Number(createdProject.id);
+  expect(createdProjectId).toBeGreaterThan(0);
   await expect(page.getByTestId("button-save-project")).toHaveCount(0);
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(
@@ -364,6 +377,12 @@ test("shows an extracted document only as project attachment after successful pr
   await expect(page.getByTestId("badge-project-project-content-articles")).toContainText("Sauna");
   await expect(page.getByTestId("badge-project-project-content-articles")).toContainText(saunaProduct.name);
   await expect(page.getByTestId("badge-project-description")).not.toContainText("nicht hinterlegt");
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/projects/${createdProjectId}/tags`);
+    if (!response.ok()) return [];
+    const body = await response.json();
+    return body.map((item: { tag: { name: string } }) => item.tag.name);
+  }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 
   await page.getByTestId("button-save-appointment").click();
   const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });

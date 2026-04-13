@@ -10,6 +10,8 @@
  * - Eine aus der Dokumentextraktion uebernommene Datei erscheint vor dem Save als pending Projektanhang und nach dem Save als echter Projektanhang.
  * - Auftragsdaten lassen sich auch ohne vorgewaehlten Kunden in das Projektformular uebernehmen.
  * - Die Dokumentextraktion fuellt die strukturierte Artikelliste nicht automatisch mit Produktselektionen vor.
+ * - Sichtbare Projektbeschreibung setzt beim Save still das Projekt-Tag `Anmerkungen`.
+ * - Auch ein nachtraeglich im Edit-Modus gepflegter Beschreibungstext setzt das Projekt-Tag `Anmerkungen`.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  * - Ungespeicherte Edit-Werte im Projektformular bleiben trotz Tag-Mutation im Sidebar-Picker erhalten.
  *
@@ -18,10 +20,11 @@
  * - Draft-Tags, Draft-Notizen oder pending Projektanhaenge gehen beim ersten Save verloren.
  * - Die Extraktionsdatei landet nicht im Projekt-Dokumentenpanel.
  * - Der Projekt-Extract bleibt bei fehlendem Kunden oder teilweiser Kundenlesbarkeit unbenutzbar.
+ * - Beschreibungstext bleibt ohne das erwartete Projekt-Tag `Anmerkungen`.
  * - Das Edit-Formular setzt lokale Feldwerte nach Tag-Auswahl wieder auf den Serverstand zurueck.
  *
  * Ziel:
- * Browser-E2E fuer die angeglichene Create-UX des Projektformulars und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
+ * Browser-E2E fuer die angeglichene Create-UX des Projektformulars, die stille `Anmerkungen`-Regel beim Speichern und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
@@ -220,6 +223,36 @@ test("persists tag, note and project attachment from the new project form and re
   await expect(page.getByTestId("project-form-sidebar").getByText(attachmentName)).toBeVisible();
 });
 
+test("sets the Anmerkungen tag when a new project is saved with visible description text", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-PROJECT-REMARKS-CREATE");
+
+  await openNewProject(page);
+  await page.getByTestId("input-project-name").fill("FT06 Browser Projekt Beschreibung");
+  await page.getByTestId("input-project-order-number").fill("FT06-PROJECT-REMARKS-CREATE-001");
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+  await page.getByRole("tab", { name: "Anmerkungen" }).click();
+  await page.getByTestId("richtext-editor").fill("Sichtbare Projektbeschreibung aus dem Browsertest");
+
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/projects"
+  ));
+  await page.getByTestId("button-save-project").click();
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+
+  const createdProject = (await createdProjectResponse.json()) as { id: number };
+  const createdProjectId = Number(createdProject.id);
+  expect(createdProjectId).toBeGreaterThan(0);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/projects/${createdProjectId}/tags`);
+    if (!response.ok()) return [];
+    const body = await response.json();
+    return body.map((item: { tag: { name: string } }) => item.tag.name);
+  }).toEqual(expect.arrayContaining(["Anmerkungen"]));
+});
+
 test("shows an extracted document as pending project attachment before save and restores it after reopen", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-PROJECT-EXTRACT");
   const extractionFileName = "ft24-project-create-sidebar.pdf";
@@ -261,6 +294,36 @@ test("shows an extracted document as pending project attachment before save and 
 
   await openProjectById(page, createdProjectId, "noAppointments");
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
+test("sets the Anmerkungen tag when an existing project is saved with a newly added description", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-PROJECT-REMARKS-EDIT");
+  const project = await createProjectFixture({
+    prefix: "FT06-PROJECT-REMARKS-EDIT",
+    customerId: customer.id,
+    name: "FT06 Edit Beschreibung",
+    orderNumber: "FT06-PROJECT-REMARKS-EDIT-001",
+    descriptionMd: null,
+  });
+
+  await openProjectById(page, project.id, "noAppointments");
+  await page.getByRole("tab", { name: "Anmerkungen" }).click();
+  await page.getByTestId("richtext-editor").fill("Nachtraeglich gepflegte Projektbeschreibung");
+
+  const updateProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/projects/${project.id}`
+  ));
+  await page.getByTestId("button-save-project").click();
+  const updateProjectResponse = await updateProjectResponsePromise;
+  expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/projects/${project.id}/tags`);
+    if (!response.ok()) return [];
+    const body = await response.json();
+    return body.map((item: { tag: { name: string } }) => item.tag.name);
+  }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 });
 
 test("keeps article dropdown selections stable in create mode after document extraction", async ({ page }) => {
