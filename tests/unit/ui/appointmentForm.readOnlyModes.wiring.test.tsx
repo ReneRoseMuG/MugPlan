@@ -18,7 +18,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let currentRole = "DISPATCHER";
-let currentMode: "historical" | "cancelled" = "historical";
+let currentMode: "historical" | "historicalParked" | "cancelled" = "historical";
 const attachmentPanelCalls: Array<Record<string, unknown>> = [];
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
@@ -190,17 +190,17 @@ vi.mock("@/components/DocumentExtractionDialog", () => ({
 
 import { AppointmentForm } from "../../../client/src/components/AppointmentForm";
 
-function buildAppointmentDetail(mode: "historical" | "cancelled") {
+function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cancelled") {
   return {
     id: 77,
     version: 3,
     projectId: null,
     customerId: 21,
     displayMode: "standard",
-    tourId: null,
+    tourId: mode === "historicalParked" ? 88 : null,
     title: "Termin A",
     description: null,
-    startDate: mode === "historical" ? "2000-01-01" : "2099-01-02",
+    startDate: mode === "cancelled" ? "2099-01-02" : "2000-01-01",
     startTime: "08:00:00",
     endDate: "2099-01-02",
     endTime: "09:00:00",
@@ -247,8 +247,14 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     };
   }
 
-  if (key === "/api/tours") {
-    return { data: [], isLoading: false };
+  if ((Array.isArray(queryKey) && queryKey[0] === "/api/tours") || key === "/api/tours") {
+    return {
+      data: [
+        { id: 88, name: "Parkplatz", color: "#D4537E" },
+        { id: 99, name: "Tour A", color: "#123456" },
+      ],
+      isLoading: false,
+    };
   }
 
   if (key === "/api/teams") {
@@ -342,4 +348,37 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(latestTagPickerCall?.canEdit).toBe(false);
     },
   );
+
+  it.each([
+    "DISPATCHER",
+    "ADMIN",
+  ] as const)("keeps historical Parkplatz appointments editable for %s", (role) => {
+    currentRole = role;
+    currentMode = "historicalParked";
+
+    const markup = renderToStaticMarkup(
+      <AppointmentForm
+        appointmentId={77}
+        showBackButton
+        onBack={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Speichern");
+    expect(markup).toContain("Stornieren");
+    expect(markup).toContain("Löschen");
+    expect(markup).not.toContain("Termin gesperrt");
+
+    const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
+    const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
+    const latestNotesSectionCall = notesSectionCalls[notesSectionCalls.length - 1];
+    const latestTagPickerCall = tagPickerCalls[tagPickerCalls.length - 1];
+
+    expect(latestAttachmentPanelCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.isLocked).toBe(false);
+    expect(latestNotesSectionCall?.readOnly).toBe(false);
+    expect(latestTagPickerCall?.canEdit).toBe(true);
+  });
 });

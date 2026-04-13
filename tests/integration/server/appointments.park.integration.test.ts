@@ -23,7 +23,7 @@
  */
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
-import { appointmentTags, tags } from "../../../shared/schema";
+import { appointmentTags, appointments, tags } from "../../../shared/schema";
 import { and, eq } from "drizzle-orm";
 import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -36,6 +36,7 @@ import {
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
+  createTagFixture,
   createTourFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
@@ -363,5 +364,116 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       .expect(({ body }) => {
         expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
       });
+  });
+});
+
+describe("FT06 integration: historische Parkplatz-Termine bleiben editierbar", () => {
+  it("erlaubt Zukunftsumplanung eines historischen Parkplatz-Termins auf regulaere Tour", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("PARK-HIST-01");
+    const employee = await createEmployeeFixture("PARK-HIST-01-A");
+    const regularTour = await createTourFixture("#0A7C66");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(14),
+    });
+
+    await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-01T00:00:00.000Z") })
+      .where(eq(appointments.id, appointment.id));
+
+    const parkedDetail = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+
+    await admin
+      .patch(`/api/appointments/${appointment.id}`)
+      .send({
+        version: parkedDetail.body.version,
+        startDate: getRelativeBerlinDate(21),
+        customerId: customer.id,
+        tourId: regularTour.id,
+        employeeIds: [employee.id],
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.tourId).toBe(regularTour.id);
+        expect(String(body.startDate).slice(0, 10)).toBe(getRelativeBerlinDate(21));
+        expect(body.employees.map((entry: { id: number }) => entry.id)).toEqual([employee.id]);
+      });
+
+    expect(await hasGeparktTag(appointment.id)).toBe(false);
+  });
+
+  it("erlaubt Tag-Mutationen fuer historische Parkplatz-Termine", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("PARK-HIST-02");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(15),
+    });
+    const customTag = await createTagFixture("PARK-HIST-TAG");
+
+    await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-02T00:00:00.000Z") })
+      .where(eq(appointments.id, appointment.id));
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tags`)
+      .send({ tagId: customTag.id })
+      .expect(201);
+
+    await admin
+      .delete(`/api/appointments/${appointment.id}/tags/${customTag.id}`)
+      .send({ version: 1 })
+      .expect(204);
+  });
+
+  it("erlaubt Storno und Loeschen fuer historische Parkplatz-Termine", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customerA = await createCustomerFixture("PARK-HIST-03");
+    const cancellableAppointment = await createAppointmentFixture({
+      customerId: customerA.id,
+      startDate: getRelativeBerlinDate(16),
+    });
+
+    await admin.post(`/api/appointments/${cancellableAppointment.id}/park`).send({ version: cancellableAppointment.version }).expect(204);
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-03T00:00:00.000Z") })
+      .where(eq(appointments.id, cancellableAppointment.id));
+
+    const cancellableDetail = await admin.get(`/api/appointments/${cancellableAppointment.id}`).expect(200);
+    await admin
+      .post(`/api/appointments/${cancellableAppointment.id}/cancel`)
+      .send({ version: cancellableDetail.body.version })
+      .expect(204);
+
+    const customerB = await createCustomerFixture("PARK-HIST-04");
+    const deletableAppointment = await createAppointmentFixture({
+      customerId: customerB.id,
+      startDate: getRelativeBerlinDate(17),
+    });
+
+    await admin.post(`/api/appointments/${deletableAppointment.id}/park`).send({ version: deletableAppointment.version }).expect(204);
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-04T00:00:00.000Z") })
+      .where(eq(appointments.id, deletableAppointment.id));
+
+    const deletableDetail = await admin.get(`/api/appointments/${deletableAppointment.id}`).expect(200);
+    await admin
+      .delete(`/api/appointments/${deletableAppointment.id}`)
+      .send({ version: deletableDetail.body.version })
+      .expect(204);
+    await admin.get(`/api/appointments/${deletableAppointment.id}`).expect(404);
   });
 });

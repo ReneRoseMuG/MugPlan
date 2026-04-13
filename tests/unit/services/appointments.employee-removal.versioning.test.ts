@@ -5,6 +5,8 @@
  * - Mitarbeiter-Entfernen aus Terminen erwartet eine gueltige Appointment-Version.
  * - Der Pfad bump't die Appointment-Version vor dem eigentlichen Join-Delete atomar.
  * - Stornierte Termine bleiben fuer den Remove-Pfad gesperrt.
+ * - Historische Nicht-Parkplatz-Termine bleiben fuer den Remove-Pfad gesperrt.
+ * - Historische Parkplatz-Termine duerfen weiterhin bearbeitet werden.
  *
  * Fehlerfaelle:
  * - Veraltete Appointment-Version liefert keinen VERSION_CONFLICT.
@@ -24,10 +26,16 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointmentTagsByAppointmentIds: vi.fn(),
 }));
 
+vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTours: vi.fn(),
+}));
+
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as toursRepository from "../../../server/repositories/toursRepository";
 import { removeEmployeeFromAppointment } from "../../../server/services/appointmentsService";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
+const toursRepoMock = vi.mocked(toursRepository);
 
 describe("FT01 unit: appointment employee removal versioning", () => {
   beforeEach(() => {
@@ -38,6 +46,7 @@ describe("FT01 unit: appointment employee removal versioning", () => {
     });
     appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
     appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
+    toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
   });
 
   it("removes an employee when the appointment version matches", async () => {
@@ -72,5 +81,27 @@ describe("FT01 unit: appointment employee removal versioning", () => {
       status: 422,
       code: "VALIDATION_ERROR",
     });
+  });
+
+  it("blocks employee removal for historical non-Parkplatz appointments", async () => {
+    appointmentsRepoMock.getAppointment.mockResolvedValue({ id: 54, startDate: "2000-01-01", tourId: 12 } as any);
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({ id: 54, startDate: "2000-01-01", tourId: 12 } as any);
+
+    await expect(removeEmployeeFromAppointment(54, 9, 3, "ADMIN")).rejects.toMatchObject({
+      status: 409,
+      code: "PAST_APPOINTMENT_READONLY",
+    });
+
+    expect(appointmentsRepoMock.deleteAppointmentEmployeeTx).not.toHaveBeenCalled();
+  });
+
+  it("allows employee removal for historical Parkplatz appointments", async () => {
+    appointmentsRepoMock.getAppointment.mockResolvedValue({ id: 55, startDate: "2000-01-01", tourId: 88 } as any);
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({ id: 55, startDate: "2000-01-01", tourId: 88 } as any);
+
+    const result = await removeEmployeeFromAppointment(55, 9, 3, "ADMIN");
+
+    expect(result).toEqual({ found: true });
+    expect(appointmentsRepoMock.deleteAppointmentEmployeeTx).toHaveBeenCalledWith(expect.anything(), 55, 9);
   });
 });

@@ -109,6 +109,10 @@ function isStartDateLocked(startDate: Date | string | null | undefined): boolean
   return normalizedStartDate < todayBerlin;
 }
 
+function isParkplatzTourId(tourId: number | null | undefined, parkplatzTourId: number | null): boolean {
+  return typeof tourId === "number" && Number.isInteger(tourId) && parkplatzTourId != null && tourId === parkplatzTourId;
+}
+
 function getBerlinCurrentTimeSeconds(): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Berlin",
@@ -162,7 +166,11 @@ async function assertAppointmentNotCancelled(appointmentId: number, message = "S
   }
 }
 
-function assertNotHistoricalInput(data: { startDate: string; startTime?: string | null }) {
+function assertNotHistoricalInput(
+  data: { startDate: string; startTime?: string | null },
+  options?: { allowHistorical?: boolean },
+) {
+  if (options?.allowHistorical) return;
   if (isStartDateLocked(data.startDate)) {
     throw new AppointmentError("Datum in der Vergangenheit", 409, "PAST_APPOINTMENT_READONLY");
   }
@@ -313,6 +321,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     appointmentTagsByAppointmentId,
     customerTagsByCustomerId,
     projectTagsByProjectId,
+    parkplatzTourId,
   ] = await Promise.all([
     buildEmployeesByAppointment(appointmentIds),
     buildProjectArticleItemsByProject(projectIds),
@@ -325,6 +334,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
     appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds),
     appointmentsRepository.getCustomerTagsByCustomerIds(customerIds),
     appointmentsRepository.getProjectTagsByProjectIds(projectIds),
+    getParkplatzTourId(),
   ]);
 
   return rows.map((row) => {
@@ -376,7 +386,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
-      isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isLocked: isAppointmentLockedForRole(row.appointment, roleKey, parkplatzTourId),
       isCancelled,
     };
   });
@@ -568,8 +578,9 @@ export async function updateAppointment(
   const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    const parkplatzTourId = await getParkplatzTourId();
 
-    if (isStartDateLocked(existing.startDate)) {
+    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
       if (roleKey !== "ADMIN") {
         throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 409, "PAST_APPOINTMENT_READONLY");
       }
@@ -577,8 +588,11 @@ export async function updateAppointment(
     }
 
     await assertAppointmentNotCancelled(appointmentId);
-
-    assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+    const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
+    assertNotHistoricalInput(
+      { startDate: data.startDate, startTime: data.startTime ?? null },
+      { allowHistorical: isParkplatzTourId(nextTourId, parkplatzTourId) },
+    );
 
     const relation = await resolveAppointmentRelationTx(
       tx,
@@ -589,7 +603,7 @@ export async function updateAppointment(
 
     await assertNoInactiveEmployeesTx(tx, employeeIds);
 
-    const newTourId = data.tourId ?? null;
+    const newTourId = nextTourId;
     const tourChanged = existing.tourId !== newTourId;
     if (tourChanged) {
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
@@ -660,8 +674,9 @@ export async function setAppointmentDisplayMode(
   const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    const parkplatzTourId = await getParkplatzTourId();
 
-    if (isStartDateLocked(existing.startDate)) {
+    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
       if (roleKey !== "ADMIN") {
         throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 409, "PAST_APPOINTMENT_READONLY");
       }
@@ -929,6 +944,7 @@ export async function listCalendarAppointments({
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds);
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
   const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
+  const parkplatzTourId = await getParkplatzTourId();
 
   return rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -976,7 +992,7 @@ export async function listCalendarAppointments({
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
       employees: employeesByAppointment.get(row.appointment.id) ?? [],
-      isLocked: roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isLocked: isAppointmentLockedForRole(row.appointment, roleKey, parkplatzTourId),
       isCancelled,
     };
 
@@ -1225,6 +1241,7 @@ export async function listAppointmentsList(params: {
   const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
   const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
   const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
+  const parkplatzTourId = await getParkplatzTourId();
 
   const items = rows.map((row) => {
     const projectId = row.project?.id ?? null;
@@ -1276,7 +1293,7 @@ export async function listAppointmentsList(params: {
       customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
       projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
       displayMode: row.appointment.displayMode,
-      isLocked: params.roleKey !== "ADMIN" && isStartDateLocked(row.appointment.startDate),
+      isLocked: isAppointmentLockedForRole(row.appointment, params.roleKey, parkplatzTourId),
       isCancelled,
       allDay: row.appointment.startTime == null,
       singleEmployee: rowEmployees.length === 1,
@@ -1298,8 +1315,9 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    const parkplatzTourId = await getParkplatzTourId();
 
-    if (isStartDateLocked(existing.startDate)) {
+    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
       throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "PAST_APPOINTMENT_READONLY");
     }
 
@@ -1336,7 +1354,8 @@ export async function addAppointmentTag(
   requireDispatcherOrAdmin(roleKey);
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
-  if (isStartDateLocked(appointment.startDate)) {
+  const parkplatzTourId = await getParkplatzTourId();
+  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
     throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
   }
   await assertAppointmentNotCancelled(appointmentId);
@@ -1365,7 +1384,8 @@ export async function removeAppointmentTag(
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
-  if (isStartDateLocked(appointment.startDate)) {
+  const parkplatzTourId = await getParkplatzTourId();
+  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
     throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
   }
   const tag = await tagRelationsService.getTagById(tagId);
@@ -1412,6 +1432,10 @@ export async function removeEmployeeFromAppointment(
   return appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
+    const parkplatzTourId = await getParkplatzTourId();
+    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
+      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
+    }
     await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht bearbeitet werden");
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
@@ -1448,7 +1472,8 @@ export async function cancelAppointment(
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
-    if (isStartDateLocked(existing.startDate)) {
+    const parkplatzTourId = await getParkplatzTourId();
+    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
       throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
     }
 
@@ -1479,6 +1504,31 @@ function findParkplatzTour(tours: Awaited<ReturnType<typeof toursRepository.getT
   return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz")) ?? null;
 }
 
+async function getParkplatzTour(): Promise<Awaited<ReturnType<typeof findParkplatzTour>>> {
+  const allTours = await toursRepository.getTours();
+  return findParkplatzTour(allTours);
+}
+
+async function getParkplatzTourId(): Promise<number | null> {
+  return (await getParkplatzTour())?.id ?? null;
+}
+
+function isHistoricalAppointmentMutationLocked(
+  appointment: { startDate: Date | string | null | undefined; tourId: number | null | undefined },
+  parkplatzTourId: number | null,
+): boolean {
+  if (!isStartDateLocked(appointment.startDate)) return false;
+  return !isParkplatzTourId(appointment.tourId, parkplatzTourId);
+}
+
+function isAppointmentLockedForRole(
+  appointment: { startDate: Date | string | null | undefined; tourId: number | null | undefined },
+  roleKey: CanonicalRoleKey,
+  parkplatzTourId: number | null,
+): boolean {
+  return roleKey !== "ADMIN" && isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId);
+}
+
 export async function parkAppointment(
   appointmentId: number,
   expectedVersion: number,
@@ -1492,14 +1542,14 @@ export async function parkAppointment(
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
 
-  if (isStartDateLocked(appointment.startDate)) {
+  const parkplatzTourId = await getParkplatzTourId();
+  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
     throw new AppointmentError("Historische Termine koennen nicht geparkt werden", 409, "PAST_APPOINTMENT_READONLY");
   }
 
   await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht geparkt werden");
 
-  const allTours = await toursRepository.getTours();
-  const parkplatzTour = findParkplatzTour(allTours);
+  const parkplatzTour = await getParkplatzTour();
   if (!parkplatzTour) {
     throw new AppointmentError(
       "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausfuehren.",

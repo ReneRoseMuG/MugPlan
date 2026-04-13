@@ -66,7 +66,6 @@ import {
 import type { Note } from "@shared/schema";
 import type { NoteTemplate } from "@shared/schema";
 import {
-  isReservedVacantTagName,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
@@ -289,6 +288,9 @@ const isPastStartDate = (startDate: string) => {
   today.setHours(0, 0, 0, 0);
   return startDateValue < today;
 };
+
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+const isParkplatzTour = (tourId: number | null, parkplatzTourId: number | null) => tourId !== null && parkplatzTourId !== null && tourId === parkplatzTourId;
 
 const buildIsoWeekKey = (dateValue: string) => {
   const parsedDate = parseISO(dateValue);
@@ -878,9 +880,14 @@ export function AppointmentForm({
   const tourMembersById = useMemo(() => new Map<number, { id: number; fullName: string }[]>(), []);
 
   const lockedStartDate = appointmentDetail?.startDate ?? startDate;
-  const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate);
+  const lockedTourId = appointmentDetail?.tourId ?? selectedTourId;
+  const parkplatzTourId = useMemo(
+    () => tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz"))?.id ?? null,
+    [tours],
+  );
+  const isParked = isEditing && isParkplatzTour(lockedTourId, parkplatzTourId);
+  const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
-  const isParked = isEditing && appointmentTagRelations.some((item) => isReservedVacantTagName(item.tag.name));
   const isReadOnlyView = isHistoricalReadOnly || isCancelled;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;

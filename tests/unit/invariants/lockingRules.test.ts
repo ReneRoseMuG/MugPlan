@@ -16,6 +16,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   withAppointmentTransaction: vi.fn(),
   getAppointmentTx: vi.fn(),
+  getAppointmentTagsByAppointmentIds: vi.fn(),
   getProjectTx: vi.fn(),
   getConflictingEmployeesTx: vi.fn(),
   hasEmployeeDateOverlapTx: vi.fn(),
@@ -25,7 +26,12 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   deleteAppointmentWithVersionTx: vi.fn(),
 }));
 
+vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTours: vi.fn(),
+}));
+
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import * as toursRepository from "../../../server/repositories/toursRepository";
 import {
   deleteAppointment,
   isAppointmentError,
@@ -33,6 +39,7 @@ import {
 } from "../../../server/services/appointmentsService";
 
 const appointmentsRepoMock = vi.mocked(appointmentsRepository);
+const toursRepoMock = vi.mocked(toursRepository);
 
 describe("PKG-02 Invariant: locking rules", () => {
   beforeEach(() => {
@@ -42,6 +49,8 @@ describe("PKG-02 Invariant: locking rules", () => {
       const fakeTx = {} as Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0];
       return handler(fakeTx);
     });
+    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
+    toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
   });
 
   it("blocks update for non-admin on locked appointment with deterministic PAST_APPOINTMENT_READONLY", async () => {
@@ -154,5 +163,70 @@ describe("PKG-02 Invariant: locking rules", () => {
       code: "PAST_APPOINTMENT_READONLY",
     });
     expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
+  });
+
+  it("allows admin update for historical Parkplatz appointments", async () => {
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
+      id: 205,
+      version: 7,
+      projectId: null,
+      tourId: 88,
+      title: "Existing",
+      description: null,
+      startDate: new Date("2000-01-05T00:00:00.000Z"),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      customerId: 11,
+    } as any);
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
+    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
+    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 205, employees: [] } as any);
+
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 11,
+        customerNumber: "C011",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await expect(
+      updateAppointment(
+        205,
+        {
+          version: 7,
+          customerId: 11,
+          tourId: 88,
+          startDate: "2000-01-05",
+          employeeIds: [],
+        },
+        "ADMIN",
+      ),
+    ).resolves.toBeTruthy();
+  });
+
+  it("allows delete for historical Parkplatz appointments", async () => {
+    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
+      id: 206,
+      version: 8,
+      projectId: 303,
+      tourId: 88,
+      title: "Existing",
+      description: null,
+      startDate: new Date("2000-01-06T00:00:00.000Z"),
+      startTime: null,
+      endDate: null,
+      endTime: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as any);
+    appointmentsRepoMock.deleteAppointmentWithVersionTx.mockResolvedValue({ kind: "deleted" });
+
+    await expect(deleteAppointment(206, 8, "ADMIN")).resolves.toBeTruthy();
+    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).toHaveBeenCalled();
   });
 });

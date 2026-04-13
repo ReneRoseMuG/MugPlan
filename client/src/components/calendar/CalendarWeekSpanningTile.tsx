@@ -51,6 +51,8 @@ const isPastStartDate = (startDate: string) => {
   return startDateValue < today;
 };
 
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
 const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
   const error = new Error(message) as AppointmentApiError;
   error.status = status;
@@ -146,7 +148,8 @@ export function CalendarWeekSpanningTile({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
-  const isHistoricalReadOnly = isPastStartDate(appointment.startDate);
+  const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
 
   const cancelMutation = useMutation({
     mutationFn: async () => {

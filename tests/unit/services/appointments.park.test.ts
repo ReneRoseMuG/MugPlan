@@ -10,6 +10,7 @@
  * - parkAppointment blockiert stornierte Termine.
  * - updateAppointment entfernt Tag Geparkt still wenn Tour von Parkplatz auf andere wechselt.
  * - updateAppointment entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war.
+ * - updateAppointment erlaubt historische Parkplatz-Termine weiterhin fuer Umplanung und Bearbeitung.
  *
  * Fehlerfaelle:
  * - Termin bereits geparkt bleibt unveraendert.
@@ -269,6 +270,40 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
       20,
       GEPARKT_TAG.id,
     );
+  });
+
+  it("erlaubt historische Parkplatz-Termine fuer Update und Zukunftsumplanung", async () => {
+    const OTHER_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
+    toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, OTHER_TOUR]);
+
+    repoMock.getAppointmentTx.mockResolvedValue({
+      ...BASE_APPOINTMENT,
+      startDate: "2000-01-01",
+      endDate: "2000-01-01",
+      tourId: PARKPLATZ_TOUR.id,
+    } as any);
+
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 1,
+        customerNumber: "K001",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
+    await expect(updateAppointment(
+      20,
+      {
+        version: 2,
+        startDate: FUTURE_DATE,
+        tourId: OTHER_TOUR.id,
+        customerId: 1,
+      },
+      "ADMIN",
+    )).resolves.toBeTruthy();
+
+    expect(repoMock.updateAppointmentWithVersionTx).toHaveBeenCalled();
   });
 
   it("entfernt Geparkt-Tag nicht wenn Tour nicht Parkplatz war", async () => {

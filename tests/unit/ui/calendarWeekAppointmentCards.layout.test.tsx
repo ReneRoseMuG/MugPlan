@@ -321,7 +321,7 @@ describe("calendar week appointment card layout", () => {
     expect(html).not.toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
   });
 
-  it("hides the header menu trigger for historical week appointments on both card types", () => {
+  it("hides the header menu trigger for historical non-Parkplatz appointments on both card types", () => {
     const appointment = createAppointment({ startDate: "2000-01-01" });
 
     const html = renderWithQueryClient(
@@ -343,6 +343,33 @@ describe("calendar week appointment card layout", () => {
     expect(html).not.toContain('week-appointment-menu-trigger-42');
     expect(html).not.toContain('week-spanning-tile-menu-trigger-42');
     expect(html).not.toContain("Termin löschen");
+  });
+
+  it("keeps the header menu trigger for historical Parkplatz appointments on both card types", () => {
+    const appointment = createAppointment({
+      startDate: "2000-01-01",
+      tourName: "Parkplatz",
+    });
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2000-01-01"
+          visibleDayNumberStart={1}
+        />
+      </>,
+    );
+
+    expect(html).toContain('week-appointment-menu-trigger-42');
+    expect(html).toContain('week-spanning-tile-menu-trigger-42');
+    expect(html).toContain("Termin");
   });
 
   it("renders the delete menu action for editable week appointments on both card types", () => {
