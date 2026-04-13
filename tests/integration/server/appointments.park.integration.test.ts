@@ -407,6 +407,76 @@ describe("FT06 integration: historische Parkplatz-Termine bleiben editierbar", (
     expect(await hasGeparktTag(appointment.id)).toBe(false);
   });
 
+  it("erlaubt Rueckdatierung eines Parkplatz-Termins auf ein Datum vor heute", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("PARK-HIST-PAST-01");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(18),
+    });
+
+    await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);
+
+    const parkedDetail = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+    const targetPastDate = getRelativeBerlinDate(-4);
+
+    await admin
+      .patch(`/api/appointments/${appointment.id}`)
+      .send({
+        version: parkedDetail.body.version,
+        startDate: targetPastDate,
+        customerId: customer.id,
+        tourId: parkedDetail.body.tourId,
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(String(body.startDate).slice(0, 10)).toBe(targetPastDate);
+        expect(body.tourId).toBe(parkedDetail.body.tourId);
+      });
+  });
+
+  it("erlaubt die Wochenplanungs-Vorschau fuer historische Parkplatz-Termine bei Datumswechsel", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const customer = await createCustomerFixture("PARK-HIST-PREVIEW-01");
+    const appointment = await createAppointmentFixture({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(19),
+    });
+
+    await admin.post(`/api/appointments/${appointment.id}/park`).send({ version: appointment.version }).expect(204);
+    await db
+      .update(appointments)
+      .set({ startDate: new Date("2000-01-04T00:00:00.000Z") })
+      .where(eq(appointments.id, appointment.id));
+
+    const parkedDetail = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
+    const targetDate = getRelativeBerlinDate(0);
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tour-change-preview`)
+      .send({
+        newTourId: parkedDetail.body.tourId,
+        newStartDate: targetDate,
+        newEndDate: null,
+        newStartTime: parkedDetail.body.startTime ?? null,
+        currentEmployeeIds: [],
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(
+          expect.objectContaining({
+            hasWeekPlan: expect.any(Boolean),
+            isoWeek: expect.any(Number),
+            isoYear: expect.any(Number),
+          }),
+        );
+      });
+  });
+
   it("erlaubt Tag-Mutationen fuer historische Parkplatz-Termine", async () => {
     const admin = await loginAdminAgent(app);
     await applySystemSeed();

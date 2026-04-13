@@ -80,6 +80,13 @@ type WeekTourLane = {
   dayBuckets: WeekDayBucket[];
 };
 
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+function isHistoricalParkplatzAppointment(appointment: CalendarAppointment): boolean {
+  return appointment.startDate < getBerlinTodayDateString()
+    && normalizeTourName(appointment.tourName) === normalizeTourName("Parkplatz");
+}
+
 type WeekLaneRenderData = {
   spanningAppointments: { appointmentId: number; rowIndex: number }[];
   singleDayGridItems: {
@@ -539,8 +546,9 @@ export function CalendarWeekView({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const appointmentStart = parseISO(appointment.startDate);
+    const isHistoricalParkplatz = isHistoricalParkplatzAppointment(appointment);
 
-    if (appointmentStart < today) {
+    if (appointmentStart < today && !isHistoricalParkplatz) {
       console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
       toast({
         title: "Verschieben nicht erlaubt",
@@ -551,7 +559,7 @@ export function CalendarWeekView({
       return;
     }
 
-    if (targetDate < today) {
+    if (targetDate < today && !isHistoricalParkplatz) {
       console.info(`${logPrefix} drop blocked: past target`, { appointmentId, targetDate: format(targetDate, "yyyy-MM-dd") });
       toast({
         title: "Verschieben nicht erlaubt",
@@ -1041,7 +1049,8 @@ export function CalendarWeekView({
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                              const canDragSegment = !isSegmentLocked
+                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                               return (
@@ -1091,7 +1100,8 @@ export function CalendarWeekView({
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                              const canDragSegment = !isSegmentLocked
+                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                               return (
@@ -1151,7 +1161,8 @@ export function CalendarWeekView({
                                     const isConflict = conflictHighlightActive && Boolean(conflictMeta);
                                     const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
-                                    const canDragSegment = !isSegmentLocked && !isHistoricalSource;
+                                    const canDragSegment = !isSegmentLocked
+                                      && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                                     const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
 
                                     return (

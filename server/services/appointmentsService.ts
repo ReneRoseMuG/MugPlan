@@ -113,6 +113,14 @@ function isParkplatzTourId(tourId: number | null | undefined, parkplatzTourId: n
   return typeof tourId === "number" && Number.isInteger(tourId) && parkplatzTourId != null && tourId === parkplatzTourId;
 }
 
+function allowsHistoricalParkplatzMutation(
+  existingTourId: number | null | undefined,
+  nextTourId: number | null | undefined,
+  parkplatzTourId: number | null,
+): boolean {
+  return isParkplatzTourId(existingTourId, parkplatzTourId) || isParkplatzTourId(nextTourId, parkplatzTourId);
+}
+
 function getBerlinCurrentTimeSeconds(): number {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Berlin",
@@ -591,7 +599,7 @@ export async function updateAppointment(
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
-      { allowHistorical: isParkplatzTourId(nextTourId, parkplatzTourId) },
+      { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },
     );
 
     const relation = await resolveAppointmentRelationTx(

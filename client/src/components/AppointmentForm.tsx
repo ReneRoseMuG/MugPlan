@@ -1577,6 +1577,7 @@ export function AppointmentForm({
   });
 
   const validateForm = () => {
+    const allowHistoricalInput = isParked;
     if (!selectedProjectId && !selectedCustomerId) {
       console.info(`${logPrefix} validation blocked: relation missing`);
       toast({ title: "Kunde oder Projekt ist erforderlich", variant: "destructive" });
@@ -1589,7 +1590,7 @@ export function AppointmentForm({
     }
     const berlinToday = getBerlinTodayDateString();
     const isPastDateInput = startDate < berlinToday;
-    if (isPastDateInput) {
+    if (isPastDateInput && !allowHistoricalInput) {
       console.info(`${logPrefix} validation blocked: startDate in past`);
       toast({ title: "Datum in der Vergangenheit", variant: "destructive" });
       return false;
@@ -1601,7 +1602,7 @@ export function AppointmentForm({
       normalizedStartTime.length === 5 &&
       startDate === berlinToday &&
       normalizedStartTime < currentBerlinTime;
-    if (isPastTimeInput) {
+    if (isPastTimeInput && !allowHistoricalInput) {
       console.info(`${logPrefix} validation blocked: startTime in past`);
       toast({ title: "Startzeit liegt in der Vergangenheit", variant: "destructive" });
       return false;
@@ -1621,6 +1622,7 @@ export function AppointmentForm({
       return;
     }
     if (!validateForm()) return;
+    const allowHistoricalInput = isParked;
     const berlinToday = getBerlinTodayDateString();
     const isPastDateInput = startDate < berlinToday;
     const currentBerlinTime = getBerlinCurrentTimeString();
@@ -1631,7 +1633,7 @@ export function AppointmentForm({
       startDate === berlinToday &&
       normalizedStartTime < currentBerlinTime;
     // Kein Save bei historischen Eingaben.
-    if (isPastDateInput || isPastTimeInput) return;
+    if ((isPastDateInput || isPastTimeInput) && !allowHistoricalInput) return;
 
     if (assignedEmployeeIds.length === 0) {
       console.info(`${logPrefix} save requires confirmation: no employees`);

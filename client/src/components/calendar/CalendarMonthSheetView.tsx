@@ -48,6 +48,13 @@ const logPrefix = "[calendar-month-sheet]";
 const MONTH_SHEET_BAR_HORIZONTAL_INSET_PX = 4;
 const MONTH_SLOT_BACKGROUND_ALPHA = 0.14;
 
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+function isHistoricalParkplatzAppointment(appointment: CalendarAppointment): boolean {
+  return appointment.startDate < getBerlinTodayDateString()
+    && normalizeTourName(appointment.tourName) === normalizeTourName("Parkplatz");
+}
+
 function toTransparentTourColor(color: string | null | undefined, alpha: number): string {
   if (typeof color !== "string") {
     return "transparent";
@@ -252,8 +259,9 @@ export function CalendarMonthSheetView({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const appointmentStart = parseISO(appointment.startDate);
+    const isHistoricalParkplatz = isHistoricalParkplatzAppointment(appointment);
 
-    if (appointmentStart < today) {
+    if (appointmentStart < today && !isHistoricalParkplatz) {
       toast({
         title: "Verschieben nicht erlaubt",
         description: "Vergangene Termine können nicht per Drag & Drop verschoben werden.",
@@ -263,7 +271,7 @@ export function CalendarMonthSheetView({
       return;
     }
 
-    if (targetDate < today) {
+    if (targetDate < today && !isHistoricalParkplatz) {
       toast({
         title: "Verschieben nicht erlaubt",
         description: "Ein Termin kann nicht in die Vergangenheit verschoben werden.",
@@ -580,7 +588,8 @@ function MonthSheetSection({
                         const position = getSlotBarPosition(bar.startDayIndex, bar.endDayIndex);
                         const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
-                        const canDrag = !isLocked && !isHistoricalSource;
+                        const canDrag = !isLocked
+                          && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
 
                         return (

@@ -3,14 +3,16 @@
  *
  * Abgedeckte Regeln:
  * - Regulaere, nicht blockierte Kalendereintraege bleiben in Monats- und Wochenansicht drag-faehig.
+ * - Historische Parkplatz-Termine bleiben in Monats- und Wochenansicht drag-faehig.
  * - Der positive Drag-Start-Pfad reicht die appointmentId in beide Kalenderansichten an dataTransfer weiter.
  *
  * Fehlerfaelle:
  * - Regulaere Termine verlieren ihren Drag-Start bereits in der Verdrahtung.
  * - Monats- und Wochenansicht setzen keine appointmentId in dataTransfer.
+ * - Historische Parkplatz-Termine verlieren ihre Drag-Freigabe.
  *
  * Ziel:
- * Die positive Drag-Start-Verdrahtung fuer normale Termine in Monat und Woche regressionssicher absichern.
+ * Die positive Drag-Start-Verdrahtung fuer normale Termine und historische Parkplatz-Termine in Monat und Woche regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -231,5 +233,24 @@ describe("calendar drag and drop regular draggable wiring", () => {
 
     expect(dragEvent.dataTransfer.effectAllowed).toBe("move");
     expect(dragEvent.setData).toHaveBeenCalledWith("text/plain", "41");
+  });
+
+  it("keeps historical Parkplatz appointments draggable in month sheet and week view", async () => {
+    configureDefaults([
+      createAppointment({ id: 51, startDate: "2000-01-01", tourId: 7, tourName: "Parkplatz" }),
+      createAppointment({ id: 52, startDate: "2000-01-01", endDate: null, tourId: 7, tourName: "Parkplatz" }),
+    ]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(<CalendarMonthSheetView currentDate={new Date("2000-01-01T00:00:00Z")} />);
+
+    const monthBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 51);
+    expect(typeof monthBar?.onDragStart).toBe("function");
+
+    const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
+    renderToStaticMarkup(<CalendarWeekView currentDate={new Date("2000-01-01T00:00:00Z")} />);
+
+    const weekPanel = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 52);
+    expect(typeof weekPanel?.onDragStart).toBe("function");
   });
 });

@@ -8,13 +8,15 @@
  * - Monatsblatt markiert stornierte Termine als gesperrt und bietet keinen Drag-Start mehr an.
  * - Wochenansicht markiert stornierte Termine als gesperrt und bietet keinen Drag-Start mehr an.
  * - Nicht stornierte Vergleichstermine bleiben weiterhin drag-faehig.
+ * - Historische Parkplatz-Termine bleiben trotz Vergangenheitsdatum drag-faehig.
  *
  * Fehlerfaelle:
  * - Stornierte Termine bleiben im Kalender verschiebbar.
  * - Die Sperre blockiert versehentlich auch regulaere Termine.
+ * - Die Vergangenheitslogik blockiert versehentlich historische Parkplatz-Termine.
  *
  * Ziel:
- * Das beobachtbare Laufzeitverhalten fuer die Drag-Sperre stornierter Termine in Woche und Monatsblatt ohne Quelltext-Assertions absichern.
+ * Das beobachtbare Laufzeitverhalten fuer die Drag-Sperre stornierter Termine sowie die Parkplatz-Ausnahme in Woche und Monatsblatt ohne Quelltext-Assertions absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -156,7 +158,7 @@ function configureDefaults(appointments: CalendarAppointment[]) {
   useQueryMock.mockImplementation((options: { queryKey?: unknown }) => {
     const first = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
     if (first === "/api/tours") {
-      return { data: [], isLoading: false };
+      return { data: [{ id: 7, name: "Parkplatz", color: "#D4537E", version: 1 }], isLoading: false };
     }
     if (first === "/api/employees") {
       return { data: [], isLoading: false };
@@ -212,5 +214,32 @@ describe("calendar drag and drop conflict feedback", () => {
     expect(cancelled?.isLocked).toBe(true);
     expect(cancelled?.onDragStart).toBeUndefined();
     expect(typeof regular?.onDragStart).toBe("function");
+  });
+
+  it("keeps historical Parkplatz appointments draggable while other historical appointments stay blocked", async () => {
+    configureDefaults([
+      createAppointment({ id: 31, startDate: "2000-01-01", tourId: 7, tourName: "Parkplatz" }),
+      createAppointment({ id: 32, startDate: "2000-01-01", tourId: 7, tourName: "Tour 1" }),
+      createAppointment({ id: 41, startDate: "2000-01-01", tourId: 7, tourName: "Parkplatz" }),
+      createAppointment({ id: 42, startDate: "2000-01-01", tourId: 7, tourName: "Tour 1" }),
+    ]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(<CalendarMonthSheetView currentDate={new Date("2000-01-01T00:00:00Z")} />);
+
+    const parkedMonth = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 31);
+    const regularMonth = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 32);
+
+    expect(typeof parkedMonth?.onDragStart).toBe("function");
+    expect(regularMonth?.onDragStart).toBeUndefined();
+
+    const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
+    renderToStaticMarkup(<CalendarWeekView currentDate={new Date("2000-01-01T00:00:00Z")} />);
+
+    const parkedWeek = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 41);
+    const regularWeek = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 42);
+
+    expect(typeof parkedWeek?.onDragStart).toBe("function");
+    expect(regularWeek?.onDragStart).toBeUndefined();
   });
 });

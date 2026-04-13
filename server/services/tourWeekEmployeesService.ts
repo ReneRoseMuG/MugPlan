@@ -52,6 +52,10 @@ function getBerlinTodayDateString(): string {
   return getBerlinDateString(new Date());
 }
 
+function normalizeTourName(value: string | null | undefined): string {
+  return (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+}
+
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
@@ -138,6 +142,11 @@ async function requireTour(tourId: number) {
     throw new TourWeekEmployeesError(404, "NOT_FOUND", "Tour nicht gefunden");
   }
   return tour;
+}
+
+async function getParkplatzTourId(): Promise<number | null> {
+  const tours = await toursRepository.getTours();
+  return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz"))?.id ?? null;
 }
 
 async function requireEmployee(employeeId: number): Promise<Employee> {
@@ -719,7 +728,10 @@ export async function previewAppointmentTourChange(
   }
 
   if (toDateOnlyString(appointment.startDate) && toDateOnlyString(appointment.startDate)! < getBerlinTodayDateString()) {
-    throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Historische Termine koennen nicht ueber Wochenplanung umgestellt werden");
+    const parkplatzTourId = await getParkplatzTourId();
+    if (appointment.tourId !== parkplatzTourId) {
+      throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Historische Termine koennen nicht ueber Wochenplanung umgestellt werden");
+    }
   }
 
   if (params.newTourId) {

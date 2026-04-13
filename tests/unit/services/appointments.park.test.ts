@@ -272,7 +272,7 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
     );
   });
 
-  it("erlaubt historische Parkplatz-Termine fuer Update und Zukunftsumplanung", async () => {
+  it("erlaubt historische Parkplatz-Termine fuer Update, Zukunftsumplanung und Rueckdatierung", async () => {
     const OTHER_TOUR = { id: 5, name: "Tour 1", color: "#006B6F", version: 1 };
     toursMock.getTours.mockResolvedValue([PARKPLATZ_TOUR, OTHER_TOUR]);
 
@@ -304,6 +304,16 @@ describe("FT06 unit: updateAppointment Geparkt-Tag-Entzug", () => {
     )).resolves.toBeTruthy();
 
     expect(repoMock.updateAppointmentWithVersionTx).toHaveBeenCalled();
+
+    await expect(updateAppointment(
+      20,
+      {
+        version: 2,
+        startDate: "2000-01-02",
+        customerId: 1,
+      },
+      "ADMIN",
+    )).resolves.toBeTruthy();
   });
 
   it("entfernt Geparkt-Tag nicht wenn Tour nicht Parkplatz war", async () => {
