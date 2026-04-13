@@ -2084,7 +2084,7 @@ export function AppointmentForm({
                   data-testid="button-back-appointment"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Zurück
+                  Schließen
                 </Button>
               ) : null}
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
@@ -2243,7 +2243,7 @@ export function AppointmentForm({
                 onClick={isReadOnlyView ? readOnlyCloseAction : handleRequestClose}
                 data-testid="button-secondary-cancel-appointment"
               >
-                {isReadOnlyView ? "Schließen" : "Zurück"}
+                Schließen
               </Button>
             </div>
 
@@ -2261,8 +2261,9 @@ export function AppointmentForm({
             ) : null}
           </div>
         )}
+        contentMaxWidth={99999}
       >
-        <div className="space-y-6" data-testid="appointment-form-main-column">
+        <div className="w-full space-y-6" data-testid="appointment-form-main-column">
           {isCancelled && (
             <Alert variant="destructive">
               <AlertTitle>Termin storniert</AlertTitle>

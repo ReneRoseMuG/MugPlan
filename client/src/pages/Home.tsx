@@ -394,11 +394,11 @@ export default function Home({ onLogout }: HomeProps) {
               appointmentScope={appointmentListScope}
               onAppointmentScopeChange={setAppointmentListScope}
               onOpenAppointment={(appointmentId) => {
-                setAppointmentOverlayContext({
-                  origin: "appointmentsList",
+                setAppointmentContext({
                   appointmentId,
                   returnContext: { targetView: "appointmentsList" },
                 });
+                setView("appointment");
               }}
             />
           ) : view === "projectList" ? (

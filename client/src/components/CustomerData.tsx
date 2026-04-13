@@ -814,7 +814,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                   onClick={onCancel}
                   data-testid="button-cancel-customer"
                 >
-                  Zurück
+                  Schließen
                 </Button>
               ) : null}
             </div>

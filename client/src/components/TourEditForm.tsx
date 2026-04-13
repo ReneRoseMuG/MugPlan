@@ -287,7 +287,7 @@ export function TourEditForm({
                   onClick={onCancel}
                   data-testid="button-cancel-tour"
                 >
-                  Zurück
+                  Schließen
                 </Button>
               </div>
               <Button

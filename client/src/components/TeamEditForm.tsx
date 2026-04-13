@@ -111,7 +111,7 @@ export function TeamEditForm({
                 onClick={onCancel}
                 data-testid="button-cancel-team"
               >
-                Zurück
+                Schließen
               </Button>
             </div>
 
@@ -130,7 +130,7 @@ export function TeamEditForm({
         sidebar={<div className="min-w-0 p-6" data-testid="team-form-sidebar" />}
         contentMaxWidth={99999}
       >
-      <div className="mx-auto max-w-xl space-y-4" data-testid="team-form-main-column">
+      <div className="w-full space-y-4" data-testid="team-form-main-column">
         <div className="sub-panel space-y-3">
           <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
             <Users className="w-4 h-4" />

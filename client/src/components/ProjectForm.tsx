@@ -1561,7 +1561,7 @@ export function ProjectForm({
                 onClick={handleRequestClose}
                 data-testid="button-cancel-project"
               >
-                Zurück
+                Schließen
               </Button>
             </div>
 
@@ -1575,8 +1575,9 @@ export function ProjectForm({
             </Button>
           </div>
         )}
+        contentMaxWidth={99999}
       >
-        <div className="space-y-6" data-testid="project-form-main-column">
+        <div className="w-full space-y-6" data-testid="project-form-main-column">
         {isEditing ? (
           <ProjectOrderForm
             name={name}
