@@ -52,7 +52,7 @@ describe("useSettings entity form shell widths", () => {
       settingsByKey: new Map(),
     });
 
-    expect(readResolvedValues()).toEqual({ sidebarWidth: 360, contentMaxWidth: 760 });
+    expect(readResolvedValues()).toEqual({ sidebarWidth: 360, contentMaxWidth: 960 });
   });
 
   it("falls back to defaults for invalid values", () => {
@@ -63,6 +63,6 @@ describe("useSettings entity form shell widths", () => {
       ]),
     });
 
-    expect(readResolvedValues()).toEqual({ sidebarWidth: 360, contentMaxWidth: 760 });
+    expect(readResolvedValues()).toEqual({ sidebarWidth: 360, contentMaxWidth: 960 });
   });
 });

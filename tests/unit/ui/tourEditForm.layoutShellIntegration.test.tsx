@@ -22,8 +22,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: (options: unknown) => useQueryMock(options),
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useQuery: (options: unknown) => useQueryMock(options),
+  };
+});
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => 960,
 }));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({

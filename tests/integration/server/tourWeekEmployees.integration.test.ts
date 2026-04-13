@@ -103,6 +103,49 @@ async function seedWeekPlanNoise(prefix: string, referenceDate: string) {
 }
 
 describe("tourWeekEmployees integration", () => {
+  it("lists week-planning cards for an employee grouped by tour and ISO week", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#335577");
+    const employee = await createEmployeeFixture("TWE-EMPLOYEE-VIEW");
+    const colleague = await createEmployeeFixture("TWE-EMPLOYEE-VIEW-COLLEAGUE");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await db.insert(tourWeekEmployees).values([
+      {
+        tourId: tour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      },
+      {
+        tourId: tour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: colleague.id,
+      },
+    ]);
+
+    await admin
+      .get(`/api/employees/${employee.id}/week-plans`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([
+          expect.objectContaining({
+            assignmentId: expect.any(Number),
+            tourId: tour.id,
+            tourName: tour.name,
+            tourColor: tour.color,
+            isoYear: targetWeek.isoYear,
+            isoWeek: targetWeek.isoWeek,
+            members: expect.arrayContaining([
+              expect.objectContaining({ employeeId: employee.id, fullName: employee.fullName }),
+              expect.objectContaining({ employeeId: colleague.id, fullName: colleague.fullName }),
+            ]),
+          }),
+        ]);
+      });
+  });
+
   it("adds a week assignment, applies it to selected appointments and exposes it in the week list", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#335577");

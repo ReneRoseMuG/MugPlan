@@ -67,7 +67,7 @@ async function openWeekPlanning(page: Parameters<typeof test>[0]["page"]) {
   await page.getByTestId(`card-tour-${tour.id}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
   await expect(page.getByTestId("toggle-tour-week-picker")).toBeVisible();
-  await expect(page.getByTestId("tour-week-planning-sidebar-panel")).toContainText("Neue Wochenplanung");
+  await expect(page.getByTestId("tour-form-functions-panel")).toContainText("KW einfügen");
 }
 
 test.beforeAll(async () => {

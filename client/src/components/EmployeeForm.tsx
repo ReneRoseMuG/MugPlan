@@ -5,6 +5,8 @@ import { AppointmentsListPage, type AppointmentsListContext } from "@/components
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
+import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +42,22 @@ interface EmployeeFormProps {
 
 type EmployeeTagDraftItem = TagRelationItem;
 type DraftEmployeeNote = Note & { templateId?: number };
+type EmployeeWeekPlanItem = {
+  assignmentId: number;
+  tourId: number;
+  tourName: string;
+  tourColor: string | null;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  isLocked: boolean;
+  members: Array<{
+    assignmentId: number;
+    employeeId: number;
+    fullName: string;
+  }>;
+};
 
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
@@ -64,6 +82,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [draftEmployeeTags, setDraftEmployeeTags] = useState<EmployeeTagDraftItem[]>([]);
   const [draftEmployeeNotes, setDraftEmployeeNotes] = useState<DraftEmployeeNote[]>([]);
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
+  const [activeTab, setActiveTab] = useState("stammdaten");
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
@@ -130,6 +149,17 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   });
   const { data: employeeNotes = [], isLoading: employeeNotesLoading } = useQuery<Note[]>({
     queryKey: ["/api/employees", employeeId, "notes"],
+    enabled: isEditing && Boolean(employeeId),
+  });
+  const { data: employeeWeekPlans = [], isLoading: employeeWeekPlansLoading } = useQuery<EmployeeWeekPlanItem[]>({
+    queryKey: ["/api/employees", employeeId, "week-plans"],
+    queryFn: async () => {
+      const response = await fetch(`/api/employees/${employeeId}/week-plans`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error("Wochenplanung konnte nicht geladen werden");
+      }
+      return response.json();
+    },
     enabled: isEditing && Boolean(employeeId),
   });
   const visibleEmployeeTags = isEditing ? employeeTagRelations : draftEmployeeTags;
@@ -675,6 +705,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
+        contentMaxWidth={activeTab === "termine" ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 items-center gap-3">
@@ -745,16 +776,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
             <div className="space-y-2">
               <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
-                <Route className="w-4 h-4" />
-                Tour
-              </h4>
-              <div className="px-3 py-2 border border-border bg-slate-50 rounded-md">
-                <p className="text-sm text-slate-400 italic">Keine direkte Tourzugehörigkeit</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <h4 className="font-semibold flex items-center gap-2 text-sm text-slate-600">
                 <Users className="w-4 h-4" />
                 Team
               </h4>
@@ -802,10 +823,18 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </div>
         )}
       >
-        <Tabs defaultValue="stammdaten" className="flex h-full min-h-0 flex-col space-y-4" data-testid="employee-form-main-column">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className={`flex min-h-0 flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
+          data-testid="employee-form-main-column"
+        >
           <TabsList>
             <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
             <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
+            {isEditing ? (
+              <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
+            ) : null}
           </TabsList>
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
@@ -911,6 +940,56 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               </p>
             )}
           </TabsContent>
+
+          {isEditing ? (
+            <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
+              {employeeWeekPlansLoading ? (
+                <p className="py-4 text-sm text-slate-400">Wochenplanung wird geladen...</p>
+              ) : employeeWeekPlans.length > 0 ? (
+                <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {employeeWeekPlans.map((weekPlan) => (
+                    <ColoredEntityCard
+                      key={`${weekPlan.assignmentId}-${weekPlan.tourId}-${weekPlan.isoYear}-${weekPlan.isoWeek}`}
+                      title={`KW ${String(weekPlan.isoWeek).padStart(2, "0")} / ${weekPlan.isoYear}`}
+                      icon={<Route className="w-4 h-4" />}
+                      borderColor={weekPlan.tourColor}
+                      testId={`card-employee-week-plan-${weekPlan.assignmentId}`}
+                      footerVisibility="visible"
+                      footer={(
+                        <div className="space-y-1 text-xs text-slate-500">
+                          <div>{weekPlan.weekStartDate} - {weekPlan.weekEndDate}</div>
+                          <div>{weekPlan.isLocked ? "Schreibgeschützt ab Wochenstart" : weekPlan.tourName}</div>
+                        </div>
+                      )}
+                    >
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          {weekPlan.tourName}
+                        </div>
+                        {weekPlan.members.map((member) => (
+                          <EmployeeInfoBadge
+                            key={member.assignmentId}
+                            id={member.employeeId}
+                            fullName={member.fullName}
+                            tourName={weekPlan.tourName}
+                            action="none"
+                            size="sm"
+                            fullWidth
+                            showPreview={false}
+                            testId={`badge-employee-week-plan-member-${member.assignmentId}`}
+                          />
+                        ))}
+                      </div>
+                    </ColoredEntityCard>
+                  ))}
+                </div>
+              ) : (
+                <p className="py-4 text-sm text-slate-400">
+                  Dieser Mitarbeiter ist aktuell keiner Wochenplanung zugeordnet.
+                </p>
+              )}
+            </TabsContent>
+          ) : null}
         </Tabs>
 
         {isEditing && employeeDetailsLoading ? (

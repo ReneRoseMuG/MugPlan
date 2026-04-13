@@ -3,9 +3,9 @@
  *
  * Abgedeckte Regeln:
  * - EmployeeForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
- * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Tour, Team.
+ * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Team.
  * - Create-Verdrahtung behaelt Draft-faehige Attachments, Tags und Notizen.
- * - Die Tour-Sektion zeigt nur noch den statischen Hinweis ohne direkte Tour-Badge.
+ * - Das Mitarbeiterformular rendert keinen veralteten Tour-Bereich mehr in der Sidebar.
  * - Footer-Aktionen bleiben im Shell-Layout mit Cancel links und Save rechts sichtbar.
  *
  * Fehlerfaelle:
@@ -81,6 +81,32 @@ vi.mock("@/components/NotesSection", () => ({
 
 vi.mock("@/components/ui/team-info-badge", () => ({
   TeamInfoBadge: () => <section data-testid="employee-team-badge-marker">team-badge</section>,
+}));
+
+vi.mock("@/components/ui/colored-entity-card", () => ({
+  ColoredEntityCard: ({
+    title,
+    children,
+    footer,
+    testId,
+  }: {
+    title: string;
+    children?: React.ReactNode;
+    footer?: React.ReactNode;
+    testId?: string;
+  }) => (
+    <section data-testid={testId ?? "employee-week-plan-card-marker"}>
+      <h4>{title}</h4>
+      {children}
+      {footer}
+    </section>
+  ),
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ fullName, testId }: { fullName?: string; testId?: string }) => (
+    <section data-testid={testId ?? "employee-week-plan-member-marker"}>{fullName}</section>
+  ),
 }));
 
 vi.mock("@/components/AppointmentsListPage", () => ({
@@ -186,6 +212,30 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     };
   }
 
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "week-plans") {
+    return {
+      data: [
+        {
+          assignmentId: 91,
+          tourId: 7,
+          tourName: "Tour Nord",
+          tourColor: "#225588",
+          isoYear: 2026,
+          isoWeek: 18,
+          weekStartDate: "2026-04-27",
+          weekEndDate: "2026-05-03",
+          isLocked: false,
+          members: [
+            { assignmentId: 91, employeeId: 17, fullName: "Mitarbeiter, Mia" },
+            { assignmentId: 92, employeeId: 22, fullName: "Kollege, Kai" },
+          ],
+        },
+      ],
+      isLoading: false,
+      error: null,
+    };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/tags") {
     return {
       data: [
@@ -258,11 +308,14 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
     expect(markup).toContain("button-save-employee");
+    expect(markup).toContain("tab-employee-wochenplanung");
+    expect(markup).toContain("KW 18 / 2026");
+    expect(markup).toContain("Tour Nord");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehörigkeit"));
-    expect(getIndex(markup, "Keine direkte Tourzugehörigkeit")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "employee-team-badge-marker"));
+    expect(markup).not.toContain("Keine direkte Tourzugehörigkeit");
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: 17,
@@ -286,11 +339,12 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
     expect(markup).toContain("button-save-employee");
+    expect(markup).not.toContain("tab-employee-wochenplanung");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
-    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keine direkte Tourzugehörigkeit"));
-    expect(getIndex(markup, "Keine direkte Tourzugehörigkeit")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
+    expect(getIndex(markup, "employee-notes-section-marker")).toBeLessThan(getIndex(markup, "Keinem Team zugewiesen"));
+    expect(markup).not.toContain("Keine direkte Tourzugehörigkeit");
 
     expect(employeeAttachmentsPanelCalls[0]).toMatchObject({
       employeeId: undefined,

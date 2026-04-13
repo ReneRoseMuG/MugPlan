@@ -186,8 +186,8 @@ test("appointments keep filters and the selected scope after closing the overlay
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Termin Andere" })).toHaveCount(0);
 
   await table.locator("tbody tr").filter({ hasText: "Persist Termin Treffer" }).first().dblclick();
-  await expect(page.getByTestId("button-back-appointment")).toBeVisible();
-  await page.getByTestId("button-back-appointment").click();
+  await expect(page.getByTestId("button-close-appointment")).toBeVisible();
+  await page.getByTestId("button-close-appointment").click();
 
   await expect(page.locator("#appointments-filter-project-title")).toHaveValue("Termin Tre");
   await ensurePeriodPickerOpen();

@@ -394,7 +394,7 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
       if (typeof value === "number" && Number.isInteger(value) && value >= 640 && value <= 1100) {
         return value as UserSettingValueByKey[K];
       }
-      return 760 as UserSettingValueByKey[K];
+      return 960 as UserSettingValueByKey[K];
     }
     if (key === "hoverPreviewOpenDelayMs") {
       const value = setting?.resolvedValue;

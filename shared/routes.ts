@@ -196,6 +196,19 @@ const tourWeekEmployeesWeekSchema = z.object({
   employees: z.array(tourWeekEmployeeMemberSchema),
 });
 
+const employeeWeekPlanningItemSchema = z.object({
+  assignmentId: z.number().int().positive(),
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  tourColor: z.string().nullable(),
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  isLocked: z.boolean(),
+  members: z.array(tourWeekEmployeeMemberSchema),
+});
+
 const tourWeekAppointmentPreviewStatusSchema = z.enum([
   "will_add",
   "conflict",
@@ -1841,6 +1854,14 @@ export const api = {
           team: z.custom<typeof teams.$inferSelect>().nullable(),
           tour: z.custom<typeof tours.$inferSelect>().nullable(),
         }),
+        404: errorSchemas.notFound,
+      },
+    },
+    weekPlans: {
+      method: 'GET' as const,
+      path: '/api/employees/:id/week-plans',
+      responses: {
+        200: z.array(employeeWeekPlanningItemSchema),
         404: errorSchemas.notFound,
       },
     },

@@ -17,6 +17,7 @@ export type TourWeekEmployeeAssignmentRow = {
   assignmentId: number;
   tourId: number;
   tourName: string;
+  tourColor: string | null;
   isoYear: number;
   isoWeek: number;
   employeeId: number;
@@ -44,6 +45,7 @@ export async function listAssignmentsByTour(tourId: number): Promise<TourWeekEmp
       assignmentId: tourWeekEmployees.id,
       tourId: tourWeekEmployees.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
@@ -65,6 +67,7 @@ export async function listAssignmentsByTour(tourId: number): Promise<TourWeekEmp
     assignmentId: Number(row.assignmentId),
     tourId: Number(row.tourId),
     tourName: row.tourName,
+    tourColor: row.tourColor,
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
@@ -81,6 +84,7 @@ export async function listAssignmentsByTourIds(tourIds: number[]): Promise<TourW
       assignmentId: tourWeekEmployees.id,
       tourId: tourWeekEmployees.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
@@ -103,6 +107,7 @@ export async function listAssignmentsByTourIds(tourIds: number[]): Promise<TourW
     assignmentId: Number(row.assignmentId),
     tourId: Number(row.tourId),
     tourName: row.tourName,
+    tourColor: row.tourColor,
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
@@ -120,6 +125,7 @@ export async function listAssignmentsByTourAndWeek(
       assignmentId: tourWeekEmployees.id,
       tourId: tourWeekEmployees.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
@@ -139,6 +145,7 @@ export async function listAssignmentsByTourAndWeek(
     assignmentId: Number(row.assignmentId),
     tourId: Number(row.tourId),
     tourName: row.tourName,
+    tourColor: row.tourColor,
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
@@ -154,6 +161,7 @@ export async function getAssignmentById(
       assignmentId: tourWeekEmployees.id,
       tourId: tourWeekEmployees.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
@@ -170,6 +178,7 @@ export async function getAssignmentById(
     assignmentId: Number(row.assignmentId),
     tourId: Number(row.tourId),
     tourName: row.tourName,
+    tourColor: row.tourColor,
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
@@ -187,6 +196,7 @@ export async function getAssignmentForEmployeeWeek(
       assignmentId: tourWeekEmployees.id,
       tourId: tourWeekEmployees.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
@@ -207,6 +217,7 @@ export async function getAssignmentForEmployeeWeek(
     assignmentId: Number(row.assignmentId),
     tourId: Number(row.tourId),
     tourName: row.tourName,
+    tourColor: row.tourColor,
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
@@ -225,6 +236,41 @@ export async function createAssignmentTx(
     employeeId: params.employeeId,
   });
   return Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId);
+}
+
+export async function listAssignmentsByEmployee(employeeId: number): Promise<TourWeekEmployeeAssignmentRow[]> {
+  const rows = await db
+    .select({
+      assignmentId: tourWeekEmployees.id,
+      tourId: tourWeekEmployees.tourId,
+      tourName: tours.name,
+      tourColor: tours.color,
+      isoYear: tourWeekEmployees.isoYear,
+      isoWeek: tourWeekEmployees.isoWeek,
+      employeeId: tourWeekEmployees.employeeId,
+      fullName: employees.fullName,
+    })
+    .from(tourWeekEmployees)
+    .innerJoin(tours, eq(tourWeekEmployees.tourId, tours.id))
+    .innerJoin(employees, eq(tourWeekEmployees.employeeId, employees.id))
+    .where(eq(tourWeekEmployees.employeeId, employeeId))
+    .orderBy(
+      asc(tourWeekEmployees.isoYear),
+      asc(tourWeekEmployees.isoWeek),
+      asc(tours.name),
+      asc(tours.id),
+    );
+
+  return rows.map((row) => ({
+    assignmentId: Number(row.assignmentId),
+    tourId: Number(row.tourId),
+    tourName: row.tourName,
+    tourColor: row.tourColor,
+    isoYear: Number(row.isoYear),
+    isoWeek: Number(row.isoWeek),
+    employeeId: Number(row.employeeId),
+    fullName: row.fullName,
+  }));
 }
 
 export async function deleteAssignmentTx(tx: DbTx, assignmentId: number): Promise<number> {

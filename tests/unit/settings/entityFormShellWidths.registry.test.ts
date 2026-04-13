@@ -25,7 +25,7 @@ describe("settings registry: entity form shell widths", () => {
     expect(userSettingsRegistry.entityFormShellSidebarWidthPx.max).toBe(480);
 
     expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.key).toBe("entityFormShell.contentMaxWidthPx");
-    expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.defaultValue).toBe(760);
+    expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.defaultValue).toBe(960);
     expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.allowedScopes).toEqual(["USER"]);
     expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.min).toBe(640);
     expect(userSettingsRegistry.entityFormShellContentMaxWidthPx.max).toBe(1100);

@@ -1,9 +1,11 @@
 import type { Employee, InsertEmployee, Tag, Team, Tour, UpdateEmployee } from "@shared/schema";
+import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
+import { isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
 
 export class EmployeesError extends Error {
   status: number;
@@ -99,6 +101,90 @@ export async function getEmployeeWithRelations(
   }
 
   return { employee, team, tour: null };
+}
+
+export async function listEmployeeWeekPlans(
+  id: number,
+  roleKey: CanonicalRoleKey,
+): Promise<Array<{
+  assignmentId: number;
+  tourId: number;
+  tourName: string;
+  tourColor: string | null;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  isLocked: boolean;
+  members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
+}> | null> {
+  const employee = await employeesRepository.getEmployee(id);
+  if (!employee) return null;
+  if (roleKey !== "ADMIN" && !employee.isActive) return null;
+
+  const employeeAssignments = await tourWeekEmployeesRepository.listAssignmentsByEmployee(id);
+  if (employeeAssignments.length === 0) return [];
+
+  const relevantKeys = new Set(
+    employeeAssignments.map((assignment) => `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`),
+  );
+  const allAssignments = await tourWeekEmployeesRepository.listAssignmentsByTourIds(
+    employeeAssignments.map((assignment) => assignment.tourId),
+  );
+
+  const grouped = new Map<number, {
+    assignmentId: number;
+    tourId: number;
+    tourName: string;
+    tourColor: string | null;
+    isoYear: number;
+    isoWeek: number;
+    weekStartDate: string;
+    weekEndDate: string;
+    isLocked: boolean;
+    members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
+  }>();
+
+  for (const assignment of allAssignments) {
+    const key = `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`;
+    if (!relevantKeys.has(key)) continue;
+
+    const numericKey = assignment.tourId * 1000000 + assignment.isoYear * 100 + assignment.isoWeek;
+    const existing = grouped.get(numericKey) ?? (() => {
+      const weekWindow = resolveIsoWeekWindow(assignment.isoYear, assignment.isoWeek);
+      const ownAssignment = employeeAssignments.find((entry) =>
+        entry.tourId === assignment.tourId
+          && entry.isoYear === assignment.isoYear
+          && entry.isoWeek === assignment.isoWeek,
+      );
+
+      return {
+        assignmentId: ownAssignment?.assignmentId ?? assignment.assignmentId,
+        tourId: assignment.tourId,
+        tourName: assignment.tourName,
+        tourColor: assignment.tourColor,
+        isoYear: assignment.isoYear,
+        isoWeek: assignment.isoWeek,
+        weekStartDate: weekWindow.weekStartDate,
+        weekEndDate: weekWindow.weekEndDate,
+        isLocked: isWeekLocked(assignment.isoYear, assignment.isoWeek),
+        members: [],
+      };
+    })();
+
+    existing.members.push({
+      assignmentId: assignment.assignmentId,
+      employeeId: assignment.employeeId,
+      fullName: assignment.fullName,
+    });
+    grouped.set(numericKey, existing);
+  }
+
+  return Array.from(grouped.values()).sort((left, right) => {
+    if (left.isoYear !== right.isoYear) return left.isoYear - right.isoYear;
+    if (left.isoWeek !== right.isoWeek) return left.isoWeek - right.isoWeek;
+    return left.tourName.localeCompare(right.tourName, "de");
+  });
 }
 
 export async function listEmployeeTagRelations(id: number, roleKey: CanonicalRoleKey) {

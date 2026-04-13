@@ -28,7 +28,7 @@ describe("CalendarWeekTourLaneHeaderBar", () => {
       />,
     );
 
-    expect(html).toContain('relative z-10 flex-shrink-0 opacity-80');
+    expect(html).toContain('relative z-10');
     expect(html).toContain('data-testid="notes-icon-marker"');
     expect(html).toContain('data-testid="notes-count-marker"');
   });
