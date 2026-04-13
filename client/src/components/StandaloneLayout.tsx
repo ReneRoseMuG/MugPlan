@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useStandaloneMode } from "@/hooks/useStandaloneMode";
@@ -11,6 +11,10 @@ type StandaloneLayoutProps = {
 
 export default function StandaloneLayout({ title, children }: StandaloneLayoutProps) {
   const isStandaloneMode = useStandaloneMode();
+
+  useEffect(() => {
+    document.title = `MuG Plan | ${title}`;
+  }, [title]);
 
   return (
     <div

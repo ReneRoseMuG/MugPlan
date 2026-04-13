@@ -69,6 +69,21 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
   };
 }
 
+function resolveStandaloneReportTitle(launch: StandaloneReportLaunch | null): string {
+  if (!launch) return "Reports";
+
+  switch (launch.reportType) {
+    case "vorlaufliste":
+      return "Vorlaufliste";
+    case "produktionsplanung":
+      return "Produktionsplanung";
+    case "auftragsliste":
+      return "Auftragsliste";
+    default:
+      return "Reports";
+  }
+}
+
 export function StandaloneAppointments() {
   const [appointmentOverlay, setAppointmentOverlay] = useState<AppointmentOverlayState | null>(null);
 
@@ -246,7 +261,7 @@ export function StandaloneReports() {
   const [launch] = useState<StandaloneReportLaunch | null>(() => parseStandaloneReportLaunch(window.location.search));
 
   return (
-    <StandaloneLayout title="Reports">
+    <StandaloneLayout title={resolveStandaloneReportTitle(launch)}>
       <ReportsPage standaloneLaunch={launch} />
     </StandaloneLayout>
   );
