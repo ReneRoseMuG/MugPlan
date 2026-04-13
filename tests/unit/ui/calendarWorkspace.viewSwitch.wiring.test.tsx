@@ -6,14 +6,17 @@
  * - CalendarWorkspace rendert Monatsansichten sichtbar nur noch ueber MonthSheetGrid.
  * - New/Open-Callbacks werden mit dem passenden Rueckkehrkontext weitergereicht.
  * - Monitoring-Treffer werden als triggerbezogene Konflikt-Metadaten in Woche und Monat weitergereicht.
+ * - Die zentrale Restore-Request-Logik fuer Vor/Zurueck-Navigation uebernimmt die zuletzt gemeldete Week-Viewport-Position nur im Wochenmodus.
  *
  * Fehlerfaelle:
  * - Falsches Grid wird fuer die aktive Ansicht gerendert.
  * - Week- und Month-Callbacks verlieren ihren View-Kontext.
  * - Triggerprioritaet oder Konfliktfarbe gehen auf dem Weg in die Grids verloren.
+ * - Wochennavigation startet nach dem Blaettern wieder oben statt die Arbeitsposition zu halten.
+ * - Monatsnavigation uebernimmt versehentlich Wochen-Scrollwerte.
  *
  * Ziel:
- * Wrapper-Verhalten fuer Woche und Monat ueber gerenderten Laufzeitkontext absichern.
+ * Wrapper-Verhalten fuer Woche und Monat inklusive Rueckkehr- und Navigationskontext absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -75,7 +78,7 @@ vi.mock("@/hooks/useSettings", () => ({
   },
 }));
 
-import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
+import { buildWeekNavigationRestoreRequest, CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
 
 describe("FT29 UI: calendar workspace week/month wiring", () => {
   beforeEach(() => {
@@ -103,8 +106,8 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         onDateChange={() => undefined}
         onOpenAppointmentForm={openAppointmentFormMock}
         projectId={88}
-        restoreScrollLeft={144}
-        onScrollRestoreApplied={() => undefined}
+        restoreRequest={{ scrollLeft: 144, scrollTop: 55 }}
+        onRestoreApplied={() => undefined}
       />,
     );
 
@@ -113,7 +116,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     const props = weekGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(17);
-    expect(props?.restoreScrollLeft).toBe(144);
+    expect(props?.restoreRequest).toEqual({ scrollLeft: 144, scrollTop: 55 });
     expect(props?.weekAppointmentDisplayMode).toBe("detail");
     expect(props?.weekTileBodyMode).toBe("collapsed");
     expect(props?.weekLanesCollapsed).toBe(false);
@@ -125,11 +128,14 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
       color: "#DC2626",
     });
 
-    (props?.onNewAppointment as (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void)(
+    (props?.onNewAppointment as (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void)(
       "2099-01-10",
-      { tourId: 5, scrollLeft: 220 },
+      { tourId: 5, scrollLeft: 220, scrollTop: 333 },
     );
-    (props?.onOpenAppointment as (appointmentId: number) => void)(501);
+    (props?.onOpenAppointment as (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void)(
+      501,
+      { scrollLeft: 111, scrollTop: 222 },
+    );
 
     expect(openAppointmentFormMock).toHaveBeenNthCalledWith(1, {
       initialDate: "2099-01-10",
@@ -137,11 +143,31 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
       projectId: 88,
       returnView: "week",
       weekScrollLeft: 220,
+      weekScrollTop: 333,
     });
     expect(openAppointmentFormMock).toHaveBeenNthCalledWith(2, {
       appointmentId: 501,
       returnView: "week",
+      weekScrollLeft: 111,
+      weekScrollTop: 222,
     });
+  });
+
+  it("builds a restore request from the last reported viewport only in week mode", () => {
+    expect(buildWeekNavigationRestoreRequest("week", {
+      scrollLeft: 321,
+      scrollTop: 654,
+    })).toEqual({
+      scrollLeft: 321,
+      scrollTop: 654,
+    });
+
+    expect(buildWeekNavigationRestoreRequest("month", {
+      scrollLeft: 321,
+      scrollTop: 654,
+    })).toBeNull();
+
+    expect(buildWeekNavigationRestoreRequest("week", null)).toBeNull();
   });
 
   it("renders the month sheet grid in month mode and forwards month callbacks with month return context", () => {

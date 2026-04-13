@@ -1,5 +1,5 @@
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
-import type { CalendarNavCommand } from "@/pages/Home";
+import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
 interface WeekGridProps {
@@ -13,10 +13,11 @@ interface WeekGridProps {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
-  onOpenAppointment?: (appointmentId: number) => void;
-  restoreScrollLeft?: number | null;
-  onScrollRestoreApplied?: () => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  restoreRequest?: WeekViewRestoreRequest | null;
+  onRestoreApplied?: () => void;
+  onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
 }
 
 export function WeekGrid({
@@ -32,8 +33,9 @@ export function WeekGrid({
   onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
-  restoreScrollLeft,
-  onScrollRestoreApplied,
+  restoreRequest,
+  onRestoreApplied,
+  onViewportChange,
 }: WeekGridProps) {
   return (
     <div className="h-full" data-testid="calendar-week-view">
@@ -50,8 +52,9 @@ export function WeekGrid({
         onVisibleDateChange={onVisibleDateChange}
         onNewAppointment={onNewAppointment}
         onOpenAppointment={onOpenAppointment}
-        restoreScrollLeft={restoreScrollLeft}
-        onScrollRestoreApplied={onScrollRestoreApplied}
+        restoreRequest={restoreRequest}
+        onRestoreApplied={onRestoreApplied}
+        onViewportChange={onViewportChange}
       />
     </div>
   );

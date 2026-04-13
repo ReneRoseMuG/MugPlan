@@ -11,6 +11,7 @@ import { EmployeesPage, type EmployeeScope, type EmployeeSortKey, type SortDirec
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage, type ProjectSortKey, type SortDirection as ProjectSortDirection } from "@/components/ProjectsPage";
 import { AppointmentForm } from "@/components/AppointmentForm";
+import type { AppointmentFormSaveResult } from "@/components/AppointmentForm";
 import {
   AppointmentsListPage,
   type AppointmentListFilters,
@@ -34,6 +35,16 @@ import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export type ViewType =
   | "month"
@@ -64,6 +75,12 @@ export type CalendarNavCommand = {
   direction: "next" | "prev";
 };
 
+export type WeekViewRestoreRequest = {
+  scrollLeft?: number | null;
+  scrollTop?: number | null;
+  focusAppointmentId?: number | null;
+};
+
 type CalendarWorkspaceView = "week" | "month";
 
 type ReturnContext = {
@@ -83,12 +100,19 @@ type AppointmentContextState = {
   returnContext?: ReturnContext;
   readOnlyFields?: Array<"project" | "customer">;
   weekScrollLeft?: number | null;
+  weekScrollTop?: number | null;
 };
 
 type AppointmentOverlayOrigin = "appointmentsList" | "employeeAppointments" | "tourAppointments" | "monitoring";
 
 type AppointmentOverlayState = AppointmentContextState & {
   origin: AppointmentOverlayOrigin;
+};
+
+type FollowAppointmentPromptState = {
+  appointmentId: number;
+  startDate: string;
+  targetView: "week" | "calendarContextual";
 };
 
 type HomeProps = {
@@ -214,9 +238,11 @@ export default function Home({ onLogout }: HomeProps) {
     returnContext?: ReturnContext;
     readOnlyFields?: Array<"project" | "customer">;
     weekScrollLeft?: number | null;
+    weekScrollTop?: number | null;
   } | null>(null);
   const [appointmentOverlayContext, setAppointmentOverlayContext] = useState<AppointmentOverlayState | null>(null);
-  const [pendingWeekScrollRestore, setPendingWeekScrollRestore] = useState<number | null>(null);
+  const [pendingWeekRestore, setPendingWeekRestore] = useState<WeekViewRestoreRequest | null>(null);
+  const [followAppointmentPrompt, setFollowAppointmentPrompt] = useState<FollowAppointmentPromptState | null>(null);
   const [employeeFormVisible, setEmployeeFormVisible] = useState(false);
   const [tourFormVisible, setTourFormVisible] = useState(false);
   const [teamFormVisible, setTeamFormVisible] = useState(false);
@@ -253,11 +279,17 @@ export default function Home({ onLogout }: HomeProps) {
     document.title = `MuG Plan | ${resolveViewTitle(view)}`;
   }, [view]);
 
-  const handleWeekScrollRestoreApplied = useCallback(() => {
-    if (view === "week") {
-      setPendingWeekScrollRestore(null);
+  const handleWeekRestoreApplied = useCallback(() => {
+    setPendingWeekRestore(null);
+  }, []);
+
+  const parseIsoDateOnlyToDate = useCallback((value: string) => {
+    const [year, month, day] = value.split("-").map(Number);
+    if (!year || !month || !day) {
+      return new Date();
     }
-  }, [view]);
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  }, []);
 
   const applyReturnContext = useCallback((context: ReturnContext) => {
     if (typeof context.projectId === "number") {
@@ -276,35 +308,58 @@ export default function Home({ onLogout }: HomeProps) {
     setView(context.targetView);
   }, []);
 
-  const returnFromAppointment = () => {
+  const returnFromAppointment = (saveResult?: AppointmentFormSaveResult) => {
     const context = appointmentContext;
+    const weekRestoreFromContext: WeekViewRestoreRequest | null =
+      typeof context?.weekScrollLeft === "number" || typeof context?.weekScrollTop === "number"
+        ? {
+            scrollLeft: context?.weekScrollLeft ?? null,
+            scrollTop: context?.weekScrollTop ?? null,
+          }
+        : null;
+
+    const followTargetView =
+      context?.returnView === "week"
+        ? (context.returnContext?.targetView === "calendarContextual" ? "calendarContextual" : "week")
+        : null;
+
+    const shouldOfferFollow = Boolean(
+      saveResult?.shouldOfferFollow
+      && followTargetView
+      && typeof saveResult.appointmentId === "number"
+      && saveResult.startDate,
+    );
 
     if (context?.returnContext) {
-      if (
-        context.returnContext.targetView === "week"
-        && typeof context.weekScrollLeft === "number"
-        && Number.isFinite(context.weekScrollLeft)
-        && context.weekScrollLeft >= 0
-      ) {
-        setPendingWeekScrollRestore(context.weekScrollLeft);
-      } else {
-        setPendingWeekScrollRestore(null);
-      }
+      setPendingWeekRestore(weekRestoreFromContext);
       setAppointmentContext(null);
       applyReturnContext(context.returnContext);
+      if (shouldOfferFollow) {
+        setFollowAppointmentPrompt({
+          appointmentId: saveResult!.appointmentId!,
+          startDate: saveResult!.startDate,
+          targetView: followTargetView!,
+        });
+      } else {
+        setFollowAppointmentPrompt(null);
+      }
       return;
     }
 
     const returnToProject = Boolean(context?.projectId);
     const returnView = context?.returnView ?? "month";
-    const weekScrollLeft = context?.weekScrollLeft;
-    if (!returnToProject && returnView === "week" && typeof weekScrollLeft === "number" && Number.isFinite(weekScrollLeft) && weekScrollLeft >= 0) {
-      setPendingWeekScrollRestore(weekScrollLeft);
-    } else {
-      setPendingWeekScrollRestore(null);
-    }
+    setPendingWeekRestore(!returnToProject && returnView === "week" ? weekRestoreFromContext : null);
     setAppointmentContext(null);
     setView(returnToProject ? "project" : returnView);
+    if (shouldOfferFollow) {
+      setFollowAppointmentPrompt({
+        appointmentId: saveResult!.appointmentId!,
+        startDate: saveResult!.startDate,
+        targetView: followTargetView!,
+      });
+    } else {
+      setFollowAppointmentPrompt(null);
+    }
   };
 
   const nextYear = () => {
@@ -561,6 +616,7 @@ export default function Home({ onLogout }: HomeProps) {
                   returnContext: { targetView: "calendarContextual", projectId: calendarContext.projectId },
                   returnView: ctx.returnView,
                   weekScrollLeft: ctx.weekScrollLeft,
+                  weekScrollTop: ctx.weekScrollTop,
                 });
                 setView("appointment");
               }}
@@ -569,6 +625,8 @@ export default function Home({ onLogout }: HomeProps) {
               }}
               projectId={calendarContext.projectId}
               hideMainNavigation
+              restoreRequest={calendarContext.activeView === "week" ? pendingWeekRestore : null}
+              onRestoreApplied={handleWeekRestoreApplied}
             />
           ) : isGlobalCalendarView && (view === "week" || view === "month" || view === "monthSheet") ? (
             <CalendarWorkspace
@@ -591,11 +649,12 @@ export default function Home({ onLogout }: HomeProps) {
                   returnContext: { targetView: ctx.returnView ?? "month" },
                   returnView: ctx.returnView,
                   weekScrollLeft: ctx.weekScrollLeft,
+                  weekScrollTop: ctx.weekScrollTop,
                 });
                 setView("appointment");
               }}
-              restoreScrollLeft={view === "week" ? pendingWeekScrollRestore : null}
-              onScrollRestoreApplied={handleWeekScrollRestoreApplied}
+              restoreRequest={view === "week" ? pendingWeekRestore : null}
+              onRestoreApplied={handleWeekRestoreApplied}
             />
           ) : isGlobalCalendarView && view === "year" ? (
             <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
@@ -684,6 +743,51 @@ export default function Home({ onLogout }: HomeProps) {
           />
         </div>
       )}
+      <AlertDialog
+        open={followAppointmentPrompt !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFollowAppointmentPrompt(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dem Termin folgen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Termin wurde auf eine andere Position verschoben. Soll direkt zur neuen Stelle im Wochenkalender gesprungen werden?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Nicht folgen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!followAppointmentPrompt) return;
+                const targetDate = parseIsoDateOnlyToDate(followAppointmentPrompt.startDate);
+                if (followAppointmentPrompt.targetView === "calendarContextual") {
+                  setCalendarContext((prev) => (
+                    prev
+                      ? {
+                          ...prev,
+                          activeView: "week",
+                          currentDate: targetDate,
+                        }
+                      : prev
+                  ));
+                } else {
+                  setCurrentDate(targetDate);
+                }
+                setPendingWeekRestore({
+                  focusAppointmentId: followAppointmentPrompt.appointmentId,
+                });
+                setFollowAppointmentPrompt(null);
+              }}
+            >
+              Folgen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {view === "project" && (
         <div className="fixed inset-0 z-50 bg-background overflow-y-auto">
           <ProjectForm

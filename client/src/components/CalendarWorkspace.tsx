@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -9,6 +9,7 @@ import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
 import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
+import type { WeekViewRestoreRequest } from "@/pages/Home";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 
@@ -19,6 +20,7 @@ type OpenAppointmentContext = {
   projectId?: number;
   returnView?: CalendarWorkspaceView;
   weekScrollLeft?: number | null;
+  weekScrollTop?: number | null;
 };
 
 interface CalendarWorkspaceProps {
@@ -34,8 +36,21 @@ interface CalendarWorkspaceProps {
   onBack?: () => void;
   projectId?: number;
   hideMainNavigation?: boolean;
-  restoreScrollLeft?: number | null;
-  onScrollRestoreApplied?: () => void;
+  restoreRequest?: WeekViewRestoreRequest | null;
+  onRestoreApplied?: () => void;
+}
+
+export function buildWeekNavigationRestoreRequest(
+  activeView: CalendarWorkspaceView,
+  viewport: { scrollLeft: number; scrollTop: number } | null,
+): WeekViewRestoreRequest | null {
+  if (activeView !== "week" || !viewport) {
+    return null;
+  }
+  return {
+    scrollLeft: viewport.scrollLeft,
+    scrollTop: viewport.scrollTop,
+  };
 }
 
 export function CalendarWorkspace({
@@ -51,17 +66,19 @@ export function CalendarWorkspace({
   onBack,
   projectId,
   hideMainNavigation = false,
-  restoreScrollLeft,
-  onScrollRestoreApplied,
+  restoreRequest,
+  onRestoreApplied,
 }: CalendarWorkspaceProps) {
   const { toast } = useToast();
   const { setSetting } = useSettings();
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
+  const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
     activeView === "week" ? String(getISOWeek(currentDate)) : "",
   );
   const [kwJumpError, setKwJumpError] = useState(false);
+  const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
   const conflictAppointmentMap = useMemo(
@@ -79,12 +96,19 @@ export function CalendarWorkspace({
   useEffect(() => {
     if (activeView !== "week") {
       setJumpBackDate(null);
+      setLocalWeekRestoreRequest(null);
       setKwInputValue("");
       setKwJumpError(false);
       return;
     }
     setKwInputValue(String(getISOWeek(currentDate)));
   }, [activeView, currentDate]);
+
+  const rememberWeekViewportForNextNavigation = () => {
+    const nextRestoreRequest = buildWeekNavigationRestoreRequest(activeView, latestWeekViewportRef.current);
+    if (!nextRestoreRequest) return;
+    setLocalWeekRestoreRequest(nextRestoreRequest);
+  };
 
   const submitKwJump = (valueOverride?: string) => {
     const trimmedValue = sanitizeIsoWeekInput(valueOverride ?? kwInputValue);
@@ -107,6 +131,7 @@ export function CalendarWorkspace({
         setKwJumpError(false);
         return;
       }
+      rememberWeekViewportForNextNavigation();
       setJumpBackDate(currentDate);
       onDateChange(targetDate);
       setKwInputValue(String(parsedKw));
@@ -139,6 +164,7 @@ export function CalendarWorkspace({
       onDateChange(addMonths(currentDate, 1));
       return;
     }
+    rememberWeekViewportForNextNavigation();
     onDateChange(addWeeks(currentDate, 1));
   };
 
@@ -149,6 +175,7 @@ export function CalendarWorkspace({
       onDateChange(subMonths(currentDate, 1));
       return;
     }
+    rememberWeekViewportForNextNavigation();
     onDateChange(subWeeks(currentDate, 1));
   };
 
@@ -171,16 +198,25 @@ export function CalendarWorkspace({
               projectId,
               returnView: "week",
               weekScrollLeft: options?.scrollLeft ?? null,
+              weekScrollTop: options?.scrollTop ?? null,
             });
           }}
-          onOpenAppointment={(appointmentId) => {
+          onOpenAppointment={(appointmentId, options) => {
             onOpenAppointmentForm({
               appointmentId,
               returnView: "week",
+              weekScrollLeft: options?.scrollLeft ?? null,
+              weekScrollTop: options?.scrollTop ?? null,
             });
           }}
-          restoreScrollLeft={restoreScrollLeft}
-          onScrollRestoreApplied={onScrollRestoreApplied}
+          restoreRequest={restoreRequest ?? localWeekRestoreRequest}
+          onRestoreApplied={() => {
+            setLocalWeekRestoreRequest(null);
+            onRestoreApplied?.();
+          }}
+          onViewportChange={(viewport) => {
+            latestWeekViewportRef.current = viewport;
+          }}
         />
       );
     }
@@ -298,6 +334,7 @@ export function CalendarWorkspace({
             showKwJumpBack={jumpBackDate !== null}
             onKwJumpBack={() => {
               if (!jumpBackDate) return;
+              rememberWeekViewportForNextNavigation();
               setKwInputValue(String(getISOWeek(jumpBackDate)));
               onDateChange(jumpBackDate);
               setJumpBackDate(null);

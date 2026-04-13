@@ -45,7 +45,7 @@ import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import { HoverPreview } from "@/components/ui/hover-preview";
-import type { CalendarNavCommand } from "@/pages/Home";
+import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
@@ -60,10 +60,11 @@ type CalendarWeekViewProps = {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   navCommand?: CalendarNavCommand;
   onVisibleDateChange?: (date: Date) => void;
-  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null }) => void;
-  onOpenAppointment?: (appointmentId: number) => void;
-  restoreScrollLeft?: number | null;
-  onScrollRestoreApplied?: () => void;
+  onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  restoreRequest?: WeekViewRestoreRequest | null;
+  onRestoreApplied?: () => void;
+  onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
 };
 
 type WeekDayBucket = {
@@ -203,8 +204,9 @@ export function CalendarWeekView({
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
-  restoreScrollLeft,
-  onScrollRestoreApplied,
+  restoreRequest,
+  onRestoreApplied,
+  onViewportChange,
 }: CalendarWeekViewProps) {
   // FIX-RULE:
   // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
@@ -215,6 +217,8 @@ export function CalendarWeekView({
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const weekSectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const weekScrollContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
   const { toast } = useToast();
@@ -275,17 +279,26 @@ export function CalendarWeekView({
   }, [scrollResetKey]);
 
   useEffect(() => {
-    if (typeof restoreScrollLeft !== "number" || !Number.isFinite(restoreScrollLeft)) return;
-    const node = horizontalScrollContainerRef.current;
-    if (!node) return;
+    const horizontalNode = horizontalScrollContainerRef.current;
+    const verticalNode = weekScrollContainerRefs.current.get(scrollResetKey);
+    if (!horizontalNode || !verticalNode || !onViewportChange) return;
 
-    const frame = window.requestAnimationFrame(() => {
-      node.scrollLeft = Math.max(0, restoreScrollLeft);
-      onScrollRestoreApplied?.();
-    });
+    const publishViewport = () => {
+      onViewportChange({
+        scrollLeft: horizontalNode.scrollLeft,
+        scrollTop: verticalNode.scrollTop,
+      });
+    };
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [onScrollRestoreApplied, restoreScrollLeft, scrollResetKey]);
+    publishViewport();
+    horizontalNode.addEventListener("scroll", publishViewport, { passive: true });
+    verticalNode.addEventListener("scroll", publishViewport, { passive: true });
+
+    return () => {
+      horizontalNode.removeEventListener("scroll", publishViewport);
+      verticalNode.removeEventListener("scroll", publishViewport);
+    };
+  }, [onViewportChange, scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -425,6 +438,79 @@ export function CalendarWeekView({
   };
 
   useEffect(() => {
+    if (!restoreRequest) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const targetAppointmentId = restoreRequest.focusAppointmentId;
+      if (typeof targetAppointmentId === "number" && Number.isFinite(targetAppointmentId)) {
+        const targetAppointment = appointmentsById.get(targetAppointmentId);
+        if (!targetAppointment) return;
+
+        const targetLaneKey = targetAppointment.tourId ? `tour-${targetAppointment.tourId}` : "tour-unassigned";
+        if (isCollapsedMode && effectiveExpandedLaneId !== targetLaneKey) {
+          void persistExpandedLaneId(targetLaneKey).catch((error) => {
+            console.error(`${logPrefix} failed to expand lane for restore`, error);
+            toast({
+              title: "Lane-Zustand konnte nicht gespeichert werden",
+              description: "Bitte erneut versuchen.",
+              variant: "destructive",
+            });
+          });
+          return;
+        }
+
+        const targetElement = document.querySelector<HTMLElement>(
+          `[data-testid="week-spanning-tile-${targetAppointmentId}"], [data-testid="week-appointment-panel-${targetAppointmentId}"]`,
+        );
+        if (!targetElement) return;
+
+        const sectionEntry = Array.from(weekSectionRefs.current.entries()).find(([, sectionNode]) => sectionNode.contains(targetElement));
+        if (!sectionEntry) return;
+
+        const [weekKey, sectionNode] = sectionEntry;
+        const horizontalNode = horizontalScrollContainerRef.current;
+        const verticalNode = weekScrollContainerRefs.current.get(weekKey);
+        if (horizontalNode) {
+          horizontalNode.scrollLeft = Math.max(0, sectionNode.offsetLeft);
+        }
+        if (verticalNode) {
+          const targetRect = targetElement.getBoundingClientRect();
+          const containerRect = verticalNode.getBoundingClientRect();
+          const verticalOffset = Math.max(
+            0,
+            verticalNode.scrollTop
+              + (targetRect.top - containerRect.top)
+              - Math.max(24, Math.round((verticalNode.clientHeight - targetRect.height) / 2)),
+          );
+          verticalNode.scrollTop = verticalOffset;
+        }
+        onRestoreApplied?.();
+        return;
+      }
+
+      const horizontalNode = horizontalScrollContainerRef.current;
+      const verticalNode = weekScrollContainerRefs.current.get(scrollResetKey);
+      if (horizontalNode && typeof restoreRequest.scrollLeft === "number" && Number.isFinite(restoreRequest.scrollLeft)) {
+        horizontalNode.scrollLeft = Math.max(0, restoreRequest.scrollLeft);
+      }
+      if (verticalNode && typeof restoreRequest.scrollTop === "number" && Number.isFinite(restoreRequest.scrollTop)) {
+        verticalNode.scrollTop = Math.max(0, restoreRequest.scrollTop);
+      }
+      onRestoreApplied?.();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    appointmentsById,
+    effectiveExpandedLaneId,
+    isCollapsedMode,
+    onRestoreApplied,
+    restoreRequest,
+    scrollResetKey,
+    toast,
+  ]);
+
+  useEffect(() => {
     if (!isCollapsedMode) {
       pendingLaneCorrectionRef.current = null;
       return;
@@ -461,8 +547,10 @@ export function CalendarWeekView({
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
+    const weekScrollTop = weekScrollContainerRefs.current.get(scrollResetKey)?.scrollTop ?? null;
+    const weekScrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
     console.info(`${logPrefix} open appointment`, { appointmentId });
-    onOpenAppointment?.(appointmentId);
+    onOpenAppointment?.(appointmentId, { scrollLeft: weekScrollLeft, scrollTop: weekScrollTop });
   };
 
   const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
@@ -784,9 +872,25 @@ export function CalendarWeekView({
             return (
               <section
                 key={weekKey}
+                ref={(node) => {
+                  if (node) {
+                    weekSectionRefs.current.set(weekKey, node);
+                  } else {
+                    weekSectionRefs.current.delete(weekKey);
+                  }
+                }}
                 className="w-full min-w-full h-full border-r border-border/30 last:border-r-0"
               >
-                <div className="h-full flex flex-col overflow-y-auto">
+                <div
+                  ref={(node) => {
+                    if (node) {
+                      weekScrollContainerRefs.current.set(weekKey, node);
+                    } else {
+                      weekScrollContainerRefs.current.delete(weekKey);
+                    }
+                  }}
+                  className="h-full flex flex-col overflow-y-auto"
+                >
                   <div className="sticky top-0 z-20 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekDayGridTemplate }}>
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
@@ -957,13 +1061,15 @@ export function CalendarWeekView({
                                         onClick={(event) => {
                                           event.stopPropagation();
                                           const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
+                                          const scrollTop = weekScrollContainerRefs.current.get(weekKey)?.scrollTop ?? null;
                                           console.info(`${logPrefix} new appointment click`, {
                                             date: dayBucket.dateKey,
                                             tourId: tourLane.tourId,
                                             laneKey: tourLane.laneKey,
                                             scrollLeft,
+                                            scrollTop,
                                           });
-                                          onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft });
+                                          onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
                                         }}
                                         className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
                                         style={{ color: "#ffffff" }}

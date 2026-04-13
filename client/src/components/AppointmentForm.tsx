@@ -74,7 +74,7 @@ import { Switch } from "@/components/ui/switch";
 
 interface AppointmentFormProps {
   onCancel?: () => void;
-  onSaved?: () => void;
+  onSaved?: (result?: AppointmentFormSaveResult) => void;
   onBack?: () => void;
   initialDate?: string;
   initialTourId?: number | null;
@@ -100,6 +100,13 @@ interface AppointmentDetail {
   employees: Employee[];
   isCancelled: boolean;
 }
+
+export type AppointmentFormSaveResult = {
+  appointmentId: number | null;
+  startDate: string;
+  tourId: number | null;
+  shouldOfferFollow: boolean;
+};
 
 type AppointmentFormProject = Project & {
   projectArticleItems?: ProjectArticleItem[];
@@ -1989,6 +1996,18 @@ export function AppointmentForm({
           : (employeeIdsOverride ?? assignedEmployeeIds),
       );
       const savedAppointmentId = data?.id ?? appointmentId ?? null;
+      const normalizedSavedStartDate = normalizeDateInputValue(payload.startDate);
+      const originalWeekKey = appointmentDetail ? buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate)) : null;
+      const savedWeekKey = buildIsoWeekKey(normalizedSavedStartDate);
+      const originalTourId = appointmentDetail?.tourId ?? null;
+      const shouldOfferFollow = Boolean(
+        isEditing
+        && typeof savedAppointmentId === "number"
+        && (
+          originalTourId !== (payload.tourId ?? null)
+          || (originalWeekKey !== null && originalWeekKey !== savedWeekKey)
+        ),
+      );
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
         projectId: payload.projectId ?? null,
@@ -2014,7 +2033,12 @@ export function AppointmentForm({
               : "Tags, Notizen oder Terminanhaenge konnten nicht vollstaendig gespeichert werden.",
             variant: "destructive",
           });
-          onSaved?.();
+          onSaved?.({
+            appointmentId: savedAppointmentId,
+            startDate: normalizedSavedStartDate,
+            tourId: payload.tourId ?? null,
+            shouldOfferFollow,
+          });
           return;
         }
       }
@@ -2054,7 +2078,12 @@ export function AppointmentForm({
         employeeIds: assignedEmployeeIds,
         sidebarDraftSignature: isEditing ? null : createSidebarDraftSignature,
       }));
-      onSaved?.();
+      onSaved?.({
+        appointmentId: savedAppointmentId,
+        startDate: normalizedSavedStartDate,
+        tourId: payload.tourId ?? null,
+        shouldOfferFollow,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
