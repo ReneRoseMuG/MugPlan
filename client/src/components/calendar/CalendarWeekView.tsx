@@ -12,8 +12,9 @@ import {
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
-import { Lock, LockOpen, MoreVertical } from "lucide-react";
+import { Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -50,9 +51,20 @@ import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
-import type { Tour } from "@shared/schema";
+import type { NoteTemplate, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
+import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -252,6 +264,8 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
+  const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; appointmentId: number; noteId: number; noteVersion: number } | null>(null);
   const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
   const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
@@ -287,6 +301,16 @@ export function CalendarWeekView({
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
   const canManageWeekPlanning = userRole === "ADMIN" || userRole === "DISPATCHER";
+  const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
+    queryKey: ["/api/note-templates"],
+    queryFn: async () => {
+      const response = await fetch("/api/note-templates", { credentials: "include" });
+      if (!response.ok) {
+        throw new Error("Notizvorlagen konnten nicht geladen werden.");
+      }
+      return response.json() as Promise<NoteTemplate[]>;
+    },
+  });
 
   const dayWeights = useMemo(
     () => getDayWeights(weekendColumnPercent),
@@ -690,6 +714,108 @@ export function CalendarWeekView({
     setDraggedAppointmentId(null);
   };
 
+  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+  const loadAppointmentNotes = async (appointmentId: number) => {
+    const response = await fetch(`/api/appointments/${appointmentId}/notes`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error("Terminnotizen konnten nicht geladen werden.");
+    }
+    return response.json() as Promise<Array<{ id: number; version: number; title: string }>>;
+  };
+
+  const createAppointmentNoteMutation = useMutation({
+    mutationFn: async ({ appointmentId, title, body, cardColor, print, templateId }: {
+      appointmentId: number;
+      title: string;
+      body: string;
+      cardColor?: string | null;
+      print: boolean;
+      templateId?: number;
+    }) => {
+      const response = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, {
+        title,
+        body,
+        cardColor,
+        print,
+        templateId,
+      });
+      return response.json();
+    },
+    onSuccess: async (_createdNote, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", variables.appointmentId, "notes"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await refreshMonitoringWithNotification(toast);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Notiz konnte nicht erstellt werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteAppointmentNoteMutation = useMutation({
+    mutationFn: async ({ appointmentId, noteId, version }: { appointmentId: number; noteId: number; version: number }) => {
+      await apiRequest("DELETE", `/api/appointments/${appointmentId}/notes/${noteId}`, { version });
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", variables.appointmentId, "notes"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await refreshMonitoringWithNotification(toast);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Notiz konnte nicht geloescht werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const applyDropMutationEvents = (params: {
+    appointmentId: number;
+    mutationEvents: AppointmentMutationEvent[] | undefined;
+    notes: Array<{ id: number; version: number; title: string }>;
+  }) => {
+    if (!params.mutationEvents || params.mutationEvents.length === 0) {
+      return;
+    }
+
+    for (const event of params.mutationEvents) {
+      if (event.kind !== "tag_mutated") {
+        continue;
+      }
+
+      if (event.action === "added") {
+        const action = computeTagAddedAction(
+          event.tagName,
+          params.appointmentId,
+          params.notes.map((note) => ({ title: note.title })),
+        );
+        if (action.kind === "show_note_suggestion_dialog") {
+          setNoteSuggestionDialog({
+            templateTitle: action.templateTitle,
+            appointmentId: params.appointmentId,
+          });
+        }
+        continue;
+      }
+
+      const action = computeTagRemovedAction(
+        event.tagName,
+        params.notes.map((note) => ({ title: note.title })),
+      );
+      if (action.kind !== "show_note_removal_dialog") {
+        continue;
+      }
+
+      const matchingNote = params.notes.find((note) => normalizeTemplateTitle(note.title) === normalizeTemplateTitle(action.templateTitle));
+      if (!matchingNote) {
+        continue;
+      }
+      setNoteRemovalDialog({
+        templateTitle: action.templateTitle,
+        appointmentId: params.appointmentId,
+        noteId: matchingNote.id,
+        noteVersion: matchingNote.version,
+      });
+    }
+  };
+
   const persistDropMutation = async ({
     appointmentId,
     version,
@@ -728,16 +854,24 @@ export function CalendarWeekView({
       }),
     });
 
+    const responseBody = await response.json().catch(() => null) as { message?: string; code?: string; mutationEvents?: AppointmentMutationEvent[] } | null;
+
     if (!response.ok) {
-      const error = await response.json().catch(() => null);
-      if (error?.code === "VERSION_CONFLICT") {
+      if (responseBody?.code === "VERSION_CONFLICT") {
         throw new Error("Termin wurde zwischenzeitlich geaendert. Bitte neu laden.");
       }
-      if (error?.code === "VALIDATION_ERROR") {
-        throw new Error(error?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
+      if (responseBody?.code === "VALIDATION_ERROR") {
+        throw new Error(responseBody?.message ?? "Termin kann nicht verschoben werden. Bitte neu laden.");
       }
-      throw new Error(error?.message ?? "Termin konnte nicht verschoben werden");
+      throw new Error(responseBody?.message ?? "Termin konnte nicht verschoben werden");
     }
+
+    const existingNotes = await loadAppointmentNotes(appointmentId);
+    applyDropMutationEvents({
+      appointmentId,
+      mutationEvents: responseBody?.mutationEvents,
+      notes: existingNotes,
+    });
 
     await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
     await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
@@ -1169,6 +1303,7 @@ export function CalendarWeekView({
                                       onClick={() => openDialog()}
                                       className="gap-2 text-xs cursor-pointer"
                                     >
+                                      <StickyNote className="h-3.5 w-3.5 shrink-0" />
                                       {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
                                     </DropdownMenuItem>
                                     {tourLane.tourId != null ? (
@@ -1567,6 +1702,72 @@ export function CalendarWeekView({
           })}
         </div>
       </div>
+      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-suggestion">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für diesen Termin angelegt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-suggestion-skip">Nicht folgen</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-suggestion-confirm"
+              onClick={() => {
+                if (!noteSuggestionDialog) return;
+                const template = noteTemplates.find((entry) => normalizeTemplateTitle(entry.title) === normalizeTemplateTitle(noteSuggestionDialog.templateTitle));
+                if (!template) {
+                  toast({
+                    title: "Notizvorlage fehlt",
+                    description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                createAppointmentNoteMutation.mutate({
+                  appointmentId: noteSuggestionDialog.appointmentId,
+                  title: template.title,
+                  body: template.body,
+                  cardColor: template.cardColor,
+                  print: template.print,
+                  templateId: template.id,
+                });
+                setNoteSuggestionDialog(null);
+              }}
+            >
+              Notiz anlegen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={noteRemovalDialog !== null} onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-removal">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz mit entfernen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}" ebenfalls entfernt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-removal-keep">Notiz behalten</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-removal-confirm"
+              onClick={() => {
+                if (!noteRemovalDialog) return;
+                deleteAppointmentNoteMutation.mutate({
+                  appointmentId: noteRemovalDialog.appointmentId,
+                  noteId: noteRemovalDialog.noteId,
+                  version: noteRemovalDialog.noteVersion,
+                });
+                setNoteRemovalDialog(null);
+              }}
+            >
+              Notiz entfernen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - Header bleibt einzeilig (h-7) und rendert keine separate Tagescounter-Zeile.
  * - Header zeigt nur den Tournamen (kein Offen/Zu- oder Mitarbeiter-Counter-Text).
+ * - Das Wochenaktions-Menue sitzt links vor der Notizanzeige statt rechts am Lane-Ende.
  *
  * Fehlerfaelle:
  * - Verdickter Header durch zusaetzliche Zeilen.
@@ -61,5 +62,20 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
     expect(html).toContain("Tour Beta");
     expect(html).not.toContain("offen |");
     expect(html).not.toContain("zu |");
+  });
+
+  it("renders the menu slot before the notes segment", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(CalendarWeekTourLaneHeaderBar, {
+        label: "Tour Gamma",
+        color: "#345678",
+        menuSlot: React.createElement("span", { "data-testid": "menu-marker" }, "M"),
+        weekNotesIcon: React.createElement("span", { "data-testid": "notes-icon-marker" }, "I"),
+        weekNotesCount: React.createElement("span", { "data-testid": "notes-count-marker" }, "2"),
+      }),
+    );
+
+    expect(html.indexOf('data-testid="menu-marker"')).toBeLessThan(html.indexOf('data-testid="notes-icon-marker"'));
+    expect(html).toContain("grid-cols-[2.25rem_2.4rem_minmax(0,1fr)]");
   });
 });

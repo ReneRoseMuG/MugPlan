@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Kalendernahe Appointment-PATCH-Mutationen koennen einen Termin auf ein anderes Zukunftsdatum verschieben.
  * - Ein erfolgreicher D&D-naher Move kann optional auch die Tour-Zuordnung mit uebernehmen.
+ * - Reine D&D-Datumsverschiebungen liefern ohne FT06-Folgeaktion keine mutationEvents.
  *
  * Fehlerfaelle:
  * - Erfolgreiche Terminverschiebungen bleiben trotz 200-Response auf dem Ursprungsdatum stehen.
@@ -72,6 +73,7 @@ describe("calendar drag and drop positive appointment mutations", () => {
       customerId: customer.id,
       tourId: null,
     });
+    expect(response.body.mutationEvents).toBeUndefined();
     expect(String(response.body.startDate)).toContain("2099-10-05");
     expect(response.body.version).toBe(before.version + 1);
 

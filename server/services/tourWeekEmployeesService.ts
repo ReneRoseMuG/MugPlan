@@ -150,6 +150,12 @@ async function getParkplatzTourId(): Promise<number | null> {
   return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz"))?.id ?? null;
 }
 
+function assertWeekAssignmentTourAllowed(tour: { name: string | null | undefined }): void {
+  if (normalizeTourName(tour.name) === normalizeTourName("Parkplatz")) {
+    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Die Tour Parkplatz unterstuetzt keine Mitarbeiterplanung.");
+  }
+}
+
 async function requireEmployee(employeeId: number): Promise<Employee> {
   const employee = await employeesRepository.getEmployee(employeeId);
   if (!employee) {
@@ -468,7 +474,8 @@ export async function previewAddWeekEmployee(
   tourId: number,
   params: { isoYear: number; isoWeek: number; employeeId: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
+  assertWeekAssignmentTourAllowed(tour);
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
   assertWeekEditable(params.isoYear, params.isoWeek);
@@ -500,7 +507,8 @@ export async function executeAddWeekEmployee(
     throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Mitarbeiter fehlt");
   }
 
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
+  assertWeekAssignmentTourAllowed(tour);
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
   assertWeekEditable(params.isoYear, params.isoWeek);

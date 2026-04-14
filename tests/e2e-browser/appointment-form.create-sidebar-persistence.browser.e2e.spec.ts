@@ -9,6 +9,7 @@
  * - Nach Save zeigt der Wochenkalender die stabil sichtbaren Projekt-, Kunden- und Tourwerte des angelegten Termins.
  * - Beim erneuten Oeffnen bleiben Startdatum, Projekt, Kunde und Tour im Edit-Formular korrekt geladen.
  * - Eine gesetzte Tour weist keine Mitarbeiter automatisch zu; die Mitarbeiterliste bleibt leer, bis Nutzer aktiv zuweisen.
+ * - Der Create-Save auf `Tour Messe` oeffnet den FT06-Notizvorschlag und kann daraus eine Vorlagen-Notiz anlegen.
  * - Tags, Notizen und Terminanhaenge lassen sich im Neuer-Termin-Formular vor dem ersten Save bedienen.
  * - Nach dem ersten Save werden Tag, Notiz und Terminanhang dem erzeugten Termin korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei wandert nach erfolgreicher Projektanlage in die Projektdokumente und nicht zusaetzlich in Terminanhaenge.
@@ -22,6 +23,7 @@
  * - Die Create/Edit-Shell verliert Header-, Main-, Sidebar- oder Footer-Bereich.
  * - Ein aus der Tour-Lane gestarteter Termin verliert vor oder nach dem Save Projekt-, Kunden- oder Tour-Relationen.
  * - Das Formular weist durch eine gesetzte Tour unerwartet Mitarbeiter automatisch zu.
+ * - Der Save auf `Tour Messe` setzt zwar das Tag, loest aber keinen Notizvorschlag aus.
  * - Draft-Tags, Draft-Notizen oder pending Terminanhaenge gehen beim ersten Save verloren.
  * - Die Overlay-Projektbeschreibung bleibt ohne das erwartete Projekt-Tag `Anmerkungen`.
  * - Der Projektslot faellt nach dem Overlay-Rueckweg auf `nicht hinterlegt` zurueck, obwohl Order-Items gespeichert wurden.
@@ -84,6 +86,12 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   await dialog.getByTestId("input-note-title").fill(input.title);
   await dialog.getByTestId("richtext-editor").fill(input.body);
   await dialog.getByTestId("button-save-note").click();
+}
+
+async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ title: string }>> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/notes`);
+  expect(response.ok()).toBeTruthy();
+  return response.json() as Promise<Array<{ title: string }>>;
 }
 
 async function mockAppointmentDocumentExtraction(page: Page, customerNumber: string, options?: {
@@ -270,7 +278,7 @@ test("creates a relation-complete single-day appointment from a tour lane and re
   await assertAppointmentFormLoaded(page, fixture, { startDate: fixture.targetDate });
 });
 
-test("creates a new appointment on Tour Messe and persists the managed Messe tag", async ({ page }) => {
+test("creates a new appointment on Tour Messe, persists the managed Messe tag and follows the note suggestion", async ({ page }) => {
   const fixture = await createAppointmentBrowserFixture({ prefix: "FT06-CREATE-MESSE", targetDayOffset: 3 });
   await renameTourToMesse(fixture.tour.id);
   const messeTagId = await readSystemTagIdByName(MANAGED_MESSE_TAG_NAME);
@@ -280,6 +288,10 @@ test("creates a new appointment on Tour Messe and persists the managed Messe tag
 
   const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
 
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${createdAppointmentId}/tags`);
     if (!response.ok()) return false;
@@ -287,10 +299,10 @@ test("creates a new appointment on Tour Messe and persists the managed Messe tag
     return body.some((item) => item.tag.name === MANAGED_MESSE_TAG_NAME);
   }).toBe(true);
 
-  const followDialog = page.getByRole("alertdialog");
-  if (await followDialog.isVisible().catch(() => false)) {
-    await page.getByRole("button", { name: "Nicht folgen" }).click();
-  }
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, createdAppointmentId);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
 
   await page.getByTestId(`week-appointment-panel-${createdAppointmentId}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();

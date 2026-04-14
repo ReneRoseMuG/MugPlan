@@ -13,6 +13,7 @@
  * - POST /api/appointments setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird.
  * - PATCH /api/appointments/:id setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird.
  * - PATCH /api/appointments/:id entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird.
+ * - Create-/Update-Responses liefern mutationEvents fuer automatische FT06-Folgeaktionen.
  * - Tag Geparkt erscheint nicht im Picker-Katalog (GET /api/tags?domain=appointment).
  * - Tag Geparkt kann nicht manuell ueber POST /api/appointments/:id/tags gesetzt werden (409 PROTECTED).
  * - Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden (409 PROTECTED).
@@ -240,7 +241,7 @@ describe("FT06 integration: Geparkt-Tag-Entzug bei Tour-Wechsel", () => {
     const afterPark = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
     expect(await hasGeparktTag(appointment.id)).toBe(true);
 
-    await admin
+    const updateResponse = await admin
       .patch(`/api/appointments/${appointment.id}`)
       .send({
         version: afterPark.body.version,
@@ -251,6 +252,20 @@ describe("FT06 integration: Geparkt-Tag-Entzug bei Tour-Wechsel", () => {
       .expect(200);
 
     expect(await hasGeparktTag(appointment.id)).toBe(false);
+    expect(updateResponse.body.mutationEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "tour_changed",
+        appointmentId: appointment.id,
+        previousTourName: "Parkplatz",
+        nextTourName: regularTour.name,
+      }),
+      expect.objectContaining({
+        kind: "tag_mutated",
+        appointmentId: appointment.id,
+        tagName: RESERVED_VACANT_TAG_NAME,
+        action: "removed",
+      }),
+    ]));
   });
 
   it("entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war", async () => {
@@ -306,6 +321,20 @@ describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
       .expect(201);
 
     expect(await hasAppointmentTag(createResponse.body.id as number, MANAGED_MESSE_TAG_NAME)).toBe(true);
+    expect(createResponse.body.mutationEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "tour_changed",
+        appointmentId: createResponse.body.id,
+        previousTourName: null,
+        nextTourName: "Tour Messe",
+      }),
+      expect.objectContaining({
+        kind: "tag_mutated",
+        appointmentId: createResponse.body.id,
+        tagName: MANAGED_MESSE_TAG_NAME,
+        action: "added",
+      }),
+    ]));
   });
 
   it("setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird", async () => {
@@ -322,7 +351,7 @@ describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
 
     const detailBefore = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
 
-    await admin
+    const updateResponse = await admin
       .patch(`/api/appointments/${appointment.id}`)
       .send({
         version: detailBefore.body.version,
@@ -333,6 +362,20 @@ describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
       .expect(200);
 
     expect(await hasAppointmentTag(appointment.id, MANAGED_MESSE_TAG_NAME)).toBe(true);
+    expect(updateResponse.body.mutationEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "tour_changed",
+        appointmentId: appointment.id,
+        previousTourName: null,
+        nextTourName: "Tour Messe",
+      }),
+      expect.objectContaining({
+        kind: "tag_mutated",
+        appointmentId: appointment.id,
+        tagName: MANAGED_MESSE_TAG_NAME,
+        action: "added",
+      }),
+    ]));
   });
 
   it("entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird", async () => {
@@ -353,7 +396,7 @@ describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
 
     const detailBefore = await admin.get(`/api/appointments/${appointment.id}`).expect(200);
 
-    await admin
+    const updateResponse = await admin
       .patch(`/api/appointments/${appointment.id}`)
       .send({
         version: detailBefore.body.version,
@@ -364,6 +407,20 @@ describe("FT06 integration: Messe-Tag-Automatik bei Tour Messe", () => {
       .expect(200);
 
     expect(await hasAppointmentTag(appointment.id, MANAGED_MESSE_TAG_NAME)).toBe(false);
+    expect(updateResponse.body.mutationEvents).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        kind: "tour_changed",
+        appointmentId: appointment.id,
+        previousTourName: "Tour Messe",
+        nextTourName: regularTour.name,
+      }),
+      expect.objectContaining({
+        kind: "tag_mutated",
+        appointmentId: appointment.id,
+        tagName: MANAGED_MESSE_TAG_NAME,
+        action: "removed",
+      }),
+    ]));
   });
 });
 

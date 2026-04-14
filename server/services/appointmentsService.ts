@@ -4,6 +4,7 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
 } from "@shared/appointmentCancellation";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import type { InsertAppointment } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
@@ -29,6 +30,7 @@ import {
   isReservedVacantTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
+import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
@@ -120,16 +122,6 @@ function isStartDateLocked(startDate: Date | string | null | undefined): boolean
 
 function isParkplatzTourId(tourId: number | null | undefined, parkplatzTourId: number | null): boolean {
   return typeof tourId === "number" && Number.isInteger(tourId) && parkplatzTourId != null && tourId === parkplatzTourId;
-}
-
-function normalizeComparableTourName(value: string | null | undefined): string {
-  return (value ?? "").trim().toLocaleLowerCase("de");
-}
-
-function isMesseTourName(value: string | null | undefined): boolean {
-  const normalized = normalizeComparableTourName(value);
-  return normalized === normalizeComparableTourName("Messe")
-    || normalized === normalizeComparableTourName("Tour Messe");
 }
 
 async function shouldTreatTourAsMesse(tourId: number | null | undefined): Promise<boolean> {
@@ -586,6 +578,7 @@ export async function createAppointment(
   const created = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const relation = await resolveAppointmentRelationTx(tx, data, "create");
     await assertNoInactiveEmployeesTx(tx, employeeIds);
+    const collectedEvents: AppointmentMutationEvent[] = [];
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
@@ -612,20 +605,49 @@ export async function createAppointment(
 
     const appointmentId = await appointmentsRepository.createAppointmentTx(tx, appointmentData);
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    let nextTourName: string | null = null;
+    if (appointmentData.tourId != null) {
+      const allTours = await toursRepository.getTours();
+      nextTourName = allTours.find((entry) => entry.id === appointmentData.tourId)?.name ?? null;
+      collectedEvents.push({
+        kind: "tour_changed",
+        appointmentId,
+        previousTourId: null,
+        nextTourId: appointmentData.tourId,
+        previousTourName: null,
+        nextTourName,
+      });
+    }
     if (await shouldTreatTourAsMesse(appointmentData.tourId ?? null)) {
       const messeTag = await tagRelationsService.getTagByName(MANAGED_MESSE_TAG_NAME);
       if (!messeTag) {
         throw new AppointmentError("Messe-Tag ist nicht konfiguriert", 409, "BUSINESS_CONFLICT");
       }
       await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, messeTag.id);
+      collectedEvents.push({
+        kind: "tag_mutated",
+        appointmentId,
+        tagName: MANAGED_MESSE_TAG_NAME,
+        action: "added",
+      });
     }
-    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    return {
+      appointment,
+      mutationEvents: collectedEvents,
+    };
   });
 
-  if (created?.id) {
-    dispatchCalDavUpsert(created.id);
+  if (created?.appointment?.id) {
+    dispatchCalDavUpsert(created.appointment.id);
   }
-  return created;
+  if (!created?.appointment) {
+    return created?.appointment ?? null;
+  }
+  return {
+    ...created.appointment,
+    ...(created.mutationEvents.length > 0 ? { mutationEvents: created.mutationEvents } : {}),
+  };
 }
 
 export async function updateAppointment(
@@ -679,9 +701,12 @@ export async function updateAppointment(
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
     }
 
+    const collectedEvents: AppointmentMutationEvent[] = [];
     let geparktTagIdForRemoval: number | null = null;
     let shouldAddMesseTag = false;
     let shouldRemoveMesseTag = false;
+    let previousTourName: string | null = null;
+    let nextTourName: string | null = null;
     if (tourChanged && existing.tourId != null) {
       const allTours = await toursRepository.getTours();
       const parkplatzTour = findParkplatzTour(allTours);
@@ -694,6 +719,8 @@ export async function updateAppointment(
 
       const previousTour = allTours.find((tour) => tour.id === existing.tourId) ?? null;
       const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
+      previousTourName = previousTour?.name ?? null;
+      nextTourName = nextTour?.name ?? null;
       const wasMesseTour = isMesseTourName(previousTour?.name);
       const isNowMesseTour = isMesseTourName(nextTour?.name);
 
@@ -702,6 +729,7 @@ export async function updateAppointment(
     } else if (tourChanged && newTourId != null) {
       const allTours = await toursRepository.getTours();
       const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
+      nextTourName = nextTour?.name ?? null;
       shouldAddMesseTag = isMesseTourName(nextTour?.name);
     }
 
@@ -738,8 +766,24 @@ export async function updateAppointment(
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
+    if (tourChanged) {
+      collectedEvents.push({
+        kind: "tour_changed",
+        appointmentId,
+        previousTourId: existing.tourId ?? null,
+        nextTourId: newTourId,
+        previousTourName,
+        nextTourName,
+      });
+    }
     if (geparktTagIdForRemoval !== null) {
       await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, geparktTagIdForRemoval);
+      collectedEvents.push({
+        kind: "tag_mutated",
+        appointmentId,
+        tagName: RESERVED_VACANT_TAG_NAME,
+        action: "removed",
+      });
     }
     if (shouldAddMesseTag || shouldRemoveMesseTag) {
       const messeTag = await tagRelationsService.getTagByName(MANAGED_MESSE_TAG_NAME);
@@ -749,18 +793,40 @@ export async function updateAppointment(
 
       if (shouldAddMesseTag) {
         await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, messeTag.id);
+        collectedEvents.push({
+          kind: "tag_mutated",
+          appointmentId,
+          tagName: MANAGED_MESSE_TAG_NAME,
+          action: "added",
+        });
       }
       if (shouldRemoveMesseTag) {
         await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, messeTag.id);
+        collectedEvents.push({
+          kind: "tag_mutated",
+          appointmentId,
+          tagName: MANAGED_MESSE_TAG_NAME,
+          action: "removed",
+        });
       }
     }
-    return appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    const appointment = await appointmentsRepository.getAppointmentWithEmployeesTx(tx, appointmentId);
+    return {
+      appointment,
+      mutationEvents: collectedEvents,
+    };
   });
 
-  if (updated?.id) {
-    dispatchCalDavUpsert(updated.id);
+  if (updated?.appointment?.id) {
+    dispatchCalDavUpsert(updated.appointment.id);
   }
-  return updated;
+  if (!updated?.appointment) {
+    return updated?.appointment ?? null;
+  }
+  return {
+    ...updated.appointment,
+    ...(updated.mutationEvents.length > 0 ? { mutationEvents: updated.mutationEvents } : {}),
+  };
 }
 
 export async function setAppointmentDisplayMode(
@@ -1604,12 +1670,8 @@ export async function cancelAppointment(
   return result;
 }
 
-function normalizeTourName(value: string): string {
-  return value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
-}
-
 function findParkplatzTour(tours: Awaited<ReturnType<typeof toursRepository.getTours>>) {
-  return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz")) ?? null;
+  return tours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
 }
 
 async function getParkplatzTour(): Promise<Awaited<ReturnType<typeof findParkplatzTour>>> {

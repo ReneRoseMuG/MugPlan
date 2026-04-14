@@ -88,4 +88,15 @@ describe("CalendarWeekNotesButton wiring", () => {
     expect(slots).toContain("count");
     expect(slots).toContain("dialog");
   });
+
+  it("liefert passive Anzeige-Slots ohne cursor-pointer", () => {
+    const html = renderToStaticMarkup(
+      <CalendarWeekNotesButton yearNumber={2026} weekNumber={15} tourId={null} tourLabel="KW 15" readOnly>
+        {({ iconSlot, countSlot }) => <div>{iconSlot}{countSlot}</div>}
+      </CalendarWeekNotesButton>,
+    );
+
+    expect(html).not.toContain("cursor-pointer");
+    expect(html).toContain('aria-hidden="true"');
+  });
 });

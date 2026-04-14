@@ -49,16 +49,11 @@ export function CalendarWeekNotesButton({
     setDialogOpen(true);
   };
 
-  const open = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    openDialog();
-  };
-
   const iconSlot = (
     <span
-      onClick={open}
-      className="inline-flex items-center cursor-pointer"
+      className="inline-flex items-center"
       data-testid={`calendar-week-notes-icon-${yearNumber}-${weekNumber}-${tourSegment}`}
+      aria-hidden="true"
     >
       <StickyNote className="h-3.5 w-3.5" />
     </span>
@@ -66,9 +61,9 @@ export function CalendarWeekNotesButton({
 
   const countSlot = (
     <span
-      onClick={open}
-      className="inline-flex items-center cursor-pointer tabular-nums"
+      className="inline-flex items-center tabular-nums"
       data-testid={`calendar-week-notes-count-${yearNumber}-${weekNumber}-${tourSegment}`}
+      aria-hidden="true"
     >
       {notes.length}
     </span>

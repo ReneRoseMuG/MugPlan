@@ -10,9 +10,11 @@
  * - parkAppointment blockiert stornierte Termine.
  * - parkAppointment blockiert planung blockierte Termine.
  * - createAppointment setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird.
+ * - createAppointment liefert fuer Tour- und Tag-Folgen zentrale mutationEvents zurueck.
  * - updateAppointment entfernt Tag Geparkt still wenn Tour von Parkplatz auf andere wechselt.
  * - updateAppointment setzt Tag Messe Aufbau/Abbau still wenn auf Tour Messe gewechselt wird.
  * - updateAppointment entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird.
+ * - updateAppointment liefert fuer Parkplatz-/Messe-Tourwechsel zentrale mutationEvents zurueck.
  * - updateAppointment entfernt Tag Geparkt nicht wenn Tour nicht Parkplatz war.
  * - updateAppointment erlaubt historische Parkplatz-Termine weiterhin fuer Umplanung und Bearbeitung.
  *
@@ -253,7 +255,7 @@ describe("FT06 unit: createAppointment Tour-Sonderregeln", () => {
       } as any);
     });
 
-    await createAppointment({
+    const result = await createAppointment({
       customerId: 1,
       tourId: MESSE_TOUR.id,
       startDate: FUTURE_DATE,
@@ -265,6 +267,25 @@ describe("FT06 unit: createAppointment Tour-Sonderregeln", () => {
       123,
       MESSE_TAG.id,
     );
+    expect(result).toMatchObject({
+      id: 123,
+      mutationEvents: [
+        {
+          kind: "tour_changed",
+          appointmentId: 123,
+          previousTourId: null,
+          nextTourId: MESSE_TOUR.id,
+          previousTourName: null,
+          nextTourName: MESSE_TOUR.name,
+        },
+        {
+          kind: "tag_mutated",
+          appointmentId: 123,
+          tagName: "Messe Aufbau/Abbau",
+          action: "added",
+        },
+      ],
+    });
   });
 });
 
@@ -323,7 +344,7 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       } as any);
     });
 
-    await updateAppointment(
+    const result = await updateAppointment(
       20,
       {
         version: 2,
@@ -339,6 +360,25 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       20,
       GEPARKT_TAG.id,
     );
+    expect(result).toMatchObject({
+      id: 20,
+      mutationEvents: [
+        {
+          kind: "tour_changed",
+          appointmentId: 20,
+          previousTourId: PARKPLATZ_TOUR.id,
+          nextTourId: OTHER_TOUR.id,
+          previousTourName: PARKPLATZ_TOUR.name,
+          nextTourName: OTHER_TOUR.name,
+        },
+        {
+          kind: "tag_mutated",
+          appointmentId: 20,
+          tagName: "Geparkt",
+          action: "removed",
+        },
+      ],
+    });
   });
 
   it("erlaubt historische Parkplatz-Termine fuer Update, Zukunftsumplanung und Rueckdatierung", async () => {
@@ -401,7 +441,7 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       } as any);
     });
 
-    await updateAppointment(
+    const result = await updateAppointment(
       20,
       {
         version: 2,
@@ -429,7 +469,7 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       } as any);
     });
 
-    await updateAppointment(
+    const result = await updateAppointment(
       20,
       {
         version: 2,
@@ -445,6 +485,25 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       20,
       MESSE_TAG.id,
     );
+    expect(result).toMatchObject({
+      id: 20,
+      mutationEvents: [
+        {
+          kind: "tour_changed",
+          appointmentId: 20,
+          previousTourId: REGULAR_TOUR.id,
+          nextTourId: MESSE_TOUR.id,
+          previousTourName: REGULAR_TOUR.name,
+          nextTourName: MESSE_TOUR.name,
+        },
+        {
+          kind: "tag_mutated",
+          appointmentId: 20,
+          tagName: "Messe Aufbau/Abbau",
+          action: "added",
+        },
+      ],
+    });
   });
 
   it("entfernt Messe-Tag still wenn von Tour Messe auf andere Tour gewechselt wird", async () => {
@@ -461,7 +520,7 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       } as any);
     });
 
-    await updateAppointment(
+    const result = await updateAppointment(
       20,
       {
         version: 2,
@@ -477,6 +536,25 @@ describe("FT06 unit: updateAppointment Tour-Sonderregeln", () => {
       20,
       MESSE_TAG.id,
     );
+    expect(result).toMatchObject({
+      id: 20,
+      mutationEvents: [
+        {
+          kind: "tour_changed",
+          appointmentId: 20,
+          previousTourId: MESSE_TOUR.id,
+          nextTourId: REGULAR_TOUR.id,
+          previousTourName: MESSE_TOUR.name,
+          nextTourName: REGULAR_TOUR.name,
+        },
+        {
+          kind: "tag_mutated",
+          appointmentId: 20,
+          tagName: "Messe Aufbau/Abbau",
+          action: "removed",
+        },
+      ],
+    });
   });
 
   it("veraendert Messe-Tag nicht wenn kein Messe-Tourwechsel stattfindet", async () => {

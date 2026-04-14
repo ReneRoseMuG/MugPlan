@@ -12,6 +12,7 @@
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  * - Explizite Tour-Wochen entstehen ohne Backfill nur bei echter Nutzung und Legacy-Wochen bleiben weiter sichtbar.
  * - Blockierte Wochen entfernen Termin-Mitarbeiter, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
+ * - Die System-Tour `Parkplatz` bleibt von der Wochenplanung ausgeschlossen.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
@@ -25,6 +26,7 @@
  * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
  * - Das Rollout legt Altwochen ungefragt als neue Tour-Wochen-Datensaetze an.
  * - Blockierte Wochen bleiben in Listen, Kalenderfeed oder Termin-Tags inkonsistent.
+ * - Die Wochenplanung erlaubt fuer `Parkplatz` faelschlich Add-Preview oder Execute.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -36,7 +38,7 @@ import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startO
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
-import { tourWeekEmployees, tourWeeks } from "../../../shared/schema";
+import { tourWeekEmployees, tourWeeks, tours } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
@@ -78,6 +80,13 @@ function resolveNextEditableWeekDates() {
 
 function toDateOnlyString(dateValue: Date | string): string {
   return typeof dateValue === "string" ? dateValue.slice(0, 10) : format(dateValue, "yyyy-MM-dd");
+}
+
+async function renameTour(tourId: number, name: string): Promise<void> {
+  await db
+    .update(tours)
+    .set({ name })
+    .where(eq(tours.id, tourId));
 }
 
 async function seedWeekPlanNoise(prefix: string, referenceDate: string) {
@@ -261,6 +270,49 @@ describe("tourWeekEmployees integration", () => {
           expect(res.body.code).toBe("PAST_WEEK_READONLY");
         });
     }
+  });
+
+  it("rejects add preview and execute for the system tour Parkplatz", async () => {
+    const admin = await loginAdmin();
+    const parkplatzTour = await createTourFixture("#d4537e");
+    const employee = await createEmployeeFixture("TWE-PARKPLATZ-EMP");
+    const targetWeek = resolveNextEditableWeekDates();
+    await renameTour(parkplatzTour.id, "Parkplatz");
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/week-employees/add/preview`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/week-employees/add`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const assignments = await db
+      .select()
+      .from(tourWeekEmployees)
+      .where(and(
+        eq(tourWeekEmployees.tourId, parkplatzTour.id),
+        eq(tourWeekEmployees.isoYear, targetWeek.isoYear),
+        eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
+      ));
+    expect(assignments).toHaveLength(0);
   });
 
   it("marks understaffing in remove preview and removes the assignment plus employee from selected appointments", async () => {

@@ -30,11 +30,13 @@
  * - Das Setzen einer Tour ohne Wochenplanung laesst bestehende Termin-Mitarbeiter unveraendert.
  * - Das Setzen der Tour `Tour Messe` traegt still den Termin-Tag `Messe Aufbau/Abbau` nach.
  * - Das Entfernen oder Wechseln weg von `Tour Messe` entfernt den Termin-Tag `Messe Aufbau/Abbau` wieder.
+ * - Der Formular-Save fuer `Tour Messe` nutzt den FT06-Notizvorschlag auch im echten Save-Pfad.
  * - Eine Datumsverschiebung in eine andere ISO-KW bewertet die Wochenplanung derselben Tour neu.
  * - Das manuelle Hinzufuegen eines Mitarbeiters zu einem bestehenden Termin bleibt ueber den echten Formular-Speicherpfad versioniert konsistent.
  *
  * Fehlerfaelle:
  * - Eine Tour ohne Wochenplanung loest trotzdem einen Preview-Dialog oder eine automatische Uebernahme aus.
+ * - Die stille Messe-Tag-Regel greift zwar serverseitig, aber der Save-Pfad zeigt keinen Folge-Dialog.
  * - Ein KW-Wechsel auf derselben Tour verwendet weiter die alte Wochenplanung.
  * - Ein manuell hinzugefuegter Mitarbeiter wird im Formular sichtbar, aber nicht persistent gespeichert.
  *
@@ -182,6 +184,28 @@ async function readAppointmentTagNames(page: Page, appointmentId: number): Promi
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as Array<{ tag: { name: string } }>;
   return body.map((item) => item.tag.name);
+}
+
+async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ title: string }>> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/notes`);
+  expect(response.ok()).toBeTruthy();
+  return response.json() as Promise<Array<{ title: string }>>;
+}
+
+async function createAppointmentNoteViaDialog(page: Page, input: { title: string; body: string }) {
+  await page.getByTestId("button-new-note").click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByTestId("input-note-title").fill(input.title);
+  await dialog.getByTestId("richtext-editor").fill(input.body);
+  await dialog.getByTestId("button-save-note").click();
+  const templateEditorCancelButton = page.getByTestId("button-cancel-note");
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const count = await templateEditorCancelButton.count();
+    if (count === 0) break;
+    await expect(templateEditorCancelButton.last()).toBeVisible();
+    await templateEditorCancelButton.last().click({ force: true });
+  }
+  await expect.poll(async () => templateEditorCancelButton.count()).toBe(0);
 }
 
 async function readSystemTagIdByName(name: string): Promise<number> {
@@ -338,13 +362,22 @@ test("adds the managed Messe tag when an appointment is switched to Tour Messe",
 
   await saveExistingAppointment(page, appointment.id);
 
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
   await expect.poll(async () => {
     const tagNames = await readAppointmentTagNames(page, appointment.id);
     return tagNames.includes(MANAGED_MESSE_TAG_NAME);
   }).toBe(true);
 
-  const followDialog = page.getByRole("alertdialog");
-  if (await followDialog.isVisible().catch(() => false)) {
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
+
+  const followDialogAfterAdd = page.getByRole("alertdialog");
+  if (await followDialogAfterAdd.isVisible().catch(() => false)) {
     await page.getByRole("button", { name: "Nicht folgen" }).click();
   }
 
@@ -367,19 +400,32 @@ test("removes the managed Messe tag when an appointment leaves Tour Messe", asyn
   await seedAppointmentFormNoise("FT06-MESSE-REMOVE", nextWeek.weekSecondDate);
 
   await openExistingAppointmentInNextWeek(page, appointment.id);
+  await createAppointmentNoteViaDialog(page, {
+    title: MANAGED_MESSE_TAG_NAME,
+    body: "",
+  });
   await page.getByTestId("badge-tour-remove").click();
   await page.getByTestId(`badge-tour-select-${regularTour.id}-add`).click();
   await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
 
   await saveExistingAppointment(page, appointment.id);
 
+  await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
+  await page.getByTestId("button-note-removal-confirm").click();
+  await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
+
   await expect.poll(async () => {
     const tagNames = await readAppointmentTagNames(page, appointment.id);
     return tagNames.includes(MANAGED_MESSE_TAG_NAME);
   }).toBe(false);
 
-  const followDialog = page.getByRole("alertdialog");
-  if (await followDialog.isVisible().catch(() => false)) {
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
+  }).toBe(false);
+
+  const followDialogAfterRemove = page.getByRole("alertdialog");
+  if (await followDialogAfterRemove.isVisible().catch(() => false)) {
     await page.getByRole("button", { name: "Nicht folgen" }).click();
   }
 

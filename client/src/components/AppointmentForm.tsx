@@ -3,6 +3,7 @@ import { ArrowLeft, Ban, Calendar, Clock, FolderKanban, ParkingCircle, Trash2, U
 import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import type { Customer, Employee, Project, Tag, Team, Tour } from "@shared/schema";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { Button } from "@/components/ui/button";
@@ -130,6 +131,7 @@ type ApiSuccessPayload = {
   id?: number;
   message?: string;
   employees?: Array<{ id: number }>;
+  mutationEvents?: AppointmentMutationEvent[];
 };
 type ExtractedProjectDraft =
   | {
@@ -402,8 +404,9 @@ export function AppointmentForm({
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
-  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
+  const [pendingPostSaveResult, setPendingPostSaveResult] = useState<AppointmentFormSaveResult | null>(null);
   const [templateNoteEditorOpen, setTemplateNoteEditorOpen] = useState(false);
   const [templateNoteEditorId, setTemplateNoteEditorId] = useState<number | null>(null);
   const [templateNoteEditorVersion, setTemplateNoteEditorVersion] = useState<number>(1);
@@ -559,7 +562,6 @@ export function AppointmentForm({
   const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates"],
     queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
-    enabled: Boolean(appointmentId),
   });
   const createSidebarDraftSignature = useMemo(
     () => JSON.stringify({
@@ -584,14 +586,14 @@ export function AppointmentForm({
       const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tags`, { tagId });
       return response.json();
     },
-    onSuccess: async (_data, { tagName }) => {
-      const action = computeTagAddedAction(tagName, appointmentId, visibleAppointmentNotes.map((n) => ({ title: n.title })));
-      if (action.kind === "show_note_suggestion_dialog") {
-        setNoteSuggestionDialog({ templateTitle: action.templateTitle });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
-      await invalidateRelatedAppointmentQueries(selectedProjectId);
-    },
+      onSuccess: async (_data, { tagName }) => {
+        const action = computeTagAddedAction(tagName, appointmentId, visibleAppointmentNotes.map((n) => ({ title: n.title })));
+        if (action.kind === "show_note_suggestion_dialog") {
+          setNoteSuggestionDialog({ templateTitle: action.templateTitle, appointmentId: appointmentId! });
+        }
+        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+        await invalidateRelatedAppointmentQueries(selectedProjectId);
+      },
     onError: (error: Error) => {
       toast({ title: "Tag-Zuweisung fehlgeschlagen", description: error.message, variant: "destructive" });
     },
@@ -603,13 +605,7 @@ export function AppointmentForm({
     onSuccess: async (_data, item) => {
       const action = computeTagRemovedAction(item.tag.name, visibleAppointmentNotes.map((n) => ({ title: n.title })));
       if (action.kind === "show_note_removal_dialog") {
-        const normalizeTitle = (v: string) => v.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
-        const matchingNote = visibleAppointmentNotes.find(
-          (n) => normalizeTitle(n.title) === normalizeTitle(action.templateTitle),
-        );
-        if (matchingNote) {
-          setNoteRemovalDialog({ templateTitle: action.templateTitle, noteId: matchingNote.id, noteVersion: matchingNote.version });
-        }
+        openNoteRemovalDialogForTemplate(action.templateTitle, visibleAppointmentNotes);
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
       await invalidateRelatedAppointmentQueries(selectedProjectId);
@@ -1506,13 +1502,19 @@ export function AppointmentForm({
   };
 
   const createAppointmentNoteMutation = useMutation({
-    mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
-      const res = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, cardColor, print, templateId });
+    mutationFn: async ({ appointmentId: targetAppointmentId, title, body, cardColor, print, templateId }: {
+      appointmentId: number;
+      title: string;
+      body: string;
+      cardColor?: string | null;
+      print: boolean;
+      templateId?: number;
+    }) => {
+      const res = await apiRequest("POST", `/api/appointments/${targetAppointmentId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
-    onSuccess: (createdNote: Note) => {
-      if (!appointmentId) return;
-      void invalidateAppointmentNotesQueries(appointmentId);
+    onSuccess: (createdNote: Note, variables) => {
+      void invalidateAppointmentNotesQueries(variables.appointmentId);
       void invalidateRelatedAppointmentQueries(selectedProjectId);
       setTemplateNoteEditorId(createdNote.id);
       setTemplateNoteEditorVersion(createdNote.version);
@@ -1875,7 +1877,81 @@ export function AppointmentForm({
     }
   };
 
-  const handleCreateTemplateNoteFromSuggestion = () => {
+  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+  const openNoteRemovalDialogForTemplate = (
+    templateTitle: string,
+    notes: Array<{ id: number; version: number; title: string }>,
+  ) => {
+    const matchingNote = notes.find((note) => normalizeTemplateTitle(note.title) === normalizeTemplateTitle(templateTitle));
+    if (!matchingNote) {
+      return;
+    }
+    setNoteRemovalDialog({
+      templateTitle,
+      noteId: matchingNote.id,
+      noteVersion: matchingNote.version,
+    });
+  };
+
+  const completePendingPostSave = () => {
+    if (!pendingPostSaveResult) {
+      return;
+    }
+    const result = pendingPostSaveResult;
+    setPendingPostSaveResult(null);
+    onSaved?.(result);
+  };
+
+  const applyAppointmentMutationEvents = (params: {
+    mutationEvents: AppointmentMutationEvent[] | undefined;
+    targetAppointmentId: number | null;
+    notes: Array<{ id: number; version: number; title: string }>;
+  }) => {
+    if (!params.mutationEvents || params.mutationEvents.length === 0 || !params.targetAppointmentId) {
+      return false;
+    }
+
+    let openedDialog = false;
+    for (const event of params.mutationEvents) {
+      if (event.kind !== "tag_mutated") {
+        continue;
+      }
+
+      if (event.action === "added") {
+        const action = computeTagAddedAction(
+          event.tagName,
+          params.targetAppointmentId,
+          params.notes.map((note) => ({ title: note.title })),
+        );
+        if (action.kind === "show_note_suggestion_dialog") {
+          setNoteSuggestionDialog({
+            templateTitle: action.templateTitle,
+            appointmentId: params.targetAppointmentId,
+          });
+          openedDialog = true;
+        }
+        continue;
+      }
+
+      const action = computeTagRemovedAction(
+        event.tagName,
+        params.notes.map((note) => ({ title: note.title })),
+      );
+      if (action.kind === "show_note_removal_dialog") {
+        openNoteRemovalDialogForTemplate(action.templateTitle, params.notes);
+        openedDialog = true;
+      }
+    }
+    return openedDialog;
+  };
+
+  const handleSkipTemplateNoteSuggestion = () => {
+    setNoteSuggestionDialog(null);
+    completePendingPostSave();
+  };
+
+  const handleCreateTemplateNoteFromSuggestion = async () => {
     if (!noteSuggestionDialog) return;
     const template = noteTemplates.find(
       (entry) => entry.title.trim().toLocaleLowerCase("de") === noteSuggestionDialog.templateTitle.trim().toLocaleLowerCase("de"),
@@ -1888,14 +1964,39 @@ export function AppointmentForm({
       });
       return;
     }
-    createAppointmentNoteMutation.mutate({
-      title: template.title,
-      body: template.body,
-      cardColor: template.cardColor,
-      print: template.print,
-      templateId: template.id,
-    });
-    setNoteSuggestionDialog(null);
+    try {
+      await createAppointmentNoteMutation.mutateAsync({
+        appointmentId: noteSuggestionDialog.appointmentId,
+        title: template.title,
+        body: template.body,
+        cardColor: template.cardColor,
+        print: template.print,
+        templateId: template.id,
+      });
+      setNoteSuggestionDialog(null);
+      completePendingPostSave();
+    } catch {
+      // onError der Mutation zeigt bereits das Toast an.
+    }
+  };
+
+  const handleKeepTemplateNote = () => {
+    setNoteRemovalDialog(null);
+    completePendingPostSave();
+  };
+
+  const handleRemoveTemplateNote = async () => {
+    if (!noteRemovalDialog || !appointmentId) return;
+    try {
+      await deleteAppointmentNoteMutation.mutateAsync({
+        noteId: noteRemovalDialog.noteId,
+        version: noteRemovalDialog.noteVersion,
+      });
+      setNoteRemovalDialog(null);
+      completePendingPostSave();
+    } catch {
+      // onError der Mutation zeigt bereits das Toast an.
+    }
   };
 
   const persistCreateSidebarDrafts = async (targetAppointmentId: number) => {
@@ -2032,12 +2133,21 @@ export function AppointmentForm({
         }
         throw new Error((data as { message?: string } | null)?.message ?? "Speichern fehlgeschlagen");
       }
+      const savedAppointmentId = data?.id ?? appointmentId ?? null;
+      const openedPostSaveDialog = applyAppointmentMutationEvents({
+        mutationEvents: data?.mutationEvents,
+        targetAppointmentId: savedAppointmentId,
+        notes: visibleAppointmentNotes.map((note) => ({
+          id: note.id,
+          version: note.version,
+          title: note.title,
+        })),
+      });
       setAssignedEmployeeIds(
         Array.isArray(data?.employees)
           ? data.employees.map((employee) => employee.id)
           : (employeeIdsOverride ?? assignedEmployeeIds),
       );
-      const savedAppointmentId = data?.id ?? appointmentId ?? null;
       const normalizedSavedStartDate = normalizeDateInputValue(payload.startDate);
       const originalWeekKey = appointmentDetail ? buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate)) : null;
       const savedWeekKey = buildIsoWeekKey(normalizedSavedStartDate);
@@ -2055,6 +2165,12 @@ export function AppointmentForm({
         projectId: payload.projectId ?? null,
         appointmentId: savedAppointmentId,
       });
+      const saveResult = {
+        appointmentId: savedAppointmentId,
+        startDate: normalizedSavedStartDate,
+        tourId: payload.tourId ?? null,
+        shouldOfferFollow,
+      } satisfies AppointmentFormSaveResult;
       if (!isEditing) {
         if (typeof savedAppointmentId !== "number" || savedAppointmentId < 1) {
           throw new Error("Termin wurde erstellt, aber die Termin-ID fehlt fuer die Nachverarbeitung.");
@@ -2075,12 +2191,11 @@ export function AppointmentForm({
               : "Tags, Notizen oder Terminanhaenge konnten nicht vollstaendig gespeichert werden.",
             variant: "destructive",
           });
-          onSaved?.({
-            appointmentId: savedAppointmentId,
-            startDate: normalizedSavedStartDate,
-            tourId: payload.tourId ?? null,
-            shouldOfferFollow,
-          });
+          if (openedPostSaveDialog) {
+            setPendingPostSaveResult(saveResult);
+          } else {
+            onSaved?.(saveResult);
+          }
           return;
         }
       }
@@ -2121,12 +2236,11 @@ export function AppointmentForm({
         employeeIds: assignedEmployeeIds,
         sidebarDraftSignature: isEditing ? null : createSidebarDraftSignature,
       }));
-      onSaved?.({
-        appointmentId: savedAppointmentId,
-        startDate: normalizedSavedStartDate,
-        tourId: payload.tourId ?? null,
-        shouldOfferFollow,
-      });
+      if (openedPostSaveDialog) {
+        setPendingPostSaveResult(saveResult);
+        return;
+      }
+      onSaved?.(saveResult);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen";
       toast({ title: "Fehler", description: message, variant: "destructive" });
@@ -2293,7 +2407,8 @@ export function AppointmentForm({
               readOnly={isReadOnlyView}
               onAdd={(data) => {
                 if (isEditing) {
-                  createAppointmentNoteMutation.mutate(data);
+                  if (!appointmentId) return;
+                  createAppointmentNoteMutation.mutate({ appointmentId, ...data });
                   return;
                 }
                 addDraftAppointmentNote(data);
@@ -2797,10 +2912,10 @@ export function AppointmentForm({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-suggestion-skip">Überspringen</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={handleSkipTemplateNoteSuggestion}>Überspringen</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-note-suggestion-confirm"
-              onClick={handleCreateTemplateNoteFromSuggestion}
+              onClick={() => { void handleCreateTemplateNoteFromSuggestion(); }}
             >
               Jetzt anlegen
             </AlertDialogAction>
@@ -2817,14 +2932,10 @@ export function AppointmentForm({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-removal-keep">Behalten</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-note-removal-keep" onClick={handleKeepTemplateNote}>Behalten</AlertDialogCancel>
             <AlertDialogAction
               data-testid="button-note-removal-confirm"
-              onClick={() => {
-                if (!noteRemovalDialog) return;
-                deleteAppointmentNoteMutation.mutate({ noteId: noteRemovalDialog.noteId, version: noteRemovalDialog.noteVersion });
-                setNoteRemovalDialog(null);
-              }}
+              onClick={() => { void handleRemoveTemplateNote(); }}
             >
               Entfernen
             </AlertDialogAction>

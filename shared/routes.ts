@@ -25,6 +25,7 @@ import {
 } from './schema';
 import type { Project, ProjectOrder } from "./schema";
 import type { ProjectArticleItem } from "./projectArticleList";
+import type { AppointmentMutationEvent } from "./appointmentMutationEvents";
 
 export const errorSchemas = {
   validation: z.object({
@@ -514,6 +515,27 @@ const calendarBlockedTourWeekSchema = z.object({
   weekStartDate: z.string(),
   weekEndDate: z.string(),
   isBlocked: z.boolean(),
+});
+
+const appointmentMutationEventSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("tour_changed"),
+    appointmentId: z.number().int().positive(),
+    previousTourId: z.number().int().positive().nullable(),
+    nextTourId: z.number().int().positive().nullable(),
+    previousTourName: z.string().nullable(),
+    nextTourName: z.string().nullable(),
+  }),
+  z.object({
+    kind: z.literal("tag_mutated"),
+    appointmentId: z.number().int().positive(),
+    tagName: z.string().min(1),
+    action: z.enum(["added", "removed"]),
+  }),
+]) as z.ZodType<AppointmentMutationEvent>;
+
+const appointmentMutationResponseSchema = z.object({
+  mutationEvents: z.array(appointmentMutationEventSchema).optional(),
 });
 
 const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
@@ -1225,7 +1247,7 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
-        }),
+        }).extend(appointmentMutationResponseSchema.shape),
         409: z.object({
           code: z.enum([
             "EMPLOYEE_OVERLAP_CONFLICT",
@@ -1268,7 +1290,7 @@ export const api = {
           endDate: z.string().nullable(),
           endTime: z.string().nullable(),
           employees: z.array(z.custom<typeof employees.$inferSelect>()),
-        }),
+        }).extend(appointmentMutationResponseSchema.shape),
         403: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
         404: errorSchemas.notFound,
         409: z.object({
