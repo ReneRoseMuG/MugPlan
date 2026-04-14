@@ -39,6 +39,7 @@ import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { NotesSection } from "@/components/NotesSection";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
+import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
 import {
   DocumentExtractionDialog,
   type ExtractionCustomerDraft,
@@ -2725,30 +2726,18 @@ export function AppointmentForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der Termin wird dauerhaft als storniert markiert. Alle Mitarbeiter werden vom Termin abgezogen und sind im Terminzeitraum zur erneuten Planung verfügbar. Der Auftragswert wird im System auf 0,- Euro gesetzt. Stornierte Termine können nicht reaktiviert werden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={cancelAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
-              onClick={() => {
-                if (!appointmentId) return;
-                const version = appointmentDetail?.version;
-                if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
-                cancelAppointmentMutation.mutate({ appointmentId, version });
-              }}
-            >
-              {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppointmentCancelConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        disabled={cancelAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
+        isPending={cancelAppointmentMutation.isPending}
+        onConfirm={() => {
+          if (!appointmentId) return;
+          const version = appointmentDetail?.version;
+          if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
+          cancelAppointmentMutation.mutate({ appointmentId, version });
+        }}
+      />
 
       <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
         <AlertDialogContent data-testid="dialog-park-appointment">

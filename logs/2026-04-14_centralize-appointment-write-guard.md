@@ -84,3 +84,19 @@ Einordnung:
 
 - Der komplette Integration-Lauf war gruen.
 - Die roten Unit-Faelle liegen ausserhalb der hier geaenderten Farb-/Seed-Stellen und betreffen bestehende Home-/Layout-Verdrahtung.
+
+## Nachtrag: zentraler Storno-Dialog in allen UI-Flows
+
+- Der Confirm-Dialog für Termin-Storno wurde im Frontend zentralisiert.
+- Formular, Wochenkarte und Mehrtageskarte nutzen jetzt dieselbe Komponente und damit identische Texte/Buttons.
+- Das fachliche Verhalten bleibt unverändert: alle Flows rufen weiterhin denselben Cancel-Endpunkt auf.
+
+Zusätzlich ergänzt:
+
+- Neue Shared-Komponente `client/src/components/AppointmentCancelConfirmDialog.tsx`
+- Neuer Unit-Test `tests/unit/ui/appointmentCancelConfirmDialog.render.test.tsx`
+- `docs/TEST_MATRIX.md` um den neuen Test ergänzt
+
+Gezielte Verifikation:
+
+- `npm run test:unit -- tests/unit/ui/appointmentCancelConfirmDialog.render.test.tsx tests/unit/ui/appointmentForm.overlayBack.behavior.test.tsx tests/unit/ui/calendarWeekAppointmentCards.layout.test.tsx`

@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -655,30 +656,12 @@ export function CalendarWeekSpanningTile({
         </>
       )}
     </div>
-
-    <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Der Termin wird als storniert markiert. Zugewiesene Mitarbeiter werden entfernt. Stornierte Termine sind nur noch lesbar.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={cancelMutation.isPending}>Abbrechen</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => cancelMutation.mutate()}
-            disabled={cancelMutation.isPending}
-            style={{
-              backgroundColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-              borderColor: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-            }}
-          >
-            {cancelMutation.isPending ? "Stornieren…" : "Stornieren"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <AppointmentCancelConfirmDialog
+      open={cancelConfirmOpen}
+      onOpenChange={setCancelConfirmOpen}
+      isPending={cancelMutation.isPending}
+      onConfirm={() => cancelMutation.mutate()}
+    />
 
     <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
       <AlertDialogContent>
