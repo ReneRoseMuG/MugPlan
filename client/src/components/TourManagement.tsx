@@ -37,6 +37,22 @@ type TourWeekEmployeeMember = {
   fullName: string;
 };
 
+type TourWeekMutationResponse = {
+  id: number;
+  tourId: number;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  isLocked: boolean;
+  isBlocked: boolean;
+};
+
+type TourWeekStatusMutationResponse = {
+  week: TourWeekMutationResponse;
+  affectedAppointmentCount: number;
+};
+
 type WeekDialogState = {
   open: boolean;
   mode: "add" | "remove";
@@ -155,6 +171,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         return Array.isArray(key) && (
           key[0] === "calendarAppointments"
           || key[0] === "calendarWeekLaneEmployeePreviews"
+          || key[0] === "calendarBlockedTourWeeks"
           || key[0] === "/api/calendar/appointments"
           || key[0] === "/api/appointments/list"
           || key[0] === "tour-management-appointments-count"
@@ -256,6 +273,38 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     },
   });
 
+  const createWeekMutation = useMutation({
+    mutationFn: async ({ tourId, isoYear, isoWeek }: { tourId: number; isoYear: number; isoWeek: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${tourId}/weeks`, { isoYear, isoWeek });
+      return response.json() as Promise<TourWeekMutationResponse>;
+    },
+    onSuccess: async () => {
+      await refreshCascadeDependentViews();
+    },
+  });
+
+  const blockWeekMutation = useMutation({
+    mutationFn: async ({ tourId, isoYear, isoWeek }: { tourId: number; isoYear: number; isoWeek: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${tourId}/weeks/${isoYear}/${isoWeek}/block`);
+      return response.json() as Promise<TourWeekStatusMutationResponse>;
+    },
+    onSuccess: async () => {
+      await refreshCascadeDependentViews();
+      await refreshMonitoringWithNotification(toast);
+    },
+  });
+
+  const unblockWeekMutation = useMutation({
+    mutationFn: async ({ tourId, isoYear, isoWeek }: { tourId: number; isoYear: number; isoWeek: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${tourId}/weeks/${isoYear}/${isoWeek}/unblock`);
+      return response.json() as Promise<TourWeekStatusMutationResponse>;
+    },
+    onSuccess: async () => {
+      await refreshCascadeDependentViews();
+      await refreshMonitoringWithNotification(toast);
+    },
+  });
+
   const previewAddCascadeMutation = useMutation({
     mutationFn: async ({ tourId, isoYear, isoWeek, employeeId }: { tourId: number; isoYear: number; isoWeek: number; employeeId: number }) => {
       const response = await apiRequest("POST", `/api/tours/${tourId}/week-employees/add/preview`, { isoYear, isoWeek, employeeId });
@@ -328,6 +377,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const handleCascadePreviewError = (error: unknown, action: "hinzufuegen" | "abziehen") => {
     const code = extractApiCode(error);
+    if (error instanceof Error && error.message.includes("Wochenplanung ist blockiert")) {
+      toast({
+        title: `Mitarbeiter nicht ${action}`,
+        description: "Die Wochenplanung ist blockiert und kann aktuell nicht geaendert werden.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (code === "BUSINESS_CONFLICT") {
       toast({
         title: `Mitarbeiter nicht ${action}`,
@@ -344,6 +401,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   };
 
   const handleExecuteCascadeError = (_error: unknown, mode: "add" | "remove") => {
+    if (_error instanceof Error && _error.message.includes("Wochenplanung ist blockiert")) {
+      toast({
+        title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefuegt werden" : "Mitarbeiter konnte nicht abgezogen werden",
+        description: "Die Wochenplanung ist blockiert und kann aktuell nicht geaendert werden.",
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefuegt werden" : "Mitarbeiter konnte nicht abgezogen werden",
       description: "Bitte versuchen Sie es erneut.",
@@ -399,6 +464,96 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleOpenCreate = () => {
     setEditingTour(null);
     setIsCreating(true);
+  };
+
+  const handleCreateWeek = async (params: { isoYear: number; isoWeek: number }) => {
+    if (!editingTour) return;
+    try {
+      const week = await createWeekMutation.mutateAsync({
+        tourId: editingTour.id,
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+      });
+      toast({
+        title: "Wochenplanung angelegt",
+        description: `KW ${String(week.isoWeek).padStart(2, "0")} / ${week.isoYear} wurde angelegt.`,
+      });
+    } catch (error) {
+      const code = extractApiCode(error);
+      if (code === "PAST_WEEK_READONLY") {
+        toast({
+          title: "Anlegen nicht moeglich",
+          description: "Laufende und vergangene Wochen koennen nicht mehr angelegt werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Wochenplanung konnte nicht angelegt werden",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBlockWeek = async (params: { isoYear: number; isoWeek: number }) => {
+    if (!editingTour) return;
+    try {
+      const result = await blockWeekMutation.mutateAsync({
+        tourId: editingTour.id,
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+      });
+      toast({
+        title: "Wochenplanung blockiert",
+        description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
+      });
+    } catch (error) {
+      const code = extractApiCode(error);
+      if (code === "PAST_WEEK_READONLY") {
+        toast({
+          title: "Blockieren nicht moeglich",
+          description: "Laufende und vergangene Wochen koennen nicht mehr blockiert werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Wochenplanung konnte nicht blockiert werden",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnblockWeek = async (params: { isoYear: number; isoWeek: number }) => {
+    if (!editingTour) return;
+    try {
+      const result = await unblockWeekMutation.mutateAsync({
+        tourId: editingTour.id,
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+      });
+      toast({
+        title: "Wochenplanung freigegeben",
+        description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
+      });
+    } catch (error) {
+      const code = extractApiCode(error);
+      if (code === "PAST_WEEK_READONLY") {
+        toast({
+          title: "Freigeben nicht moeglich",
+          description: "Laufende und vergangene Wochen koennen nicht mehr freigegeben werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Wochenplanung konnte nicht freigegeben werden",
+        description: "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmitTour = async (tourId: number | null, _employeeIds: number[], name: string, color: string) => {
@@ -508,6 +663,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     || previewRemoveCascadeMutation.isPending
     || executeAddCascadeMutation.isPending
     || executeRemoveCascadeMutation.isPending;
+  const isMutatingWeeks = createWeekMutation.isPending
+    || blockWeekMutation.isPending
+    || unblockWeekMutation.isPending;
 
   if (activeTour || isCreating) {
     return (
@@ -516,6 +674,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           tour={activeTour}
           allEmployees={employees}
           onSubmit={handleSubmitTour}
+          onCreateWeek={activeTour ? handleCreateWeek : undefined}
+          onBlockWeek={activeTour ? handleBlockWeek : undefined}
+          onUnblockWeek={activeTour ? handleUnblockWeek : undefined}
           onAddWeekEmployee={activeTour ? handleStartAddWeekEmployee : undefined}
           onRemoveWeekEmployee={activeTour ? handleStartRemoveWeekEmployee : undefined}
           onDelete={handleDeleteFromDialog}
@@ -523,6 +684,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           isDeleting={deleteMutation.isPending}
           isSaving={createMutation.isPending || updateMutation.isPending}
           isMutatingMembers={isMutatingMembers}
+          isMutatingWeeks={isMutatingWeeks}
           isCreate={isCreating}
           defaultName={getNextTourName()}
           defaultColor={defaultEntityColor}

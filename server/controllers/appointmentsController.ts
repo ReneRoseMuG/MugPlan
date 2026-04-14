@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
+import * as tourWeeksService from "../services/tourWeeksService";
 import { handleZodError } from "./validation";
 import { logDebug, logWarn } from "../lib/logger";
 
@@ -535,6 +536,38 @@ export async function listCalendarWeekLaneEmployeePreviews(req: Request, res: Re
     });
     res.json(previews);
   } catch (err) {
+    next(err);
+  }
+}
+
+export async function listCalendarBlockedTourWeeks(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+
+    if (!fromDate || !toDate) {
+      res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      logWarn(`${logPrefix} list calendar blocked tour weeks rejected: invalid range ${fromDate}-${toDate}`);
+      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      return;
+    }
+
+    if (toDate < fromDate) {
+      res.status(400).json({ message: "toDate darf nicht vor fromDate liegen" });
+      return;
+    }
+
+    const blockedWeeks = await appointmentsService.listCalendarBlockedTourWeeks({ fromDate, toDate });
+    res.json(blockedWeeks);
+  } catch (err) {
+    if (err instanceof tourWeeksService.TourWeeksError) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
     next(err);
   }
 }

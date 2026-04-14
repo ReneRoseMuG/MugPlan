@@ -169,6 +169,13 @@
       "when": 1744329600000,
       "tag": "0023_drop_seed_run_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1776124800000,
+      "tag": "0024_tour_weeks",
+      "breakpoints": true
     }
   ]
 }

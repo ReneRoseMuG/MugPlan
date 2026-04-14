@@ -193,7 +193,29 @@ const tourWeekEmployeesWeekSchema = z.object({
   weekStartDate: z.string(),
   weekEndDate: z.string(),
   isLocked: z.boolean(),
+  isBlocked: z.boolean(),
   employees: z.array(tourWeekEmployeeMemberSchema),
+});
+
+const tourWeekSchema = z.object({
+  id: z.number().int().positive(),
+  tourId: z.number().int().positive(),
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  isLocked: z.boolean(),
+  isBlocked: z.boolean(),
+});
+
+const tourWeekCreateInputSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+}).strict();
+
+const tourWeekStatusMutationResponseSchema = z.object({
+  week: tourWeekSchema,
+  affectedAppointmentCount: z.number().int().min(0),
 });
 
 const employeeWeekPlanningItemSchema = z.object({
@@ -483,6 +505,15 @@ const calendarWeekLaneEmployeePreviewSchema = z.object({
   tourId: z.number().int().positive(),
   weekEmployees: z.array(calendarWeekLaneEmployeePreviewMemberSchema),
   additionalDayEmployees: z.array(calendarWeekLaneEmployeePreviewMemberSchema),
+});
+
+const calendarBlockedTourWeekSchema = z.object({
+  tourId: z.number().int().positive(),
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  isBlocked: z.boolean(),
 });
 
 const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
@@ -1497,6 +1528,17 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(calendarWeekLaneEmployeePreviewSchema),
+      },
+    },
+    blockedTourWeeks: {
+      method: "GET" as const,
+      path: "/api/calendar/blocked-tour-weeks",
+      input: z.object({
+        fromDate: z.string(),
+        toDate: z.string(),
+      }).strict(),
+      responses: {
+        200: z.array(calendarBlockedTourWeekSchema),
       },
     },
   },
@@ -2648,6 +2690,42 @@ export const api = {
       responses: {
         200: appointmentWeekEmployeePreviewResponseSchema,
         404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
+  tourWeeks: {
+    create: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/weeks",
+      input: tourWeekCreateInputSchema,
+      responses: {
+        200: tourWeekSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "PAST_WEEK_READONLY"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    block: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/weeks/:isoYear/:isoWeek/block",
+      responses: {
+        200: tourWeekStatusMutationResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "PAST_WEEK_READONLY"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    unblock: {
+      method: "POST" as const,
+      path: "/api/tours/:tourId/weeks/:isoYear/:isoWeek/unblock",
+      responses: {
+        200: tourWeekStatusMutationResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: errorSchemas.notFound,
+        409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "PAST_WEEK_READONLY"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

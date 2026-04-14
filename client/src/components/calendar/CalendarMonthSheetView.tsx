@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
-import { addDays, format, isSameDay, parseISO } from "date-fns";
+import { addDays, format, getISOWeekYear, isSameDay, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
-import { useCalendarAppointments, type CalendarAppointment } from "@/lib/calendar-appointments";
+import {
+  useCalendarAppointments,
+  useCalendarBlockedTourWeeks,
+  type CalendarAppointment,
+} from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
@@ -52,6 +56,10 @@ type MonthSheetRenderWeek = {
 const logPrefix = "[calendar-month-sheet]";
 const MONTH_SHEET_BAR_HORIZONTAL_INSET_PX = 4;
 const MONTH_SLOT_BACKGROUND_ALPHA = 0.14;
+const BLOCKED_WEEK_OVERLAY_STYLE = {
+  backgroundImage: "repeating-linear-gradient(135deg, rgba(148,163,184,0.26) 0px, rgba(148,163,184,0.26) 8px, rgba(255,255,255,0.18) 8px, rgba(255,255,255,0.18) 16px)",
+  backgroundColor: "rgba(15,23,42,0.08)",
+} as const;
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
@@ -115,6 +123,10 @@ export function CalendarMonthSheetView({
     detail: "full",
     userRole,
   });
+  const { data: blockedTourWeeks = [] } = useCalendarBlockedTourWeeks({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+  });
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
@@ -122,6 +134,12 @@ export function CalendarMonthSheetView({
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
     [appointments],
+  );
+  const blockedTourWeekKeys = useMemo(
+    () => new Set(blockedTourWeeks
+      .filter((week) => week.isBlocked)
+      .map((week) => `${week.tourId}-${week.isoYear}-${week.isoWeek}`)),
+    [blockedTourWeeks],
   );
   const tourSlots = useMemo(() => buildMonthTourSlots(tours), [tours]);
 
@@ -349,6 +367,7 @@ export function CalendarMonthSheetView({
           appointmentsById={appointmentsById}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentMap={conflictAppointmentMap}
+          blockedTourWeekKeys={blockedTourWeekKeys}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
           draggedAppointmentId={draggedAppointmentId}
@@ -373,6 +392,7 @@ function MonthSheetSection({
   appointmentsById,
   conflictHighlightActive,
   conflictAppointmentMap,
+  blockedTourWeekKeys,
   berlinToday,
   isAdmin,
   draggedAppointmentId,
@@ -391,6 +411,7 @@ function MonthSheetSection({
   appointmentsById: Map<number, CalendarAppointment>;
   conflictHighlightActive: boolean;
   conflictAppointmentMap: Map<number, MonitoringConflictMeta>;
+  blockedTourWeekKeys: Set<string>;
   berlinToday: string;
   isAdmin: boolean;
   draggedAppointmentId: number | null;
@@ -533,6 +554,8 @@ function MonthSheetSection({
                               subRows * MONTH_SLOT_BAR_HEIGHT_PX +
                               (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
                               MONTH_SLOT_PADDING_BOTTOM_PX;
+                            const isSlotBlocked = slot.tourId != null
+                              && blockedTourWeekKeys.has(`${slot.tourId}-${getISOWeekYear(week.weekStart)}-${week.weekNumber}`);
 
                             return (
                               <div
@@ -551,6 +574,13 @@ function MonthSheetSection({
                                   void onDrop(event, day.date, slot.tourId);
                                 }}
                               >
+                                {isSlotBlocked ? (
+                                  <div
+                                    className="pointer-events-none absolute inset-0"
+                                    style={BLOCKED_WEEK_OVERLAY_STYLE}
+                                    aria-hidden
+                                  />
+                                ) : null}
                                 <div style={{ height: `${MONTH_SLOT_SEPARATOR_HEIGHT_PX}px` }} className="w-full" />
                               </div>
                             );
@@ -597,6 +627,8 @@ function MonthSheetSection({
                         const canDrag = !isLocked
                           && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
+                        const isSlotBlocked = slot.tourId != null
+                          && blockedTourWeekKeys.has(`${slot.tourId}-${getISOWeekYear(week.weekStart)}-${week.weekNumber}`);
 
                         return (
                           <div
@@ -613,7 +645,7 @@ function MonthSheetSection({
                               appointment={appointment}
                               isFirstDay={isSameDay(segmentStart, appointmentStart)}
                               isLastDay={isSameDay(segmentEnd, appointmentEnd)}
-                              isConflict={conflictHighlightActive && Boolean(conflictMeta)}
+                              isConflict={conflictHighlightActive && Boolean(conflictMeta) && !isSlotBlocked}
                               conflictColor={conflictMeta?.color}
                               hideOrderNumber={true}
                               showPopover={true}

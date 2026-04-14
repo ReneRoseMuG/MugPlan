@@ -62,6 +62,15 @@ export type CalendarWeekLaneEmployeePreview = {
   additionalDayEmployees: { id: number; fullName: string }[];
 };
 
+export type CalendarBlockedTourWeek = {
+  tourId: number;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  isBlocked: boolean;
+};
+
 const logPrefix = "[calendar-appointments]";
 
 export const getCalendarAppointmentsQueryKey = ({
@@ -83,6 +92,14 @@ export const getCalendarWeekLaneEmployeePreviewsQueryKey = ({
   fromDate: string;
   toDate: string;
 }) => ["calendarWeekLaneEmployeePreviews", fromDate, toDate];
+
+export const getCalendarBlockedTourWeeksQueryKey = ({
+  fromDate,
+  toDate,
+}: {
+  fromDate: string;
+  toDate: string;
+}) => ["calendarBlockedTourWeeks", fromDate, toDate];
 
 export function useCalendarAppointments({
   fromDate,
@@ -183,6 +200,32 @@ export function useCalendarWeekLaneEmployeePreviews({
       }
       const payload = (await response.json()) as unknown;
       return Array.isArray(payload) ? payload as CalendarWeekLaneEmployeePreview[] : [];
+    },
+  });
+}
+
+export function useCalendarBlockedTourWeeks({
+  fromDate,
+  toDate,
+  enabled,
+}: {
+  fromDate: string;
+  toDate: string;
+  enabled?: boolean;
+}) {
+  return useQuery<CalendarBlockedTourWeek[]>({
+    queryKey: getCalendarBlockedTourWeeksQueryKey({ fromDate, toDate }),
+    enabled,
+    queryFn: async () => {
+      const params = new URLSearchParams({ fromDate, toDate });
+      const response = await fetch(`/api/calendar/blocked-tour-weeks?${params.toString()}`, {
+        headers: {},
+      });
+      if (!response.ok) {
+        throw new Error("Blockierte Kalenderwochen konnten nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      return Array.isArray(payload) ? payload as CalendarBlockedTourWeek[] : [];
     },
   });
 }

@@ -11,17 +11,20 @@ import {
   startOfWeek,
 } from "date-fns";
 import { de } from "date-fns/locale";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
+import { Lock, LockOpen, MoreVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import {
   useCalendarAppointments,
+  useCalendarBlockedTourWeeks,
   useCalendarWeekLaneEmployeePreviews,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { apiRequest } from "@/lib/queryClient";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
   CALENDAR_UNASSIGNED_TOUR_COLOR,
@@ -46,6 +49,7 @@ import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import { HoverPreview } from "@/components/ui/hover-preview";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
@@ -106,6 +110,10 @@ type WeekLaneRenderData = {
 };
 
 const logPrefix = "[calendar-week]";
+const BLOCKED_WEEK_OVERLAY_STYLE = {
+  backgroundImage: "repeating-linear-gradient(135deg, rgba(148,163,184,0.26) 0px, rgba(148,163,184,0.26) 8px, rgba(255,255,255,0.18) 8px, rgba(255,255,255,0.18) 16px)",
+  backgroundColor: "rgba(15,23,42,0.08)",
+} as const;
 
 const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
   const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
@@ -278,6 +286,7 @@ export function CalendarWeekView({
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
+  const canManageWeekPlanning = userRole === "ADMIN" || userRole === "DISPATCHER";
 
   const dayWeights = useMemo(
     () => getDayWeights(weekendColumnPercent),
@@ -378,6 +387,10 @@ export function CalendarWeekView({
     fromDate: stripFromDate,
     toDate: stripToDate,
   });
+  const { data: blockedTourWeeks = [] } = useCalendarBlockedTourWeeks({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+  });
 
   useEffect(() => {
     laneHeightByKeyRef.current.clear();
@@ -399,6 +412,13 @@ export function CalendarWeekView({
       weekLaneEmployeePreviews.map((preview) => [`${preview.tourId}-${preview.date}`, preview] as const),
     ),
     [weekLaneEmployeePreviews],
+  );
+
+  const blockedTourWeekKeys = useMemo(
+    () => new Set(blockedTourWeeks
+      .filter((week) => week.isBlocked)
+      .map((week) => `${week.tourId}-${week.isoYear}-${week.isoWeek}`)),
+    [blockedTourWeeks],
   );
 
   const lanesByWeekStart = useMemo(() => {
@@ -478,6 +498,42 @@ export function CalendarWeekView({
 
   const getLaneRenderData = (tourLane: WeekTourLane): WeekLaneRenderData =>
     buildWeekLaneRenderData(tourLane, appointmentsById);
+
+  const invalidateWeekPlanningViews = async () => {
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        return Array.isArray(key) && (
+          key[0] === "calendarAppointments"
+          || key[0] === "calendarWeekLaneEmployeePreviews"
+          || key[0] === "calendarBlockedTourWeeks"
+          || (typeof key[0] === "string" && key[0].startsWith("/api/tours/") && key[0].endsWith("/week-employees"))
+        );
+      },
+    });
+  };
+
+  const blockWeekMutation = useMutation({
+    mutationFn: async (params: { tourId: number; isoYear: number; isoWeek: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/weeks/${params.isoYear}/${params.isoWeek}/block`);
+      return response.json() as Promise<{ affectedAppointmentCount: number }>;
+    },
+    onSuccess: async () => {
+      await invalidateWeekPlanningViews();
+      await refreshMonitoringWithNotification(toast);
+    },
+  });
+
+  const unblockWeekMutation = useMutation({
+    mutationFn: async (params: { tourId: number; isoYear: number; isoWeek: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/weeks/${params.isoYear}/${params.isoWeek}/unblock`);
+      return response.json() as Promise<{ affectedAppointmentCount: number }>;
+    },
+    onSuccess: async () => {
+      await invalidateWeekPlanningViews();
+      await refreshMonitoringWithNotification(toast);
+    },
+  });
 
   const primaryWeekLaneKeys = useMemo(() => {
     if (weekStarts.length === 0) return [] as string[];
@@ -1044,17 +1100,22 @@ export function CalendarWeekView({
                               ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
                             ].join(" ")
                           : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`;
+                      const isoYear = getISOWeekYear(weekStart);
+                      const isoWeek = getISOWeek(weekStart);
+                      const isLaneBlocked = tourLane.tourId != null
+                        && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
+                      const isLaneWeekLocked = weekKey <= format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
 
                       return (
                       <CalendarWeekNotesButton
                         key={tourLane.laneKey}
-                        yearNumber={getISOWeekYear(weekStart)}
-                        weekNumber={getISOWeek(weekStart)}
+                        yearNumber={isoYear}
+                        weekNumber={isoWeek}
                         tourId={tourLane.tourId ?? null}
                         tourLabel={tourLane.label}
                         readOnly={!canWriteNotes}
                       >
-                        {({ iconSlot, countSlot, dialog }) => (
+                        {({ iconSlot, countSlot, dialog, openDialog }) => (
                         <div className="rounded-lg border border-border/40 bg-muted/10">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
@@ -1079,7 +1140,104 @@ export function CalendarWeekView({
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
                             weekNotesIcon={iconSlot}
                             weekNotesCount={countSlot}
+                            statusSlot={isLaneBlocked ? (
+                              <span
+                                className="inline-flex items-center rounded-full border border-white/35 bg-black/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+                                data-testid={`week-tour-lane-blocked-badge-${tourLane.laneKey}`}
+                              >
+                                Blockiert
+                              </span>
+                            ) : undefined}
+                            menuSlot={(
+                              <span
+                                onClick={(event) => event.stopPropagation()}
+                                onDoubleClick={(event) => event.stopPropagation()}
+                              >
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="flex items-center justify-center rounded p-0.5 opacity-70 transition-opacity hover:bg-white/20 hover:opacity-100"
+                                      aria-label="Wochenaktionen"
+                                      data-testid={`week-tour-lane-menu-trigger-${tourLane.laneKey}`}
+                                    >
+                                      <MoreVertical className="h-3.5 w-3.5" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="min-w-[190px]">
+                                    <DropdownMenuItem
+                                      onClick={() => openDialog()}
+                                      className="gap-2 text-xs cursor-pointer"
+                                    >
+                                      {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
+                                    </DropdownMenuItem>
+                                    {tourLane.tourId != null ? (
+                                      isLaneBlocked ? (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            void unblockWeekMutation.mutateAsync({
+                                              tourId: tourLane.tourId!,
+                                              isoYear,
+                                              isoWeek,
+                                            }).then((result) => {
+                                              toast({
+                                                title: "Wochenplanung freigegeben",
+                                                description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
+                                              });
+                                            }).catch(() => {
+                                              toast({
+                                                title: "Wochenplanung konnte nicht freigegeben werden",
+                                                description: "Bitte erneut versuchen.",
+                                                variant: "destructive",
+                                              });
+                                            });
+                                          }}
+                                          disabled={!canManageWeekPlanning || isLaneWeekLocked || unblockWeekMutation.isPending}
+                                          className="gap-2 text-xs cursor-pointer"
+                                        >
+                                          <LockOpen className="h-3.5 w-3.5 shrink-0" />
+                                          Wochenplanung freigeben
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            void blockWeekMutation.mutateAsync({
+                                              tourId: tourLane.tourId!,
+                                              isoYear,
+                                              isoWeek,
+                                            }).then((result) => {
+                                              toast({
+                                                title: "Wochenplanung blockiert",
+                                                description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
+                                              });
+                                            }).catch(() => {
+                                              toast({
+                                                title: "Wochenplanung konnte nicht blockiert werden",
+                                                description: "Bitte erneut versuchen.",
+                                                variant: "destructive",
+                                              });
+                                            });
+                                          }}
+                                          disabled={!canManageWeekPlanning || isLaneWeekLocked || blockWeekMutation.isPending}
+                                          className="gap-2 text-xs cursor-pointer"
+                                        >
+                                          <Lock className="h-3.5 w-3.5 shrink-0" />
+                                          Wochenplanung blockieren
+                                        </DropdownMenuItem>
+                                      )
+                                    ) : null}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </span>
+                            )}
                           />
+                          {isLaneBlocked ? (
+                            <div
+                              className="pointer-events-none absolute inset-0 rounded-md opacity-70"
+                              style={BLOCKED_WEEK_OVERLAY_STYLE}
+                              aria-hidden
+                            />
+                          ) : null}
                           <div
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -1198,6 +1356,13 @@ export function CalendarWeekView({
                                 />
                               );
                             })}
+                            {isLaneBlocked ? (
+                              <div
+                                className="pointer-events-none absolute inset-0 z-[1]"
+                                style={BLOCKED_WEEK_OVERLAY_STYLE}
+                                aria-hidden
+                              />
+                            ) : null}
                             {hasLaneContent && draggedAppointmentId !== null ? (
                               <div
                                 className="absolute inset-0 grid z-20"
@@ -1232,7 +1397,7 @@ export function CalendarWeekView({
                                 ) + 1;
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
-                              const isConflict = conflictHighlightActive && Boolean(conflictMeta);
+                              const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
@@ -1284,7 +1449,7 @@ export function CalendarWeekView({
 
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
-                              const isConflict = conflictHighlightActive && Boolean(conflictMeta);
+                              const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
@@ -1346,7 +1511,7 @@ export function CalendarWeekView({
 
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const conflictMeta = conflictAppointmentMap.get(appointment.id);
-                                    const isConflict = conflictHighlightActive && Boolean(conflictMeta);
+                                    const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
                                     const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                                     const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;

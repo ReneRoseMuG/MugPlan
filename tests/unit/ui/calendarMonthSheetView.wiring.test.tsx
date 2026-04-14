@@ -10,10 +10,13 @@
  * - Monatsfremde Tage bleiben sichtbar, werden aber im Renderzustand als reduzierte Nachbar-Monatstage markiert.
  * - Sechs-Wochen-Monate behalten ihre letzte Woche in einem eigenen vertikalen Wochen-Scroller erreichbar.
  * - Die bestehende Compact-Bar-Darstellung bleibt fuer geklippte Mehrtagessegmente wiederverwendet.
+ * - Blockierte Wochen legen im Monatsblatt eine Sperrflaeche ueber den Tour-Slot.
+ * - Konflikt-Schraffuren werden fuer Termine in blockierten Wochen unterdrueckt.
  *
  * Fehlerfaelle:
  * - Das Monatsblatt rendert versehentlich wieder mehrere Monate parallel.
  * - Wiederverwendete Termindarstellung verliert isFirstDay/isLastDay an sichtbaren Segmentgrenzen.
+ * - Blockierte Tour-Slots zeigen weiterhin doppelte Konflikt- und Sperrflaechen.
  *
  * Ziel:
  * Die neue Monatsblatt-View ueber beobachtbare Struktur und wiederverwendete Appointment-Bar-Props regressionssicher absichern.
@@ -27,6 +30,7 @@ import type { Tour } from "../../../shared/schema";
 const compactBarCalls: Array<Record<string, unknown>> = [];
 const useSettingMock = vi.fn();
 const useCalendarAppointmentsMock = vi.fn();
+const useCalendarBlockedTourWeeksMock = vi.fn();
 const useQueryMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
@@ -53,6 +57,7 @@ vi.mock("@/lib/calendar-appointments", async () => {
   return {
     ...actual,
     useCalendarAppointments: (options: unknown) => useCalendarAppointmentsMock(options),
+    useCalendarBlockedTourWeeks: (options: unknown) => useCalendarBlockedTourWeeksMock(options),
   };
 });
 
@@ -105,7 +110,18 @@ function createAppointment(overrides: Partial<CalendarAppointment>): CalendarApp
   };
 }
 
-function configureDefaults(appointments: CalendarAppointment[], tours: Tour[]) {
+function configureDefaults(
+  appointments: CalendarAppointment[],
+  tours: Tour[],
+  blockedTourWeeks: Array<{
+    tourId: number;
+    isoYear: number;
+    isoWeek: number;
+    weekStartDate: string;
+    weekEndDate: string;
+    isBlocked: boolean;
+  }> = [],
+) {
   useSettingMock.mockImplementation((key: string) => {
     switch (key) {
       case "calendarWeekendColumnPercent":
@@ -116,6 +132,7 @@ function configureDefaults(appointments: CalendarAppointment[], tours: Tour[]) {
   });
 
   useCalendarAppointmentsMock.mockReturnValue({ data: appointments });
+  useCalendarBlockedTourWeeksMock.mockReturnValue({ data: blockedTourWeeks });
   useQueryMock.mockImplementation((options: { queryKey?: unknown }) => {
     const first = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
     if (first === "/api/tours") {
@@ -130,6 +147,7 @@ describe("calendar month sheet view wiring", () => {
     compactBarCalls.length = 0;
     useSettingMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
+    useCalendarBlockedTourWeeksMock.mockReset();
     useQueryMock.mockReset();
     vi.stubGlobal("React", React);
     vi.stubGlobal("window", {
@@ -230,5 +248,39 @@ describe("calendar month sheet view wiring", () => {
     const conflictBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 77);
     expect(conflictBar?.isConflict).toBe(true);
     expect(conflictBar?.conflictColor).toBe("#D4537E");
+  });
+
+  it("renders a blocked-week overlay and suppresses conflict markers inside blocked weeks", async () => {
+    const appointment = createAppointment({
+      id: 88,
+      startDate: "2026-03-02",
+    });
+    configureDefaults(
+      [appointment],
+      [{ id: 7, name: "Alpha", color: "#225588", version: 1 }],
+      [{
+        tourId: 7,
+        isoYear: 2026,
+        isoWeek: 10,
+        weekStartDate: "2026-03-02",
+        weekEndDate: "2026-03-08",
+        isBlocked: true,
+      }],
+    );
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2026-03-15T00:00:00Z")}
+        conflictHighlightActive
+        conflictAppointmentMap={new Map([
+          [88, { triggerCode: "TR-02", triggerName: "Geparkt", color: "#D4537E" }],
+        ])}
+      />,
+    );
+
+    const blockedBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 88);
+    expect(blockedBar?.isConflict).toBe(false);
+    expect(markup).toContain("repeating-linear-gradient(135deg");
   });
 });

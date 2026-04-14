@@ -31,6 +31,7 @@ import {
 import { logDebug, logInfo } from "../lib/logger";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
+import * as tourWeeksService from "./tourWeeksService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
@@ -1261,6 +1262,13 @@ export async function listCalendarWeekLaneEmployeePreviews({
       if (left.date !== right.date) return left.date.localeCompare(right.date);
       return left.tourId - right.tourId;
     });
+}
+
+export async function listCalendarBlockedTourWeeks(params: {
+  fromDate: string;
+  toDate: string;
+}) {
+  return tourWeeksService.listBlockedTourWeeksForRange(params);
 }
 
 export async function listAppointmentsList(params: {

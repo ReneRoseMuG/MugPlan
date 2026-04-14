@@ -19,12 +19,20 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
 const useCalendarAppointmentsMock = vi.fn();
 const useSettingMock = vi.fn();
 const setSettingMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
+  useMutation: (options: unknown) => {
+    useMutationMock(options);
+    return {
+      mutateAsync: vi.fn(),
+      isPending: false,
+    };
+  },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
 }));
 
@@ -43,6 +51,10 @@ vi.mock("@/lib/monitoring", () => ({
 
 vi.mock("@/lib/preview-width", () => ({
   storeWeeklyPreviewWidth: vi.fn(),
+}));
+
+vi.mock("@/lib/queryClient", () => ({
+  apiRequest: vi.fn(),
 }));
 
 vi.mock("@/lib/calendar-appointments", async () => {
@@ -82,6 +94,7 @@ import { CalendarWeekView } from "../../../client/src/components/calendar/Calend
 describe("CalendarWeekView - header controls", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
+    useMutationMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
     useSettingMock.mockReset();
     setSettingMock.mockReset();

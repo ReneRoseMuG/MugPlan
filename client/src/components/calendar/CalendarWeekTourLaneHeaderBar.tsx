@@ -9,6 +9,8 @@ type CalendarWeekTourLaneHeaderBarProps = {
   testId?: string;
   weekNotesIcon?: React.ReactNode;
   weekNotesCount?: React.ReactNode;
+  statusSlot?: React.ReactNode;
+  menuSlot?: React.ReactNode;
 };
 
 export function CalendarWeekTourLaneHeaderBar({
@@ -20,6 +22,8 @@ export function CalendarWeekTourLaneHeaderBar({
   testId,
   weekNotesIcon,
   weekNotesCount,
+  statusSlot,
+  menuSlot,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
 
@@ -42,7 +46,7 @@ export function CalendarWeekTourLaneHeaderBar({
       data-testid={testId}
       aria-expanded={isExpanded}
     >
-      <div className="grid h-full min-w-0 grid-cols-[2.4rem_minmax(0,1fr)]">
+      <div className="grid h-full min-w-0 grid-cols-[2.4rem_minmax(0,1fr)_2.25rem]">
         <span
           className="flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
           aria-hidden={weekNotesIcon === undefined && weekNotesCount === undefined}
@@ -56,8 +60,12 @@ export function CalendarWeekTourLaneHeaderBar({
             </span>
           ) : null}
         </span>
-        <span className="flex min-w-0 items-center px-2.5">
+        <span className="flex min-w-0 items-center gap-2 px-2.5">
           <span className="truncate">{label}</span>
+          {statusSlot ? <span className="flex shrink-0 items-center">{statusSlot}</span> : null}
+        </span>
+        <span className="flex items-center justify-center border-l border-white/15 bg-black/5">
+          {menuSlot}
         </span>
       </div>
     </button>

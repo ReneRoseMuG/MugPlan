@@ -10,6 +10,8 @@
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
  * - Wiederholte Add-Executes fuer dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
+ * - Explizite Tour-Wochen entstehen ohne Backfill nur bei echter Nutzung und Legacy-Wochen bleiben weiter sichtbar.
+ * - Blockierte Wochen entfernen Termin-Mitarbeiter, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
@@ -21,6 +23,8 @@
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
  * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
+ * - Das Rollout legt Altwochen ungefragt als neue Tour-Wochen-Datensaetze an.
+ * - Blockierte Wochen bleiben in Listen, Kalenderfeed oder Termin-Tags inkonsistent.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -32,7 +36,7 @@ import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startO
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
-import { tourWeekEmployees } from "../../../shared/schema";
+import { tourWeekEmployees, tourWeeks } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
@@ -443,6 +447,70 @@ describe("tourWeekEmployees integration", () => {
     ]);
   });
 
+  it("creates explicit tour-week records without backfilling legacy assignment weeks", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#0f766e");
+    const employee = await createEmployeeFixture("TWE-EXPLICIT-WEEK-EMP");
+    const firstWeek = resolveNextEditableWeekDates();
+    const secondWeekStart = addWeeks(parseISO(firstWeek.weekStartDate), 1);
+    const secondWeek = {
+      isoYear: getISOWeekYear(secondWeekStart),
+      isoWeek: getISOWeek(secondWeekStart),
+    };
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: firstWeek.isoYear,
+      isoWeek: firstWeek.isoWeek,
+      employeeId: employee.id,
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks`)
+      .send(secondWeek)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({
+          tourId: tour.id,
+          isoYear: secondWeek.isoYear,
+          isoWeek: secondWeek.isoWeek,
+          isBlocked: false,
+        }));
+      });
+
+    const persistedWeeks = await db
+      .select()
+      .from(tourWeeks)
+      .where(eq(tourWeeks.tourId, tour.id));
+    expect(persistedWeeks).toHaveLength(1);
+    expect(persistedWeeks[0]).toEqual(expect.objectContaining({
+      tourId: tour.id,
+      isoYear: secondWeek.isoYear,
+      isoWeek: secondWeek.isoWeek,
+      isBlocked: false,
+    }));
+
+    await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            isoYear: firstWeek.isoYear,
+            isoWeek: firstWeek.isoWeek,
+            isBlocked: false,
+            employees: [expect.objectContaining({ employeeId: employee.id })],
+          }),
+          expect.objectContaining({
+            isoYear: secondWeek.isoYear,
+            isoWeek: secondWeek.isoWeek,
+            isBlocked: false,
+            employees: [],
+          }),
+        ]));
+      });
+  });
+
   it("keeps repeated add executes idempotent for the same employee in the same tour week", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#14b8a6");
@@ -512,6 +580,168 @@ describe("tourWeekEmployees integration", () => {
         eq(tourWeekEmployees.employeeId, employee.id),
       ));
     expect(employeeAssignments).toHaveLength(1);
+  });
+
+  it("blocks a week, strips appointment employees, exposes the blocked calendar feed and suppresses active week-plan previews", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#b45309");
+    const project = await createProjectFixture({ prefix: "TWE-BLOCK" });
+    const employee = await createEmployeeFixture("TWE-BLOCK-EMP");
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(24),
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const isoWeek = resolveIsoWeek(appointment!.startDate);
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: isoWeek.isoYear,
+      isoWeek: isoWeek.isoWeek,
+      employeeId: employee.id,
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${isoWeek.isoYear}/${isoWeek.isoWeek}/block`)
+      .send({})
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({
+          affectedAppointmentCount: 1,
+          week: expect.objectContaining({
+            tourId: tour.id,
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: true,
+          }),
+        }));
+      });
+
+    await admin
+      .get(`/api/appointments/${appointment!.id}`)
+      .expect(200)
+      .expect((res) => {
+        expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
+        expect((res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).toContain("Planung blockiert");
+      });
+
+    await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([
+          expect.objectContaining({
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: true,
+            employees: [expect.objectContaining({ employeeId: employee.id })],
+          }),
+        ]);
+      });
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: toDateOnlyString(appointment!.startDate),
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.hasWeekPlan).toBe(false);
+        expect(res.body.items).toEqual([]);
+      });
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+      .send({
+        isoYear: isoWeek.isoYear,
+        isoWeek: isoWeek.isoWeek,
+        employeeId: employee.id,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .get(`/api/calendar/blocked-tour-weeks?fromDate=${toDateOnlyString(appointment!.startDate)}&toDate=${toDateOnlyString(appointment!.startDate)}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([
+          expect.objectContaining({
+            tourId: tour.id,
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: true,
+          }),
+        ]);
+      });
+  });
+
+  it("unblocks a blocked week without restoring removed appointment employees", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#1d4ed8");
+    const project = await createProjectFixture({ prefix: "TWE-UNBLOCK" });
+    const employee = await createEmployeeFixture("TWE-UNBLOCK-EMP");
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(26),
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const isoWeek = resolveIsoWeek(appointment!.startDate);
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: isoWeek.isoYear,
+      isoWeek: isoWeek.isoWeek,
+      employeeId: employee.id,
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${isoWeek.isoYear}/${isoWeek.isoWeek}/block`)
+      .send({})
+      .expect(200);
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${isoWeek.isoYear}/${isoWeek.isoWeek}/unblock`)
+      .send({})
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({
+          week: expect.objectContaining({
+            tourId: tour.id,
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: false,
+          }),
+        }));
+      });
+
+    await admin
+      .get(`/api/appointments/${appointment!.id}`)
+      .expect(200)
+      .expect((res) => {
+        expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
+        expect((res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).not.toContain("Planung blockiert");
+      });
+
+    await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([
+          expect.objectContaining({
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: false,
+            employees: [expect.objectContaining({ employeeId: employee.id })],
+          }),
+        ]);
+      });
   });
 
   it("keeps the assignment when all appointments conflict and only leaves future appointments untouched", async () => {

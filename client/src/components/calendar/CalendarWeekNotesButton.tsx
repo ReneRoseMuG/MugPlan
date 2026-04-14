@@ -8,6 +8,8 @@ type CalendarWeekNotesButtonRenderProps = {
   iconSlot: React.ReactNode;
   countSlot: React.ReactNode;
   dialog: React.ReactNode;
+  notesCount: number;
+  openDialog: () => void;
 };
 
 type CalendarWeekNotesButtonProps = {
@@ -43,9 +45,13 @@ export function CalendarWeekNotesButton({
     },
   });
 
+  const openDialog = () => {
+    setDialogOpen(true);
+  };
+
   const open = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setDialogOpen(true);
+    openDialog();
   };
 
   const iconSlot = (
@@ -80,5 +86,5 @@ export function CalendarWeekNotesButton({
     />
   );
 
-  return <>{children({ iconSlot, countSlot, dialog })}</>;
+  return <>{children({ iconSlot, countSlot, dialog, notesCount: notes.length, openDialog })}</>;
 }
