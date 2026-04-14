@@ -108,6 +108,32 @@ const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppoi
   return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
 };
 
+export function resolveVisibleWeekStartFromScroll(params: {
+  baseWeekStart: Date;
+  weekStarts: Date[];
+  viewportMidpoint: number;
+  getSectionMetrics: (weekKey: string) => { offsetLeft: number; width: number } | null;
+}): Date {
+  const { baseWeekStart, weekStarts, viewportMidpoint, getSectionMetrics } = params;
+  let closestWeekStart = baseWeekStart;
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  for (const weekStart of weekStarts) {
+    const weekKey = format(weekStart, "yyyy-MM-dd");
+    const sectionMetrics = getSectionMetrics(weekKey);
+    if (!sectionMetrics) continue;
+
+    const sectionMidpoint = sectionMetrics.offsetLeft + (sectionMetrics.width / 2);
+    const distance = Math.abs(sectionMidpoint - viewportMidpoint);
+    if (distance >= closestDistance) continue;
+
+    closestDistance = distance;
+    closestWeekStart = weekStart;
+  }
+
+  return closestWeekStart;
+}
+
 export function buildWeekLaneRenderData(
   tourLane: WeekTourLane,
   appointmentsById: Map<number, CalendarAppointment>,
@@ -213,6 +239,7 @@ export function CalendarWeekView({
   // Zeitraumwechsel darf nur explizit über Home-Buttons und currentDate erfolgen.
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
+  const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
   const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
@@ -253,7 +280,6 @@ export function CalendarWeekView({
   );
 
   const baseWeekStart = startOfWeek(currentDate, { weekStartsOn: 1, locale: de });
-  const baseWeekEnd = endOfWeek(baseWeekStart, { weekStartsOn: 1, locale: de });
   const scrollResetKey = format(baseWeekStart, "yyyy-MM-dd");
   const berlinToday = getBerlinTodayDateString();
 
@@ -264,6 +290,10 @@ export function CalendarWeekView({
 
   const stripFromDate = format(weekStarts[0], "yyyy-MM-dd");
   const stripToDate = format(endOfWeek(weekStarts[weekStarts.length - 1], { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+
+  useEffect(() => {
+    setVisibleWeekStart(baseWeekStart);
+  }, [baseWeekStart]);
 
   useEffect(() => {
     const node = firstWeekdayHeaderRef.current;
@@ -299,6 +329,38 @@ export function CalendarWeekView({
       verticalNode.removeEventListener("scroll", publishViewport);
     };
   }, [onViewportChange, scrollResetKey]);
+
+  useEffect(() => {
+    const horizontalNode = horizontalScrollContainerRef.current;
+    if (!horizontalNode) return;
+
+    const syncVisibleWeekStart = () => {
+      const closestWeekStart = resolveVisibleWeekStartFromScroll({
+        baseWeekStart,
+        weekStarts,
+        viewportMidpoint: horizontalNode.scrollLeft + (horizontalNode.clientWidth / 2),
+        getSectionMetrics: (weekKey) => {
+          const sectionNode = weekSectionRefs.current.get(weekKey);
+          if (!sectionNode) return null;
+          return {
+            offsetLeft: sectionNode.offsetLeft,
+            width: sectionNode.clientWidth,
+          };
+        },
+      });
+
+      setVisibleWeekStart((currentVisibleWeekStart) =>
+        currentVisibleWeekStart.getTime() === closestWeekStart.getTime() ? currentVisibleWeekStart : closestWeekStart,
+      );
+    };
+
+    syncVisibleWeekStart();
+    horizontalNode.addEventListener("scroll", syncVisibleWeekStart, { passive: true });
+
+    return () => {
+      horizontalNode.removeEventListener("scroll", syncVisibleWeekStart);
+    };
+  }, [baseWeekStart, weekStarts, scrollResetKey]);
 
   const { data: appointments = [] } = useCalendarAppointments({
     fromDate: stripFromDate,
@@ -734,13 +796,15 @@ export function CalendarWeekView({
     setAppointmentHeightVersion((prev) => prev + 1);
   };
 
+  const visibleWeekEnd = endOfWeek(visibleWeekStart, { weekStartsOn: 1, locale: de });
+
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
       <div className="relative z-30 flex items-center justify-between border-b border-border/40 bg-muted/30 px-6 py-4">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold text-primary">KW {getISOWeek(baseWeekStart)}</span>
+          <span className="text-lg font-bold text-primary">KW {getISOWeek(visibleWeekStart)}</span>
           <span className="text-sm text-muted-foreground">
-            {format(baseWeekStart, "d. MMMM", { locale: de })} - {format(baseWeekEnd, "d. MMMM yyyy", { locale: de })}
+            {format(visibleWeekStart, "d. MMMM", { locale: de })} - {format(visibleWeekEnd, "d. MMMM yyyy", { locale: de })}
           </span>
         </div>
         <div className="flex items-center gap-3">
