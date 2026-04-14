@@ -206,7 +206,7 @@ function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cance
     endDate: "2099-01-02",
     endTime: "09:00:00",
     employees: [{ id: 41, firstName: "Mia", lastName: "Muster" }],
-    appointmentTags: mode === "planningBlocked" ? [{ id: 81, name: "Planung blockiert", color: "#8B6A00", version: 1 }] : [],
+    appointmentTags: mode === "planningBlocked" ? [{ id: 81, name: "Planung blockiert", color: "#3B2025", version: 1 }] : [],
     isCancelled: mode === "cancelled",
   };
 }

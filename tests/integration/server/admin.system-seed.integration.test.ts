@@ -85,7 +85,7 @@ describe("integration: admin system seed", () => {
 
     expect(complaintTag).toMatchObject({ color: "#FF011B", isDefault: true });
     expect(vacantTag).toMatchObject({ color: "#D4537E", isDefault: true });
-    expect(planningBlockedTag).toMatchObject({ color: "#8B6A00", isDefault: true });
+    expect(planningBlockedTag).toMatchObject({ color: "#3B2025", isDefault: true });
     expect(tours).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "Parkplatz", color: "#D4537E" }),
       expect.objectContaining({ name: "Tour 1", color: "#006B6F" }),

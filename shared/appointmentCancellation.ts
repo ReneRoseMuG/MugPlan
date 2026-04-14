@@ -1,5 +1,5 @@
 export const RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME = "Storniert";
-export const RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR = "#2C2C2A";
+export const RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR = "#3B2025";
 export const MANAGED_COMPLAINT_TAG_NAME = "Reklamation";
 export const MANAGED_COMPLAINT_TAG_COLOR = "#FF011B";
 export const MANAGED_SPECIAL_MEASURE_TAG_NAME = "Sondermaß";
@@ -11,7 +11,7 @@ export const MANAGED_REMARKS_TAG_COLOR = "#888780";
 export const RESERVED_VACANT_TAG_NAME = "Geparkt";
 export const RESERVED_VACANT_TAG_COLOR = "#D4537E";
 export const RESERVED_PLANNING_BLOCKED_TAG_NAME = "Planung blockiert";
-export const RESERVED_PLANNING_BLOCKED_TAG_COLOR = "#8B6A00";
+export const RESERVED_PLANNING_BLOCKED_TAG_COLOR = RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR;
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
 export type TagPickerDomain = "appointment" | "project" | "customer" | "employee";

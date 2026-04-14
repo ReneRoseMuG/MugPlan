@@ -219,9 +219,9 @@ describe("calendar drag and drop conflict feedback", () => {
 
   it("blocks planning blocked appointments from being dragged in month sheet and week view", async () => {
     configureDefaults([
-      createAppointment({ id: 51, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#8B6A00", isDefault: true, version: 1 }] }),
+      createAppointment({ id: 51, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#3B2025", isDefault: true, version: 1 }] }),
       createAppointment({ id: 52, startDate: "2099-07-02" }),
-      createAppointment({ id: 61, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#8B6A00", isDefault: true, version: 1 }] }),
+      createAppointment({ id: 61, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#3B2025", isDefault: true, version: 1 }] }),
       createAppointment({ id: 62, startDate: "2099-07-02" }),
     ]);
 

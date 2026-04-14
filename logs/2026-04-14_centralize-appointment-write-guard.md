@@ -52,5 +52,35 @@ Erfolgreich ausgefuehrt:
 
 ## Bekannte Hinweise
 
-- Fuer den neuen System-Tag wurde die Farbe `#8B6A00` verwendet.
+- Fuer die reservierten Termin-Tags `Storniert` und `Planung blockiert` wird gemeinsam die dunkle Rot-Schwarz-Farbe `#3B2025` verwendet.
 - Ein voller Audit und voller Testlauf wurden in diesem Schritt noch nicht ausgefuehrt.
+
+## Nachtrag
+
+- Die gemeinsame Farbe fuer `Storniert` und `Planung blockiert` wurde nachtraeglich abgestimmt und auf `#3B2025` gesetzt.
+- Die direkt betroffenen Seed-, Service- und UI-Tests wurden darauf nachgezogen.
+
+## Audit und Test-Report
+
+Erfolgreich ausgefuehrt:
+
+- `npm run check`
+- `npm run lint`
+- `npm run audit`
+- `npm run secrets`
+- `npm run test:integration -- --reporter=verbose`
+
+Unit-Testlauf ausgefuehrt mit bestehenden roten Faellen:
+
+- `npm run test:unit`
+- Rot: `tests/unit/ui/home.behavior.test.tsx`
+  - `hides the sidebar while the employees form is visible`
+  - `restores the week scroll position when returning from the fullscreen appointment form`
+  - `passes pending week scroll restore into the global week workspace`
+- Rot: `tests/unit/ui/appointmentForm.layoutTourIntegration.test.tsx`
+  - `keeps create mode flow in the main column and routes tour selection through AppointmentEmployeeSlot`
+
+Einordnung:
+
+- Der komplette Integration-Lauf war gruen.
+- Die roten Unit-Faelle liegen ausserhalb der hier geaenderten Farb-/Seed-Stellen und betreffen bestehende Home-/Layout-Verdrahtung.

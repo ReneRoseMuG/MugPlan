@@ -52,7 +52,7 @@ import {
 describe("appointment cancellation helpers", () => {
   it("detects the reserved cancellation tag name case-insensitively", () => {
     expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME).toBe("Storniert");
-    expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR).toBe("#2C2C2A");
+    expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR).toBe("#3B2025");
     expect(isReservedAppointmentCancellationTagName("Storniert")).toBe(true);
     expect(isReservedAppointmentCancellationTagName(" storniert ")).toBe(true);
     expect(isReservedAppointmentCancellationTagName("STORNIERT")).toBe(true);
