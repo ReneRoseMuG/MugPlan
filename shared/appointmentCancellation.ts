@@ -8,6 +8,7 @@ export const MANAGED_MESSE_TAG_NAME = "Messe Aufbau/Abbau";
 export const MANAGED_MESSE_TAG_COLOR = "#3465A4";
 export const MANAGED_REMARKS_TAG_NAME = "Anmerkungen";
 export const MANAGED_REMARKS_TAG_COLOR = "#888780";
+export const MANAGED_MIRRORED_TAG_NAME = "Gespiegelt";
 export const RESERVED_VACANT_TAG_NAME = "Geparkt";
 export const RESERVED_VACANT_TAG_COLOR = "#D4537E";
 export const RESERVED_PLANNING_BLOCKED_TAG_NAME = "Planung blockiert";
@@ -38,6 +39,10 @@ export function isManagedMesseTagName(value: string): boolean {
 
 export function isManagedRemarksTagName(value: string): boolean {
   return normalizeTagName(value) === normalizeTagName(MANAGED_REMARKS_TAG_NAME);
+}
+
+export function isManagedMirroredTagName(value: string): boolean {
+  return normalizeTagName(value) === normalizeTagName(MANAGED_MIRRORED_TAG_NAME);
 }
 
 export function isReservedVacantTagName(value: string): boolean {

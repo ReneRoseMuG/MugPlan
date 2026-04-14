@@ -43,6 +43,7 @@ import {
 } from "../../helpers/testDataFactory";
 import * as projectsService from "../../../server/services/projectsService";
 import {
+  MANAGED_MIRRORED_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
@@ -253,6 +254,7 @@ describe("FT26 integration: report produktionsplanung", () => {
     const admin = await loginAdminAgent(app);
     const specialMeasureTag = await ensureManagedSpecialMeasureTag();
     const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#2563eb");
+    const mirroredTag = await ensureExactTag(MANAGED_MIRRORED_TAG_NAME, "#0891b2");
     const infoTag = await ensureExactTag("Info FT26", "#0f766e");
     const employee = await createEmployeeFixtureWithOverrides({
       prefix: "FT26-PV-EMP",
@@ -268,7 +270,7 @@ describe("FT26 integration: report produktionsplanung", () => {
         { startDate: "2100-01-15", employeeIds: [], tourId: tour.id },
       ],
       descriptionMd: "<p>Kartenbeschreibung</p>",
-      projectTags: [specialMeasureTag, infoTag],
+      projectTags: [specialMeasureTag, infoTag, mirroredTag],
       appointmentTagsByIndex: [[remarksTag], []],
       productItems: [{ categoryName: "Fass Saunen", name: "Sauna Lang", shortCode: "SL", quantity: 2 }],
       componentItems: [{ categoryName: "Fenster", name: "Fenster Breit", shortCode: "FB", quantity: 1 }],
@@ -332,11 +334,13 @@ describe("FT26 integration: report produktionsplanung", () => {
         attachmentsCount: 3,
         tags: expect.arrayContaining([
           expect.objectContaining({ id: infoTag.id, name: "Info FT26" }),
+          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
           expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
           expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
         ]),
         reportCardReasonTags: [
           expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
+          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
           expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
         ],
         articleValues: expect.arrayContaining([
@@ -404,6 +408,38 @@ describe("FT26 integration: report produktionsplanung", () => {
       }),
     ]);
     expect(response.body.projectRows[0]?.projectId).not.toBe(cancelledProject.project.id);
+  });
+
+  it("treats Gespiegelt as an additional project card trigger", async () => {
+    const admin = await loginAdminAgent(app);
+    const mirroredTag = await ensureExactTag(MANAGED_MIRRORED_TAG_NAME, "#0891b2");
+
+    const mirroredOnlyProject = await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-MIRRORED-ONLY",
+      appointmentDates: [{ startDate: "2100-03-10" }],
+      projectTags: [mirroredTag],
+      productItems: [{ categoryName: "Fass Saunen", name: "Mirrored Sauna", quantity: 2 }],
+    });
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-PV-MIRRORED-NO-REASON",
+      appointmentDates: [{ startDate: "2100-03-11" }],
+      productItems: [{ categoryName: "Fass Saunen", name: "No Reason Sauna", quantity: 1 }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup Sauna Mirrored Trigger" })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2100-03-01&toDate=2100-03-31&productCategoryIds=${saunaCategoryId}`)
+      .expect(200);
+
+    expect(response.body.projectRows).toEqual([
+      expect.objectContaining({
+        projectId: mirroredOnlyProject.project.id,
+        reportCardReasonTags: [
+          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
+        ],
+      }),
+    ]);
   });
 
   it("allows dispatcher access and rejects reader access", async () => {

@@ -19,6 +19,7 @@ import { describe, expect, it } from "vitest";
 import {
   MANAGED_COMPLAINT_TAG_COLOR,
   MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_MIRRORED_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
@@ -27,6 +28,7 @@ import {
   RESERVED_PLANNING_BLOCKED_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
   isManagedComplaintTagName,
+  isManagedMirroredTagName,
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
   isPickerVisibleForDomain,
@@ -65,11 +67,14 @@ describe("appointment cancellation helpers", () => {
     expect(MANAGED_SPECIAL_MEASURE_TAG_NAME).toBe("Sondermaß");
     expect(MANAGED_SPECIAL_MEASURE_TAG_COLOR).toBe("#BA7517");
     expect(MANAGED_REMARKS_TAG_NAME).toBe("Anmerkungen");
+    expect(MANAGED_MIRRORED_TAG_NAME).toBe("Gespiegelt");
 
     expect(isManagedComplaintTagName(" reklamation ")).toBe(true);
     expect(isManagedSpecialMeasureTagName("SONDERMASS")).toBe(true);
     expect(isManagedRemarksTagName(" anmerkungen ")).toBe(true);
+    expect(isManagedMirroredTagName(" gespiegelt ")).toBe(true);
     expect(isManagedRemarksTagName("Anmerkungen Intern")).toBe(false);
+    expect(isManagedMirroredTagName("Gespiegelt Intern")).toBe(false);
 
     expect(isProtectedSystemTagName("Storniert")).toBe(true);
     expect(isProtectedSystemTagName("Reklamation")).toBe(true);
@@ -77,6 +82,7 @@ describe("appointment cancellation helpers", () => {
     expect(isProtectedSystemTagName(RESERVED_VACANT_TAG_NAME)).toBe(true);
     expect(isProtectedSystemTagName(RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(true);
     expect(isProtectedSystemTagName("Anmerkungen")).toBe(false);
+    expect(isProtectedSystemTagName("Gespiegelt")).toBe(false);
 
     expect(RESERVED_VACANT_TAG_NAME).toBe("Geparkt");
     expect(isReservedVacantTagName("Geparkt")).toBe(true);

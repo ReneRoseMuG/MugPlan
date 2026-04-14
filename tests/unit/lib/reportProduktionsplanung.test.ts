@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Produktionsplanung fasst Mengen je Kategorie ueber identische Shortcodes zusammen, wenn Shortcodes aktiv sind.
  * - Ohne Shortcode oder bei deaktivierter Option bleiben Artikel getrennt.
- * - reportCardReasonTags enthalten ausschliesslich die managed Gruende "Sondermaß" und "Anmerkungen".
+ * - reportCardReasonTags enthalten ausschliesslich die managed Gruende "Sondermaß", "Anmerkungen" und "Gespiegelt".
  *
  * Fehlerfaelle:
  * - Shortcodes verdichten Mengen nicht stabil.
@@ -57,16 +57,19 @@ describe("reportProduktionsplanung helpers", () => {
       projectTags: [
         { id: 1, name: "Reklamation", color: "#f97316", isDefault: false, version: 1 },
         { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
+        { id: 5, name: "Gespiegelt", color: "#0891b2", isDefault: false, version: 1 },
       ],
       appointmentTags: [
         { id: 3, name: "Sondermaß", color: "#1e3a8a", isDefault: false, version: 1 },
         { id: 4, name: "Storniert", color: "#ef4444", isDefault: false, version: 1 },
         { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
+        { id: 5, name: "Gespiegelt", color: "#0891b2", isDefault: false, version: 1 },
       ],
     });
 
     expect(result).toEqual([
       { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
+      { id: 5, name: "Gespiegelt", color: "#0891b2", isDefault: false, version: 1 },
       { id: 3, name: "Sondermaß", color: "#1e3a8a", isDefault: false, version: 1 },
     ]);
   });
