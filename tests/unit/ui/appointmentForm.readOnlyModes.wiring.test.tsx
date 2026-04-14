@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Historische Termine werden im Formular für Admin und Disponent als reine Schließansicht gerendert.
  * - Stornierte Termine werden im Formular für Admin und Disponent ebenfalls als reine Schließansicht gerendert.
+ * - Planung blockierte Termine werden im Formular für Admin und Disponent ebenfalls als reine Schließansicht gerendert.
  * - Das Formular reicht den Readonly-Modus an Dokumente, Tags, Notizen und Mitarbeiterbereich weiter.
  *
  * Fehlerfälle:
@@ -18,7 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let currentRole = "DISPATCHER";
-let currentMode: "historical" | "historicalParked" | "cancelled" = "historical";
+let currentMode: "historical" | "historicalParked" | "cancelled" | "planningBlocked" = "historical";
 const attachmentPanelCalls: Array<Record<string, unknown>> = [];
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
@@ -190,7 +191,7 @@ vi.mock("@/components/DocumentExtractionDialog", () => ({
 
 import { AppointmentForm } from "../../../client/src/components/AppointmentForm";
 
-function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cancelled") {
+function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cancelled" | "planningBlocked") {
   return {
     id: 77,
     version: 3,
@@ -200,11 +201,12 @@ function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cance
     tourId: mode === "historicalParked" ? 88 : null,
     title: "Termin A",
     description: null,
-    startDate: mode === "cancelled" ? "2099-01-02" : "2000-01-01",
+    startDate: mode === "cancelled" || mode === "planningBlocked" ? "2099-01-02" : "2000-01-01",
     startTime: "08:00:00",
     endDate: "2099-01-02",
     endTime: "09:00:00",
     employees: [{ id: 41, firstName: "Mia", lastName: "Muster" }],
+    appointmentTags: mode === "planningBlocked" ? [{ id: 81, name: "Planung blockiert", color: "#3B2025", version: 1 }] : [],
     isCancelled: mode === "cancelled",
   };
 }
@@ -306,6 +308,8 @@ describe("FT01 UI: appointment form readonly modes", () => {
     ["ADMIN", "historical"],
     ["DISPATCHER", "cancelled"],
     ["ADMIN", "cancelled"],
+    ["DISPATCHER", "planningBlocked"],
+    ["ADMIN", "planningBlocked"],
   ] as const)(
     "renders only a close action for %s appointments in %s mode",
     (role, mode) => {
@@ -331,6 +335,10 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(markup).not.toContain("button-save-appointment");
       if (mode === "historical") {
         expect(markup).toContain("Termin gesperrt");
+        expect(markup).not.toContain("Termin storniert");
+        expect(markup).not.toContain("Planung blockiert");
+      } else if (mode === "planningBlocked") {
+        expect(markup).toContain("Planung blockiert");
         expect(markup).not.toContain("Termin storniert");
       } else {
         expect(markup).toContain("Termin storniert");

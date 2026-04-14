@@ -12,6 +12,7 @@ import {
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -86,6 +87,10 @@ const normalizeTourName = (value: string | null | undefined) => (value ?? "").tr
 function isHistoricalParkplatzAppointment(appointment: CalendarAppointment): boolean {
   return appointment.startDate < getBerlinTodayDateString()
     && normalizeTourName(appointment.tourName) === normalizeTourName("Parkplatz");
+}
+
+function isPlanningBlockedAppointment(appointment: CalendarAppointment): boolean {
+  return appointment.appointmentTags.some((tag) => isReservedPlanningBlockedTagName(tag.name));
 }
 
 type WeekLaneRenderData = {
@@ -731,6 +736,17 @@ export function CalendarWeekView({
       return;
     }
 
+    if (isPlanningBlockedAppointment(appointment)) {
+      console.info(`${logPrefix} drop blocked: planning blocked appointment`, { appointmentId });
+      toast({
+        title: "Planung blockiert",
+        description: "Planung blockierte Termine koennen nicht verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     if (appointment.isLocked && !isAdmin) {
       console.info(`${logPrefix} drop blocked`, { appointmentId });
       toast({
@@ -1217,11 +1233,12 @@ export function CalendarWeekView({
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta);
-                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
+                              const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
+                              const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
 
                               return (
                                 <CalendarWeekSpanningTile
@@ -1268,11 +1285,12 @@ export function CalendarWeekView({
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta);
-                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
+                              const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
+                              const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
 
                               return (
                                 <div
@@ -1329,11 +1347,12 @@ export function CalendarWeekView({
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const conflictMeta = conflictAppointmentMap.get(appointment.id);
                                     const isConflict = conflictHighlightActive && Boolean(conflictMeta);
-                                    const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
+                                    const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
+                                    const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isSegmentLocked
                                       && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                                    const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                                    const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
 
                                     return (
                                       <CalendarWeekAppointmentPanel

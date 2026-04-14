@@ -39,6 +39,7 @@ import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { NotesSection } from "@/components/NotesSection";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
+import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
 import {
   DocumentExtractionDialog,
   type ExtractionCustomerDraft,
@@ -67,6 +68,7 @@ import type { Note } from "@shared/schema";
 import type { NoteTemplate } from "@shared/schema";
 import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  isReservedPlanningBlockedTagName,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
@@ -98,6 +100,7 @@ interface AppointmentDetail {
   endDate: string | null;
   endTime: string | null;
   employees: Employee[];
+  appointmentTags: Tag[];
   isCancelled: boolean;
 }
 
@@ -717,6 +720,9 @@ export function AppointmentForm({
       if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
         throw buildApiError("Stornierte Termine koennen nicht geparkt werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
       }
+      if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+        throw buildApiError("Planung blockierte Termine koennen nicht geparkt werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      }
       throw buildApiError(parsed?.message ?? (response.statusText || "Parken fehlgeschlagen"), response.status, parsed?.code);
     },
     onSuccess: async () => {
@@ -744,6 +750,10 @@ export function AppointmentForm({
       }
       if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
         toast({ title: "Parken nicht moeglich", description: "Stornierte Termine koennen nicht geparkt werden.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+        toast({ title: "Parken nicht moeglich", description: "Planung blockierte Termine koennen nicht geparkt werden.", variant: "destructive" });
         return;
       }
       toast({ title: "Parken nicht moeglich", description: err.message || "Termin konnte nicht geparkt werden.", variant: "destructive" });
@@ -895,7 +905,15 @@ export function AppointmentForm({
   const isParked = isEditing && isParkplatzTour(lockedTourId, parkplatzTourId);
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
-  const isReadOnlyView = isHistoricalReadOnly || isCancelled;
+  const isPlanningBlocked = (appointmentDetail?.appointmentTags ?? []).some((tag) => isReservedPlanningBlockedTagName(tag.name));
+  const readOnlyReason = isHistoricalReadOnly
+    ? "historical"
+    : isCancelled
+      ? "cancelled"
+      : isPlanningBlocked
+        ? "planningBlocked"
+        : null;
+  const isReadOnlyView = readOnlyReason !== null;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
   const isCustomerReadOnly = isMutationLocked || selectedProjectId !== null || readOnlyFields?.includes("customer") === true;
@@ -1619,9 +1637,14 @@ export function AppointmentForm({
 
   const submitAppointment = async () => {
     if (isMutationLocked) {
-      if (isCancelled) {
+      if (readOnlyReason === "cancelled") {
         toast({ title: "Termin ist storniert", description: "Stornierte Termine können nicht mehr bearbeitet werden.", variant: "destructive" });
         console.info(`${logPrefix} save blocked: cancelled appointment`);
+        return;
+      }
+      if (readOnlyReason === "planningBlocked") {
+        toast({ title: "Planung blockiert", description: "Planung blockierte Termine können nicht bearbeitet werden.", variant: "destructive" });
+        console.info(`${logPrefix} save blocked: planning blocked appointment`);
         return;
       }
       toast({ title: "Termin ist gesperrt", description: "Historische Termine können nicht geändert werden.", variant: "destructive" });
@@ -1723,6 +1746,9 @@ export function AppointmentForm({
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
           throw buildApiError("Stornierte Termine koennen nicht geloescht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
         }
+        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+          throw buildApiError("Planung blockierte Termine koennen nicht geloescht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
+        }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
         }
@@ -1782,6 +1808,14 @@ export function AppointmentForm({
         toast({
           title: "Löschen nicht möglich",
           description: "Stornierte Termine koennen nicht geloescht werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Planung blockierte Termine koennen nicht geloescht werden.",
           variant: "destructive",
         });
         return;
@@ -1975,6 +2009,14 @@ export function AppointmentForm({
           toast({
             title: "Speichern nicht moeglich",
             description: "Stornierte Termine koennen nicht mehr bearbeitet werden.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+          toast({
+            title: "Speichern nicht moeglich",
+            description: "Planung blockierte Termine koennen nicht bearbeitet werden.",
             variant: "destructive",
           });
           return;
@@ -2312,7 +2354,7 @@ export function AppointmentForm({
         )}
       >
         <div className="w-full space-y-6" data-testid="appointment-form-main-column">
-          {isCancelled && (
+          {readOnlyReason === "cancelled" && (
             <Alert variant="destructive">
               <AlertTitle>Termin storniert</AlertTitle>
               <AlertDescription>
@@ -2320,11 +2362,19 @@ export function AppointmentForm({
               </AlertDescription>
             </Alert>
           )}
-          {isHistoricalReadOnly && (
+          {readOnlyReason === "historical" && (
             <Alert variant="destructive">
               <AlertTitle>Termin gesperrt</AlertTitle>
               <AlertDescription>
                 Historische Termine können nicht verändert werden.
+              </AlertDescription>
+            </Alert>
+          )}
+          {readOnlyReason === "planningBlocked" && (
+            <Alert variant="destructive">
+              <AlertTitle>Planung blockiert</AlertTitle>
+              <AlertDescription>
+                Dieser Termin ist für Schreibzugriffe blockiert und kann auf der Terminseite nicht bearbeitet werden.
               </AlertDescription>
             </Alert>
           )}
@@ -2676,30 +2726,18 @@ export function AppointmentForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Termin stornieren?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der Termin wird dauerhaft als storniert markiert. Alle Mitarbeiter werden vom Termin abgezogen und sind im Terminzeitraum zur erneuten Planung verfügbar. Der Auftragswert wird im System auf 0,- Euro gesetzt. Stornierte Termine können nicht reaktiviert werden.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={cancelAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
-              onClick={() => {
-                if (!appointmentId) return;
-                const version = appointmentDetail?.version;
-                if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
-                cancelAppointmentMutation.mutate({ appointmentId, version });
-              }}
-            >
-              {cancelAppointmentMutation.isPending ? "Termin stornieren..." : "Termin stornieren"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AppointmentCancelConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        disabled={cancelAppointmentMutation.isPending || !appointmentId || typeof appointmentDetail?.version !== "number" || !Number.isInteger(appointmentDetail.version) || appointmentDetail.version < 1}
+        isPending={cancelAppointmentMutation.isPending}
+        onConfirm={() => {
+          if (!appointmentId) return;
+          const version = appointmentDetail?.version;
+          if (typeof version !== "number" || !Number.isInteger(version) || version < 1) return;
+          cancelAppointmentMutation.mutate({ appointmentId, version });
+        }}
+      />
 
       <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
         <AlertDialogContent data-testid="dialog-park-appointment">

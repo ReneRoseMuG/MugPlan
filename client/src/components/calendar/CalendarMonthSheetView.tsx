@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { addDays, format, isSameDay, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -37,6 +38,10 @@ type CalendarMonthSheetViewProps = {
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
+
+function isPlanningBlockedAppointment(appointment: CalendarAppointment): boolean {
+  return appointment.appointmentTags.some((tag) => isReservedPlanningBlockedTagName(tag.name));
+}
 
 type MonthSheetRenderWeek = {
   rowLayout: MonthWeekRowLayout;
@@ -586,7 +591,8 @@ function MonthSheetSection({
                           MONTH_SLOT_SEPARATOR_HEIGHT_PX +
                           bar.subRowIndex * (MONTH_SLOT_BAR_HEIGHT_PX + MONTH_SLOT_BAR_GAP_PX);
                         const position = getSlotBarPosition(bar.startDayIndex, bar.endDayIndex);
-                        const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
+                        const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
+                        const isLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
                         const canDrag = !isLocked
                           && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));

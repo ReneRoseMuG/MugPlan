@@ -22,6 +22,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointment: vi.fn(),
+  getAppointmentTagsByAppointmentIds: vi.fn(),
   getAppointmentTx: vi.fn(),
   withAppointmentTransaction: vi.fn(),
   bumpAppointmentVersionTx: vi.fn(),
@@ -60,13 +61,14 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
       const fakeTx = {} as Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0];
       return handler(fakeTx);
     });
+    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
     appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
     toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
 
     tagRelationsServiceMock.getTagByName.mockResolvedValue({
       id: 77,
       name: "Storniert",
-      color: "#2C2C2A",
+      color: "#3B2025",
       isDefault: true,
       version: 1,
       createdAt: new Date(),

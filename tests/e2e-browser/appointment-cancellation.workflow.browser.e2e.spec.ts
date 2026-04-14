@@ -5,6 +5,7 @@
  * - Ein Projekttermin kann im Browser aus Kunde, Projekt mit Betrag und Mitarbeiter als regulaerer Zukunftstermin angelegt werden.
  * - Der Einweg-Storno laesst sich ueber das Terminformular ausloesen und markiert den Termin sichtbar als storniert.
  * - Der Wochenkalender zeigt den stornierten Termin nach dem Bestätigen des Stornos ohne manuelles Formularschließen weiterhin sichtbar, aber mit Storniert-Tag.
+ * - Planung blockierte Termine bleiben im Wochenkalender sichtbar, sind aber im Formular nur noch als Schließansicht oeffbar.
  * - Der Projektbetrag wird nach dem Storno im Projektformular auf 0.00 gesetzt.
  * - Die Vorlaufliste zeigt den stornierten Termin weiterhin mit Betrag 0 und sichtbarer Storno-Kennzeichnung.
  * - Der Produktionsplanung soll stornierte Projekte ausfiltern; dieser Soll-Test beschreibt die aktuelle Luecke bewusst rot.
@@ -12,19 +13,21 @@
  * Fehlerfaelle:
  * - Der Termin verschwindet vor dem Storno oder traegt bereits vorher den Storniert-Tag.
  * - Der Storno bleibt im offenen Formular hängen und propagiert nicht direkt in Kalender, Projektbetrag oder Reports.
+ * - Planung blockierte Termine bleiben im Browser trotz Server-Guard editierbar.
  * - Die Vorlaufliste zeigt nach dem Storno weiterhin den alten Betrag.
  * - Der Produktionsplanung listet das stornierte Projekt trotz Soll-Regel weiterhin in Mengenlisten.
  *
  * - Der Geparkt-Tag erscheint nicht im Termin-Tag-Picker (isPickerVisibleForDomain schließt ihn aus).
  *
  * Ziel:
- * Den kompletten fachlichen Storno-Flow aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
- * Ergaenzend: Picker-Schutz fuer den reservierten Geparkt-Tag browser-seitig absichern.
+ * Den kompletten fachlichen Storno-Flow sowie die Read-only-Oberflaeche fuer Planung blockiert aus Anwendersicht ueber Kalender, Formular, Projekt und Reports absichern.
+ * Ergaenzend: Picker-Schutz fuer die reservierten Termin-System-Tags browser-seitig absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { RESERVED_VACANT_TAG_NAME } from "../../shared/appointmentCancellation";
+import { RESERVED_PLANNING_BLOCKED_TAG_NAME, RESERVED_VACANT_TAG_NAME } from "../../shared/appointmentCancellation";
 
 import {
+  attachAppointmentTagFixture,
   createAppointmentFixture,
   createComponentFixture,
   createCustomerFixture,
@@ -32,6 +35,7 @@ import {
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  ensureSystemTagsFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -245,6 +249,66 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Keine passenden Kategorien im gewählten Zeitraum gefunden.");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).not.toContainText("FT28 Browser Cancel Fenster");
+});
+
+test("Planung blockierte Termine bleiben im Browser sichtbar, aber read-only", async ({ page }) => {
+  const customer = await createCustomerFixture("FT28-PLAN-BLOCK-BROWSER-CUST");
+  const employee = await createEmployeeFixture("FT28-PLAN-BLOCK-BROWSER-EMP");
+  const projectName = "FT28 Browser Planung blockiert Projekt";
+  const project = await createProjectFixture({
+    prefix: "FT28-PLAN-BLOCK-BROWSER",
+    customerId: customer.id,
+    name: projectName,
+  });
+  const appointmentDate = getRelativeBerlinDate(1);
+
+  await openProjectById(page, project.id, "noAppointments");
+  await openNewAppointmentFromProjectContext(page);
+  await page.getByTestId("input-start-date").fill(appointmentDate);
+  await expect(page.getByTestId("badge-project")).toContainText(projectName);
+  await selectEmployeeForAppointment(page, employee.id);
+
+  const createAppointmentResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && response.url().includes("/api/appointments")
+    && !response.url().includes("/cancel")
+  ));
+  await page.getByTestId("button-save-appointment").click();
+  const createAppointmentResponse = await createAppointmentResponsePromise;
+  expect(createAppointmentResponse.ok()).toBeTruthy();
+  const createdAppointment = await createAppointmentResponse.json() as { id: number };
+  const appointmentId = Number(createdAppointment.id);
+  expect(appointmentId).toBeGreaterThan(0);
+
+  const { systemTags } = await ensureSystemTagsFixture();
+  const planningBlockedTag = systemTags.find((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME);
+  expect(planningBlockedTag?.id).toBeTruthy();
+  await attachAppointmentTagFixture(appointmentId, planningBlockedTag!.id);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointmentId}`);
+    if (!response.ok()) return false;
+    const body = await response.json();
+    return Array.isArray(body.appointmentTags)
+      && body.appointmentTags.some((tag: { name: string }) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME);
+  }).toBe(true);
+
+  await page.reload();
+
+  const blockedAppointmentPanel = page.getByTestId(`week-appointment-panel-${appointmentId}`);
+  await expect(blockedAppointmentPanel).toBeVisible();
+  await expect(blockedAppointmentPanel).toHaveAttribute("aria-disabled", "true");
+  await expect(blockedAppointmentPanel).toContainText(projectName);
+
+  await blockedAppointmentPanel.dblclick();
+  await expect(page.getByText("Planung blockiert", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Schreibzugriffe blockiert/i)).toBeVisible();
+  await expect(page.getByText("Schließen", { exact: true }).first()).toBeVisible();
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+  await expect(page.getByTestId("button-cancel-appointment")).toHaveCount(0);
+  await expect(page.getByTestId("button-park-appointment")).toHaveCount(0);
+  await expect(page.getByTestId("button-delete-appointment")).toHaveCount(0);
+  await expect(page.getByTestId("appointment-tag-picker-button-add")).toHaveCount(0);
 });
 
 test("Geparkt-Tag erscheint nicht im Termin-Tag-Picker", async ({ page }) => {

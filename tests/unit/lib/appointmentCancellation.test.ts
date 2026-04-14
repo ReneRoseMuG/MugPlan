@@ -3,9 +3,10 @@
  *
  * Abgedeckte Regeln:
  * - Der reservierte Termin-Storno-Tag wird namensbasiert robust erkannt.
+ * - Der reservierte Termin-Tag "Planung blockiert" wird namensbasiert robust erkannt.
  * - Die systemverwalteten Report-Tags "Reklamation", "Sondermaß" und "Anmerkungen" werden robust erkannt.
  * - "Anmerkungen" bleibt sichtbar in allen Pickern und ist kein geschuetzter System-Tag.
- * - Die serverseitigen Picker-Filter vereinheitlichen alle Domaenen auf "alles ausser Storniert".
+ * - Die serverseitigen Picker-Filter vereinheitlichen alle Domaenen auf "alles ausser geschuetzten Termin-System-Tags".
  *
  * Fehlerfaelle:
  * - "Anmerkungen" wuerde wie ein geschuetzter oder versteckter System-Tag behandelt.
@@ -23,12 +24,14 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  RESERVED_PLANNING_BLOCKED_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
   isManagedComplaintTagName,
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
   isPickerVisibleForDomain,
   isProtectedSystemTagName,
+  isReservedPlanningBlockedTagName,
   isReservedAppointmentCancellationTagName,
   isReservedVacantTagName,
 } from "../../../shared/appointmentCancellation";
@@ -39,15 +42,17 @@ import {
   hasAppointmentCancellationTag,
   hasManagedComplaintTag,
   hasManagedRemarksTag,
+  hasReservedPlanningBlockedTag,
   isAppointmentCancellationTag,
   isManagedComplaintTag,
   isManagedRemarksTag,
+  isReservedPlanningBlockedTag,
 } from "../../../server/lib/appointmentCancellation";
 
 describe("appointment cancellation helpers", () => {
   it("detects the reserved cancellation tag name case-insensitively", () => {
     expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME).toBe("Storniert");
-    expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR).toBe("#2C2C2A");
+    expect(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR).toBe("#3B2025");
     expect(isReservedAppointmentCancellationTagName("Storniert")).toBe(true);
     expect(isReservedAppointmentCancellationTagName(" storniert ")).toBe(true);
     expect(isReservedAppointmentCancellationTagName("STORNIERT")).toBe(true);
@@ -70,6 +75,7 @@ describe("appointment cancellation helpers", () => {
     expect(isProtectedSystemTagName("Reklamation")).toBe(true);
     expect(isProtectedSystemTagName("Sondermaß")).toBe(true);
     expect(isProtectedSystemTagName(RESERVED_VACANT_TAG_NAME)).toBe(true);
+    expect(isProtectedSystemTagName(RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(true);
     expect(isProtectedSystemTagName("Anmerkungen")).toBe(false);
 
     expect(RESERVED_VACANT_TAG_NAME).toBe("Geparkt");
@@ -77,6 +83,12 @@ describe("appointment cancellation helpers", () => {
     expect(isReservedVacantTagName(" geparkt ")).toBe(true);
     expect(isReservedVacantTagName("GEPARKT")).toBe(true);
     expect(isReservedVacantTagName("Vakant")).toBe(false);
+
+    expect(RESERVED_PLANNING_BLOCKED_TAG_NAME).toBe("Planung blockiert");
+    expect(isReservedPlanningBlockedTagName("Planung blockiert")).toBe(true);
+    expect(isReservedPlanningBlockedTagName(" planung blockiert ")).toBe(true);
+    expect(isReservedPlanningBlockedTagName("PLANUNG BLOCKIERT")).toBe(true);
+    expect(isReservedPlanningBlockedTagName("Planung offen")).toBe(false);
   });
 
   it("detects managed tags across server-side helpers", () => {
@@ -89,6 +101,9 @@ describe("appointment cancellation helpers", () => {
     expect(isManagedRemarksTag({ name: "Anmerkungen" })).toBe(true);
     expect(hasManagedRemarksTag([{ name: "Normal" }, { name: "Anmerkungen" }])).toBe(true);
     expect(hasManagedRemarksTag([{ name: "Normal" }])).toBe(false);
+
+    expect(isReservedPlanningBlockedTag({ name: "Planung blockiert" })).toBe(true);
+    expect(hasReservedPlanningBlockedTag([{ name: "Normal" }, { name: "Planung blockiert" }])).toBe(true);
   });
 
   it("filters only the reserved cancellation tag from visible picker collections", () => {
@@ -108,6 +123,11 @@ describe("appointment cancellation helpers", () => {
     expect(isPickerVisibleForDomain("Geparkt", "project")).toBe(false);
     expect(isPickerVisibleForDomain("Geparkt", "customer")).toBe(false);
     expect(isPickerVisibleForDomain("Geparkt", "employee")).toBe(false);
+
+    expect(isPickerVisibleForDomain("Planung blockiert", "appointment")).toBe(false);
+    expect(isPickerVisibleForDomain("Planung blockiert", "project")).toBe(false);
+    expect(isPickerVisibleForDomain("Planung blockiert", "customer")).toBe(false);
+    expect(isPickerVisibleForDomain("Planung blockiert", "employee")).toBe(false);
 
     expect(filterPickerTagsForDomain([
       { name: "Info" },
