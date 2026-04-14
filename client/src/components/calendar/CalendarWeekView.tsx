@@ -123,8 +123,8 @@ type WeekLaneRenderData = {
 
 const logPrefix = "[calendar-week]";
 const BLOCKED_WEEK_OVERLAY_STYLE = {
-  backgroundImage: "repeating-linear-gradient(135deg, rgba(148,163,184,0.26) 0px, rgba(148,163,184,0.26) 8px, rgba(255,255,255,0.18) 8px, rgba(255,255,255,0.18) 16px)",
-  backgroundColor: "rgba(15,23,42,0.08)",
+  backgroundImage: "repeating-linear-gradient(135deg, rgba(71,85,105,0.34) 0px, rgba(71,85,105,0.34) 8px, rgba(226,232,240,0.26) 8px, rgba(226,232,240,0.26) 16px)",
+  backgroundColor: "rgba(15,23,42,0.18)",
 } as const;
 
 const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
@@ -1274,14 +1274,6 @@ export function CalendarWeekView({
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
                             weekNotesIcon={iconSlot}
                             weekNotesCount={countSlot}
-                            statusSlot={isLaneBlocked ? (
-                              <span
-                                className="inline-flex items-center rounded-full border border-white/35 bg-black/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
-                                data-testid={`week-tour-lane-blocked-badge-${tourLane.laneKey}`}
-                              >
-                                Blockiert
-                              </span>
-                            ) : undefined}
                             menuSlot={(
                               <span
                                 onClick={(event) => event.stopPropagation()}
@@ -1368,11 +1360,24 @@ export function CalendarWeekView({
                           />
                           {isLaneBlocked ? (
                             <div
-                              className="pointer-events-none absolute inset-0 rounded-md opacity-70"
+                              className="pointer-events-none absolute inset-0 rounded-md"
                               style={BLOCKED_WEEK_OVERLAY_STYLE}
                               aria-hidden
                             />
                           ) : null}
+                          <div
+                            className="pointer-events-none absolute inset-0 grid"
+                            style={{ gridTemplateColumns: weekDayGridTemplate }}
+                            aria-hidden
+                          >
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
+                              <div
+                                key={`lane-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                className={dayIdx === 0 ? "" : "border-l border-white/20"}
+                                data-testid={`week-tour-lane-day-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                              />
+                            ))}
+                          </div>
                           <div
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -1420,14 +1425,14 @@ export function CalendarWeekView({
                                   >
                                     {dayAppointmentCounts[dayIdx] > 0 ? (
                                       <span
-                                        className="pointer-events-none absolute left-1/2 -translate-x-1/2 truncate text-center text-[10px] font-semibold"
+                                        className="pointer-events-none ml-auto min-w-0 truncate text-right text-[10px] font-semibold"
                                         style={{ color: "#ffffff" }}
                                         data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                       >
                                         {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
                                       </span>
                                     ) : (
-                                      <span />
+                                      <span className="ml-auto" />
                                     )}
                                     {dayBucket.dateKey >= berlinToday ? (
                                       <button

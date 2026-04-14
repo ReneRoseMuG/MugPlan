@@ -26,9 +26,9 @@ export function CalendarWeekTourLaneHeaderBar({
   menuSlot,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
-  const layoutClassName = menuSlot
-    ? "grid-cols-[2.25rem_2.4rem_minmax(0,1fr)]"
-    : "grid-cols-[2.4rem_minmax(0,1fr)]";
+  const wrapperClassName = menuSlot
+    ? "grid h-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)]"
+    : "h-full min-w-0";
   const content = (
     <>
       <span
@@ -44,8 +44,10 @@ export function CalendarWeekTourLaneHeaderBar({
           </span>
         ) : null}
       </span>
-      <span className="flex min-w-0 items-center gap-2 px-2.5">
-        <span className="truncate">{label}</span>
+      <span className="relative z-30 flex min-w-0 items-center gap-2 px-2.5">
+        <span className="inline-flex max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-sm bg-black/35 px-1.5 py-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.14)]">
+          {label}
+        </span>
         {statusSlot ? <span className="flex shrink-0 items-center">{statusSlot}</span> : null}
       </span>
     </>
@@ -53,7 +55,7 @@ export function CalendarWeekTourLaneHeaderBar({
 
   return (
     <div
-      className="relative z-10 h-7 w-full rounded-md border text-xs font-semibold tracking-wide shadow-sm"
+      className="h-7 w-full rounded-md border text-xs font-semibold tracking-wide shadow-sm"
       style={{
         backgroundColor: resolvedColor,
         color: "#ffffff",
@@ -64,9 +66,9 @@ export function CalendarWeekTourLaneHeaderBar({
           "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
       }}
     >
-      <div className={`grid h-full min-w-0 ${layoutClassName}`}>
+      <div className={wrapperClassName}>
         {menuSlot ? (
-          <span className="flex items-center justify-center border-r border-white/15 bg-black/5">
+          <span className="relative z-20 flex items-center justify-center border-r border-white/15 bg-black/5">
             {menuSlot}
           </span>
         ) : null}

@@ -263,4 +263,50 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).not.toContain("button-add-tour-week-footer");
   });
 
+  it("shows the corrected blocked week notice in edit mode", () => {
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
+      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
+        return {
+          data: [
+            {
+              isoYear: 2099,
+              isoWeek: 7,
+              weekStartDate: "2099-02-09",
+              weekEndDate: "2099-02-15",
+              isLocked: false,
+              isBlocked: true,
+              employees: [
+                {
+                  assignmentId: 302,
+                  employeeId: 22,
+                  fullName: "Beispiel, Ben",
+                },
+              ],
+            },
+          ],
+          isLoading: false,
+        };
+      }
+
+      return {
+        data: [],
+        isLoading: false,
+      };
+    });
+
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("text-tour-week-blocked-2099-7");
+    expect(markup).toContain("Zugeordnete Mitarbeiter wurden aus den Terminen dieser Woche abgezogen");
+    expect(markup).not.toContain("Mitarbeiter bleiben sichtbar");
+  });
+
 });

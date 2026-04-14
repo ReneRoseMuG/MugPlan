@@ -376,10 +376,7 @@ test("adds the managed Messe tag when an appointment is switched to Tour Messe",
     return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
   }).toBe(true);
 
-  const followDialogAfterAdd = page.getByRole("alertdialog");
-  if (await followDialogAfterAdd.isVisible().catch(() => false)) {
-    await page.getByRole("button", { name: "Nicht folgen" }).click();
-  }
+  await expect(page.getByRole("alertdialog", { name: "Dem Termin folgen?" })).toHaveCount(0);
 
   await page.getByTestId(`week-appointment-panel-${appointment.id}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
@@ -424,10 +421,7 @@ test("removes the managed Messe tag when an appointment leaves Tour Messe", asyn
     return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
   }).toBe(false);
 
-  const followDialogAfterRemove = page.getByRole("alertdialog");
-  if (await followDialogAfterRemove.isVisible().catch(() => false)) {
-    await page.getByRole("button", { name: "Nicht folgen" }).click();
-  }
+  await expect(page.getByRole("alertdialog", { name: "Dem Termin folgen?" })).toHaveCount(0);
 
   await page.getByTestId(`week-appointment-panel-${appointment.id}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();

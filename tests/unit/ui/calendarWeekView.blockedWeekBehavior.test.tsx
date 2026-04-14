@@ -2,17 +2,19 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Blockierte Tour-Wochen zeigen im Wochenkalender Badge, Menüeintrag und Sperrflaeche an.
- * - Das Drei-Punkte-Menü der linken Tour-Lane enthaelt weiterhin den Notiz-Einstieg und wechselt fuer blockierte Wochen auf Freigeben.
+ * - Blockierte Tour-Wochen zeigen im Wochenkalender Menueintrag und Sperrflaeche an, aber keinen zusaetzlichen Badge.
+ * - Das Drei-Punkte-Menue der linken Tour-Lane enthaelt weiterhin den Notiz-Einstieg und wechselt fuer blockierte Wochen auf Freigeben.
+ * - Tageszaehler und Tages-Plusaktionen bleiben trotz Menue-Overlay im Lane-Header erhalten.
  * - Konflikt-Markierungen werden fuer Termine in blockierten Wochen unterdrueckt.
  *
  * Fehlerfaelle:
- * - Blockierte Wochen rendern ohne sichtbaren Status oder ohne Aktionsmenue.
+ * - Blockierte Wochen rendern ohne Aktionsmenue oder mit redundantem Badge.
  * - Das Lane-Menue verliert den Notiz-Einstieg oder zeigt weiterhin die falsche Blockieraktion.
+ * - Tageszaehler oder Tages-Plusaktionen verschwinden nach Header-Layering-Aenderungen.
  * - Konflikt-Schraffuren bleiben trotz blockierter Woche auf Terminen aktiv.
  *
  * Ziel:
- * Das sichtbare Wochenkalender-Verhalten fuer blockierte Wochen isoliert regressionssicher absichern.
+ * Das sichtbare Wochenkalender-Verhalten fuer blockierte Wochen inkl. Menue, Sperrflaeche und Tagessteuerung regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -158,7 +160,7 @@ function createAppointment(overrides: Partial<CalendarAppointment>): CalendarApp
     projectArticleItems: [],
     projectDescription: null,
     project: null,
-    startDate: "2026-03-30",
+    startDate: "2026-04-20",
     endDate: null,
     startTime: null,
     tourId: 7,
@@ -210,9 +212,9 @@ describe("CalendarWeekView blocked week behavior", () => {
       data: [{
         tourId: 7,
         isoYear: 2026,
-        isoWeek: 14,
-        weekStartDate: "2026-03-30",
-        weekEndDate: "2026-04-05",
+        isoWeek: 17,
+        weekStartDate: "2026-04-20",
+        weekEndDate: "2026-04-26",
         isBlocked: true,
       }],
     });
@@ -258,10 +260,10 @@ describe("CalendarWeekView blocked week behavior", () => {
     });
   });
 
-  it("shows the blocked badge and freigeben menu while suppressing conflict markers on appointments", () => {
+  it("shows the blocked overlay and freigeben menu while keeping day controls and suppressing conflict markers", () => {
     const markup = renderToStaticMarkup(
       <CalendarWeekView
-        currentDate={new Date("2026-03-30T00:00:00Z")}
+        currentDate={new Date("2026-04-20T00:00:00Z")}
         conflictHighlightActive
         conflictAppointmentMap={new Map([
           [91, { triggerCode: "TR-02", triggerName: "Geparkt", color: "#D4537E" }],
@@ -269,10 +271,14 @@ describe("CalendarWeekView blocked week behavior", () => {
       />,
     );
 
-    expect(markup).toContain("Blockiert");
     expect(markup).toContain("Notizen verwalten");
     expect(markup).toContain("Wochenplanung freigeben");
     expect(markup).toContain("repeating-linear-gradient(135deg");
+    expect(markup).not.toContain('week-tour-lane-blocked-badge-');
+    expect(markup).toContain('data-testid="week-tour-lane-day-divider-tour-7-2026-04-21"');
+    expect(markup).toContain('data-testid="week-tour-lane-day-counter-');
+    expect(markup).toContain("1 Termin");
+    expect(markup).toContain('data-testid="button-new-appointment-week-2026-04-20-lane-');
 
     const appointmentPanel = appointmentPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 91);
     expect(appointmentPanel?.isConflict).toBe(false);
