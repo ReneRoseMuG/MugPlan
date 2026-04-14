@@ -258,6 +258,12 @@ export async function blockTourWeek(
       isoWeek: params.isoWeek,
     });
 
+    await tourWeekEmployeesRepository.deleteAssignmentsByTourAndWeekTx(tx, {
+      tourId,
+      isoYear: params.isoYear,
+      isoWeek: params.isoWeek,
+    });
+
     const updated = await tourWeeksRepository.updateWeekBlockedTx(tx, {
       tourId,
       isoYear: params.isoYear,

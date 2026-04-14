@@ -1308,7 +1308,6 @@ export function CalendarWeekView({
                                             }).then((result) => {
                                               toast({
                                                 title: "Wochenplanung freigegeben",
-                                                description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
                                               });
                                             }).catch(() => {
                                               toast({
@@ -1334,7 +1333,6 @@ export function CalendarWeekView({
                                             }).then((result) => {
                                               toast({
                                                 title: "Wochenplanung blockiert",
-                                                description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
                                               });
                                             }).catch(() => {
                                               toast({

@@ -506,7 +506,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       });
       toast({
         title: "Wochenplanung blockiert",
-        description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
       });
     } catch (error) {
       const code = extractApiCode(error);
@@ -536,7 +535,6 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       });
       toast({
         title: "Wochenplanung freigegeben",
-        description: `${result.affectedAppointmentCount} Termine wurden in der Woche angepasst.`,
       });
     } catch (error) {
       const code = extractApiCode(error);

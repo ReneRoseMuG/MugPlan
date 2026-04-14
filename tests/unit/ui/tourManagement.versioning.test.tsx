@@ -8,12 +8,14 @@
  * - Erfolgreiche Wochenplan-Mutationen bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
  * - Erfolgreiche Wochenplan-Mutationen invalidieren auch die neue Tour-Lane-Hover-Preview des Wochenkalenders.
  * - Wochenplan-Dialoge starten mit sinnvoller Vorauswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
+ * - Blockieren und Freigeben der Wochenplanung bestaetigen nur den Statuswechsel, ohne stille Termin-Tag-Mutationen im Toast auszuspielen.
  *
  * Fehlerfaelle:
  * - Versiondaten fehlen in Tour-Mutationen.
  * - Der Tourname wird im Update-Payload nicht mitgesendet.
  * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
  * - Erfolgreiche Wochenplan-Aktionen lassen Monitoring- und Query-Refresh aus.
+ * - Stille Termin-Tag-Mutationen werden im UI als sichtbare Termin-Anpassungen fehlkommuniziert.
  *
  * Ziel:
  * TourManagement ueber beobachtbare Mutations- und Folgeeffekte der Wochenplanung statt ueber Quelltextstrings absichern.
@@ -547,5 +549,75 @@ describe("FT07 TourManagement behavior", () => {
       title: "Wochenplanung gespeichert",
       description: "1 Termine wurden aktualisiert.",
     }));
+  });
+
+  it("confirms week blocking without surfacing silent appointment-adjustment counts", async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        week: {
+          id: 71,
+          tourId: 5,
+          isoYear: 2099,
+          isoWeek: 6,
+          weekStartDate: "2099-02-02",
+          weekEndDate: "2099-02-08",
+          isLocked: false,
+          isBlocked: true,
+        },
+        affectedAppointmentCount: 5,
+      }),
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour },
+      isCreating: false,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    const onBlockWeek = tourEditFormCalls[0].onBlockWeek as (params: { isoYear: number; isoWeek: number }) => Promise<void>;
+    await onBlockWeek({ isoYear: 2099, isoWeek: 6 });
+
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/weeks/2099/6/block");
+    expect(toastMock).toHaveBeenCalledWith({
+      title: "Wochenplanung blockiert",
+    });
+  });
+
+  it("confirms week unblocking without surfacing silent appointment-adjustment counts", async () => {
+    apiRequestMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        week: {
+          id: 71,
+          tourId: 5,
+          isoYear: 2099,
+          isoWeek: 6,
+          weekStartDate: "2099-02-02",
+          weekEndDate: "2099-02-08",
+          isLocked: false,
+          isBlocked: false,
+        },
+        affectedAppointmentCount: 5,
+      }),
+    });
+
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour },
+      isCreating: false,
+      cascadeDialogState: null,
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    const onUnblockWeek = tourEditFormCalls[0].onUnblockWeek as (params: { isoYear: number; isoWeek: number }) => Promise<void>;
+    await onUnblockWeek({ isoYear: 2099, isoWeek: 6 });
+
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/weeks/2099/6/unblock");
+    expect(toastMock).toHaveBeenCalledWith({
+      title: "Wochenplanung freigegeben",
+    });
   });
 });

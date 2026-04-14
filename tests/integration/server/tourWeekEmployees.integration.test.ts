@@ -11,7 +11,7 @@
  * - Wiederholte Add-Executes fuer dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  * - Beim Oeffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
- * - Blockierte Wochen entfernen Termin-Mitarbeiter, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
+ * - Blockierte Wochen entfernen Termin-Mitarbeiter und Wochen-Zuordnungen, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
  * - Die System-Tour `Parkplatz` bleibt von der Wochenplanung ausgeschlossen.
  *
  * Fehlerfaelle:
@@ -25,7 +25,7 @@
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
  * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
  * - Das Rollout legt vergangene oder fachlich fremde Wochen ungefragt als neue Tour-Wochen-Datensaetze an.
- * - Blockierte Wochen bleiben in Listen, Kalenderfeed oder Termin-Tags inkonsistent.
+ * - Blockierte Wochen behalten stale Wochen-Zuordnungen in Listen oder Join-Tabellen.
  * - Die Wochenplanung erlaubt fuer `Parkplatz` faelschlich Add-Preview oder Execute.
  *
  * Ziel:
@@ -675,7 +675,7 @@ describe("tourWeekEmployees integration", () => {
     expect(employeeAssignments).toHaveLength(1);
   });
 
-  it("blocks a week, strips appointment employees, exposes the blocked calendar feed and suppresses active week-plan previews", async () => {
+  it("blocks a week, strips appointment employees plus week assignments, exposes the blocked calendar feed and suppresses active week-plan previews", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#b45309");
     const project = await createProjectFixture({ prefix: "TWE-BLOCK" });
@@ -730,9 +730,19 @@ describe("tourWeekEmployees integration", () => {
           isoYear: isoWeek.isoYear,
           isoWeek: isoWeek.isoWeek,
           isBlocked: true,
-          employees: [expect.objectContaining({ employeeId: employee.id })],
+          employees: [],
         }));
       });
+
+    const remainingAssignments = await db
+      .select()
+      .from(tourWeekEmployees)
+      .where(and(
+        eq(tourWeekEmployees.tourId, tour.id),
+        eq(tourWeekEmployees.isoYear, isoWeek.isoYear),
+        eq(tourWeekEmployees.isoWeek, isoWeek.isoWeek),
+      ));
+    expect(remainingAssignments).toHaveLength(0);
 
     await admin
       .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
@@ -834,7 +844,7 @@ describe("tourWeekEmployees integration", () => {
           isoYear: isoWeek.isoYear,
           isoWeek: isoWeek.isoWeek,
           isBlocked: false,
-          employees: [expect.objectContaining({ employeeId: employee.id })],
+          employees: [],
         }));
       });
   });

@@ -278,6 +278,18 @@ export async function deleteAssignmentTx(tx: DbTx, assignmentId: number): Promis
   return getAffectedRows(result);
 }
 
+export async function deleteAssignmentsByTourAndWeekTx(
+  tx: DbTx,
+  params: { tourId: number; isoYear: number; isoWeek: number },
+): Promise<number> {
+  const result = await tx.delete(tourWeekEmployees).where(and(
+    eq(tourWeekEmployees.tourId, params.tourId),
+    eq(tourWeekEmployees.isoYear, params.isoYear),
+    eq(tourWeekEmployees.isoWeek, params.isoWeek),
+  ));
+  return getAffectedRows(result);
+}
+
 export async function listAppointmentsByTourAndDateRange(
   tourId: number,
   params: { fromDate: Date; toDate: Date },
