@@ -15,8 +15,7 @@
  * - PATCH /api/appointments/:id entfernt Tag Messe Aufbau/Abbau still wenn von Tour Messe weg gewechselt wird.
  * - Tag Geparkt erscheint nicht im Picker-Katalog (GET /api/tags?domain=appointment).
  * - Tag Geparkt kann nicht manuell ueber POST /api/appointments/:id/tags gesetzt werden (409 PROTECTED).
- * - Tag Geparkt kann manuell entfernt werden, wenn der Termin ausserhalb der Parkplatz-Tour liegt.
- * - Tag Geparkt kann nicht manuell entfernt werden, wenn der Termin noch in der Parkplatz-Tour liegt (409 PROTECTED).
+ * - Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden (409 PROTECTED).
  *
  * Fehlerfaelle:
  * - Gleichzeitiges Parken desselben Termins mit gleicher Version: zweiter Aufruf liefert VERSION_CONFLICT.
@@ -402,7 +401,7 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       });
   });
 
-  it("Tag Geparkt kann manuell entfernt werden, wenn der Termin ausserhalb der Parkplatz-Tour liegt", async () => {
+  it("Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden, auch ausserhalb der Parkplatz-Tour", async () => {
     const admin = await loginAdminAgent(app);
     await applySystemSeed();
 
@@ -442,9 +441,12 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
     await admin
       .delete(`/api/appointments/${appointment.id}/tags/${geparktTagId}`)
       .send({ version: 1 })
-      .expect(204);
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
+      });
 
-    expect(await hasGeparktTag(appointment.id)).toBe(false);
+    expect(await hasGeparktTag(appointment.id)).toBe(true);
   });
 
   it("Tag Geparkt kann nicht manuell ueber DELETE /tags/:tagId entfernt werden, solange der Termin in Parkplatz liegt", async () => {
