@@ -6,12 +6,14 @@
  * - Das Drei-Punkte-Menue der linken Tour-Lane enthaelt weiterhin den Notiz-Einstieg und wechselt fuer blockierte Wochen auf Freigeben.
  * - Tageszaehler und Tages-Plusaktionen bleiben trotz Menue-Overlay im Lane-Header erhalten.
  * - Konflikt-Markierungen werden fuer Termine in blockierten Wochen unterdrueckt.
+ * - Blockierte Wochen reichen den gedimmten Header-Status an Terminkarten weiter.
  *
  * Fehlerfaelle:
  * - Blockierte Wochen rendern ohne Aktionsmenue oder mit redundantem Badge.
  * - Das Lane-Menue verliert den Notiz-Einstieg oder zeigt weiterhin die falsche Blockieraktion.
  * - Tageszaehler oder Tages-Plusaktionen verschwinden nach Header-Layering-Aenderungen.
  * - Konflikt-Schraffuren bleiben trotz blockierter Woche auf Terminen aktiv.
+ * - Terminkarten bleiben in blockierten Wochen trotz Sperrstatus vollsaettigt.
  *
  * Ziel:
  * Das sichtbare Wochenkalender-Verhalten fuer blockierte Wochen inkl. Menue, Sperrflaeche und Tagessteuerung regressionssicher absichern.
@@ -282,6 +284,7 @@ describe("CalendarWeekView blocked week behavior", () => {
 
     const appointmentPanel = appointmentPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 91);
     expect(appointmentPanel?.isConflict).toBe(false);
+    expect(appointmentPanel?.isBlocked).toBe(true);
     expect(appointmentPanel?.conflictColor).toBe("#D4537E");
   });
 });

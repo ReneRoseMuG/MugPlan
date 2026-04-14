@@ -354,17 +354,18 @@ export function CalendarWeekAppointmentTagPicker({
                 onChange={setNoteCardColor}
                 testId="button-note-card-color-picker"
                 disabled={cardColorLocked}
+                label="Kartenfarbe"
               />
               {cardColorLocked ? (
                 <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">
-                  Die Kartenfarbe stammt aus der Vorlage und kann fuer diese Notiz nicht geaendert werden.
+                  Die Kartenfarbe stammt aus der Vorlage und kann für diese Notiz nicht geändert werden.
                 </p>
               ) : null}
             </div>
             <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
               <div>
                 <Label htmlFor={`switch-note-print-${appointmentId}`} className="text-sm font-medium">Drucken</Label>
-                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben beruecksichtigt wird.</p>
+                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben berücksichtigt wird.</p>
               </div>
               <Switch
                 id={`switch-note-print-${appointmentId}`}
@@ -394,7 +395,7 @@ export function CalendarWeekAppointmentTagPicker({
               disabled={!noteTitle.trim()}
               data-testid="button-save-note"
             >
-              Aktualisieren
+              Speichern
             </Button>
           </DialogFooter>
         </DialogContent>

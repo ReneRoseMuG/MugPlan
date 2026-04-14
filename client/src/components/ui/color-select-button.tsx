@@ -5,6 +5,7 @@ interface ColorSelectButtonProps {
   onChange: (color: string) => void;
   testId?: string;
   disabled?: boolean;
+  label?: string;
 }
 
 export function ColorSelectButton({
@@ -12,6 +13,7 @@ export function ColorSelectButton({
   onChange,
   testId = "button-color-select",
   disabled = false,
+  label = "Farbe",
 }: ColorSelectButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -41,10 +43,10 @@ export function ColorSelectButton({
         style={{ backgroundColor: color }}
         disabled={disabled}
         data-testid={`${testId}-preview`}
-        aria-label="Farbe waehlen"
+        aria-label={label}
       />
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="font-medium text-foreground">Farbe waehlen</span>
+        <span className="font-medium text-foreground">{label}</span>
       </div>
       <input
         ref={inputRef}

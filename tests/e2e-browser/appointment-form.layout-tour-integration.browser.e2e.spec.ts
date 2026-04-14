@@ -365,6 +365,9 @@ test("adds the managed Messe tag when an appointment is switched to Tour Messe",
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_MESSE_TAG_NAME);
+  await page.getByTestId("button-cancel-note").click();
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
 
   await expect.poll(async () => {
     const tagNames = await readAppointmentTagNames(page, appointment.id);

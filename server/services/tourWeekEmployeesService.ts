@@ -84,6 +84,20 @@ function normalizeAppointmentIds(appointmentIds: number[]): number[] {
   return Array.from(new Set(appointmentIds.filter((id) => Number.isInteger(id) && id > 0)));
 }
 
+function resolveUpcomingSeedWeeks(
+  todayBerlin = getBerlinTodayDateString(),
+  weekCount = 4,
+): Array<{ isoYear: number; isoWeek: number }> {
+  const nextEditableWeekStart = addWeeks(startOfISOWeek(parseDateOnly(todayBerlin)), 1);
+  return Array.from({ length: weekCount }, (_, index) => {
+    const weekStart = addWeeks(nextEditableWeekStart, index);
+    return {
+      isoYear: getISOWeekYear(weekStart),
+      isoWeek: getISOWeek(weekStart),
+    };
+  });
+}
+
 export function resolveIsoWeekWindow(isoYear: number, isoWeek: number): {
   isoYear: number;
   isoWeek: number;
@@ -413,8 +427,22 @@ async function buildAppointmentEmployeePreview(
   };
 }
 
+async function ensureUpcomingWeekSeed(tourId: number): Promise<void> {
+  const upcomingWeeks = resolveUpcomingSeedWeeks();
+  await tourWeeksRepository.withTourWeeksTransaction(async (tx) => {
+    for (const week of upcomingWeeks) {
+      await tourWeeksRepository.getOrCreateWeekTx(tx, {
+        tourId,
+        isoYear: week.isoYear,
+        isoWeek: week.isoWeek,
+      });
+    }
+  });
+}
+
 export async function listWeekEmployeesByTour(tourId: number) {
   await requireTour(tourId);
+  await ensureUpcomingWeekSeed(tourId);
   const [weeks, assignments] = await Promise.all([
     tourWeeksRepository.listWeeksByTour(tourId),
     tourWeekEmployeesRepository.listAssignmentsByTour(tourId),

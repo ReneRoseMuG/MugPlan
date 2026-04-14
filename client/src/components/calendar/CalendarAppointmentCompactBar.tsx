@@ -20,6 +20,7 @@ type CompactBarProps = {
   showPopover?: boolean;
   isLocked?: boolean;
   isDragging?: boolean;
+  isBlocked?: boolean;
   positionStyle?: React.CSSProperties;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
@@ -38,6 +39,7 @@ export function CalendarAppointmentCompactBar({
   showPopover = isFirstDay,
   isLocked,
   isDragging,
+  isBlocked = false,
   positionStyle,
   onDoubleClick,
   onDragStart,
@@ -113,6 +115,8 @@ export function CalendarAppointmentCompactBar({
             "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
           boxShadow:
             "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
+          filter: isBlocked ? "saturate(0.38) brightness(0.82)" : undefined,
+          opacity: isBlocked ? 0.86 : undefined,
           borderRadius: isFirstDay && isLastDay ? "4px" : isFirstDay ? "4px 0 0 4px" : isLastDay ? "0 4px 4px 0" : "0",
           width: "100%",
         }}

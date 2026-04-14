@@ -296,6 +296,31 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain("opacity-100 transition-opacity duration-200");
   });
 
+  it("dims the colored header chrome on blocked week card variants", () => {
+    const appointment = createAppointment();
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          isBlocked
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          displayMode="detail"
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          isBlocked
+        />
+      </>,
+    );
+
+    expect(html).toContain("filter:saturate(0.38) brightness(0.82)");
+    expect(html).toContain("opacity:0.86");
+  });
+
   it("keeps both sub panels visible in collapsed body mode while preserving the shared outer card height", () => {
     const appointment = createAppointment();
 
