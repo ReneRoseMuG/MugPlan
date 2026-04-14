@@ -112,6 +112,22 @@ export type AppointmentFormSaveResult = {
   shouldOfferFollow: boolean;
 };
 
+export function shouldOfferFollowAfterAppointmentSave(params: {
+  isEditing: boolean;
+  savedAppointmentId: number | null;
+  originalTourId: number | null;
+  nextTourId: number | null;
+  originalStartDate: string | null;
+  nextStartDate: string;
+}) {
+  if (!params.isEditing || typeof params.savedAppointmentId !== "number") {
+    return false;
+  }
+
+  return params.originalTourId !== params.nextTourId
+    || (params.originalStartDate !== null && params.originalStartDate !== params.nextStartDate);
+}
+
 type AppointmentFormProject = Project & {
   projectArticleItems?: ProjectArticleItem[];
 };
@@ -1541,6 +1557,11 @@ export function AppointmentForm({
       void invalidateRelatedAppointmentQueries(selectedProjectId);
       setTemplateNoteEditorVersion(updatedNote.version);
       setTemplateNoteEditorOpen(false);
+      if (pendingPostSaveResult) {
+        const result = pendingPostSaveResult;
+        setPendingPostSaveResult(null);
+        onSaved?.(result);
+      }
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
@@ -1951,6 +1972,13 @@ export function AppointmentForm({
     completePendingPostSave();
   };
 
+  const closeTemplateNoteEditor = (open: boolean) => {
+    setTemplateNoteEditorOpen(open);
+    if (!open) {
+      completePendingPostSave();
+    }
+  };
+
   const handleCreateTemplateNoteFromSuggestion = async () => {
     if (!noteSuggestionDialog) return;
     const template = noteTemplates.find(
@@ -1974,7 +2002,6 @@ export function AppointmentForm({
         templateId: template.id,
       });
       setNoteSuggestionDialog(null);
-      completePendingPostSave();
     } catch {
       // onError der Mutation zeigt bereits das Toast an.
     }
@@ -2149,17 +2176,16 @@ export function AppointmentForm({
           : (employeeIdsOverride ?? assignedEmployeeIds),
       );
       const normalizedSavedStartDate = normalizeDateInputValue(payload.startDate);
-      const originalWeekKey = appointmentDetail ? buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate)) : null;
-      const savedWeekKey = buildIsoWeekKey(normalizedSavedStartDate);
+      const originalStartDate = appointmentDetail ? normalizeDateInputValue(appointmentDetail.startDate) : null;
       const originalTourId = appointmentDetail?.tourId ?? null;
-      const shouldOfferFollow = Boolean(
-        isEditing
-        && typeof savedAppointmentId === "number"
-        && (
-          originalTourId !== (payload.tourId ?? null)
-          || (originalWeekKey !== null && originalWeekKey !== savedWeekKey)
-        ),
-      );
+      const shouldOfferFollow = shouldOfferFollowAfterAppointmentSave({
+        isEditing,
+        savedAppointmentId,
+        originalTourId,
+        nextTourId: payload.tourId ?? null,
+        originalStartDate,
+        nextStartDate: normalizedSavedStartDate,
+      });
       console.info(`${logPrefix} save success`, {
         action: isEditing ? "edit" : "create",
         projectId: payload.projectId ?? null,
@@ -2943,7 +2969,7 @@ export function AppointmentForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={templateNoteEditorOpen} onOpenChange={setTemplateNoteEditorOpen}>
+      <Dialog open={templateNoteEditorOpen} onOpenChange={closeTemplateNoteEditor}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Notiz bearbeiten</DialogTitle>
@@ -2977,17 +3003,18 @@ export function AppointmentForm({
                 onChange={setTemplateNoteCardColor}
                 testId="button-note-card-color-picker"
                 disabled={templateNoteCardColorLocked}
+                label="Kartenfarbe"
               />
               {templateNoteCardColorLocked ? (
                 <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">
-                  Die Kartenfarbe stammt aus der Vorlage und kann fuer diese Notiz nicht geaendert werden.
+                  Die Kartenfarbe stammt aus der Vorlage und kann für diese Notiz nicht geändert werden.
                 </p>
               ) : null}
             </div>
             <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
               <div>
                 <Label htmlFor="template-note-print" className="text-sm font-medium">Drucken</Label>
-                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben beruecksichtigt wird.</p>
+                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben berücksichtigt wird.</p>
               </div>
               <Switch
                 id="template-note-print"
@@ -2999,7 +3026,7 @@ export function AppointmentForm({
           </div>
 
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setTemplateNoteEditorOpen(false)} data-testid="button-cancel-note">
+            <Button variant="outline" onClick={() => closeTemplateNoteEditor(false)} data-testid="button-cancel-note">
               Abbrechen
             </Button>
             <Button
@@ -3017,7 +3044,7 @@ export function AppointmentForm({
               disabled={!templateNoteTitle.trim()}
               data-testid="button-save-note"
             >
-              Aktualisieren
+              Speichern
             </Button>
           </DialogFooter>
         </DialogContent>
