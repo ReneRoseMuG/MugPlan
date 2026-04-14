@@ -512,4 +512,88 @@ describe("FT26 integration: report produktionsplanung", () => {
     expect(noSCItems).toContainEqual({ itemName: "Sauna Beta", totalQuantity: 3 });
     expect(noSCItems).toContainEqual({ itemName: "Sauna Gamma", totalQuantity: 1 });
   });
+
+  /**
+   * @Test Scope:
+   * - Gleichlautende Shortcodes duerfen nur innerhalb derselben Kategorie aggregiert werden.
+   */
+  it("trennt gleiche Shortcodes strikt nach Kategorie und fuehrt sie nicht kategorie-uebergreifend zusammen", async () => {
+    const admin = await loginAdminAgent(app);
+    const sondermassTag = await ensureManagedSpecialMeasureTag();
+
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-SC-CROSS-A",
+      appointmentDates: [{ startDate: "2097-05-10" }],
+      appointmentTagsByIndex: [[sondermassTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Cross", quantity: 3, shortCode: "X" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Cross", quantity: 5, shortCode: "X" }],
+    });
+    await createProduktionsplanungProjectFixture({
+      prefix: "FT26-SC-CROSS-B",
+      appointmentDates: [{ startDate: "2097-05-11" }],
+      appointmentTagsByIndex: [[sondermassTag]],
+      productItems: [{ categoryName: "Fass Saunen", name: "Sauna Cross 2", quantity: 2, shortCode: "X" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Cross 2", quantity: 4, shortCode: "X" }],
+    });
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup SC-Cross Sauna" })).categoryId;
+    const windowCategoryId = (await createComponentFixture({ categoryName: "Fenster", name: "Lookup SC-Cross Fenster" })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2097-05-01&toDate=2097-05-31&productCategoryIds=${saunaCategoryId}&componentCategoryIds=${windowCategoryId}&useShortCodes=true`)
+      .expect(200);
+
+    expect(response.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "X", totalQuantity: 5 }],
+      },
+    ]);
+    expect(response.body.componentCategoryGroups).toEqual([
+      {
+        categoryId: windowCategoryId,
+        categoryName: "Fenster",
+        items: [{ itemName: "X", totalQuantity: 9 }],
+      },
+    ]);
+  });
+
+  /**
+   * @Test Scope:
+   * - Produktionsplanung summiert Shortcode-Mengen auch ueber groessere Projektmengen exakt und ohne Duplikate.
+   */
+  it("summiert Mengen ueber 10 Projekte mit identischem Shortcode korrekt zur Gesamtmenge", async () => {
+    const admin = await loginAdminAgent(app);
+    const sondermassTag = await ensureManagedSpecialMeasureTag();
+
+    for (let index = 1; index <= 10; index += 1) {
+      const day = String(10 + index).padStart(2, "0");
+      await createProduktionsplanungProjectFixture({
+        prefix: `FT26-VOL-${index}`,
+        appointmentDates: [{ startDate: `2097-06-${day}` }],
+        appointmentTagsByIndex: [[sondermassTag]],
+        productItems: [{
+          categoryName: "Fass Saunen",
+          name: `Sauna Vol ${index}`,
+          quantity: index,
+          shortCode: "VOL",
+        }],
+      });
+    }
+
+    const saunaCategoryId = (await createProductFixture({ categoryName: "Fass Saunen", name: "Lookup SC-Vol Sauna" })).categoryId;
+
+    const response = await admin
+      .get(`/api/reports/produktionsplanung?fromDate=2097-06-01&toDate=2097-06-30&productCategoryIds=${saunaCategoryId}&useShortCodes=true`)
+      .expect(200);
+
+    expect(response.body.productCategoryGroups).toEqual([
+      {
+        categoryId: saunaCategoryId,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "VOL", totalQuantity: 55 }],
+      },
+    ]);
+  });
 });
