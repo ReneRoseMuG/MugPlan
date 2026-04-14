@@ -1,4 +1,5 @@
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
+import { WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX } from "./weekAppointmentCardStyles";
 
 export function CalendarWeekAppointmentPanelHeader({
   customerNumber,
@@ -7,7 +8,7 @@ export function CalendarWeekAppointmentPanelHeader({
   startDate,
   endDate,
   startTime,
-  connectedToNextRow = false,
+  connectedToNextRow: _connectedToNextRow = false,
   menuSlot,
 }: {
   customerNumber: string;
@@ -41,18 +42,20 @@ export function CalendarWeekAppointmentPanelHeader({
 
   return (
     <div
-      className={connectedToNextRow ? "rounded-t-md rounded-b-none border px-2 py-1" : "rounded-md border px-2 py-1"}
+      className="box-border rounded-t-md rounded-b-none border px-2 py-1"
       style={{
         backgroundColor: color,
         color: "#ffffff",
         borderColor: "rgba(255,255,255,0.22)",
+        minHeight: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
+        height: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
         backgroundImage:
           "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
       }}
     >
-      <div className="space-y-1 text-[10px] font-semibold tracking-wide">
+      <div className="flex h-full flex-col justify-between text-[10px] font-semibold tracking-wide">
         <div className={`grid items-center gap-1 ${menuSlot ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
           <span
             className="inline-flex items-center justify-center"

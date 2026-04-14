@@ -2,13 +2,13 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Standard- und Mehrtagesterminkarten verwenden dieselbe zusätzliche Footer-Höhe.
- * - Beide Wochenkarten rendern denselben dezent tourfarbenen Footer-Rahmen.
- * - Beide Wochenkarten verwenden denselben kompakten Content-Inset für Panels und Footer.
+ * - Standard- und Mehrtagesterminkarten verwenden dieselbe zusätzliche Footer-Höhe sowie gemeinsame Header-/Footer-Mindesthöhen.
+ * - Beide Wochenkarten rendern denselben dezent tourfarbenen Footer-Rahmen und denselben sichtbaren Body-Container.
+ * - Compact- und Collapsed-Varianten behalten die äußere Kartenhöhe und verdichten nur den Inhalt.
  *
  * Fehlerfälle:
- * - Mehrtagestermine weichen bei Höhe oder Footer-Fläche wieder von normalen Terminkarten ab.
- * - Panels und Footer erhalten unterschiedliche Innenabstände.
+ * - Mehrtagestermine weichen bei Höhe, Header oder Footer-Fläche wieder von normalen Terminkarten ab.
+ * - Compact- oder Collapsed-Karten verlieren ihre gemeinsame Außenhöhe.
  *
  * Ziel:
  * Die sichtbare Layout-Angleichung der Wochenkartenfamilie regressionssicher absichern.
@@ -19,6 +19,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekSpanningTile";
+import {
+  WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX,
+  WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
+} from "../../../client/src/components/calendar/weekAppointmentCardStyles";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 
 const customerPanelCalls: Array<Record<string, unknown>> = [];
@@ -166,6 +170,8 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-appointment-panel-42"');
     expect(html).toContain('data-testid="week-spanning-tile-42"');
     expect(html.match(/height:260px/g)).toHaveLength(2);
+    expect(html.match(new RegExp(`min-height:${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`, "g"))).toHaveLength(2);
+    expect(html.match(new RegExp(`min-height:${WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX}px`, "g"))).toHaveLength(2);
   });
 
   it("renders the same compact content insets and tinted footer on both card types", () => {
@@ -188,7 +194,7 @@ describe("calendar week appointment card layout", () => {
     );
 
     expect(html).toContain('data-testid="week-appointment-content-42"');
-    expect(html).toContain('class="relative min-h-0 px-1 pt-1 flex-1"');
+    expect(html.match(/class="relative flex min-h-0 flex-1 flex-col bg-white\/90 px-1 pt-1 pb-2"/g)).toHaveLength(2);
     expect(html).toContain('data-testid="week-spanning-tile-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
@@ -253,8 +259,8 @@ describe("calendar week appointment card layout", () => {
       </>,
     );
 
-    expect(html.match(/class="flex min-h-full flex-col gap-1"/g)).toHaveLength(2);
-    expect(html.match(/class="mt-auto"/g)).toHaveLength(2);
+    expect(html.match(/class="grid h-full grid-rows-\[1\.75rem_1\.75rem\] gap-1"/g)).toHaveLength(2);
+    expect(html.match(/class="h-7 overflow-hidden"/g)).toHaveLength(2);
     expect(html).toContain('data-testid="week-spanning-tile-body-filled-42"');
     expect(html).toContain('class="flex min-h-0 h-full flex-col bg-white/90"');
     expect(html).toContain('class="flex min-h-0 flex-1 flex-col"');
@@ -290,7 +296,7 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain("opacity-100 transition-opacity duration-200");
   });
 
-  it("keeps both sub panels visible in collapsed body mode and collapses the explicit height stretching", () => {
+  it("keeps both sub panels visible in collapsed body mode while preserving the shared outer card height", () => {
     const appointment = createAppointment();
 
     const html = renderWithQueryClient(
@@ -317,8 +323,29 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls.every((call) => call.mode === "collapsed")).toBe(true);
     expect(projectPanelCalls).toHaveLength(2);
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
-    expect(html.match(/height:260px/g)).toBeNull();
-    expect(html).not.toContain('class="relative min-h-0 flex-1 px-1 pt-1"');
+    expect(html.match(/height:260px/g)).toHaveLength(2);
+    expect(html).toContain('class="flex min-h-0 h-full flex-col"');
+    expect(html).toContain('class="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"');
+  });
+
+  it("keeps single-day compact appointments on the same shell and only collapses inner panel density", () => {
+    const appointment = createAppointment({ displayMode: "compact" });
+
+    const html = renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={appointment}
+        context="week-calendar"
+        uniformHeightPx={240}
+      />,
+    );
+
+    expect(customerPanelCalls).toHaveLength(1);
+    expect(customerPanelCalls[0]?.mode).toBe("collapsed");
+    expect(projectPanelCalls).toHaveLength(1);
+    expect(projectPanelCalls[0]?.collapsed).toBe(true);
+    expect(html).toContain('data-testid="week-appointment-content-42"');
+    expect(html).toContain('data-testid="week-appointment-footer-42"');
+    expect(html).toContain('height:260px');
   });
 
   it("hides the header menu trigger for historical non-Parkplatz appointments on both card types", () => {

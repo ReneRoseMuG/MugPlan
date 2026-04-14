@@ -35,6 +35,7 @@ type CalendarWeekAppointmentTagPickerProps = {
   projectTags: Tag[];
   canEdit: boolean;
   testId: string;
+  className?: string;
 };
 
 export function CalendarWeekAppointmentTagPicker({
@@ -44,6 +45,7 @@ export function CalendarWeekAppointmentTagPicker({
   projectTags,
   canEdit,
   testId,
+  className,
 }: CalendarWeekAppointmentTagPickerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -254,7 +256,7 @@ export function CalendarWeekAppointmentTagPicker({
 
   return (
     <>
-      <div className="flex w-full items-start gap-2" data-testid={testId}>
+      <div className={`flex h-7 w-full items-center gap-2 overflow-hidden ${className ?? ""}`.trim()} data-testid={testId}>
         <div className="min-w-0 flex-1">
           <EntityTagFooterRow tags={tags} testId={`${testId}-badges`} />
         </div>

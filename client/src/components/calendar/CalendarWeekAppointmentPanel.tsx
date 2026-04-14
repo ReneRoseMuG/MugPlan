@@ -397,10 +397,12 @@ export function CalendarWeekAppointmentPanel({
   const resolvedTourColor = appointment.tourName?.trim()
     ? (appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR)
     : CALENDAR_UNASSIGNED_TOUR_COLOR;
-  const isCollapsedBodyMode = weekTileBodyMode === "collapsed";
   const showCustomerPanel = true;
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
   const projectCollapsed = weekTileBodyMode === "collapsed";
+  const effectiveCustomerMode = isCompact ? "collapsed" : customerMode;
+  const effectiveProjectCollapsed = isCompact ? true : projectCollapsed;
+  const customerPanelHeightClassName = effectiveCustomerMode === "expanded" ? "h-[6.5rem] overflow-hidden" : "h-8 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -413,7 +415,7 @@ export function CalendarWeekAppointmentPanel({
       }
     : undefined;
   const footerTopRow = context === "week-calendar" ? (
-    <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+    <div className="flex h-7 w-full flex-nowrap items-center gap-1 overflow-hidden">
       <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
       <CalendarWeekAppointmentNotesHover
         appointmentId={appointment.id}
@@ -432,7 +434,7 @@ export function CalendarWeekAppointmentPanel({
     <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
   );
   const footerTagRow = (
-    <div className="mt-auto">
+    <div className="h-7 overflow-hidden">
       <CalendarWeekAppointmentTagPicker
         appointmentId={appointment.id}
         tags={mergedTags}
@@ -446,7 +448,7 @@ export function CalendarWeekAppointmentPanel({
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
-    : !isCollapsedBodyMode && uniformHeightPx && uniformHeightPx > 0
+    : uniformHeightPx && uniformHeightPx > 0
       ? { height: `${uniformHeightPx + WEEK_CARD_FOOTER_SAFE_SPACE_PX}px` }
       : undefined;
 
@@ -469,7 +471,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className={`flex min-h-0 flex-col ${isCollapsedBodyMode ? "" : "h-full"}`}>
+        <div className="flex min-h-0 h-full flex-col">
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -495,77 +497,60 @@ export function CalendarWeekAppointmentPanel({
               </div>
             )}
           </div>
-          {!isCompact ? (
-            <>
-              <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-appointment-content-${appointment.id}`}>
-                {isConflict ? (
-                  <div
-                    className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
-                    style={conflictOverlayStyle}
-                    data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
-                  />
-                ) : null}
-                <div className="min-h-0 space-y-1 overflow-hidden">
-                  {showCustomerPanel ? (
-                    <CalendarWeekAppointmentPanelCustomer
-                      mode={customerMode}
-                      fullName={appointment.customer.fullName ?? ""}
-                      customerNumber={appointment.customer.customerNumber}
-                      phone={appointment.customer.phone}
-                      email={appointment.customer.email}
-                      addressLine1={appointment.customer.addressLine1}
-                      postalCode={appointment.customer.postalCode}
-                      city={appointment.customer.city}
-                      country={appointment.customer.country}
-                    />
-                  ) : null}
-                  <CalendarWeekAppointmentPanelProject
-                    projectName={resolvedProjectName}
-                    projectOrderNumber={appointment.projectOrderNumber}
-                    projectArticleItems={appointment.projectArticleItems}
-                    projectDescription={appointment.projectDescription}
-                    collapsed={projectCollapsed}
-                    enableFullDescriptionPreview={context === "week-calendar"}
-                  />
-                </div>
-              </div>
+          <div
+            className="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"
+            data-testid={`week-appointment-content-${appointment.id}`}
+          >
+            {isConflict ? (
               <div
-                className="relative mt-auto shrink-0 border-t px-1 py-2"
-                style={footerStyle}
-                data-testid={`week-appointment-footer-${appointment.id}`}
-              >
-                {isConflict ? (
-                  <div
-                    className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
-                    style={conflictOverlayStyle}
-                    data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
-                  />
-                ) : null}
-                <div className="flex min-h-full flex-col gap-1">
-                  {footerTopRow}
-                  {footerTagRow}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div
-              className="relative mt-auto shrink-0 border-t px-1 py-2"
-              style={footerStyle}
-              data-testid={`week-appointment-footer-${appointment.id}`}
-            >
-              {isConflict ? (
-                <div
-                  className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
-                  style={conflictOverlayStyle}
-                  data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+                className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                style={conflictOverlayStyle}
+                data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+              />
+            ) : null}
+            <div className="grid min-h-0 flex-1 gap-1 overflow-hidden" style={{ gridTemplateRows: `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)` }}>
+              {showCustomerPanel ? (
+                <CalendarWeekAppointmentPanelCustomer
+                  mode={effectiveCustomerMode}
+                  fullName={appointment.customer.fullName ?? ""}
+                  customerNumber={appointment.customer.customerNumber}
+                  phone={appointment.customer.phone}
+                  email={appointment.customer.email}
+                  addressLine1={appointment.customer.addressLine1}
+                  postalCode={appointment.customer.postalCode}
+                  city={appointment.customer.city}
+                  country={appointment.customer.country}
+                  className={customerPanelHeightClassName}
                 />
               ) : null}
-              <div className="flex min-h-full flex-col gap-1">
-                {footerTopRow}
-                {footerTagRow}
-              </div>
+              <CalendarWeekAppointmentPanelProject
+                projectName={resolvedProjectName}
+                projectOrderNumber={appointment.projectOrderNumber}
+                projectArticleItems={appointment.projectArticleItems}
+                projectDescription={appointment.projectDescription}
+                collapsed={effectiveProjectCollapsed}
+                enableFullDescriptionPreview={context === "week-calendar"}
+                className="min-h-0 h-full"
+              />
             </div>
-          )}
+          </div>
+          <div
+            className="relative mt-auto shrink-0 border-t px-1 py-1"
+            style={footerStyle}
+            data-testid={`week-appointment-footer-${appointment.id}`}
+          >
+            {isConflict ? (
+              <div
+                className="pointer-events-none absolute inset-0 opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
+                style={conflictOverlayStyle}
+                data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
+              />
+            ) : null}
+            <div className="grid h-full grid-rows-[1.75rem_1.75rem] gap-1">
+              {footerTopRow}
+              {footerTagRow}
+            </div>
+          </div>
         </div>
       )}
       {isContinuation && (

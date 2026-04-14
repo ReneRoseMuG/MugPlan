@@ -2,6 +2,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
 import { resolveProjectDisplayName } from "@/components/ui/project-info-panel";
+import { cn } from "@/lib/utils";
 
 const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
 
@@ -13,6 +14,7 @@ export function CalendarWeekAppointmentPanelProject({
   collapsed = false,
   showSectionTitle = false,
   enableFullDescriptionPreview = false,
+  className,
 }: {
   projectName: string;
   projectOrderNumber: string | null;
@@ -21,6 +23,7 @@ export function CalendarWeekAppointmentPanelProject({
   collapsed?: boolean;
   showSectionTitle?: boolean;
   enableFullDescriptionPreview?: boolean;
+  className?: string;
 }) {
   const compactContentClassName = "max-h-24 overflow-hidden";
   const fullDescriptionClassName = "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
@@ -38,13 +41,13 @@ export function CalendarWeekAppointmentPanelProject({
   const canOpenDescriptionPreview = hasProjectReference && hasProjectContent && enableFullDescriptionPreview;
 
   return (
-    <div className="rounded-md border border-slate-200/90 px-2 py-1.5">
+    <div className={cn("flex min-h-0 flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5", className)}>
       {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
-      <div className="text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
+      <div className="shrink-0 text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
       {collapsed ? null : (
         <>
       {!canOpenDescriptionPreview && hasProjectContent && (
-        <div className={compactContentClassName}>
+        <div className={cn("mt-1 min-h-0 flex-1 overflow-hidden", compactContentClassName)}>
           <ProjectArticleDescriptionRenderer
             articleItems={projectArticleItems}
             descriptionHtml={projectDescription}
@@ -77,7 +80,7 @@ export function CalendarWeekAppointmentPanelProject({
           className="z-[9999] w-[420px]"
         >
           <div
-            className={compactContentClassName}
+            className={cn("mt-1 min-h-0 flex-1 overflow-hidden", compactContentClassName)}
             data-testid="week-project-description-hover-trigger"
           >
             <ProjectArticleDescriptionRenderer

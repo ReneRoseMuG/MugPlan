@@ -10,6 +10,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   postalCode,
   city,
   country,
+  className,
 }: {
   mode?: "collapsed" | "semiexpanded" | "expanded";
   fullName: string;
@@ -20,6 +21,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   postalCode: string | null;
   city: string | null;
   country?: string | null;
+  className?: string;
 }) {
   return (
     <CustomerInfoPanel
@@ -33,6 +35,7 @@ export function CalendarWeekAppointmentPanelCustomer({
       phone={phone}
       email={email}
       testId="week-customer-panel"
+      className={className}
     />
   );
 }
