@@ -10,6 +10,8 @@ export const MANAGED_REMARKS_TAG_NAME = "Anmerkungen";
 export const MANAGED_REMARKS_TAG_COLOR = "#888780";
 export const RESERVED_VACANT_TAG_NAME = "Geparkt";
 export const RESERVED_VACANT_TAG_COLOR = "#D4537E";
+export const RESERVED_PLANNING_BLOCKED_TAG_NAME = "Planung blockiert";
+export const RESERVED_PLANNING_BLOCKED_TAG_COLOR = "#8B6A00";
 
 export type AppointmentCancellationReportState = "default" | "contains_cancelled" | "cancelled_only";
 export type TagPickerDomain = "appointment" | "project" | "customer" | "employee";
@@ -42,12 +44,17 @@ export function isReservedVacantTagName(value: string): boolean {
   return normalizeTagName(value) === normalizeTagName(RESERVED_VACANT_TAG_NAME);
 }
 
+export function isReservedPlanningBlockedTagName(value: string): boolean {
+  return normalizeTagName(value) === normalizeTagName(RESERVED_PLANNING_BLOCKED_TAG_NAME);
+}
+
 export function isProtectedSystemTagName(value: string): boolean {
   return isReservedAppointmentCancellationTagName(value)
     || isManagedComplaintTagName(value)
     || isManagedSpecialMeasureTagName(value)
     || isManagedMesseTagName(value)
-    || isReservedVacantTagName(value);
+    || isReservedVacantTagName(value)
+    || isReservedPlanningBlockedTagName(value);
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
@@ -56,6 +63,9 @@ export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain)
     return false;
   }
   if (isReservedVacantTagName(value)) {
+    return false;
+  }
+  if (isReservedPlanningBlockedTagName(value)) {
     return false;
   }
 

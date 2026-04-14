@@ -23,7 +23,9 @@ import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatch
 import {
   filterVisibleAppointmentTagRelations,
   hasAppointmentCancellationTag,
+  hasReservedPlanningBlockedTag,
   isAppointmentCancellationTag,
+  isReservedPlanningBlockedTag,
   isReservedVacantTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
@@ -54,6 +56,7 @@ class AppointmentError extends Error {
     | "CANCELLATION_TAG_NOT_CONFIGURED"
     | "CANCELLATION_TAG_PROTECTED"
     | "CANCELLED_APPOINTMENT_READONLY"
+    | "PLANNING_BLOCKED_APPOINTMENT_READONLY"
     | "ALREADY_PARKED";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
@@ -72,6 +75,7 @@ class AppointmentError extends Error {
       | "CANCELLATION_TAG_NOT_CONFIGURED"
       | "CANCELLATION_TAG_PROTECTED"
       | "CANCELLED_APPOINTMENT_READONLY"
+      | "PLANNING_BLOCKED_APPOINTMENT_READONLY"
       | "ALREADY_PARKED",
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
@@ -184,14 +188,46 @@ function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointme
   };
 }
 
-async function isAppointmentCancelled(appointmentId: number): Promise<boolean> {
+async function getAppointmentTagsForGuard(appointmentId: number): Promise<Array<{ name: string }>> {
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds([appointmentId]);
-  return hasAppointmentCancellationTag(appointmentTagsByAppointmentId.get(appointmentId) ?? []);
+  return (appointmentTagsByAppointmentId.get(appointmentId) ?? []) as Array<{ name: string }>;
 }
 
-async function assertAppointmentNotCancelled(appointmentId: number, message = "Stornierte Termine koennen nicht geaendert werden"): Promise<void> {
-  if (await isAppointmentCancelled(appointmentId)) {
-    throw new AppointmentError(message, 409, "CANCELLED_APPOINTMENT_READONLY");
+async function assertAppointmentWriteAllowed(
+  appointmentId: number,
+  appointment: { startDate: Date | string | null | undefined; tourId: number | null | undefined },
+  options: {
+    parkplatzTourId: number | null;
+    allowHistorical?: boolean;
+    allowCancelled?: boolean;
+    allowPlanningBlocked?: boolean;
+    historicalMessage?: string;
+    cancelledMessage?: string;
+    planningBlockedMessage?: string;
+  },
+): Promise<void> {
+  if (!options.allowHistorical && isHistoricalAppointmentMutationLocked(appointment, options.parkplatzTourId)) {
+    throw new AppointmentError(
+      options.historicalMessage ?? "Historische Termine koennen nicht geaendert werden",
+      409,
+      "PAST_APPOINTMENT_READONLY",
+    );
+  }
+
+  const appointmentTags = await getAppointmentTagsForGuard(appointmentId);
+  if (!options.allowCancelled && hasAppointmentCancellationTag(appointmentTags)) {
+    throw new AppointmentError(
+      options.cancelledMessage ?? "Stornierte Termine koennen nicht geaendert werden",
+      409,
+      "CANCELLED_APPOINTMENT_READONLY",
+    );
+  }
+  if (!options.allowPlanningBlocked && hasReservedPlanningBlockedTag(appointmentTags)) {
+    throw new AppointmentError(
+      options.planningBlockedMessage ?? "Planung blockierte Termine koennen nicht geaendert werden",
+      409,
+      "PLANNING_BLOCKED_APPOINTMENT_READONLY",
+    );
   }
 }
 
@@ -615,15 +651,12 @@ export async function updateAppointment(
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
     const parkplatzTourId = await getParkplatzTourId();
-
-    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
-      if (roleKey !== "ADMIN") {
-        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 409, "PAST_APPOINTMENT_READONLY");
-      }
-      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-    }
-
-    await assertAppointmentNotCancelled(appointmentId);
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      historicalMessage: roleKey !== "ADMIN"
+        ? "Termin ist ab dem Starttag gesperrt"
+        : "Historische Termine koennen nicht geaendert werden",
+    });
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
@@ -738,15 +771,12 @@ export async function setAppointmentDisplayMode(
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
     const parkplatzTourId = await getParkplatzTourId();
-
-    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
-      if (roleKey !== "ADMIN") {
-        throw new AppointmentError("Termin ist ab dem Starttag gesperrt", 409, "PAST_APPOINTMENT_READONLY");
-      }
-      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-    }
-
-    await assertAppointmentNotCancelled(appointmentId);
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      historicalMessage: roleKey !== "ADMIN"
+        ? "Termin ist ab dem Starttag gesperrt"
+        : "Historische Termine koennen nicht geaendert werden",
+    });
 
     const updateResult = await appointmentsRepository.updateAppointmentDisplayModeWithVersionTx(tx, {
       appointmentId,
@@ -1379,12 +1409,12 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
     const parkplatzTourId = await getParkplatzTourId();
-
-    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
-      throw new AppointmentError("Historische Termine koennen nicht geloescht werden", 409, "PAST_APPOINTMENT_READONLY");
-    }
-
-    await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht geloescht werden");
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      historicalMessage: "Historische Termine koennen nicht geloescht werden",
+      cancelledMessage: "Stornierte Termine koennen nicht geloescht werden",
+      planningBlockedMessage: "Planung blockierte Termine koennen nicht geloescht werden",
+    });
 
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
       appointmentId,
@@ -1417,11 +1447,6 @@ export async function addAppointmentTag(
   requireDispatcherOrAdmin(roleKey);
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
-  const parkplatzTourId = await getParkplatzTourId();
-  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
-    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-  }
-  await assertAppointmentNotCancelled(appointmentId);
   const tag = await tagRelationsService.getTagById(tagId);
   if (!tag) {
     return null;
@@ -1432,6 +1457,16 @@ export async function addAppointmentTag(
   if (isReservedVacantTag(tag)) {
     throw new AppointmentError("Der Geparkt-Tag kann nur ueber die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
+  if (isReservedPlanningBlockedTag(tag)) {
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  }
+  const parkplatzTourId = await getParkplatzTourId();
+  await assertAppointmentWriteAllowed(appointmentId, appointment, {
+    parkplatzTourId,
+    historicalMessage: "Historische Termine koennen nicht geaendert werden",
+    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
+    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+  });
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
 
@@ -1447,10 +1482,6 @@ export async function removeAppointmentTag(
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
-  const parkplatzTourId = await getParkplatzTourId();
-  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
-    throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-  }
   const tag = await tagRelationsService.getTagById(tagId);
   if (!tag) {
     return null;
@@ -1461,7 +1492,16 @@ export async function removeAppointmentTag(
   if (isReservedVacantTag(tag)) {
     throw new AppointmentError("Der Geparkt-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
-  await assertAppointmentNotCancelled(appointmentId);
+  if (isReservedPlanningBlockedTag(tag)) {
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  }
+  const parkplatzTourId = await getParkplatzTourId();
+  await assertAppointmentWriteAllowed(appointmentId, appointment, {
+    parkplatzTourId,
+    historicalMessage: "Historische Termine koennen nicht geaendert werden",
+    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
+    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+  });
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
     throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
@@ -1488,10 +1528,12 @@ export async function removeEmployeeFromAppointment(
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
     const parkplatzTourId = await getParkplatzTourId();
-    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
-      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-    }
-    await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht bearbeitet werden");
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      historicalMessage: "Historische Termine koennen nicht geaendert werden",
+      cancelledMessage: "Stornierte Termine koennen nicht bearbeitet werden",
+      planningBlockedMessage: "Planung blockierte Termine koennen nicht bearbeitet werden",
+    });
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
       expectedVersion,
@@ -1528,9 +1570,12 @@ export async function cancelAppointment(
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
     const parkplatzTourId = await getParkplatzTourId();
-    if (isHistoricalAppointmentMutationLocked(existing, parkplatzTourId)) {
-      throw new AppointmentError("Historische Termine koennen nicht geaendert werden", 409, "PAST_APPOINTMENT_READONLY");
-    }
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      allowCancelled: true,
+      allowPlanningBlocked: true,
+      historicalMessage: "Historische Termine koennen nicht geaendert werden",
+    });
 
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
@@ -1598,11 +1643,12 @@ export async function parkAppointment(
   if (!appointment) return { found: false };
 
   const parkplatzTourId = await getParkplatzTourId();
-  if (isHistoricalAppointmentMutationLocked(appointment, parkplatzTourId)) {
-    throw new AppointmentError("Historische Termine koennen nicht geparkt werden", 409, "PAST_APPOINTMENT_READONLY");
-  }
-
-  await assertAppointmentNotCancelled(appointmentId, "Stornierte Termine koennen nicht geparkt werden");
+  await assertAppointmentWriteAllowed(appointmentId, appointment, {
+    parkplatzTourId,
+    historicalMessage: "Historische Termine koennen nicht geparkt werden",
+    cancelledMessage: "Stornierte Termine koennen nicht geparkt werden",
+    planningBlockedMessage: "Planung blockierte Termine koennen nicht geparkt werden",
+  });
 
   const parkplatzTour = await getParkplatzTour();
   if (!parkplatzTour) {

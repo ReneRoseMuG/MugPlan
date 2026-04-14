@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  isReservedPlanningBlockedTagName,
   isReservedVacantTagName,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
@@ -149,8 +150,10 @@ export function CalendarWeekAppointmentPanel({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+  const isPlanningBlocked = appointment.appointmentTags.some((t) => isReservedPlanningBlockedTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
+  const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isPlanningBlocked || isLocked === true;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -233,6 +236,9 @@ export function CalendarWeekAppointmentPanel({
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
           throw buildApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
         }
+        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+          throw buildApiError("Planung blockierte Termine können nicht gelöscht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
+        }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
         }
@@ -289,6 +295,14 @@ export function CalendarWeekAppointmentPanel({
         });
         return;
       }
+      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Planung blockierte Termine können nicht gelöscht werden.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (err.code === "VERSION_CONFLICT") {
         toast({
           title: "Löschen nicht möglich",
@@ -310,7 +324,7 @@ export function CalendarWeekAppointmentPanel({
     },
   });
 
-  const menuSlot = interactive && !isHistoricalReadOnly ? (
+  const menuSlot = interactive && !isReadOnlyActionView ? (
     <span
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}

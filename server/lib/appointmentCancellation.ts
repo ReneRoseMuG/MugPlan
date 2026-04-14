@@ -5,6 +5,7 @@ import {
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
+  isReservedPlanningBlockedTagName,
   isReservedVacantTagName,
   type TagPickerDomain,
 } from "@shared/appointmentCancellation";
@@ -53,6 +54,15 @@ export function isReservedVacantTag(tag: Pick<Tag, "name"> | null | undefined): 
 
 export function hasReservedVacantTag(tags: Array<Pick<Tag, "name">>): boolean {
   return tags.some((tag) => isReservedVacantTag(tag));
+}
+
+export function isReservedPlanningBlockedTag(tag: Pick<Tag, "name"> | null | undefined): boolean {
+  if (!tag) return false;
+  return isReservedPlanningBlockedTagName(tag.name);
+}
+
+export function hasReservedPlanningBlockedTag(tags: Array<Pick<Tag, "name">>): boolean {
+  return tags.some((tag) => isReservedPlanningBlockedTag(tag));
 }
 
 export function filterPickerTagsForDomain<TTag extends Pick<Tag, "name">>(

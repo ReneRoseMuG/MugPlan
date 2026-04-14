@@ -9,6 +9,7 @@
  * - applySystemSeed ueberschreibt bestehende Notizvorlagen-Bodies nicht.
  * - applySystemSeed arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen.
  * - applySystemSeed migriert einen Tag mit Namen "Vakant" zu "Geparkt" vor dem normalen Seed-Lauf.
+ * - applySystemSeed seeded den geschuetzten Termin-Tag "Planung blockiert" mit.
  * - applySystemSeed migriert eine Tour mit Namen "Vakant" zu "Parkplatz" vor dem normalen Seed-Lauf.
  * - Migration ist idempotent: kein Fehler wenn weder Tag noch Tour "Vakant" existieren.
  *
@@ -113,6 +114,7 @@ describe("systemSeedService", () => {
     }));
     expect(result.logLines).toContain("Tag angelegt: Reklamation");
     expect(result.logLines).toContain("Tag angelegt: Geparkt");
+    expect(result.logLines).toContain("Tag angelegt: Planung blockiert");
   });
 
   it("behandelt vorhandene Tags idempotent", async () => {

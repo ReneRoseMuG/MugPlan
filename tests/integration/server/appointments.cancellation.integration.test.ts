@@ -5,18 +5,21 @@
  * - Der Public-Tagkatalog filtert geschuetzte System-Tags domänenspezifisch fuer Picker.
  * - Ohne Domain-Query entspricht `/api/tags` der restriktiven appointment-Sicht.
  * - Die Admin-Tagverwaltung normalisiert geschuetzte System-Tags auf isDefault=true und blockiert Update/Delete.
+ * - Der reservierte Tag "Planung blockiert" folgt denselben Seed-, Picker- und Admin-Schutzregeln wie andere System-Tags.
+ * - Planung blockierte Termine bleiben ueber alle relevanten Schreibpfade serverseitig schreibgeschuetzt.
  * - Der Einweg-Storno benötigt den reservierten Tag aus dem System-Seed, zieht danach Mitarbeiter ab und setzt den Projektbetrag auf 0.
  * - Das Entfernen des reservierten Tags ueber den generischen Termin-Tag-Pfad ist blockiert.
  *
  * Fehlerfaelle:
  * - System-Tags erscheinen im falschen Picker-Kontext.
  * - Der reservierte Tag kann in den Stammdaten umbenannt oder geloescht werden.
+ * - Planung blockierte Termine bleiben ueber einzelne Mutationspfade veraenderbar.
  * - Projektgebundene Stornos behalten den bisherigen Projektbetrag.
  * - Ein fehlender reservierter Tag wird im Storno-Flow stillschweigend vorausgesetzt.
  * - Ein stornierter Termin bleibt ueber normale Mutationspfade veraenderbar.
  *
  * Ziel:
- * Den reservierten Einweg-Storno ueber bestehende Tag-Infrastruktur end-to-end absichern.
+ * Die reservierten Termin-Schutzpfade fuer Storno und Planung blockiert ueber die bestehende Tag-Infrastruktur end-to-end absichern.
  */
 import { and, eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -29,15 +32,19 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+  RESERVED_PLANNING_BLOCKED_TAG_COLOR,
+  RESERVED_PLANNING_BLOCKED_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import * as projectsService from "../../../server/services/projectsService";
 import { applySystemSeed } from "../../../server/services/systemSeedService";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
+  attachAppointmentTagFixture,
   createAppointmentFixture,
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
+  createTagFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 
@@ -55,6 +62,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
@@ -62,6 +70,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=appointment").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
@@ -69,6 +78,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=project").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string; color: string }>)).toContainEqual(
         expect.objectContaining({
           name: MANAGED_COMPLAINT_TAG_NAME,
@@ -86,6 +96,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=customer").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
@@ -93,6 +104,7 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin.get("/api/tags?domain=employee").expect(200).expect(({ body }) => {
       expect(Array.isArray(body)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(true);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
     });
@@ -100,9 +112,13 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     let managedReportTag: { id: number; name: string; version: number; isDefault: boolean } | undefined;
     let managedSpecialMeasureTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
     let normalizedCancellationTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
+    let normalizedPlanningBlockedTag: { id: number; name: string; version: number; isDefault: boolean; color: string } | undefined;
     await admin.get("/api/admin/master-data/tags").expect(200).expect(({ body }) => {
       normalizedCancellationTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
         (tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
+      );
+      normalizedPlanningBlockedTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean; color: string }>).find(
+        (tag) => tag.name === RESERVED_PLANNING_BLOCKED_TAG_NAME,
       );
       managedReportTag = (body as Array<{ id: number; name: string; version: number; isDefault: boolean }>).find(
         (tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME,
@@ -114,6 +130,9 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     expect(normalizedCancellationTag).toBeDefined();
     expect(normalizedCancellationTag?.color).toBe(RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR);
     expect(normalizedCancellationTag?.isDefault).toBe(true);
+    expect(normalizedPlanningBlockedTag).toBeDefined();
+    expect(normalizedPlanningBlockedTag?.color).toBe(RESERVED_PLANNING_BLOCKED_TAG_COLOR);
+    expect(normalizedPlanningBlockedTag?.isDefault).toBe(true);
     expect(managedReportTag).toBeDefined();
     expect(managedReportTag?.isDefault).toBe(true);
     expect(managedSpecialMeasureTag).toBeDefined();
@@ -131,6 +150,22 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
     await admin
       .delete(`/api/admin/master-data/tags/${normalizedCancellationTag!.id}`)
       .send({ version: normalizedCancellationTag!.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .put(`/api/admin/master-data/tags/${normalizedPlanningBlockedTag!.id}`)
+      .send({ name: "Planung blockiert Edit", version: normalizedPlanningBlockedTag!.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .delete(`/api/admin/master-data/tags/${normalizedPlanningBlockedTag!.id}`)
+      .send({ version: normalizedPlanningBlockedTag!.version })
       .expect(409)
       .expect(({ body }) => {
         expect(body.code).toBe("BUSINESS_CONFLICT");
@@ -167,6 +202,163 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       .expect(({ body }) => {
         expect(body.code).toBe("BUSINESS_CONFLICT");
       });
+  });
+
+  it("blocks write paths for planning blocked appointments, protects manual tag assignment, and still allows cancel", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+
+    const [planningBlockedTag] = await db
+      .select({
+        id: tags.id,
+        version: tags.version,
+        color: tags.color,
+        isDefault: tags.isDefault,
+      })
+      .from(tags)
+      .where(eq(tags.name, RESERVED_PLANNING_BLOCKED_TAG_NAME))
+      .limit(1);
+
+    expect(planningBlockedTag).toMatchObject({
+      color: RESERVED_PLANNING_BLOCKED_TAG_COLOR,
+      isDefault: true,
+    });
+    if (!planningBlockedTag) {
+      throw new Error("Expected reserved planning blocked tag to exist.");
+    }
+
+    const project = await createProjectFixture({ prefix: "FT28-PLAN-LOCK" });
+    const employee = await createEmployeeFixture("FT28-PLAN-LOCK-EMP");
+    const manualSetCandidate = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(4),
+      employeeIds: [],
+    });
+
+    await admin
+      .post(`/api/appointments/${manualSetCandidate.id}/tags`)
+      .send({ tagId: planningBlockedTag.id })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
+      });
+
+    const readonlyAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(5),
+      employeeIds: [employee.id],
+    });
+    const removableTag = await createTagFixture("FT28-PLAN-LOCK-REMOVE");
+    const addCandidateTag = await createTagFixture("FT28-PLAN-LOCK-ADD");
+
+    await attachAppointmentTagFixture(readonlyAppointment.id, planningBlockedTag.id);
+    await attachAppointmentTagFixture(readonlyAppointment.id, removableTag.id);
+
+    const [relation] = await db
+      .select({ version: appointmentTags.version })
+      .from(appointmentTags)
+      .where(and(
+        eq(appointmentTags.appointmentId, readonlyAppointment.id),
+        eq(appointmentTags.tagId, removableTag.id),
+      ))
+      .limit(1);
+    if (!relation) {
+      throw new Error("Expected removable appointment tag relation to exist.");
+    }
+
+    const detailResponse = await admin.get(`/api/appointments/${readonlyAppointment.id}`).expect(200);
+    const detail = detailResponse.body as {
+      version: number;
+      projectId: number | null;
+      customerId: number | null;
+      tourId: number | null;
+      startDate: string;
+      endDate: string | null;
+      startTime: string | null;
+      employees: Array<{ id: number }>;
+      appointmentTags: Array<{ name: string }>;
+    };
+
+    await admin
+      .patch(`/api/appointments/${readonlyAppointment.id}`)
+      .send({
+        version: detail.version,
+        projectId: detail.projectId,
+        customerId: detail.customerId,
+        tourId: detail.tourId,
+        startDate: getRelativeBerlinDate(6),
+        endDate: detail.endDate,
+        startTime: detail.startTime,
+        employeeIds: detail.employees.map((entry) => entry.id),
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .patch(`/api/appointments/${readonlyAppointment.id}/display-mode`)
+      .send({
+        version: detail.version,
+        displayMode: "compact",
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .delete(`/api/appointments/${readonlyAppointment.id}`)
+      .send({ version: detail.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .post(`/api/appointments/${readonlyAppointment.id}/tags`)
+      .send({ tagId: addCandidateTag.id })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .delete(`/api/appointments/${readonlyAppointment.id}/tags/${removableTag.id}`)
+      .send({ version: relation.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .delete(`/api/appointments/${readonlyAppointment.id}/employees/${employee.id}`)
+      .send({ version: detail.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .post(`/api/appointments/${readonlyAppointment.id}/park`)
+      .send({ version: detail.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PLANNING_BLOCKED_APPOINTMENT_READONLY");
+      });
+
+    await admin
+      .post(`/api/appointments/${readonlyAppointment.id}/cancel`)
+      .send({ version: detail.version })
+      .expect(204);
+
+    await admin.get(`/api/appointments/${readonlyAppointment.id}`).expect(200).expect(({ body }) => {
+      expect(body.isCancelled).toBe(true);
+      expect(body.employees).toEqual([]);
+      expect((body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).toEqual(
+        expect.arrayContaining([RESERVED_PLANNING_BLOCKED_TAG_NAME, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME]),
+      );
+    });
   });
 
   it("requires the seeded cancellation tag, then cancels versioniert and rejects stale repeats afterwards", async () => {

@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - POST /api/admin/system-seed ist ADMIN-only.
- * - Der Endpoint seeded System-Tags, Soll-Touren und Notizvorlagen mit stabilem Vertrag.
+ * - Der Endpoint seeded System-Tags inklusive "Planung blockiert", Soll-Touren und Notizvorlagen mit stabilem Vertrag.
  * - Ein zweiter Lauf bleibt idempotent und liefert unveraenderte Eintraege statt Duplikaten.
  * - Bestehende Notizvorlagen-Bodies werden beim Endpoint-Seed nicht ueberschrieben.
  *
@@ -72,17 +72,20 @@ describe("integration: admin system seed", () => {
 
     expect(response.body.logLines).toEqual(expect.arrayContaining([
       "Tag angelegt: Storniert",
+      "Tag angelegt: Planung blockiert",
       "Tour angelegt: Parkplatz",
       "Notizvorlage angelegt: Reklamation",
     ]));
 
     const complaintTag = await masterDataRepository.getTagByNormalizedName("Reklamation");
     const vacantTag = await masterDataRepository.getTagByNormalizedName("Geparkt");
+    const planningBlockedTag = await masterDataRepository.getTagByNormalizedName("Planung blockiert");
     const tours = await toursRepository.getTours();
     const templates = await noteTemplatesRepository.getNoteTemplates(false);
 
     expect(complaintTag).toMatchObject({ color: "#FF011B", isDefault: true });
     expect(vacantTag).toMatchObject({ color: "#D4537E", isDefault: true });
+    expect(planningBlockedTag).toMatchObject({ color: "#8B6A00", isDefault: true });
     expect(tours).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "Parkplatz", color: "#D4537E" }),
       expect.objectContaining({ name: "Tour 1", color: "#006B6F" }),
@@ -111,6 +114,7 @@ describe("integration: admin system seed", () => {
 
     expect(secondRun.body.logLines).toEqual(expect.arrayContaining([
       "Tag unverändert: Reklamation",
+      "Tag unverändert: Planung blockiert",
       "Tour unverändert: Parkplatz",
       "Notizvorlage unverändert: Reklamation",
     ]));
