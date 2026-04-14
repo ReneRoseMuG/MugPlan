@@ -5,6 +5,7 @@ export function CalendarWeekAppointmentPanelHeader({
   customerNumber,
   postalCode,
   color,
+  isBlocked = false,
   startDate,
   endDate,
   startTime,
@@ -14,6 +15,7 @@ export function CalendarWeekAppointmentPanelHeader({
   customerNumber: string;
   postalCode: string | null;
   color: string;
+  isBlocked?: boolean;
   startDate: string;
   endDate: string | null;
   startTime: string | null;
@@ -53,6 +55,8 @@ export function CalendarWeekAppointmentPanelHeader({
           "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
+        filter: isBlocked ? "saturate(0.38) brightness(0.82)" : undefined,
+        opacity: isBlocked ? 0.86 : undefined,
       }}
     >
       <div className="flex h-full flex-col justify-between text-[10px] font-semibold tracking-wide">

@@ -10,7 +10,7 @@
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
  * - Wiederholte Add-Executes fuer dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
- * - Explizite Tour-Wochen entstehen ohne Backfill nur bei echter Nutzung und Legacy-Wochen bleiben weiter sichtbar.
+ * - Beim Oeffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
  * - Blockierte Wochen entfernen Termin-Mitarbeiter, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
  * - Die System-Tour `Parkplatz` bleibt von der Wochenplanung ausgeschlossen.
  *
@@ -24,7 +24,7 @@
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
  * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
- * - Das Rollout legt Altwochen ungefragt als neue Tour-Wochen-Datensaetze an.
+ * - Das Rollout legt vergangene oder fachlich fremde Wochen ungefragt als neue Tour-Wochen-Datensaetze an.
  * - Blockierte Wochen bleiben in Listen, Kalenderfeed oder Termin-Tags inkonsistent.
  * - Die Wochenplanung erlaubt fuer `Parkplatz` faelschlich Add-Preview oder Execute.
  *
@@ -76,6 +76,17 @@ function resolveNextEditableWeekDates() {
     weekMidDate: format(addDays(targetWeekStart, 3), "yyyy-MM-dd"),
     previousWeekDate: format(addDays(targetWeekStart, -7), "yyyy-MM-dd"),
   };
+}
+
+function resolveUpcomingSeedWindow() {
+  const nextWeekStart = startOfISOWeek(addWeeks(parseISO(getRelativeBerlinDate(0)), 1));
+  return Array.from({ length: 4 }, (_, index) => {
+    const weekStart = addWeeks(nextWeekStart, index);
+    return {
+      isoYear: getISOWeekYear(weekStart),
+      isoWeek: getISOWeek(weekStart),
+    };
+  });
 }
 
 function toDateOnlyString(dateValue: Date | string): string {
@@ -201,13 +212,40 @@ describe("tourWeekEmployees integration", () => {
     expect(await getAppointmentEmployeeIds(appointment!.id)).toEqual([employee.id]);
 
     const list = await admin.get(`/api/tours/${tour.id}/week-employees`).expect(200);
-    expect(list.body).toEqual([
-      expect.objectContaining({
-        isoYear: isoWeek.isoYear,
-        isoWeek: isoWeek.isoWeek,
-        employees: [expect.objectContaining({ employeeId: employee.id, fullName: employee.fullName })],
-      }),
-    ]);
+    const targetWeekEntry = list.body.find((week: { isoYear: number; isoWeek: number }) =>
+      week.isoYear === isoWeek.isoYear && week.isoWeek === isoWeek.isoWeek,
+    );
+    expect(targetWeekEntry).toEqual(expect.objectContaining({
+      isoYear: isoWeek.isoYear,
+      isoWeek: isoWeek.isoWeek,
+      employees: [expect.objectContaining({ employeeId: employee.id, fullName: employee.fullName })],
+    }));
+  });
+
+  it("seeds the upcoming four tour weeks when the tour week list is opened", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#335577");
+    const expectedWeeks = resolveUpcomingSeedWindow();
+
+    const response = await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200);
+
+    expect(response.body).toHaveLength(4);
+    expect(response.body.map((week: { isoYear: number; isoWeek: number }) => ({
+      isoYear: week.isoYear,
+      isoWeek: week.isoWeek,
+    }))).toEqual(expectedWeeks);
+
+    const dbWeeks = await db
+      .select()
+      .from(tourWeeks)
+      .where(eq(tourWeeks.tourId, tour.id));
+
+    expect(dbWeeks.map((week) => ({
+      isoYear: Number(week.isoYear),
+      isoWeek: Number(week.isoWeek),
+    }))).toEqual(expectedWeeks);
   });
 
   it("blocks assigning the same employee to a second tour in the same ISO week", async () => {
@@ -490,16 +528,17 @@ describe("tourWeekEmployees integration", () => {
     });
 
     const list = await admin.get(`/api/tours/${tour.id}/week-employees`).expect(200);
-    expect(list.body).toEqual([
-      expect.objectContaining({
-        isoYear: targetWeek.isoYear,
-        isoWeek: targetWeek.isoWeek,
-        employees: [expect.objectContaining({ employeeId: employee.id })],
-      }),
-    ]);
+    const targetWeekEntry = list.body.find((week: { isoYear: number; isoWeek: number }) =>
+      week.isoYear === targetWeek.isoYear && week.isoWeek === targetWeek.isoWeek,
+    );
+    expect(targetWeekEntry).toEqual(expect.objectContaining({
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      employees: [expect.objectContaining({ employeeId: employee.id })],
+    }));
   });
 
-  it("creates explicit tour-week records without backfilling legacy assignment weeks", async () => {
+  it("keeps legacy assignment weeks visible alongside the seeded planning horizon", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#0f766e");
     const employee = await createEmployeeFixture("TWE-EXPLICIT-WEEK-EMP");
@@ -611,16 +650,18 @@ describe("tourWeekEmployees integration", () => {
       .expect(200);
 
     const list = await admin.get(`/api/tours/${tour.id}/week-employees`).expect(200);
-    expect(list.body).toHaveLength(1);
-    expect(list.body[0]).toEqual(expect.objectContaining({
+    const targetWeekEntry = list.body.find((week: { isoYear: number; isoWeek: number }) =>
+      week.isoYear === targetWeek.isoYear && week.isoWeek === targetWeek.isoWeek,
+    );
+    expect(targetWeekEntry).toEqual(expect.objectContaining({
       isoYear: targetWeek.isoYear,
       isoWeek: targetWeek.isoWeek,
     }));
-    expect(list.body[0].employees).toEqual(expect.arrayContaining([
+    expect(targetWeekEntry?.employees).toEqual(expect.arrayContaining([
       expect.objectContaining({ employeeId: employee.id }),
       expect.objectContaining({ employeeId: sideEmployee.id }),
     ]));
-    expect(list.body[0].employees).toHaveLength(2);
+    expect(targetWeekEntry?.employees).toHaveLength(2);
 
     const employeeAssignments = await db
       .select()
@@ -682,14 +723,15 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${tour.id}/week-employees`)
       .expect(200)
       .expect((res) => {
-        expect(res.body).toEqual([
-          expect.objectContaining({
-            isoYear: isoWeek.isoYear,
-            isoWeek: isoWeek.isoWeek,
-            isBlocked: true,
-            employees: [expect.objectContaining({ employeeId: employee.id })],
-          }),
-        ]);
+        const targetWeekEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
+          week.isoYear === isoWeek.isoYear && week.isoWeek === isoWeek.isoWeek,
+        );
+        expect(targetWeekEntry).toEqual(expect.objectContaining({
+          isoYear: isoWeek.isoYear,
+          isoWeek: isoWeek.isoWeek,
+          isBlocked: true,
+          employees: [expect.objectContaining({ employeeId: employee.id })],
+        }));
       });
 
     await admin
@@ -785,14 +827,15 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${tour.id}/week-employees`)
       .expect(200)
       .expect((res) => {
-        expect(res.body).toEqual([
-          expect.objectContaining({
-            isoYear: isoWeek.isoYear,
-            isoWeek: isoWeek.isoWeek,
-            isBlocked: false,
-            employees: [expect.objectContaining({ employeeId: employee.id })],
-          }),
-        ]);
+        const targetWeekEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
+          week.isoYear === isoWeek.isoYear && week.isoWeek === isoWeek.isoWeek,
+        );
+        expect(targetWeekEntry).toEqual(expect.objectContaining({
+          isoYear: isoWeek.isoYear,
+          isoWeek: isoWeek.isoWeek,
+          isBlocked: false,
+          employees: [expect.objectContaining({ employeeId: employee.id })],
+        }));
       });
   });
 
@@ -866,7 +909,10 @@ describe("tourWeekEmployees integration", () => {
     expect(await getAppointmentEmployeeIds(secondTourAppointment!.id)).toEqual([]);
 
     const list = await admin.get(`/api/tours/${tour.id}/week-employees`).expect(200);
-    expect(list.body[0]?.employees).toEqual(
+    const targetWeekEntry = list.body.find((week: { isoYear: number; isoWeek: number }) =>
+      week.isoYear === targetWeek.isoYear && week.isoWeek === targetWeek.isoWeek,
+    );
+    expect(targetWeekEntry?.employees).toEqual(
       expect.arrayContaining([expect.objectContaining({ employeeId: employee.id })]),
     );
   });

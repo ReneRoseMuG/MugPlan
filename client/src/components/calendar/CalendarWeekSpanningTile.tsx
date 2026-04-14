@@ -108,6 +108,7 @@ type CalendarWeekSpanningTileProps = {
   isLocked?: boolean;
   highlighted?: boolean;
   isConflict?: boolean;
+  isBlocked?: boolean;
   conflictColor?: string;
   onDoubleClick?: () => void;
   onDragStart?: (event: DragEvent) => void;
@@ -135,6 +136,7 @@ export function CalendarWeekSpanningTile({
   isLocked,
   highlighted = false,
   isConflict = false,
+  isBlocked = false,
   conflictColor,
   onDoubleClick,
   onDragStart,
@@ -545,6 +547,8 @@ export function CalendarWeekSpanningTile({
             "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
           boxShadow:
             "inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -1px 0 rgba(0,0,0,0.14), 0 2px 6px rgba(15,23,42,0.2)",
+          filter: isBlocked ? "saturate(0.38) brightness(0.82)" : undefined,
+          opacity: isBlocked ? 0.86 : undefined,
         }}
         data-testid={`week-spanning-tile-header-${appointment.id}`}
       >

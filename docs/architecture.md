@@ -1,8 +1,8 @@
 ﻿# MuGPlan – Architektur (Ist-Stand)
 
-Dokumentstand: v2.1  
-Datum: 2026-03-05  
-Commit: 37cb373
+Dokumentstand: v2.2  
+Datum: 2026-04-14  
+Commit: —
 
 ## Ziel dieses Dokuments
 
@@ -36,12 +36,14 @@ Es gibt keinen Env-Fallback für `development`/`test`.
 Der Startflow in `server/index.ts`:
 
 1. Runtime-Env initialisieren
-2. Systemrollen und Masterdata-Defaults sicherstellen
-3. Storage-Pfade initialisieren
-4. Routen registrieren
-5. Backup-Scheduler starten
-6. Fehlerhandler registrieren
-7. In `development`: Vite-Integration; in `production`: statische Assets ausliefern
+2. Trust-Proxy-Setting auflösen (ENV: `TRUST_PROXY`; Default: `1` in production, `false` sonst)
+3. Systemrollen und Masterdata-Defaults sicherstellen
+4. Storage-Pfade initialisieren
+5. Bootstrap-State ermitteln (`getBootstrapState`, liefert u. a. `needsAdminSetup`)
+6. Routen registrieren
+7. Backup-Scheduler starten
+8. Fehlerhandler registrieren
+9. In `development`: Vite-Integration; in `production`: statische Assets ausliefern
 
 ### 2.3 DB-Sicherheitsarchitektur
 
@@ -87,7 +89,7 @@ Die zentrale Pipeline in `server/routes.ts` ist:
 6. `enforceAdminMaintenancePolicy`
 7. fachliche Route-Module
 
-Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Projektstatus, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, Demo Seed/Purge, Dokumentextraktion, Help-Texts, Masterdata und Admin Bulk Imports.
+Aktive Domänen-Routen umfassen u. a. Auth inkl. Passwort-Login, 2FA-Flow und Quick-Login, Termine, Kalender, Kunden, Projekte, Mitarbeiter, Teams, Touren, Notizen, Anhänge und Attachment-Queries, User Settings, Users, Backups, System Seed, Dokumentextraktion, Help-Texts, Masterdata, Admin Bulk Imports, Reports, Monitoring, Data Version, Kalenderwochen-Notizen, Tour-Wochen und Tour-Wochen-Mitarbeiter.
 
 Reste der früheren FT30-Abwesenheitsdomäne existieren weiterhin in `shared/routes.ts`, `shared/schema.ts` sowie einzelnen Service-/UI-Dateien, sind aber nicht Teil der aktiven Routing-Architektur, solange `registerRoutes` keine `employeeAbsencesRoutes` mountet.
 
@@ -126,14 +128,14 @@ Das relationale Modell ist in `shared/schema.ts` definiert. Zentrale Entitäten:
 - Termine (`appointments`)
 - Mitarbeiter (`employee`)
 - Teams (`teams`), Touren (`tours`)
+- Kalenderwochen-Planung (`tour_weeks`, `tour_week_employees`)
 - Projektstatus (`project_status`, Join `project_project_status`)
-- Tags und Zuordnungen (`tags`, `project_tags`, `customer_tags`, `employee_tags`, `appointment_tags`)
+- Tags und Zuordnungen (`tags`, `project_tags`, `customer_tags`, `employee_tags`, `appointment_tags`); System-Tags: `Storniert`, `Geparkt`, `Planung blockiert`, `Reklamation`, `Sondermaß`, `Messe Aufbau/Abbau`, `Anmerkungen`, `Gespiegelt`; im Tag-Picker versteckt: `Storniert`, `Geparkt`, `Planung blockiert` (siehe `isPickerVisibleForDomain` in `shared/appointmentCancellation.ts`)
 - Notizen/Vorlagen (`note`, `note_template`, Joins)
 - Anhänge (`project_attachment`, `customer_attachment`, `employee_attachment`)
 - User/Rollen (`users`, `roles`)
 - User Settings (`user_settings_value`)
 - Backup-/Sync-Logs (`backup_log`, `calendar_sync_log`)
-- Seed-Läufe (`seed_run`, `seed_run_entity`)
 - Masterdata-Tabellen für Produkte, Komponenten und Spezifikationen (FT27)
 
 ## 7. Fachliche Invarianten (serverseitig)
@@ -157,6 +159,8 @@ Evidenz: `server/services/appointmentsService.ts`, Integrationstests `tests/inte
 Historische Termine werden serverseitig blockiert (`PAST_APPOINTMENT_READONLY`).
 
 Ist-Stand: sowohl `DISPONENT` als auch `ADMIN` können historische Termine nicht mutieren (`updateAppointment`/`deleteAppointment`), obwohl im Kalender weiterhin `isLocked` rolebasiert als Anzeige-Flag berechnet wird (`roleKey !== ADMIN`).
+
+Ausnahme: Termine der Tour „Parkplatz“ können auch bei historischem Startdatum über die Wochenplanungs-Preview umgestellt werden (`tourWeekEmployeesService`, `previewAppointmentTourChange`).
 
 ### 7.4 Archivierungsmodell
 
@@ -202,11 +206,11 @@ KI-Provider-Code ist vorhanden, aber nicht der aktive Hauptpfad für Kopf-/Artik
 - Backup aktivierbar/deaktivierbar via globales Setting `backup_enabled`
 - CalDAV Sync asynchron via Dispatcher-Queue und Sync-Log
 
-### 8.7 Demo Seed/Purge
+### 8.7 System Seed
 
-Seed/Purge ist ein separater Admin-Pfad mit Run-Tracking (`seed_run`, `seed_run_entity`) und guardierter, idempotenter Purge-Logik.
+`applySystemSeed()` (`server/services/systemSeedService.ts`) ist eine idempotente Admin-Funktion, die Stammdaten-Defaults sicherstellt: System-Tags, System-Touren und Notizvorlagen. Sie wird über `systemSeedRoutes` als Admin-Endpoint bereitgestellt. Bei jedem Lauf werden fehlende Einträge angelegt, vorhandene auf Farbe und Flags geprüft und ggf. aktualisiert. Migrationen (z. B. „Vakant“ → „Geparkt“, Tour „Vakant“ → „Parkplatz“) werden ebenfalls idempotent ausgeführt. Ein separates Run-Tracking existiert nicht mehr (`seed_run`/`seed_run_entity` wurden per Migration 0023 entfernt).
 
-Basis-Seed nutzt vorhandene aktive Mitarbeitende aus der Datenbank, statt sie frei zu generieren oder zu importieren. Admin-Reset nimmt `users`, `roles` und `employee` aus dem Domain-Reset aus.
+Der Demo-Seed-Pfad (`demoSeedService`) für Testdaten bleibt separat erhalten, ist aber vom System Seed konzeptionell getrennt.
 
 ## 9. Frontend-Architektur
 

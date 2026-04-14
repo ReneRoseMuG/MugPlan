@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { addDays, format, getISOWeekYear, isSameDay, parseISO } from "date-fns";
+import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
@@ -57,8 +57,8 @@ const logPrefix = "[calendar-month-sheet]";
 const MONTH_SHEET_BAR_HORIZONTAL_INSET_PX = 4;
 const MONTH_SLOT_BACKGROUND_ALPHA = 0.14;
 const BLOCKED_WEEK_OVERLAY_STYLE = {
-  backgroundImage: "repeating-linear-gradient(135deg, rgba(148,163,184,0.26) 0px, rgba(148,163,184,0.26) 8px, rgba(255,255,255,0.18) 8px, rgba(255,255,255,0.18) 16px)",
-  backgroundColor: "rgba(15,23,42,0.08)",
+  backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
+  backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
@@ -83,6 +83,23 @@ function toTransparentTourColor(color: string | null | undefined, alpha: number)
   const green = Number.parseInt(hex.slice(2, 4), 16);
   const blue = Number.parseInt(hex.slice(4, 6), 16);
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function buildBlockedTourWeekKey(tourId: number, isoYear: number, isoWeek: number): string {
+  return `${tourId}-${isoYear}-${isoWeek}`;
+}
+
+export function isBlockedTourWeekSlot(params: {
+  tourId: number | null | undefined;
+  weekDate: Date;
+  blockedTourWeekKeys: Set<string>;
+}): boolean {
+  return typeof params.tourId === "number"
+    && params.blockedTourWeekKeys.has(buildBlockedTourWeekKey(
+      params.tourId,
+      getISOWeekYear(params.weekDate),
+      getISOWeek(params.weekDate),
+    ));
 }
 
 export function CalendarMonthSheetView({
@@ -138,7 +155,7 @@ export function CalendarMonthSheetView({
   const blockedTourWeekKeys = useMemo(
     () => new Set(blockedTourWeeks
       .filter((week) => week.isBlocked)
-      .map((week) => `${week.tourId}-${week.isoYear}-${week.isoWeek}`)),
+      .map((week) => buildBlockedTourWeekKey(week.tourId, week.isoYear, week.isoWeek))),
     [blockedTourWeeks],
   );
   const tourSlots = useMemo(() => buildMonthTourSlots(tours), [tours]);
@@ -320,6 +337,20 @@ export function CalendarMonthSheetView({
         description: "Nur Admins dürfen vergangene Termine ändern.",
         variant: "destructive",
       });
+      return;
+    }
+
+    if (isBlockedTourWeekSlot({
+      tourId: targetTourId,
+      weekDate: targetDate,
+      blockedTourWeekKeys,
+    })) {
+      toast({
+        title: "Wochenplanung blockiert",
+        description: "Termine können nicht in eine blockierte Tour-Woche verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
       return;
     }
 
@@ -554,12 +585,17 @@ function MonthSheetSection({
                               subRows * MONTH_SLOT_BAR_HEIGHT_PX +
                               (subRows - 1) * MONTH_SLOT_BAR_GAP_PX +
                               MONTH_SLOT_PADDING_BOTTOM_PX;
-                            const isSlotBlocked = slot.tourId != null
-                              && blockedTourWeekKeys.has(`${slot.tourId}-${getISOWeekYear(week.weekStart)}-${week.weekNumber}`);
+                            const isSlotBlocked = isBlockedTourWeekSlot({
+                              tourId: slot.tourId,
+                              weekDate: week.weekStart,
+                              blockedTourWeekKeys,
+                            });
 
                             return (
                               <div
                                 key={slot.tourId ?? "unassigned"}
+                                data-testid={`month-sheet-slot-${day.dateKey}-${slot.tourId ?? "unassigned"}`}
+                                data-blocked={isSlotBlocked ? "true" : "false"}
                                 style={{
                                   height: `${slotHeightPx}px`,
                                   backgroundColor: toTransparentTourColor(
@@ -578,6 +614,7 @@ function MonthSheetSection({
                                   <div
                                     className="pointer-events-none absolute inset-0"
                                     style={BLOCKED_WEEK_OVERLAY_STYLE}
+                                    data-testid={`month-sheet-slot-overlay-${day.dateKey}-${slot.tourId ?? "unassigned"}`}
                                     aria-hidden
                                   />
                                 ) : null}
@@ -627,8 +664,11 @@ function MonthSheetSection({
                         const canDrag = !isLocked
                           && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
-                        const isSlotBlocked = slot.tourId != null
-                          && blockedTourWeekKeys.has(`${slot.tourId}-${getISOWeekYear(week.weekStart)}-${week.weekNumber}`);
+                        const isSlotBlocked = isBlockedTourWeekSlot({
+                          tourId: slot.tourId,
+                          weekDate: week.weekStart,
+                          blockedTourWeekKeys,
+                        });
 
                         return (
                           <div
@@ -651,6 +691,7 @@ function MonthSheetSection({
                               showPopover={true}
                               isLocked={isLocked}
                               isDragging={draggedAppointmentId === appointment.id}
+                              isBlocked={isSlotBlocked}
                               onDoubleClick={() => onAppointmentClick(appointment.id)}
                               onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                               onDragEnd={canDrag ? onDragEnd : undefined}

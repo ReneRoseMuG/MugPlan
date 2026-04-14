@@ -104,6 +104,7 @@ export function CalendarWeekAppointmentPanel({
   interactive = true,
   highlighted = false,
   isConflict = false,
+  isBlocked = false,
   conflictColor,
   onMouseEnter,
   onMouseLeave,
@@ -129,6 +130,7 @@ export function CalendarWeekAppointmentPanel({
   interactive?: boolean;
   highlighted?: boolean;
   isConflict?: boolean;
+  isBlocked?: boolean;
   conflictColor?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -477,6 +479,7 @@ export function CalendarWeekAppointmentPanel({
               customerNumber={appointment.customer.customerNumber}
               postalCode={appointment.customer.postalCode}
               color={appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR}
+              isBlocked={isBlocked}
               startDate={appointment.startDate}
               endDate={appointment.endDate}
               startTime={appointment.startTime}
@@ -490,6 +493,8 @@ export function CalendarWeekAppointmentPanel({
                   backgroundColor: resolvedTourColor,
                   color: "#ffffff",
                   borderColor: "rgba(255,255,255,0.22)",
+                  filter: isBlocked ? "saturate(0.38) brightness(0.82)" : undefined,
+                  opacity: isBlocked ? 0.86 : undefined,
                 }}
                 data-testid={`week-appointment-tour-name-${appointment.id}`}
               >

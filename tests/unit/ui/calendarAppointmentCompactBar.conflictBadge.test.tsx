@@ -4,10 +4,12 @@
  * Abgedeckte Regeln:
  * - Konfliktmarkierungen auf Monatsbars werden als deutlich sichtbare Badge gerendert.
  * - Nicht-Konflikt-Bars erhalten keine Konflikt-Badge.
+ * - Blockierte Monatsbars dimmen ihre Tourfarbe sichtbar ab.
  *
  * Fehlerfaelle:
  * - Der Konflikthinweis bleibt nur als kleines Overlay-Symbol erhalten.
  * - Normale Bars zeigen versehentlich eine Konfliktmarkierung.
+ * - Blockierte Monatsbars bleiben trotz Sperrstatus vollsaettigt.
  *
  * Ziel:
  * Die auffaelligere Konflikt-Darstellung der CalendarAppointmentCompactBar regressionssicher absichern.
@@ -96,5 +98,20 @@ describe("CalendarAppointmentCompactBar conflict badge", () => {
 
     expect(html).not.toContain("appointment-bar-conflict-icon-17");
     expect(html).not.toContain("Konflikt");
+  });
+
+  it("dims blocked compact bars so the slot overlay stays readable", () => {
+    const html = renderToStaticMarkup(
+      <CalendarAppointmentCompactBar
+        appointment={createAppointment()}
+        isFirstDay
+        isLastDay
+        isBlocked
+        showPopover={false}
+      />,
+    );
+
+    expect(html).toContain("filter:saturate(0.38) brightness(0.82)");
+    expect(html).toContain("opacity:0.86");
   });
 });

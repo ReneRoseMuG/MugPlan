@@ -12,11 +12,13 @@
  * - Die bestehende Compact-Bar-Darstellung bleibt fuer geklippte Mehrtagessegmente wiederverwendet.
  * - Blockierte Wochen legen im Monatsblatt eine Sperrflaeche ueber den Tour-Slot.
  * - Konflikt-Schraffuren werden fuer Termine in blockierten Wochen unterdrueckt.
+ * - Blockierte Wochen reichen den gedimmten Bar-Status an Compact-Bars weiter.
  *
  * Fehlerfaelle:
  * - Das Monatsblatt rendert versehentlich wieder mehrere Monate parallel.
  * - Wiederverwendete Termindarstellung verliert isFirstDay/isLastDay an sichtbaren Segmentgrenzen.
  * - Blockierte Tour-Slots zeigen weiterhin doppelte Konflikt- und Sperrflaechen.
+ * - Monatsbalken bleiben in blockierten Slots trotz Sperrstatus vollsaettigt.
  *
  * Ziel:
  * Die neue Monatsblatt-View ueber beobachtbare Struktur und wiederverwendete Appointment-Bar-Props regressionssicher absichern.
@@ -281,6 +283,7 @@ describe("calendar month sheet view wiring", () => {
 
     const blockedBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 88);
     expect(blockedBar?.isConflict).toBe(false);
+    expect(blockedBar?.isBlocked).toBe(true);
     expect(markup).toContain("repeating-linear-gradient(135deg");
   });
 });

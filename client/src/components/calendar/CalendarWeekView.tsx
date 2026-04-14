@@ -123,8 +123,8 @@ type WeekLaneRenderData = {
 
 const logPrefix = "[calendar-week]";
 const BLOCKED_WEEK_OVERLAY_STYLE = {
-  backgroundImage: "repeating-linear-gradient(135deg, rgba(71,85,105,0.34) 0px, rgba(71,85,105,0.34) 8px, rgba(226,232,240,0.26) 8px, rgba(226,232,240,0.26) 16px)",
-  backgroundColor: "rgba(15,23,42,0.18)",
+  backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
+  backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
 
 const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
@@ -1567,6 +1567,7 @@ export function CalendarWeekView({
                                   isLocked={isSegmentLocked}
                                   highlighted={isHighlighted}
                                   isConflict={isConflict}
+                                  isBlocked={isLaneBlocked}
                                   conflictColor={conflictMeta?.color}
                                   onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                   onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
@@ -1618,6 +1619,7 @@ export function CalendarWeekView({
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
                                     isConflict={isConflict}
+                                    isBlocked={isLaneBlocked}
                                     conflictColor={conflictMeta?.color}
                                     onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
@@ -1677,6 +1679,7 @@ export function CalendarWeekView({
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}
                                         isConflict={isConflict}
+                                        isBlocked={isLaneBlocked}
                                         conflictColor={conflictMeta?.color}
                                         onDoubleClick={() => handleAppointmentClick(appointment.id)}
                                         onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}

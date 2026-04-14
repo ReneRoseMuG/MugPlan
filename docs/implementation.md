@@ -1,8 +1,8 @@
 ﻿# MuGPlan – Engineering & Implementation Handbook (Ist-Stand)
 
-Dokumentstand: v2.1  
-Datum: 2026-03-05  
-Commit: 37cb373
+Dokumentstand: v2.2  
+Datum: 2026-04-14  
+Commit: —
 
 ## Zweck dieses Dokuments
 
@@ -46,6 +46,8 @@ Pflichtvariablen:
 - `DB_ALLOWED_HOSTS_<MODE>`
 
 CSV-Werte werden getrimmt und normalisiert, Hosts in lowercase.
+
+Zusätzliche ENV-Variable `TRUST_PROXY`: steuert Express `trust proxy`-Setting. Akzeptiert `true`, `false` oder eine Ganzzahl. Default: `1` in production, `false` sonst.
 
 ### 2.2 DB-Startup-Gate
 
@@ -107,6 +109,8 @@ JSON-Validation erfolgt schema-basiert über Contract-Schemas; Multipart über d
 - Historische Termin-Blockade
 - Überlappungsprüfung von Mitarbeiterzuweisungen
 - Fehlercodes: `EMPLOYEE_OVERLAP_CONFLICT`, `VERSION_CONFLICT`, `PAST_APPOINTMENT_READONLY`, `INACTIVE_ENTITY_ASSIGNMENT`, `VALIDATION_ERROR`
+
+KW-Planungs-Fehlercodes (`tourWeeksService`, `tourWeekEmployeesService`): `PAST_WEEK_READONLY`, `BUSINESS_CONFLICT`, `NOT_FOUND`, `VALIDATION_ERROR`.
 
 Overlap wird transaktional geprüft und blockierend erzwungen.
 
@@ -173,20 +177,9 @@ CalDAV:
 - Upsert/Delete via `caldavService`
 - Sync-Status in `calendar_sync_log`
 
-### 5.7 Demo Seed/Purge
+### 5.7 System Seed
 
-`server/services/demoSeedService.ts`:
-
-- Run-Typen: `base`, `appointments`, `legacy`
-- Persistenztracking via `seed_run`, `seed_run_entity`
-- Purge mit DB-/Dateilöschung und Idempotenz
-- zusätzliche Safety-Prüfung via `assertSafeDemoSeedPurgeTarget`
-- Basis-Seed nutzt vorhandene aktive Mitarbeitende aus der Datenbank
-- Mitarbeitende werden fuer den Basis-Run nicht als purge-bare Seed-Entitaeten angelegt; die Termine-Sequenz nutzt dafuer die im Run-Summary referenzierten Mitarbeiter-IDs
-
-`server/services/adminService.ts` / `server/repositories/adminRepository.ts`:
-
-- zentraler Admin-Reset löscht Demo-/Fachdaten, aber keine `users`, `roles`, `employee` oder `employee_attachment`
+`server/services/systemSeedService.ts` stellt `applySystemSeed()` bereit — eine idempotente Funktion zur Sicherstellung von Stammdaten-Defaults: System-Tags, System-Touren, Notizvorlagen. Migrationen (z. B. „Vakant“ → „Geparkt“, Tour „Vakant“ → „Parkplatz“) werden ebenfalls idempotent ausgeführt. Kein Run-Tracking; `seed_run`/`seed_run_entity` wurden per Migration 0023 entfernt. Demo-Seed und Admin-Reset-Pfad existieren nicht mehr.
 
 ### 5.8 Admin Bulk Import
 
@@ -202,6 +195,10 @@ Das Projektdatenmodell umfasst zusätzlich:
 - `project_order` als 1:1-Erweiterung des Projekts für Auftragsnummer, Betrag und Planungsfelder
 - `project_order_items` für positionsbezogene Produkt-/Komponenten-/Freitextzeilen mit Konsistenz-Checks
 - universelles Tagging für Projekte, Kunden, Mitarbeiter und Termine; Termin-Tags werden über `appointment_tags` persistiert
+
+### 5.10 Monitoring
+
+`server/services/monitoringService.ts` wertet aktive Trigger aus und liefert eine aggregierte Übersicht für Disponenten und Admins. Aktive Trigger: `TR-01` (Mindestzahl Mitarbeiter), `TR-02` (Geparkt). Trigger-Definitionen, Namen und Farben sind zentral in `shared/monitoring.ts` gepflegt. Der Schwellwert für TR-01 wird über das globale Setting `monitoring.tr01.minimumEmployees` konfiguriert. Disponenten erhalten Lesezugriff auf `/api/monitoring`; die Admin-Konfiguration unter `/api/admin/monitoring/config` ist nur für Admins zugänglich.
 
 ## 6. Frontend-Implementierung
 
