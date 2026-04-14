@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 
 export const WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX = 20;
+export const WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX = 48;
+export const WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX = 68;
 
 function toTransparentTourColor(color: string | null | undefined, alpha: number): string {
   if (typeof color !== "string") {
@@ -26,5 +28,6 @@ export function getWeekAppointmentFooterStyle(tourColor: string | null | undefin
   return {
     backgroundColor: toTransparentTourColor(resolvedTourColor, 0.1),
     borderTopColor: toTransparentTourColor(resolvedTourColor, 0.22),
+    minHeight: `${WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX}px`,
   };
 }

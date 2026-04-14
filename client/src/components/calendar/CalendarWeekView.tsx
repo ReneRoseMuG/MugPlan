@@ -267,7 +267,7 @@ export function CalendarWeekView({
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; appointmentId: number; noteId: number; noteVersion: number } | null>(null);
   const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
-  const laneHeightByKeyRef = useRef<Map<string, number>>(new Map());
+  const cardHeightByLaneRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -417,7 +417,7 @@ export function CalendarWeekView({
   });
 
   useEffect(() => {
-    laneHeightByKeyRef.current.clear();
+    cardHeightByLaneRef.current.clear();
     projectStatusHeightByWeekRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
   }, [appointments, scrollResetKey, weekTileBodyMode, weekAppointmentDisplayMode]);
@@ -982,13 +982,13 @@ export function CalendarWeekView({
     }
   };
 
-  const measureLaneCardHeight = (laneHeightKey: string, node: HTMLDivElement | null, footerSafeSpacePx = 0) => {
+  const measureLaneCardHeight = (laneKey: string, node: HTMLDivElement | null, footerSafeSpacePx = 0) => {
     if (!node) return;
     const heightPx = Math.max(0, Math.round(node.getBoundingClientRect().height) - footerSafeSpacePx);
     if (heightPx <= 0) return;
-    const currentLaneHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? 0;
+    const currentLaneHeightPx = cardHeightByLaneRef.current.get(laneKey) ?? 0;
     if (heightPx <= currentLaneHeightPx) return;
-    laneHeightByKeyRef.current.set(laneHeightKey, heightPx);
+    cardHeightByLaneRef.current.set(laneKey, heightPx);
     setAppointmentHeightVersion((prev) => prev + 1);
   };
 
@@ -1217,10 +1217,9 @@ export function CalendarWeekView({
 
                   <div className="space-y-3 pb-3">
                     {weekLanes.map((tourLane) => {
-                      const laneHeightKey = `${weekKey}:${tourLane.laneKey}`;
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
-                      const laneUniformHeightPx = laneHeightByKeyRef.current.get(laneHeightKey) ?? null;
+                      const laneUniformHeightPx = cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null;
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
@@ -1578,7 +1577,7 @@ export function CalendarWeekView({
                                   }
                                   projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                   containerRef={(node) =>
-                                    measureLaneCardHeight(laneHeightKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)}
+                                    measureLaneCardHeight(tourLane.laneKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)}
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
                               );
@@ -1614,7 +1613,7 @@ export function CalendarWeekView({
                                     canEditTags={canEditAppointmentTags}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={(node) =>
-                                      measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                      measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
@@ -1673,7 +1672,7 @@ export function CalendarWeekView({
                                         canEditTags={canEditAppointmentTags}
                                         projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                         containerRef={(node) =>
-                                          measureLaneCardHeight(laneHeightKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                          measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}

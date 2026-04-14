@@ -37,6 +37,7 @@ import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPa
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 import {
   getWeekAppointmentFooterStyle,
+  WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./weekAppointmentCardStyles";
 import { toAlphaColor } from "@/lib/monitoring-ui";
@@ -402,10 +403,10 @@ export function CalendarWeekSpanningTile({
   const resolvedStartTime = appointment.startTime?.trim().slice(0, 5) || null;
   const resolvedCustomerNumber = appointment.customer.customerNumber.trim() || "-";
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
-  const isCollapsedBodyMode = weekTileBodyMode === "collapsed";
   const showCustomerPanel = true;
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
   const projectCollapsed = weekTileBodyMode === "collapsed";
+  const customerPanelHeightClassName = customerMode === "expanded" ? "h-[6.5rem] overflow-hidden" : "h-8 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -419,7 +420,7 @@ export function CalendarWeekSpanningTile({
     : undefined;
 
   const mainContentPanels = (
-    <>
+    <div className="grid min-h-0 flex-1 gap-1 overflow-hidden" style={{ gridTemplateRows: `${customerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)` }}>
       {showCustomerPanel ? (
         <CalendarWeekAppointmentPanelCustomer
           mode={customerMode}
@@ -431,6 +432,7 @@ export function CalendarWeekSpanningTile({
           postalCode={appointment.customer.postalCode}
           city={appointment.customer.city}
           country={appointment.customer.country}
+          className={customerPanelHeightClassName}
         />
       ) : null}
       <CalendarWeekAppointmentPanelProject
@@ -440,13 +442,14 @@ export function CalendarWeekSpanningTile({
         projectDescription={appointment.projectDescription}
         collapsed={projectCollapsed}
         enableFullDescriptionPreview
+        className="min-h-0 h-full"
       />
-    </>
+    </div>
   );
 
   const footerContentPanels = (
-    <div className="flex min-h-full flex-col gap-1">
-      <div className="flex w-full flex-nowrap items-center gap-1 overflow-visible">
+    <div className="grid h-full grid-rows-[1.75rem_1.75rem] gap-1">
+      <div className="flex h-7 w-full flex-nowrap items-center gap-1 overflow-hidden">
         <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
         <CalendarWeekAppointmentNotesHover
           appointmentId={appointment.id}
@@ -461,7 +464,7 @@ export function CalendarWeekSpanningTile({
           totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
         />
       </div>
-      <div className="mt-auto">
+      <div className="h-7 overflow-hidden">
         <CalendarWeekAppointmentTagPicker
           appointmentId={appointment.id}
           tags={mergedTags}
@@ -476,7 +479,7 @@ export function CalendarWeekSpanningTile({
 
   const bodyContent = (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className={`relative min-h-0 px-1 pt-1 ${isCollapsedBodyMode ? "" : "flex-1"}`} data-testid={`week-spanning-tile-content-${appointment.id}`}>
+      <div className="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2" data-testid={`week-spanning-tile-content-${appointment.id}`}>
         {isConflict ? (
           <div
             className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
@@ -484,12 +487,12 @@ export function CalendarWeekSpanningTile({
             data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
           />
         ) : null}
-        <div className="min-h-0 space-y-1 overflow-hidden">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
           {mainContentPanels}
         </div>
       </div>
       <div
-        className="relative mt-auto shrink-0 border-t px-1 py-2"
+        className="relative mt-auto shrink-0 border-t px-1 py-1"
         style={footerStyle}
         data-testid={`week-spanning-tile-footer-${appointment.id}`}
       >
@@ -514,7 +517,7 @@ export function CalendarWeekSpanningTile({
         gridTemplateRows: "auto 1fr",
         borderColor: highlighted ? undefined : borderColor,
         boxShadow: uniformBorderShadow,
-        ...(!isCollapsedBodyMode && uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
+        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
         ...style,
       }}
       onDoubleClick={onDoubleClick}
@@ -528,7 +531,7 @@ export function CalendarWeekSpanningTile({
       data-testid={testId ?? `week-spanning-tile-${appointment.id}`}
     >
       <div
-        className="grid rounded-b-none border-b border-white/15 text-[10px] font-semibold tracking-wide"
+        className="grid box-border rounded-b-none border-b border-white/15 text-[10px] font-semibold tracking-wide"
         style={{
           gridColumn: `1 / span ${visibleColumns}`,
           gridRow: 1,
@@ -536,6 +539,8 @@ export function CalendarWeekSpanningTile({
           backgroundColor: appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR,
           color: "#ffffff",
           borderColor: "rgba(255,255,255,0.18)",
+          minHeight: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
+          height: `${WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX}px`,
           backgroundImage:
             "linear-gradient(180deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0) 42%), linear-gradient(180deg, rgba(0,0,0,0) 58%, rgba(0,0,0,0.18) 100%)",
           boxShadow:
@@ -546,36 +551,38 @@ export function CalendarWeekSpanningTile({
         {headerDays.map((headerDay) => (
           <div
             key={headerDay.key}
-            className="min-w-0 px-2 py-1"
+            className="box-border min-w-0 h-full px-2 py-1"
             style={{
               borderLeft: headerDay.isFirst ? undefined : "1px solid rgba(255,255,255,0.16)",
             }}
           >
-            <div className={`grid items-center gap-1 ${headerDay.isLast ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
-              {headerDay.isFirst ? (
-                <>
-                  <span
-                    className="inline-flex items-center justify-center"
-                    title={visibleColumns > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
-                  >
-                    <TimingIcon className="h-3.5 w-3.5" aria-hidden />
-                  </span>
-                  <span className="truncate text-center">{[resolvedStartTime, headerDay.formattedDate].filter(Boolean).join(" | ")}</span>
-                </>
-              ) : (
-                <>
-                  <span />
-                  <span className="truncate text-center">{headerDay.formattedDate}</span>
-                </>
-              )}
-              <span className="shrink-0 text-right justify-self-end">{headerDay.dayLabel}</span>
-              {headerDay.isLast && (
-                <span className="shrink-0 flex items-center justify-center">{menuSlot}</span>
-              )}
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/20 pt-1">
-              {headerDay.isFirst ? <span className="truncate">K: {resolvedCustomerNumber}</span> : <span />}
-              {headerDay.isLast ? <span className="truncate text-right">PLZ: {resolvedPostalCode}</span> : <span />}
+            <div className="flex h-full flex-col justify-between text-[10px] font-semibold tracking-wide">
+              <div className={`grid items-center gap-1 ${headerDay.isLast ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
+                {headerDay.isFirst ? (
+                  <>
+                    <span
+                      className="inline-flex items-center justify-center"
+                      title={visibleColumns > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
+                    >
+                      <TimingIcon className="h-3.5 w-3.5" aria-hidden />
+                    </span>
+                    <span className="truncate text-center">{[resolvedStartTime, headerDay.formattedDate].filter(Boolean).join(" | ")}</span>
+                  </>
+                ) : (
+                  <>
+                    <span />
+                    <span className="truncate text-center">{headerDay.formattedDate}</span>
+                  </>
+                )}
+                <span className="shrink-0 text-right justify-self-end">{headerDay.dayLabel}</span>
+                {headerDay.isLast && (
+                  <span className="shrink-0 flex items-center justify-center">{menuSlot}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
+                {headerDay.isFirst ? <span className="truncate">K: {resolvedCustomerNumber}</span> : <span />}
+                {headerDay.isLast ? <span className="truncate text-right">PLZ: {resolvedPostalCode}</span> : <span />}
+              </div>
             </div>
           </div>
         ))}
