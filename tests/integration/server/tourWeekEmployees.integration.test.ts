@@ -12,7 +12,7 @@
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  * - Beim Oeffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
  * - Blockierte Wochen entfernen Termin-Mitarbeiter und Wochen-Zuordnungen, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
- * - Die System-Tour `Parkplatz` bleibt von der Wochenplanung ausgeschlossen.
+ * - Die System-Tour `Parkplatz` bleibt von Seed, Listen, Verfuegbarkeit, Previews und Wochen-Mutationen ausgeschlossen.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
@@ -26,7 +26,7 @@
  * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
  * - Das Rollout legt vergangene oder fachlich fremde Wochen ungefragt als neue Tour-Wochen-Datensaetze an.
  * - Blockierte Wochen behalten stale Wochen-Zuordnungen in Listen oder Join-Tabellen.
- * - Die Wochenplanung erlaubt fuer `Parkplatz` faelschlich Add-Preview oder Execute.
+ * - Die Wochenplanung erzeugt fuer `Parkplatz` beim Oeffnen wieder KW-Karten oder zeigt Legacy-Zuordnungen weiter an.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -248,6 +248,71 @@ describe("tourWeekEmployees integration", () => {
     }))).toEqual(expectedWeeks);
   });
 
+  it("keeps Parkplatz out of week-plan lists, availability and employee week plans without seeding a horizon", async () => {
+    const admin = await loginAdmin();
+    const parkplatzTour = await createTourFixture("#d4537e");
+    const employee = await createEmployeeFixture("TWE-PARKPLATZ-LIST-EMP");
+    const colleague = await createEmployeeFixture("TWE-PARKPLATZ-LIST-COL");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await renameTour(parkplatzTour.id, "Parkplatz");
+
+    await db.insert(tourWeeks).values({
+      tourId: parkplatzTour.id,
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      isBlocked: false,
+    });
+
+    await db.insert(tourWeekEmployees).values([
+      {
+        tourId: parkplatzTour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      },
+      {
+        tourId: parkplatzTour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: colleague.id,
+      },
+    ]);
+
+    await admin
+      .get(`/api/tours/${parkplatzTour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([]);
+      });
+
+    await admin
+      .get(`/api/tours/${parkplatzTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([]);
+      });
+
+    await admin
+      .get(`/api/employees/${employee.id}/week-plans`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([]);
+      });
+
+    const persistedWeeks = await db
+      .select()
+      .from(tourWeeks)
+      .where(eq(tourWeeks.tourId, parkplatzTour.id));
+    expect(persistedWeeks).toHaveLength(1);
+    expect(persistedWeeks[0]).toEqual(expect.objectContaining({
+      tourId: parkplatzTour.id,
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      isBlocked: false,
+    }));
+  });
+
   it("blocks assigning the same employee to a second tour in the same ISO week", async () => {
     const admin = await loginAdmin();
     const firstTour = await createTourFixture("#114477");
@@ -389,6 +454,68 @@ describe("tourWeekEmployees integration", () => {
         eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
       ));
     expect(assignments).toHaveLength(0);
+  });
+
+  it("suppresses assignment previews and week mutations for the system tour Parkplatz", async () => {
+    const admin = await loginAdmin();
+    const parkplatzTour = await createTourFixture("#d4537e");
+    const employee = await createEmployeeFixture("TWE-PARKPLATZ-PREVIEW-EMP");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await renameTour(parkplatzTour.id, "Parkplatz");
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: parkplatzTour.id,
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      employeeId: employee.id,
+    });
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetWeek.weekMidDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({
+          isoYear: targetWeek.isoYear,
+          isoWeek: targetWeek.isoWeek,
+          hasWeekPlan: false,
+          currentEmployeeIds: [],
+          items: [],
+        }));
+      });
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/weeks`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/weeks/${targetWeek.isoYear}/${targetWeek.isoWeek}/block`)
+      .send({})
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .post(`/api/tours/${parkplatzTour.id}/weeks/${targetWeek.isoYear}/${targetWeek.isoWeek}/unblock`)
+      .send({})
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
   });
 
   it("marks understaffing in remove preview and removes the assignment plus employee from selected appointments", async () => {

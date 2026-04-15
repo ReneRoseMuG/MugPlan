@@ -1204,8 +1204,11 @@ export async function listCalendarWeekLaneEmployeePreviews({
   const appointmentIds = Array.from(new Set(rows.map((row) => row.appointment.id)));
   const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
   const tours = await toursRepository.getTours();
-  const assignmentRows = tours.length > 0
-    ? await tourWeekEmployeesRepository.listAssignmentsByTourIds(tours.map((tour) => tour.id))
+  const weekPlanningTourIds = tours
+    .filter((tour) => !isParkplatzTourName(tour.name))
+    .map((tour) => tour.id);
+  const assignmentRows = weekPlanningTourIds.length > 0
+    ? await tourWeekEmployeesRepository.listAssignmentsByTourIds(weekPlanningTourIds)
     : [];
 
   type PreviewAccumulator = {

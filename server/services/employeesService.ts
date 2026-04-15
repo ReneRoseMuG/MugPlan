@@ -6,6 +6,7 @@ import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
+import { isParkplatzTourName } from "../lib/systemTours";
 
 export class EmployeesError extends Error {
   status: number;
@@ -122,15 +123,16 @@ export async function listEmployeeWeekPlans(
   if (!employee) return null;
   if (roleKey !== "ADMIN" && !employee.isActive) return null;
 
-  const employeeAssignments = await tourWeekEmployeesRepository.listAssignmentsByEmployee(id);
+  const employeeAssignments = (await tourWeekEmployeesRepository.listAssignmentsByEmployee(id))
+    .filter((assignment) => !isParkplatzTourName(assignment.tourName));
   if (employeeAssignments.length === 0) return [];
 
   const relevantKeys = new Set(
     employeeAssignments.map((assignment) => `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`),
   );
-  const allAssignments = await tourWeekEmployeesRepository.listAssignmentsByTourIds(
+  const allAssignments = (await tourWeekEmployeesRepository.listAssignmentsByTourIds(
     employeeAssignments.map((assignment) => assignment.tourId),
-  );
+  )).filter((assignment) => !isParkplatzTourName(assignment.tourName));
 
   const grouped = new Map<number, {
     assignmentId: number;

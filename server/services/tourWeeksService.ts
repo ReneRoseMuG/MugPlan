@@ -11,6 +11,7 @@ import * as tourWeeksRepository from "../repositories/tourWeeksRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { hasAppointmentCancellationTag, hasReservedPlanningBlockedTag } from "../lib/appointmentCancellation";
+import { isParkplatzTourName } from "../lib/systemTours";
 
 type TourWeekConflictCode =
   | "NOT_FOUND"
@@ -113,6 +114,12 @@ async function requireTour(tourId: number) {
     throw new TourWeeksError(404, "NOT_FOUND", "Tour nicht gefunden");
   }
   return tour;
+}
+
+function assertWeekPlanningSupported(tour: { name: string | null | undefined }): void {
+  if (isParkplatzTourName(tour.name)) {
+    throw new TourWeeksError(409, "BUSINESS_CONFLICT", "Die Tour Parkplatz unterstuetzt keine Wochenplanung.");
+  }
 }
 
 function mapWeekToResponse(week: tourWeeksRepository.TourWeekRow) {
@@ -223,6 +230,7 @@ export async function createTourWeek(
   params: { isoYear: number; isoWeek: number },
 ) {
   const tour = await requireTour(tourId);
+  assertWeekPlanningSupported(tour);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const week = await tourWeeksRepository.withTourWeeksTransaction(async (tx) =>
@@ -244,6 +252,7 @@ export async function blockTourWeek(
   params: { isoYear: number; isoWeek: number },
 ) {
   const tour = await requireTour(tourId);
+  assertWeekPlanningSupported(tour);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const blockedTag = await ensurePlanningBlockedTag();
@@ -291,6 +300,7 @@ export async function unblockTourWeek(
   params: { isoYear: number; isoWeek: number },
 ) {
   const tour = await requireTour(tourId);
+  assertWeekPlanningSupported(tour);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const existingWeek = await tourWeeksRepository.getWeekByTourAndWeek(tourId, params.isoYear, params.isoWeek);

@@ -8,6 +8,7 @@ import * as toursRepository from "../repositories/toursRepository";
 import * as userSettingsService from "./userSettingsService";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { hasAppointmentCancellationTag } from "../lib/appointmentCancellation";
+import { isParkplatzTourName } from "../lib/systemTours";
 
 type WeekEmployeeConflictCode =
   | "NOT_FOUND"
@@ -51,10 +52,6 @@ function getBerlinDateString(date: Date): string {
 
 function getBerlinTodayDateString(): string {
   return getBerlinDateString(new Date());
-}
-
-function normalizeTourName(value: string | null | undefined): string {
-  return (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 }
 
 function parseDateOnly(input: string): Date {
@@ -161,11 +158,15 @@ async function requireTour(tourId: number) {
 
 async function getParkplatzTourId(): Promise<number | null> {
   const tours = await toursRepository.getTours();
-  return tours.find((tour) => normalizeTourName(tour.name) === normalizeTourName("Parkplatz"))?.id ?? null;
+  return tours.find((tour) => isParkplatzTourName(tour.name))?.id ?? null;
+}
+
+function supportsWeekPlanningForTour(tour: { name: string | null | undefined }): boolean {
+  return !isParkplatzTourName(tour.name);
 }
 
 function assertWeekAssignmentTourAllowed(tour: { name: string | null | undefined }): void {
-  if (normalizeTourName(tour.name) === normalizeTourName("Parkplatz")) {
+  if (!supportsWeekPlanningForTour(tour)) {
     throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Die Tour Parkplatz unterstuetzt keine Mitarbeiterplanung.");
   }
 }
@@ -317,6 +318,7 @@ async function buildAppointmentEmployeePreview(
   params: {
     appointmentId?: number;
     tourId: number | null;
+    tourSupportsWeekPlanning?: boolean;
     startDate: string;
     endDate?: string | null;
     startTime?: string | null;
@@ -339,6 +341,16 @@ async function buildAppointmentEmployeePreview(
   const currentEmployeeIds = params.currentEmployees.map((employee) => employee.id);
 
   if (!params.tourId) {
+    return {
+      isoYear: week.isoYear,
+      isoWeek: week.isoWeek,
+      hasWeekPlan: false,
+      currentEmployeeIds,
+      items: buildCurrentOnlyPreviewItems(params.currentEmployees, new Set()),
+    };
+  }
+
+  if (params.tourSupportsWeekPlanning === false) {
     return {
       isoYear: week.isoYear,
       isoWeek: week.isoWeek,
@@ -441,7 +453,10 @@ async function ensureUpcomingWeekSeed(tourId: number): Promise<void> {
 }
 
 export async function listWeekEmployeesByTour(tourId: number) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
+  if (!supportsWeekPlanningForTour(tour)) {
+    return [];
+  }
   await ensureUpcomingWeekSeed(tourId);
   const [weeks, assignments] = await Promise.all([
     tourWeeksRepository.listWeeksByTour(tourId),
@@ -502,7 +517,10 @@ export async function listAvailableWeekEmployees(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
+  if (!supportsWeekPlanningForTour(tour)) {
+    return [];
+  }
   resolveIsoWeekWindow(params.isoYear, params.isoWeek);
 
   const [activeEmployees, assignedEmployeeIds] = await Promise.all([
@@ -817,10 +835,11 @@ export async function previewTourAssignment(
     existingEmployeeIds: number[];
   },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   const currentEmployees = await employeesRepository.getEmployeesByIds(params.existingEmployeeIds);
   return buildAppointmentEmployeePreview({
     tourId,
+    tourSupportsWeekPlanning: supportsWeekPlanningForTour(tour),
     startDate: params.startDate,
     endDate: params.endDate ?? null,
     startTime: params.startTime ?? null,
@@ -850,8 +869,10 @@ export async function previewAppointmentTourChange(
     }
   }
 
+  let nextTourSupportsWeekPlanning = true;
   if (params.newTourId) {
-    await requireTour(params.newTourId);
+    const nextTour = await requireTour(params.newTourId);
+    nextTourSupportsWeekPlanning = supportsWeekPlanningForTour(nextTour);
   }
 
   const currentEmployees = typeof params.currentEmployeeIds !== "undefined"
@@ -864,6 +885,7 @@ export async function previewAppointmentTourChange(
   return buildAppointmentEmployeePreview({
     appointmentId,
     tourId: params.newTourId,
+    tourSupportsWeekPlanning: nextTourSupportsWeekPlanning,
     startDate: params.newStartDate,
     endDate: params.newEndDate ?? null,
     startTime: params.newStartTime ?? null,

@@ -41,6 +41,12 @@ type TourWeekEmployeeMember = {
   fullName: string;
 };
 
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+function isParkplatzTourName(value: string | null | undefined): boolean {
+  return normalizeTourName(value) === normalizeTourName("Parkplatz");
+}
+
 type TourWeekEmployeesWeek = {
   id: number;
   tourId: number;
@@ -99,6 +105,7 @@ export function TourEditForm({
 }: TourEditFormProps) {
   const { toast } = useToast();
   const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
+  const isWeekPlanningSupported = !isCreate && !isParkplatzTourName(tour?.name);
   const nextEditableWeek = useMemo(() => {
     const nextWeek = addWeeks(startOfISOWeek(new Date()), 1);
     const isoYear = getISOWeekYear(nextWeek);
@@ -143,7 +150,7 @@ export function TourEditForm({
 
   const { data: allWeeks = [] } = useQuery<TourWeekEmployeesWeek[]>({
     queryKey: [`/api/tours/${tour?.id}/week-employees`],
-    enabled: !isCreate && tour?.id != null,
+    enabled: !isCreate && tour?.id != null && isWeekPlanningSupported,
     queryFn: async () => {
       const response = await fetch(`/api/tours/${tour?.id}/week-employees`, {
         credentials: "include",
@@ -161,7 +168,7 @@ export function TourEditForm({
       pendingWeekSelection?.isoYear ?? null,
       pendingWeekSelection?.isoWeek ?? null,
     ],
-    enabled: !isCreate && employeePickerOpen && tour?.id != null && pendingWeekSelection != null,
+    enabled: !isCreate && isWeekPlanningSupported && employeePickerOpen && tour?.id != null && pendingWeekSelection != null,
     queryFn: async () => {
       if (!tour?.id || !pendingWeekSelection) return [];
       const params = new URLSearchParams({
@@ -256,7 +263,7 @@ export function TourEditForm({
 
   const title = isCreate ? defaultName : "Tour bearbeiten";
   const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
-  const showWeekInsertAction = !isCreate && activeTab === "wochenplanung";
+  const showWeekInsertAction = !isCreate && activeTab === "wochenplanung" && isWeekPlanningSupported;
   const showDeleteAction = !isCreate && canDelete && tour && onDelete;
   const showFunctionsPanel = showWeekInsertAction || showDeleteAction;
 
@@ -436,7 +443,18 @@ export function TourEditForm({
 
           {!isCreate ? (
             <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
-              <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
+              {!isWeekPlanningSupported ? (
+                <div
+                  className="sub-panel mx-auto w-full max-w-[760px] space-y-3"
+                  data-testid="panel-tour-week-planning-unsupported"
+                >
+                  <h3 className="text-base font-semibold text-slate-900">Keine Wochenplanung für diese Tour</h3>
+                  <p className="text-sm text-slate-600" data-testid="text-tour-week-planning-unsupported">
+                    Die Systemtour Parkplatz unterstützt keine Kalenderwochen-Planung. Mitarbeiter werden hier nicht über die Wochenplanung zugewiesen.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
                 {allWeeks.map((week) => (
                   <ColoredEntityCard
                     key={`${week.isoYear}-${week.isoWeek}`}
@@ -545,7 +563,8 @@ export function TourEditForm({
                     </div>
                   </ColoredEntityCard>
                 ))}
-              </div>
+                </div>
+              )}
             </TabsContent>
           ) : null}
         </Tabs>
