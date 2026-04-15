@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -147,7 +147,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -177,7 +177,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -197,8 +197,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       const code = extractErrorCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Notiz konnte nicht geloescht werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Notiz konnte nicht gelöscht werden",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -281,15 +281,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     onError: (error: Error) => {
       const code = extractErrorCode(error);
       if (code === "VERSION_CONFLICT") {
-        toast({ title: "Speichern nicht moeglich", description: "Kunde wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        toast({ title: "Speichern nicht möglich", description: "Kunde wurde zwischenzeitlich geändert. Bitte neu laden.", variant: "destructive" });
         return;
       }
       if (code === "FORBIDDEN") {
-        toast({ title: "Speichern nicht moeglich", description: "Aenderung des Aktiv-Status ist nur fuer Admin erlaubt.", variant: "destructive" });
+        toast({ title: "Speichern nicht möglich", description: "Änderung des Aktiv-Status ist nur für Admin erlaubt.", variant: "destructive" });
         return;
       }
       if (code === "VALIDATION_ERROR") {
-        toast({ title: "Speichern nicht moeglich", description: "Ungueltige Kundendaten. Bitte neu laden.", variant: "destructive" });
+        toast({ title: "Speichern nicht möglich", description: "Ungültige Kundendaten. Bitte neu laden.", variant: "destructive" });
         return;
       }
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -311,7 +311,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       const code = extractErrorCode(error);
       toast({
         title: code === "FORBIDDEN" ? "Tag kann nicht zugewiesen werden" : "Tag-Zuweisung fehlgeschlagen",
-        description: code === "FORBIDDEN" ? "Keine Berechtigung fuer Tag-Aenderungen." : error.message,
+        description: code === "FORBIDDEN" ? "Keine Berechtigung für Tag-Änderungen." : error.message,
         variant: "destructive",
       });
     },
@@ -330,7 +330,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     onError: (error: Error) => {
       const code = extractErrorCode(error);
       toast({
-        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geaendert" : "Tag konnte nicht entfernt werden",
+        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geändert" : "Tag konnte nicht entfernt werden",
         description: error.message,
         variant: "destructive",
       });
@@ -520,7 +520,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         setDraftCustomerAttachments([]);
       } catch (error) {
         toast({
-          title: "Kunde gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          title: "Kunde gespeichert, Sidebar-Daten konnten nicht vollständig persistiert werden",
           description: error instanceof Error ? error.message : "Unbekannter Fehler",
           variant: "destructive",
         });
@@ -1000,7 +1000,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       data-testid="checkbox-active" 
                     />
                     <Label htmlFor="isActive" className="text-slate-500" data-testid="label-active">
-                      Kunde ist aktiv {isAdmin ? "" : "(nur durch Administrator aenderbar)"}
+                      Kunde ist aktiv {isAdmin ? "" : "(nur durch Administrator änderbar)"}
                     </Label>
                   </div>
                 </div>
@@ -1031,3 +1031,4 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     </Tabs>
   );
 }
+

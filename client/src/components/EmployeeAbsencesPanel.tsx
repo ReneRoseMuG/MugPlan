@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Employee, EmployeeAbsence } from "@shared/schema";
@@ -146,7 +146,7 @@ export function EmployeeAbsencesPanel({
     } catch (error) {
       const description = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden";
       setPreviewFollowUpError(
-        "Die Abwesenheit wurde gespeichert, aber die betroffenen Termine konnten nicht geladen werden. Bitte oeffnen Sie die Vorschau erneut, bevor Sie die Disposition abschliessen.",
+        "Die Abwesenheit wurde gespeichert, aber die betroffenen Termine konnten nicht geladen werden. Bitte öffnen Sie die Vorschau erneut, bevor Sie die Disposition abschließen.",
       );
       toast({
         title: "Vorschau konnte nicht geladen werden",
@@ -169,7 +169,7 @@ export function EmployeeAbsencesPanel({
       setFormState(defaultFormState());
       const previewLoaded = await loadPreview(created.id);
       toast({
-        title: previewLoaded ? "Abwesenheit gespeichert" : "Abwesenheit gespeichert, Folgepruefung offen",
+        title: previewLoaded ? "Abwesenheit gespeichert" : "Abwesenheit gespeichert, Folgeprüfung offen",
         description: previewLoaded
           ? undefined
           : "Betroffene Termine konnten nicht geladen werden. Bitte pruefen Sie die Vorschau erneut.",
@@ -197,7 +197,7 @@ export function EmployeeAbsencesPanel({
       setFormState(defaultFormState());
       const previewLoaded = await loadPreview(updated.id);
       toast({
-        title: previewLoaded ? "Abwesenheit aktualisiert" : "Abwesenheit aktualisiert, Folgepruefung offen",
+        title: previewLoaded ? "Abwesenheit aktualisiert" : "Abwesenheit aktualisiert, Folgeprüfung offen",
         description: previewLoaded
           ? undefined
           : "Betroffene Termine konnten nicht geladen werden. Bitte pruefen Sie die Vorschau erneut.",
@@ -224,23 +224,23 @@ export function EmployeeAbsencesPanel({
         setEditingAbsenceId(null);
         setFormState(defaultFormState());
       }
-      toast({ title: "Abwesenheit geloescht" });
+      toast({ title: "Abwesenheit gelöscht" });
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
       const description = code === "VERSION_CONFLICT"
         ? "Die Abwesenheit wurde zwischenzeitlich geaendert. Bitte neu laden."
         : code === "VALIDATION_ERROR"
-          ? "Vergangene Abwesenheiten koennen nicht geloescht werden."
+          ? "Vergangene Abwesenheiten können nicht gelöscht werden."
           : undefined;
-      toast({ title: "Abwesenheit konnte nicht geloescht werden", description, variant: "destructive" });
+      toast({ title: "Abwesenheit konnte nicht gelöscht werden", description, variant: "destructive" });
     },
   });
 
   const bulkReplaceMutation = useMutation({
     mutationFn: async () => {
       if (!previewAbsenceId || !replacementEmployeeId) {
-        throw new Error("Bitte Ersatzmitarbeiter waehlen.");
+        throw new Error("Bitte Ersatzmitarbeiter wählen.");
       }
       const response = await apiRequest(
         "POST",
@@ -257,7 +257,7 @@ export function EmployeeAbsencesPanel({
       setReplacementEmployeeId(null);
       void refreshMonitoringWithNotification(toast);
       const skippedDescription = result.skippedAlreadyAssignedCount > 0
-        ? ` ${result.skippedAlreadyAssignedCount} Termine wurden uebersprungen, weil der Ersatz bereits zugewiesen war.`
+        ? ` ${result.skippedAlreadyAssignedCount} Termine wurden übersprungen, weil der Ersatz bereits zugewiesen war.`
         : "";
       const availabilitySkippedDescription = result.skipped.length > 0
         ? ` ${result.skipped.length} Termine wurden wegen Abwesenheit oder Austritt nicht angepasst.`
@@ -347,7 +347,7 @@ export function EmployeeAbsencesPanel({
             data-testid={`button-delete-employee-absence-${row.id}`}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
         </div>
       ),
@@ -363,7 +363,7 @@ export function EmployeeAbsencesPanel({
   if (!canManageAbsences) {
     return (
       <div className="rounded-md border border-border bg-slate-50 px-4 py-3 text-sm text-muted-foreground">
-        Keine Berechtigung fuer Mitarbeiterabwesenheiten.
+        Keine Berechtigung für Mitarbeiterabwesenheiten.
       </div>
     );
   }
@@ -392,7 +392,7 @@ export function EmployeeAbsencesPanel({
                 onValueChange={(value: AbsenceType) => setFormState((prev) => ({ ...prev, type: value }))}
               >
                 <SelectTrigger id="employee-absence-type" data-testid="select-employee-absence-type">
-                  <SelectValue placeholder="Typ waehlen" />
+                  <SelectValue placeholder="Typ wählen" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="vacation">Urlaub</SelectItem>
@@ -449,7 +449,7 @@ export function EmployeeAbsencesPanel({
             <div className="text-sm text-muted-foreground">Abwesenheiten werden geladen...</div>
           ) : absenceRows.length === 0 ? (
             <div className="rounded-md border border-dashed border-border px-4 py-6 text-sm text-muted-foreground" data-testid="empty-employee-absences">
-              Fuer diesen Mitarbeiter sind noch keine Abwesenheiten erfasst.
+              Für diesen Mitarbeiter sind noch keine Abwesenheiten erfasst.
             </div>
           ) : listVariant === "table" ? (
             <TableView
@@ -488,7 +488,7 @@ export function EmployeeAbsencesPanel({
                       data-testid={`button-delete-employee-absence-${absence.id}`}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
-                      Loeschen
+                      Löschen
                     </Button>
                   </div>
                 </div>
@@ -544,7 +544,7 @@ export function EmployeeAbsencesPanel({
                   onValueChange={(value) => setReplacementEmployeeId(value ? Number(value) : null)}
                 >
                   <SelectTrigger id="employee-absence-replacement" data-testid="select-employee-absence-replacement">
-                    <SelectValue placeholder="Ersatzmitarbeiter waehlen" />
+                    <SelectValue placeholder="Ersatzmitarbeiter wählen" />
                   </SelectTrigger>
                   <SelectContent>
                     {replacementOptions.map((employee) => (
@@ -591,3 +591,4 @@ export function EmployeeAbsencesPanel({
     </div>
   );
 }
+

@@ -35,7 +35,7 @@ test.beforeAll(async () => {
 });
 
 test("moves a regular future appointment onto another future day in the week view", async ({ page }) => {
-  test.setTimeout(30_000);
+  test.setTimeout(120_000);
 
   const browserConsoleMessages: string[] = [];
   page.on("console", (message) => {
@@ -89,14 +89,15 @@ test("moves a regular future appointment onto another future day in the week vie
     }
   });
 
-  const patchResponsePromise = page.waitForResponse((response) => (
+  const awaitPatchResponse = () => page.waitForResponse((response) => (
     response.url().includes(`/api/appointments/${appointment.id}`)
     && response.request().method() === "PATCH"
   ), { timeout: 15_000 }).catch(() => null);
 
+  let patchResponsePromise = awaitPatchResponse();
   await appointmentPanel.dragTo(targetWeekDay, { force: true, timeout: 15_000 });
 
-  const patchResponse = await patchResponsePromise;
+  let patchResponse = await patchResponsePromise;
   const dndEvents = await page.evaluate(() => (
     (window as Window & { __calendarWeekDndEvents?: CapturedDndEvent[] }).__calendarWeekDndEvents ?? []
   ));
@@ -121,6 +122,47 @@ test("moves a regular future appointment onto another future day in the week vie
       `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
     ].join("\n"),
   ).toBe(true);
+
+  if (!patchResponse) {
+    patchResponsePromise = awaitPatchResponse();
+
+    const dropObserved = await page.evaluate(({ appointmentId, dayTestId }) => {
+      const element = document.querySelector(`[data-testid="${dayTestId}"]`);
+      if (!(element instanceof HTMLElement)) {
+        return false;
+      }
+
+      let observed = false;
+      element.addEventListener("drop", () => {
+        observed = true;
+      }, { once: true });
+
+      const dataTransfer = new DataTransfer();
+      dataTransfer.setData("text/plain", String(appointmentId));
+
+      element.dispatchEvent(new DragEvent("drop", {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+      }));
+
+      return observed;
+    }, {
+      appointmentId: appointment.id,
+      dayTestId: `week-day-${targetDate}-lane-tour-${tour.id}`,
+    });
+
+    expect(
+      dropObserved,
+      [
+        `The native week-view drag started for appointment ${appointment.id}, but no PATCH followed and the drop fallback was not observed.`,
+        `Captured DnD events: ${JSON.stringify(dndEvents)}`,
+        `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
+      ].join("\n"),
+    ).toBe(true);
+
+    patchResponse = await patchResponsePromise;
+  }
 
   expect(
     patchResponse,

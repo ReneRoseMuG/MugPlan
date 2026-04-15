@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { CheckSquare, LayoutGrid, Mail, Phone, Users } from "lucide-react";
 import type { Employee, Team, Tour } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,7 @@ export function EmployeePickerDialogList({
   tours: _tours,
   selectedEmployeeId = null,
   isLoading = false,
-  title = "Mitarbeiter auswaehlen",
+  title = "Mitarbeiter auswählen",
   allowBulkSelection = false,
   viewModeSettingKey,
   onSelectEmployee,
@@ -162,7 +162,7 @@ export function EmployeePickerDialogList({
             disabled={selectedEmployeeIds.length === 0}
             data-testid="button-confirm-employee-picker-selection"
           >
-            Mitarbeiter uebernehmen{selectedEmployeeIds.length > 0 ? ` (${selectedEmployeeIds.length})` : ""}
+            Mitarbeiter übernehmen{selectedEmployeeIds.length > 0 ? ` (${selectedEmployeeIds.length})` : ""}
           </Button>
         </div>
       ) : undefined}
@@ -259,3 +259,4 @@ export function EmployeePickerDialogList({
     />
   );
 }
+

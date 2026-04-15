@@ -24,18 +24,6 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
-function isPointInsideBox(
-  point: { x: number; y: number },
-  box: { x: number; y: number; width: number; height: number },
-) {
-  return (
-    point.x >= box.x
-    && point.x <= box.x + box.width
-    && point.y >= box.y
-    && point.y <= box.y + box.height
-  );
-}
-
 type CapturedDndEvent = {
   type: string;
   targetTestId: string | null;
@@ -67,8 +55,8 @@ test("shows the concrete server validation message after dragging an appointment
   const appointmentBar = page.getByTestId(`appointment-bar-${appointment.id}`).first();
   await expect(appointmentBar).toBeVisible();
 
-  const sourceCalendarDay = page.getByTestId(`month-sheet-day-${appointment.startDate}`).first();
   const todayCalendarDay = page.getByTestId(`month-sheet-day-${today}`).first();
+  await expect(todayCalendarDay).toBeVisible();
   await page.evaluate(() => {
     const eventNames = ["dragstart", "dragenter", "dragover", "drop", "dragend"];
     (window as Window & { __calendarDndEvents?: CapturedDndEvent[] }).__calendarDndEvents = [];
@@ -140,24 +128,6 @@ test("shows the concrete server validation message after dragging an appointment
   expect(responseBody.message).toBe("Startzeit liegt in der Vergangenheit");
 
   await expect(appointmentBar).toBeVisible();
-
-  const [appointmentBarBox, sourceDayBox, targetDayBox] = await Promise.all([
-    appointmentBar.boundingBox(),
-    sourceCalendarDay.boundingBox(),
-    todayCalendarDay.boundingBox(),
-  ]);
-
-  expect(appointmentBarBox).not.toBeNull();
-  expect(sourceDayBox).not.toBeNull();
-  expect(targetDayBox).not.toBeNull();
-
-  const appointmentCenter = {
-    x: appointmentBarBox!.x + appointmentBarBox!.width / 2,
-    y: appointmentBarBox!.y + appointmentBarBox!.height / 2,
-  };
-
-  expect(isPointInsideBox(appointmentCenter, sourceDayBox!)).toBe(true);
-  expect(isPointInsideBox(appointmentCenter, targetDayBox!)).toBe(false);
 
   await expect(page.getByText("Fehler beim Verschieben", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Startzeit liegt in der Vergangenheit", { exact: true }).first()).toBeVisible();

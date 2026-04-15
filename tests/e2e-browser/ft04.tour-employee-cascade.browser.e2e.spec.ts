@@ -156,7 +156,14 @@ test("shows overlap conflicts in the week preview and only applies the selectabl
   await page.getByTestId("toggle-tour-week-picker").click();
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
-  await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(
+  const weekPickerInput = page.getByTestId("input-tour-week");
+  const insertedWeekCard = page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`);
+  await expect(insertedWeekCard).toBeVisible();
+  if (await weekPickerInput.isVisible().catch(() => false)) {
+    await page.getByRole("button", { name: "Zurück" }).click();
+    await expect(weekPickerInput).not.toBeVisible();
+  }
+  await insertedWeekCard.getByTestId(
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
   await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
@@ -165,7 +172,7 @@ test("shows overlap conflicts in the week preview and only applies the selectabl
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Mitarbeiter in Wochenplanung aufnehmen");
   await expect(dialog.getByTestId(`tour-employee-cascade-status-${conflictAppointment.id}`)).toContainText(
-    "Ueberschneidung mit bestehendem Termin",
+    "Überschneidung mit bestehendem Termin",
   );
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).not.toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).toBeDisabled();

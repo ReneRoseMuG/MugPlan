@@ -674,7 +674,7 @@ export default function Home({ onLogout }: HomeProps) {
                   onClick={prevYear}
                   className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
                   data-testid="button-prev"
-                  aria-label="Zurueck"
+                  aria-label="Zurück"
                 >
                   {"<"}
                 </button>
@@ -783,3 +783,4 @@ export default function Home({ onLogout }: HomeProps) {
     </div>
   );
 }
+

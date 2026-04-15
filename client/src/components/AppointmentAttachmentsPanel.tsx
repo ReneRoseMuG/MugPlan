@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+﻿import { useEffect, useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
 import { AttachmentDeleteAction } from "@/components/AttachmentDeleteAction";
@@ -190,7 +190,7 @@ export function AppointmentAttachmentsPanel({
           title: "Termindokumente",
           items: resolvedAppointmentAttachments,
           isLoading: resolvedAppointmentLoading,
-          emptyText: "Keine Terminanhaenge vorhanden",
+          emptyText: "Keine Terminhänge vorhanden",
           canUpload: canUploadAppointmentAttachment,
           isUploading: uploadMutation.isPending,
           onUpload: handleAppointmentUpload,
@@ -211,3 +211,4 @@ export function AppointmentAttachmentsPanel({
     />
   );
 }
+

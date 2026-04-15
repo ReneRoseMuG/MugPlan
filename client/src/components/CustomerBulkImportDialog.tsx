@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,7 +123,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "inactive" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects?filter=all&scope=all"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      toast({ title: "Neue Kunden uebernommen" });
+      toast({ title: "Neue Kunden übernommen" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Uebernahme fehlgeschlagen");
     } finally {
@@ -185,7 +185,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
             multiple
             onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
           />
-          <div className="text-xs text-muted-foreground">Ausgewaehlte Dateien: {selectedFileCount}</div>
+          <div className="text-xs text-muted-foreground">Ausgewählte Dateien: {selectedFileCount}</div>
           {result ? (
             <div className="text-xs text-muted-foreground">
               Limits: max {result.limits.maxFiles} Dateien, max {(result.limits.maxFileSizeBytes / (1024 * 1024)).toFixed(0)} MB pro Datei
@@ -213,7 +213,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
                 </label>
               ))}
               <Button onClick={() => void applyNew()} disabled={selectedNewIds.length === 0 || applyingNew}>
-                {applyingNew ? "Uebernehme..." : "Neue Kunden uebernehmen"}
+                {applyingNew ? "Übernehme..." : "Neue Kunden übernehmen"}
               </Button>
             </section>
 
@@ -253,3 +253,4 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
     </Dialog>
   );
 }
+

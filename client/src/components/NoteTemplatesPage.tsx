@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,7 +59,7 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
             }}
             data-testid={`button-delete-template-${template.id}`}
           >
-            Loeschen
+            Löschen
           </Button>
         </div>
       </div>
@@ -131,8 +131,8 @@ export function NoteTemplatesPage() {
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
       }
@@ -150,8 +150,8 @@ export function NoteTemplatesPage() {
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Loeschen nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Löschen nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
       }
@@ -214,7 +214,7 @@ export function NoteTemplatesPage() {
   };
 
   const handleDelete = (template: NoteTemplate) => {
-    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich loeschen?`)) {
+    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
       deleteMutation.mutate({ id: template.id, version: template.version });
     }
   };
@@ -333,10 +333,12 @@ export function NoteTemplatesPage() {
             data-testid="checkbox-template-active"
           />
           <Label htmlFor="template-active" className="text-muted-foreground">
-            Aktiv <span className="text-xs">(nur durch Administrator aenderbar)</span>
+            Aktiv <span className="text-xs">(nur durch Administrator änderbar)</span>
           </Label>
         </div>
       </ColorSelectEntityEditDialog>
     </>
   );
 }
+
+

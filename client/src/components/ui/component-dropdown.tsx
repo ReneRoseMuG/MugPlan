@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { CollectionDropDown } from "@/components/ui/collection-drop-down";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -67,7 +67,7 @@ function ComponentDropdownPanel({
       label={targetCategory}
       value={draftSelection}
       options={options}
-      placeholder={`${targetCategory} auswaehlen`}
+      placeholder={`${targetCategory} auswählen`}
       onSelect={setDraftSelection}
       showAdopt
       onAdopt={() => {
@@ -118,10 +118,11 @@ export function ComponentDropdown({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title ?? `${targetCategory} auswaehlen`}</DialogTitle>
+          <DialogTitle>{title ?? `${targetCategory} auswählen`}</DialogTitle>
         </DialogHeader>
         {panel}
       </DialogContent>
     </Dialog>
   );
 }
+

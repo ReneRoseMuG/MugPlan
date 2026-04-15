@@ -90,6 +90,8 @@ describe("PKG-03 Authorization & Roles: resolveUserRole middleware", () => {
       userId: 7,
       roleCode: "DISPATCHER",
       isActive: true,
+      fullName: "Max Mustermann",
+      username: "mmustermann",
     } as any);
 
     const req = { userId: 7 } as any;
@@ -97,10 +99,11 @@ describe("PKG-03 Authorization & Roles: resolveUserRole middleware", () => {
 
     await resolveUserRole(req, {} as any, next);
 
-    expect(req.userContext).toEqual({
+    expect(req.userContext).toMatchObject({
       userId: 7,
       roleCode: "DISPATCHER",
       roleKey: "DISPONENT",
+      displayName: "Max Mustermann",
     });
     expect(next).toHaveBeenCalledWith();
   });

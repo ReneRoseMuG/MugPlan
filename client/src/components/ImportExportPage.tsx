@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ type ImportResponse = {
 function statusLabel(status: ImportRowStatus): string {
   if (status === "IMPORTED") return "Importiert";
   if (status === "DUPLICATE") return "Duplikat";
-  if (status === "INVALID") return "Ungueltig";
+  if (status === "INVALID") return "Ungültig";
   return "Fehler";
 }
 
@@ -133,7 +133,7 @@ export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProp
             <div>Gesamt: {result.summary.totalRows}</div>
             <div>Importiert: {result.summary.importedRows}</div>
             <div>Duplikate: {result.summary.duplicateRows}</div>
-            <div>Ungueltig: {result.summary.invalidRows}</div>
+            <div>Ungültig: {result.summary.invalidRows}</div>
             <div>Fehler: {result.summary.errorRows}</div>
           </div>
           <div className="overflow-auto border border-border rounded">
@@ -165,3 +165,4 @@ export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProp
     </div>
   );
 }
+

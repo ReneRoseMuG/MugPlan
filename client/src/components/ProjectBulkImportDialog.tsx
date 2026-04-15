@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,7 +141,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
         throw new Error(payload?.message ?? "Uebernahme fehlgeschlagen");
       }
       await invalidateQueries();
-      toast({ title: "Neue Projekte uebernommen" });
+      toast({ title: "Neue Projekte übernommen" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Uebernahme fehlgeschlagen");
     } finally {
@@ -167,12 +167,12 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.message ?? "Sonderfall konnte nicht uebernommen werden");
+        throw new Error(payload?.message ?? "Sonderfall konnte nicht übernommen werden");
       }
       await invalidateQueries();
-      toast({ title: "Sonderfall uebernommen" });
+      toast({ title: "Sonderfall übernommen" });
     } catch (applyError) {
-      setError(applyError instanceof Error ? applyError.message : "Sonderfall konnte nicht uebernommen werden");
+      setError(applyError instanceof Error ? applyError.message : "Sonderfall konnte nicht übernommen werden");
     } finally {
       setApplyingSpecialId(null);
     }
@@ -200,7 +200,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
             multiple
             onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
           />
-          <div className="text-xs text-muted-foreground">Ausgewaehlte Dateien: {selectedFileCount}</div>
+          <div className="text-xs text-muted-foreground">Ausgewählte Dateien: {selectedFileCount}</div>
           {result ? (
             <div className="text-xs text-muted-foreground">
               Limits: max {result.limits.maxFiles} Dateien, max {(result.limits.maxFileSizeBytes / (1024 * 1024)).toFixed(0)} MB pro Datei
@@ -228,7 +228,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
                 </label>
               ))}
               <Button onClick={() => void applyNew()} disabled={selectedNewIds.length === 0 || applyingNew}>
-                {applyingNew ? "Uebernehme..." : "Neue Projekte uebernehmen"}
+                {applyingNew ? "Übernehme..." : "Neue Projekte übernehmen"}
               </Button>
             </section>
 
@@ -259,7 +259,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
                       onClick={() => void applySpecialCase(row.id)}
                       disabled={applyingSpecialId !== null}
                     >
-                      {applyingSpecialId === row.id ? "Uebernehme..." : "Sonderfall uebernehmen"}
+                      {applyingSpecialId === row.id ? "Übernehme..." : "Sonderfall übernehmen"}
                     </Button>
                   </div>
                 ))
@@ -285,3 +285,5 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
     </Dialog>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+﻿import { useRef } from "react";
 import type { ReactNode } from "react";
 import { Paperclip } from "lucide-react";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
@@ -35,7 +35,7 @@ export function SplitAttachmentsPanel({ title, helpKey, sections, className }: S
     ? {
         onClick: () => fileInputRef.current?.click(),
         disabled: uploadableSection.isUploading === true,
-        ariaLabel: "Dokument hinzufuegen",
+        ariaLabel: "Dokument hinzufügen",
         testId: "button-add-document-header",
       }
     : undefined;
@@ -99,3 +99,4 @@ export function SplitAttachmentsPanel({ title, helpKey, sections, className }: S
     </SidebarChildPanel>
   );
 }
+

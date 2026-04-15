@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HelpCircle } from "lucide-react";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
@@ -93,8 +93,8 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -114,22 +114,22 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
-      toast({ title: "Hilfetext geloescht" });
+      toast({ title: "Hilfetext gelöscht" });
       onSaved?.();
     },
     onError: (error) => {
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Loeschen nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Löschen nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       toast({
         title: "Fehler",
-        description: error instanceof Error ? error.message : "Hilfetext konnte nicht geloescht werden.",
+        description: error instanceof Error ? error.message : "Hilfetext konnte nicht gelöscht werden.",
         variant: "destructive",
       });
     },
@@ -144,7 +144,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
   const handleSubmit = async () => {
     if (!helpKey.trim() || !title.trim()) {
       toast({
-        title: "Bitte Pflichtfelder ausfuellen",
+        title: "Bitte Pflichtfelder ausfüllen",
         variant: "destructive",
       });
       throw new Error("VALIDATION_ERROR");
@@ -187,13 +187,13 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
           variant="destructive"
           onClick={() => {
             if (!helpText) return;
-            if (!window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich loeschen?`)) return;
+            if (!window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich löschen?`)) return;
             deleteMutation.mutate({ id: helpText.id, version: helpText.version });
           }}
           disabled={isBusy}
           data-testid="button-delete-helptext"
         >
-          Hilfetext loeschen
+          Hilfetext löschen
         </Button>
       ) : undefined}
     >
@@ -247,3 +247,5 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     </EntityFormLayout>
   );
 }
+
+

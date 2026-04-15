@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+﻿import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
@@ -754,8 +754,8 @@ export function ProjectForm({
       const code = extractApiCode(error);
       if (code === "INACTIVE_ENTITY_ASSIGNMENT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Der ausgewaehlte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
+          title: "Speichern nicht möglich",
+          description: "Der ausgewählte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
           variant: "destructive",
         });
         return;
@@ -778,16 +778,16 @@ export function ProjectForm({
       const code = extractApiCode(error);
       if (code === "INACTIVE_ENTITY_ASSIGNMENT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Der ausgewaehlte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
+          title: "Speichern nicht möglich",
+          description: "Der ausgewählte Kunde ist inaktiv. Bitte einen aktiven Kunden zuordnen.",
           variant: "destructive",
         });
         return;
       }
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -800,8 +800,8 @@ export function ProjectForm({
     const tag = availableTags.find((entry) => entry.id === tagId);
     if (!tag) {
       toast({
-        title: "Tag konnte nicht hinzugefuegt werden",
-        description: "Der ausgewaehlte Tag ist nicht verfuegbar.",
+        title: "Tag konnte nicht hinzugefügt werden",
+        description: "Der ausgewählte Tag ist nicht verfügbar.",
         variant: "destructive",
       });
       return;
@@ -931,7 +931,7 @@ export function ProjectForm({
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -953,7 +953,7 @@ export function ProjectForm({
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
       }
@@ -971,8 +971,8 @@ export function ProjectForm({
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Notiz konnte nicht geloescht werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Notiz konnte nicht gelöscht werden",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
       }
@@ -1026,7 +1026,7 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void invalidateProjectQueries();
-      toast({ title: "Projekt geloescht" });
+      toast({ title: "Projekt gelöscht" });
       if (onSaved && onSaved !== onCancel) {
         onSaved();
         return;
@@ -1037,22 +1037,22 @@ export function ProjectForm({
       const code = extractApiCode(error);
       if (code === "BUSINESS_CONFLICT") {
         toast({
-          title: "Projekt kann nicht geloescht werden",
-          description: "Projekt kann nicht geloescht werden, weil Termine vorhanden sind.",
+          title: "Projekt kann nicht gelöscht werden",
+          description: "Projekt kann nicht gelöscht werden, weil Termine vorhanden sind.",
           variant: "destructive",
         });
         return;
       }
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Projekt wurde zwischenzeitlich geaendert",
+          title: "Projekt wurde zwischenzeitlich geändert",
           description: "Bitte neu laden und erneut versuchen.",
           variant: "destructive",
         });
         return;
       }
       toast({
-        title: "Projekt konnte nicht geloescht werden",
+        title: "Projekt konnte nicht gelöscht werden",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -1070,7 +1070,7 @@ export function ProjectForm({
     });
     const duplicatePayload = await duplicateResponse.json().catch(() => null);
     if (!duplicateResponse.ok) {
-      throw new Error(duplicatePayload?.message ?? "Duplikatpruefung fehlgeschlagen");
+      throw new Error(duplicatePayload?.message ?? "Duplikatprüfung fehlgeschlagen");
     }
     return duplicatePayload as {
       duplicate: boolean;
@@ -1120,10 +1120,10 @@ export function ProjectForm({
         const duplicateInfo = await checkAttachmentDuplicateByOriginalName(attachment.file);
         if (duplicateInfo.duplicate) {
           const confirmed = window.confirm(
-            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknuepfen?`,
+            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknüpfen?`,
           );
           if (!confirmed) {
-            toast({ title: "Dokumentverknuepfung uebersprungen" });
+            toast({ title: "Dokumentverknüpfung übersprungen" });
             continue;
           }
         }
@@ -1350,7 +1350,7 @@ export function ProjectForm({
         setDraftProjectAttachments([]);
       } catch (error) {
         toast({
-          title: "Projekt gespeichert, Sidebar-Daten konnten nicht vollstaendig persistiert werden",
+          title: "Projekt gespeichert, Sidebar-Daten konnten nicht vollständig persistiert werden",
           description: error instanceof Error ? error.message : "Unbekannter Fehler",
           variant: "destructive",
         });
@@ -1825,7 +1825,7 @@ export function ProjectForm({
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-          <AlertDialogTitle>Projekt wirklich loeschen?</AlertDialogTitle>
+          <AlertDialogTitle>Projekt wirklich löschen?</AlertDialogTitle>
           <AlertDialogDescription>
             Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
           </AlertDialogDescription>
@@ -1862,3 +1862,4 @@ function extractApiCode(error: unknown): string | null {
     return null;
   }
 }
+

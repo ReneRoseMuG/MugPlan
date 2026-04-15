@@ -26,6 +26,7 @@ Ziel: Vollstaendiges Inventar aller Pfade mit destruktivem Potenzial und Nachwei
 | `script/seed-roles.ts` | script | seed writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |
 | `script/verify-demo-seed.ts` | script | seed + purge writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |
 | `script/migrate-project-names-with-customer-number.ts` | script | migration writes | via `server/db.ts` | zentraler DB-Factory-Guard in `db.ts` | secured |
+| `script/run-migrations.ts` | manuell / `npm run db:migrate:*` | schema migration writes, inklusive optionalem `DROP TABLE` | `mysql.createConnection(...)` via `initializeMigrationRuntime()` | Runtime-Zielvalidierung ueber `initializeMigrationRuntime()`; kein zentrales Destructive-Guard-Gate wie bei Reset-Pfaden | partial |
 | `server/services/dumpService.ts` | API `POST /api/admin/dumps/import` | TRUNCATE TABLE aller Dump-Tabellen + Insert | `pool.getConnection()` aus `server/db.ts` (startupvalidiert) | Admin-Session-Guard + `NODE_ENV !== "production"`-Guard; DB-Startup-Guard aus `db.ts` validiert Ziel-DB beim Serverstart | partial |
 
 ## Verbindliche Regeln fuer alle Eintraege

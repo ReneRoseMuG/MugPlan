@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@shared/schema";
 import { CollectionDropDown } from "@/components/ui/collection-drop-down";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -56,7 +56,7 @@ function ProductSelectionDropdownPanel({
       label={label ?? "Sauna"}
       value={draftSelection}
       options={options}
-      placeholder={placeholder ?? "Sauna auswaehlen"}
+      placeholder={placeholder ?? "Sauna auswählen"}
       onSelect={setDraftSelection}
       showAdopt
       onAdopt={() => {
@@ -105,10 +105,11 @@ export function ProductSelectionDropdown({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title ?? `${label ?? "Sauna"} auswaehlen`}</DialogTitle>
+          <DialogTitle>{title ?? `${label ?? "Sauna"} auswählen`}</DialogTitle>
         </DialogHeader>
         {panel}
       </DialogContent>
     </Dialog>
   );
 }
+

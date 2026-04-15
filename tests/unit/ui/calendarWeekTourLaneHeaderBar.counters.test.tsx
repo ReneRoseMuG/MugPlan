@@ -76,7 +76,7 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
     );
 
     expect(html.indexOf('data-testid="menu-marker"')).toBeLessThan(html.indexOf('data-testid="notes-icon-marker"'));
-    expect(html).toContain("grid-cols-[2.25rem_minmax(0,1fr)]");
-    expect(html).not.toContain("grid-cols-[2.25rem_2.4rem_minmax(0,1fr)]");
+    expect(html).toContain("grid-cols-[1.75rem_minmax(0,1fr)]");
+    expect(html).toContain("grid-cols-[2.4rem_minmax(0,1fr)]");
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -255,7 +255,7 @@ export function CalendarWorkspace({
               className="px-3 py-1.5 rounded-md border border-border text-sm font-medium hover:bg-accent"
               data-testid="button-calendar-context-back"
             >
-              Zurueck
+              Zurück
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -292,7 +292,7 @@ export function CalendarWorkspace({
           onClick={prev}
           className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
           data-testid="button-prev"
-          aria-label="Zurueck"
+          aria-label="Zurück"
         >
           {"<"}
         </button>
@@ -346,3 +346,4 @@ export function CalendarWorkspace({
     </div>
   );
 }
+

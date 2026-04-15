@@ -40,7 +40,7 @@ function extractApiCode(error: unknown): string | null {
 function resolveComponentDeleteError(error: unknown): string {
   const payload = extractApiPayload(error);
   if (payload?.code !== "BUSINESS_CONFLICT") {
-    return "Komponente konnte nicht geloescht werden.";
+    return "Komponente konnte nicht gelöscht werden.";
   }
 
   const projectOrderItemCount = typeof payload.projectOrderItemCount === "number"
@@ -56,7 +56,7 @@ function resolveComponentDeleteError(error: unknown): string {
 function resolveCategoryDeleteError(error: unknown, entityLabel: "Produktkategorie" | "Komponentenkategorie"): string {
   const payload = extractApiPayload(error);
   if (payload?.code !== "BUSINESS_CONFLICT") {
-    return `${entityLabel} konnte nicht geloescht werden.`;
+    return `${entityLabel} konnte nicht gelöscht werden.`;
   }
 
   if (entityLabel === "Produktkategorie") {
@@ -79,11 +79,11 @@ function resolveCategoryDeleteError(error: unknown, entityLabel: "Produktkategor
 }
 
 function resolveCategoryImportError(code: string | null, entityLabel: "Produkte" | "Komponenten"): { title: string; description?: string } {
-  if (code === "INVALID_CSV_HEADER") return { title: `CSV-Header fuer ${entityLabel.toLocaleLowerCase("de")} ungueltig`, description: 'Erwartet wird mindestens eine Spalte "Name". Optional sind "Beschreibung" und "IsActive".' };
-  if (code === "INVALID_CSV_FORMAT") return { title: `CSV-Datei fuer ${entityLabel.toLocaleLowerCase("de")} ist formal ungueltig`, description: "Bitte Trennzeichen, Quotes und Dateiformat pruefen." };
-  if (code === "INVALID_CSV_CONTENT") return { title: `CSV-Datei fuer ${entityLabel.toLocaleLowerCase("de")} enthaelt keine gueltigen Daten`, description: "Nach dem Header muss mindestens eine verwertbare Zeile mit Name vorhanden sein." };
+  if (code === "INVALID_CSV_HEADER") return { title: `CSV-Header für ${entityLabel.toLocaleLowerCase("de")} ungueltig`, description: 'Erwartet wird mindestens eine Spalte "Name". Optional sind "Beschreibung" und "IsActive".' };
+  if (code === "INVALID_CSV_FORMAT") return { title: `CSV-Datei für ${entityLabel.toLocaleLowerCase("de")} ist formal ungueltig`, description: "Bitte Trennzeichen, Quotes und Dateiformat prüfen." };
+  if (code === "INVALID_CSV_CONTENT") return { title: `CSV-Datei für ${entityLabel.toLocaleLowerCase("de")} enthält keine gültigen Daten`, description: "Nach dem Header muss mindestens eine verwertbare Zeile mit Name vorhanden sein." };
   if (code === "NOT_FOUND") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Die gewaehlte Kategorie wurde nicht gefunden." };
-  if (code === "FORBIDDEN") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Der Import ist nur fuer Admins erlaubt." };
+  if (code === "FORBIDDEN") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Der Import ist nur für Admins erlaubt." };
   return { title: `${entityLabel}import fehlgeschlagen`, description: code ? `Servercode: ${code}` : "Die genaue Ursache konnte nicht aufgeloest werden." };
 }
 
@@ -229,7 +229,7 @@ export function ProductManagementPage() {
   const deleteSelectedComponentWithConflictDetails = async (component: Component): Promise<void> => {
     try {
       await deleteComponentMutation.mutateAsync({ id: component.id, version: component.version });
-      toast({ title: "Komponente geloescht" });
+      toast({ title: "Komponente gelöscht" });
     } catch (error) {
       throw new Error(resolveComponentDeleteError(error));
     }
@@ -308,12 +308,12 @@ export function ProductManagementPage() {
     }
   }
   async function deleteSelectedProduct(): Promise<void> {
-    if (!selectedProduct || !window.confirm(`Produkt "${selectedProduct.name}" loeschen?`)) return;
+    if (!selectedProduct || !window.confirm(`Produkt "${selectedProduct.name}" löschen?`)) return;
     try {
       await deleteProductMutation.mutateAsync({ id: selectedProduct.id, version: selectedProduct.version });
-      toast({ title: "Produkt geloescht" });
+      toast({ title: "Produkt gelöscht" });
     } catch (error) {
-      toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht geloescht werden", variant: "destructive" });
+      toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht gelöscht werden", variant: "destructive" });
     }
   }
   async function deleteAllProductsInCategory(categoryId: string): Promise<void> {
@@ -469,7 +469,7 @@ export function ProductManagementPage() {
               }
               if (!newProductCategoryName.trim()) return;
               categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Produktkategorie"), variant: "destructive" }) }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
+            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Produktkategorie"), variant: "destructive" }) }); }, (row) => { setPendingProductCategoryImportId(row.id); productCategoryImportInputRef.current?.click(); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
             {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
               if (editComponentCategory) {
                 if (!editComponentCategory.name.trim()) return;
@@ -478,11 +478,12 @@ export function ProductManagementPage() {
               }
               if (!newComponentCategoryName.trim()) return;
               categoryMutations.createComponent.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" loeschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Komponentenkategorie"), variant: "destructive" }) }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
+            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" löschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Komponentenkategorie"), variant: "destructive" }) }); }, (row) => { setPendingComponentCategoryImportId(row.id); componentCategoryImportInputRef.current?.click(); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
           </div>
         </div>
       )}
     />
   );
 }
+
 

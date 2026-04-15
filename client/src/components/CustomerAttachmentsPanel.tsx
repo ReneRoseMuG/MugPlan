@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CustomerAttachment } from "@shared/schema";
 import { SplitAttachmentsPanel } from "@/components/SplitAttachmentsPanel";
@@ -161,7 +161,7 @@ export function CustomerAttachmentsPanel({
           title: "Kundendokumente",
           items,
           isLoading,
-          emptyText: isEditing ? "Keine Dokumente vorhanden" : "Keine Kundendokumente ausgewaehlt",
+          emptyText: isEditing ? "Keine Dokumente vorhanden" : "Keine Kundendokumente ausgewählt",
           canUpload: canUploadCustomerAttachment,
           isUploading: uploadMutation.isPending,
           onUpload: handleCustomerUpload,
@@ -202,3 +202,4 @@ export function CustomerAttachmentsPanel({
     />
   );
 }
+

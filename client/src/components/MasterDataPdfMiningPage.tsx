@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Component, ComponentCategory, Product, ProductCategory } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,12 @@ async function fetchJson<T>(url: string): Promise<T> {
 async function parseJsonResponse<T>(response: Response, context: string): Promise<T> {
   const text = await response.text();
   if (!text.trim()) {
-    throw new Error(`Leere Antwort fuer ${context}`);
+    throw new Error(`Leere Antwort für ${context}`);
   }
   try {
     return JSON.parse(text) as T;
   } catch {
-    throw new Error(`Ungueltige Serverantwort fuer ${context}`);
+    throw new Error(`Ungültige Serverantwort für ${context}`);
   }
 }
 
@@ -587,3 +587,5 @@ export function MasterDataPdfMiningPage() {
     </div>
   );
 }
+
+

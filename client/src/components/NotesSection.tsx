@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -88,7 +88,7 @@ function NoteCard({
             }}
             className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${iconButtonClassName}`}
             data-testid={`button-delete-note-${note.id}`}
-            title="Notiz loeschen"
+            title="Notiz löschen"
           >
             <X className="h-4 w-4" />
           </button>
@@ -209,7 +209,7 @@ export function NotesSection({
 
   const handleDelete = (note: Note) => {
     if (!onDelete) return;
-    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich loeschen?`)) {
+    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich löschen?`)) {
       onDelete(note.id);
     }
   };
@@ -281,7 +281,7 @@ export function NotesSection({
                 </div>
                 <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
                   <SelectTrigger data-testid="select-note-template" disabled={templatesLoading}>
-                    <SelectValue placeholder={templatesLoading ? "Vorlagen laden..." : "Vorlage auswaehlen (optional)"} />
+                    <SelectValue placeholder={templatesLoading ? "Vorlagen laden..." : "Vorlage auswählen (optional)"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Keine Vorlage</SelectItem>
@@ -356,3 +356,4 @@ export function NotesSection({
     </div>
   );
 }
+

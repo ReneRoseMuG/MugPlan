@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -62,7 +62,7 @@ export function HelpIcon({
           variant="ghost"
           className={cn(buttonSizeClass[size], className)}
           data-testid={`button-help-${helpKey}`}
-          aria-label={`Hilfe fuer ${helpKey}`}
+          aria-label={`Hilfe für ${helpKey}`}
         >
           <CircleHelp className={iconSizeClass[size]} />
         </Button>
@@ -80,3 +80,4 @@ export function HelpIcon({
     </Popover>
   );
 }
+

@@ -1,4 +1,4 @@
-import { SearchFilterInput } from "@/components/ui/search-filter-input";
+﻿import { SearchFilterInput } from "@/components/ui/search-filter-input";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 
 interface HelpTextsFilterPanelProps {
@@ -14,7 +14,7 @@ export function HelpTextsFilterPanel({
     <FilterPanel title="Hilfetextfilter" layout="row">
       <SearchFilterInput
         id="helptexts-search"
-        label="Schluessel oder Titel"
+        label="Schlüssel oder Titel"
         value={searchQuery}
         onChange={onSearchQueryChange}
         onClear={() => onSearchQueryChange("")}
@@ -23,3 +23,4 @@ export function HelpTextsFilterPanel({
     </FilterPanel>
   );
 }
+

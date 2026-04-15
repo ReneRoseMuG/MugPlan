@@ -660,7 +660,7 @@ export function AppointmentForm({
         );
       }
       if (parsed?.code === "VERSION_CONFLICT") {
-        throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
+        throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
       }
 
       throw buildApiError(parsed?.message ?? (response.statusText || "Stornieren fehlgeschlagen"), response.status, parsed?.code);
@@ -699,7 +699,7 @@ export function AppointmentForm({
       if (err.code === "VERSION_CONFLICT") {
         toast({
           title: "Stornieren nicht möglich",
-          description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Termin wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -727,16 +727,16 @@ export function AppointmentForm({
         throw buildApiError("Termin ist bereits geparkt.", response.status, "ALREADY_PARKED");
       }
       if (parsed?.code === "VERSION_CONFLICT") {
-        throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
+        throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
       }
       if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
         throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
       }
       if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
-        throw buildApiError("Stornierte Termine koennen nicht geparkt werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+        throw buildApiError("Stornierte Termine können nicht geparkt werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
       }
       if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        throw buildApiError("Planung blockierte Termine koennen nicht geparkt werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
+        throw buildApiError("Planung blockierte Termine können nicht geparkt werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
       }
       throw buildApiError(parsed?.message ?? (response.statusText || "Parken fehlgeschlagen"), response.status, parsed?.code);
     },
@@ -752,26 +752,26 @@ export function AppointmentForm({
     onError: (error) => {
       const err = error as AppointmentApiError;
       if (err.code === "ALREADY_PARKED") {
-        toast({ title: "Parken nicht moeglich", description: "Termin ist bereits geparkt.", variant: "destructive" });
+        toast({ title: "Parken nicht möglich", description: "Termin ist bereits geparkt.", variant: "destructive" });
         return;
       }
       if (err.code === "VERSION_CONFLICT") {
-        toast({ title: "Parken nicht moeglich", description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.", variant: "destructive" });
+        toast({ title: "Parken nicht möglich", description: "Termin wurde zwischenzeitlich geändert. Bitte neu laden.", variant: "destructive" });
         return;
       }
       if (err.code === "PAST_APPOINTMENT_READONLY") {
-        toast({ title: "Parken nicht moeglich", description: "Termin ist gesperrt.", variant: "destructive" });
+        toast({ title: "Parken nicht möglich", description: "Termin ist gesperrt.", variant: "destructive" });
         return;
       }
       if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
-        toast({ title: "Parken nicht moeglich", description: "Stornierte Termine koennen nicht geparkt werden.", variant: "destructive" });
+        toast({ title: "Parken nicht möglich", description: "Stornierte Termine können nicht geparkt werden.", variant: "destructive" });
         return;
       }
       if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        toast({ title: "Parken nicht moeglich", description: "Planung blockierte Termine koennen nicht geparkt werden.", variant: "destructive" });
+        toast({ title: "Parken nicht möglich", description: "Planung blockierte Termine können nicht geparkt werden.", variant: "destructive" });
         return;
       }
-      toast({ title: "Parken nicht moeglich", description: err.message || "Termin konnte nicht geparkt werden.", variant: "destructive" });
+      toast({ title: "Parken nicht möglich", description: err.message || "Termin konnte nicht geparkt werden.", variant: "destructive" });
     },
   });
 
@@ -1046,7 +1046,7 @@ export function AppointmentForm({
           return;
         }
         openAppointmentWeekPreviewDialog(preview, {
-          title: "Wochenplanung fuer Termin uebernehmen",
+          title: "Wochenplanung für Termin übernehmen",
           description: "Die ausgewählte Tour hat für diese Kalenderwoche eine Planung. Wählen Sie, welche Mitarbeiter übernommen werden sollen.",
           persistAfterConfirm: false,
           resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
@@ -1080,8 +1080,8 @@ export function AppointmentForm({
     const tag = availableTags.find((entry) => entry.id === tagId);
     if (!tag) {
       toast({
-        title: "Tag konnte nicht hinzugefuegt werden",
-        description: "Der ausgewaehlte Tag ist nicht verfuegbar.",
+        title: "Tag konnte nicht hinzugefügt werden",
+        description: "Der ausgewählte Tag ist nicht verfügbar.",
         variant: "destructive",
       });
       return;
@@ -1571,7 +1571,7 @@ export function AppointmentForm({
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -1595,7 +1595,7 @@ export function AppointmentForm({
       if (code === "VERSION_CONFLICT") {
         toast({
           title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -1617,8 +1617,8 @@ export function AppointmentForm({
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Notiz konnte nicht geloescht werden",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Notiz konnte nicht gelöscht werden",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -1746,7 +1746,7 @@ export function AppointmentForm({
             appointmentId: targetAppointmentId,
             version,
           });
-          throw buildApiError("Termin kann derzeit nicht geloescht werden. Bitte neu laden.", 422, "VALIDATION_ERROR");
+          throw buildApiError("Termin kann derzeit nicht gelöscht werden. Bitte neu laden.", 422, "VALIDATION_ERROR");
         }
         return version;
       };
@@ -1770,18 +1770,18 @@ export function AppointmentForm({
           throw buildApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
         }
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
-          throw buildApiError("Stornierte Termine koennen nicht geloescht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+          throw buildApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
         }
         if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-          throw buildApiError("Planung blockierte Termine koennen nicht geloescht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
+          throw buildApiError("Planung blockierte Termine können nicht gelöscht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
         }
         if (parsed?.code === "VERSION_CONFLICT") {
-          throw buildApiError("Termin wurde parallel geaendert.", response.status, "VERSION_CONFLICT");
+          throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
         }
         if (parsed?.code === "VALIDATION_ERROR") {
-          throw buildApiError("Ungueltige Loeschdaten (Version). Bitte neu laden.", response.status, "VALIDATION_ERROR");
+          throw buildApiError("Ungültige Löschdaten (Version). Bitte neu laden.", response.status, "VALIDATION_ERROR");
         }
-        throw buildApiError(parsed?.message ?? (response.statusText || "Loeschen fehlgeschlagen"), response.status, parsed?.code);
+        throw buildApiError(parsed?.message ?? (response.statusText || "Löschen fehlgeschlagen"), response.status, parsed?.code);
       };
 
       try {
@@ -1799,7 +1799,7 @@ export function AppointmentForm({
           const retryErr = retryError as AppointmentApiError;
           if (retryErr.code === "VERSION_CONFLICT") {
             throw buildApiError(
-              "Termin wurde parallel geaendert. Bitte Formular neu oeffnen.",
+              "Termin wurde parallel geändert. Bitte Formular neu oeffnen.",
               retryErr.status,
               "VERSION_CONFLICT",
             );
@@ -1833,7 +1833,7 @@ export function AppointmentForm({
       if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
         toast({
           title: "Löschen nicht möglich",
-          description: "Stornierte Termine koennen nicht geloescht werden.",
+          description: "Stornierte Termine können nicht gelöscht werden.",
           variant: "destructive",
         });
         return;
@@ -1841,7 +1841,7 @@ export function AppointmentForm({
       if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
         toast({
           title: "Löschen nicht möglich",
-          description: "Planung blockierte Termine koennen nicht geloescht werden.",
+          description: "Planung blockierte Termine können nicht gelöscht werden.",
           variant: "destructive",
         });
         return;
@@ -1849,7 +1849,7 @@ export function AppointmentForm({
       if (err.code === "VERSION_CONFLICT") {
         toast({
           title: "Löschen nicht möglich",
-          description: err.message || "Termin wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          description: err.message || "Termin wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -1857,7 +1857,7 @@ export function AppointmentForm({
       if (err.code === "VALIDATION_ERROR") {
         toast({
           title: "Löschen nicht möglich",
-          description: "Ungueltige Loeschdaten. Bitte neu laden.",
+          description: "Ungültige Löschdaten. Bitte neu laden.",
           variant: "destructive",
         });
         return;
@@ -2039,7 +2039,7 @@ export function AppointmentForm({
     const resolvedPayloadCustomerId = selectedProject?.customerId ?? selectedCustomerId;
     if (!resolvedPayloadCustomerId) {
       toast({
-        title: "Speichern nicht moeglich",
+        title: "Speichern nicht möglich",
         description: "Bitte Kunde oder Projekt zuordnen.",
         variant: "destructive",
       });
@@ -2064,7 +2064,7 @@ export function AppointmentForm({
         version,
       });
       toast({
-        title: "Speichern nicht moeglich",
+        title: "Speichern nicht möglich",
         description: "Termin kann derzeit nicht gespeichert werden. Bitte neu laden.",
         variant: "destructive",
       });
@@ -2114,7 +2114,7 @@ export function AppointmentForm({
             conflictEmployees: parsed.conflictEmployees?.length ?? 0,
           });
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: `${parsed.message ?? "Termin überschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
             variant: "destructive",
           });
@@ -2122,7 +2122,7 @@ export function AppointmentForm({
         }
         if (parsed?.code === "INACTIVE_ENTITY_ASSIGNMENT") {
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: "Mindestens ein zugewiesener Mitarbeiter ist inaktiv.",
             variant: "destructive",
           });
@@ -2130,7 +2130,7 @@ export function AppointmentForm({
         }
         if (parsed?.code === "PAST_APPOINTMENT_READONLY") {
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: "Historische Termine koennen nicht geaendert werden.",
             variant: "destructive",
           });
@@ -2138,7 +2138,7 @@ export function AppointmentForm({
         }
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: "Stornierte Termine koennen nicht mehr bearbeitet werden.",
             variant: "destructive",
           });
@@ -2146,7 +2146,7 @@ export function AppointmentForm({
         }
         if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: "Planung blockierte Termine koennen nicht bearbeitet werden.",
             variant: "destructive",
           });
@@ -2155,7 +2155,7 @@ export function AppointmentForm({
         if (parsed?.code === "VERSION_CONFLICT") {
           console.info(`${logPrefix} submit blocked: VERSION_CONFLICT`, { status: response.status });
           toast({
-            title: "Speichern nicht moeglich",
+            title: "Speichern nicht möglich",
             description: "Termin wurde zwischenzeitlich geaendert. Bitte neu laden und erneut speichern.",
             variant: "destructive",
           });
@@ -2214,10 +2214,10 @@ export function AppointmentForm({
           await refreshMonitoringWithNotification(toast);
           await queryClient.invalidateQueries({ queryKey: ["/api/appointments", savedAppointmentId] });
           toast({
-            title: "Termin erstellt, aber Zusatzdaten sind unvollstaendig",
+            title: "Termin erstellt, aber Zusatzdaten sind unvollständig",
             description: error instanceof Error
               ? error.message
-              : "Tags, Notizen oder Terminanhaenge konnten nicht vollstaendig gespeichert werden.",
+              : "Tags, Notizen oder Terminhänge konnten nicht vollständig gespeichert werden.",
             variant: "destructive",
           });
           if (openedPostSaveDialog) {
@@ -3105,3 +3105,4 @@ export function AppointmentForm({
     </Tabs>
   );
 }
+

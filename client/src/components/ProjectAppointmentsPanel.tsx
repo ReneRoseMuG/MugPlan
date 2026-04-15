@@ -87,7 +87,7 @@ export function ProjectAppointmentsPanel({
   const addAction = isEditing && onOpenCalendarWorkspace && projectId
     ? {
         onClick: () => onOpenCalendarWorkspace({ projectId }),
-        ariaLabel: "Termin hinzufuegen",
+        ariaLabel: "Termin hinzufügen",
         testId: "button-new-appointment-from-project",
       }
     : undefined;
@@ -107,3 +107,4 @@ export function ProjectAppointmentsPanel({
     />
   );
 }
+

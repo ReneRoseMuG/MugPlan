@@ -144,6 +144,7 @@ vi.mock("lucide-react", () => ({
   Layers: () => <span>layers</span>,
   CalendarRange: () => <span>calendar-range</span>,
   ShieldAlert: () => <span>shield-alert</span>,
+  History: () => <span>history</span>,
   FileText: () => <span>file-text</span>,
   Settings: () => <span>settings</span>,
   Phone: () => <span>phone</span>,

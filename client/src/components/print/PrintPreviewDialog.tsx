@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PrintDocumentRoot } from "./PrintDocumentRoot";
@@ -164,7 +164,7 @@ export function PrintPreviewDialog<TPage>({
                     className="absolute right-2 top-1/2 z-10 -translate-y-1/2 rounded-full border border-slate-300 bg-white/95 p-3 text-slate-700 shadow transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                     onClick={() => onPageChange(Math.min(pages.length - 1, activePageIndex + 1))}
                     disabled={!canGoNext}
-                    aria-label="Naechste Seite"
+                    aria-label="Nächste Seite"
                     data-testid={`button-${testIdPrefix}-next`}
                   >
                     <ChevronRight className="h-5 w-5" />
@@ -187,3 +187,4 @@ export function PrintPreviewDialog<TPage>({
     </>
   );
 }
+

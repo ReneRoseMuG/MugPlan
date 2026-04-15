@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -65,37 +65,37 @@ function formatShortDate(dateValue: string): string {
 function buildWeekTitle(props: TourEmployeeCascadeDialogProps): string {
   if (props.title) return props.title;
   if (props.mode === "remove") return "Mitarbeiter von Tour-Terminen abziehen";
-  return "Mitarbeiter zu Tour-Terminen hinzufuegen";
+  return "Mitarbeiter zu Tour-Terminen hinzufügen";
 }
 
 function buildWeekDescription(props: TourEmployeeCascadeDialogProps): string {
   if (props.description) return props.description;
   if (props.mode === "remove") {
     return props.employeeName
-      ? `Waehlen Sie die Termine aus, von denen ${props.employeeName} abgezogen werden soll.`
-      : "Waehlen Sie die Termine aus, von denen der Mitarbeiter abgezogen werden soll.";
+      ? `Wählen Sie die Termine aus, von denen ${props.employeeName} abgezogen werden soll.`
+      : "Wählen Sie die Termine aus, von denen der Mitarbeiter abgezogen werden soll.";
   }
   return props.employeeName
-    ? `Waehlen Sie die Termine aus, fuer die ${props.employeeName} geplant werden soll.`
-    : "Waehlen Sie die Termine aus, fuer die der Mitarbeiter geplant werden soll.";
+    ? `Wählen Sie die Termine aus, für die ${props.employeeName} geplant werden soll.`
+    : "Wählen Sie die Termine aus, für die der Mitarbeiter geplant werden soll.";
 }
 
 function weekStatusLabel(item: WeekPreviewItem): string | null {
   const normalizedStatus = item.status
     ?? (item.isUnderstaffed ? "understaffed" : item.eligible === false ? "conflict" : "will_add");
-  if (normalizedStatus === "conflict") return "Ueberschneidung mit bestehendem Termin";
+  if (normalizedStatus === "conflict") return "Überschneidung mit bestehendem Termin";
   if (normalizedStatus === "already_assigned") return "Bereits auf diesem Termin zugewiesen";
   if (normalizedStatus === "understaffed") return "Warnung: Termin wird unterbesetzt";
   if (normalizedStatus === "will_remove") return "Wird vom Termin entfernt";
-  if (normalizedStatus === "will_add") return "Wird zum Termin hinzugefuegt";
+  if (normalizedStatus === "will_add") return "Wird zum Termin hinzugefügt";
   return null;
 }
 
 function appointmentStatusLabel(item: AppointmentPreviewItem): string | null {
-  if (item.status === "conflict") return "Ueberschneidung mit bestehendem Termin";
+  if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
   if (item.status === "current_only") return "Bleibt nur durch aktuelle Terminzuweisung erhalten";
-  if (item.status === "will_add") return "Kann aus der Wochenplanung uebernommen werden";
+  if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
   return null;
 }
 
@@ -259,7 +259,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
             )
           ) : appointmentPreviewItems.length === 0 ? (
             <div className="p-4 text-sm text-slate-500">
-              Keine Mitarbeiter fuer die Vorschau vorhanden.
+              Keine Mitarbeiter für die Vorschau vorhanden.
             </div>
           ) : (
             <div className="divide-y">
@@ -314,3 +314,5 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
     </Dialog>
   );
 }
+
+

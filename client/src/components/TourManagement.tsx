@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Route } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -230,15 +230,15 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Speichern nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       if (code === "BUSINESS_CONFLICT") {
         toast({
-          title: "Speichern nicht moeglich",
+          title: "Speichern nicht möglich",
           description: "Tourname ist bereits vergeben.",
           variant: "destructive",
         });
@@ -257,16 +257,16 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const code = extractApiCode(error);
       if (code === "VERSION_CONFLICT") {
         toast({
-          title: "Loeschen nicht moeglich",
-          description: "Datensatz wurde zwischenzeitlich geaendert. Bitte neu laden.",
+          title: "Löschen nicht möglich",
+          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
           variant: "destructive",
         });
         return;
       }
       if (code === "BUSINESS_CONFLICT") {
         toast({
-          title: "Loeschen nicht moeglich",
-          description: "Tour kann nicht geloescht werden, solange Termine zugeordnet sind.",
+          title: "Löschen nicht möglich",
+          description: "Tour kann nicht gelöscht werden, solange Termine zugeordnet sind.",
           variant: "destructive",
         });
       }
@@ -403,14 +403,14 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleExecuteCascadeError = (_error: unknown, mode: "add" | "remove") => {
     if (_error instanceof Error && _error.message.includes("Wochenplanung ist blockiert")) {
       toast({
-        title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefuegt werden" : "Mitarbeiter konnte nicht abgezogen werden",
+        title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefügt werden" : "Mitarbeiter konnte nicht abgezogen werden",
         description: "Die Wochenplanung ist blockiert und kann aktuell nicht geaendert werden.",
         variant: "destructive",
       });
       return;
     }
     toast({
-      title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefuegt werden" : "Mitarbeiter konnte nicht abgezogen werden",
+      title: mode === "add" ? "Mitarbeiter konnte nicht hinzugefügt werden" : "Mitarbeiter konnte nicht abgezogen werden",
       description: "Bitte versuchen Sie es erneut.",
       variant: "destructive",
     });
@@ -482,7 +482,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const code = extractApiCode(error);
       if (code === "PAST_WEEK_READONLY") {
         toast({
-          title: "Anlegen nicht moeglich",
+          title: "Anlegen nicht möglich",
           description: "Laufende und vergangene Wochen koennen nicht mehr angelegt werden.",
           variant: "destructive",
         });
@@ -511,7 +511,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const code = extractApiCode(error);
       if (code === "PAST_WEEK_READONLY") {
         toast({
-          title: "Blockieren nicht moeglich",
+          title: "Blockieren nicht möglich",
           description: "Laufende und vergangene Wochen koennen nicht mehr blockiert werden.",
           variant: "destructive",
         });
@@ -540,7 +540,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       const code = extractApiCode(error);
       if (code === "PAST_WEEK_READONLY") {
         toast({
-          title: "Freigeben nicht moeglich",
+          title: "Freigeben nicht möglich",
           description: "Laufende und vergangene Wochen koennen nicht mehr freigegeben werden.",
           variant: "destructive",
         });
@@ -614,7 +614,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         if (!weekDialogState.assignmentId) {
           toast({
             title: "Wochenplanung konnte nicht gespeichert werden",
-            description: "Die zu loeschende Wochenzuordnung fehlt.",
+            description: "Die zu löschende Wochenzuordnung fehlt.",
             variant: "destructive",
           });
           return;
@@ -628,7 +628,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         });
       }
       const skippedMessage = result.skipped.length > 0
-        ? ` ${result.skipped.length} Termine wurden wegen Konflikten uebersprungen.`
+        ? ` ${result.skipped.length} Termine wurden wegen Konflikten übersprungen.`
         : "";
       toast({
         title: weekDialogState.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert",
@@ -696,8 +696,8 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
             title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
             description={
               weekDialogState.mode === "add"
-                ? `${weekDialogState.employeeName} wird fuer ${weekDialogState.weekLabel} eingeplant.`
-                : `${weekDialogState.employeeName} wird fuer ${weekDialogState.weekLabel} aus der Planung entfernt.`
+                ? `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} eingeplant.`
+                : `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} aus der Planung entfernt.`
             }
             weekLabel={weekDialogState.weekLabel}
             previewItems={weekDialogState.previewItems}
@@ -740,7 +740,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
               ) : null}
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-tours">
-                  Schliessen
+                  Schließen
                 </Button>
               ) : null}
             </div>
@@ -786,3 +786,5 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     </>
   );
 }
+
+

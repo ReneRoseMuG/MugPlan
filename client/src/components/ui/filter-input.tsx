@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+﻿import { ReactNode } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,7 @@ export function FilterInput({
             size="icon"
             onClick={onClear}
             className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
-            aria-label={`${label} zuruecksetzen`}
+            aria-label={`${label} zurücksetzen`}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -74,3 +74,4 @@ export function FilterInput({
     </div>
   );
 }
+

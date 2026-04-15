@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Plus, LayoutGrid, Table2, ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -297,7 +297,7 @@ export function CustomersPage({
       },
       {
         id: "relevantAppointment",
-        header: renderSortHeader("Naechster Termin", "relevantAppointment"),
+        header: renderSortHeader("Nächster Termin", "relevantAppointment"),
         accessor: (row) => row.relevantAppointment?.startDate ?? "",
         minWidth: 180,
         cell: ({ row }) => (
@@ -326,7 +326,7 @@ export function CustomersPage({
     <ListEmptyState
       helpKey="customers.emptyFiltered"
       fallbackTitle="Keine Treffer gefunden."
-      fallbackBody="Fuer die gewaehlte Filtereinstellung konnten keine Treffer ermittelt werden."
+      fallbackBody="Für die gewählte Filtereinstellung konnten keine Treffer ermittelt werden."
     />
   ) : (
     <ListEmptyState
@@ -362,7 +362,7 @@ export function CustomersPage({
       ) : undefined}
       trailingSlot={onCancel ? (
         <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-customers">
-          Schliessen
+          Schließen
         </Button>
       ) : undefined}
     />
@@ -462,3 +462,4 @@ export function CustomersPage({
     </>
   );
 }
+
