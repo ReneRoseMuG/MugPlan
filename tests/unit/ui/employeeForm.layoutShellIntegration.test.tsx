@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - EmployeeForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
+ * - Im Edit-Modus zeigt EmployeeForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Team.
  * - Create-Verdrahtung behaelt Draft-faehige Attachments, Tags und Notizen.
  * - Das Mitarbeiterformular rendert keinen veralteten Tour-Bereich mehr in der Sidebar.
@@ -10,6 +11,7 @@
  *
  * Fehlerfaelle:
  * - Das Mitarbeiterformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
+ * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
  *
@@ -115,7 +117,7 @@ vi.mock("@/components/AppointmentsListPage", () => ({
 
 vi.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
-  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
   TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
@@ -308,6 +310,9 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
     expect(markup).toContain("button-save-employee");
+    expect(markup).toContain("tabs-employee-main");
+    expect(markup).toContain("tab-employee-details-main");
+    expect(markup).toContain("tab-employee-journal");
     expect(markup).toContain("tab-employee-wochenplanung");
     expect(markup).toContain("KW 18 / 2026");
     expect(markup).toContain("Tour Nord");
@@ -339,6 +344,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
     expect(markup).toContain("button-save-employee");
+    expect(markup).not.toContain("tabs-employee-main");
+    expect(markup).not.toContain("tab-employee-journal");
     expect(markup).not.toContain("tab-employee-wochenplanung");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));

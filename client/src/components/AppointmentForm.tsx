@@ -37,6 +37,7 @@ import {
   type PendingAppointmentAttachmentItem,
 } from "@/components/AppointmentAttachmentsPanel";
 import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { NotesSection } from "@/components/NotesSection";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
@@ -51,6 +52,7 @@ import {
   type ProjectDuplicateLatestAppointment,
   type ProjectDuplicateResolution,
 } from "@/components/ProjectDuplicateResolutionDialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -435,6 +437,7 @@ export function AppointmentForm({
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
   const [resolvedAppointmentWeekPlanKey, setResolvedAppointmentWeekPlanKey] = useState<string | null>(null);
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [isSaving, setIsSaving] = useState(false);
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
@@ -2292,26 +2295,39 @@ export function AppointmentForm({
   };
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1">
+    <Tabs
+      value={isEditing ? activeMainTab : "details"}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      className="h-full"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
-              {showBackButton && !isReadOnlyView ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRequestClose}
-                  data-testid="button-back-appointment"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Schließen
-                </Button>
+            <div className="flex min-w-0 flex-col gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {showBackButton && !isReadOnlyView ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleRequestClose}
+                    data-testid="button-back-appointment"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Schließen
+                  </Button>
+                ) : null}
+                <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                  <Calendar className="w-6 h-6" />
+                  {isEditing ? "Termin bearbeiten" : "Neuer Termin"}
+                </h2>
+              </div>
+              {isEditing ? (
+                <TabsList data-testid="tabs-appointment-main">
+                  <TabsTrigger value="details" data-testid="tab-appointment-details">Details</TabsTrigger>
+                  <TabsTrigger value="journal" data-testid="tab-appointment-journal">Journal</TabsTrigger>
+                </TabsList>
               ) : null}
-              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
-                <Calendar className="w-6 h-6" />
-                {isEditing ? "Termin bearbeiten" : "Neuer Termin"}
-              </h2>
             </div>
 
             {!isReadOnlyView ? (
@@ -2327,7 +2343,7 @@ export function AppointmentForm({
             ) : null}
           </div>
         )}
-        sidebar={(
+        sidebar={activeMainTab === "details" ? (
           <div className="min-w-0 space-y-6 p-6" data-testid="appointment-form-sidebar">
             {isEditing && appointmentId && !isReadOnlyView ? (
               <div className="sub-panel space-y-3" data-testid="appointment-form-functions-panel">
@@ -2465,7 +2481,7 @@ export function AppointmentForm({
               }}
             />
           </div>
-        )}
+        ) : undefined}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -2494,7 +2510,8 @@ export function AppointmentForm({
           </div>
         )}
       >
-        <div className="w-full space-y-6" data-testid="appointment-form-main-column">
+        {activeMainTab === "details" ? (
+          <div className="w-full space-y-6" data-testid="appointment-form-main-column">
           {readOnlyReason === "cancelled" && (
             <Alert variant="destructive">
               <AlertTitle>Termin storniert</AlertTitle>
@@ -2694,7 +2711,14 @@ export function AppointmentForm({
               isProcessing={documentExtractionLoading}
             />
           ) : null}
-        </div>
+          </div>
+        ) : (
+          <JournalRecordsView
+            context={{ tableName: "appointment", recordId: appointmentId }}
+            pageSize={25}
+            testIdPrefix="appointment-journal"
+          />
+        )}
       </EntityFormShell>
 
       {appointmentWeekPreviewDialog ? (
@@ -3077,6 +3101,7 @@ export function AppointmentForm({
           Daten werden geladen...
         </div>
       )}
-    </div>
+      </div>
+    </Tabs>
   );
 }

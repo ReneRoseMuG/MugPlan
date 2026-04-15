@@ -23,6 +23,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Customer, Note, Tag } from "@shared/schema";
 
 interface CustomerDataProps {
@@ -82,6 +84,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [draftCustomerTags, setDraftCustomerTags] = useState<TagRelationItem[]>([]);
   const [draftCustomerNotes, setDraftCustomerNotes] = useState<DraftCustomerNote[]>([]);
   const [draftCustomerAttachments, setDraftCustomerAttachments] = useState<PendingCustomerAttachmentItem[]>([]);
@@ -726,16 +729,27 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1">
+    <Tabs
+      value={isEditMode ? activeMainTab : "details"}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      className="h-full"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-col gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <User className="w-6 h-6" />
                 {isEditMode ? "Kunde bearbeiten" : "Neuer Kunde"}
               </h2>
+              {isEditMode ? (
+                <TabsList data-testid="tabs-customer-main">
+                  <TabsTrigger value="details" data-testid="tab-customer-details">Details</TabsTrigger>
+                  <TabsTrigger value="journal" data-testid="tab-customer-journal">Journal</TabsTrigger>
+                </TabsList>
+              ) : null}
             </div>
 
             {onCancel ? (
@@ -751,7 +765,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             ) : null}
           </div>
         )}
-        sidebar={(
+        sidebar={activeMainTab === "details" ? (
           <div className="min-w-0 space-y-6 p-6" data-testid="customer-form-sidebar">
             <LinkedProjectsPanel
               customerId={customerId}
@@ -804,7 +818,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               onDelete={handleDeleteNote}
             />
           </div>
-        )}
+        ) : undefined}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -831,7 +845,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
           </div>
         )}
       >
-        <div className="w-full space-y-6" data-testid="customer-form-main-column">
+        {activeMainTab === "details" ? (
+          <div className="w-full space-y-6" data-testid="customer-form-main-column">
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />
@@ -991,7 +1006,14 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               )}
 
-        </div>
+          </div>
+        ) : (
+          <JournalRecordsView
+            context={{ tableName: "customer", recordId: customerId }}
+            pageSize={25}
+            testIdPrefix="customer-journal"
+          />
+        )}
 
 
       </EntityFormShell>
@@ -1005,6 +1027,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
         customerApplyLabel="Kundendaten übernehmen"
         onApplyCustomer={applyExtractedCustomerDraft}
       />
-    </div>
+      </div>
+    </Tabs>
   );
 }

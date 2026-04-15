@@ -222,7 +222,7 @@ export async function createTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const week = await tourWeeksRepository.withTourWeeksTransaction(async (tx) =>
@@ -233,14 +233,17 @@ export async function createTourWeek(
     }),
   );
 
-  return mapWeekToResponse(week);
+  return {
+    ...mapWeekToResponse(week),
+    tourName: tour.name,
+  };
 }
 
 export async function blockTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const blockedTag = await ensurePlanningBlockedTag();
@@ -278,6 +281,7 @@ export async function blockTourWeek(
 
   return {
     week: mapWeekToResponse(week),
+    tourName: tour.name,
     affectedAppointmentCount: changedAppointmentIds.length,
   };
 }
@@ -286,7 +290,7 @@ export async function unblockTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   assertWeekEditable(params.isoYear, params.isoWeek);
 
   const existingWeek = await tourWeeksRepository.getWeekByTourAndWeek(tourId, params.isoYear, params.isoWeek);
@@ -317,6 +321,7 @@ export async function unblockTourWeek(
 
   return {
     week: mapWeekToResponse(week),
+    tourName: tour.name,
     affectedAppointmentCount: changedAppointmentIds.length,
   };
 }

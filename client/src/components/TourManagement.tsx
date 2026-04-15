@@ -499,7 +499,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleBlockWeek = async (params: { isoYear: number; isoWeek: number }) => {
     if (!editingTour) return;
     try {
-      const result = await blockWeekMutation.mutateAsync({
+      await blockWeekMutation.mutateAsync({
         tourId: editingTour.id,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
@@ -528,7 +528,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleUnblockWeek = async (params: { isoYear: number; isoWeek: number }) => {
     if (!editingTour) return;
     try {
-      const result = await unblockWeekMutation.mutateAsync({
+      await unblockWeekMutation.mutateAsync({
         tourId: editingTour.id,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,

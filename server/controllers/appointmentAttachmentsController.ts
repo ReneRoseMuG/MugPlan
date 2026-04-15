@@ -10,7 +10,11 @@ import {
   writeAttachmentBuffer,
 } from "../lib/attachmentFiles";
 import { parseMultipartFile } from "../lib/multipart";
+import { buildAttachmentMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
 import * as appointmentAttachmentsService from "../services/appointmentAttachmentsService";
+import * as appointmentsService from "../services/appointmentsService";
+import * as journalService from "../services/journalService";
 
 export async function listAppointmentAttachments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -68,6 +72,24 @@ export async function createAppointmentAttachment(req: Request, res: Response, n
     };
 
     const created = await appointmentAttachmentsService.createAppointmentAttachment(attachmentData);
+    const appointment = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment_attachment",
+      recordId: created.id,
+      op: "create",
+      newValue: created,
+      snapshot: created,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.attachment.create",
+      messageText: buildAttachmentMessage("hochgeladen", "appointment", appointment, created.originalName, appointmentId),
+      contexts: [
+        {
+          tableName: "appointment",
+          recordId: appointmentId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(201).json(created);
   } catch (err) {
     if (err instanceof Error && err.message === "Payload too large") {
@@ -145,6 +167,24 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
     }
 
     await appointmentAttachmentsService.softDeleteAppointmentAttachment(attachmentId);
+    const appointment = await appointmentsService.getAppointmentDetails(attachment.appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment_attachment",
+      recordId: attachment.id,
+      op: "delete",
+      oldValue: attachment,
+      snapshot: attachment,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.attachment.delete",
+      messageText: buildAttachmentMessage("geloescht", "appointment", appointment, attachment.originalName, attachment.appointmentId),
+      contexts: [
+        {
+          tableName: "appointment",
+          recordId: attachment.appointmentId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(200).json({ message: "Anhang geloescht" });
   } catch (err) {
     next(err);

@@ -623,7 +623,13 @@ export async function executeAddWeekEmployee(
 
     return {
       assignmentId,
+      employeeId: params.employeeId,
+      employeeName: employee.fullName,
+      tourName: tour.name,
+      isoYear: params.isoYear,
+      isoWeek: params.isoWeek,
       updatedAppointmentCount: changedAppointmentIds.length,
+      changedAppointmentIds,
       skipped,
     };
   });
@@ -768,7 +774,13 @@ export async function executeRemoveWeekEmployee(
 
     return {
       assignmentId: assignment.assignmentId,
+      employeeId: assignment.employeeId,
+      employeeName: assignment.fullName,
+      tourName: assignment.tourName,
+      isoYear: assignment.isoYear,
+      isoWeek: assignment.isoWeek,
       updatedAppointmentCount: changedAppointmentIds.length,
+      changedAppointmentIds,
       skipped,
     };
   });

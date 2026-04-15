@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - CustomerData rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
+ * - Im Edit-Modus zeigt CustomerData die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
  * - Das Kundenformular zeigt das neue Feld `Land` im Hauptbereich in Create und Edit an.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Projekte, Termine, Attachments, Tags, Notizen.
  * - Create-Verdrahtung behaelt Draft-faehige Tags, Notizen und Attachments.
@@ -10,6 +11,7 @@
  *
  * Fehlerfaelle:
  * - Das Kundenformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
+ * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
  * - Das neue Feld `Land` fehlt im Formular trotz erweitertem Kunden-Adressmodell.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
@@ -251,6 +253,9 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("customer-form-sidebar");
     expect(markup).toContain("button-cancel-customer");
     expect(markup).toContain("button-save-customer");
+    expect(markup).toContain("tabs-customer-main");
+    expect(markup).toContain("tab-customer-details");
+    expect(markup).toContain("tab-customer-journal");
     expect(markup).toContain("label-country");
     expect(markup).toContain("input-country");
 
@@ -280,6 +285,8 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("customer-form-sidebar");
     expect(markup).toContain("button-cancel-customer");
     expect(markup).toContain("button-save-customer");
+    expect(markup).not.toContain("tabs-customer-main");
+    expect(markup).not.toContain("tab-customer-journal");
     expect(markup).toContain("customer-document-extraction-dropzone-marker");
     expect(markup).toContain("label-country");
     expect(markup).toContain("input-country");

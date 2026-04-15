@@ -6,6 +6,13 @@ import * as employeesService from "../services/employeesService";
 import { logWarn } from "../lib/logger";
 import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
 import { parseMultipartFile } from "../lib/multipart";
+import { getRequestActor } from "../lib/requestActor";
+import {
+  buildCreateMessage,
+  buildTagMessage,
+  buildUpdateMessage,
+} from "../lib/journalMessages";
+import * as journalService from "../services/journalService";
 
 const logPrefix = "[employees-controller]";
 
@@ -121,6 +128,16 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
     }
     const input = api.employees.create.input.parse(req.body);
     const employee = await employeesService.createEmployee(input);
+    await journalService.recordJournalEntry({
+      tableName: "employee",
+      recordId: employee.id,
+      op: "create",
+      snapshot: employee,
+      newValue: employee,
+      actor: getRequestActor(req),
+      triggerKey: "employee.create",
+      messageText: buildCreateMessage("employee", employee, employee.id),
+    });
     res.status(201).json(employee);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -189,11 +206,23 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
       return;
     }
+    const before = await employeesService.getEmployeeWithRelations(id, roleKey);
     const employee = await employeesService.updateEmployee(id, input, roleKey);
     if (!employee) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "employee",
+      recordId: employee.id,
+      op: "update",
+      oldValue: before?.employee ?? null,
+      newValue: employee,
+      snapshot: employee,
+      actor: getRequestActor(req),
+      triggerKey: "employee.update",
+      messageText: buildUpdateMessage("employee", employee, employee.id),
+    });
     res.json(employee);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -222,6 +251,17 @@ export async function addEmployeeTag(req: Request, res: Response, next: NextFunc
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    const employee = await employeesService.getEmployeeWithRelations(employeeId, roleKey);
+    await journalService.recordJournalEntry({
+      tableName: "employee",
+      recordId: employeeId,
+      op: "tag_add",
+      newValue: { tagId: relation.tag.id, tagName: relation.tag.name },
+      snapshot: employee?.employee ?? null,
+      actor: getRequestActor(req),
+      triggerKey: "employee.tag.add",
+      messageText: buildTagMessage("hinzugefuegt", "employee", employee?.employee ?? null, relation.tag.name, employeeId),
+    });
     res.status(201).json(relation);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -246,10 +286,27 @@ export async function removeEmployeeTag(req: Request, res: Response, next: NextF
     const employeeId = Number(req.params.employeeId);
     const tagId = Number(req.params.tagId);
     const input = api.employeeTags.remove.input.parse(req.body);
+    const [employee, existingRelations] = await Promise.all([
+      employeesService.getEmployeeWithRelations(employeeId, roleKey),
+      employeesService.listEmployeeTagRelations(employeeId, roleKey),
+    ]);
+    const removedTag = existingRelations?.find((relation) => relation.tag.id === tagId)?.tag ?? null;
     const result = await employeesService.removeEmployeeTag(employeeId, tagId, input.version, roleKey);
     if (result === null) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    if (removedTag) {
+      await journalService.recordJournalEntry({
+        tableName: "employee",
+        recordId: employeeId,
+        op: "tag_remove",
+        oldValue: { tagId: removedTag.id, tagName: removedTag.name },
+        snapshot: employee?.employee ?? null,
+        actor: getRequestActor(req),
+        triggerKey: "employee.tag.remove",
+        messageText: buildTagMessage("entfernt", "employee", employee?.employee ?? null, removedTag.name, employeeId),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -274,11 +331,23 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
       return;
     }
+    const before = await employeesService.getEmployeeWithRelations(id, roleKey);
     const employee = await employeesService.toggleEmployeeActive(id, input.isActive, input.version, roleKey);
     if (!employee) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "employee",
+      recordId: employee.id,
+      op: "toggle_active",
+      oldValue: before?.employee ?? null,
+      newValue: employee,
+      snapshot: employee,
+      actor: getRequestActor(req),
+      triggerKey: "employee.toggle_active",
+      messageText: buildUpdateMessage("employee", employee, employee.id),
+    });
     res.json(employee);
   } catch (err) {
     if (err instanceof ZodError) {

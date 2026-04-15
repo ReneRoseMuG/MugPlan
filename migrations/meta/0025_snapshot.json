@@ -1,0 +1,7 @@
+{
+  "version": "5",
+  "dialect": "mysql",
+  "id": "d4e5f6a7-b8c9-40d1-e2f3-a4b5c6d7e8f9",
+  "prevId": "c3d4e5f6-a7b8-49c0-d1e2-f3a4b5c6d7e8",
+  "note": "Manual snapshot placeholder for 0025_journal_entries. Adds journal_entry and journal_entry_context for append-only audit records with explicit context lookup."
+}

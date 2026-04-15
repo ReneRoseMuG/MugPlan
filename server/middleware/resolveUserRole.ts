@@ -30,6 +30,7 @@ export async function resolveUserRole(req: Request, _res: Response, next: NextFu
       userId: userWithRole.userId,
       roleCode: userWithRole.roleCode,
       roleKey: mapDbRoleCodeToCanonicalRole(userWithRole.roleCode),
+      displayName: userWithRole.fullName.trim().length > 0 ? userWithRole.fullName : userWithRole.username,
     };
 
     next();

@@ -128,6 +128,53 @@ const appointmentTagGroupsSchema = z.object({
   projectTags: z.array(tagSchema),
 });
 
+const journalContextSchema = z.object({
+  contextTable: z.string().min(1),
+  contextId: z.number().int().positive().nullable(),
+  contextKey: z.string().nullable(),
+  relationRole: z.string().nullable(),
+});
+
+const journalEntrySchema = z.object({
+  id: z.number().int().positive(),
+  tableName: z.string().min(1),
+  recordId: z.number().int().positive().nullable(),
+  recordKey: z.string().nullable(),
+  op: z.string().min(1),
+  field: z.string().nullable(),
+  oldValue: z.unknown().nullable(),
+  newValue: z.unknown().nullable(),
+  snapshot: z.unknown().nullable(),
+  actorUserId: z.number().int().positive().nullable(),
+  actorName: z.string().nullable(),
+  triggerKey: z.string().nullable(),
+  messageText: z.string().min(1),
+  isRaw: z.boolean(),
+  createdAt: z.string().min(1),
+  contexts: z.array(journalContextSchema),
+});
+
+const journalListInputSchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  contextTable: z.string().trim().min(1).optional(),
+  contextId: z.coerce.number().int().positive().optional(),
+  contextKey: z.string().trim().min(1).optional(),
+  actor: z.string().trim().optional(),
+  q: z.string().trim().optional(),
+  triggerKey: z.string().trim().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+}).strict();
+
+const journalListResponseSchema = z.object({
+  items: z.array(journalEntrySchema),
+  page: z.number().int().min(1),
+  pageSize: z.number().int().min(1),
+  total: z.number().int().min(0),
+  totalPages: z.number().int().min(0),
+});
+
 const tourEmployeeCascadeConflictReasonSchema = z.enum([
   "EMPLOYEE_OVERLAP",
   "ALREADY_ASSIGNED",
@@ -216,6 +263,7 @@ const tourWeekCreateInputSchema = z.object({
 
 const tourWeekStatusMutationResponseSchema = z.object({
   week: tourWeekSchema,
+  tourName: z.string().nullable().optional(),
   affectedAppointmentCount: z.number().int().min(0),
 });
 
@@ -272,7 +320,13 @@ const tourWeekRemovePreviewInputSchema = z.object({
 
 const tourWeekExecuteResponseSchema = z.object({
   assignmentId: z.number().int().positive().optional(),
+  employeeId: z.number().int().positive().optional(),
+  employeeName: z.string().optional(),
+  tourName: z.string().nullable().optional(),
+  isoYear: z.number().int().min(1).optional(),
+  isoWeek: z.number().int().min(1).max(53).optional(),
   updatedAppointmentCount: z.number().int().min(0),
+  changedAppointmentIds: z.array(z.number().int().positive()).optional(),
   skipped: z.array(z.object({
     appointmentId: z.number().int().positive(),
     reason: z.string(),
@@ -1087,6 +1141,18 @@ export const api = {
           latestAppointment: documentExtractionLatestProjectAppointmentSchema.nullable(),
         }),
         400: errorSchemas.validation,
+      },
+    },
+  },
+  journal: {
+    list: {
+      method: "GET" as const,
+      path: "/api/journal/messages",
+      input: journalListInputSchema,
+      responses: {
+        200: journalListResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
   },

@@ -5,6 +5,14 @@ import * as projectsService from "../services/projectsService";
 import * as projectNotesService from "../services/projectNotesService";
 import * as projectAttachmentsService from "../services/projectAttachmentsService";
 import * as appointmentsService from "../services/appointmentsService";
+import { getRequestActor } from "../lib/requestActor";
+import {
+  buildCreateMessage,
+  buildDeleteMessage,
+  buildTagMessage,
+  buildUpdateMessage,
+} from "../lib/journalMessages";
+import * as journalService from "../services/journalService";
 
 function parseTagIds(value: unknown): number[] {
   if (!value) return [];
@@ -122,6 +130,16 @@ export async function createProject(req: Request, res: Response, next: NextFunct
   try {
     const input = api.projects.create.input.parse(req.body);
     const project = await projectsService.createProject(input);
+    await journalService.recordJournalEntry({
+      tableName: "project",
+      recordId: project.id,
+      op: "create",
+      snapshot: project,
+      newValue: project,
+      actor: getRequestActor(req),
+      triggerKey: "project.create",
+      messageText: buildCreateMessage("project", project, project.id),
+    });
     res.status(201).json(project);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -139,11 +157,24 @@ export async function createProject(req: Request, res: Response, next: NextFunct
 export async function updateProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.projects.update.input.parse(req.body);
-    const project = await projectsService.updateProject(Number(req.params.id), input);
+    const projectId = Number(req.params.id);
+    const before = await projectsService.getProject(projectId);
+    const project = await projectsService.updateProject(projectId, input);
     if (!project) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "project",
+      recordId: project.id,
+      op: "update",
+      oldValue: before,
+      newValue: project,
+      snapshot: project,
+      actor: getRequestActor(req),
+      triggerKey: "project.update",
+      messageText: buildUpdateMessage("project", project, project.id),
+    });
     res.json(project);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -168,6 +199,16 @@ export async function deleteProject(req: Request, res: Response, next: NextFunct
       return;
     }
     await projectsService.deleteProject(projectId, input.version);
+    await journalService.recordJournalEntry({
+      tableName: "project",
+      recordId: projectId,
+      op: "delete",
+      oldValue: project,
+      snapshot: project,
+      actor: getRequestActor(req),
+      triggerKey: "project.delete",
+      messageText: buildDeleteMessage("project", project, projectId),
+    });
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {
@@ -201,6 +242,18 @@ export async function createProjectOrderItem(req: Request, res: Response, next: 
     const projectId = Number(req.params.id);
     const input = api.projects.orderItems.create.input.parse(req.body);
     const row = await projectsService.createProjectOrderItem(projectId, input);
+    await journalService.recordJournalEntry({
+      tableName: "project_order_item",
+      recordId: row.id,
+      recordKey: `${projectId}:${row.id}`,
+      op: "create",
+      newValue: row,
+      snapshot: row,
+      contexts: [{ tableName: "project", recordId: projectId, relationRole: "owner" }],
+      actor: getRequestActor(req),
+      triggerKey: "project.order_item.create",
+      messageText: buildCreateMessage("project_order_item", row, row.id, row.orderNumber),
+    });
     res.status(201).json(row);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -220,7 +273,21 @@ export async function updateProjectOrderItem(req: Request, res: Response, next: 
     const projectId = Number(req.params.id);
     const itemId = Number(req.params.itemId);
     const input = api.projects.orderItems.update.input.parse(req.body);
+    const before = (await projectsService.listProjectOrderItems(projectId)).find((row) => row.id === itemId) ?? null;
     const row = await projectsService.updateProjectOrderItem(projectId, itemId, input);
+    await journalService.recordJournalEntry({
+      tableName: "project_order_item",
+      recordId: row.id,
+      recordKey: `${projectId}:${row.id}`,
+      op: "update",
+      oldValue: before,
+      newValue: row,
+      snapshot: row,
+      contexts: [{ tableName: "project", recordId: projectId, relationRole: "owner" }],
+      actor: getRequestActor(req),
+      triggerKey: "project.order_item.update",
+      messageText: buildUpdateMessage("project_order_item", row, row.id, row.orderNumber),
+    });
     res.json(row);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -240,7 +307,22 @@ export async function deleteProjectOrderItem(req: Request, res: Response, next: 
     const projectId = Number(req.params.id);
     const itemId = Number(req.params.itemId);
     const input = api.projects.orderItems.delete.input.parse(req.body);
+    const before = (await projectsService.listProjectOrderItems(projectId)).find((row) => row.id === itemId) ?? null;
     await projectsService.deleteProjectOrderItem(projectId, itemId, input.version);
+    if (before) {
+      await journalService.recordJournalEntry({
+        tableName: "project_order_item",
+        recordId: before.id,
+        recordKey: `${projectId}:${before.id}`,
+        op: "delete",
+        oldValue: before,
+        snapshot: before,
+        contexts: [{ tableName: "project", recordId: projectId, relationRole: "owner" }],
+        actor: getRequestActor(req),
+        triggerKey: "project.order_item.delete",
+        messageText: buildDeleteMessage("project_order_item", before, before.id, before.orderNumber),
+      });
+    }
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {
@@ -283,6 +365,17 @@ export async function addProjectTag(req: Request, res: Response, next: NextFunct
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    const project = await projectsService.getProject(projectId);
+    await journalService.recordJournalEntry({
+      tableName: "project",
+      recordId: projectId,
+      op: "tag_add",
+      newValue: { tagId: relation.tag.id, tagName: relation.tag.name },
+      snapshot: project,
+      actor: getRequestActor(req),
+      triggerKey: "project.tag.add",
+      messageText: buildTagMessage("hinzugefuegt", "project", project, relation.tag.name, projectId),
+    });
     res.status(201).json(relation);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -307,10 +400,27 @@ export async function removeProjectTag(req: Request, res: Response, next: NextFu
     const projectId = Number(req.params.projectId);
     const tagId = Number(req.params.tagId);
     const input = api.projectTags.remove.input.parse(req.body);
+    const [project, existingRelations] = await Promise.all([
+      projectsService.getProject(projectId),
+      projectsService.listProjectTagRelations(projectId),
+    ]);
+    const removedTag = existingRelations?.find((relation) => relation.tag.id === tagId)?.tag ?? null;
     const result = await projectsService.removeProjectTag(projectId, tagId, input.version, roleKey);
     if (result === null) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    if (removedTag) {
+      await journalService.recordJournalEntry({
+        tableName: "project",
+        recordId: projectId,
+        op: "tag_remove",
+        oldValue: { tagId: removedTag.id, tagName: removedTag.name },
+        snapshot: project,
+        actor: getRequestActor(req),
+        triggerKey: "project.tag.remove",
+        messageText: buildTagMessage("entfernt", "project", project, removedTag.name, projectId),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -340,8 +450,22 @@ export async function replaceProjectOrderItems(
 
     const input = api.projects.orderItems.replace.input.parse(req.body);
     const items = input.items.map((item) => ({ ...item, projectId }));
-
+    const before = await projectsService.listProjectOrderItems(projectId);
     const result = await projectsService.replaceProjectOrderItems(projectId, items);
+    const project = await projectsService.getProject(projectId);
+    await journalService.recordJournalEntry({
+      tableName: "project_order_item",
+      recordId: null,
+      recordKey: `${projectId}:replace`,
+      op: "replace",
+      oldValue: before,
+      newValue: result,
+      snapshot: { projectId, count: result.length },
+      contexts: [{ tableName: "project", recordId: projectId, relationRole: "owner" }],
+      actor: getRequestActor(req),
+      triggerKey: "project.order_item.replace",
+      messageText: `Auftragspositionen bei Projekt ${project?.name ?? `#${projectId}`} ersetzt`,
+    });
     res.status(200).json(result);
   } catch (err) {
     if (err instanceof ZodError) {

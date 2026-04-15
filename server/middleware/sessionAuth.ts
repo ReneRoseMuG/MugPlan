@@ -14,6 +14,7 @@ export type RequestUserContext = {
   userId: number;
   roleCode: DbRoleCode;
   roleKey: CanonicalRoleKey;
+  displayName: string;
 };
 
 declare global {

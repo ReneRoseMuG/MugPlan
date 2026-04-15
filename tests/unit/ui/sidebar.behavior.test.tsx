@@ -4,13 +4,13 @@
  * Feature: FT07/FT26/FT31 - Sidebar
  *
  * Abgedeckte Regeln:
- * - Dispatcher sehen Reports und Monitoring inklusive triggerweiser Pills direkt unter dem Navigationseintrag.
+ * - Dispatcher sehen Reports, Journal und Monitoring inklusive triggerweiser Pills direkt unter dem Navigationseintrag.
  * - Die globale Kalendernavigation bietet eine Wochenübersicht und die neue Monatsübersicht als monatliche Hauptansicht.
- * - Reader sehen keine Reports-/Monitoring-Navigation, aber den allgemeinen Einstieg in die Benutzereinstellungen.
+ * - Reader sehen keine Reports-/Journal-/Monitoring-Navigation, aber den allgemeinen Einstieg in die Benutzereinstellungen.
  * - Backup-Disablement bleibt als sichtbare Seitenmarkierung erhalten.
  *
  * Fehlerfaelle:
- * - Reports oder Monitoring verschwinden fuer berechtigte Rollen.
+ * - Reports, Journal oder Monitoring verschwinden fuer berechtigte Rollen.
  * - Trigger-Pills erscheinen nicht oder an der falschen Stelle oder zeigen falsche Zaehler.
  * - Reader erhalten unberechtigte Navigationseintraege oder verlieren den Zugriff auf eigene Einstellungen.
  *
@@ -48,6 +48,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     );
 
     expect(html).toContain("Reports");
+    expect(html).toContain("Journal");
     expect(html).toContain("Monitoring");
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
@@ -75,6 +76,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
     expect(html).not.toContain("Reports");
+    expect(html).not.toContain("Journal");
     expect(html).not.toContain("Monitoring");
     expect(html).not.toContain("nav-monitoring");
     expect(html).not.toContain("monitoring-trigger-pills");

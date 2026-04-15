@@ -1305,7 +1305,7 @@ export function CalendarWeekView({
                                               tourId: tourLane.tourId!,
                                               isoYear,
                                               isoWeek,
-                                            }).then((result) => {
+                                            }).then(() => {
                                               toast({
                                                 title: "Wochenplanung freigegeben",
                                               });
@@ -1330,7 +1330,7 @@ export function CalendarWeekView({
                                               tourId: tourLane.tourId!,
                                               isoYear,
                                               isoWeek,
-                                            }).then((result) => {
+                                            }).then(() => {
                                               toast({
                                                 title: "Wochenplanung blockiert",
                                               });

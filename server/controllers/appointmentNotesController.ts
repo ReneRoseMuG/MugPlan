@@ -3,6 +3,9 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as appointmentNotesService from "../services/appointmentNotesService";
 import * as notesService from "../services/notesService";
+import { buildNoteMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
+import * as journalService from "../services/journalService";
 
 export async function listAppointmentNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -27,6 +30,23 @@ export async function createAppointmentNote(req: Request, res: Response, next: N
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "note",
+      recordId: note.id,
+      op: "create",
+      newValue: note,
+      snapshot: note,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.note.create",
+      messageText: buildNoteMessage("erstellt", "appointment", null, note.title, appointmentId),
+      contexts: [
+        {
+          tableName: "appointment",
+          recordId: appointmentId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(201).json(note);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -46,7 +66,27 @@ export async function deleteAppointmentNote(req: Request, res: Response, next: N
     const input = api.appointmentNotes.delete.input.parse(req.body);
     const appointmentId = Number(req.params.appointmentId);
     const noteId = Number(req.params.noteId);
+    const existingNote = await notesService.getNote(noteId);
     await notesService.deleteAppointmentScopedNote(appointmentId, noteId, input.version);
+    if (existingNote) {
+      await journalService.recordJournalEntry({
+        tableName: "note",
+        recordId: existingNote.id,
+        op: "delete",
+        oldValue: existingNote,
+        snapshot: existingNote,
+        actor: getRequestActor(req),
+        triggerKey: "appointment.note.delete",
+        messageText: buildNoteMessage("geloescht", "appointment", null, existingNote.title, appointmentId),
+        contexts: [
+          {
+            tableName: "appointment",
+            recordId: appointmentId,
+            relationRole: "owner",
+          },
+        ],
+      });
+    }
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

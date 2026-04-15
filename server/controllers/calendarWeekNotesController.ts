@@ -3,6 +3,9 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as calendarWeekNotesService from "../services/calendarWeekNotesService";
 import * as notesService from "../services/notesService";
+import { buildCalendarWeekMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
+import * as journalService from "../services/journalService";
 
 export async function listCalendarWeekNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -49,6 +52,17 @@ export async function createCalendarWeekNote(req: Request, res: Response, next: 
     const { yearNumber, weekNumber, tourId } = params;
     const input = api.calendarWeekNotes.create.input.parse(req.body);
     const note = await calendarWeekNotesService.createCalendarWeekNote(yearNumber, weekNumber, tourId, input);
+    await journalService.recordJournalEntry({
+      tableName: "note",
+      recordId: note.id,
+      op: "create",
+      newValue: note,
+      snapshot: note,
+      actor: getRequestActor(req),
+      triggerKey: "calendar_week.note.create",
+      messageText: buildCalendarWeekMessage("notiz_erstellt", yearNumber, weekNumber, null),
+      contexts: [journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId })],
+    });
     res.status(201).json(note);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -80,7 +94,21 @@ export async function deleteCalendarWeekNote(req: Request, res: Response, next: 
     if (!params) return;
     const { yearNumber, weekNumber, tourId } = params;
     const noteId = Number(req.params.noteId);
+    const existingNote = await notesService.getNote(noteId);
     await notesService.deleteCalendarWeekScopedNote(yearNumber, weekNumber, tourId, noteId, input.version);
+    if (existingNote) {
+      await journalService.recordJournalEntry({
+        tableName: "note",
+        recordId: existingNote.id,
+        op: "delete",
+        oldValue: existingNote,
+        snapshot: existingNote,
+        actor: getRequestActor(req),
+        triggerKey: "calendar_week.note.delete",
+        messageText: buildCalendarWeekMessage("notiz_geloescht", yearNumber, weekNumber, null),
+        contexts: [journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId })],
+      });
+    }
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

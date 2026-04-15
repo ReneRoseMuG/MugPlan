@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - ProjectForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
+ * - Im Edit-Modus zeigt ProjectForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Termine, Attachments, Tags, Notizen.
  * - Footer-Aktionen bleiben im Shell-Layout gesplittet; Delete erscheint nur im Edit-Modus.
  * - Create-Verdrahtung der Sidebar behaelt Draft-faehige Attachments bei.
  *
  * Fehlerfaelle:
  * - Das Projektformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
+ * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Delete erscheint im Create-Modus oder die Create-Sidebar verliert ihre Draft-Verdrahtung.
  *
@@ -165,8 +167,8 @@ vi.mock("@/components/ui/dialog", () => ({
 vi.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  TabsTrigger: ({ children }: { children?: React.ReactNode }) => <button type="button">{children}</button>,
+  TabsList: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
+  TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
 }));
 
 vi.mock("@/components/ui/alert-dialog", () => ({
@@ -283,6 +285,8 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     const markup = renderToStaticMarkup(<ProjectForm />);
 
     expect(markup).toContain("entity-form-shell");
+    expect(markup).not.toContain("tabs-project-main");
+    expect(markup).not.toContain("tab-project-journal");
     expect(getIndex(markup, "project-form-main-column")).toBeLessThan(getIndex(markup, "project-form-sidebar"));
     expect(getIndex(markup, "project-form-sidebar")).toBeLessThan(getIndex(markup, "project-appointments-panel-marker"));
     expect(getIndex(markup, "project-appointments-panel-marker")).toBeLessThan(getIndex(markup, "project-attachments-panel-marker"));
@@ -299,6 +303,9 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     const markup = renderToStaticMarkup(<ProjectForm projectId={7} />);
 
     expect(markup).toContain("entity-form-shell");
+    expect(markup).toContain("tabs-project-main");
+    expect(markup).toContain("tab-project-details");
+    expect(markup).toContain("tab-project-journal");
     expect(getIndex(markup, "project-form-main-column")).toBeLessThan(getIndex(markup, "project-form-sidebar"));
     expect(getIndex(markup, "project-form-sidebar")).toBeLessThan(getIndex(markup, "project-appointments-panel-marker"));
     expect(getIndex(markup, "project-appointments-panel-marker")).toBeLessThan(getIndex(markup, "project-attachments-panel-marker"));

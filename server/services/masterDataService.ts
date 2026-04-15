@@ -451,6 +451,11 @@ export async function createProductCategory(input: InsertProductCategory, roleKe
   }
 }
 
+export async function getProductCategoryById(id: number, roleKey: CanonicalRoleKey): Promise<ProductCategory | undefined> {
+  requireAdmin(roleKey);
+  return masterDataRepository.getProductCategoryById(id);
+}
+
 export async function updateProductCategory(
   id: number,
   expectedVersion: number,
@@ -585,6 +590,11 @@ export async function createComponentCategory(input: InsertComponentCategory, ro
   }
 }
 
+export async function getComponentCategoryById(id: number, roleKey: CanonicalRoleKey): Promise<ComponentCategory | undefined> {
+  requireAdmin(roleKey);
+  return masterDataRepository.getComponentCategoryById(id);
+}
+
 export async function updateComponentCategory(
   id: number,
   expectedVersion: number,
@@ -642,6 +652,11 @@ export async function createProduct(input: InsertProduct, roleKey: CanonicalRole
     }
     throw error;
   }
+}
+
+export async function getProductById(id: number, roleKey: CanonicalRoleKey): Promise<Product | undefined> {
+  requireAdmin(roleKey);
+  return masterDataRepository.getProductById(id);
 }
 
 export async function updateProduct(
@@ -702,6 +717,11 @@ export async function createComponent(input: InsertComponent, roleKey: Canonical
     }
     throw error;
   }
+}
+
+export async function getComponentById(id: number, roleKey: CanonicalRoleKey): Promise<Component | undefined> {
+  requireAdmin(roleKey);
+  return masterDataRepository.getComponentById(id);
 }
 
 export async function updateComponent(
@@ -778,6 +798,11 @@ export async function deleteProductsByCategory(
   return { deletedCount, skippedCount };
 }
 
+export async function listProductsByCategoryId(categoryId: number, roleKey: CanonicalRoleKey): Promise<Product[]> {
+  requireAdmin(roleKey);
+  return masterDataRepository.listProductsByCategoryId(categoryId);
+}
+
 export async function deleteComponentsByCategory(
   categoryId: number,
   roleKey: CanonicalRoleKey,
@@ -810,6 +835,11 @@ export async function deleteComponentsByCategory(
   return { deletedCount, skippedCount };
 }
 
+export async function listComponentsByCategoryId(categoryId: number, roleKey: CanonicalRoleKey): Promise<Component[]> {
+  requireAdmin(roleKey);
+  return masterDataRepository.listComponentsByCategoryId(categoryId);
+}
+
 export async function listTags(roleKey: CanonicalRoleKey): Promise<Tag[]> {
   requireAdmin(roleKey);
   return masterDataRepository.listTags();
@@ -825,6 +855,11 @@ export async function createTag(input: { name: string; color: string }, roleKey:
     }
     throw error;
   }
+}
+
+export async function getTagById(id: number, roleKey: CanonicalRoleKey): Promise<Tag | null> {
+  requireAdmin(roleKey);
+  return masterDataRepository.getTagById(id);
 }
 
 export async function updateTag(

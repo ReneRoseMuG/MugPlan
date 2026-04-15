@@ -176,6 +176,13 @@
       "when": 1776124800000,
       "tag": "0024_tour_weeks",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1776211200000,
+      "tag": "0025_journal_entries",
+      "breakpoints": true
     }
   ]
 }

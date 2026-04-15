@@ -25,6 +25,7 @@ import { UsersPage } from "@/components/UsersPage";
 import { MasterDataPage } from "@/components/MasterDataPage";
 import { ReportsPage } from "@/components/ReportsPage";
 import { MonitoringPage } from "@/components/MonitoringPage";
+import { JournalPage } from "@/components/JournalPage";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
@@ -58,6 +59,7 @@ export type ViewType =
   | "masterData"
   | "users"
   | "reports"
+  | "journal"
   | "monitoring";
 
 export type CalendarNavCommand = {
@@ -142,6 +144,8 @@ function resolveViewTitle(view: ViewType): string {
       return "Benutzerverwaltung";
     case "reports":
       return "Reports";
+    case "journal":
+      return "Journal";
     case "monitoring":
       return "Monitoring";
     default:
@@ -580,6 +584,8 @@ export default function Home({ onLogout }: HomeProps) {
             <UsersPage />
           ) : view === "reports" && canAccessReports ? (
             <ReportsPage />
+          ) : view === "journal" && canAccessReports ? (
+            <JournalPage />
           ) : view === "monitoring" && canAccessMonitoring ? (
             <MonitoringPage
               isAdmin={isAdmin}

@@ -5,6 +5,16 @@ import * as appointmentsService from "../services/appointmentsService";
 import * as tourWeeksService from "../services/tourWeeksService";
 import { handleZodError } from "./validation";
 import { logDebug, logWarn } from "../lib/logger";
+import { getRequestActor } from "../lib/requestActor";
+import {
+  buildAppointmentEmployeeMessage,
+  buildCreateMessage,
+  buildDeleteMessage,
+  buildDisplayModeMessage,
+  buildTagMessage,
+  buildUpdateMessage,
+} from "../lib/journalMessages";
+import * as journalService from "../services/journalService";
 
 const logPrefix = "[appointments-controller]";
 
@@ -20,6 +30,59 @@ function parseTagIds(value: unknown): number[] {
     .map((entry) => Number(entry.trim()))
     .filter((entry) => Number.isFinite(entry) && entry > 0);
   return Array.from(new Set(ids));
+}
+
+type AppointmentEmployeePreview = {
+  id: number;
+  fullName: string;
+};
+
+type AppointmentDetailSnapshot = Awaited<ReturnType<typeof appointmentsService.getAppointmentDetails>>;
+
+async function recordAppointmentEmployeeDelta(params: {
+  appointmentId: number;
+  beforeEmployees: AppointmentEmployeePreview[];
+  afterEmployees: AppointmentEmployeePreview[];
+  appointmentSnapshot: AppointmentDetailSnapshot;
+  actor: ReturnType<typeof getRequestActor>;
+}) {
+  const beforeIds = new Set(params.beforeEmployees.map((employee) => employee.id));
+  const afterIds = new Set(params.afterEmployees.map((employee) => employee.id));
+  const added = params.afterEmployees.filter((employee) => !beforeIds.has(employee.id));
+  const removed = params.beforeEmployees.filter((employee) => !afterIds.has(employee.id));
+
+  await journalService.recordJournalEntries([
+    ...added.map((employee) => ({
+      tableName: "appointment_employee",
+      recordId: null,
+      recordKey: `${params.appointmentId}:${employee.id}`,
+      op: "employee_add",
+      newValue: { employeeId: employee.id, employeeName: employee.fullName },
+      snapshot: params.appointmentSnapshot,
+      contexts: [
+        { tableName: "appointment", recordId: params.appointmentId, relationRole: "owner" },
+        { tableName: "employee", recordId: employee.id, relationRole: "employee" },
+      ],
+      actor: params.actor,
+      triggerKey: "appointment.employee.add",
+      messageText: buildAppointmentEmployeeMessage("hinzugefuegt", employee.fullName, params.appointmentSnapshot, params.appointmentId),
+    })),
+    ...removed.map((employee) => ({
+      tableName: "appointment_employee",
+      recordId: null,
+      recordKey: `${params.appointmentId}:${employee.id}`,
+      op: "employee_remove",
+      oldValue: { employeeId: employee.id, employeeName: employee.fullName },
+      snapshot: params.appointmentSnapshot,
+      contexts: [
+        { tableName: "appointment", recordId: params.appointmentId, relationRole: "owner" },
+        { tableName: "employee", recordId: employee.id, relationRole: "employee" },
+      ],
+      actor: params.actor,
+      triggerKey: "appointment.employee.remove",
+      messageText: buildAppointmentEmployeeMessage("entfernt", employee.fullName, params.appointmentSnapshot, params.appointmentId),
+    })),
+  ]);
 }
 
 export async function getAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -40,6 +103,28 @@ export async function createAppointment(req: Request, res: Response, next: NextF
   try {
     const input = api.appointments.create.input.parse(req.body);
     const appointment = await appointmentsService.createAppointment(input);
+    if (appointment?.id) {
+      const detail = await appointmentsService.getAppointmentDetails(appointment.id);
+      await journalService.recordJournalEntry({
+        tableName: "appointment",
+        recordId: appointment.id,
+        op: "create",
+        snapshot: detail ?? appointment,
+        newValue: detail ?? appointment,
+        actor: getRequestActor(req),
+        triggerKey: "appointment.create",
+        messageText: buildCreateMessage("appointment", detail ?? appointment, appointment.id),
+      });
+      if (detail) {
+        await recordAppointmentEmployeeDelta({
+          appointmentId: appointment.id,
+          beforeEmployees: [],
+          afterEmployees: detail.employees,
+          appointmentSnapshot: detail,
+          actor: getRequestActor(req),
+        });
+      }
+    }
     res.status(201).json(appointment);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -69,10 +154,32 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
     }
 
     const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const appointment = await appointmentsService.updateAppointment(appointmentId, input, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
+    }
+    const after = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "update",
+      oldValue: before,
+      newValue: after ?? appointment,
+      snapshot: after ?? appointment,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.update",
+      messageText: buildUpdateMessage("appointment", after ?? appointment, appointmentId),
+    });
+    if (after) {
+      await recordAppointmentEmployeeDelta({
+        appointmentId,
+        beforeEmployees: before?.employees ?? [],
+        afterEmployees: after.employees,
+        appointmentSnapshot: after,
+        actor: getRequestActor(req),
+      });
     }
     res.json(appointment);
   } catch (err) {
@@ -132,11 +239,24 @@ export async function setAppointmentDisplayMode(req: Request, res: Response, nex
     }
 
     const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const appointment = await appointmentsService.setAppointmentDisplayMode(appointmentId, input, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
     }
+    const after = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "display_mode",
+      oldValue: before ? { displayMode: before.displayMode } : null,
+      newValue: { displayMode: appointment.displayMode },
+      snapshot: after ?? before,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.display_mode",
+      messageText: buildDisplayModeMessage(before?.displayMode ?? "unknown", appointment.displayMode, after ?? before, appointmentId),
+    });
     res.json(appointment);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -290,6 +410,17 @@ export async function addAppointmentTag(req: Request, res: Response, next: NextF
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    const appointment = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "tag_add",
+      newValue: { tagId: relation.tag.id, tagName: relation.tag.name },
+      snapshot: appointment,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.tag.add",
+      messageText: buildTagMessage("hinzugefuegt", "appointment", appointment, relation.tag.name, appointmentId),
+    });
     res.status(201).json(relation);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -314,10 +445,27 @@ export async function removeAppointmentTag(req: Request, res: Response, next: Ne
     const appointmentId = Number(req.params.appointmentId);
     const tagId = Number(req.params.tagId);
     const input = api.appointmentTags.remove.input.parse(req.body);
+    const [appointment, existingRelations] = await Promise.all([
+      appointmentsService.getAppointmentDetails(appointmentId),
+      appointmentsService.listAppointmentTagRelations(appointmentId),
+    ]);
+    const removedTag = existingRelations?.find((relation) => relation.tag.id === tagId)?.tag ?? null;
     const result = await appointmentsService.removeAppointmentTag(appointmentId, tagId, input.version, roleKey);
     if (result === null) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    if (removedTag) {
+      await journalService.recordJournalEntry({
+        tableName: "appointment",
+        recordId: appointmentId,
+        op: "tag_remove",
+        oldValue: { tagId: removedTag.id, tagName: removedTag.name },
+        snapshot: appointment,
+        actor: getRequestActor(req),
+        triggerKey: "appointment.tag.remove",
+        messageText: buildTagMessage("entfernt", "appointment", appointment, removedTag.name, appointmentId),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -342,10 +490,32 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
     }
     const input = api.appointments.cancel.input.parse(req.body);
     const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const result = await appointmentsService.cancelAppointment(appointmentId, input.version, roleKey);
     if (!result.found) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    const after = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "cancel",
+      oldValue: before,
+      newValue: after,
+      snapshot: after ?? before,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.cancel",
+      messageText: `Termin ${before?.title ?? `#${appointmentId}`} storniert`,
+    });
+    if (after) {
+      await recordAppointmentEmployeeDelta({
+        appointmentId,
+        beforeEmployees: before?.employees ?? [],
+        afterEmployees: after.employees,
+        appointmentSnapshot: after,
+        actor: getRequestActor(req),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -370,10 +540,32 @@ export async function parkAppointment(req: Request, res: Response, next: NextFun
     }
     const input = api.appointments.park.input.parse(req.body);
     const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const result = await appointmentsService.parkAppointment(appointmentId, input.version, roleKey);
     if (!result.found) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    const after = await appointmentsService.getAppointmentDetails(appointmentId);
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "park",
+      oldValue: before,
+      newValue: after,
+      snapshot: after ?? before,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.park",
+      messageText: `Termin ${before?.title ?? `#${appointmentId}`} geparkt`,
+    });
+    if (after) {
+      await recordAppointmentEmployeeDelta({
+        appointmentId,
+        beforeEmployees: before?.employees ?? [],
+        afterEmployees: after.employees,
+        appointmentSnapshot: after,
+        actor: getRequestActor(req),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -399,10 +591,21 @@ export async function removeEmployeeFromAppointment(req: Request, res: Response,
     const input = api.appointmentEmployees.remove.input.parse(req.body);
     const appointmentId = Number(req.params.id);
     const employeeId = Number(req.params.employeeId);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const result = await appointmentsService.removeEmployeeFromAppointment(appointmentId, employeeId, input.version, roleKey);
     if (!result.found) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    const after = await appointmentsService.getAppointmentDetails(appointmentId);
+    if (after) {
+      await recordAppointmentEmployeeDelta({
+        appointmentId,
+        beforeEmployees: before?.employees ?? [],
+        afterEmployees: after.employees,
+        appointmentSnapshot: after,
+        actor: getRequestActor(req),
+      });
     }
     res.status(204).send();
   } catch (err) {
@@ -429,11 +632,22 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
 
     const appointmentId = Number(req.params.id);
     logDebug(`${logPrefix} delete request appointmentId=${appointmentId}`);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
     const appointment = await appointmentsService.deleteAppointment(appointmentId, input.version, roleKey);
     if (!appointment) {
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "appointment",
+      recordId: appointmentId,
+      op: "delete",
+      oldValue: before ?? appointment,
+      snapshot: before ?? appointment,
+      actor: getRequestActor(req),
+      triggerKey: "appointment.delete",
+      messageText: buildDeleteMessage("appointment", before ?? appointment, appointmentId),
+    });
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

@@ -1,6 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
+import { buildCalendarWeekMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
+import * as journalService from "../services/journalService";
 import * as tourWeeksService from "../services/tourWeeksService";
 
 function canMutateTourWeeks(req: Request): boolean {
@@ -52,6 +55,26 @@ export async function blockTourWeek(req: Request, res: Response, next: NextFunct
     const isoYear = Number(req.params.isoYear);
     const isoWeek = Number(req.params.isoWeek);
     const result = await tourWeeksService.blockTourWeek(tourId, { isoYear, isoWeek });
+    const snapshot = {
+      tourId,
+      isoYear,
+      isoWeek,
+      isBlocked: true,
+      tourName: result.tourName ?? null,
+      affectedAppointmentCount: result.affectedAppointmentCount,
+    };
+    await journalService.recordJournalEntry({
+      tableName: "calendar_week",
+      recordKey: `${isoYear}-${String(isoWeek).padStart(2, "0")}-${tourId}`,
+      op: "update",
+      field: "isBlocked",
+      newValue: snapshot,
+      snapshot,
+      actor: getRequestActor(req),
+      triggerKey: "calendar_week.block",
+      messageText: buildCalendarWeekMessage("blockiert", isoYear, isoWeek, result.tourName ?? null),
+      contexts: [journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId })],
+    });
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;
@@ -70,6 +93,26 @@ export async function unblockTourWeek(req: Request, res: Response, next: NextFun
     const isoYear = Number(req.params.isoYear);
     const isoWeek = Number(req.params.isoWeek);
     const result = await tourWeeksService.unblockTourWeek(tourId, { isoYear, isoWeek });
+    const snapshot = {
+      tourId,
+      isoYear,
+      isoWeek,
+      isBlocked: false,
+      tourName: result.tourName ?? null,
+      affectedAppointmentCount: result.affectedAppointmentCount,
+    };
+    await journalService.recordJournalEntry({
+      tableName: "calendar_week",
+      recordKey: `${isoYear}-${String(isoWeek).padStart(2, "0")}-${tourId}`,
+      op: "update",
+      field: "isBlocked",
+      newValue: snapshot,
+      snapshot,
+      actor: getRequestActor(req),
+      triggerKey: "calendar_week.unblock",
+      messageText: buildCalendarWeekMessage("freigegeben", isoYear, isoWeek, result.tourName ?? null),
+      contexts: [journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId })],
+    });
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;

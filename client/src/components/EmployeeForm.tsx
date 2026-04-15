@@ -18,6 +18,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
 import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
@@ -82,6 +83,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [draftEmployeeTags, setDraftEmployeeTags] = useState<EmployeeTagDraftItem[]>([]);
   const [draftEmployeeNotes, setDraftEmployeeNotes] = useState<DraftEmployeeNote[]>([]);
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
   const draftEmployeeNoteIdRef = useRef(-1);
 
@@ -702,17 +704,28 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1">
+    <Tabs
+      value={isEditing ? activeMainTab : "details"}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      className="h-full"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeTab === "termine" ? 99999 : undefined}
+        contentMaxWidth={activeMainTab === "details" && activeTab === "termine" ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-col gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <Users className="w-6 h-6" />
                 {title}
               </h2>
+              {isEditing ? (
+                <TabsList data-testid="tabs-employee-main">
+                  <TabsTrigger value="details" data-testid="tab-employee-details-main">Details</TabsTrigger>
+                  <TabsTrigger value="journal" data-testid="tab-employee-journal">Journal</TabsTrigger>
+                </TabsList>
+              ) : null}
             </div>
 
             {onCancel ? (
@@ -728,7 +741,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
             ) : null}
           </div>
         )}
-        sidebar={(
+        sidebar={activeMainTab === "details" ? (
           <div className="min-w-0 space-y-6 p-6" data-testid="employee-form-sidebar">
             <EmployeeAttachmentsPanel
               employeeId={employeeId}
@@ -796,7 +809,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               )}
             </div>
           </div>
-        )}
+        ) : undefined}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -823,19 +836,20 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </div>
         )}
       >
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className={`flex min-h-0 flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
-          data-testid="employee-form-main-column"
-        >
-          <TabsList>
-            <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
-            <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
-            {isEditing ? (
-              <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
-            ) : null}
-          </TabsList>
+        {activeMainTab === "details" ? (
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className={`flex min-h-0 flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
+            data-testid="employee-form-main-column"
+          >
+            <TabsList>
+              <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
+              <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
+              {isEditing ? (
+                <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
+              ) : null}
+            </TabsList>
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
             <div className="w-full space-y-6 min-h-0">
@@ -990,7 +1004,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               )}
             </TabsContent>
           ) : null}
-        </Tabs>
+          </Tabs>
+        ) : (
+          <JournalRecordsView
+            context={{ tableName: "employee", recordId: employeeId }}
+            pageSize={25}
+            testIdPrefix="employee-journal"
+          />
+        )}
 
         {isEditing && employeeDetailsLoading ? (
           <div className="mt-6 text-sm text-muted-foreground">
@@ -998,6 +1019,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
           </div>
         ) : null}
       </EntityFormShell>
-    </div>
+      </div>
+    </Tabs>
   );
 }

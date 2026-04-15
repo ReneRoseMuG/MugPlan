@@ -3,6 +3,9 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as projectNotesService from "../services/projectNotesService";
 import * as notesService from "../services/notesService";
+import { buildNoteMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
+import * as journalService from "../services/journalService";
 
 export async function listProjectNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -23,6 +26,23 @@ export async function createProjectNote(req: Request, res: Response, next: NextF
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "note",
+      recordId: note.id,
+      op: "create",
+      newValue: note,
+      snapshot: note,
+      actor: getRequestActor(req),
+      triggerKey: "project.note.create",
+      messageText: buildNoteMessage("erstellt", "project", null, note.title, projectId),
+      contexts: [
+        {
+          tableName: "project",
+          recordId: projectId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(201).json(note);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -42,7 +62,27 @@ export async function deleteProjectNote(req: Request, res: Response, next: NextF
     const input = api.projectNotes.delete.input.parse(req.body);
     const projectId = Number(req.params.projectId);
     const noteId = Number(req.params.noteId);
+    const existingNote = await notesService.getNote(noteId);
     await notesService.deleteProjectScopedNote(projectId, noteId, input.version);
+    if (existingNote) {
+      await journalService.recordJournalEntry({
+        tableName: "note",
+        recordId: existingNote.id,
+        op: "delete",
+        oldValue: existingNote,
+        snapshot: existingNote,
+        actor: getRequestActor(req),
+        triggerKey: "project.note.delete",
+        messageText: buildNoteMessage("geloescht", "project", null, existingNote.title, projectId),
+        contexts: [
+          {
+            tableName: "project",
+            recordId: projectId,
+            relationRole: "owner",
+          },
+        ],
+      });
+    }
     res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {

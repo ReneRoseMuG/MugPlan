@@ -7,6 +7,8 @@ type UserWithRoleResult = {
   userId: number;
   isActive: boolean;
   roleCode: DbRoleCode | null;
+  username: string;
+  fullName: string;
 };
 
 export type AuthUserRecord = {
@@ -66,6 +68,8 @@ export async function getUserWithRole(userId: number): Promise<UserWithRoleResul
         userId: users.id,
         userIsActive: users.isActive,
         roleCode: roles.code,
+        username: users.username,
+        fullName: users.fullName,
       })
       .from(users)
       .leftJoin(roles, eq(users.roleId, roles.id))
@@ -81,6 +85,8 @@ export async function getUserWithRole(userId: number): Promise<UserWithRoleResul
       userId: row.userId,
       isActive: row.userIsActive,
       roleCode: normalizedRoleCode,
+      username: row.username,
+      fullName: row.fullName,
     };
   } catch {
     // Rollen-/User-Modell ist in dieser Phase optional; fehlende Tabellen duerfen Settings nicht blockieren.

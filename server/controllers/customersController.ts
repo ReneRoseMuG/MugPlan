@@ -4,6 +4,13 @@ import { ZodError } from "zod";
 import * as appointmentsService from "../services/appointmentsService";
 import * as customersService from "../services/customersService";
 import { logWarn } from "../lib/logger";
+import { getRequestActor } from "../lib/requestActor";
+import {
+  buildCreateMessage,
+  buildTagMessage,
+  buildUpdateMessage,
+} from "../lib/journalMessages";
+import * as journalService from "../services/journalService";
 
 const logPrefix = "[customers-controller]";
 
@@ -93,6 +100,16 @@ export async function createCustomer(req: Request, res: Response, next: NextFunc
   try {
     const input = api.customers.create.input.parse(req.body);
     const customer = await customersService.createCustomer(input);
+    await journalService.recordJournalEntry({
+      tableName: "customer",
+      recordId: customer.id,
+      op: "create",
+      snapshot: customer,
+      newValue: customer,
+      actor: getRequestActor(req),
+      triggerKey: "customer.create",
+      messageText: buildCreateMessage("customer", customer, customer.id),
+    });
     res.status(201).json(customer);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -115,11 +132,24 @@ export async function updateCustomer(req: Request, res: Response, next: NextFunc
       res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
       return;
     }
-    const customer = await customersService.updateCustomer(Number(req.params.id), input, roleKey);
+    const customerId = Number(req.params.id);
+    const before = await customersService.getCustomer(customerId, roleKey);
+    const customer = await customersService.updateCustomer(customerId, input, roleKey);
     if (!customer) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    await journalService.recordJournalEntry({
+      tableName: "customer",
+      recordId: customer.id,
+      op: "update",
+      oldValue: before,
+      newValue: customer,
+      snapshot: customer,
+      actor: getRequestActor(req),
+      triggerKey: "customer.update",
+      messageText: buildUpdateMessage("customer", customer, customer.id),
+    });
     res.json(customer);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -213,6 +243,17 @@ export async function addCustomerTag(req: Request, res: Response, next: NextFunc
       res.status(404).json({ code: "NOT_FOUND" });
       return;
     }
+    const customer = await customersService.getCustomer(customerId, roleKey);
+    await journalService.recordJournalEntry({
+      tableName: "customer",
+      recordId: customerId,
+      op: "tag_add",
+      newValue: { tagId: relation.tag.id, tagName: relation.tag.name },
+      snapshot: customer,
+      actor: getRequestActor(req),
+      triggerKey: "customer.tag.add",
+      messageText: buildTagMessage("hinzugefuegt", "customer", customer, relation.tag.name, customerId),
+    });
     res.status(201).json(relation);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -237,10 +278,27 @@ export async function removeCustomerTag(req: Request, res: Response, next: NextF
     const customerId = Number(req.params.customerId);
     const tagId = Number(req.params.tagId);
     const input = api.customerTags.remove.input.parse(req.body);
+    const [customer, existingRelations] = await Promise.all([
+      customersService.getCustomer(customerId, roleKey),
+      customersService.listCustomerTagRelations(customerId, roleKey),
+    ]);
+    const removedTag = existingRelations?.find((relation) => relation.tag.id === tagId)?.tag ?? null;
     const result = await customersService.removeCustomerTag(customerId, tagId, input.version, roleKey);
     if (result === null) {
       res.status(404).json({ code: "NOT_FOUND" });
       return;
+    }
+    if (removedTag) {
+      await journalService.recordJournalEntry({
+        tableName: "customer",
+        recordId: customerId,
+        op: "tag_remove",
+        oldValue: { tagId: removedTag.id, tagName: removedTag.name },
+        snapshot: customer,
+        actor: getRequestActor(req),
+        triggerKey: "customer.tag.remove",
+        messageText: buildTagMessage("entfernt", "customer", customer, removedTag.name, customerId),
+      });
     }
     res.status(204).send();
   } catch (err) {

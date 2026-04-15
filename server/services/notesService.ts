@@ -12,6 +12,10 @@ export class NotesError extends Error {
   }
 }
 
+export async function getNote(noteId: number): Promise<Note | null> {
+  return notesRepository.getNote(noteId);
+}
+
 export async function updateNote(noteId: number, data: UpdateNote & { version: number }): Promise<Note | null> {
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");

@@ -112,6 +112,7 @@ export function Sidebar({
   const AppointmentsIcon = domainIcons.appointmentsList;
   const ReportsIcon = domainIcons.reports;
   const MonitoringIcon = domainIcons.monitoring;
+  const JournalIcon = domainIcons.journal;
   const EmployeesIcon = domainIcons.employees;
   const TeamsIcon = domainIcons.teams;
   const ToursIcon = domainIcons.tours;
@@ -191,10 +192,11 @@ export function Sidebar({
 
         {canAccessReports ? (
           <NavGroup title="Reports">
-            <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} />
-            <div className="flex flex-col gap-2">
-              <NavButton
-                icon={MonitoringIcon}
+          <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} />
+          <NavButton icon={JournalIcon} label="Journal" isActive={currentView === "journal"} onClick={() => onViewChange("journal")} />
+          <div className="flex flex-col gap-2">
+            <NavButton
+              icon={MonitoringIcon}
                 label="Monitoring"
                 isActive={currentView === "monitoring"}
                 onClick={() => onViewChange("monitoring")}

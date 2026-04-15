@@ -3,12 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - `Home` delegiert Listen- und Monitoring-Oeffnungen in den jeweils vorgesehenen Termin-Kontext.
+ * - `Home` rendert die globale Journal-Ansicht ueber den normalen View-Switch innerhalb des Hauptlayouts.
  * - Bearbeitete Formularviews blenden die Sidebar sichtbar aus.
  * - Projektformulare koennen den Kontextkalender oeffnen.
  * - Rueckkehr aus dem Terminformular setzt den Wochen-Scroll-Restore ueber `returnContext`.
  *
  * Fehlerfaelle:
  * - Termin-Kontext oder Rueckwegzustand gehen beim View-Wechsel verloren.
+ * - Die neue Journal-Ansicht wird nicht im zentralen Home-View gerendert.
  * - Die Sidebar bleibt trotz aktivem Formular sichtbar.
  * - Der Kontextkalender oeffnet nicht mit Projektbindung.
  *
@@ -25,6 +27,7 @@ const projectFormCalls: Array<Record<string, unknown>> = [];
 const calendarWorkspaceCalls: Array<Record<string, unknown>> = [];
 const appointmentFormCalls: Array<Record<string, unknown>> = [];
 const employeesPageCalls: Array<Record<string, unknown>> = [];
+const journalPageCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/Sidebar", () => ({
   Sidebar: (props: Record<string, unknown>) => {
@@ -124,6 +127,13 @@ vi.mock("@/components/MonitoringPage", () => ({
   MonitoringPage: () => <div>monitoring-page</div>,
 }));
 
+vi.mock("@/components/JournalPage", () => ({
+  JournalPage: (props: Record<string, unknown>) => {
+    journalPageCalls.push(props);
+    return <div data-testid="journal-page">journal-page</div>;
+  },
+}));
+
 vi.mock("@/hooks/useListFilters", () => ({
   useListFilters: () => ({
     filters: { employeeId: null },
@@ -186,6 +196,7 @@ describe("PKG-08 home behavior wiring", () => {
     calendarWorkspaceCalls.length = 0;
     appointmentFormCalls.length = 0;
     employeesPageCalls.length = 0;
+    journalPageCalls.length = 0;
   });
 
   it("opens the appointment form from the standalone appointments list with return context", async () => {
@@ -338,6 +349,19 @@ describe("PKG-08 home behavior wiring", () => {
       mode: "global",
       monitoringItems: [],
     });
+  });
+
+  it("renders the journal page inside the main view switch", async () => {
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "journal",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("data-testid=\"sidebar\"");
+    expect(html).toContain("data-testid=\"journal-page\"");
+    expect(journalPageCalls).toHaveLength(1);
   });
 
 });

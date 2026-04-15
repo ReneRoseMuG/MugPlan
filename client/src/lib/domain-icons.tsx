@@ -10,6 +10,7 @@ import {
   Layers,
   CalendarRange,
   ShieldAlert,
+  History,
 } from "lucide-react";
 
 export const domainIcons = {
@@ -21,6 +22,7 @@ export const domainIcons = {
   teams: Layers,
   employeeAbsences: CalendarRange,
   monitoring: ShieldAlert,
+  journal: History,
   reports: FileText,
   admin: Settings,
 } satisfies Record<string, ComponentType<{ className?: string }>>;

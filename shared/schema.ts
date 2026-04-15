@@ -175,6 +175,59 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 
+export const journalEntries = mysqlTable("journal_entry", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  tableName: varchar("table_name", { length: 64 }).notNull(),
+  recordId: bigint("record_id", { mode: "number" }),
+  recordKey: varchar("record_key", { length: 255 }),
+  op: varchar("op", { length: 32 }).notNull(),
+  field: varchar("field_name", { length: 128 }),
+  oldValue: json("old_value").$type<unknown | null>(),
+  newValue: json("new_value").$type<unknown | null>(),
+  snapshot: json("snapshot").$type<unknown | null>(),
+  actorUserId: bigint("actor_user_id", { mode: "number" }),
+  actorName: varchar("actor_name", { length: 255 }),
+  triggerKey: varchar("trigger_key", { length: 128 }),
+  messageText: text("message_text").notNull(),
+  isRaw: boolean("is_raw").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  byCreatedAtId: index("idx_journal_entry_created_id").on(table.createdAt, table.id),
+  byTableRecordCreated: index("idx_journal_entry_table_record_created").on(
+    table.tableName,
+    table.recordId,
+    table.createdAt,
+  ),
+  byTableRecordKeyCreated: index("idx_journal_entry_table_record_key_created").on(
+    table.tableName,
+    table.recordKey,
+    table.createdAt,
+  ),
+  byActorCreated: index("idx_journal_entry_actor_created").on(table.actorUserId, table.createdAt),
+  byTriggerCreated: index("idx_journal_entry_trigger_created").on(table.triggerKey, table.createdAt),
+}));
+
+export type JournalEntry = typeof journalEntries.$inferSelect;
+export type InsertJournalEntry = typeof journalEntries.$inferInsert;
+
+export const journalEntryContexts = mysqlTable("journal_entry_context", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  entryId: bigint("entry_id", { mode: "number" })
+    .notNull()
+    .references(() => journalEntries.id, { onDelete: "cascade" }),
+  contextTable: varchar("context_table", { length: 64 }).notNull(),
+  contextId: bigint("context_id", { mode: "number" }),
+  contextKey: varchar("context_key", { length: 255 }),
+  relationRole: varchar("relation_role", { length: 64 }),
+}, (table) => ({
+  byEntryId: index("idx_journal_context_entry").on(table.entryId),
+  byContextId: index("idx_journal_context_lookup").on(table.contextTable, table.contextId, table.entryId),
+  byContextKey: index("idx_journal_context_key_lookup").on(table.contextTable, table.contextKey, table.entryId),
+}));
+
+export type JournalEntryContext = typeof journalEntryContexts.$inferSelect;
+export type InsertJournalEntryContext = typeof journalEntryContexts.$inferInsert;
+
 // Note - Notizverwaltung (FT 13)
 export const notes = mysqlTable("note", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),

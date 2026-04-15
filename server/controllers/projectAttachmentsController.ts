@@ -10,7 +10,10 @@ import {
   writeAttachmentBuffer,
 } from "../lib/attachmentFiles";
 import { parseMultipartFile } from "../lib/multipart";
+import { buildAttachmentMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
 import * as projectAttachmentsService from "../services/projectAttachmentsService";
+import * as journalService from "../services/journalService";
 
 export async function listProjectAttachments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -64,6 +67,23 @@ export async function createProjectAttachment(req: Request, res: Response, next:
     };
 
     const created = await projectAttachmentsService.createProjectAttachment(attachmentData);
+    await journalService.recordJournalEntry({
+      tableName: "project_attachment",
+      recordId: created.id,
+      op: "create",
+      newValue: created,
+      snapshot: created,
+      actor: getRequestActor(req),
+      triggerKey: "project.attachment.create",
+      messageText: buildAttachmentMessage("hochgeladen", "project", null, created.originalName, projectId),
+      contexts: [
+        {
+          tableName: "project",
+          recordId: projectId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(201).json(created);
   } catch (err) {
     if (err instanceof Error && err.message === "Payload too large") {
@@ -133,6 +153,23 @@ export async function deleteProjectAttachment(req: Request, res: Response, next:
     }
 
     await projectAttachmentsService.softDeleteProjectAttachment(attachmentId);
+    await journalService.recordJournalEntry({
+      tableName: "project_attachment",
+      recordId: attachment.id,
+      op: "delete",
+      oldValue: attachment,
+      snapshot: attachment,
+      actor: getRequestActor(req),
+      triggerKey: "project.attachment.delete",
+      messageText: buildAttachmentMessage("geloescht", "project", null, attachment.originalName, attachment.projectId),
+      contexts: [
+        {
+          tableName: "project",
+          recordId: attachment.projectId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(200).json({ message: "Anhang geloescht" });
   } catch (err) {
     next(err);

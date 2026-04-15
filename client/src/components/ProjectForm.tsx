@@ -68,6 +68,7 @@ import {
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
 import { isManagedRemarksTagName } from "@shared/appointmentCancellation";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
 import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -177,6 +178,7 @@ export function ProjectForm({
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const didInitializeCreateFormRef = useRef(false);
   const initializedEditProjectIdRef = useRef<number | null>(null);
@@ -1470,15 +1472,26 @@ export function ProjectForm({
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1">
+    <Tabs
+      value={isEditing ? activeMainTab : "details"}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      className="h-full"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-col gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <FolderKanban className="w-6 h-6" />
                 {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
               </h2>
+              {isEditing ? (
+                <TabsList data-testid="tabs-project-main">
+                  <TabsTrigger value="details" data-testid="tab-project-details">Details</TabsTrigger>
+                  <TabsTrigger value="journal" data-testid="tab-project-journal">Journal</TabsTrigger>
+                </TabsList>
+              ) : null}
             </div>
 
             <Button
@@ -1492,7 +1505,7 @@ export function ProjectForm({
             </Button>
           </div>
         )}
-        sidebar={(
+        sidebar={activeMainTab === "details" ? (
           <div className="min-w-0 space-y-6 p-6" data-testid="project-form-sidebar">
             {isEditing ? (
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
@@ -1599,7 +1612,7 @@ export function ProjectForm({
               }}
             />
           </div>
-        )}
+        ) : undefined}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -1624,7 +1637,8 @@ export function ProjectForm({
           </div>
         )}
       >
-        <div className="w-full space-y-6" data-testid="project-form-main-column">
+        {activeMainTab === "details" ? (
+          <div className="w-full space-y-6" data-testid="project-form-main-column">
         {isEditing ? (
           <ProjectOrderForm
             name={name}
@@ -1734,6 +1748,13 @@ export function ProjectForm({
               ) : null}
 
           </div>
+        ) : (
+          <JournalRecordsView
+            context={{ tableName: "project", recordId: effectiveProjectId }}
+            pageSize={25}
+            testIdPrefix="project-journal"
+          />
+        )}
 
       </EntityFormShell>
 
@@ -1824,7 +1845,8 @@ export function ProjectForm({
         </AlertDialogContent>
       </AlertDialog>
 
-    </div>
+      </div>
+    </Tabs>
   );
 }
 

@@ -10,7 +10,10 @@ import {
   writeAttachmentBuffer,
 } from "../lib/attachmentFiles";
 import { parseMultipartFile } from "../lib/multipart";
+import { buildAttachmentMessage } from "../lib/journalMessages";
+import { getRequestActor } from "../lib/requestActor";
 import * as employeeAttachmentsService from "../services/employeeAttachmentsService";
+import * as journalService from "../services/journalService";
 
 export async function listEmployeeAttachments(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -68,6 +71,23 @@ export async function createEmployeeAttachment(req: Request, res: Response, next
     };
 
     const created = await employeeAttachmentsService.createEmployeeAttachment(attachmentData);
+    await journalService.recordJournalEntry({
+      tableName: "employee_attachment",
+      recordId: created.id,
+      op: "create",
+      newValue: created,
+      snapshot: created,
+      actor: getRequestActor(req),
+      triggerKey: "employee.attachment.create",
+      messageText: buildAttachmentMessage("hochgeladen", "employee", null, created.originalName, employeeId),
+      contexts: [
+        {
+          tableName: "employee",
+          recordId: employeeId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(201).json(created);
   } catch (err) {
     if (err instanceof Error && err.message === "Payload too large") {
@@ -139,6 +159,23 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
     }
 
     await employeeAttachmentsService.softDeleteEmployeeAttachment(attachmentId);
+    await journalService.recordJournalEntry({
+      tableName: "employee_attachment",
+      recordId: attachment.id,
+      op: "delete",
+      oldValue: attachment,
+      snapshot: attachment,
+      actor: getRequestActor(req),
+      triggerKey: "employee.attachment.delete",
+      messageText: buildAttachmentMessage("geloescht", "employee", null, attachment.originalName, attachment.employeeId),
+      contexts: [
+        {
+          tableName: "employee",
+          recordId: attachment.employeeId,
+          relationRole: "owner",
+        },
+      ],
+    });
     res.status(200).json({ message: "Anhang geloescht" });
   } catch (err) {
     next(err);

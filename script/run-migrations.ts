@@ -138,6 +138,18 @@ function parseCreateIndexStatement(statement: string) {
   };
 }
 
+function parseDropTableStatement(statement: string) {
+  const normalized = statement.trim().replace(/;$/, "");
+  const match = /^DROP TABLE(?: IF EXISTS)?\s+`([^`]+)`$/i.exec(normalized);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    tableName: match[1],
+  };
+}
+
 function parseAlterTableAddKeysAndConstraints(statement: string) {
   const normalized = statement.trim().replace(/;$/, "");
   const tableMatch = /^ALTER TABLE\s+`([^`]+)`\s+/i.exec(normalized);
@@ -244,6 +256,17 @@ async function executeMigrationChunk(connection: mysql.Connection, chunk: string
   if (createIndex) {
     const exists = await indexExists(connection, createIndex.tableName, createIndex.indexName);
     if (exists) {
+      return;
+    }
+
+    await connection.query(chunk);
+    return;
+  }
+
+  const dropTable = parseDropTableStatement(chunk);
+  if (dropTable) {
+    const exists = await tableExists(connection, dropTable.tableName);
+    if (!exists) {
       return;
     }
 
