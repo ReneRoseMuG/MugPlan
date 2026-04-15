@@ -300,9 +300,9 @@ describe("FT01 appointment form layout tour integration", () => {
     const markup = renderToStaticMarkup(<AppointmentForm />);
 
     expect(markup).toContain("entity-form-shell");
-    expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "slot-project-relation"));
+    expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "appointment-employee-slot-marker"));
+    expect(getIndex(markup, "appointment-employee-slot-marker")).toBeLessThan(getIndex(markup, "slot-project-relation"));
     expect(getIndex(markup, "slot-project-relation")).toBeLessThan(getIndex(markup, "slot-customer-relation"));
-    expect(getIndex(markup, "slot-customer-relation")).toBeLessThan(getIndex(markup, "appointment-employee-slot-marker"));
     expect(getIndex(markup, "appointment-employee-slot-marker")).toBeLessThan(getIndex(markup, "document-extraction-dropzone-marker"));
 
     const employeeSlotProps = employeeSlotCalls.at(-1);

@@ -86,10 +86,9 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
 
   await openWeekPlanning(page, secondTour.id);
 
-  await page.getByTestId("toggle-tour-week-picker").click();
-  await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
-  await page.getByTestId("button-confirm-tour-week").click();
-  await page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`).getByTestId(
+  const weekCard = page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`);
+  await expect(weekCard).toBeVisible();
+  await weekCard.getByTestId(
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
   await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
@@ -98,7 +97,9 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/tours/${secondTour.id}/week-employees`);
-    return response.json();
+    const weeks = await response.json() as Array<{ isoYear: number; isoWeek: number; employees: Array<unknown> }>;
+    const targetWeek = weeks.find((week) => week.isoYear === nextWeek.isoYear && week.isoWeek === nextWeek.isoWeek);
+    return targetWeek?.employees ?? null;
   }).toEqual([]);
 });
 

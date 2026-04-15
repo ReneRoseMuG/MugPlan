@@ -17,15 +17,21 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const useMutationMock = vi.fn();
 const useCalendarAppointmentsMock = vi.fn();
 const useCalendarWeekLaneEmployeePreviewsMock = vi.fn();
 const useSettingMock = vi.fn();
 const setSettingMock = vi.fn();
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
-  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
-}));
+vi.mock("@tanstack/react-query", async () => {
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  return {
+    ...actual,
+    useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
+    useMutation: (options: unknown) => useMutationMock(options),
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  };
+});
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
@@ -97,11 +103,18 @@ import { CalendarWeekView } from "../../../client/src/components/calendar/Calend
 describe("CalendarWeekView - lane hover fallback", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
+    useMutationMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
     useCalendarWeekLaneEmployeePreviewsMock.mockReset();
     useSettingMock.mockReset();
     setSettingMock.mockReset();
 
+    useMutationMock.mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+      reset: vi.fn(),
+    });
     useCalendarAppointmentsMock.mockReturnValue({ data: [] });
     useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({ data: [] });
     useQueryMock.mockImplementation((options: { queryKey?: unknown }) => {

@@ -162,10 +162,9 @@ test("Test 1: Entfernen über Wochenplan-Dialog mit Datumsfilter", async ({ page
 test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ page }) => {
   await openWeekPlanning(page);
 
-  await page.getByTestId("toggle-tour-week-picker").click();
-  await page.getByTestId("input-tour-week").fill(nextWeekInputValue);
-  await page.getByTestId("button-confirm-tour-week").click();
-  await page.getByTestId(`card-tour-week-${nextWeekIsoYear}-${nextWeekIsoWeek}`).getByTestId(
+  const weekCard = page.getByTestId(`card-tour-week-${nextWeekIsoYear}-${nextWeekIsoWeek}`);
+  await expect(weekCard).toBeVisible();
+  await weekCard.getByTestId(
     `button-add-tour-week-member-${nextWeekIsoYear}-${nextWeekIsoWeek}`,
   ).click();
   await page.getByTestId(`employee-picker-card-${addCandidateEmployee.id}`).dblclick();

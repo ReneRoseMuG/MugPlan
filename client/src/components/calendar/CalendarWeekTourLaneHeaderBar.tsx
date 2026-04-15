@@ -27,12 +27,12 @@ export function CalendarWeekTourLaneHeaderBar({
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
   const wrapperClassName = menuSlot
-    ? "grid h-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)]"
+    ? "grid h-full min-w-0 grid-cols-[1.75rem_minmax(0,1fr)]"
     : "h-full min-w-0";
   const content = (
     <>
       <span
-        className="flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
+        className="pointer-events-none flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
         aria-hidden={weekNotesIcon === undefined && weekNotesCount === undefined}
       >
         {weekNotesIcon ? (
@@ -44,8 +44,8 @@ export function CalendarWeekTourLaneHeaderBar({
           </span>
         ) : null}
       </span>
-      <span className="relative z-30 flex min-w-0 items-center gap-2 px-2.5">
-        <span className="inline-flex max-w-full items-center overflow-hidden text-ellipsis whitespace-nowrap rounded-sm bg-black/35 px-1.5 py-0.5 shadow-[0_0_0_1px_rgba(255,255,255,0.14)]">
+      <span className="pointer-events-none flex min-w-0 items-center gap-2 px-2">
+        <span className="max-w-full truncate">
           {label}
         </span>
         {statusSlot ? <span className="flex shrink-0 items-center">{statusSlot}</span> : null}

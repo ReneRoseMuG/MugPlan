@@ -65,7 +65,7 @@ test("blocks save when neither project nor customer is set", async ({ page }) =>
   await page.getByTestId("input-start-date").fill(startDate);
   await page.getByTestId("button-save-appointment").click();
 
-  await expect(page.getByText("Kunde oder Projekt ist erforderlich")).toBeVisible();
+  await expect(page.getByText("Kunde oder Projekt ist erforderlich", { exact: true })).toBeVisible();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 });
 

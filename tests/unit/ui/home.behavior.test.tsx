@@ -301,7 +301,10 @@ describe("PKG-08 home behavior wiring", () => {
     const onSaved = appointmentFormCalls[0].onSaved as () => void;
     onSaved();
 
-    expect(setters.get(26)).toHaveBeenCalledWith(144);
+    expect(setters.get(26)).toHaveBeenCalledWith({
+      scrollLeft: 144,
+      scrollTop: null,
+    });
     expect(setters.get(24)).toHaveBeenCalledWith(null);
     expect(setters.get(2)).toHaveBeenCalledWith("week");
   });
@@ -318,9 +321,9 @@ describe("PKG-08 home behavior wiring", () => {
     expect(calendarWorkspaceCalls[0]).toMatchObject({
       mode: "global",
       activeView: "week",
-      restoreScrollLeft: 88,
+      restoreRequest: 88,
     });
-    expect(calendarWorkspaceCalls[0].onScrollRestoreApplied).toEqual(expect.any(Function));
+    expect(calendarWorkspaceCalls[0].onRestoreApplied).toEqual(expect.any(Function));
   });
 
   it("passes monitoring items into the global calendar workspace", async () => {
