@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TagBadge } from "@/components/ui/tag-badge";
@@ -40,11 +40,16 @@ export function TagPickerPanel({
   className,
   testIdPrefix = "tag-picker",
 }: TagPickerPanelProps) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   const assignedIds = useMemo(() => new Set(assignedTags.map((item) => item.tag.id)), [assignedTags]);
   const unassignedTags = useMemo(
     () => availableTags.filter((tag) => !assignedIds.has(tag.id)),
     [assignedIds, availableTags],
   );
+  const handleAddTag = (tagId: number) => {
+    setPickerOpen(false);
+    onAdd(tagId);
+  };
 
   return (
     <SidebarChildPanel
@@ -52,7 +57,7 @@ export function TagPickerPanel({
       icon={<Tags className="h-4 w-4" />}
       className={className}
       headerActions={canEdit ? (
-        <Popover>
+        <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
           <Tooltip>
             <TooltipTrigger asChild>
               <PopoverTrigger asChild>
@@ -76,7 +81,7 @@ export function TagPickerPanel({
           <PopoverContent className="w-72 p-3" align="end">
             <TagSelectionMenuContent
               tags={unassignedTags}
-              onAddTag={onAdd}
+              onAddTag={handleAddTag}
               emptyText="Alle Tags sind bereits zugewiesen."
               testIdPrefix={`${testIdPrefix}-add-tag`}
               showVerboseLabels
