@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  appointments,
   appointmentNotes,
   calendarWeekNotes,
   customerNotes,
@@ -8,7 +9,10 @@ import {
   journalEntries,
   journalEntryContexts,
   projectNotes,
+  projects,
 } from "@shared/schema";
+
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type JournalContextRow = {
   contextTable: string;
@@ -84,6 +88,17 @@ export type JournalInsertInput = {
   contexts: JournalInsertContextInput[];
 };
 
+export type ProjectHierarchyRow = {
+  projectId: number;
+  customerId: number | null;
+};
+
+export type AppointmentHierarchyRow = {
+  appointmentId: number;
+  projectId: number | null;
+  customerId: number | null;
+};
+
 function normalizeTimestamp(value: Date | string): string {
   if (value instanceof Date) {
     return value.toISOString();
@@ -128,8 +143,8 @@ function buildEntryWhere(params: JournalListParams) {
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-export async function insertJournalEntry(input: JournalInsertInput): Promise<number> {
-  const result = await db.insert(journalEntries).values({
+async function insertJournalEntryTx(tx: DbTx, input: JournalInsertInput): Promise<number> {
+  const result = await tx.insert(journalEntries).values({
     tableName: input.tableName,
     recordId: input.recordId ?? null,
     recordKey: input.recordKey ?? null,
@@ -148,7 +163,7 @@ export async function insertJournalEntry(input: JournalInsertInput): Promise<num
   const entryId = Number((result as any)?.[0]?.insertId ?? (result as any)?.insertId ?? 0);
 
   if (input.contexts.length > 0) {
-    await db.insert(journalEntryContexts).values(
+    await tx.insert(journalEntryContexts).values(
       input.contexts.map((context) => ({
         entryId,
         contextTable: context.contextTable,
@@ -160,6 +175,10 @@ export async function insertJournalEntry(input: JournalInsertInput): Promise<num
   }
 
   return entryId;
+}
+
+export async function insertJournalEntry(input: JournalInsertInput): Promise<number> {
+  return db.transaction(async (tx) => insertJournalEntryTx(tx, input));
 }
 
 export async function listJournalEntries(params: JournalListParams): Promise<JournalListResult> {
@@ -310,4 +329,46 @@ export async function listNoteOwners(noteId: number): Promise<JournalContextRow[
       relationRole: "owner",
     })),
   ];
+}
+
+export async function getProjectHierarchy(projectId: number): Promise<ProjectHierarchyRow | null> {
+  const [row] = await db
+    .select({
+      projectId: projects.id,
+      customerId: projects.customerId,
+    })
+    .from(projects)
+    .where(eq(projects.id, projectId))
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    projectId: row.projectId,
+    customerId: row.customerId ?? null,
+  };
+}
+
+export async function getAppointmentHierarchy(appointmentId: number): Promise<AppointmentHierarchyRow | null> {
+  const [row] = await db
+    .select({
+      appointmentId: appointments.id,
+      projectId: appointments.projectId,
+      customerId: appointments.customerId,
+    })
+    .from(appointments)
+    .where(eq(appointments.id, appointmentId))
+    .limit(1);
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    appointmentId: row.appointmentId,
+    projectId: row.projectId ?? null,
+    customerId: row.customerId ?? null,
+  };
 }
