@@ -316,6 +316,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("tab-employee-wochenplanung");
     expect(markup).toContain("KW 18 / 2026");
     expect(markup).toContain("Tour Nord");
+    expect(markup).toContain("27.04.26 - 03.05.26");
+    expect(markup).not.toContain("2026-04-27 - 2026-05-03");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));

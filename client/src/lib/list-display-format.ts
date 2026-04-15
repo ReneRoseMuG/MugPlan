@@ -13,6 +13,14 @@ export function formatListDate(value: string | null | undefined): string {
   return format(parsed, "dd.MM.yy", { locale: de });
 }
 
+export function formatListDateRange(startDate: string | null | undefined, endDate: string | null | undefined): string {
+  const startLabel = formatListDate(startDate);
+  const endLabel = formatListDate(endDate);
+
+  if (startLabel && endLabel) return `${startLabel} - ${endLabel}`;
+  return startLabel || endLabel;
+}
+
 export function formatListTime(value: string | null | undefined): string {
   if (!value) return "";
   return value.slice(0, 5);

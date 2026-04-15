@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -971,7 +972,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                       footerVisibility="visible"
                       footer={(
                         <div className="space-y-1 text-xs text-slate-500">
-                          <div>{weekPlan.weekStartDate} - {weekPlan.weekEndDate}</div>
+                          <div>{formatListDateRange(weekPlan.weekStartDate, weekPlan.weekEndDate)}</div>
                           <div>{weekPlan.isLocked ? "Schreibgeschützt ab Wochenstart" : weekPlan.tourName}</div>
                         </div>
                       )}
