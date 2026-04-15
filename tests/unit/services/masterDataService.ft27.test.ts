@@ -8,6 +8,7 @@
  * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
+ * - Gleiche Komponentennamen sind nur innerhalb derselben Kategorie konfliktbehaftet.
  * - Produkt- und Komponentenkategorien sind loeschbar, solange sie nicht mehr verwendet werden.
  * - Komponenten-Loeschkonflikte liefern differenzierte Referenzdetails fuer Produkte und Projektauftragspositionen.
  * - Ohne Filter wird serverseitig auf active normalisiert.
@@ -233,6 +234,32 @@ describe("FT27 unit: masterDataService", () => {
         {
           name: "Produkt X",
           categoryId: 999,
+          description: null,
+          isActive: true,
+          version: 1,
+        },
+        "ADMIN",
+      ),
+    ).rejects.toMatchObject<Partial<MasterDataError>>({
+      status: 409,
+      code: "BUSINESS_CONFLICT",
+    });
+  });
+
+  it("maps drizzle duplicate cause on component create to BUSINESS_CONFLICT", async () => {
+    repositoryMocks.createComponent.mockRejectedValueOnce({
+      message: "Failed query: insert into `components` ...",
+      cause: {
+        code: "ER_DUP_ENTRY",
+        errno: 1062,
+      },
+    });
+
+    await expect(
+      createComponent(
+        {
+          name: "Komponente X",
+          categoryId: 1,
           description: null,
           isActive: true,
           version: 1,

@@ -81,13 +81,19 @@ export function assertMasterDataAdmin(roleKey: CanonicalRoleKey): void {
   requireAdmin(roleKey);
 }
 
+function extractMysqlError(error: unknown): { code?: string; errno?: number } | null {
+  const directError = error as { code?: string; errno?: number; cause?: unknown } | null;
+  const causeError = directError?.cause as { code?: string; errno?: number } | null | undefined;
+  return causeError ?? directError;
+}
+
 function isDuplicateKeyError(error: unknown): boolean {
-  const mysqlError = error as { code?: string; errno?: number } | null;
+  const mysqlError = extractMysqlError(error);
   return mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062;
 }
 
 function isRowReferencedError(error: unknown): boolean {
-  const mysqlError = error as { code?: string; errno?: number } | null;
+  const mysqlError = extractMysqlError(error);
   return (
     mysqlError?.code === "ER_ROW_IS_REFERENCED_2"
     || mysqlError?.code === "ER_ROW_IS_REFERENCED"
@@ -96,7 +102,7 @@ function isRowReferencedError(error: unknown): boolean {
 }
 
 function isMissingReferenceError(error: unknown): boolean {
-  const mysqlError = error as { code?: string; errno?: number } | null;
+  const mysqlError = extractMysqlError(error);
   return mysqlError?.code === "ER_NO_REFERENCED_ROW_2" || mysqlError?.errno === 1452;
 }
 

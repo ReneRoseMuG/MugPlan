@@ -519,7 +519,7 @@ export type UpdateProduct = z.infer<typeof updateProductSchema>;
 // Components - Komponenten (FT 27)
 export const components = mysqlTable("components", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
   shortCode: varchar("short_code", { length: 64 }),
   categoryId: bigint("category_id", { mode: "number" })
     .notNull()
@@ -529,7 +529,9 @@ export const components = mysqlTable("components", {
   version: int("version").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
+}, (table) => ({
+  categoryNameUnique: uniqueIndex("components_category_name_unique").on(table.categoryId, table.name),
+}));
 
 export const insertComponentSchema = createInsertSchema(components).omit({
   id: true,

@@ -7,6 +7,7 @@
  * Abgedeckte Regeln:
  * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
+ * - Gleiche Komponentennamen sind in verschiedenen Komponentenkategorien erlaubt, innerhalb derselben Kategorie aber nicht.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
  * - Komponenten-Loeschkonflikte liefern Referenzdetails fuer Produktzuordnungen und Projektauftragspositionen.
  * - Auch Default-Kategorien bleiben loeschbar, solange keine direkte Nutzung mehr besteht.
@@ -331,6 +332,77 @@ describe("FT27 integration: master data admin API", () => {
       })
       .expect(200);
     expect(updatedComponent.body.shortCode).toBe("CMP2");
+  });
+
+  it("allows the same component name in different component categories", async () => {
+    const admin = await loginAdminAgent();
+    const suffix = `${Date.now()}-${userCounter++}`;
+    const sharedName = `CMP-FT27-CROSS-${suffix}`;
+    const firstCategory = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: `CK-FT27-CROSS-A-${suffix}`, isActive: true, version: 1 })
+      .expect(201);
+    const secondCategory = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: `CK-FT27-CROSS-B-${suffix}`, isActive: true, version: 1 })
+      .expect(201);
+
+    await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: sharedName,
+        categoryId: firstCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: sharedName,
+        categoryId: secondCategory.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+  });
+
+  it("rejects duplicate component names inside the same component category", async () => {
+    const admin = await loginAdminAgent();
+    const suffix = `${Date.now()}-${userCounter++}`;
+    const category = await admin
+      .post("/api/admin/master-data/component-categories")
+      .send({ name: `CK-FT27-DUP-${suffix}`, isActive: true, version: 1 })
+      .expect(201);
+    const duplicateName = `CMP-FT27-DUP-${suffix}`;
+
+    await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: duplicateName,
+        categoryId: category.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(201);
+
+    await admin
+      .post("/api/admin/master-data/components")
+      .send({
+        name: duplicateName,
+        categoryId: category.body.id,
+        description: null,
+        isActive: true,
+        version: 1,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
   });
 
   it("imports products into the selected product category idempotently", async () => {
