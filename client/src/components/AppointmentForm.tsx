@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
@@ -56,6 +57,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatAppointmentEditContext, resolveCustomerEditLabel } from "@/lib/edit-form-context";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -870,6 +872,26 @@ export function AppointmentForm({
   const selectedTour = useMemo(
     () => tours.find((tour) => tour.id === selectedTourId) ?? null,
     [tours, selectedTourId],
+  );
+  const appointmentEditContext = useMemo(
+    () => (
+      isEditing
+        ? formatAppointmentEditContext({
+          startDate,
+          startTime: startTimeEnabled ? startTimeValue : null,
+          tourName: selectedTour?.name ?? null,
+          customerName: resolveCustomerEditLabel(selectedCustomer),
+        })
+        : null
+    ),
+    [
+      isEditing,
+      selectedCustomer,
+      selectedTour?.name,
+      startDate,
+      startTimeEnabled,
+      startTimeValue,
+    ],
   );
   const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
   const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
@@ -2355,6 +2377,7 @@ export function AppointmentForm({
                   {isEditing ? "Termin bearbeiten" : "Neuer Termin"}
                 </h2>
               </div>
+              <EditFormContextText>{appointmentEditContext}</EditFormContextText>
               {isEditing ? (
                 <TabsList data-testid="tabs-appointment-main">
                   <TabsTrigger value="details" data-testid="tab-appointment-details">Details</TabsTrigger>
@@ -3030,6 +3053,7 @@ export function AppointmentForm({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Notiz bearbeiten</DialogTitle>
+            <EditFormContextText>{templateNoteTitle.trim() || null}</EditFormContextText>
           </DialogHeader>
 
           <div className="space-y-4">

@@ -1,10 +1,11 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { User, Phone, MapPin, Mail, X } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
@@ -22,6 +23,7 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
+import { joinEditFormContext, resolveCustomerEditLabel } from "@/lib/edit-form-context";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -120,6 +122,30 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   });
   const visibleCustomerTags = isEditMode ? customerTagRelations : draftCustomerTags;
   const visibleCustomerNotes = isEditMode ? notes : draftCustomerNotes;
+  const customerEditContext = useMemo(
+    () => (
+      isEditMode
+        ? joinEditFormContext([
+          resolveCustomerEditLabel({
+            fullName: customer?.fullName,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            company: formData.company,
+            customerNumber: formData.customerNumber,
+          }),
+          formData.customerNumber.trim() ? `Nr. ${formData.customerNumber.trim()}` : null,
+        ])
+        : null
+    ),
+    [
+      customer?.fullName,
+      formData.company,
+      formData.customerNumber,
+      formData.firstName,
+      formData.lastName,
+      isEditMode,
+    ],
+  );
 
   const createNoteMutation = useMutation({
     mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
@@ -744,6 +770,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 <User className="w-6 h-6" />
                 {isEditMode ? "Kunde bearbeiten" : "Neuer Kunde"}
               </h2>
+              <EditFormContextText>{customerEditContext}</EditFormContextText>
               {isEditMode ? (
                 <TabsList data-testid="tabs-customer-main">
                   <TabsTrigger value="details" data-testid="tab-customer-details">Details</TabsTrigger>
@@ -1031,4 +1058,3 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     </Tabs>
   );
 }
-

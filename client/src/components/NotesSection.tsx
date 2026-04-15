@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -270,6 +271,9 @@ export function NotesSection({
               <StickyNote className="h-5 w-5" />
               {isEditMode ? "Notiz bearbeiten" : "Neue Notiz"}
             </DialogTitle>
+            <EditFormContextText className="pl-7">
+              {isEditMode ? (noteTitle.trim() || null) : null}
+            </EditFormContextText>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -356,4 +360,3 @@ export function NotesSection({
     </div>
   );
 }
-

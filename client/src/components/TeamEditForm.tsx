@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Trash2, Users, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
@@ -77,6 +78,7 @@ export function TeamEditForm({
   );
 
   const title = isCreate ? defaultName : "Team bearbeiten";
+  const teamEditContext = !isCreate ? (team?.name?.trim() ?? null) : null;
   const handleSubmit = async () => onSubmit(team?.id ?? null, selectedMembers, selectedColor);
 
   return (
@@ -85,11 +87,12 @@ export function TeamEditForm({
         mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <Users className="w-6 h-6" />
                 {title}
               </h2>
+              <EditFormContextText>{teamEditContext}</EditFormContextText>
             </div>
 
             <Button

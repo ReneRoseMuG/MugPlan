@@ -2,7 +2,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { CalendarRange, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Employee, EmployeeAbsence } from "@shared/schema";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatAbsenceEditContext } from "@/lib/edit-form-context";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { useToast } from "@/hooks/use-toast";
@@ -359,6 +361,18 @@ export function EmployeeAbsencesPanel({
     setEditingAbsenceId(null);
     setFormState(defaultFormState());
   };
+  const absenceEditContext = useMemo(
+    () => (
+      editingAbsenceId !== null
+        ? formatAbsenceEditContext({
+          from: formState.from,
+          until: formState.until,
+          typeLabel: formatAbsenceType(formState.type),
+        })
+        : null
+    ),
+    [editingAbsenceId, formState.from, formState.type, formState.until],
+  );
 
   if (!canManageAbsences) {
     return (
@@ -371,11 +385,12 @@ export function EmployeeAbsencesPanel({
   return (
     <div className="space-y-6" data-testid="employee-absences-panel">
       <Card>
-        <CardHeader>
+        <CardHeader className="gap-1">
           <CardTitle className="flex items-center gap-2 text-base">
             <CalendarRange className="h-4 w-4" />
             {editingAbsenceId === null ? "Abwesenheit anlegen" : "Abwesenheit bearbeiten"}
           </CardTitle>
+          <EditFormContextText>{absenceEditContext}</EditFormContextText>
         </CardHeader>
         <CardContent className="space-y-4">
           {previewFollowUpError ? (
@@ -591,4 +606,3 @@ export function EmployeeAbsencesPanel({
     </div>
   );
 }
-

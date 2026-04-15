@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { X } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 
 interface EntityFormLayoutProps {
   title: string;
+  subtitle?: ReactNode;
   icon: ReactNode;
   children: ReactNode;
   headerStartAction?: ReactNode;
@@ -24,6 +26,7 @@ interface EntityFormLayoutProps {
 
 export function EntityFormLayout({
   title,
+  subtitle,
   icon,
   children,
   headerStartAction,
@@ -64,12 +67,15 @@ export function EntityFormLayout({
       <Card className="mx-auto flex h-full min-h-0 w-full flex-1 flex-col">
         <CardHeader className="border-b border-border">
           <div className="flex items-center justify-between">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-start gap-3">
               {headerStartAction}
-              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
-                {icon}
-                {title}
-              </h2>
+              <div className="flex min-w-0 flex-col gap-1">
+                <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                  {icon}
+                  {title}
+                </h2>
+                <EditFormContextText>{subtitle}</EditFormContextText>
+              </div>
             </div>
             {onClose && (
               <Button 

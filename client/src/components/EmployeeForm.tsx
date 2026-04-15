@@ -6,6 +6,7 @@ import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
@@ -20,6 +21,7 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
+import { resolveEmployeeEditLabel } from "@/lib/edit-form-context";
 import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
@@ -702,6 +704,18 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   };
 
   const title = isEditing ? "Mitarbeiter bearbeiten" : "Neuer Mitarbeiter";
+  const employeeEditContext = useMemo(
+    () => (
+      isEditing
+        ? resolveEmployeeEditLabel({
+          fullName: employeeDetails?.employee.fullName,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+        })
+        : null
+    ),
+    [employeeDetails?.employee.fullName, formData.firstName, formData.lastName, isEditing],
+  );
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -721,6 +735,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 <Users className="w-6 h-6" />
                 {title}
               </h2>
+              <EditFormContextText>{employeeEditContext}</EditFormContextText>
               {isEditing ? (
                 <TabsList data-testid="tabs-employee-main">
                   <TabsTrigger value="details" data-testid="tab-employee-details-main">Details</TabsTrigger>

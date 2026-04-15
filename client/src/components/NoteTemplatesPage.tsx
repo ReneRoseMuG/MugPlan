@@ -9,6 +9,7 @@ import { BoardView } from "@/components/ui/board-view";
 import { FileText } from "lucide-react";
 import type { NoteTemplate } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { joinEditFormContext } from "@/lib/edit-form-context";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
@@ -89,6 +90,9 @@ export function NoteTemplatesPage() {
   const [formPrint, setFormPrint] = useState(false);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const templateEditContext = editingTemplate
+    ? joinEditFormContext([formTitle.trim() || editingTemplate.title])
+    : null;
 
   const extractApiCode = (error: unknown): string | null => {
     if (!(error instanceof Error)) return null;
@@ -265,6 +269,7 @@ export function NoteTemplatesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
+        subtitle={templateEditContext}
         icon={FileText}
         selectedColor={formCardColor}
         onColorChange={setFormCardColor}
@@ -340,5 +345,4 @@ export function NoteTemplatesPage() {
     </>
   );
 }
-
 

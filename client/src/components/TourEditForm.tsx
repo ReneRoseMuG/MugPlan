@@ -4,6 +4,7 @@ import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "da
 import { CalendarPlus2, Lock, LockOpen, MoreVertical, Route, Trash2, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
@@ -262,6 +263,7 @@ export function TourEditForm({
   };
 
   const title = isCreate ? defaultName : "Tour bearbeiten";
+  const tourEditContext = !isCreate ? (selectedName.trim() || tour?.name?.trim() || null) : null;
   const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
   const showWeekInsertAction = !isCreate && activeTab === "wochenplanung" && isWeekPlanningSupported;
   const showDeleteAction = !isCreate && canDelete && tour && onDelete;
@@ -273,11 +275,12 @@ export function TourEditForm({
         mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 flex-col gap-1">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <Route className="w-6 h-6" />
                 {title}
               </h2>
+              <EditFormContextText>{tourEditContext}</EditFormContextText>
             </div>
 
             <Button

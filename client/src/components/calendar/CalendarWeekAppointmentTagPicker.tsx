@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -324,6 +325,7 @@ export function CalendarWeekAppointmentTagPicker({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Notiz bearbeiten</DialogTitle>
+            <EditFormContextText>{noteTitle.trim() || null}</EditFormContextText>
           </DialogHeader>
 
           <div className="space-y-4">

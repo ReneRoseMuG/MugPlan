@@ -2,6 +2,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HelpCircle } from "lucide-react";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { joinEditFormContext } from "@/lib/edit-form-context";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -140,6 +141,17 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     () => !helpKey.trim() || !title.trim() || isBusy || (isEditing && !helpText),
     [helpKey, title, isBusy, isEditing, helpText],
   );
+  const editContext = useMemo(
+    () => (
+      isEditing
+        ? joinEditFormContext([
+          title.trim() || helpText?.title || null,
+          helpKey.trim() ? `Hilfe-Key ${helpKey.trim()}` : null,
+        ])
+        : null
+    ),
+    [helpKey, helpText?.title, isEditing, title],
+  );
 
   const handleSubmit = async () => {
     if (!helpKey.trim() || !title.trim()) {
@@ -175,6 +187,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
   return (
     <EntityFormLayout
       title={isEditing ? "Hilfetext bearbeiten" : "Neuer Hilfetext"}
+      subtitle={editContext}
       icon={<HelpCircle className="w-6 h-6" />}
       onClose={onCancel}
       onCancel={onCancel}
@@ -247,5 +260,4 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     </EntityFormLayout>
   );
 }
-
 

@@ -23,6 +23,7 @@ import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { 
   FolderKanban, 
@@ -44,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { joinEditFormContext } from "@/lib/edit-form-context";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { DEFAULT_PROJECT_TYPE, resolveProjectEditForm } from "@/lib/project-edit-form";
@@ -445,6 +447,17 @@ export function ProjectForm({
   const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
   const projectNamePreview = name.trim();
+  const projectEditContext = useMemo(
+    () => (
+      isEditing
+        ? joinEditFormContext([
+          projectNamePreview,
+          orderNumber.trim() ? `Auftrag ${orderNumber.trim()}` : null,
+        ])
+        : null
+    ),
+    [isEditing, orderNumber, projectNamePreview],
+  );
   const projectVersion = projectData?.project.version;
   const resolvedProjectEditForm = resolveProjectEditForm(projectType);
   const articleLines = buildProjectArticleLines(productSelections);
@@ -1486,6 +1499,7 @@ export function ProjectForm({
                 <FolderKanban className="w-6 h-6" />
                 {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
               </h2>
+              <EditFormContextText>{projectEditContext}</EditFormContextText>
               {isEditing ? (
                 <TabsList data-testid="tabs-project-main">
                   <TabsTrigger value="details" data-testid="tab-project-details">Details</TabsTrigger>
@@ -1862,4 +1876,3 @@ function extractApiCode(error: unknown): string | null {
     return null;
   }
 }
-

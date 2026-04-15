@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ export interface EntityEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  subtitle?: ReactNode;
   icon: LucideIcon;
   children: ReactNode;
   onSave?: () => void;
@@ -34,6 +36,7 @@ export function EntityEditDialog({
   open,
   onOpenChange,
   title,
+  subtitle,
   icon: Icon,
   children,
   onSave,
@@ -87,6 +90,9 @@ export function EntityEditDialog({
             {title}
             {headerExtra}
           </DialogTitle>
+          <EditFormContextText className="pl-7">
+            {subtitle}
+          </EditFormContextText>
         </DialogHeader>
         <div className="space-y-4 pt-4">
           {children}
