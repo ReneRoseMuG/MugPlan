@@ -5,6 +5,7 @@
  *
  * Abgedeckte Regeln:
  * - Admins sehen den sichtbaren Konfigurationsbereich mit Mindestmitarbeiter-Eingabe und Save-Aktion.
+ * - Das Monitoring-Filterpanel bleibt unterhalb der Tabelle im unteren Seitenbereich verdrahtet.
  * - Die Tabellenansicht leitet Row-Doppelklicks in den Termin-Open-Flow weiter.
  * - Monitoring-Zeilen erhalten triggerabhaengige Highlight-Farben.
  * - Die Tabelle rendert nur die neue Trigger-Spaltenstruktur ohne Problem-Spalte.
@@ -153,6 +154,7 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     expect(html).toContain("monitoring-filter-customer-last-name");
     expect(html).toContain("monitoring-filter-order-number");
     expect(html).toContain("table-monitoring");
+    expect(html.indexOf("table-monitoring")).toBeLessThan(html.indexOf("monitoring-filter-customer-last-name"));
 
     const props = tableViewCalls[0];
     expect((props.columns as Array<{ id: string }>).map((column) => column.id)).toEqual([

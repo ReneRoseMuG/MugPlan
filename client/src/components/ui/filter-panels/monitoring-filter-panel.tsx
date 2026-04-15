@@ -46,7 +46,7 @@ export function MonitoringFilterPanel({
           label="Kunde Nr."
           placeholderLabel="Nr."
           helpKey="appointments.filter.customerNumber"
-          maxLength={8}
+          numericOnly={false}
           className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
         />
         <ProjectTitleFilterInput
@@ -67,7 +67,6 @@ export function MonitoringFilterPanel({
           label="Auftrag Nr."
           placeholderLabel="Nr."
           helpKey="appointments.filter.orderNumber"
-          maxLength={8}
           className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
         />
         <div className="flex min-w-[150px] flex-col gap-1">

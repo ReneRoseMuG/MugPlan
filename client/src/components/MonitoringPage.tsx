@@ -268,6 +268,13 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     </div>
   ) : null;
 
+  const footerPanel = (
+    <div className="flex flex-col gap-4">
+      {configPanel}
+      {filterPanel}
+    </div>
+  );
+
   const content = (
     <div className="flex h-full min-h-0 flex-col p-6">
       <TableView
@@ -299,10 +306,8 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       icon={<AlertTriangle className="h-5 w-5" />}
       helpKey="monitoring"
       isLoading={isInitialLoading && !initialItems}
-      filterSlot={filterPanel}
-      filterPlacement="top"
       contentSlot={content}
-      footerSlot={configPanel}
+      footerSlot={footerPanel}
     />
   );
 }

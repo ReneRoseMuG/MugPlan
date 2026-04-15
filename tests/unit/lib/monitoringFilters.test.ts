@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Monitoring-Filter wenden Text- und Nummern-Teiltreffer fuer Kunde, Projekt und Auftrag kombiniert an.
+ * - Kunden- und Auftragsnummern werden tolerant gegen Gross-/Kleinschreibung sowie Trennzeichen verglichen.
  * - Tour- und Trigger-Filter arbeiten exakt und behalten Doppeltrigger-Termine fuer passende Trigger sichtbar.
  * - Die Kundenanzeige formatiert Nachname/Vorname bevorzugt und faellt sonst auf den Legacy-Anzeigenamen zurueck.
  *
@@ -65,6 +66,29 @@ describe("FT31 unit: monitoring filters", () => {
       customerNumber: "100",
       projectTitle: "winter",
       orderNumber: "ORD-10",
+    });
+
+    expect(result.map((item) => item.appointmentId)).toEqual([1]);
+  });
+
+  it("matches customer and order identifiers case-insensitively without requiring separator input", () => {
+    const items: MonitoringListResponse = [
+      buildMonitoringItem({
+        appointmentId: 1,
+        customerNumber: "C-2100",
+        orderNumber: "A-0218229A",
+      }),
+      buildMonitoringItem({
+        appointmentId: 2,
+        customerNumber: "C-9999",
+        orderNumber: "B-0000001",
+      }),
+    ];
+
+    const result = applyMonitoringFilters(items, {
+      ...defaultMonitoringFilters,
+      customerNumber: "c2100",
+      orderNumber: "a0218229a",
     });
 
     expect(result.map((item) => item.appointmentId)).toEqual([1]);

@@ -30,8 +30,8 @@ function normalizeText(value: string | null | undefined): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function normalizeNumber(value: string): string {
-  return value.trim();
+function normalizeIdentifier(value: string | null | undefined): string {
+  return normalizeText(value).replace(/[^a-z0-9]/g, "");
 }
 
 export function formatMonitoringCustomerName(
@@ -59,14 +59,21 @@ function matchesText(values: Array<string | null | undefined>, normalizedFilter:
     .some((value) => value.includes(normalizedFilter));
 }
 
+function matchesIdentifier(values: Array<string | null | undefined>, normalizedFilter: string): boolean {
+  if (!normalizedFilter) return true;
+  return values
+    .map(normalizeIdentifier)
+    .some((value) => value.includes(normalizedFilter));
+}
+
 export function applyMonitoringFilters(
   items: MonitoringListResponse | undefined,
   filters: MonitoringFilters,
 ): MonitoringListResponse {
   const normalizedCustomerLastName = normalizeText(filters.customerLastName);
-  const normalizedCustomerNumber = normalizeNumber(filters.customerNumber);
+  const normalizedCustomerNumber = normalizeIdentifier(filters.customerNumber);
   const normalizedProjectTitle = normalizeText(filters.projectTitle);
-  const normalizedOrderNumber = normalizeNumber(filters.orderNumber);
+  const normalizedOrderNumber = normalizeIdentifier(filters.orderNumber);
 
   return (items ?? []).filter((item) => {
     if (!matchesText([
@@ -78,7 +85,7 @@ export function applyMonitoringFilters(
       return false;
     }
 
-    if (normalizedCustomerNumber && !(item.customerNumber ?? "").includes(normalizedCustomerNumber)) {
+    if (!matchesIdentifier([item.customerNumber], normalizedCustomerNumber)) {
       return false;
     }
 
@@ -86,7 +93,7 @@ export function applyMonitoringFilters(
       return false;
     }
 
-    if (normalizedOrderNumber && !(item.orderNumber ?? "").includes(normalizedOrderNumber)) {
+    if (!matchesIdentifier([item.orderNumber], normalizedOrderNumber)) {
       return false;
     }
 

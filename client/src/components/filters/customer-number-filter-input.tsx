@@ -11,6 +11,7 @@ interface CustomerNumberFilterInputProps {
   maxLength?: number;
   id?: string;
   helpKey?: string;
+  numericOnly?: boolean;
 }
 
 export function CustomerNumberFilterInput({
@@ -23,6 +24,7 @@ export function CustomerNumberFilterInput({
   maxLength,
   id = "customer-filter-number",
   helpKey = "customers.filter.customerNumber",
+  numericOnly = true,
 }: CustomerNumberFilterInputProps) {
   return (
     <SearchFilterInput
@@ -33,7 +35,7 @@ export function CustomerNumberFilterInput({
       value={value}
       onChange={onChange}
       onClear={onClear}
-      numericOnly
+      numericOnly={numericOnly}
       maxLength={maxLength}
       className={className}
     />
