@@ -449,7 +449,7 @@ test("opens the week preview for a new next-week appointment and applies the pla
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Wochenplanung fuer Termin uebernehmen");
+  await expect(dialog).toContainText("Wochenplanung für Termin übernehmen");
   await expect(dialog.getByTestId(`appointment-week-preview-row-${weekEmployee.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
   await expect(page.getByTestId("button-appointment-week-mode-additive")).toBeVisible();
@@ -538,7 +538,7 @@ test("marks conflicting week employees as non-selectable for new appointments", 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Ueberschneidung mit bestehendem Termin",
+    "Überschneidung mit bestehendem Termin",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).not.toBeChecked();
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeDisabled();
@@ -583,7 +583,7 @@ test("uses the already confirmed preview decision when an existing appointment c
     "Bleibt nur durch aktuelle Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung uebernommen werden",
+    "Kann aus der Wochenplanung übernommen werden",
   );
   await page.getByTestId("button-appointment-week-mode-replace").click();
   await immediateDialog.getByTestId("button-tour-employee-cascade-confirm").click();
@@ -631,6 +631,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
 
   await openExistingAppointmentInNextWeek(page, appointment.id);
   await page.getByTestId("input-start-date").fill(targetWeekSecondDate);
+  await expect(page.getByTestId("input-start-date")).toHaveValue(targetWeekSecondDate);
 
   const saveResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "PATCH"
@@ -645,7 +646,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
     "Bleibt nur durch aktuelle Terminzuweisung erhalten",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
-    "Kann aus der Wochenplanung uebernommen werden",
+    "Kann aus der Wochenplanung übernommen werden",
   );
   await page.getByTestId("button-appointment-week-mode-replace").click();
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
@@ -768,7 +769,7 @@ test("opens the week preview when an existing appointment without tour later get
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Wochenplanung fuer Termin uebernehmen");
+  await expect(dialog).toContainText("Wochenplanung für Termin übernehmen");
   await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId("badge-tour")).toBeVisible();

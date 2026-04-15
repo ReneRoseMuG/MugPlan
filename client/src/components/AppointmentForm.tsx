@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Ban, Calendar, Clock, FolderKanban, ParkingCircle, Trash2, Users, X } from "lucide-react";
+import { flushSync } from "react-dom";
 import { addDays, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
@@ -967,10 +968,22 @@ export function AppointmentForm({
   };
 
   const handleStartDateChange = (nextStartDate: string) => {
-    if (isEndDateEnabled && endDate) {
-      setEndDate(shiftEndDateByStartDateChange(startDate, endDate, nextStartDate));
+    const currentResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, startDate);
+    const nextResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, nextStartDate);
+    const shiftedEndDate = isEndDateEnabled && endDate
+      ? shiftEndDateByStartDateChange(startDate, endDate, nextStartDate)
+      : null;
+
+    flushSync(() => {
+      if (shiftedEndDate) {
+        setEndDate(shiftedEndDate);
+      }
+      setStartDate(nextStartDate);
+    });
+
+    if (currentResolutionKey !== nextResolutionKey) {
+      setResolvedAppointmentWeekPlanKey(null);
     }
-    setStartDate(nextStartDate);
   };
 
   const handleAssignTeam = (team: Team) => {
@@ -1020,6 +1033,12 @@ export function AppointmentForm({
       resolutionMode: "additive",
       persistAfterConfirm: params.persistAfterConfirm,
     });
+  };
+
+  const closeAppointmentWeekPreviewDialog = () => {
+    if (!appointmentWeekPreviewDialog) return;
+    setResolvedAppointmentWeekPlanKey(appointmentWeekPreviewDialog.resolutionKey);
+    setAppointmentWeekPreviewDialog(null);
   };
 
   const applyTourChange = (tourId: number | null) => {
@@ -1691,42 +1710,56 @@ export function AppointmentForm({
     // Kein Save bei historischen Eingaben.
     if ((isPastDateInput || isPastTimeInput) && !allowHistoricalInput) return;
 
-    if (assignedEmployeeIds.length === 0) {
-      console.info(`${logPrefix} save requires confirmation: no employees`);
-      setEmployeeConfirmOpen(true);
-      return;
-    }
+    const currentResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, startDate);
+    if (selectedTourId !== null && currentResolutionKey !== null && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
+      try {
+        if (isEditing && appointmentId && appointmentDetail) {
+          const originalTourId = appointmentDetail.tourId ?? null;
+          const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
+          const currentWeekKey = buildIsoWeekKey(startDate);
+          const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
 
-    if (isEditing && appointmentId && appointmentDetail) {
-      const originalTourId = appointmentDetail.tourId ?? null;
-      const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
-      const currentWeekKey = buildIsoWeekKey(startDate);
-      const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
-      const currentResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, startDate);
-
-      if (requiresTourPreview && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
-        try {
-          const preview = await loadAppointmentTourChangePreview();
-          if (preview?.hasWeekPlan) {
+          if (requiresTourPreview) {
+            const preview = await loadAppointmentTourChangePreview();
+            if (preview?.hasWeekPlan) {
+              openAppointmentWeekPreviewDialog(preview, {
+                title: "Wochenplanung vor dem Speichern prüfen",
+                description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
+                persistAfterConfirm: true,
+                resolutionKey: currentResolutionKey,
+              });
+              return;
+            }
+          }
+        } else {
+          const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
+          if (preview.hasWeekPlan) {
             openAppointmentWeekPreviewDialog(preview, {
               title: "Wochenplanung vor dem Speichern prüfen",
               description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
               persistAfterConfirm: true,
-              resolutionKey: currentResolutionKey ?? `${selectedTourId ?? "none"}-${preview.isoYear}-${preview.isoWeek}`,
+              resolutionKey: currentResolutionKey,
             });
             return;
           }
-          setResolvedAppointmentWeekPlanKey(currentResolutionKey);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
-          toast({
-            title: "Wochenplanung konnte nicht geladen werden",
-            description: message,
-            variant: "destructive",
-          });
-          return;
         }
+
+        setResolvedAppointmentWeekPlanKey(currentResolutionKey);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        toast({
+          title: "Wochenplanung konnte nicht geladen werden",
+          description: message,
+          variant: "destructive",
+        });
+        return;
       }
+    }
+
+    if (assignedEmployeeIds.length === 0) {
+      console.info(`${logPrefix} save requires confirmation: no employees`);
+      setEmployeeConfirmOpen(true);
+      return;
     }
 
     await persistAppointment();
@@ -2741,7 +2774,7 @@ export function AppointmentForm({
           onConfirm={() => {
             void handleConfirmAppointmentWeekPreview();
           }}
-          onClose={() => setAppointmentWeekPreviewDialog(null)}
+          onClose={closeAppointmentWeekPreviewDialog}
         />
       ) : null}
 
@@ -3105,4 +3138,3 @@ export function AppointmentForm({
     </Tabs>
   );
 }
-
