@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Projektanlage im Browser validiert Pflichtfelder und erzeugt nach Kundenauswahl einen neuen Datensatz.
  * - Ein neues Projekt mit sichtbaren Artikeln, Sidebar und EntityFormShell laesst sich anlegen, auf der Karte wiederfinden und im Edit-Modus konsistent erneut oeffnen.
+ * - Der Footer der rechten Formular-Sidebar bleibt im sichtbaren Bereich gedockt und reserviert eigenen Scroll-Abstand.
  * - Projektliste schaltet stabil zwischen Grundmengen um und filtert innerhalb der gewaehlten Menge.
  * - Produkt- und Komponenten-Dialoge im Projektformular bleiben fuer neue und bestehende Projekte sofort sichtbar, persistent und nach Reopen abrufbar.
  * - Projektnotizen lassen sich im Browser anlegen und loeschen.
@@ -19,7 +20,7 @@
  * Ziel:
  * Eine reduzierte, belastbare FT02-Browser-Suite fuer die realen Projekt-Workflows des Ist-Stands absichern.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   createAppointmentFixture,
   createComponentFixture,
@@ -80,13 +81,44 @@ async function openProjectArticleList(page: Page) {
 }
 
 async function expectProjectEntityFormShell(page: Page) {
-  await expect(page.getByTestId("entity-form-shell")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-header")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-middle")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-main")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-main-inner")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-sidebar")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-footer")).toBeVisible();
+  const shell = page.getByTestId("entity-form-shell");
+  await expect(shell).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-header")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-middle")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-main")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-main-inner")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-sidebar")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-sidebar-scroll")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-footer")).toBeVisible();
+  await expectDockedEntityFormSidebarFooter(shell);
+}
+
+async function expectDockedEntityFormSidebarFooter(shell: Locator) {
+  const footerLayout = await shell.getByTestId("entity-form-shell-footer").evaluate((footer) => {
+    if (!(footer instanceof HTMLElement)) return null;
+    const sidebar = footer.closest('[data-testid="entity-form-shell-sidebar"]');
+    const sidebarScroll = sidebar?.querySelector('[data-testid="entity-form-shell-sidebar-scroll"]');
+    if (!(sidebar instanceof HTMLElement) || !(sidebarScroll instanceof HTMLElement)) return null;
+
+    const footerRect = footer.getBoundingClientRect();
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const sidebarScrollStyle = window.getComputedStyle(sidebarScroll);
+
+    return {
+      footerBottom: Math.round(footerRect.bottom),
+      sidebarBottom: Math.round(sidebarRect.bottom),
+      footerHeight: Math.round(footerRect.height),
+      viewportHeight: window.innerHeight,
+      overflowY: sidebarScrollStyle.overflowY,
+      paddingBottom: Math.round(Number.parseFloat(sidebarScrollStyle.paddingBottom || "0")),
+    };
+  });
+
+  expect(footerLayout).not.toBeNull();
+  expect(footerLayout?.overflowY).toBe("auto");
+  expect(Math.abs((footerLayout?.sidebarBottom ?? 0) - (footerLayout?.footerBottom ?? 0))).toBeLessThanOrEqual(2);
+  expect(footerLayout?.footerBottom ?? 0).toBeLessThanOrEqual((footerLayout?.viewportHeight ?? 0) + 1);
+  expect(footerLayout?.paddingBottom ?? 0).toBeGreaterThanOrEqual((footerLayout?.footerHeight ?? 0) - 2);
 }
 
 async function expectProjectSidebarPanels(page: Page, isEditing: boolean) {

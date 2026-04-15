@@ -2773,10 +2773,10 @@ export function AppointmentForm({
 
       {pendingProjectDraft ? (
         <div
-          className="fixed inset-0 z-[70] overflow-y-auto bg-background"
+          className="fixed inset-0 z-[70] overflow-hidden bg-background"
           data-testid="appointment-project-overlay"
         >
-          <div className="min-h-full">
+          <div className="flex h-full min-h-0 flex-col">
             <ProjectForm
               projectId={pendingProjectDraft.mode === "existing" ? pendingProjectDraft.projectId : undefined}
               initialDraft={pendingProjectDraft.mode === "create" ? {

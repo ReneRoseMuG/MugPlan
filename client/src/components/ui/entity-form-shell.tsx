@@ -12,6 +12,8 @@ interface EntityFormShellProps {
   mainClassName?: string;
 }
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+
 export function EntityFormShell({
   header,
   sidebar,
@@ -26,6 +28,42 @@ export function EntityFormShell({
   const resolvedContentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx");
   const effectiveSidebarWidth = sidebarWidth ?? resolvedSidebarWidth ?? 360;
   const effectiveContentMaxWidth = contentMaxWidth ?? resolvedContentMaxWidth ?? 960;
+  const sidebarFooterRef = React.useRef<HTMLDivElement | null>(null);
+  const [sidebarFooterHeight, setSidebarFooterHeight] = React.useState(0);
+
+  useIsomorphicLayoutEffect(() => {
+    if (!sidebar) {
+      setSidebarFooterHeight(0);
+      return;
+    }
+
+    const footerNode = sidebarFooterRef.current;
+    if (!footerNode) {
+      setSidebarFooterHeight(0);
+      return;
+    }
+
+    const updateSidebarFooterHeight = () => {
+      const nextHeight = Math.ceil(footerNode.getBoundingClientRect().height);
+      setSidebarFooterHeight((currentHeight) => (currentHeight === nextHeight ? currentHeight : nextHeight));
+    };
+
+    updateSidebarFooterHeight();
+
+    if (typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateSidebarFooterHeight();
+    });
+
+    resizeObserver.observe(footerNode);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [effectiveSidebarWidth, footer, sidebar]);
 
   return (
     <div
@@ -61,15 +99,20 @@ export function EntityFormShell({
         {sidebar && (
           <div
             data-testid="entity-form-shell-sidebar"
-            className="flex-shrink-0 flex flex-col border-l border-[hsl(var(--color-border))] bg-[hsl(var(--color-cream))]"
+            className="relative flex min-h-0 flex-shrink-0 overflow-hidden border-l border-[hsl(var(--color-border))] bg-[hsl(var(--color-cream))]"
             style={{ width: effectiveSidebarWidth }}
           >
-            <div className="flex-1 overflow-y-auto">
+            <div
+              data-testid="entity-form-shell-sidebar-scroll"
+              className="visible-vertical-scrollbar min-h-0 flex-1 overflow-y-auto"
+              style={sidebarFooterHeight > 0 ? { paddingBottom: sidebarFooterHeight } : undefined}
+            >
               {sidebar}
             </div>
             <div
+              ref={sidebarFooterRef}
               data-testid="entity-form-shell-footer"
-              className="flex-shrink-0 border-t border-[hsl(var(--color-border))] bg-[hsl(var(--color-beige))]"
+              className="absolute inset-x-0 bottom-0 z-10 border-t border-[hsl(var(--color-border))] bg-[hsl(var(--color-beige))]"
             >
               {footer}
             </div>

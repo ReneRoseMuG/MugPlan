@@ -6,6 +6,7 @@
  * Abgedeckte Regeln:
  * - Ein neuer Eintagestermin kann im Browser aus dem Tour-Kontext mit Projekt-, Kunden- und Tourrelation angelegt werden.
  * - Das Terminformular rendert in Create und Edit innerhalb der EntityFormShell mit sichtbarer Sidebar.
+ * - Die rechte Formular-Sidebar behaelt in Termin- und Projekt-Overlay-Formularen einen gedockten Footer mit eigenem Scroll-Abstand.
  * - Nach Save zeigt der Wochenkalender die stabil sichtbaren Projekt-, Kunden- und Tourwerte des angelegten Termins.
  * - Beim erneuten Oeffnen bleiben Startdatum, Projekt, Kunde und Tour im Edit-Formular korrekt geladen.
  * - Eine gesetzte Tour weist keine Mitarbeiter automatisch zu; die Mitarbeiterliste bleibt leer, bis Nutzer aktiv zuweisen.
@@ -33,7 +34,7 @@
  * Browser-E2E fuer den realen Create/Edit-Flow eines relationierten Eintagestermins, den Projekt-Overlay-Rueckweg inklusive stiller `Anmerkungen`-Regel und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { db } from "../../server/db";
 import { MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
@@ -142,13 +143,44 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
 }
 
 async function assertAppointmentFormShell(page: Page) {
-  await expect(page.getByTestId("entity-form-shell")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-header")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-middle")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-main")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-main-inner")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-sidebar")).toBeVisible();
-  await expect(page.getByTestId("entity-form-shell-footer")).toBeVisible();
+  const shell = page.getByTestId("entity-form-shell");
+  await expect(shell).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-header")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-middle")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-main")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-main-inner")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-sidebar")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-sidebar-scroll")).toBeVisible();
+  await expect(shell.getByTestId("entity-form-shell-footer")).toBeVisible();
+  await expectDockedEntityFormSidebarFooter(shell);
+}
+
+async function expectDockedEntityFormSidebarFooter(shell: Locator) {
+  const footerLayout = await shell.getByTestId("entity-form-shell-footer").evaluate((footer) => {
+    if (!(footer instanceof HTMLElement)) return null;
+    const sidebar = footer.closest('[data-testid="entity-form-shell-sidebar"]');
+    const sidebarScroll = sidebar?.querySelector('[data-testid="entity-form-shell-sidebar-scroll"]');
+    if (!(sidebar instanceof HTMLElement) || !(sidebarScroll instanceof HTMLElement)) return null;
+
+    const footerRect = footer.getBoundingClientRect();
+    const sidebarRect = sidebar.getBoundingClientRect();
+    const sidebarScrollStyle = window.getComputedStyle(sidebarScroll);
+
+    return {
+      footerBottom: Math.round(footerRect.bottom),
+      sidebarBottom: Math.round(sidebarRect.bottom),
+      footerHeight: Math.round(footerRect.height),
+      viewportHeight: window.innerHeight,
+      overflowY: sidebarScrollStyle.overflowY,
+      paddingBottom: Math.round(Number.parseFloat(sidebarScrollStyle.paddingBottom || "0")),
+    };
+  });
+
+  expect(footerLayout).not.toBeNull();
+  expect(footerLayout?.overflowY).toBe("auto");
+  expect(Math.abs((footerLayout?.sidebarBottom ?? 0) - (footerLayout?.footerBottom ?? 0))).toBeLessThanOrEqual(2);
+  expect(footerLayout?.footerBottom ?? 0).toBeLessThanOrEqual((footerLayout?.viewportHeight ?? 0) + 1);
+  expect(footerLayout?.paddingBottom ?? 0).toBeGreaterThanOrEqual((footerLayout?.footerHeight ?? 0) - 2);
 }
 
 async function assertAppointmentSidebar(page: Page) {
@@ -550,6 +582,9 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await expect(page.getByTestId("appointment-project-overlay")).toBeVisible();
   await expect(page.getByTestId("button-save-project")).toBeVisible();
   await expect(page.getByText("Projekt bearbeiten")).toBeVisible();
+  await expectDockedEntityFormSidebarFooter(
+    page.getByTestId("appointment-project-overlay").getByTestId("entity-form-shell"),
+  );
 
   const updateProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "PATCH"
