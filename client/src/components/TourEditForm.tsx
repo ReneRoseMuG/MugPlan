@@ -450,7 +450,7 @@ export function TourEditForm({
                 >
                   <h3 className="text-base font-semibold text-slate-900">Keine Wochenplanung für diese Tour</h3>
                   <p className="text-sm text-slate-600" data-testid="text-tour-week-planning-unsupported">
-                    Die Systemtour Parkplatz unterstützt keine Kalenderwochen-Planung. Mitarbeiter werden hier nicht über die Wochenplanung zugewiesen.
+                    Die Parkplatz-Tour unterstützt keine Mitarbeiter-Planung. Die Parkplatz-Tour ist Zwischenspeicher und dient nicht der konkreten Terminplanung.
                   </p>
                 </div>
               ) : (

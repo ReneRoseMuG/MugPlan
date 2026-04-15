@@ -285,7 +285,7 @@ describe("FT04 tour form shell layout integration", () => {
 
     expect(markup).toContain("panel-tour-week-planning-unsupported");
     expect(markup).toContain("text-tour-week-planning-unsupported");
-    expect(markup).toContain("Die Systemtour Parkplatz");
+    expect(markup).toContain("Die Parkplatz-Tour");
     expect(markup).not.toContain("card-tour-week-2099-6");
     expect(markup).not.toContain("button-add-tour-week-member-2099-6");
     expect(markup).not.toContain("button-tour-week-menu-2099-6");
