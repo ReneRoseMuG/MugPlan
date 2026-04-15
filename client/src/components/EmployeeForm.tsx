@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
+import { EmployeeAppointmentsUtilizationBoard } from "@/components/EmployeeAppointmentsUtilizationBoard";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
@@ -15,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
@@ -88,6 +90,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
+  const [appointmentsViewMode, setAppointmentsViewMode] = useState<"list" | "utilization">("list");
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
@@ -188,6 +191,10 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       draftEmployeeNoteIdRef.current = -1;
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    setAppointmentsViewMode("list");
+  }, [employeeId]);
 
   const allEmployees = useMemo(() => {
     if (!isAdmin) return employees;
@@ -708,13 +715,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
     () => (
       isEditing
         ? resolveEmployeeEditLabel({
-          fullName: employeeDetails?.employee.fullName,
+          fullName: employeeDetails?.employee?.fullName,
           firstName: formData.firstName,
           lastName: formData.lastName,
         })
         : null
     ),
-    [employeeDetails?.employee.fullName, formData.firstName, formData.lastName, isEditing],
+    [employeeDetails?.employee?.fullName, formData.firstName, formData.lastName, isEditing],
   );
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
 
@@ -956,14 +963,47 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
           <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
             {employeeId ? (
-              <AppointmentsListPage
-                title="Termine"
-                helpKey="appointments.list.employeeForm"
-                context={{ type: "employee", employeeId }}
-                onOpenAppointment={onOpenAppointment}
-                onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
-                className="min-h-0 flex-1"
-              />
+              <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="flex items-center justify-end">
+                  <ToggleGroup
+                    type="single"
+                    value={appointmentsViewMode}
+                    onValueChange={(value) => {
+                      if (value === "list" || value === "utilization") {
+                        setAppointmentsViewMode(value);
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    data-testid="toggle-employee-appointments-view"
+                  >
+                    <ToggleGroupItem value="list" data-testid="toggle-employee-appointments-list">
+                      Liste
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="utilization" data-testid="toggle-employee-appointments-utilization">
+                      Auslastung
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+
+                {appointmentsViewMode === "list" ? (
+                  <AppointmentsListPage
+                    title="Termine"
+                    helpKey="appointments.list.employeeForm"
+                    context={{ type: "employee", employeeId }}
+                    onOpenAppointment={onOpenAppointment}
+                    onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
+                    className="min-h-0 flex-1"
+                  />
+                ) : (
+                  <EmployeeAppointmentsUtilizationBoard
+                    employeeId={employeeId}
+                    userRole={userRole}
+                    className="min-h-0"
+                    onOpenAppointment={(appointmentId) => onOpenAppointment?.(appointmentId, { type: "employee", employeeId })}
+                  />
+                )}
+              </div>
             ) : (
               <p className="py-4 text-sm text-slate-400">
                 Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
