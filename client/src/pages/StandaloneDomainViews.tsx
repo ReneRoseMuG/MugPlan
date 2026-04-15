@@ -5,6 +5,7 @@ import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import { CustomerData } from "@/components/CustomerData";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeesPage } from "@/components/EmployeesPage";
+import { MonitoringPage } from "@/components/MonitoringPage";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
@@ -106,6 +107,33 @@ export function StandaloneAppointments() {
             initialDate={appointmentOverlay.initialDate}
             initialTourId={appointmentOverlay.initialTourId}
             projectId={appointmentOverlay.projectId}
+            onCancel={() => setAppointmentOverlay(null)}
+            onSaved={() => setAppointmentOverlay(null)}
+          />
+        </StandaloneOverlay>
+      ) : null}
+    </>
+  );
+}
+
+export function StandaloneMonitoring() {
+  const [appointmentOverlay, setAppointmentOverlay] = useState<{ appointmentId: number } | null>(null);
+  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const isAdmin = userRole === "ADMIN";
+
+  return (
+    <>
+      <StandaloneLayout title="Monitoring">
+        <MonitoringPage
+          isAdmin={isAdmin}
+          onOpenAppointment={(appointmentId) => setAppointmentOverlay({ appointmentId })}
+        />
+      </StandaloneLayout>
+
+      {appointmentOverlay ? (
+        <StandaloneOverlay>
+          <AppointmentForm
+            appointmentId={appointmentOverlay.appointmentId}
             onCancel={() => setAppointmentOverlay(null)}
             onSaved={() => setAppointmentOverlay(null)}
           />

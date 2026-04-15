@@ -58,6 +58,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("monitoring-pill-TR-02");
     expect(html).toContain("TR-02: 1");
     expect(html.indexOf("nav-monitoring")).toBeLessThan(html.indexOf("monitoring-trigger-pills"));
+    expect(html).toContain("nav-monitoring-open-tab");
     expect(html).toContain("border-2 border-red-600");
     expect(html).not.toContain("nav-monitoring-count");
     expect(html).toContain("Meine Einstellungen");
@@ -79,6 +80,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).not.toContain("Journal");
     expect(html).not.toContain("Monitoring");
     expect(html).not.toContain("nav-monitoring");
+    expect(html).not.toContain("nav-monitoring-open-tab");
     expect(html).not.toContain("monitoring-trigger-pills");
     expect(html).toContain("Meine Einstellungen");
   });

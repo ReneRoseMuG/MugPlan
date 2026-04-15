@@ -13,6 +13,7 @@ import {
   StandaloneAppointments,
   StandaloneCustomers,
   StandaloneEmployees,
+  StandaloneMonitoring,
   StandaloneProjects,
   StandaloneReports,
   StandaloneTeams,
@@ -48,6 +49,7 @@ function Router({ onLogout }: RouterProps) {
       <Route path="/standalone/employees" component={StandaloneEmployees} />
       <Route path="/standalone/tours" component={StandaloneTours} />
       <Route path="/standalone/teams" component={StandaloneTeams} />
+      <Route path="/standalone/monitoring" component={StandaloneMonitoring} />
       <Route path="/standalone/reports" component={StandaloneReports} />
       <Route
         path="/calendar"

@@ -23,8 +23,14 @@ export type MonitoringItem = {
   appointmentId: number;
   startDate: string;
   startTime: string | null;
+  tourId: number | null;
   tourName: string | null;
+  orderNumber: string | null;
+  projectTitle: string | null;
   projectName: string | null;
+  customerNumber: string | null;
+  customerFirstName: string | null;
+  customerLastName: string | null;
   customerName: string | null;
   employeeCount: number;
   triggerCode: MonitoringTriggerCode;
@@ -169,8 +175,14 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
         appointmentId: row.appointmentId,
         startDate: row.startDate,
         startTime: row.startTime,
+        tourId: row.tourId,
         tourName: row.tourName,
+        orderNumber: row.orderNumber,
+        projectTitle: row.projectTitle,
         projectName: row.projectName,
+        customerNumber: row.customerNumber,
+        customerFirstName: row.customerFirstName,
+        customerLastName: row.customerLastName,
         customerName: row.customerName,
         employeeCount: row.employeeCount,
         triggerCode: triggerCodes[0],

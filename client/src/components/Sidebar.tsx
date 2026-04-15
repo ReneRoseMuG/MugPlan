@@ -200,6 +200,7 @@ export function Sidebar({
                 label="Monitoring"
                 isActive={currentView === "monitoring"}
                 onClick={() => onViewChange("monitoring")}
+                standaloneUrl="/standalone/monitoring"
               />
               {monitoringSummary.length > 0 ? (
                 <div className="flex flex-wrap gap-2 px-3" data-testid="monitoring-trigger-pills">

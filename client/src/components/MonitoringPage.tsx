@@ -2,12 +2,21 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { api, type MonitoringConfigResponse, type MonitoringListResponse } from "@shared/routes";
+import type { Tour } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MonitoringFilterPanel } from "@/components/ui/filter-panels/monitoring-filter-panel";
+import {
+  applyMonitoringFilters,
+  defaultMonitoringFilters,
+  formatMonitoringCustomerName,
+  type MonitoringFilters,
+} from "@/lib/monitoring-filters";
+import { formatListDate, formatListTime } from "@/lib/list-display-format";
 import { useToast } from "@/hooks/use-toast";
 import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
@@ -74,6 +83,7 @@ function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appoint
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
   const { toast } = useToast();
   const [draftConfig, setDraftConfig] = useState<MonitoringConfigDraft | null>(null);
+  const [filters, setFilters] = useState<MonitoringFilters>(defaultMonitoringFilters);
 
   const monitoringQuery = useQuery<MonitoringListResponse>({
     queryKey: [api.monitoring.list.path],
@@ -101,6 +111,10 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       }
       return (await response.json()) as MonitoringConfigResponse;
     },
+  });
+
+  const { data: tours = [] } = useQuery<Tour[]>({
+    queryKey: [api.tours.list.path],
   });
 
   const resolvedConfig = draftConfig ?? (configQuery.data
@@ -138,24 +152,45 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
   const columns = useMemo<TableViewColumnDef<MonitoringListResponse[number]>[]>(() => [
     {
       id: "startTime",
-      header: "Startzeit",
-      accessor: (row) => row.startTime ? row.startTime.slice(0, 5) : null,
+      header: "Uhrzeit",
+      accessor: (row) => formatListTime(row.startTime) || null,
       minWidth: 80,
     },
     {
       id: "startDate",
-      header: "Startdatum",
-      accessor: (row) => {
-        const [year, month, day] = row.startDate.split("-");
-        return `${day}.${month}.${year?.slice(2)}`;
-      },
-      minWidth: 110,
+      header: "Datum",
+      accessor: (row) => formatListDate(row.startDate),
+      minWidth: 100,
+    },
+    {
+      id: "orderNumber",
+      header: "Auftrag Nr.",
+      accessor: (row) => row.orderNumber ?? null,
+      minWidth: 120,
+    },
+    {
+      id: "projectTitle",
+      header: "Projekt",
+      accessor: (row) => row.projectTitle ?? row.projectName ?? null,
+      minWidth: 180,
+    },
+    {
+      id: "customerNumber",
+      header: "Kunde Nr.",
+      accessor: (row) => row.customerNumber ?? null,
+      minWidth: 120,
+    },
+    {
+      id: "customerName",
+      header: "Kunde",
+      accessor: (row) => formatMonitoringCustomerName(row) || null,
+      minWidth: 180,
     },
     {
       id: "tourName",
       header: "Tour",
       accessor: (row) => row.tourName ?? null,
-      minWidth: 20,
+      minWidth: 120,
     },
     {
       id: "triggerName",
@@ -191,6 +226,19 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     });
   };
 
+  const filteredRows = useMemo(
+    () => applyMonitoringFilters(monitoringQuery.data, filters),
+    [filters, monitoringQuery.data],
+  );
+
+  const filterPanel = (
+    <MonitoringFilterPanel
+      filters={filters}
+      onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))}
+      tours={tours}
+    />
+  );
+
   const configPanel = isAdmin ? (
     <div className="flex flex-wrap items-end gap-4" data-testid="monitoring-config-panel">
       <div className="flex w-44 flex-col gap-1">
@@ -224,7 +272,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     <div className="flex h-full min-h-0 flex-col p-6">
       <TableView
         columns={columns}
-        rows={monitoringQuery.data ?? []}
+        rows={filteredRows}
         rowKey={(row) => row.appointmentId}
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
         rowPreviewRenderer={(row) => (
@@ -251,6 +299,8 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       icon={<AlertTriangle className="h-5 w-5" />}
       helpKey="monitoring"
       isLoading={isInitialLoading && !initialItems}
+      filterSlot={filterPanel}
+      filterPlacement="top"
       contentSlot={content}
       footerSlot={configPanel}
     />

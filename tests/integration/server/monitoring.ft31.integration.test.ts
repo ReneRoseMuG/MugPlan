@@ -34,6 +34,7 @@ import {
   createCustomerFixture,
   createEmployeeFixture,
   createExactTagFixture,
+  createProjectFixture,
   createTourFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
@@ -111,6 +112,11 @@ describe("FT31 integration: monitoring", () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
     const customer = await createCustomerFixture("FT31-CUST");
+    const project = await createProjectFixture({
+      prefix: "FT31-PROJ",
+      customerId: customer.id,
+      name: "FT31 Monitoring Projekt",
+    });
     const tour = await createTourFixture("#0055aa");
     const employeeA = await createEmployeeFixture("FT31-EMP");
     const employeeB = await createEmployeeFixture("FT31-EMP");
@@ -122,9 +128,16 @@ describe("FT31 integration: monitoring", () => {
     });
 
     const underStaffed = await createAppointmentFixture({
+      projectId: project.id,
       customerId: customer.id,
       tourId: tour.id,
       startDate: getRelativeBerlinDate(1),
+      employeeIds: [],
+    });
+    const directCustomerUnderStaffed = await createAppointmentFixture({
+      customerId: customer.id,
+      tourId: tour.id,
+      startDate: getRelativeBerlinDate(2),
       employeeIds: [],
     });
     await createAppointmentFixture({
@@ -149,7 +162,28 @@ describe("FT31 integration: monitoring", () => {
       expect.objectContaining({
         appointmentId: underStaffed.id,
         startDate: getRelativeBerlinDate(1),
+        tourId: tour.id,
         tourName: tour.name,
+        orderNumber: project.orderNumber ?? null,
+        projectTitle: project.name,
+        customerNumber: customer.customerNumber,
+        customerFirstName: customer.firstName,
+        customerLastName: customer.lastName,
+        employeeCount: 0,
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01"],
+        triggerName: "Mindestzahl Mitarbeiter",
+      }),
+      expect.objectContaining({
+        appointmentId: directCustomerUnderStaffed.id,
+        startDate: getRelativeBerlinDate(2),
+        tourId: tour.id,
+        tourName: tour.name,
+        orderNumber: null,
+        projectTitle: null,
+        customerNumber: customer.customerNumber,
+        customerFirstName: customer.firstName,
+        customerLastName: customer.lastName,
         employeeCount: 0,
         triggerCode: "TR-01",
         triggerCodes: ["TR-01"],
@@ -158,7 +192,7 @@ describe("FT31 integration: monitoring", () => {
     ]);
 
     const adminResponse = await admin.agent.get("/api/monitoring").expect(200);
-    expect(adminResponse.body).toHaveLength(1);
+    expect(adminResponse.body).toHaveLength(2);
 
     await reader.agent.get("/api/monitoring").expect(403).expect(({ body }) => {
       expect(body.code).toBe("FORBIDDEN");

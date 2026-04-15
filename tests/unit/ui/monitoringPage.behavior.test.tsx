@@ -34,6 +34,10 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: () => <span data-testid="help-icon-marker">help</span>,
+}));
+
 vi.mock("@/lib/queryClient", () => ({
   apiRequest: vi.fn(),
   queryClient: {
@@ -43,8 +47,13 @@ vi.mock("@/lib/queryClient", () => ({
 }));
 
 vi.mock("@/components/ui/list-layout", () => ({
-  ListLayout: ({ contentSlot, footerSlot }: { contentSlot?: React.ReactNode; footerSlot?: React.ReactNode }) => (
+  ListLayout: ({ filterSlot, contentSlot, footerSlot }: {
+    filterSlot?: React.ReactNode;
+    contentSlot?: React.ReactNode;
+    footerSlot?: React.ReactNode;
+  }) => (
     <section>
+      {filterSlot}
       {contentSlot}
       {footerSlot}
     </section>
@@ -99,14 +108,26 @@ describe("FT31 UI: MonitoringPage behavior", () => {
           isLoading: false,
         };
       }
+      if (firstKey === "/api/tours") {
+        return {
+          data: [{ id: 7, name: "Tour 7", color: "#2563eb", version: 1 }],
+          isLoading: false,
+        };
+      }
       return {
         data: [
           {
             appointmentId: 77,
             startDate: "2099-01-01",
             startTime: null,
+            tourId: 7,
             tourName: "Tour 7",
+            orderNumber: "ORD-77",
+            projectTitle: "Projekt 77",
             projectName: null,
+            customerNumber: "1077",
+            customerFirstName: "Mia",
+            customerLastName: "Monitor",
             customerName: null,
             employeeCount: 1,
             triggerCode: "TR-01",
@@ -129,12 +150,18 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     expect(html).toContain("input-monitoring-minimum-employees");
     expect(html).toContain("button-monitoring-save-config");
     expect(html).toContain("Mindestzahl Mitarbeiter");
+    expect(html).toContain("monitoring-filter-customer-last-name");
+    expect(html).toContain("monitoring-filter-order-number");
     expect(html).toContain("table-monitoring");
 
     const props = tableViewCalls[0];
     expect((props.columns as Array<{ id: string }>).map((column) => column.id)).toEqual([
       "startTime",
       "startDate",
+      "orderNumber",
+      "projectTitle",
+      "customerNumber",
+      "customerName",
       "tourName",
       "triggerName",
     ]);

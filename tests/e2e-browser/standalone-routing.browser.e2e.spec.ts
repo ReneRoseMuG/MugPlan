@@ -208,7 +208,7 @@ test.describe("Sidebar navigation stays unchanged", () => {
 test.describe("Sidebar standalone buttons", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("shows all eight standalone buttons in the sidebar", async ({ page }) => {
+  test("shows all nine standalone buttons in the sidebar", async ({ page }) => {
     await loginAsAdmin(page);
 
     await expect(page.getByTestId("nav-wochenuebersicht-open-tab")).toBeVisible();
@@ -219,6 +219,7 @@ test.describe("Sidebar standalone buttons", () => {
     await expect(page.getByTestId("nav-mitarbeiter-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-touren-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-teams-open-tab")).toBeVisible();
+    await expect(page.getByTestId("nav-monitoring-open-tab")).toBeVisible();
   });
 
   test("uses the expected tooltip on the week standalone button", async ({ page }) => {
@@ -288,6 +289,33 @@ test.describe("Sidebar standalone buttons", () => {
       popup.getByTestId("table-appointments-list").locator("tbody tr")
         .filter({ hasText: project.name })
         .filter({ hasText: customer.customerNumber })
+        .first(),
+    );
+    await popup.close();
+  });
+
+  test("opens monitoring in a new tab and shows the under-staffed appointment row", async ({ page }) => {
+    const customer = await createCustomerFixture("STR-MON-CUST");
+    const project = await createProjectFixture({
+      prefix: "STR-MON-PROJ",
+      customerId: customer.id,
+      name: "Standalone Monitoring Objekt",
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(4),
+      employeeIds: [],
+    });
+
+    await loginAsAdmin(page);
+    const popup = await openStandalonePopup(page, "nav-monitoring-open-tab");
+
+    await expectStandaloneViewLoaded(
+      popup,
+      popup.getByTestId("table-monitoring").locator("tbody tr")
+        .filter({ hasText: project.name })
+        .filter({ hasText: "Mindestzahl Mitarbeiter" })
         .first(),
     );
     await popup.close();

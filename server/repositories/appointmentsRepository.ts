@@ -1081,17 +1081,36 @@ export async function listAppointmentsForMonitoring(params: {
       appointmentId: appointments.id,
       startDate: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
       startTime: appointments.startTime,
+      tourId: appointments.tourId,
       tourName: tours.name,
+      orderNumber: projectOrder.orderNumber,
+      projectTitle: projects.name,
       projectName: projects.name,
-      customerName: customers.lastName,
+      customerNumber: customers.customerNumber,
+      customerFirstName: customers.firstName,
+      customerLastName: customers.lastName,
+      customerName: customers.fullName,
       employeeCount: sql<number>`cast(count(${appointmentEmployees.employeeId}) as signed)`,
     })
     .from(appointments)
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .leftJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(appointmentEmployees, eq(appointmentEmployees.appointmentId, appointments.id))
     .where(whereClause)
-    .groupBy(appointments.id, appointments.startDate, appointments.startTime, tours.name, projects.name, customers.lastName)
+    .groupBy(
+      appointments.id,
+      appointments.startDate,
+      appointments.startTime,
+      appointments.tourId,
+      tours.name,
+      projectOrder.orderNumber,
+      projects.name,
+      customers.customerNumber,
+      customers.firstName,
+      customers.lastName,
+      customers.fullName,
+    )
     .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id));
 }
