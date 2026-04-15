@@ -55,12 +55,13 @@ type TourWeekEmployeesWeek = {
 
 interface TourEditFormProps {
   tour: Tour | null;
-  allEmployees: Employee[];
+  allEmployees?: Employee[];
   onSubmit: (tourId: number | null, employeeIds: number[], name: string, color: string) => Promise<void>;
   onCreateWeek?: (params: { isoYear: number; isoWeek: number }) => Promise<void>;
   onBlockWeek?: (params: { isoYear: number; isoWeek: number }) => Promise<void>;
   onUnblockWeek?: (params: { isoYear: number; isoWeek: number }) => Promise<void>;
   onAddWeekEmployee?: (params: { isoYear: number; isoWeek: number; employeeId: number }) => Promise<void>;
+  onAddWeekEmployees?: (params: { isoYear: number; isoWeek: number; employeeIds: number[] }) => Promise<void>;
   onRemoveWeekEmployee?: (assignment: TourWeekEmployeeMember & { isoYear: number; isoWeek: number }) => Promise<void>;
   onDelete?: () => Promise<void>;
   canDelete?: boolean;
@@ -77,12 +78,12 @@ interface TourEditFormProps {
 
 export function TourEditForm({
   tour,
-  allEmployees,
   onSubmit,
   onCreateWeek,
   onBlockWeek,
   onUnblockWeek,
   onAddWeekEmployee,
+  onAddWeekEmployees,
   onRemoveWeekEmployee,
   onDelete,
   canDelete = false,
@@ -154,12 +155,28 @@ export function TourEditForm({
     },
   });
 
-  const availableEmployees = useMemo(() => {
-    if (!pendingWeekSelection) return [];
-    const week = allWeeks.find((entry) => entry.isoYear === pendingWeekSelection.isoYear && entry.isoWeek === pendingWeekSelection.isoWeek);
-    const assignedIds = new Set((week?.employees ?? []).map((employee) => employee.employeeId));
-    return allEmployees.filter((employee) => employee.isActive && !assignedIds.has(employee.id));
-  }, [allEmployees, allWeeks, pendingWeekSelection]);
+  const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<Employee[]>({
+    queryKey: [
+      `/api/tours/${tour?.id}/week-employees/available`,
+      pendingWeekSelection?.isoYear ?? null,
+      pendingWeekSelection?.isoWeek ?? null,
+    ],
+    enabled: !isCreate && employeePickerOpen && tour?.id != null && pendingWeekSelection != null,
+    queryFn: async () => {
+      if (!tour?.id || !pendingWeekSelection) return [];
+      const params = new URLSearchParams({
+        isoYear: String(pendingWeekSelection.isoYear),
+        isoWeek: String(pendingWeekSelection.isoWeek),
+      });
+      const response = await fetch(`/api/tours/${tour.id}/week-employees/available?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Verfuegbare Mitarbeiter konnten nicht geladen werden");
+      }
+      return response.json() as Promise<Employee[]>;
+    },
+  });
 
   useEffect(() => {
     if (!pendingWeekScrollTarget) return;
@@ -582,6 +599,9 @@ export function TourEditForm({
               employees={availableEmployees}
               teams={[]}
               tours={[]}
+              isLoading={availableEmployeesLoading}
+              allowBulkSelection
+              viewModeSettingKey="appointmentEmployeePicker.viewMode"
               title="Mitarbeiter auswählen"
               onSelectEmployee={(employeeId) => {
                 if (pendingWeekSelection) {
@@ -590,6 +610,29 @@ export function TourEditForm({
                     isoWeek: pendingWeekSelection.isoWeek,
                     employeeId,
                   });
+                }
+                setEmployeePickerOpen(false);
+                setPendingWeekSelection(null);
+              }}
+              onConfirmSelection={(employeeIds) => {
+                if (pendingWeekSelection && employeeIds.length > 0) {
+                  const normalizedEmployeeIds = Array.from(new Set(
+                    employeeIds.filter((employeeId) => Number.isInteger(employeeId) && employeeId > 0),
+                  ));
+
+                  if (normalizedEmployeeIds.length === 1) {
+                    void onAddWeekEmployee?.({
+                      isoYear: pendingWeekSelection.isoYear,
+                      isoWeek: pendingWeekSelection.isoWeek,
+                      employeeId: normalizedEmployeeIds[0],
+                    });
+                  } else if (normalizedEmployeeIds.length > 1) {
+                    void onAddWeekEmployees?.({
+                      isoYear: pendingWeekSelection.isoYear,
+                      isoWeek: pendingWeekSelection.isoWeek,
+                      employeeIds: normalizedEmployeeIds,
+                    });
+                  }
                 }
                 setEmployeePickerOpen(false);
                 setPendingWeekSelection(null);

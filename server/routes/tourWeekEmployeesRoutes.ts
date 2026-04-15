@@ -5,6 +5,7 @@ import * as tourWeekEmployeesController from "../controllers/tourWeekEmployeesCo
 const router = Router();
 
 router.get(api.tourWeekEmployees.list.path, tourWeekEmployeesController.listTourWeekEmployees);
+router.get(api.tourWeekEmployees.available.path, tourWeekEmployeesController.listAvailableTourWeekEmployees);
 router.post(api.tourWeekEmployees.addPreview.path, tourWeekEmployeesController.previewAddTourWeekEmployee);
 router.post(api.tourWeekEmployees.addExecute.path, tourWeekEmployeesController.executeAddTourWeekEmployee);
 router.post(api.tourWeekEmployees.removePreview.path, tourWeekEmployeesController.previewRemoveTourWeekEmployee);

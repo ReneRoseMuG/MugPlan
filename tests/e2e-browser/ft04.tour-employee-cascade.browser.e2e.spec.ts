@@ -71,7 +71,7 @@ test("creates a new tour without a Wochenplanung tab in create mode", async ({ p
   await expect(page.getByTestId("button-new-tour")).toBeVisible();
 });
 
-test("blocks assigning the same employee to a second tour in the same ISO week", async ({ page }) => {
+test("hides employees that are already assigned to another tour in the same ISO week from the picker", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const firstTour = await createTourFixture("#4477aa");
   const secondTour = await createTourFixture("#aa7744");
@@ -91,9 +91,7 @@ test("blocks assigning the same employee to a second tour in the same ISO week",
   await weekCard.getByTestId(
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
-  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
-
-  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+  await expect(page.getByTestId(`employee-picker-card-${employee.id}`)).toHaveCount(0);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/tours/${secondTour.id}/week-employees`);

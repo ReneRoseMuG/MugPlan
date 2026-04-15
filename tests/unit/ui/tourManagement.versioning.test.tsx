@@ -7,7 +7,8 @@
  * - Der Admin-Dialog behaelt den Delete-Flow mit versioniertem DELETE-Payload.
  * - Erfolgreiche Wochenplan-Mutationen bestaetigen den Execute-Request und triggern Refresh/Invalidierung fuer abhaengige Views.
  * - Erfolgreiche Wochenplan-Mutationen invalidieren auch die neue Tour-Lane-Hover-Preview des Wochenkalenders.
- * - Wochenplan-Dialoge starten mit sinnvoller Vorauswahl und Mitarbeiterdaten werden nur im Edit-Modus geladen.
+ * - Wochenplan-Dialoge starten mit sinnvoller Vorauswahl und bulk-selektierte Mitarbeitende laufen sequentiell durch denselben Preview-Pfad.
+ * - Listenbasierte Mehrfachauswahl im Wochenplan-Picker startet denselben Preview-Fluss sequentiell fuer weitere Mitarbeitende.
  * - Blockieren und Freigeben der Wochenplanung bestaetigen nur den Statuswechsel, ohne stille Termin-Tag-Mutationen im Toast auszuspielen.
  *
  * Fehlerfaelle:
@@ -15,6 +16,7 @@
  * - Der Tourname wird im Update-Payload nicht mitgesendet.
  * - Der Admin-Delete-Flow driftet aus dem Dialog heraus.
  * - Erfolgreiche Wochenplan-Aktionen lassen Monitoring- und Query-Refresh aus.
+ * - Mehrfach ausgewaehlte Wochenplan-Mitarbeiter verlieren den Folge-Preview nach dem ersten Execute.
  * - Stille Termin-Tag-Mutationen werden im UI als sichtbare Termin-Anpassungen fehlkommuniziert.
  *
  * Ziel:
@@ -413,66 +415,66 @@ describe("FT07 TourManagement behavior", () => {
     }));
   });
 
-  it("disables the employees query in list and create view and enables it while editing", async () => {
-    const { TourManagement: TourManagementList } = await loadTourManagement({
-      editingTour: null,
-      isCreating: false,
-      cascadeDialogState: null,
+  it("queues bulk-selected week employees behind the first preview", async () => {
+    apiRequestMock.mockImplementation(async (_method: string, url: string, payload?: unknown) => {
+      if (url === "/api/tours/5/week-employees/add/preview") {
+        return {
+          ok: true,
+          json: async () => ({
+            isoYear: 2099,
+            isoWeek: 6,
+            weekStartDate: "2099-02-02",
+            weekEndDate: "2099-02-08",
+            employee: {
+              employeeId: (payload as { employeeId: number }).employeeId,
+              fullName: (payload as { employeeId: number }).employeeId === 11 ? "Mia Tour" : "Nora Queue",
+            },
+            items: [{
+              appointmentId: 900,
+              startDate: "2099-02-03",
+              endDate: null,
+              customerName: "Kunde Eins",
+              projectName: "Projekt Eins",
+              status: "will_add",
+              selectable: true,
+              conflictReason: null,
+            }],
+          }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({}),
+      };
     });
 
-    renderToStaticMarkup(<TourManagementList userRole="ADMIN" />);
-
-    const listEmployeesQuery = useQueryMock.mock.calls
-      .map(([options]) => options as { queryKey?: unknown; enabled?: boolean })
-      .find((options) => Array.isArray(options.queryKey) && options.queryKey[0] === "/api/employees");
-
-    expect(listEmployeesQuery).toMatchObject({
-      queryKey: ["/api/employees"],
-      enabled: false,
-    });
-
-    useQueryMock.mockClear();
-    tourEditFormCalls.length = 0;
-
-    const { TourManagement: TourManagementCreate } = await loadTourManagement({
-      editingTour: null,
-      isCreating: true,
-      cascadeDialogState: null,
-    });
-
-    renderToStaticMarkup(<TourManagementCreate userRole="ADMIN" />);
-
-    const createEmployeesQuery = useQueryMock.mock.calls
-      .map(([options]) => options as { queryKey?: unknown; enabled?: boolean })
-      .find((options) => Array.isArray(options.queryKey) && options.queryKey[0] === "/api/employees");
-
-    expect(createEmployeesQuery).toMatchObject({
-      queryKey: ["/api/employees"],
-      enabled: false,
-    });
-
-    useQueryMock.mockClear();
-    tourEditFormCalls.length = 0;
-
-    const { TourManagement: TourManagementEdit } = await loadTourManagement({
+    const { TourManagement } = await loadTourManagement({
       editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: null,
     });
 
-    renderToStaticMarkup(<TourManagementEdit userRole="ADMIN" />);
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
 
-    const editEmployeesQuery = useQueryMock.mock.calls
-      .map(([options]) => options as { queryKey?: unknown; enabled?: boolean })
-      .find((options) => Array.isArray(options.queryKey) && options.queryKey[0] === "/api/employees");
+    const onAddWeekEmployees = tourEditFormCalls[0].onAddWeekEmployees as (
+      params: { isoYear: number; isoWeek: number; employeeIds: number[] }
+    ) => Promise<void>;
+    await onAddWeekEmployees({ isoYear: 2099, isoWeek: 6, employeeIds: [11, 12] });
 
-    expect(editEmployeesQuery).toMatchObject({
-      queryKey: ["/api/employees"],
-      enabled: true,
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add/preview", {
+      isoYear: 2099,
+      isoWeek: 6,
+      employeeId: 11,
     });
+    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
+      open: true,
+      mode: "add",
+      employeeId: 11,
+      remainingEmployeeIds: [12],
+    }));
   });
 
-  it("executes week planning updates and refreshes dependent views after success", async () => {
+  it("executes week planning updates, refreshes dependent views and opens the next queued preview", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
       if (method === "POST" && url === "/api/tours/5/week-employees/add") {
         return {
@@ -480,6 +482,31 @@ describe("FT07 TourManagement behavior", () => {
           json: async () => ({
             updatedAppointmentCount: (payload as { selectedAppointmentIds: number[] }).selectedAppointmentIds.length,
             skipped: [],
+          }),
+        };
+      }
+      if (method === "POST" && url === "/api/tours/5/week-employees/add/preview") {
+        return {
+          ok: true,
+          json: async () => ({
+            isoYear: 2099,
+            isoWeek: 6,
+            weekStartDate: "2099-02-02",
+            weekEndDate: "2099-02-08",
+            employee: {
+              employeeId: 12,
+              fullName: "Nora Queue",
+            },
+            items: [{
+              appointmentId: 901,
+              startDate: "2099-02-04",
+              endDate: null,
+              customerName: "Kunde Zwei",
+              projectName: "Projekt Zwei",
+              status: "will_add",
+              selectable: true,
+              conflictReason: null,
+            }],
           }),
         };
       }
@@ -512,6 +539,7 @@ describe("FT07 TourManagement behavior", () => {
           conflictReason: null,
         }],
         selectedIds: [900],
+        remainingEmployeeIds: [12],
       },
     });
 
@@ -530,11 +558,21 @@ describe("FT07 TourManagement behavior", () => {
       employeeId: 11,
       selectedAppointmentIds: [900],
     });
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add/preview", {
+      isoYear: 2099,
+      isoWeek: 6,
+      employeeId: 12,
+    });
     const activeMembersInvalidation = invalidateQueriesMock.mock.calls
       .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
       .find((options) => typeof options.predicate === "function"
         && options.predicate?.({ queryKey: ["/api/tours/5/week-employees"] }));
     expect(activeMembersInvalidation).toBeTruthy();
+    const availableMembersInvalidation = invalidateQueriesMock.mock.calls
+      .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
+      .find((options) => typeof options.predicate === "function"
+        && options.predicate?.({ queryKey: ["/api/tours/5/week-employees/available", 2099, 6] }));
+    expect(availableMembersInvalidation).toBeTruthy();
     const lanePreviewInvalidation = invalidateQueriesMock.mock.calls
       .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
       .find((options) => typeof options.predicate === "function"
@@ -548,6 +586,11 @@ describe("FT07 TourManagement behavior", () => {
     expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
       title: "Wochenplanung gespeichert",
       description: "1 Termine wurden aktualisiert.",
+    }));
+    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
+      employeeId: 12,
+      employeeName: "Nora Queue",
+      remainingEmployeeIds: [],
     }));
   });
 

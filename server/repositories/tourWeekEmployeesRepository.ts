@@ -153,6 +153,24 @@ export async function listAssignmentsByTourAndWeek(
   }));
 }
 
+export async function listAssignedEmployeeIdsByWeek(
+  isoYear: number,
+  isoWeek: number,
+): Promise<number[]> {
+  const rows = await db
+    .selectDistinct({
+      employeeId: tourWeekEmployees.employeeId,
+    })
+    .from(tourWeekEmployees)
+    .where(and(
+      eq(tourWeekEmployees.isoYear, isoYear),
+      eq(tourWeekEmployees.isoWeek, isoWeek),
+    ))
+    .orderBy(asc(tourWeekEmployees.employeeId));
+
+  return rows.map((row) => Number(row.employeeId));
+}
+
 export async function getAssignmentById(
   assignmentId: number,
 ): Promise<TourWeekEmployeeAssignmentRow | null> {

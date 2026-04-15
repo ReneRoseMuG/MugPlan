@@ -5,22 +5,25 @@
  * - TourEditForm rendert im EntityFormShell-Layout Header, Hauptbereich, Sidebar und Footer.
  * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Wochenplanung wird ueber die Abfrage gerendert.
+ * - Der Wochenplan-Mitarbeiterpicker bleibt im Tourformular als bulk-faehiger Listen-/Board-Picker verdrahtet.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
  * - Das Tourformular verliert die erwartete Sidebar oder rendert die Shell-Struktur unvollständig.
  * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Wochenplanung verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
+ * - Der KW-Picker verliert die Listenansicht oder die Sammelauswahl-Verdrahtung.
  * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
  *
  * Ziel:
- * Das neue Shell-Layout des Tourformulars ueber sichtbare Struktur, Breite und die erwarteten Kernelemente regressionssicher absichern.
+ * Das neue Shell-Layout des Tourformulars inklusive sichtbarer Wochenplan-Verdrahtung regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const employeePickerCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-query")>();
@@ -129,7 +132,10 @@ vi.mock("@/components/ui/toggle", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
-  EmployeePickerDialogList: () => <div>employee-picker</div>,
+  EmployeePickerDialogList: (props: Record<string, unknown>) => {
+    employeePickerCalls.push(props);
+    return <div>employee-picker</div>;
+  },
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -151,6 +157,7 @@ describe("FT04 tour form shell layout integration", () => {
   const noop = async (..._args: unknown[]) => undefined;
 
   beforeEach(() => {
+    employeePickerCalls.length = 0;
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
       if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
         return {
@@ -261,6 +268,28 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
     expect(markup).not.toContain("button-add-tour-week-footer");
+  });
+
+  it("keeps the week employee picker wired for bulk list selection", () => {
+    renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={[]}
+        onSubmit={noop}
+        onAddWeekEmployee={noop}
+        onAddWeekEmployees={async () => undefined}
+        isSaving={false}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(employeePickerCalls).toHaveLength(1);
+    expect(employeePickerCalls[0]).toMatchObject({
+      allowBulkSelection: true,
+      viewModeSettingKey: "appointmentEmployeePicker.viewMode",
+    });
+    expect(employeePickerCalls[0].onSelectEmployee).toEqual(expect.any(Function));
+    expect(employeePickerCalls[0].onConfirmSelection).toEqual(expect.any(Function));
   });
 
   it("shows the corrected blocked week notice in edit mode", () => {

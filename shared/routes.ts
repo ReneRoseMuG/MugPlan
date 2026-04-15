@@ -261,6 +261,11 @@ const tourWeekCreateInputSchema = z.object({
   isoWeek: z.number().int().min(1).max(53),
 }).strict();
 
+const tourWeekAvailabilityInputSchema = z.object({
+  isoYear: z.coerce.number().int().min(1),
+  isoWeek: z.coerce.number().int().min(1).max(53),
+}).strict();
+
 const tourWeekStatusMutationResponseSchema = z.object({
   week: tourWeekSchema,
   tourName: z.string().nullable().optional(),
@@ -2710,6 +2715,16 @@ export const api = {
       responses: {
         200: z.array(tourWeekEmployeesWeekSchema),
         404: errorSchemas.notFound,
+      },
+    },
+    available: {
+      method: "GET" as const,
+      path: "/api/tours/:tourId/week-employees/available",
+      input: tourWeekAvailabilityInputSchema,
+      responses: {
+        200: z.array(z.custom<typeof employees.$inferSelect>()),
+        404: errorSchemas.notFound,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     addPreview: {

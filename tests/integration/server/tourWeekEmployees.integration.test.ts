@@ -38,7 +38,7 @@ import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startO
 import { and, eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
-import { tourWeekEmployees, tourWeeks, tours } from "../../../shared/schema";
+import { employees, tourWeekEmployees, tourWeeks, tours } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
@@ -277,6 +277,44 @@ describe("tourWeekEmployees integration", () => {
       .expect(409)
       .expect((res) => {
         expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+  });
+
+  it("filters the available week employee picker server-side to active and unassigned employees of the target ISO week", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#117799");
+    const otherTour = await createTourFixture("#991177");
+    const targetWeek = resolveNextEditableWeekDates();
+    const freeEmployee = await createEmployeeFixture("TWE-AVAILABLE-FREE");
+    const sameWeekSameTourEmployee = await createEmployeeFixture("TWE-AVAILABLE-SAME-TOUR");
+    const sameWeekOtherTourEmployee = await createEmployeeFixture("TWE-AVAILABLE-OTHER-TOUR");
+    const inactiveEmployee = await createEmployeeFixture("TWE-AVAILABLE-INACTIVE");
+
+    await db.insert(tourWeekEmployees).values([
+      {
+        tourId: targetTour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: sameWeekSameTourEmployee.id,
+      },
+      {
+        tourId: otherTour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: sameWeekOtherTourEmployee.id,
+      },
+    ]);
+
+    await db
+      .update(employees)
+      .set({ isActive: false })
+      .where(eq(employees.id, inactiveEmployee.id));
+
+    await admin
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.map((employee: { id: number }) => employee.id)).toEqual([freeEmployee.id]);
       });
   });
 

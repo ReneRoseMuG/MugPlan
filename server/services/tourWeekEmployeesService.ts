@@ -498,6 +498,22 @@ export async function listWeekEmployeesByTour(tourId: number) {
   });
 }
 
+export async function listAvailableWeekEmployees(
+  tourId: number,
+  params: { isoYear: number; isoWeek: number },
+) {
+  await requireTour(tourId);
+  resolveIsoWeekWindow(params.isoYear, params.isoWeek);
+
+  const [activeEmployees, assignedEmployeeIds] = await Promise.all([
+    employeesRepository.getEmployees("active"),
+    tourWeekEmployeesRepository.listAssignedEmployeeIdsByWeek(params.isoYear, params.isoWeek),
+  ]);
+
+  const assignedEmployeeIdSet = new Set(assignedEmployeeIds);
+  return activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
+}
+
 export async function previewAddWeekEmployee(
   tourId: number,
   params: { isoYear: number; isoWeek: number; employeeId: number },

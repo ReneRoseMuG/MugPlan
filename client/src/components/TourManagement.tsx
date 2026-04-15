@@ -15,7 +15,7 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { useToast } from "@/hooks/use-toast";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
-import type { Tour, Employee } from "@shared/schema";
+import type { Tour } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 
@@ -65,6 +65,7 @@ type WeekDialogState = {
   employeeName: string;
   previewItems: WeekPreviewItem[];
   selectedIds: number[];
+  remainingEmployeeIds: number[];
 };
 
 type WeekExecuteResult = {
@@ -83,6 +84,10 @@ interface TourManagementProps {
 
 function buildWeekLabel(isoYear: number, isoWeek: number): string {
   return `KW ${String(isoWeek).padStart(2, "0")} / ${isoYear}`;
+}
+
+function normalizeEmployeeIds(employeeIds: number[]): number[] {
+  return Array.from(new Set(employeeIds.filter((employeeId) => Number.isInteger(employeeId) && employeeId > 0)));
 }
 
 function buildWeekDialogState(params: Omit<WeekDialogState, "selectedIds" | "open" | "mode"> & { mode: "add" | "remove" }): WeekDialogState {
@@ -106,12 +111,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     queryKey: ["/api/tours"],
   });
 
-  const { data: employees = [], isLoading: employeesLoading } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"],
-    enabled: !!editingTour,
-  });
-
-  const isLoading = toursLoading || (!!editingTour && employeesLoading);
+  const isLoading = toursLoading;
   const today = getBerlinTodayDateString();
 
   const { data: appointmentCountsByTourId = new Map<number, number>() } = useQuery({
@@ -191,6 +191,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           && (
             (key[0].startsWith("/api/tours/") && key[0].endsWith("/employees/active"))
             || (key[0].startsWith("/api/tours/") && key[0].endsWith("/week-employees"))
+            || (key[0].startsWith("/api/tours/") && key[0].endsWith("/week-employees/available"))
           );
       },
     });
@@ -375,6 +376,28 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     }));
   };
 
+  const openAddCascadeDialog = (
+    preview: {
+      isoYear: number;
+      isoWeek: number;
+      employee: { employeeId: number; fullName: string };
+      items: WeekPreviewItem[];
+    },
+    options?: { remainingEmployeeIds?: number[] },
+  ) => {
+    if (!editingTour) return;
+    openCascadeDialog("add", {
+      tourId: editingTour.id,
+      isoYear: preview.isoYear,
+      isoWeek: preview.isoWeek,
+      weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
+      employeeId: preview.employee.employeeId,
+      employeeName: preview.employee.fullName,
+      previewItems: preview.items,
+      remainingEmployeeIds: options?.remainingEmployeeIds ?? [],
+    });
+  };
+
   const handleCascadePreviewError = (error: unknown, action: "hinzufuegen" | "abziehen") => {
     const code = extractApiCode(error);
     if (error instanceof Error && error.message.includes("Wochenplanung ist blockiert")) {
@@ -425,15 +448,30 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         isoWeek: params.isoWeek,
         employeeId: params.employeeId,
       });
-      openCascadeDialog("add", {
+      openAddCascadeDialog(preview);
+    } catch (error) {
+      handleCascadePreviewError(error, "hinzufuegen");
+    }
+  };
+
+  const handleStartAddWeekEmployees = async (
+    params: { isoYear: number; isoWeek: number; employeeIds: number[] },
+  ) => {
+    if (!editingTour) return;
+
+    const normalizedEmployeeIds = normalizeEmployeeIds(params.employeeIds);
+    if (normalizedEmployeeIds.length === 0) return;
+
+    const [employeeId, ...remainingEmployeeIds] = normalizedEmployeeIds;
+
+    try {
+      const preview = await previewAddCascadeMutation.mutateAsync({
         tourId: editingTour.id,
-        isoYear: preview.isoYear,
-        isoWeek: preview.isoWeek,
-        weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
-        employeeId: preview.employee.employeeId,
-        employeeName: preview.employee.fullName,
-        previewItems: preview.items,
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+        employeeId,
       });
+      openAddCascadeDialog(preview, { remainingEmployeeIds });
     } catch (error) {
       handleCascadePreviewError(error, "hinzufuegen");
     }
@@ -455,6 +493,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         employeeId: preview.employee.employeeId,
         employeeName: preview.employee.fullName,
         previewItems: preview.items,
+        remainingEmployeeIds: [],
       });
     } catch (error) {
       handleCascadePreviewError(error, "abziehen");
@@ -600,18 +639,19 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const handleConfirmCascade = async () => {
     if (!weekDialogState) return;
+    const currentDialogState = weekDialogState;
     try {
       let result: WeekExecuteResult;
-      if (weekDialogState.mode === "add") {
+      if (currentDialogState.mode === "add") {
         result = await executeAddCascadeMutation.mutateAsync({
-          tourId: weekDialogState.tourId,
-          isoYear: weekDialogState.isoYear,
-          isoWeek: weekDialogState.isoWeek,
-          employeeId: weekDialogState.employeeId,
-          selectedIds: weekDialogState.selectedIds,
+          tourId: currentDialogState.tourId,
+          isoYear: currentDialogState.isoYear,
+          isoWeek: currentDialogState.isoWeek,
+          employeeId: currentDialogState.employeeId,
+          selectedIds: currentDialogState.selectedIds,
         });
       } else {
-        if (!weekDialogState.assignmentId) {
+        if (!currentDialogState.assignmentId) {
           toast({
             title: "Wochenplanung konnte nicht gespeichert werden",
             description: "Die zu löschende Wochenzuordnung fehlt.",
@@ -620,23 +660,40 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           return;
         }
         result = await executeRemoveCascadeMutation.mutateAsync({
-          tourId: weekDialogState.tourId,
-          assignmentId: weekDialogState.assignmentId,
-          isoYear: weekDialogState.isoYear,
-          isoWeek: weekDialogState.isoWeek,
-          selectedIds: weekDialogState.selectedIds,
+          tourId: currentDialogState.tourId,
+          assignmentId: currentDialogState.assignmentId,
+          isoYear: currentDialogState.isoYear,
+          isoWeek: currentDialogState.isoWeek,
+          selectedIds: currentDialogState.selectedIds,
         });
       }
       const skippedMessage = result.skipped.length > 0
         ? ` ${result.skipped.length} Termine wurden wegen Konflikten übersprungen.`
         : "";
       toast({
-        title: weekDialogState.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert",
+        title: currentDialogState.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert",
         description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedMessage}`,
       });
+
+      if (currentDialogState.mode === "add" && currentDialogState.remainingEmployeeIds.length > 0) {
+        const [nextEmployeeId, ...remainingEmployeeIds] = currentDialogState.remainingEmployeeIds;
+        try {
+          const preview = await previewAddCascadeMutation.mutateAsync({
+            tourId: currentDialogState.tourId,
+            isoYear: currentDialogState.isoYear,
+            isoWeek: currentDialogState.isoWeek,
+            employeeId: nextEmployeeId,
+          });
+          openAddCascadeDialog(preview, { remainingEmployeeIds });
+          return;
+        } catch (error) {
+          handleCascadePreviewError(error, "hinzufuegen");
+        }
+      }
+
       setWeekDialogState(null);
     } catch (error) {
-      handleExecuteCascadeError(error, weekDialogState.mode);
+      handleExecuteCascadeError(error, currentDialogState.mode);
     }
   };
 
@@ -670,12 +727,12 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       <>
         <TourEditForm
           tour={activeTour}
-          allEmployees={employees}
           onSubmit={handleSubmitTour}
           onCreateWeek={activeTour ? handleCreateWeek : undefined}
           onBlockWeek={activeTour ? handleBlockWeek : undefined}
           onUnblockWeek={activeTour ? handleUnblockWeek : undefined}
           onAddWeekEmployee={activeTour ? handleStartAddWeekEmployee : undefined}
+          onAddWeekEmployees={activeTour ? handleStartAddWeekEmployees : undefined}
           onRemoveWeekEmployee={activeTour ? handleStartRemoveWeekEmployee : undefined}
           onDelete={handleDeleteFromDialog}
           canDelete={isAdmin}

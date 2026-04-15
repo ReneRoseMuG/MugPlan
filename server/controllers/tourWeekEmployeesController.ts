@@ -39,6 +39,23 @@ export async function listTourWeekEmployees(req: Request, res: Response, next: N
   }
 }
 
+export async function listAvailableTourWeekEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!canMutateWeekEmployees(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
+
+    const tourId = Number(req.params.tourId);
+    const input = api.tourWeekEmployees.available.input.parse(req.query);
+    const result = await tourWeekEmployeesService.listAvailableWeekEmployees(tourId, input);
+    res.json(result);
+  } catch (err) {
+    if (handleServiceError(err, res)) return;
+    next(err);
+  }
+}
+
 export async function previewAddTourWeekEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!canMutateWeekEmployees(req)) {
