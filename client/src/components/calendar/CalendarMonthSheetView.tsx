@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO } from "date-fns";
+import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
@@ -30,7 +30,30 @@ import {
   MONTH_SLOT_SEPARATOR_HEIGHT_PX,
   type MonthWeekRowLayout,
 } from "./monthLaneState";
-import { buildMonthSheetMatrix, type MonthSheetMatrix } from "./monthSheetModel";
+import { buildFixedWeekMatrix, buildMonthSheetMatrix, type MonthSheetMatrix } from "./monthSheetModel";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  isReservedVacantTagName,
+  RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
+  RESERVED_VACANT_TAG_COLOR,
+} from "@shared/appointmentCancellation";
+import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
@@ -39,6 +62,8 @@ type CalendarMonthSheetViewProps = {
   employeeFilterId?: number | null;
   conflictHighlightActive?: boolean;
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
+  readOnly?: boolean;
+  visibleWeekCount?: number;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
@@ -107,6 +132,8 @@ export function CalendarMonthSheetView({
   employeeFilterId,
   conflictHighlightActive = false,
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
+  readOnly = false,
+  visibleWeekCount,
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthSheetViewProps) {
@@ -127,8 +154,10 @@ export function CalendarMonthSheetView({
   const berlinToday = getBerlinTodayDateString();
 
   const month = useMemo(
-    () => buildMonthSheetMatrix(currentDate.getFullYear(), currentDate.getMonth() + 1),
-    [currentDate],
+    () => visibleWeekCount !== undefined
+      ? buildFixedWeekMatrix(startOfISOWeek(currentDate), visibleWeekCount)
+      : buildMonthSheetMatrix(currentDate.getFullYear(), currentDate.getMonth() + 1),
+    [currentDate, visibleWeekCount],
   );
   const stripFromDate = format(month.visibleStart, "yyyy-MM-dd");
   const stripToDate = format(month.visibleEnd, "yyyy-MM-dd");
@@ -401,6 +430,8 @@ export function CalendarMonthSheetView({
           blockedTourWeekKeys={blockedTourWeekKeys}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
+          readOnly={readOnly}
+          showMonthHeader={visibleWeekCount === undefined}
           draggedAppointmentId={draggedAppointmentId}
           getSlotBarPosition={getSlotBarPosition}
           onDrop={handleDrop}
@@ -426,6 +457,8 @@ function MonthSheetSection({
   blockedTourWeekKeys,
   berlinToday,
   isAdmin,
+  readOnly,
+  showMonthHeader,
   draggedAppointmentId,
   getSlotBarPosition,
   onDrop,
@@ -445,6 +478,8 @@ function MonthSheetSection({
   blockedTourWeekKeys: Set<string>;
   berlinToday: string;
   isAdmin: boolean;
+  readOnly: boolean;
+  showMonthHeader: boolean;
   draggedAppointmentId: number | null;
   getSlotBarPosition: (startIndex: number, endIndex: number) => { left: string; width: string };
   onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => Promise<void>;
@@ -460,11 +495,13 @@ function MonthSheetSection({
       data-testid={`month-sheet-${month.monthKey}`}
     >
       <div className="flex h-full flex-col">
-        <div className="border-b border-border/40 bg-muted/20 px-6 py-3">
-          <span className="text-sm font-semibold tracking-wide text-primary" data-testid={`month-sheet-title-${month.monthKey}`}>
-            {format(month.monthStart, "MMMM yyyy", { locale: de })}
-          </span>
-        </div>
+        {showMonthHeader ? (
+          <div className="border-b border-border/40 bg-muted/20 px-6 py-3">
+            <span className="text-sm font-semibold tracking-wide text-primary" data-testid={`month-sheet-title-${month.monthKey}`}>
+              {format(month.monthStart, "MMMM yyyy", { locale: de })}
+            </span>
+          </div>
+        ) : null}
 
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
@@ -545,8 +582,8 @@ function MonthSheetSection({
                           ${dayCellClassName}
                           ${dayIdx === 6 ? "border-r-0" : ""}
                         `}
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={(event) => {
+                        onDragOver={readOnly ? undefined : (event) => event.preventDefault()}
+                        onDrop={readOnly ? undefined : (event) => {
                           void onDrop(event, day.date);
                         }}
                         data-testid={`month-sheet-day-${day.dateKey}`}
@@ -564,7 +601,7 @@ function MonthSheetSection({
                           >
                             {format(day.date, "d")}
                           </span>
-                          {day.dateKey >= berlinToday ? (
+                          {!readOnly && day.dateKey >= berlinToday ? (
                             <button
                               onClick={() => onNewAppointment(day.dateKey)}
                               className={newAppointmentButtonClassName}
@@ -604,8 +641,8 @@ function MonthSheetSection({
                                   ),
                                 }}
                                 className="relative w-full"
-                                onDragOver={(event) => event.preventDefault()}
-                                onDrop={(event) => {
+                                onDragOver={readOnly ? undefined : (event) => event.preventDefault()}
+                                onDrop={readOnly ? undefined : (event) => {
                                   event.stopPropagation();
                                   void onDrop(event, day.date, slot.tourId);
                                 }}
@@ -661,7 +698,7 @@ function MonthSheetSection({
                         const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                         const isLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
-                        const canDrag = !isLocked
+                        const canDrag = !readOnly && !isLocked
                           && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
                         const isSlotBlocked = isBlockedTourWeekSlot({
@@ -681,21 +718,34 @@ function MonthSheetSection({
                               height: `${MONTH_SLOT_BAR_HEIGHT_PX}px`,
                             }}
                           >
-                            <CalendarAppointmentCompactBar
-                              appointment={appointment}
-                              isFirstDay={isSameDay(segmentStart, appointmentStart)}
-                              isLastDay={isSameDay(segmentEnd, appointmentEnd)}
-                              isConflict={conflictHighlightActive && Boolean(conflictMeta) && !isSlotBlocked}
-                              conflictColor={conflictMeta?.color}
-                              hideOrderNumber={true}
-                              showPopover={true}
-                              isLocked={isLocked}
-                              isDragging={draggedAppointmentId === appointment.id}
-                              isBlocked={isSlotBlocked}
-                              onDoubleClick={() => onAppointmentClick(appointment.id)}
-                              onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
-                              onDragEnd={canDrag ? onDragEnd : undefined}
-                            />
+                            {readOnly ? (
+                              <CalendarAppointmentCompactBar
+                                appointment={appointment}
+                                isFirstDay={isSameDay(segmentStart, appointmentStart)}
+                                isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                                isConflict={conflictHighlightActive && Boolean(conflictMeta) && !isSlotBlocked}
+                                conflictColor={conflictMeta?.color}
+                                hideOrderNumber={true}
+                                showPopover={true}
+                                isLocked={isLocked}
+                                isDragging={false}
+                                isBlocked={isSlotBlocked}
+                              />
+                            ) : (
+                              <MonthCompactBarWithMenu
+                                appointment={appointment}
+                                isFirstDay={isSameDay(segmentStart, appointmentStart)}
+                                isLastDay={isSameDay(segmentEnd, appointmentEnd)}
+                                isConflict={conflictHighlightActive && Boolean(conflictMeta) && !isSlotBlocked}
+                                conflictColor={conflictMeta?.color}
+                                isLocked={isLocked}
+                                isDragging={draggedAppointmentId === appointment.id}
+                                isBlocked={isSlotBlocked}
+                                onDoubleClick={() => onAppointmentClick(appointment.id)}
+                                onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
+                                onDragEnd={canDrag ? onDragEnd : undefined}
+                              />
+                            )}
                           </div>
                         );
                       });
@@ -708,5 +758,297 @@ function MonthSheetSection({
         </div>
       </div>
     </section>
+  );
+}
+
+const isPastStartDate = (startDate: string) => {
+  const startDateValue = new Date(`${startDate}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return startDateValue < today;
+};
+
+const buildMonthApiError = (message: string, status?: number, code?: string) => {
+  const error = new Error(message) as Error & { status?: number; code?: string };
+  error.status = status;
+  error.code = code;
+  return error;
+};
+
+const parseMonthErrorPayload = (rawBody: string): { message?: string; code?: string } | null => {
+  const trimmed = rawBody.trim();
+  if (!trimmed || !(trimmed.startsWith("{") && trimmed.endsWith("}"))) return null;
+  try {
+    const parsed = JSON.parse(trimmed) as { message?: unknown; code?: unknown };
+    return {
+      message: typeof parsed.message === "string" && parsed.message.trim().length > 0 ? parsed.message : undefined,
+      code: typeof parsed.code === "string" ? parsed.code : undefined,
+    };
+  } catch {
+    return null;
+  }
+};
+
+function MonthCompactBarWithMenu({
+  appointment,
+  isFirstDay,
+  isLastDay,
+  isConflict = false,
+  conflictColor,
+  isLocked,
+  isDragging,
+  isBlocked = false,
+  onDoubleClick,
+  onDragStart,
+  onDragEnd,
+}: {
+  appointment: CalendarAppointment;
+  isFirstDay: boolean;
+  isLastDay: boolean;
+  isConflict?: boolean;
+  conflictColor?: string;
+  isLocked?: boolean;
+  isDragging?: boolean;
+  isBlocked?: boolean;
+  onDoubleClick?: () => void;
+  onDragStart?: (event: React.DragEvent) => void;
+  onDragEnd?: () => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+  const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Stornieren fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      toast({ title: "Termin storniert" });
+    },
+    onError: () => {
+      toast({ title: "Stornieren nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const parkMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/appointments/${appointment.id}/park`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      if (!res.ok) throw new Error("Parken fehlgeschlagen");
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Termin geparkt" });
+    },
+    onError: () => {
+      toast({ title: "Parken nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const fetchFreshVersion = async (): Promise<number> => {
+        const detail = await queryClient.fetchQuery({
+          queryKey: ["/api/appointments", appointment.id],
+          queryFn: async () => {
+            const response = await fetch(`/api/appointments/${appointment.id}`, { credentials: "include" });
+            if (!response.ok) throw new Error("Termindetails konnten nicht geladen werden");
+            return response.json() as Promise<{ version?: number }>;
+          },
+          staleTime: 0,
+        });
+        const version = detail?.version;
+        if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+          throw buildMonthApiError("Termin kann derzeit nicht gelöscht werden. Bitte neu laden.", 422, "VALIDATION_ERROR");
+        }
+        return version;
+      };
+      const requestDelete = async (version: number) => {
+        const response = await fetch(`/api/appointments/${appointment.id}`, {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ version }),
+        });
+        if (response.ok) return;
+        const rawBody = await response.text();
+        const parsed = parseMonthErrorPayload(rawBody);
+        if (parsed?.code === "PAST_APPOINTMENT_READONLY") throw buildMonthApiError("Termin ist gesperrt.", response.status, "PAST_APPOINTMENT_READONLY");
+        if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") throw buildMonthApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
+        if (parsed?.code === "VERSION_CONFLICT") throw buildMonthApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
+        if (parsed?.code === "VALIDATION_ERROR") throw buildMonthApiError("Ungültige Löschdaten. Bitte neu laden.", response.status, "VALIDATION_ERROR");
+        throw buildMonthApiError(parsed?.message ?? (response.statusText || "Löschen fehlgeschlagen"), response.status, parsed?.code);
+      };
+      try {
+        const freshVersion = await fetchFreshVersion();
+        await requestDelete(freshVersion);
+      } catch (error) {
+        const err = error as Error & { code?: string };
+        if (err.code !== "VERSION_CONFLICT") throw error;
+        const freshVersion = await fetchFreshVersion();
+        await requestDelete(freshVersion);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Termin gelöscht" });
+    },
+    onError: (error) => {
+      const err = error as Error & { status?: number; code?: string };
+      if (err.code === "PAST_APPOINTMENT_READONLY" || err.status === 403) {
+        toast({ title: "Löschen nicht möglich", description: "Termin ist gesperrt.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "CANCELLED_APPOINTMENT_READONLY") {
+        toast({ title: "Löschen nicht möglich", description: "Stornierte Termine können nicht gelöscht werden.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "VERSION_CONFLICT") {
+        toast({ title: "Löschen nicht möglich", description: err.message || "Termin wurde zwischenzeitlich geändert.", variant: "destructive" });
+        return;
+      }
+      if (err.code === "VALIDATION_ERROR") {
+        toast({ title: "Löschen nicht möglich", description: "Ungültige Löschdaten. Bitte neu laden.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Fehler", description: error instanceof Error ? error.message : "Löschen fehlgeschlagen", variant: "destructive" });
+    },
+  });
+
+  const menuSlot = !isHistoricalReadOnly ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center justify-center rounded p-0.5 opacity-60 hover:opacity-100 hover:bg-white/20 transition-opacity focus:outline-none"
+          aria-label="Terminaktionen"
+          data-testid={`month-compact-bar-menu-trigger-${appointment.id}`}
+        >
+          <MoreVertical className="h-3.5 w-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[160px]">
+        {onDoubleClick && (
+          <DropdownMenuItem onClick={onDoubleClick} className="gap-2 text-xs cursor-pointer">
+            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            Termin öffnen
+          </DropdownMenuItem>
+        )}
+        {!appointment.isCancelled && (
+          <DropdownMenuItem
+            onClick={() => setCancelConfirmOpen(true)}
+            className="gap-2 text-xs cursor-pointer"
+            style={{ color: RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR }}
+          >
+            <Ban className="h-3.5 w-3.5 shrink-0" />
+            Stornieren
+          </DropdownMenuItem>
+        )}
+        {!appointment.isCancelled && !isParked && (
+          <DropdownMenuItem
+            onClick={() => setParkConfirmOpen(true)}
+            className="gap-2 text-xs cursor-pointer"
+            style={{ color: RESERVED_VACANT_TAG_COLOR }}
+          >
+            <ParkingCircle className="h-3.5 w-3.5 shrink-0" />
+            Parken
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onClick={() => setDeleteConfirmOpen(true)}
+          className="gap-2 text-xs cursor-pointer text-destructive focus:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5 shrink-0" />
+          Termin löschen
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : undefined;
+
+  return (
+    <>
+      <CalendarAppointmentCompactBar
+        appointment={appointment}
+        isFirstDay={isFirstDay}
+        isLastDay={isLastDay}
+        isConflict={isConflict}
+        conflictColor={conflictColor}
+        hideOrderNumber={true}
+        showPopover={true}
+        isLocked={isLocked}
+        isDragging={isDragging}
+        isBlocked={isBlocked}
+        menuSlot={menuSlot}
+        onDoubleClick={onDoubleClick}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+      />
+      <AppointmentCancelConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        isPending={cancelMutation.isPending}
+        onConfirm={() => cancelMutation.mutate()}
+      />
+      <AlertDialog open={parkConfirmOpen} onOpenChange={setParkConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin parken?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Termin wird in die Parkplatz-Tour verschoben und als geparkt markiert. Zugewiesene Mitarbeiter werden entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={parkMutation.isPending}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => parkMutation.mutate()}
+              disabled={parkMutation.isPending}
+              style={{ backgroundColor: RESERVED_VACANT_TAG_COLOR, borderColor: RESERVED_VACANT_TAG_COLOR }}
+            >
+              {parkMutation.isPending ? "Parken…" : "Parken"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dieser Termin wird dauerhaft gelöscht und kann nicht rückgängig gemacht werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive text-destructive-foreground border border-destructive-border hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "Termin löschen..." : "Termin löschen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

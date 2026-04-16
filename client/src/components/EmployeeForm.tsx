@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Mail, Phone, Route, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
-import { EmployeeAppointmentsUtilizationBoard } from "@/components/EmployeeAppointmentsUtilizationBoard";
+import { EmployeeUtilizationView } from "@/components/EmployeeUtilizationView";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
@@ -16,7 +16,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
@@ -90,7 +89,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
-  const [appointmentsViewMode, setAppointmentsViewMode] = useState<"list" | "utilization">("list");
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
@@ -191,10 +189,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       draftEmployeeNoteIdRef.current = -1;
     }
   }, [isEditing]);
-
-  useEffect(() => {
-    setAppointmentsViewMode("list");
-  }, [employeeId]);
 
   const allEmployees = useMemo(() => {
     if (!isAdmin) return employees;
@@ -734,7 +728,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeMainTab === "details" && activeTab === "termine" ? 99999 : undefined}
+        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "auslastung") ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
@@ -872,6 +866,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               {isEditing ? (
                 <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
               ) : null}
+              {isEditing ? (
+                <TabsTrigger value="auslastung" data-testid="tab-employee-auslastung">Auslastung</TabsTrigger>
+              ) : null}
             </TabsList>
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
@@ -963,53 +960,32 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
 
           <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
             {employeeId ? (
-              <div className="flex min-h-0 flex-1 flex-col gap-4">
-                <div className="flex items-center justify-end">
-                  <ToggleGroup
-                    type="single"
-                    value={appointmentsViewMode}
-                    onValueChange={(value) => {
-                      if (value === "list" || value === "utilization") {
-                        setAppointmentsViewMode(value);
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    data-testid="toggle-employee-appointments-view"
-                  >
-                    <ToggleGroupItem value="list" data-testid="toggle-employee-appointments-list">
-                      Liste
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="utilization" data-testid="toggle-employee-appointments-utilization">
-                      Auslastung
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                </div>
-
-                {appointmentsViewMode === "list" ? (
-                  <AppointmentsListPage
-                    title="Termine"
-                    helpKey="appointments.list.employeeForm"
-                    context={{ type: "employee", employeeId }}
-                    onOpenAppointment={onOpenAppointment}
-                    onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
-                    className="min-h-0 flex-1"
-                  />
-                ) : (
-                  <EmployeeAppointmentsUtilizationBoard
-                    employeeId={employeeId}
-                    userRole={userRole}
-                    className="min-h-0"
-                    onOpenAppointment={(appointmentId) => onOpenAppointment?.(appointmentId, { type: "employee", employeeId })}
-                  />
-                )}
-              </div>
+              <AppointmentsListPage
+                title="Termine"
+                helpKey="appointments.list.employeeForm"
+                context={{ type: "employee", employeeId }}
+                onOpenAppointment={onOpenAppointment}
+                onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
+                className="min-h-0 flex-1"
+              />
             ) : (
               <p className="py-4 text-sm text-slate-400">
                 Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
               </p>
             )}
           </TabsContent>
+
+          {isEditing && employeeId ? (
+            <TabsContent value="auslastung" className="flex min-h-0 flex-1 flex-col">
+              <EmployeeUtilizationView
+                employeeId={employeeId}
+                userRole={userRole}
+                onOpenAppointment={onOpenAppointment
+                  ? (appointmentId) => onOpenAppointment(appointmentId, { type: "employee", employeeId })
+                  : undefined}
+              />
+            </TabsContent>
+          ) : null}
 
           {isEditing ? (
             <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">

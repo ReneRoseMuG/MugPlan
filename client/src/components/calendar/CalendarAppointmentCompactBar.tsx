@@ -22,6 +22,7 @@ type CompactBarProps = {
   isDragging?: boolean;
   isBlocked?: boolean;
   positionStyle?: React.CSSProperties;
+  menuSlot?: React.ReactNode;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -41,6 +42,7 @@ export function CalendarAppointmentCompactBar({
   isDragging,
   isBlocked = false,
   positionStyle,
+  menuSlot,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -140,6 +142,15 @@ export function CalendarAppointmentCompactBar({
         <span className="ml-auto inline-flex min-w-0 max-w-[34%] items-center justify-end text-[10px] text-right">
           <span className="truncate">{rightContent}</span>
         </span>
+        {menuSlot ? (
+          <span
+            className="shrink-0 flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            {menuSlot}
+          </span>
+        ) : null}
       </div>
     </div>
   );
