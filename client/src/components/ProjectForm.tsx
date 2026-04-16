@@ -25,8 +25,10 @@ import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPane
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { RelationSlot } from "@/components/ui/relation-slot";
-import { 
-  FolderKanban, 
+import {
+  FolderKanban,
+  LayoutList,
+  ScrollText,
   Trash2,
   UserCircle,
   X,
@@ -1500,12 +1502,6 @@ export function ProjectForm({
                 {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
               </h2>
               <EditFormContextText>{projectEditContext}</EditFormContextText>
-              {isEditing ? (
-                <TabsList data-testid="tabs-project-main">
-                  <TabsTrigger value="details" data-testid="tab-project-details">Details</TabsTrigger>
-                  <TabsTrigger value="journal" data-testid="tab-project-journal">Journal</TabsTrigger>
-                </TabsList>
-              ) : null}
             </div>
 
             <Button
@@ -1519,8 +1515,17 @@ export function ProjectForm({
             </Button>
           </div>
         )}
-        sidebar={activeMainTab === "details" ? (
+        sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="project-form-sidebar">
+            {isEditing ? (
+              <div className="sub-panel space-y-3">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
+                <TabsList className="w-full" data-testid="tabs-project-main">
+                  <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-project-details"><LayoutList className="w-4 h-4" />Details</TabsTrigger>
+                  <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-project-journal"><ScrollText className="w-4 h-4" />Journal</TabsTrigger>
+                </TabsList>
+              </div>
+            ) : null}
             {isEditing ? (
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
@@ -1626,7 +1631,7 @@ export function ProjectForm({
               }}
             />
           </div>
-        ) : undefined}
+        )}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">

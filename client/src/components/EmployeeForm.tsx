@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Mail, Phone, Route, Users, X } from "lucide-react";
+import { LayoutList, Mail, Phone, Route, ScrollText, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeUtilizationView } from "@/components/EmployeeUtilizationView";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
@@ -737,12 +737,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                 {title}
               </h2>
               <EditFormContextText>{employeeEditContext}</EditFormContextText>
-              {isEditing ? (
-                <TabsList data-testid="tabs-employee-main">
-                  <TabsTrigger value="details" data-testid="tab-employee-details-main">Details</TabsTrigger>
-                  <TabsTrigger value="journal" data-testid="tab-employee-journal">Journal</TabsTrigger>
-                </TabsList>
-              ) : null}
             </div>
 
             {onCancel ? (
@@ -758,8 +752,17 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
             ) : null}
           </div>
         )}
-        sidebar={activeMainTab === "details" ? (
+        sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="employee-form-sidebar">
+            {isEditing ? (
+              <div className="sub-panel space-y-3">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
+                <TabsList className="w-full" data-testid="tabs-employee-main">
+                  <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-employee-details-main"><LayoutList className="w-4 h-4" />Details</TabsTrigger>
+                  <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-employee-journal"><ScrollText className="w-4 h-4" />Journal</TabsTrigger>
+                </TabsList>
+              </div>
+            ) : null}
             <EmployeeAttachmentsPanel
               employeeId={employeeId}
               isEditing={isEditing}
@@ -826,7 +829,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               )}
             </div>
           </div>
-        ) : undefined}
+        )}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">

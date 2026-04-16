@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
-import { User, Phone, MapPin, Mail, X } from "lucide-react";
+import { LayoutList, Mail, MapPin, Phone, ScrollText, User, X } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
@@ -771,12 +771,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 {isEditMode ? "Kunde bearbeiten" : "Neuer Kunde"}
               </h2>
               <EditFormContextText>{customerEditContext}</EditFormContextText>
-              {isEditMode ? (
-                <TabsList data-testid="tabs-customer-main">
-                  <TabsTrigger value="details" data-testid="tab-customer-details">Details</TabsTrigger>
-                  <TabsTrigger value="journal" data-testid="tab-customer-journal">Journal</TabsTrigger>
-                </TabsList>
-              ) : null}
             </div>
 
             {onCancel ? (
@@ -792,8 +786,17 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             ) : null}
           </div>
         )}
-        sidebar={activeMainTab === "details" ? (
+        sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="customer-form-sidebar">
+            {isEditMode ? (
+              <div className="sub-panel space-y-3">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
+                <TabsList className="w-full" data-testid="tabs-customer-main">
+                  <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-customer-details"><LayoutList className="w-4 h-4" />Details</TabsTrigger>
+                  <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-customer-journal"><ScrollText className="w-4 h-4" />Journal</TabsTrigger>
+                </TabsList>
+              </div>
+            ) : null}
             <LinkedProjectsPanel
               customerId={customerId}
               customerNumber={formData.customerNumber}
@@ -845,7 +848,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               onDelete={handleDeleteNote}
             />
           </div>
-        ) : undefined}
+        )}
         footer={(
           <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
             <div className="flex flex-wrap items-center gap-3">
