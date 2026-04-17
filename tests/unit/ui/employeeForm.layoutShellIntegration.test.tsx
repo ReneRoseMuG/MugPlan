@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - EmployeeForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
  * - Im Edit-Modus zeigt EmployeeForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
+ * - Der Termine-Tab startet im Edit-Modus sichtbar in der Listenansicht und bietet den lokalen Toggle `Liste/Auslastung`.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Attachments, Tags, Notizen, Team.
  * - Create-Verdrahtung behaelt Draft-faehige Attachments, Tags und Notizen.
  * - Das Mitarbeiterformular rendert keinen veralteten Tour-Bereich mehr in der Sidebar.
@@ -12,6 +13,7 @@
  * Fehlerfaelle:
  * - Das Mitarbeiterformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
  * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
+ * - Der neue Termine-View-Toggle fehlt oder startet nicht mehr in der Listenansicht.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
  * - Die Create-Sidebar verliert ihre Draft-Verdrahtung fuer Tags, Notizen oder Attachments.
  *
@@ -25,6 +27,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const employeeAttachmentsPanelCalls: Array<Record<string, unknown>> = [];
 const tagPickerPanelCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
+const utilizationBoardCalls: Array<Record<string, unknown>> = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 
@@ -115,11 +118,23 @@ vi.mock("@/components/AppointmentsListPage", () => ({
   AppointmentsListPage: () => <section data-testid="employee-appointments-list-marker">appointments</section>,
 }));
 
+vi.mock("@/components/EmployeeAppointmentsUtilizationBoard", () => ({
+  EmployeeAppointmentsUtilizationBoard: (props: Record<string, unknown>) => {
+    utilizationBoardCalls.push(props);
+    return <section data-testid="employee-appointments-utilization-board-marker">utilization-board</section>;
+  },
+}));
+
 vi.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   TabsList: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
   TabsContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+}));
+
+vi.mock("@/components/ui/toggle-group", () => ({
+  ToggleGroup: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
+  ToggleGroupItem: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
 }));
 
 vi.mock("@/components/ui/checkbox", () => ({
@@ -286,6 +301,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     employeeAttachmentsPanelCalls.length = 0;
     tagPickerPanelCalls.length = 0;
     notesSectionCalls.length = 0;
+    utilizationBoardCalls.length = 0;
     useMutationMock.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(async () => ({ id: 17 })),
@@ -314,6 +330,11 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("tab-employee-details-main");
     expect(markup).toContain("tab-employee-journal");
     expect(markup).toContain("tab-employee-wochenplanung");
+    expect(markup).toContain("toggle-employee-appointments-view");
+    expect(markup).toContain("toggle-employee-appointments-list");
+    expect(markup).toContain("toggle-employee-appointments-utilization");
+    expect(markup).toContain("employee-appointments-list-marker");
+    expect(markup).not.toContain("employee-appointments-utilization-board-marker");
     expect(markup).toContain("KW 18 / 2026");
     expect(markup).toContain("Tour Nord");
     expect(markup).toContain("27.04.26 - 03.05.26");
@@ -336,6 +357,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
       notes: [{ id: 41, title: "Hinweis" }],
       readOnly: false,
     });
+    expect(utilizationBoardCalls).toHaveLength(0);
   });
 
   it("renders draft-capable sidebar panels in create mode with the same order", () => {
@@ -349,6 +371,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).not.toContain("tabs-employee-main");
     expect(markup).not.toContain("tab-employee-journal");
     expect(markup).not.toContain("tab-employee-wochenplanung");
+    expect(markup).not.toContain("toggle-employee-appointments-view");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
     expect(getIndex(markup, "employee-tag-picker-marker")).toBeLessThan(getIndex(markup, "employee-notes-section-marker"));
@@ -370,5 +393,6 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
       notes: [],
       readOnly: false,
     });
+    expect(utilizationBoardCalls).toHaveLength(0);
   });
 });
