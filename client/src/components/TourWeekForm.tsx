@@ -409,15 +409,15 @@ export function TourWeekForm({
       </div>
 
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
             teams={teams}
             tours={[]}
             isLoading={availableEmployeesLoading}
-            title="KW-Mitarbeiter auswählen"
+            title="Mitarbeiter auswählen"
             allowBulkSelection
-            viewModeSettingKey="tourWeekForm.employeePicker"
+            viewModeSettingKey="appointmentEmployeePicker.viewMode"
             onSelectEmployee={(employeeId) => {
               if (!onAddWeekEmployees) return;
               void onAddWeekEmployees({

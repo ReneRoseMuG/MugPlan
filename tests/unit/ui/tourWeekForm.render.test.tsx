@@ -202,7 +202,11 @@ describe("tourWeekForm render", () => {
     expect(markup).toContain("27.04.26 - 03.05.26");
 
     expect(employeePickerCalls).toHaveLength(1);
-    expect(employeePickerCalls[0].allowBulkSelection).toBe(true);
+    expect(employeePickerCalls[0]).toMatchObject({
+      allowBulkSelection: true,
+      viewModeSettingKey: "appointmentEmployeePicker.viewMode",
+      title: "Mitarbeiter auswählen",
+    });
     expect(employeePickerCalls[0].onSelectEmployee).toEqual(expect.any(Function));
     expect(employeePickerCalls[0].onConfirmSelection).toEqual(expect.any(Function));
 

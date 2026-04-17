@@ -18,6 +18,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+const employeePickerCalls: Array<Record<string, unknown>> = [];
+
 vi.mock("@/components/ui/entity-form-shell", () => ({
   EntityFormShell: ({
     children,
@@ -83,7 +85,10 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
-  EmployeePickerDialogList: () => <div>employee-picker</div>,
+  EmployeePickerDialogList: (props: Record<string, unknown>) => {
+    employeePickerCalls.push(props);
+    return <div>employee-picker</div>;
+  },
 }));
 
 import { TeamEditForm } from "../../../client/src/components/TeamEditForm";
@@ -112,7 +117,34 @@ const teamFixture = {
 describe("FT06/FT07 team form shell layout integration", () => {
   const noop = async () => undefined;
 
+  it("keeps the shared employee picker wiring for board and list selection", () => {
+    employeePickerCalls.length = 0;
+
+    renderToStaticMarkup(
+      <TeamEditForm
+        team={null}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        isCreate
+        defaultName="Neues Team"
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(employeePickerCalls).toHaveLength(1);
+    expect(employeePickerCalls[0]).toMatchObject({
+      allowBulkSelection: true,
+      viewModeSettingKey: "appointmentEmployeePicker.viewMode",
+      title: "Mitarbeiter auswählen",
+    });
+    expect(employeePickerCalls[0].onSelectEmployee).toEqual(expect.any(Function));
+    expect(employeePickerCalls[0].onConfirmSelection).toEqual(expect.any(Function));
+  });
+
   it("renders the expected create elements in shell mode with the sidebar", () => {
+    employeePickerCalls.length = 0;
+
     const markup = renderToStaticMarkup(
       <TeamEditForm
         team={null}
@@ -143,6 +175,8 @@ describe("FT06/FT07 team form shell layout integration", () => {
   });
 
   it("keeps delete and existing member badges visible in edit mode", () => {
+    employeePickerCalls.length = 0;
+
     const markup = renderToStaticMarkup(
       <TeamEditForm
         team={teamFixture}
