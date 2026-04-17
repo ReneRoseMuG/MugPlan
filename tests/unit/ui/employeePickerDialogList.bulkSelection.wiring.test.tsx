@@ -163,7 +163,7 @@ describe("FT01 UI: EmployeePickerDialogList bulk selection wiring", () => {
     expect(markup).toContain("employee-picker-checkbox-2");
     expect(markup).toContain("employee-picker-checkbox-1");
     expect(markup).toContain("button-confirm-employee-picker-selection");
-    expect(markup).toContain("Mitarbeiter uebernehmen");
+    expect(markup).toContain("Mitarbeiter übernehmen");
 
     const alphaIndex = markup.indexOf("Berta Alpha");
     const betaIndex = markup.indexOf("Anna Beta");

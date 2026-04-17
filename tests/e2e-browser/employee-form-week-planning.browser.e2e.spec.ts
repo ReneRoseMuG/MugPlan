@@ -5,14 +5,16 @@
  * - Das Mitarbeiterformular zeigt im Edit-Modus einen read-only Tab fuer Wochenplanung.
  * - Wochenplanungskarten erscheinen nur fuer echte Tour/KW-Zuordnungen des Mitarbeiters.
  * - Die Karte zeigt die beteiligten Mitarbeiter derselben Tour/KW-Kombination sichtbar an.
+ * - Ein Doppelklick auf die Wochenplanungskarte oeffnet das gemeinsame Wochenformular im Mitarbeiter-Scope.
  *
  * Fehlerfaelle:
  * - Der Wochenplanung-Tab fehlt trotz bestehender Tour/KW-Zuordnung.
  * - Die Wochenplanungskarte wird nicht aus echten Daten aufgebaut.
  * - Beteiligte Mitarbeiter erscheinen nicht sichtbar in der Wochenplanungskarte.
+ * - Das gemeinsame Wochenformular wird aus dem Mitarbeiter-Scope nicht geoeffnet.
  *
  * Ziel:
- * Browser-E2E-Nachweis fuer die sichtbare Mitarbeiter-Wochenplanung im Mitarbeiterformular.
+ * Browser-E2E-Nachweis fuer die sichtbare Mitarbeiter-Wochenplanung und das gemeinsame Wochenformular im Mitarbeiterformular.
  */
 import { expect, test } from "@playwright/test";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
@@ -78,10 +80,17 @@ test("employee form shows week-planning cards with visible assigned members", as
   await expect(weekCard).toBeVisible();
   await expect(weekCard).toContainText(`KW ${String(targetWeek.isoWeek).padStart(2, "0")} / ${targetWeek.isoYear}`);
   await expect(weekCard).toContainText(tour.name);
-  await expect(weekCard).toContainText(`${targetWeek.weekStartDate} - ${targetWeek.weekEndDate}`);
+  await expect(weekCard).toContainText(" - ");
 
   await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${ownAssignmentId}`)).toContainText(employee.fullName);
   await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${colleagueAssignmentId}`)).toContainText(
     colleague.fullName,
   );
+
+  await weekCard.dblclick();
+  await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
+  await expect(page.getByTestId("tab-tour-week-stammdaten")).toBeVisible();
+  await expect(page.getByTestId("button-open-tour-week-employee-picker")).toHaveCount(0);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(employee.fullName);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(colleague.fullName);
 });

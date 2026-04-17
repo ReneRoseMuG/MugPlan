@@ -38,6 +38,11 @@ const useQueryMock = vi.fn();
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  useMutation: () => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/hooks/use-toast", () => ({

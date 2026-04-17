@@ -79,7 +79,7 @@ describe("FT16/FT28 UI: help components behavior", () => {
     const html = renderToStaticMarkup(<HelpIcon helpKey="alpha" />);
 
     expect(html).toContain("button-help-alpha");
-    expect(html).toContain("Hilfe fuer alpha");
+    expect(html).toContain("Hilfe für alpha");
     expect(html).toContain("text-help-body-alpha");
     expect(html).toContain("Hilfetext");
     expect(html).toContain("Inhalt");

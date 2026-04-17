@@ -7,6 +7,7 @@ import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TourEditForm } from "@/components/TourEditForm";
+import { TourWeekForm } from "@/components/TourWeekForm";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -15,6 +16,7 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { useToast } from "@/hooks/use-toast";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
+import type { TourWeekCardData } from "@/components/TourWeekCard";
 import type { Tour } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
@@ -102,6 +104,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const { toast } = useToast();
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTourWeek, setActiveTourWeek] = useState<TourWeekCardData | null>(null);
   const [weekDialogState, setWeekDialogState] = useState<WeekDialogState | null>(null);
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
   const isAdmin = effectiveUserRole === "ADMIN";
@@ -612,6 +615,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleCloseDialog = () => {
     setEditingTour(null);
     setIsCreating(false);
+    setActiveTourWeek(null);
     setWeekDialogState(null);
   };
 
@@ -745,7 +749,32 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           defaultColor={defaultEntityColor}
           onCancel={handleCloseDialog}
           onOpenAppointment={onOpenAppointment}
+          onOpenTourWeek={(week) => setActiveTourWeek(week)}
         />
+        {activeTourWeek && activeTour ? (
+          <TourWeekForm
+            week={activeTourWeek}
+            scope="tour"
+            onClose={() => setActiveTourWeek(null)}
+            onOpenAppointment={onOpenAppointment}
+            onAddWeekEmployees={({ employeeIds, isoYear, isoWeek }) =>
+              handleStartAddWeekEmployees({ isoYear, isoWeek, employeeIds })
+            }
+            onRemoveWeekEmployee={(assignment) =>
+              handleStartRemoveWeekEmployee({
+                assignmentId: assignment.assignmentId,
+                employeeId: assignment.employeeId,
+                fullName: assignment.fullName,
+                isoYear: assignment.isoYear,
+                isoWeek: assignment.isoWeek,
+              })
+            }
+            onBlockWeek={({ isoYear, isoWeek }) => handleBlockWeek({ isoYear, isoWeek })}
+            onUnblockWeek={({ isoYear, isoWeek }) => handleUnblockWeek({ isoYear, isoWeek })}
+            isMutatingMembers={isMutatingMembers}
+            isMutatingWeeks={isMutatingWeeks}
+          />
+        ) : null}
         {weekDialogState ? (
           <TourEmployeeCascadeDialog
             variant="week"
@@ -843,5 +872,3 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     </>
   );
 }
-
-

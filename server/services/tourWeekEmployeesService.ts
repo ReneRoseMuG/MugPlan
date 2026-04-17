@@ -2,6 +2,7 @@ import { addDays, addWeeks, getISOWeek, getISOWeekYear, startOfISOWeek } from "d
 import type { Employee } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as notesRepository from "../repositories/notesRepository";
 import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
 import * as tourWeeksRepository from "../repositories/tourWeeksRepository";
 import * as toursRepository from "../repositories/toursRepository";
@@ -243,6 +244,45 @@ async function listWeekAppointments(tourId: number, isoYear: number, isoWeek: nu
   };
 }
 
+type TourWeekMember = {
+  assignmentId: number;
+  employeeId: number;
+  fullName: string;
+};
+
+type TourWeekCardProjection = {
+  tourId: number;
+  tourName: string;
+  tourColor: string | null;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  isLocked: boolean;
+  isBlocked: boolean;
+  employees: TourWeekMember[];
+};
+
+export async function enrichTourWeekCards<T extends TourWeekCardProjection>(
+  items: T[],
+  options: { employeeId?: number } = {},
+): Promise<Array<T & { appointmentsCount: number; notesCount: number }>> {
+  return Promise.all(items.map(async (item) => {
+    const { appointments } = await listWeekAppointments(item.tourId, item.isoYear, item.isoWeek);
+    const appointmentIds = appointments.map((appointment) => appointment.appointmentId);
+    const scopedAppointmentIds = options.employeeId
+      ? await tourWeekEmployeesRepository.listAssignedAppointmentIdsForEmployee(options.employeeId, appointmentIds)
+      : appointmentIds;
+    const notes = await notesRepository.getCalendarWeekNotes(item.isoYear, item.isoWeek, item.tourId);
+
+    return {
+      ...item,
+      appointmentsCount: scopedAppointmentIds.length,
+      notesCount: notes.length,
+    };
+  }));
+}
+
 async function buildAddPreviewItems(
   employeeId: number,
   appointments: tourWeekEmployeesRepository.TourWeekAppointmentRow[],
@@ -462,20 +502,15 @@ export async function listWeekEmployeesByTour(tourId: number) {
     tourWeeksRepository.listWeeksByTour(tourId),
     tourWeekEmployeesRepository.listAssignmentsByTour(tourId),
   ]);
-  const grouped = new Map<number, {
-    isoYear: number;
-    isoWeek: number;
-    weekStartDate: string;
-    weekEndDate: string;
-    isLocked: boolean;
-    isBlocked: boolean;
-    employees: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
-  }>();
+  const grouped = new Map<number, TourWeekCardProjection>();
 
   for (const weekRow of weeks) {
     const week = resolveIsoWeekWindow(weekRow.isoYear, weekRow.isoWeek);
     const key = weekRow.isoYear * 100 + weekRow.isoWeek;
     grouped.set(key, {
+      tourId,
+      tourName: tour.name ?? "",
+      tourColor: tour.color,
       isoYear: weekRow.isoYear,
       isoWeek: weekRow.isoWeek,
       weekStartDate: week.weekStartDate,
@@ -490,6 +525,9 @@ export async function listWeekEmployeesByTour(tourId: number) {
     const week = resolveIsoWeekWindow(assignment.isoYear, assignment.isoWeek);
     const key = assignment.isoYear * 100 + assignment.isoWeek;
     const existing = grouped.get(key) ?? {
+      tourId: assignment.tourId,
+      tourName: assignment.tourName,
+      tourColor: assignment.tourColor,
       isoYear: assignment.isoYear,
       isoWeek: assignment.isoWeek,
       weekStartDate: week.weekStartDate,
@@ -507,10 +545,12 @@ export async function listWeekEmployeesByTour(tourId: number) {
     grouped.set(key, existing);
   }
 
-  return Array.from(grouped.values()).sort((left, right) => {
+  const items = Array.from(grouped.values()).sort((left, right) => {
     if (left.isoYear !== right.isoYear) return left.isoYear - right.isoYear;
     return left.isoWeek - right.isoWeek;
   });
+
+  return enrichTourWeekCards(items);
 }
 
 export async function listAvailableWeekEmployees(

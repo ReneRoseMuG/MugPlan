@@ -202,6 +202,11 @@ test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ pa
   await expect(
     page.getByTestId("table-appointments-list").getByTestId(`button-remove-employee-from-appointment-${addDialogAppointment.id}`),
   ).toBeVisible();
+  await page.getByTestId("tab-employee-wochenplanung").click();
+  const employeeWeekCard = page.locator('[data-testid^="card-employee-week-plan-"]').filter({ hasText: tour.name }).first();
+  await expect(employeeWeekCard).toBeVisible();
+  await expect(employeeWeekCard.locator('[data-testid$="-appointments"]').first()).toContainText("1");
+  await page.getByTestId("tab-employee-termine").click();
 });
 
 test("Test 3: Entfernen über Minus-Button im Mitarbeiterformular", async ({ page }) => {
@@ -242,6 +247,11 @@ test("Test 3: Entfernen über Minus-Button im Mitarbeiterformular", async ({ pag
     const payload = await response.json();
     return (payload.employees as Array<{ id: number }>).map((entry) => entry.id);
   }).toContain(sideEmployee.id);
+
+  await page.getByTestId("tab-employee-wochenplanung").click();
+  const updatedWeekCard = page.locator('[data-testid^="card-employee-week-plan-"]').filter({ hasText: tour.name }).first();
+  await expect(updatedWeekCard).toBeVisible();
+  await expect(updatedWeekCard.locator('[data-testid$="-appointments"]').first()).toContainText("0");
 
   await page.getByTestId("button-close-employee").click();
   await page.getByTestId("nav-termine").click();

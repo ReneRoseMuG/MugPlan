@@ -100,7 +100,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("A-100 - Projekt Nord");
     expect(html).toContain("K: C-100 - Kunde Nord");
     expect(html).toContain("Projekt Sued");
-    expect(html).toContain("Ueberschneidung mit bestehendem Termin");
+    expect(html).toContain("Überschneidung mit bestehendem Termin");
     expect(html).toContain("button-tour-employee-cascade-confirm");
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");

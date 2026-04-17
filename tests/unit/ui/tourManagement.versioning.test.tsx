@@ -41,6 +41,7 @@ const cascadeDialogCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  useQueryClient: () => ({ invalidateQueries: vi.fn(), fetchQuery: vi.fn() }),
   useMutation: (options: {
     mutationFn: (variables: unknown) => Promise<unknown>;
     onSuccess?: (result: unknown, variables: unknown, context: unknown) => unknown;
@@ -159,6 +160,7 @@ vi.mock("@/components/TourEmployeeCascadeDialog", () => ({
 async function loadTourManagement(options?: {
   editingTour?: Record<string, unknown> | null;
   isCreating?: boolean;
+  activeTourWeek?: Record<string, unknown> | null;
   cascadeDialogState?: Record<string, unknown> | null;
 }) {
   vi.resetModules();
@@ -177,6 +179,9 @@ async function loadTourManagement(options?: {
           return [options?.isCreating ?? false, setIsCreatingMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         if (stateCall === 3) {
+          return [options?.activeTourWeek ?? null, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall === 4) {
           return [options?.cascadeDialogState ?? null, setCascadeDialogStateMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         return actual.useState(initial);
@@ -406,7 +411,7 @@ describe("FT07 TourManagement behavior", () => {
       isoWeek: 6,
       employeeId: 11,
     });
-    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
       open: true,
       mode: "add",
       isoYear: 2099,
@@ -466,7 +471,7 @@ describe("FT07 TourManagement behavior", () => {
       isoWeek: 6,
       employeeId: 11,
     });
-    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
       open: true,
       mode: "add",
       employeeId: 11,
@@ -587,7 +592,7 @@ describe("FT07 TourManagement behavior", () => {
       title: "Wochenplanung gespeichert",
       description: "1 Termine wurden aktualisiert.",
     }));
-    expect(setCascadeDialogStateMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
       employeeId: 12,
       employeeName: "Nora Queue",
       remainingEmployeeIds: [],

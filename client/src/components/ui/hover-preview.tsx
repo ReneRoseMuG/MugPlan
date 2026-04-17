@@ -1,3 +1,4 @@
+import React from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSetting } from "@/hooks/useSettings";
 import { cn } from "@/lib/utils";

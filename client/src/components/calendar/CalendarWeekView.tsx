@@ -762,7 +762,7 @@ export function CalendarWeekView({
       await refreshMonitoringWithNotification(toast);
     },
     onError: (error: Error) => {
-      toast({ title: "Notiz konnte nicht geloescht werden", description: error.message, variant: "destructive" });
+      toast({ title: "Notiz konnte nicht gelöscht werden", description: error.message, variant: "destructive" });
     },
   });
 

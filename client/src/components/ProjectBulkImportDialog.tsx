@@ -111,7 +111,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
       setSelectedNewIds(analyzeResult.newProjects.map((row) => row.id));
       toast({
         title: "Analyse abgeschlossen",
-        description: `Neu: ${analyzeResult.newProjects.length}, Duplikate: ${analyzeResult.duplicates.length}, Sonderfaelle: ${analyzeResult.specialCases.length}, Fehler: ${analyzeResult.errors.length}`,
+        description: `Neu: ${analyzeResult.newProjects.length}, Duplikate: ${analyzeResult.duplicates.length}, Sonderfälle: ${analyzeResult.specialCases.length}, Fehler: ${analyzeResult.errors.length}`,
       });
     } catch (analyzeError) {
       setError(analyzeError instanceof Error ? analyzeError.message : "Analyse fehlgeschlagen");
@@ -138,12 +138,12 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.message ?? "Uebernahme fehlgeschlagen");
+        throw new Error(payload?.message ?? "Übernahme fehlgeschlagen");
       }
       await invalidateQueries();
       toast({ title: "Neue Projekte übernommen" });
     } catch (applyError) {
-      setError(applyError instanceof Error ? applyError.message : "Uebernahme fehlgeschlagen");
+      setError(applyError instanceof Error ? applyError.message : "Übernahme fehlgeschlagen");
     } finally {
       setApplyingNew(false);
     }
@@ -246,7 +246,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
             </section>
 
             <section className="rounded-md border border-border p-3 space-y-2">
-              <h3 className="text-sm font-semibold">C - Sonderfaelle (Kunde fehlt)</h3>
+              <h3 className="text-sm font-semibold">C - Sonderfälle (Kunde fehlt)</h3>
               {result.specialCases.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Keine</p>
               ) : (
@@ -285,5 +285,4 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
     </Dialog>
   );
 }
-
 

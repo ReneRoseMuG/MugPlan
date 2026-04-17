@@ -1846,7 +1846,7 @@ export function ProjectForm({
           <AlertDialogHeader>
           <AlertDialogTitle>Projekt wirklich löschen?</AlertDialogTitle>
           <AlertDialogDescription>
-            Diese Aktion ist endgueltig. Das Projekt wird nur geloescht, wenn keine Termine zugeordnet sind.
+            Diese Aktion ist endgültig. Das Projekt wird nur gelöscht, wenn keine Termine zugeordnet sind.
           </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

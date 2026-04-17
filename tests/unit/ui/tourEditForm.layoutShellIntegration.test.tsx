@@ -90,6 +90,18 @@ vi.mock("@/components/AppointmentsListPage", () => ({
   ),
 }));
 
+vi.mock("@/components/TourWeekAppointmentsHoverPreview", () => ({
+  TourWeekAppointmentsHoverPreview: ({ count, triggerTestId }: { count: number; triggerTestId?: string }) => (
+    <div data-testid={triggerTestId}>appointments-{count}</div>
+  ),
+}));
+
+vi.mock("@/components/TourWeekNotesHoverPreview", () => ({
+  TourWeekNotesHoverPreview: ({ count, triggerTestId }: { count: number; triggerTestId?: string }) => (
+    <div data-testid={triggerTestId}>notes-{count}</div>
+  ),
+}));
+
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -165,11 +177,17 @@ describe("FT04 tour form shell layout integration", () => {
         return {
           data: [
             {
+              tourId: 12,
+              tourName: "Nordtour",
+              tourColor: "#335577",
               isoYear: 2099,
               isoWeek: 6,
               weekStartDate: "2099-02-02",
               weekEndDate: "2099-02-08",
               isLocked: false,
+              isBlocked: false,
+              appointmentsCount: 2,
+              notesCount: 1,
               employees: [
                 {
                   assignmentId: 301,
@@ -320,12 +338,17 @@ describe("FT04 tour form shell layout integration", () => {
         return {
           data: [
             {
+              tourId: 12,
+              tourName: "Nordtour",
+              tourColor: "#335577",
               isoYear: 2099,
               isoWeek: 7,
               weekStartDate: "2099-02-09",
               weekEndDate: "2099-02-15",
               isLocked: false,
               isBlocked: true,
+              appointmentsCount: 0,
+              notesCount: 1,
               employees: [
                 {
                   assignmentId: 302,

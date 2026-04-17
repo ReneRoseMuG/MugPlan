@@ -7,7 +7,6 @@ import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
-import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
@@ -32,6 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toggle } from "@/components/ui/toggle";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { useSetting } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import type { Tour, Employee } from "@shared/schema";
@@ -49,14 +49,17 @@ function isParkplatzTourName(value: string | null | undefined): boolean {
 }
 
 type TourWeekEmployeesWeek = {
-  id: number;
   tourId: number;
+  tourName: string;
+  tourColor: string | null;
   isoYear: number;
   isoWeek: number;
   weekStartDate: string;
   weekEndDate: string;
   isLocked: boolean;
   isBlocked: boolean;
+  appointmentsCount: number;
+  notesCount: number;
   employees: TourWeekEmployeeMember[];
 };
 
@@ -81,6 +84,7 @@ interface TourEditFormProps {
   defaultColor?: string;
   onCancel: () => void;
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
+  onOpenTourWeek?: (week: TourWeekCardData) => void;
 }
 
 export function TourEditForm({
@@ -103,6 +107,7 @@ export function TourEditForm({
   defaultColor = "#60a5fa",
   onCancel,
   onOpenAppointment,
+  onOpenTourWeek,
 }: TourEditFormProps) {
   const { toast } = useToast();
   const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
@@ -180,7 +185,7 @@ export function TourEditForm({
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error("Verfuegbare Mitarbeiter konnten nicht geladen werden");
+        throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
       }
       return response.json() as Promise<Employee[]>;
     },
@@ -459,12 +464,23 @@ export function TourEditForm({
               ) : (
                 <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
                 {allWeeks.map((week) => (
-                  <ColoredEntityCard
+                  <TourWeekCard
                     key={`${week.isoYear}-${week.isoWeek}`}
-                    title={`KW ${String(week.isoWeek).padStart(2, "0")} / ${week.isoYear}`}
-                    icon={<Route className="w-4 h-4" />}
+                    week={week}
+                    scope="tour"
                     borderColor={selectedColor}
                     testId={`card-tour-week-${week.isoYear}-${week.isoWeek}`}
+                    memberTestIdPrefix="badge-tour-week-member"
+                    blockedTextTestId={`text-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
+                    blockedBadgeTestId={`badge-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
+                    onOpen={() => onOpenTourWeek?.(week)}
+                    onRemoveEmployee={(employee) => {
+                      void onRemoveWeekEmployee?.({
+                        ...employee,
+                        isoYear: week.isoYear,
+                        isoWeek: week.isoWeek,
+                      });
+                    }}
                     actions={(
                       <>
                         {!week.isLocked && !week.isBlocked ? (
@@ -516,22 +532,8 @@ export function TourEditForm({
                         </DropdownMenu>
                       </>
                     )}
-                    footerVisibility="visible"
-                    footer={(
-                      <div className="flex w-full items-center justify-between gap-3 text-xs text-slate-500">
-                        <span>
+                    legacyLabel=
                           {week.isLocked ? "Schreibgeschützt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
-                        </span>
-                        {week.isBlocked ? (
-                          <span
-                            className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 font-semibold text-amber-700"
-                            data-testid={`badge-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
-                          >
-                            Blockiert
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
                   >
                     <div className="space-y-2">
                       {week.isBlocked ? (
@@ -564,7 +566,7 @@ export function TourEditForm({
                         <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
                       ) : null}
                     </div>
-                  </ColoredEntityCard>
+                  </TourWeekCard>
                 ))}
                 </div>
               )}
