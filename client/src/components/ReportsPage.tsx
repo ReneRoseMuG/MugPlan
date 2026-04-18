@@ -1465,7 +1465,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               {isAdmin && isProduktionsplanungCategoryLayoutDialogOpen ? (
                 <Dialog open={isProduktionsplanungCategoryLayoutDialogOpen} onOpenChange={setIsProduktionsplanungCategoryLayoutDialogOpen}>
                   <DialogContent
-                    className="max-h-[90vh] max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
+                    className="max-h-[90vh] max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
                     data-testid="dialog-reports-produktionsplanung-category-layout"
                   >
                     <div className="border-b border-slate-100 px-5 py-4">
