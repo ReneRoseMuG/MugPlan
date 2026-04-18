@@ -30,6 +30,30 @@ describe("testIsolationRegistry", () => {
     );
   });
 
+  it("marks the paged customers suite as a core default rollout candidate", () => {
+    expect(getRegisteredIsolationSuite("tests/integration/server/customers.paged-list.integration.test.ts")).toEqual(
+      expect.objectContaining({
+        rolloutMode: "candidate-default",
+        baseline: "core",
+        storageProfile: "none",
+        resetScope: "per-suite",
+        canaryProfile: "project-list-confusion",
+      }),
+    );
+  });
+
+  it("marks the project scope browser suite as a seeded default rollout candidate", () => {
+    expect(getRegisteredIsolationSuite("tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts")).toEqual(
+      expect.objectContaining({
+        rolloutMode: "candidate-default",
+        baseline: "seeded",
+        storageProfile: "none",
+        resetScope: "per-suite",
+        canaryProfile: "project-list-confusion",
+      }),
+    );
+  });
+
   it("matches registered suites by absolute path suffix", () => {
     expect(
       getRegisteredIsolationSuite("C:/repo/tests/integration/server/tourWeekEmployees.integration.test.ts"),

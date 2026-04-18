@@ -360,10 +360,12 @@ Jede Phase ist abzubrechen, wenn Fingerprints instabil sind, Canaries nicht ansc
 | Suite | Klasse | Baseline | Reset-Scope | Canary | Status | Ergebnis | Konsequenz |
 |---|---|---|---|---|---|---|---|
 | `tests/integration/server/projects.paged-list.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | legacy, candidate, repeat und Canary gruen | erste `candidate-default`-Suite |
+| `tests/integration/server/customers.paged-list.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Canary-Fund im Paging gehaertet, danach stabil | weitere `candidate-default`-Suite |
 | `tests/integration/server/appointments.attachments.integration.test.ts` | S | `core` | `per-test` | `attachment-confusion` | validiert mit harter Isolation | Storage-Pilot stabil gruen | bleibt vorerst `pilot-only` |
 | `tests/integration/server/admin.system-seed.integration.test.ts` | S | `core` | `per-test` | `seed-shadow` | validiert mit harter Isolation | `per-suite` ungeeignet, `per-test` stabil | bleibt vorerst `pilot-only` |
 | `tests/integration/server/tourWeekEmployees.integration.test.ts` | A | `core` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | Canary-Fund behoben, danach stabil | bleibt vorerst `pilot-only` |
 | `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | Canary-Fund im Listenreset behoben | zweite `candidate-default`-Suite |
+| `tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | seeded Browser-Scope-Pilot ohne Nachschärfung stabil | weitere `candidate-default`-Suite |
 | `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts` | S | `seeded` | `per-suite` | `backup-confusion` | validiert | Browser-Backup-Pilot stabil gruen | bleibt vorerst `pilot-only` |
 | `tests/e2e-browser/tour-week-form.browser.e2e.spec.ts` | A | `seeded` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | komplexer Browser-Wochenplan stabil | bleibt vorerst `pilot-only` |
 
@@ -374,7 +376,9 @@ Nur Suiten, die unter `candidate-baseline` mit `per-suite` sowie Canary und Repe
 ### `candidate-default`
 
 - `tests/integration/server/projects.paged-list.integration.test.ts`
+- `tests/integration/server/customers.paged-list.integration.test.ts`
 - `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts`
+- `tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts`
 
 ### `pilot-only`
 

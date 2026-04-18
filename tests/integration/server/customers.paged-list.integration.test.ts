@@ -41,19 +41,25 @@ beforeAll(async () => {
 describe("FT30 integration: paged customers list", () => {
   it("returns only one board page from a larger result set", async () => {
     const agent = await loginAdminAgent(app);
+    const pagingToken = "FT30-CUST-PAGING";
 
     for (let index = 0; index < 55; index += 1) {
-      await createCustomerFixture(`FT30-CUST-${String(index).padStart(3, "0")}`);
+      await createCustomerFixture(`${pagingToken}-${String(index).padStart(3, "0")}`);
     }
 
     const response = await agent
-      .get("/api/customers/list?scope=active&page=2&pageSize=50")
+      .get(`/api/customers/list?scope=active&lastName=${encodeURIComponent(pagingToken)}&page=2&pageSize=50`)
       .expect(200);
 
     expect(response.body.total).toBe(55);
     expect(response.body.totalPages).toBe(2);
     expect(response.body.page).toBe(2);
     expect(response.body.items).toHaveLength(5);
+    expect(
+      response.body.items.every((item: { customerNumber?: string; lastName?: string }) =>
+        item.customerNumber?.includes(pagingToken) && item.lastName?.includes(pagingToken)
+      ),
+    ).toBe(true);
   });
 
   it("applies filters before paging and includes appointment counters", async () => {

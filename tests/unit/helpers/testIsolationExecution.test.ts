@@ -114,6 +114,50 @@ describe("testIsolationExecution", () => {
     });
   });
 
+  it("defaults validated customer paging suites to core candidate baseline without env overrides", () => {
+    delete process.env.TEST_ISOLATION_MODE;
+    delete process.env.TEST_ISOLATION_TARGET_SUITE;
+    delete process.env.TEST_ISOLATION_BASELINE;
+    delete process.env.TEST_ISOLATION_STORAGE_PROFILE;
+    delete process.env.TEST_ISOLATION_CANARY_PROFILE;
+    delete process.env.TEST_ISOLATION_RESET_SCOPE;
+    delete process.env.TEST_ISOLATION_VERBOSE;
+
+    expect(
+      readIsolationExecutionConfigForSuite("tests/integration/server/customers.paged-list.integration.test.ts"),
+    ).toEqual({
+      mode: "candidate-baseline",
+      targetSuite: "tests/integration/server/customers.paged-list.integration.test.ts",
+      baseline: "core",
+      storageProfile: "none",
+      canaryProfile: null,
+      resetScope: "per-suite",
+      verbose: false,
+    });
+  });
+
+  it("defaults validated project scope browser suites to seeded candidate baseline without env overrides", () => {
+    delete process.env.TEST_ISOLATION_MODE;
+    delete process.env.TEST_ISOLATION_TARGET_SUITE;
+    delete process.env.TEST_ISOLATION_BASELINE;
+    delete process.env.TEST_ISOLATION_STORAGE_PROFILE;
+    delete process.env.TEST_ISOLATION_CANARY_PROFILE;
+    delete process.env.TEST_ISOLATION_RESET_SCOPE;
+    delete process.env.TEST_ISOLATION_VERBOSE;
+
+    expect(
+      readIsolationExecutionConfigForSuite("tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts"),
+    ).toEqual({
+      mode: "candidate-baseline",
+      targetSuite: "tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts",
+      baseline: "seeded",
+      storageProfile: "none",
+      canaryProfile: null,
+      resetScope: "per-suite",
+      verbose: false,
+    });
+  });
+
   it("uses candidate baseline only for the targeted suite", () => {
     process.env.TEST_ISOLATION_MODE = "candidate-baseline";
     process.env.TEST_ISOLATION_TARGET_SUITE = "tests/integration/server/projects.paged-list.integration.test.ts";
