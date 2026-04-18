@@ -2,12 +2,24 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 import { applyTestSystemSeed, resetDatabase } from "./resetDatabase";
+import {
+  assertIsolationFingerprintForConfiguredRun,
+  injectConfiguredCanariesForRun,
+  shouldInjectConfiguredCanaries,
+} from "./testIsolationExecution";
 import { resetTestDataFactoryState } from "./testDataFactory";
+import { resetIsolatedTestStorage } from "./testStorageIsolation";
 
 export async function resetBrowserSuiteState() {
+  await resetIsolatedTestStorage();
   resetTestDataFactoryState();
   await resetDatabase();
   await applyTestSystemSeed();
+  await assertIsolationFingerprintForConfiguredRun("browser-suite");
+
+  if (shouldInjectConfiguredCanaries()) {
+    await injectConfiguredCanariesForRun();
+  }
 }
 
 async function isVisible(locator: ReturnType<Page["getByTestId"]> | ReturnType<Page["getByLabel"]>) {

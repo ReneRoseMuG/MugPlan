@@ -50,11 +50,12 @@ beforeAll(async () => {
 describe("FT30 integration: paged projects list", () => {
   it("returns only one board page from a larger upcoming result set", async () => {
     const agent = await loginAdminAgent(app);
+    const pagingToken = "FT30-PAGING";
 
     for (let index = 0; index < 55; index += 1) {
       const project = await createProjectFixture({
-        prefix: `FT30-PROJ-${String(index).padStart(3, "0")}`,
-        name: `FT30 Project ${String(index).padStart(3, "0")}`,
+        prefix: `${pagingToken}-${String(index).padStart(3, "0")}`,
+        name: `${pagingToken} Project ${String(index).padStart(3, "0")}`,
       });
       await createAppointmentFixture({
         projectId: project.id,
@@ -63,13 +64,14 @@ describe("FT30 integration: paged projects list", () => {
     }
 
     const response = await agent
-      .get("/api/projects/list?scope=upcoming&page=2&pageSize=50")
+      .get(`/api/projects/list?scope=upcoming&title=${encodeURIComponent(pagingToken)}&page=2&pageSize=50`)
       .expect(200);
 
     expect(response.body.total).toBe(55);
     expect(response.body.totalPages).toBe(2);
     expect(response.body.page).toBe(2);
     expect(response.body.items).toHaveLength(5);
+    expect(response.body.items.every((item: { name?: string }) => item.name?.includes(pagingToken))).toBe(true);
   });
 
   it("filters before paging and returns board appointment summary fields", async () => {
