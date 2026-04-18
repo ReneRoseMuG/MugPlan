@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "client/src/**/*",
+    "server/**/*",
+    "shared/**/*",
+    "tests/**/*",
+    "script/**/*",
+    "scripts/**/*",
+    "*.ts",
+    "*.tsx",
+    "*.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

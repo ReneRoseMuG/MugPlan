@@ -20,6 +20,7 @@ app-logs/*
 !app-logs/.gitkeep
 *.zip
 .tmp-analysis-*.json
+.tmp-analysis/
 .tmp-unit-*.json
 tests/coverage/
 plans/

@@ -197,7 +197,7 @@ Codex legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angeg
 Codex klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne die Branch-Frage erneut zu stellen.
 
 `audit`  
-Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus und berichtet die Ergebnisse vollständig nach den dort definierten Regeln.
+Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus. Wenn im Repository ein lokaler Audit-Runner vorhanden ist, der die in Abschnitt 12 definierten Kommandos seriell ausführt, nutzt Codex diesen bevorzugt. Anschließend berichtet Codex die Ergebnisse vollständig nach den dort definierten Regeln und zusätzlich in einem kurzen zusammenfassenden Report.
 
 `test`  
 Codex führt den vollen Testlauf gemäß Abschnitt 12 als reinen Report-Auftrag aus und beachtet dabei zusätzlich alle Regeln aus Abschnitt 11. Während dieses Auftrags nimmt Codex keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor.
@@ -438,8 +438,21 @@ E2E-Tests prüfen geschäftskritische Nutzerabläufe aus Sicht des Benutzers im 
 - `npm run lint`
 - `npm run audit`
 - `npm run secrets`
+- `npm run analyze:arch`
+- `npm run analyze:boundaries`
+- `npm run analyze:coverage`
+- `npm run analyze:knip`
 
 Nach Ausführung muss Codex explizit berichten: welche Kommandos ausgeführt wurden, welches Ergebnis jedes hatte, welche Teile nicht ausgeführt wurden und warum. „Alles grün" ist nur zulässig, wenn alle verpflichtenden Kommandos erfolgreich abgeschlossen wurden.
+
+Wenn das Repository einen lokalen Sammelbefehl wie `npm run audit:local` bereitstellt, darf Codex diesen für die Ausführung verwenden, sofern der Befehl exakt diese Audit-Kommandos seriell abdeckt oder sichtbar orchestriert. Der Abschlussbericht bleibt trotzdem kommandogenau.
+
+Zusätzlich zum vollständigen Bericht liefert Codex nach einem Audit immer einen kurzen Management-Report mit:
+
+- Gesamtstatus (`grün`, `gelb` oder `rot`)
+- Anzahl erfolgreicher und fehlgeschlagener Teilprüfungen
+- den 1 bis 3 wichtigsten Problemursachen
+- einer knappen Einschätzung, ob der Branch audit-seitig mergefähig wirkt oder noch klar blockiert ist
 
 ---
 
