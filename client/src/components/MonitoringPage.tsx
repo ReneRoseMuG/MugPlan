@@ -7,7 +7,6 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MonitoringFilterPanel } from "@/components/ui/filter-panels/monitoring-filter-panel";
 import {
@@ -241,7 +240,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
 
   const configPanel = isAdmin ? (
     <div className="flex flex-wrap items-end gap-4" data-testid="monitoring-config-panel">
-      <div className="flex w-44 flex-col gap-1">
+      <div className="h-0 overflow-hidden opacity-0 pointer-events-none" aria-hidden="true">
         <span className="whitespace-nowrap text-sm font-medium text-slate-700">Mindestzahl Mitarbeiter</span>
         <Input
           type="number"
@@ -255,15 +254,6 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
           }}
           data-testid="input-monitoring-minimum-employees"
         />
-      </div>
-      <div className="ml-auto flex items-end">
-        <Button
-          onClick={() => void handleSaveConfig()}
-          disabled={saveConfigMutation.isPending || configQuery.isLoading}
-          data-testid="button-monitoring-save-config"
-        >
-          Speichern
-        </Button>
       </div>
     </div>
   ) : null;
