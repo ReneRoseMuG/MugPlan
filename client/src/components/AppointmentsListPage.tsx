@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
@@ -79,6 +79,7 @@ interface AppointmentsListPageProps {
   onSortDirectionChange?: (direction: AppointmentListSortDirection) => void;
   appointmentScope?: AppointmentListScope;
   onAppointmentScopeChange?: (scope: AppointmentListScope) => void;
+  fixedDateRange?: { dateFrom: string; dateTo: string };
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -104,44 +105,19 @@ function resolveAppointmentProjectDisplayName(storedProjectName: string): string
 function hasUserControlledAppointmentFilters(
   filters: AppointmentListFilters,
   options: {
-    appointmentScope: AppointmentListScope;
-    todayBerlin: string;
-    availableRange: AppointmentListAvailableRange;
-    resolvedTourId: number | null | undefined;
-    resolvedEmployeeId: number | undefined;
+    baseFilters: AppointmentListFilters;
   },
 ): boolean {
-  if (filters.projectTitle.trim().length > 0) return true;
-  if (filters.customerLastName.trim().length > 0) return true;
-  if (filters.customerNumber.trim().length > 0) return true;
-  if (filters.orderNumber.trim().length > 0) return true;
-  if (filters.tagIds.length > 0) return true;
-  if (filters.dateTo !== undefined) return true;
-
-  if (filters.employeeId !== undefined && filters.employeeId !== options.resolvedEmployeeId) {
-    return true;
-  }
-
-  if (filters.tourId !== undefined && filters.tourId !== (options.resolvedTourId ?? undefined)) {
-    return true;
-  }
-
-  if (options.appointmentScope === "planned") {
-    if (filters.dateFrom === undefined) {
-      return true;
-    }
-    return filters.dateFrom !== options.todayBerlin;
-  }
-
-  const matchesAvailableRange = (
-    (filters.dateFrom ?? undefined) === (options.availableRange.dateFrom ?? undefined)
-    && (filters.dateTo ?? undefined) === (options.availableRange.dateTo ?? undefined)
-  );
-  if (matchesAvailableRange) {
-    return false;
-  }
-
-  return filters.dateFrom !== undefined;
+  return filters.projectTitle.trim() !== options.baseFilters.projectTitle.trim()
+    || filters.customerLastName.trim() !== options.baseFilters.customerLastName.trim()
+    || filters.customerNumber.trim() !== options.baseFilters.customerNumber.trim()
+    || filters.orderNumber.trim() !== options.baseFilters.orderNumber.trim()
+    || filters.employeeId !== options.baseFilters.employeeId
+    || filters.tourId !== options.baseFilters.tourId
+    || (filters.dateFrom ?? undefined) !== (options.baseFilters.dateFrom ?? undefined)
+    || (filters.dateTo ?? undefined) !== (options.baseFilters.dateTo ?? undefined)
+    || filters.tagIds.length !== options.baseFilters.tagIds.length
+    || filters.tagIds.some((tagId, index) => tagId !== options.baseFilters.tagIds[index]);
 }
 
 export function AppointmentsListPage({
@@ -168,6 +144,7 @@ export function AppointmentsListPage({
   onSortDirectionChange,
   appointmentScope: controlledAppointmentScope,
   onAppointmentScopeChange,
+  fixedDateRange,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -178,6 +155,7 @@ export function AppointmentsListPage({
   const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
   const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
   const resolvedEnforceFromToday = enforceFromToday;
+  const hasFixedDateRange = Boolean(fixedDateRange?.dateFrom && fixedDateRange?.dateTo);
 
   const todayBerlin = getBerlinTodayDateString();
   const [internalPage, setInternalPage] = useState(1);
@@ -197,8 +175,8 @@ export function AppointmentsListPage({
     orderNumber: "",
     tagIds: [],
     tourId: resolvedTourId ?? undefined,
-    dateFrom: resolvedEnforceFromToday ? todayBerlin : undefined,
-    dateTo: undefined,
+    dateFrom: fixedDateRange?.dateFrom ?? (resolvedEnforceFromToday ? todayBerlin : undefined),
+    dateTo: fixedDateRange?.dateTo,
   });
   const filters = controlledFilters ?? internalFilters;
   const page = controlledPage ?? internalPage;
@@ -217,9 +195,9 @@ export function AppointmentsListPage({
     orderNumber: "",
     tagIds: [],
     tourId: resolvedTourId ?? undefined,
-    dateFrom: resolvedEnforceFromToday ? todayBerlin : undefined,
-    dateTo: undefined,
-  }), [resolvedEmployeeId, resolvedEnforceFromToday, resolvedTourId, todayBerlin]);
+    dateFrom: fixedDateRange?.dateFrom ?? (resolvedEnforceFromToday ? todayBerlin : undefined),
+    dateTo: fixedDateRange?.dateTo,
+  }), [fixedDateRange?.dateFrom, fixedDateRange?.dateTo, resolvedEmployeeId, resolvedEnforceFromToday, resolvedTourId, todayBerlin]);
 
   const applyFiltersPatch = useCallback((patch: Partial<AppointmentListFilters>) => {
     if (onFiltersChange) {
@@ -242,6 +220,16 @@ export function AppointmentsListPage({
     applyFiltersPatch({ employeeId: resolvedEmployeeId });
     setPage(1);
   }, [applyFiltersPatch, filters.employeeId, isEmployeeContext, resolvedEmployeeId, setPage]);
+
+  useEffect(() => {
+    if (!hasFixedDateRange || !fixedDateRange) return;
+    if (filters.dateFrom === fixedDateRange.dateFrom && filters.dateTo === fixedDateRange.dateTo) return;
+    applyFiltersPatch({
+      dateFrom: fixedDateRange.dateFrom,
+      dateTo: fixedDateRange.dateTo,
+    });
+    setPage(1);
+  }, [applyFiltersPatch, filters.dateFrom, filters.dateTo, fixedDateRange, hasFixedDateRange, setPage]);
 
   useEffect(() => {
     if (appointmentScope !== "planned") return;
@@ -469,11 +457,7 @@ export function AppointmentsListPage({
     [availableTags, selectedTagIds],
   );
   const hasUserControlledFilters = hasUserControlledAppointmentFilters(filters, {
-    appointmentScope,
-    todayBerlin,
-    availableRange,
-    resolvedTourId,
-    resolvedEmployeeId,
+    baseFilters,
   });
   const emptyState = hasUserControlledFilters ? (
     <ListEmptyState
@@ -531,6 +515,7 @@ export function AppointmentsListPage({
           tagPickerOpen={tagPickerOpen}
           onTagPickerOpenChange={setTagPickerOpen}
           hideTourFilter={resolvedHideTourFilter}
+          hidePeriodPicker={hasFixedDateRange}
         />
       }
       footerSlot={tableFooter}

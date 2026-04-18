@@ -23,6 +23,7 @@ const tagPickerCalls: Array<Record<string, unknown>> = [];
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
   useMutation: () => useMutationMock(),
+  useQueryClient: () => ({ invalidateQueries: vi.fn(), fetchQuery: vi.fn() }),
 }));
 
 vi.mock("@/components/ui/entity-form-shell", () => ({
@@ -84,6 +85,10 @@ vi.mock("@/components/ui/label", () => ({
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: vi.fn(() => null),
 }));
 
 vi.mock("@/lib/queryClient", () => ({

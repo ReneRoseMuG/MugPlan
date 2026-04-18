@@ -236,12 +236,17 @@ const tourWeekEmployeeMemberSchema = z.object({
 });
 
 const tourWeekEmployeesWeekSchema = z.object({
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  tourColor: z.string().nullable(),
   isoYear: z.number().int().min(1),
   isoWeek: z.number().int().min(1).max(53),
   weekStartDate: z.string(),
   weekEndDate: z.string(),
   isLocked: z.boolean(),
   isBlocked: z.boolean(),
+  appointmentsCount: z.number().int().min(0),
+  notesCount: z.number().int().min(0),
   employees: z.array(tourWeekEmployeeMemberSchema),
 });
 
@@ -282,7 +287,11 @@ const employeeWeekPlanningItemSchema = z.object({
   weekStartDate: z.string(),
   weekEndDate: z.string(),
   isLocked: z.boolean(),
+  isBlocked: z.boolean(),
+  appointmentsCount: z.number().int().min(0),
+  notesCount: z.number().int().min(0),
   members: z.array(tourWeekEmployeeMemberSchema),
+  employees: z.array(tourWeekEmployeeMemberSchema),
 });
 
 const tourWeekAppointmentPreviewStatusSchema = z.enum([

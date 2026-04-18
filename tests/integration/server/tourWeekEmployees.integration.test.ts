@@ -170,6 +170,88 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
+  it("projects appointment and note counters for tour and employee week cards strictly by ISO week", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#335577");
+    const project = await createProjectFixture({ prefix: "TWE-COUNTS" });
+    const employee = await createEmployeeFixture("TWE-COUNTS-EMP");
+    const colleague = await createEmployeeFixture("TWE-COUNTS-COL");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await db.insert(tourWeekEmployees).values([
+      {
+        tourId: tour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      },
+      {
+        tourId: tour.id,
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: colleague.id,
+      },
+    ]);
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekStartDate,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekMidDate,
+      tourId: tour.id,
+      employeeIds: [colleague.id],
+    });
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.previousWeekDate,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    await admin
+      .post(`/api/calendar-weeks/${targetWeek.isoYear}/${targetWeek.isoWeek}/tours/${tour.id}/notes`)
+      .send({ title: "KW-Notiz", body: "<p>nur diese Woche</p>", print: false })
+      .expect(201);
+
+    const tourWeeksResponse = await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200);
+
+    const tourWeekCard = tourWeeksResponse.body.find((entry: { isoYear: number; isoWeek: number }) =>
+      entry.isoYear === targetWeek.isoYear && entry.isoWeek === targetWeek.isoWeek,
+    );
+
+    expect(tourWeekCard).toEqual(expect.objectContaining({
+      tourId: tour.id,
+      tourName: tour.name,
+      tourColor: tour.color,
+      appointmentsCount: 2,
+      notesCount: 1,
+    }));
+
+    const employeeWeekPlansResponse = await admin
+      .get(`/api/employees/${employee.id}/week-plans`)
+      .expect(200);
+
+    expect(employeeWeekPlansResponse.body).toEqual([
+      expect.objectContaining({
+        tourId: tour.id,
+        appointmentsCount: 1,
+        notesCount: 1,
+        employees: expect.arrayContaining([
+          expect.objectContaining({ employeeId: employee.id }),
+          expect.objectContaining({ employeeId: colleague.id }),
+        ]),
+      }),
+    ]);
+  });
+
   it("adds a week assignment, applies it to selected appointments and exposes it in the week list", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#335577");

@@ -115,7 +115,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(payload?.message ?? "Uebernahme fehlgeschlagen");
+        throw new Error(payload?.message ?? "Übernahme fehlgeschlagen");
       }
       await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
@@ -125,7 +125,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
       await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
       toast({ title: "Neue Kunden übernommen" });
     } catch (applyError) {
-      setError(applyError instanceof Error ? applyError.message : "Uebernahme fehlgeschlagen");
+      setError(applyError instanceof Error ? applyError.message : "Übernahme fehlgeschlagen");
     } finally {
       setApplyingNew(false);
     }
@@ -253,4 +253,3 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
     </Dialog>
   );
 }
-

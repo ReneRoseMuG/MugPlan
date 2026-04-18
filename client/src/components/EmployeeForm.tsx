@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LayoutList, Mail, Phone, Route, ScrollText, Users, X } from "lucide-react";
+import { LayoutList, Mail, Phone, ScrollText, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeUtilizationView } from "@/components/EmployeeUtilizationView";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
-import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
+import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { invalidateTourWeekQueries } from "@/lib/tour-week-queries";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
@@ -43,6 +44,7 @@ interface EmployeeFormProps {
   onCancel?: () => void;
   onSaved?: () => void;
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
+  onOpenTourWeek?: (week: TourWeekCardData) => void;
 }
 
 type EmployeeTagDraftItem = TagRelationItem;
@@ -57,7 +59,15 @@ type EmployeeWeekPlanItem = {
   weekStartDate: string;
   weekEndDate: string;
   isLocked: boolean;
+  isBlocked: boolean;
+  appointmentsCount: number;
+  notesCount: number;
   members: Array<{
+    assignmentId: number;
+    employeeId: number;
+    fullName: string;
+  }>;
+  employees: Array<{
     assignmentId: number;
     employeeId: number;
     fullName: string;
@@ -70,7 +80,7 @@ function extractApiCode(error: unknown): string | null {
   return match?.[1] ?? null;
 }
 
-export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment }: EmployeeFormProps) {
+export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment, onOpenTourWeek }: EmployeeFormProps) {
   const { toast } = useToast();
   const isEditing = Boolean(employeeId);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
@@ -290,6 +300,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
       void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
       if (employeeId) {
         void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "week-plans"] });
+        const relevantWeeks = employeeWeekPlans.filter((weekPlan) => weekPlan.appointmentsCount > 0);
+        for (const weekPlan of relevantWeeks) {
+          void invalidateTourWeekQueries(queryClient, {
+            tourId: weekPlan.tourId,
+            isoYear: weekPlan.isoYear,
+            isoWeek: weekPlan.isoWeek,
+            employeeId,
+          });
+        }
       }
       toast({ title: "Mitarbeiter wurde vom Termin entfernt" });
     },
@@ -997,12 +1017,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
               ) : employeeWeekPlans.length > 0 ? (
                 <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {employeeWeekPlans.map((weekPlan) => (
-                    <ColoredEntityCard
+                    <TourWeekCard
                       key={`${weekPlan.assignmentId}-${weekPlan.tourId}-${weekPlan.isoYear}-${weekPlan.isoWeek}`}
-                      title={`KW ${String(weekPlan.isoWeek).padStart(2, "0")} / ${weekPlan.isoYear}`}
-                      icon={<Route className="w-4 h-4" />}
+                      week={{ ...weekPlan, employees: weekPlan.employees ?? weekPlan.members }}
+                      scope="employee"
+                      employeeId={employeeId}
                       borderColor={weekPlan.tourColor}
                       testId={`card-employee-week-plan-${weekPlan.assignmentId}`}
+                      memberTestIdPrefix="badge-employee-week-plan-member"
+                      onOpen={() => onOpenTourWeek?.({ ...weekPlan, employees: weekPlan.employees ?? weekPlan.members })}
                       footerVisibility="visible"
                       footer={(
                         <div className="space-y-1 text-xs text-slate-500">
@@ -1029,7 +1052,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment 
                           />
                         ))}
                       </div>
-                    </ColoredEntityCard>
+                    </TourWeekCard>
                   ))}
                 </div>
               ) : (

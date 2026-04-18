@@ -1,11 +1,12 @@
 import type { Employee, InsertEmployee, Tag, Team, Tour, UpdateEmployee } from "@shared/schema";
 import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
+import * as tourWeeksRepository from "../repositories/tourWeeksRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
-import { isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
+import { enrichTourWeekCards, isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
 import { isParkplatzTourName } from "../lib/systemTours";
 
 export class EmployeesError extends Error {
@@ -117,7 +118,11 @@ export async function listEmployeeWeekPlans(
   weekStartDate: string;
   weekEndDate: string;
   isLocked: boolean;
+  isBlocked: boolean;
+  appointmentsCount: number;
+  notesCount: number;
   members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
+  employees: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
 }> | null> {
   const employee = await employeesRepository.getEmployee(id);
   if (!employee) return null;
@@ -133,6 +138,12 @@ export async function listEmployeeWeekPlans(
   const allAssignments = (await tourWeekEmployeesRepository.listAssignmentsByTourIds(
     employeeAssignments.map((assignment) => assignment.tourId),
   )).filter((assignment) => !isParkplatzTourName(assignment.tourName));
+  const blockedWeeks = await tourWeeksRepository.listBlockedWeeksByTourIds(
+    Array.from(new Set(employeeAssignments.map((assignment) => assignment.tourId))),
+  );
+  const blockedWeekKeys = new Set(
+    blockedWeeks.map((week) => `${week.tourId}-${week.isoYear}-${week.isoWeek}`),
+  );
 
   const grouped = new Map<number, {
     assignmentId: number;
@@ -144,6 +155,7 @@ export async function listEmployeeWeekPlans(
     weekStartDate: string;
     weekEndDate: string;
     isLocked: boolean;
+    isBlocked: boolean;
     members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
   }>();
 
@@ -170,6 +182,7 @@ export async function listEmployeeWeekPlans(
         weekStartDate: weekWindow.weekStartDate,
         weekEndDate: weekWindow.weekEndDate,
         isLocked: isWeekLocked(assignment.isoYear, assignment.isoWeek),
+        isBlocked: blockedWeekKeys.has(`${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`),
         members: [],
       };
     })();
@@ -182,11 +195,36 @@ export async function listEmployeeWeekPlans(
     grouped.set(numericKey, existing);
   }
 
-  return Array.from(grouped.values()).sort((left, right) => {
+  const items = Array.from(grouped.values()).sort((left, right) => {
     if (left.isoYear !== right.isoYear) return left.isoYear - right.isoYear;
     if (left.isoWeek !== right.isoWeek) return left.isoWeek - right.isoWeek;
     return left.tourName.localeCompare(right.tourName, "de");
   });
+
+  const enriched = await enrichTourWeekCards(
+    items.map((item) => ({
+      ...item,
+      employees: item.members,
+    })),
+    { employeeId: id },
+  );
+
+  return enriched.map((item) => ({
+    assignmentId: item.assignmentId,
+    tourId: item.tourId,
+    tourName: item.tourName,
+    tourColor: item.tourColor,
+    isoYear: item.isoYear,
+    isoWeek: item.isoWeek,
+    weekStartDate: item.weekStartDate,
+    weekEndDate: item.weekEndDate,
+    isLocked: item.isLocked,
+    isBlocked: item.isBlocked,
+    appointmentsCount: item.appointmentsCount,
+    notesCount: item.notesCount,
+    members: item.members,
+    employees: item.employees,
+  }));
 }
 
 export async function listEmployeeTagRelations(id: number, roleKey: CanonicalRoleKey) {

@@ -22,6 +22,7 @@ import { EmployeeFilterPanel } from "@/components/ui/filter-panels/employee-filt
 import { EmployeeEntityCard } from "@/components/ui/entity-preview-cards";
 import { EmployeeForm } from "@/components/EmployeeForm";
 import { EmployeeImportPanel } from "@/components/ImportExportPage";
+import { TourWeekForm } from "@/components/TourWeekForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { applyEmployeeFilters, defaultEmployeeFilters } from "@/lib/employee-filters";
 import { getBerlinTodayDateString, PROJECT_APPOINTMENTS_ALL_FROM_DATE } from "@/lib/project-appointments";
@@ -32,6 +33,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
+import type { TourWeekCardData } from "@/components/TourWeekCard";
 import type { Employee, Tag, Team } from "@shared/schema";
 import type { EmployeeFilters } from "@/lib/employee-filters";
 
@@ -134,6 +136,7 @@ export function EmployeesPage({
   const isAdmin = userRole === "ADMIN";
   const berlinToday = getBerlinTodayDateString();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
+  const [activeTourWeek, setActiveTourWeek] = useState<TourWeekCardData | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [importResetSignal, setImportResetSignal] = useState(0);
@@ -426,18 +429,32 @@ export function EmployeesPage({
 
   if (isCreating || selectedEmployeeId !== null) {
     return (
-      <EmployeeForm
-        employeeId={isCreating ? undefined : (selectedEmployeeId ?? undefined)}
-        onCancel={() => {
-          setSelectedEmployeeId(null);
-          setIsCreating(false);
-        }}
-        onSaved={() => {
-          setSelectedEmployeeId(null);
-          setIsCreating(false);
-        }}
-        onOpenAppointment={onOpenAppointment}
-      />
+      <>
+        <EmployeeForm
+          employeeId={isCreating ? undefined : (selectedEmployeeId ?? undefined)}
+          onCancel={() => {
+            setActiveTourWeek(null);
+            setSelectedEmployeeId(null);
+            setIsCreating(false);
+          }}
+          onSaved={() => {
+            setActiveTourWeek(null);
+            setSelectedEmployeeId(null);
+            setIsCreating(false);
+          }}
+          onOpenAppointment={onOpenAppointment}
+          onOpenTourWeek={(week) => setActiveTourWeek(week)}
+        />
+        {activeTourWeek && selectedEmployeeId ? (
+          <TourWeekForm
+            week={activeTourWeek}
+            scope="employee"
+            employeeId={selectedEmployeeId}
+            onClose={() => setActiveTourWeek(null)}
+            onOpenAppointment={onOpenAppointment}
+          />
+        ) : null}
+      </>
     );
   }
 

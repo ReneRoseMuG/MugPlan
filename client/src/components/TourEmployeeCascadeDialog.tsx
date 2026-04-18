@@ -204,7 +204,7 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
           {variant === "week" ? (
             weekPreviewItems.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">
-                Keine zukuenftigen Termine betroffen.
+                Keine zukünftigen Termine betroffen.
               </div>
             ) : (
               <div className="divide-y">
@@ -314,5 +314,4 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
     </Dialog>
   );
 }
-
 

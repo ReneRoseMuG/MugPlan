@@ -223,8 +223,20 @@ export function TeamEditForm({
               teams={[]}
               tours={[]}
               title="Mitarbeiter auswählen"
+              allowBulkSelection
+              viewModeSettingKey="appointmentEmployeePicker.viewMode"
               onSelectEmployee={(employeeId) => {
                 setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));
+                setEmployeePickerOpen(false);
+              }}
+              onConfirmSelection={(employeeIds) => {
+                setSelectedMembers((prev) => {
+                  const nextIds = new Set(prev);
+                  for (const employeeId of employeeIds) {
+                    nextIds.add(employeeId);
+                  }
+                  return Array.from(nextIds);
+                });
                 setEmployeePickerOpen(false);
               }}
               onClose={() => setEmployeePickerOpen(false)}

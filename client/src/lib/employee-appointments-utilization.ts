@@ -219,7 +219,7 @@ export function buildEmployeeAppointmentsUtilizationBoardModel(params: {
     }
   }
 
-  for (const dateKey of segmentsByDate.keys()) {
+  for (const dateKey of Array.from(segmentsByDate.keys())) {
     const segments = segmentsByDate.get(dateKey);
     if (!segments) continue;
     segments.sort(compareSegments);

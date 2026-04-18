@@ -37,6 +37,7 @@ interface AppointmentsFilterPanelProps {
   tagPickerOpen: boolean;
   onTagPickerOpenChange: (open: boolean) => void;
   hideTourFilter?: boolean;
+  hidePeriodPicker?: boolean;
 }
 
 export function AppointmentsFilterPanel({
@@ -52,6 +53,7 @@ export function AppointmentsFilterPanel({
   tagPickerOpen,
   onTagPickerOpenChange,
   hideTourFilter = false,
+  hidePeriodPicker = false,
 }: AppointmentsFilterPanelProps) {
   return (
     <FilterPanel title="Terminfilter" layout="row">
@@ -133,16 +135,18 @@ export function AppointmentsFilterPanel({
         testIdPrefix="appointment-filter-tag"
         className="sm:min-w-[96px] sm:w-[96px]"
       />
-      <AppointmentPeriodPicker
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-        onDateFromChange={(value) => onChange({ dateFrom: value })}
-        onDateToChange={(value) => onChange({ dateTo: value })}
-        availableRange={availableRange}
-        appointmentScope={appointmentScope}
-        onAppointmentScopeChange={onAppointmentScopeChange}
-        onResetAll={onResetAll}
-      />
+      {!hidePeriodPicker ? (
+        <AppointmentPeriodPicker
+          dateFrom={filters.dateFrom}
+          dateTo={filters.dateTo}
+          onDateFromChange={(value) => onChange({ dateFrom: value })}
+          onDateToChange={(value) => onChange({ dateTo: value })}
+          availableRange={availableRange}
+          appointmentScope={appointmentScope}
+          onAppointmentScopeChange={onAppointmentScopeChange}
+          onResetAll={onResetAll}
+        />
+      ) : null}
     </FilterPanel>
   );
 }
