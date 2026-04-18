@@ -6,6 +6,7 @@ import {
   injectStorageCanaries,
 } from "./testIsolationCanaries";
 import { assertCombinedTestFingerprint } from "./testIsolationFingerprint";
+import { getRegisteredIsolationSuite } from "./testIsolationRegistry";
 import { resetIsolatedTestStorage } from "./testStorageIsolation";
 import { resetTestDataFactoryState } from "./testDataFactory";
 
@@ -53,17 +54,37 @@ export function normalizeTestPath(testPath: string | null | undefined) {
 }
 
 export function readIsolationExecutionConfig(): IsolationExecutionConfig {
-  const mode = process.env.TEST_ISOLATION_MODE === "candidate-baseline"
-    ? "candidate-baseline"
-    : "legacy-reset";
+  return readIsolationExecutionConfigForSuite(null);
+}
+
+export function readIsolationExecutionConfigForSuite(testPath: string | null | undefined): IsolationExecutionConfig {
+  const explicitMode = process.env.TEST_ISOLATION_MODE;
   const targetSuite = process.env.TEST_ISOLATION_TARGET_SUITE
     ? normalizeTestPath(process.env.TEST_ISOLATION_TARGET_SUITE)
     : null;
-  const baseline = process.env.TEST_ISOLATION_BASELINE === "seeded" ? "seeded" : "core";
-  const storageProfile = parseStorageProfile(process.env.TEST_ISOLATION_STORAGE_PROFILE);
-  const canaryProfile = parseCanaryProfile(process.env.TEST_ISOLATION_CANARY_PROFILE);
-  const resetScope = process.env.TEST_ISOLATION_RESET_SCOPE === "per-test" ? "per-test" : "per-suite";
+  const suiteEntry = getRegisteredIsolationSuite(testPath);
   const verbose = process.env.TEST_ISOLATION_VERBOSE === "1";
+
+  if (!explicitMode && suiteEntry?.rolloutMode === "candidate-default") {
+    return {
+      mode: "candidate-baseline",
+      targetSuite: suiteEntry.suitePath,
+      baseline: suiteEntry.baseline,
+      storageProfile: suiteEntry.storageProfile,
+      canaryProfile: parseCanaryProfile(process.env.TEST_ISOLATION_CANARY_PROFILE),
+      resetScope: suiteEntry.resetScope,
+      verbose,
+    };
+  }
+
+  const mode = explicitMode === "candidate-baseline" ? "candidate-baseline" : "legacy-reset";
+  const baseline = process.env.TEST_ISOLATION_BASELINE === "seeded" ? "seeded" : "core";
+  const storageProfile = parseStorageProfile(
+    process.env.TEST_ISOLATION_STORAGE_PROFILE,
+    suiteEntry?.storageProfile ?? "none",
+  );
+  const canaryProfile = parseCanaryProfile(process.env.TEST_ISOLATION_CANARY_PROFILE);
+  const resetScope = parseResetScope(process.env.TEST_ISOLATION_RESET_SCOPE, suiteEntry?.resetScope ?? "per-suite");
 
   return {
     mode,
@@ -85,7 +106,7 @@ export function shouldInjectConfiguredCanaries() {
 }
 
 export async function assertIsolationFingerprintForConfiguredRun(suitePath: string) {
-  const config = readIsolationExecutionConfig();
+  const config = readIsolationExecutionConfigForSuite(suitePath);
   await assertFingerprintWithLogging(config, normalizeTestPath(suitePath));
 }
 
@@ -95,7 +116,7 @@ export async function injectConfiguredCanariesForRun() {
 }
 
 export function shouldUseCandidateBaseline(testPath: string | null | undefined) {
-  const config = readIsolationExecutionConfig();
+  const config = readIsolationExecutionConfigForSuite(testPath);
   if (config.mode !== "candidate-baseline" || !config.targetSuite) {
     return false;
   }
@@ -105,7 +126,7 @@ export function shouldUseCandidateBaseline(testPath: string | null | undefined) 
 
 export async function prepareIntegrationOrE2eIsolation(testPath: string | null | undefined) {
   const normalizedPath = normalizeTestPath(testPath);
-  const config = readIsolationExecutionConfig();
+  const config = readIsolationExecutionConfigForSuite(testPath);
   const isTargetSuite = !!config.targetSuite && matchesTargetSuite(normalizedPath, config.targetSuite);
 
   if (config.mode === "candidate-baseline" && isTargetSuite) {
@@ -129,12 +150,26 @@ export async function prepareIntegrationOrE2eIsolation(testPath: string | null |
   }
 }
 
-function parseStorageProfile(rawProfile: string | undefined): TestIsolationStorageProfile {
+function parseStorageProfile(
+  rawProfile: string | undefined,
+  fallbackProfile: TestIsolationStorageProfile = "none",
+): TestIsolationStorageProfile {
   if (rawProfile === "uploads" || rawProfile === "backups" || rawProfile === "both") {
     return rawProfile;
   }
 
-  return "none";
+  return fallbackProfile;
+}
+
+function parseResetScope(
+  rawResetScope: string | undefined,
+  fallbackScope: TestIsolationResetScope = "per-suite",
+): TestIsolationResetScope {
+  if (rawResetScope === "per-test" || rawResetScope === "per-suite") {
+    return rawResetScope;
+  }
+
+  return fallbackScope;
 }
 
 function parseCanaryProfile(rawProfile: string | undefined) {

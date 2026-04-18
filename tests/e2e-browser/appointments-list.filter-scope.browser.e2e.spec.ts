@@ -31,7 +31,7 @@ import {
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts");
 });
 
 test("appointment scopes keep the new all/default semantics and apply valid or invalid filters to real result sets", async ({ page }) => {

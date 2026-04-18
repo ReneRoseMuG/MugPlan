@@ -10,12 +10,12 @@ import {
 import { resetTestDataFactoryState } from "./testDataFactory";
 import { resetIsolatedTestStorage } from "./testStorageIsolation";
 
-export async function resetBrowserSuiteState() {
+export async function resetBrowserSuiteState(testPath?: string) {
   await resetIsolatedTestStorage();
   resetTestDataFactoryState();
   await resetDatabase();
   await applyTestSystemSeed();
-  await assertIsolationFingerprintForConfiguredRun("browser-suite");
+  await assertIsolationFingerprintForConfiguredRun(testPath ?? "browser-suite");
 
   if (shouldInjectConfiguredCanaries()) {
     await injectConfiguredCanariesForRun();

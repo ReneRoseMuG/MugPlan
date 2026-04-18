@@ -354,3 +354,43 @@ Jede Phase ist abzubrechen, wenn Fingerprints instabil sind, Canaries nicht ansc
 - Einige bestehende Tests verwenden bereits weiche Muster; diese müssen beim Pilot aktiv identifiziert und nicht still übernommen werden.
 - Dump-, Backup- und andere globale Systemzustands-Suiten bleiben teuer und sollen zuerst sicher, nicht maximal schnell werden.
 - Klasse C und Worker-Isolation sind vor erfolgreicher Pilotvalidierung bewusst ausgeschlossen.
+ 
+## Konsolidierter Pilotstand
+
+| Suite | Klasse | Baseline | Reset-Scope | Canary | Status | Ergebnis | Konsequenz |
+|---|---|---|---|---|---|---|---|
+| `tests/integration/server/projects.paged-list.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | legacy, candidate, repeat und Canary gruen | erste `candidate-default`-Suite |
+| `tests/integration/server/appointments.attachments.integration.test.ts` | S | `core` | `per-test` | `attachment-confusion` | validiert mit harter Isolation | Storage-Pilot stabil gruen | bleibt vorerst `pilot-only` |
+| `tests/integration/server/admin.system-seed.integration.test.ts` | S | `core` | `per-test` | `seed-shadow` | validiert mit harter Isolation | `per-suite` ungeeignet, `per-test` stabil | bleibt vorerst `pilot-only` |
+| `tests/integration/server/tourWeekEmployees.integration.test.ts` | A | `core` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | Canary-Fund behoben, danach stabil | bleibt vorerst `pilot-only` |
+| `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | Canary-Fund im Listenreset behoben | zweite `candidate-default`-Suite |
+| `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts` | S | `seeded` | `per-suite` | `backup-confusion` | validiert | Browser-Backup-Pilot stabil gruen | bleibt vorerst `pilot-only` |
+| `tests/e2e-browser/tour-week-form.browser.e2e.spec.ts` | A | `seeded` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | komplexer Browser-Wochenplan stabil | bleibt vorerst `pilot-only` |
+
+## Zielzuordnung nach Pilot
+
+Nur Suiten, die unter `candidate-baseline` mit `per-suite` sowie Canary und Repeat stabil validiert wurden, duerfen in den normalen Default-Rollout wechseln.
+
+### `candidate-default`
+
+- `tests/integration/server/projects.paged-list.integration.test.ts`
+- `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts`
+
+### `pilot-only`
+
+- `tests/integration/server/appointments.attachments.integration.test.ts`
+- `tests/integration/server/admin.system-seed.integration.test.ts`
+- `tests/integration/server/tourWeekEmployees.integration.test.ts`
+- `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts`
+- `tests/e2e-browser/tour-week-form.browser.e2e.spec.ts`
+
+Diese Trennung ist bewusst konservativ: Ein bestandener Pilot genuegt noch nicht fuer einen breiten Default-Rollout, wenn die Suite harte Isolation, Seed-Sonderbehandlung oder Storage-Schutz braucht.
+
+## Kontrollierter Umbau ab diesem Stand
+
+Der Umbau startet ab jetzt nicht mehr nur ueber manuelle Pilot-Flags, sondern ueber eine feste Registry der bereits validierten Suites.
+
+- Die Registry bildet Klasse, Baseline, Storage-Profil, Reset-Scope, Canary-Profil und Rollout-Modus pro pilotierter Suite ab.
+- Ohne explizite Env-Overrides schalten nur explizit freigegebene `candidate-default`-Suites automatisch auf `candidate-baseline`.
+- Alle anderen pilotierten Suites bleiben `pilot-only` und laufen im normalen Standard weiter im Legacy-Modell.
+- Jede weitere Suite darf erst dann in `candidate-default` wechseln, wenn Canary-, Repeat- und Vergleichslaeufe dokumentiert gruen sind und keine Assertion-Abschwaechung noetig war.
