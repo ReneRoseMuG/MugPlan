@@ -346,6 +346,7 @@ describe("calendar week appointment card layout", () => {
     expect(html).not.toContain("height:260px");
     expect(html).toContain('class="flex shrink-0 flex-col"');
     expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
+    expect(html).toContain('class="grid w-full shrink-0 content-start gap-1 overflow-hidden"');
   });
 
   it("keeps single-day collapsed body cards on the reduced shell and removes the extra body height", () => {

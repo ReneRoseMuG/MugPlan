@@ -15,7 +15,7 @@
  * Den zentralen Nutzerfluss des Tour-PLZ-Plans browserseitig absichern.
  */
 import { expect, test } from "@playwright/test";
-import { format, parseISO, startOfISOWeek } from "date-fns";
+import { addDays, format, parseISO, startOfISOWeek } from "date-fns";
 
 import {
   createAppointmentFixture,
@@ -44,7 +44,10 @@ test("loads PLZ suggestions and opens appointment creation with date and tour pr
     name: "Tour PLZ Browser Projekt",
   });
   const tour = await createTourFixture("#225588");
-  const appointmentDate = getRelativeBerlinDate(2);
+  const appointmentDate = format(
+    addDays(startOfISOWeek(parseISO(getRelativeBerlinDate(0))), 8),
+    "yyyy-MM-dd",
+  );
   const appointmentWeekStartDate = format(startOfISOWeek(parseISO(appointmentDate)), "yyyy-MM-dd");
 
   await createAppointmentFixture({

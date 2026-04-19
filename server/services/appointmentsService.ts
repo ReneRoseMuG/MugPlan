@@ -1189,14 +1189,17 @@ export async function listCalendarTourPostalPlan({
   postalCode,
   fromDate,
   toDate,
-  roleKey: _roleKey,
+  roleKey,
 }: {
   postalCode: string;
   fromDate: string;
   toDate: string;
   roleKey: CanonicalRoleKey;
 }) {
-  const requestedFromDate = parseDateOnly(fromDate);
+  const minimumFromDate = startOfWeek(addWeeks(parseDateOnly(getBerlinTodayDateString()), 1), { weekStartsOn: 1 });
+  const requestedFromDate = parseDateOnly(fromDate) < minimumFromDate
+    ? minimumFromDate
+    : parseDateOnly(fromDate);
   const requestedToDate = parseDateOnly(toDate);
   if (requestedToDate < requestedFromDate) {
     throw new AppointmentError("toDate darf nicht vor fromDate liegen", 422, "VALIDATION_ERROR");
@@ -1206,11 +1209,31 @@ export async function listCalendarTourPostalPlan({
     fromDate: requestedFromDate,
     toDate: requestedToDate,
   });
-  const matches = buildTourPostalPlanMatches({ postalCode, rows });
+  const minimumFromDateString = toDateOnlyString(requestedFromDate) ?? "";
+  const clampedRows = rows.filter((row) => {
+    const appointmentStartDate = toDateOnlyString(row.appointment.startDate) ?? "";
+    return appointmentStartDate >= minimumFromDateString;
+  });
+  const matches = buildTourPostalPlanMatches({ postalCode, rows: clampedRows });
   const appointmentIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.appointment.id))));
+  const projectIds = Array.from(new Set(
+    matches.flatMap((match) => match.matches.map((item) => item.project?.id).filter((id): id is number => Number.isFinite(id))),
+  ));
+  const customerIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.customer.id))));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
+  const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
+  const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
   const appointmentTagsByAppointmentId = appointmentIds.length > 0
     ? await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds)
     : new Map<number, AppointmentTagRelations>();
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
+  const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
+  const parkplatzTourId = await getParkplatzTourId();
 
   const weeks = new Map<string, {
     isoYear: number;
@@ -1225,6 +1248,7 @@ export async function listCalendarTourPostalPlan({
       scoreLabel: "exakt" | "sehr nah" | "nah" | "grob passend" | "schwach passend";
       matchedPostalCodes: string[];
       matchedAppointmentCount: number;
+      appointments: ReturnType<typeof listCalendarAppointments> extends Promise<(infer T)[]> ? T[] : never;
       days: Array<{
         date: string;
         appointments: Array<{
@@ -1251,6 +1275,70 @@ export async function listCalendarTourPostalPlan({
       weekEndDate: matchGroup.weekEndDate,
       suggestions: [],
     };
+
+    const previewAppointments = matchGroup.matches
+      .map((item) => {
+        const row = item;
+        const projectId = row.project?.id ?? null;
+        const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+          appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+        );
+        const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+        const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+        const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
+
+        return {
+          id: row.appointment.id,
+          version: row.appointment.version,
+          projectId,
+          projectName: row.project?.name ?? "Ohne Projekt",
+          projectVersion: row.project?.version ?? null,
+          projectOrderNumber: row.projectOrder?.orderNumber ?? null,
+          projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
+          projectDescription: row.project?.descriptionMd ?? null,
+          startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+          endDate: toDateOnlyString(row.appointment.endDate),
+          startTime: row.appointment.startTime ?? null,
+          tourId: row.appointment.tourId ?? null,
+          tourName: row.tour?.name ?? null,
+          tourColor: row.tour?.color ?? null,
+          customer: {
+            id: row.customer.id,
+            customerNumber: row.customer.customerNumber,
+            fullName: row.customer.fullName,
+            phone: row.customer.phone ?? null,
+            email: row.customer.email ?? null,
+            company: row.customer.company ?? null,
+            addressLine1: row.customer.addressLine1 ?? null,
+            addressLine2: row.customer.addressLine2 ?? null,
+            postalCode: row.customer.postalCode ?? null,
+            city: row.customer.city ?? null,
+            country: row.customer.country ?? null,
+          },
+          customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+          projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
+          appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+          customerAttachmentsCount,
+          projectAttachmentsCount,
+          appointmentAttachmentsCount,
+          totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
+          appointmentTags: visibleTags,
+          customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+          projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
+          displayMode: row.appointment.displayMode,
+          employees: employeesByAppointment.get(row.appointment.id) ?? [],
+          isLocked: isAppointmentLockedForRole(row.appointment, roleKey, parkplatzTourId),
+          isCancelled,
+        };
+      })
+      .sort((left, right) => {
+        if (left.startDate !== right.startDate) return left.startDate.localeCompare(right.startDate);
+        const leftTime = left.startTime ?? "99:99:99";
+        const rightTime = right.startTime ?? "99:99:99";
+        if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+        return left.id - right.id;
+      })
+      .filter((appointment, index, appointments) => appointments.findIndex((entry) => entry.id === appointment.id) === index);
 
     const days = Array.from({ length: 7 }, (_, index) => {
       const date = toDateOnlyString(addDays(parseDateOnly(matchGroup.weekStartDate), index)) ?? matchGroup.weekStartDate;
@@ -1296,6 +1384,7 @@ export async function listCalendarTourPostalPlan({
       scoreLabel: matchGroup.scoreLabel,
       matchedPostalCodes: matchGroup.matchedPostalCodes,
       matchedAppointmentCount: matchGroup.matchedAppointmentCount,
+      appointments: previewAppointments,
       days,
     });
     weeks.set(weekKey, week);

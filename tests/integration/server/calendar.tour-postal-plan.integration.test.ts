@@ -15,6 +15,7 @@
  * Die neue Kalenderprojektion des Tour-PLZ-Plans gegen echte API-Responses absichern.
  */
 import { beforeAll, describe, expect, it } from "vitest";
+import { addDays, addWeeks, format, startOfISOWeek } from "date-fns";
 
 import type express from "express";
 import * as appointmentsService from "../../../server/services/appointmentsService";
@@ -169,6 +170,7 @@ describe("calendar tour postal plan integration", () => {
         scoreLabel: string;
         matchedPostalCodes: string[];
         matchedAppointmentCount: number;
+        appointments: Array<{ id: number; customer: { postalCode: string | null } }>;
         days: Array<{ date: string; appointments: Array<{ postalCode: string | null }> }>;
       }>;
     };
@@ -195,5 +197,71 @@ describe("calendar tour postal plan integration", () => {
     expect(
       weeks[0]?.suggestions.flatMap((suggestion) => suggestion.days.flatMap((day) => day.appointments.map((appointment) => appointment.postalCode))),
     ).not.toContain(null);
+    expect(
+      weeks[0]?.suggestions.flatMap((suggestion) => suggestion.appointments.map((appointment) => appointment.customer.postalCode)),
+    ).not.toContain(null);
+  });
+
+  it("klammert laufende Woche serverseitig auf den Beginn der kommenden Woche", async () => {
+    const agent = await loginAdminAgent(app);
+    const local = seq++;
+    const berlinToday = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Berlin",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const currentWeekStart = startOfISOWeek(new Date(`${berlinToday}T00:00:00`));
+    const nextWeekStart = addWeeks(currentWeekStart, 1);
+    const currentWeekDate = berlinToday;
+    const nextWeekDate = format(addDays(nextWeekStart, 1), "yyyy-MM-dd");
+    const tour = await toursRepository.createTour(`PLZ Clamp ${Date.now()}-${local}`, "#0f766e");
+    const customer = await customersService.createCustomer({
+      customerNumber: `TPLZ-CL-${local}`,
+      firstName: "Clara",
+      lastName: `Clamp-${local}`,
+      fullName: `Clamp-${local}, Clara`,
+      company: null,
+      email: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      postalCode: "26135",
+      city: "Oldenburg",
+      country: null,
+      version: 1,
+    });
+    const project = await projectsService.createProject({
+      name: `Projekt Clamp ${local}`,
+      customerId: customer.id,
+      orderNumber: `TPLZ-CL-${local}`,
+      descriptionMd: null,
+      version: 1,
+    });
+
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: currentWeekDate,
+      employeeIds: [],
+      tourId: tour.id,
+    });
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: nextWeekDate,
+      employeeIds: [],
+      tourId: tour.id,
+    });
+
+    const response = await agent
+      .get(`/api/calendar/tour-postal-plan?postalCode=26135&fromDate=1900-01-01&toDate=${format(addWeeks(nextWeekStart, 3), "yyyy-MM-dd")}`)
+      .expect(200);
+
+    const weeks = response.body as Array<{ weekStartDate: string; suggestions: Array<{ appointments: Array<{ startDate: string }> }> }>;
+    expect(
+      weeks.flatMap((week) => week.suggestions.flatMap((suggestion) => suggestion.appointments.map((appointment) => appointment.startDate))),
+    ).not.toContain(currentWeekDate);
+    expect(
+      weeks.flatMap((week) => week.suggestions.flatMap((suggestion) => suggestion.appointments.map((appointment) => appointment.startDate))),
+    ).toContain(nextWeekDate);
   });
 });

@@ -417,7 +417,7 @@ export function CalendarWeekSpanningTile({
     ? "relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"
     : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
   const mainContentPanelsClassName = isCompactPanelMode
-    ? "grid shrink-0 content-start gap-1 overflow-hidden"
+    ? "grid w-full shrink-0 content-start gap-1 overflow-hidden"
     : "grid min-h-0 flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,

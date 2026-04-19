@@ -13,6 +13,10 @@ export function resolveTourPostalPlanWeekStart(isoYear: number, isoWeek: number)
   return addWeeks(firstIsoWeekStart, isoWeek - 1);
 }
 
+export function resolveTourPostalPlanMinimumWeekStartDate(todayDate: string): Date {
+  return addWeeks(startOfISOWeek(parseISO(todayDate)), 1);
+}
+
 export function resolveTourPostalPlanMaxWeekStartDate(maxWeekInput: string, todayDate: string): Date | null {
   const normalized = normalizeTourPostalPlanWeekInput(maxWeekInput);
   if (normalized.length === 0) return null;

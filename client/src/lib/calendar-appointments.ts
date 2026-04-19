@@ -97,6 +97,7 @@ export type CalendarTourPostalPlanSuggestion = {
   matchedPostalCodes: string[];
   matchedAppointmentCount: number;
   days: CalendarTourPostalPlanDay[];
+  appointments: CalendarAppointment[];
 };
 
 export type CalendarTourPostalPlanWeek = {

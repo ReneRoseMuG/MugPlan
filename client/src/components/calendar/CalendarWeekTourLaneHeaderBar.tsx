@@ -5,6 +5,7 @@ type CalendarWeekTourLaneHeaderBarProps = {
   color?: string | null;
   isExpanded?: boolean;
   interactive?: boolean;
+  reduced?: boolean;
   onClick?: () => void;
   testId?: string;
   weekNotesIcon?: React.ReactNode;
@@ -18,6 +19,7 @@ export function CalendarWeekTourLaneHeaderBar({
   color,
   isExpanded = true,
   interactive = false,
+  reduced = false,
   onClick,
   testId,
   weekNotesIcon,
@@ -26,24 +28,34 @@ export function CalendarWeekTourLaneHeaderBar({
   menuSlot,
 }: CalendarWeekTourLaneHeaderBarProps) {
   const resolvedColor = color ?? "#64748b";
+  const showNotesSegment = !reduced;
   const wrapperClassName = menuSlot
     ? "grid h-full min-w-0 grid-cols-[1.75rem_minmax(0,1fr)]"
     : "h-full min-w-0";
-  const content = (
-    <>
-      <span
-        className="pointer-events-none flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
-        aria-hidden={weekNotesIcon === undefined && weekNotesCount === undefined}
-      >
-        {weekNotesIcon ? (
-          <span className="relative z-10 flex h-full flex-shrink-0 items-center opacity-85">{weekNotesIcon}</span>
-        ) : null}
-        {weekNotesCount !== undefined ? (
-          <span className="relative z-10 flex h-full flex-shrink-0 items-center tabular-nums opacity-90">
-            {weekNotesCount}
-          </span>
-        ) : null}
+  const content = reduced ? (
+    <span className="pointer-events-none flex min-w-0 items-center gap-2 px-2">
+      <span className="max-w-full truncate">
+        {label}
       </span>
+      {statusSlot ? <span className="flex shrink-0 items-center">{statusSlot}</span> : null}
+    </span>
+  ) : (
+    <>
+      {showNotesSegment ? (
+        <span
+          className="pointer-events-none flex h-full items-center justify-center gap-0.5 border-r border-white/20 bg-black/10 px-0.5"
+          aria-hidden={weekNotesIcon === undefined && weekNotesCount === undefined}
+        >
+          {weekNotesIcon ? (
+            <span className="relative z-10 flex h-full flex-shrink-0 items-center opacity-85">{weekNotesIcon}</span>
+          ) : null}
+          {weekNotesCount !== undefined ? (
+            <span className="relative z-10 flex h-full flex-shrink-0 items-center tabular-nums opacity-90">
+              {weekNotesCount}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
       <span className="pointer-events-none flex min-w-0 items-center gap-2 px-2">
         <span className="max-w-full truncate">
           {label}
@@ -76,7 +88,7 @@ export function CalendarWeekTourLaneHeaderBar({
           <button
             type="button"
             onClick={onClick}
-            className="grid min-w-0 grid-cols-[2.4rem_minmax(0,1fr)] transition hover:-translate-y-[1px] hover:shadow-md"
+            className={`grid min-w-0 ${reduced ? "grid-cols-[minmax(0,1fr)]" : "grid-cols-[2.4rem_minmax(0,1fr)]"} transition hover:-translate-y-[1px] hover:shadow-md`}
             data-testid={testId}
             aria-expanded={isExpanded}
           >
@@ -84,7 +96,7 @@ export function CalendarWeekTourLaneHeaderBar({
           </button>
         ) : (
           <div
-            className="grid min-w-0 grid-cols-[2.4rem_minmax(0,1fr)]"
+            className={`grid min-w-0 ${reduced ? "grid-cols-[minmax(0,1fr)]" : "grid-cols-[2.4rem_minmax(0,1fr)]"}`}
             data-testid={testId}
             aria-expanded={isExpanded}
           >

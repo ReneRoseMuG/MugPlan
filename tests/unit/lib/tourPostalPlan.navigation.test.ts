@@ -20,9 +20,16 @@ import { format } from "date-fns";
 import {
   buildTourPostalPlanWindow,
   resolveTourPostalPlanMaxWeekStartDate,
+  resolveTourPostalPlanMinimumWeekStartDate,
 } from "../../../client/src/lib/tour-postal-plan";
 
 describe("tourPostalPlan navigation helpers", () => {
+  it("startet immer am Beginn der kommenden ISO-Woche", () => {
+    const result = resolveTourPostalPlanMinimumWeekStartDate("2026-04-14");
+
+    expect(format(result, "yyyy-MM-dd")).toBe("2026-04-20");
+  });
+
   it("liefert ohne max.-KW keine Begrenzung", () => {
     expect(resolveTourPostalPlanMaxWeekStartDate("", "2026-04-14")).toBeNull();
   });
