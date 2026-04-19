@@ -93,7 +93,7 @@ describe("month sheet model rules", () => {
   it("marks today only on the actual current date inside the matrix", () => {
     const today = new Date();
     const matrix = buildMonthSheetMatrix(today.getFullYear(), today.getMonth() + 1);
-    const todayKey = today.toISOString().slice(0, 10);
+    const todayKey = format(today, "yyyy-MM-dd");
     const flaggedDays = matrix.weeks.flatMap((week) => week.days).filter((day) => day.isToday);
 
     expect(flaggedDays).toHaveLength(1);

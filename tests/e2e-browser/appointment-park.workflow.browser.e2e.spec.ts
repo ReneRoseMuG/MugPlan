@@ -84,6 +84,9 @@ test("parks a future appointment via the park button and shows correct state in 
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("button-park-appointment")).toBeVisible();
 
+  await page.getByTestId("button-park-appointment").click();
+  await expect(page.getByTestId("dialog-park-appointment")).toBeVisible();
+
   const detailResponse = await page.request.get(`/api/appointments/${appointment.id}`);
   expect(detailResponse.ok()).toBeTruthy();
   const detail = await detailResponse.json() as { version: number };
@@ -92,8 +95,6 @@ test("parks a future appointment via the park button and shows correct state in 
     response.request().method() === "POST"
     && response.url().includes(`/api/appointments/${appointment.id}/park`)
   ));
-  await page.getByTestId("button-park-appointment").click();
-  await expect(page.getByTestId("dialog-park-appointment")).toBeVisible();
   await page.getByRole("button", { name: "Termin parken" }).click();
   const parkResponse = await parkResponsePromise;
   expect(parkResponse.status()).toBe(204);

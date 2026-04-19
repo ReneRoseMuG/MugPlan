@@ -66,8 +66,8 @@ async function ensurePeriodPickerOpen(page: Page) {
   await expect(allScopeToggle).toBeVisible();
 }
 
-test.beforeEach(async () => {
-  await resetBrowserSuiteState();
+test.beforeAll(async () => {
+  await resetBrowserSuiteState("tests/e2e-browser/appointments-list.period-picker.browser.e2e.spec.ts");
 });
 
 test("filters with a fixed 2024 reference date and rejects impossible kw values in a 52-week year", async ({ page }) => {

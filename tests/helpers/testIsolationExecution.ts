@@ -78,7 +78,9 @@ export function readIsolationExecutionConfigForSuite(testPath: string | null | u
   }
 
   const mode = explicitMode === "candidate-baseline" ? "candidate-baseline" : "legacy-reset";
-  const baseline = process.env.TEST_ISOLATION_BASELINE === "seeded" ? "seeded" : "core";
+  const baseline = process.env.TEST_ISOLATION_BASELINE === "seeded"
+    ? "seeded"
+    : suiteEntry?.baseline ?? "core";
   const storageProfile = parseStorageProfile(
     process.env.TEST_ISOLATION_STORAGE_PROFILE,
     suiteEntry?.storageProfile ?? "none",

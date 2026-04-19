@@ -24,7 +24,7 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/settingsPage.controls.browser.e2e.spec.ts");
 });
 
 async function openSettings(page: Page) {

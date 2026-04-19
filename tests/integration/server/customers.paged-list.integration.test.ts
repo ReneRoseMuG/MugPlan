@@ -41,7 +41,7 @@ beforeAll(async () => {
 describe("FT30 integration: paged customers list", () => {
   it("returns only one board page from a larger result set", async () => {
     const agent = await loginAdminAgent(app);
-    const pagingToken = "FT30-CUST-PAGING";
+    const pagingToken = "ft30-customer-paging";
 
     for (let index = 0; index < 55; index += 1) {
       await createCustomerFixture(`${pagingToken}-${String(index).padStart(3, "0")}`);

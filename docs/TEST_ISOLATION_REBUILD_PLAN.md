@@ -329,6 +329,28 @@ Reine Existenzprüfung reicht bei Listen-, Filter-, Report-, CRUD- und Browser-R
   - Storage-Bedarf: `none`, `uploads`, `backups` oder `both`
 - Diese Deklaration soll im Test-Scope-Kommentar oder über einen künftigen Helper sichtbar sein.
 
+### Laufzeitbewusste Testkonstruktion
+
+- Neue Tests sollen die schnellste fachlich noch korrekte Isolationsstufe wählen und nicht vorsorglich auf härtere Resets ausweichen.
+- `seeded` ist keine bequeme Voreinstellung, sondern nur zulässig, wenn der Test tatsächlich System-Seed oder systemnahe Masterdaten braucht.
+- `per-test` ist nur für echte Klasse-A- oder Klasse-S-Fälle zulässig; Klasse-B-Suiten sollen zuerst gegen `per-suite` entworfen werden.
+- Bereits vorhandene Registry-Einträge, Suite-Helfer und Baselines sind wiederzuverwenden, bevor neue Sonderpfade eingeführt werden.
+- Wiederholte Logins, Navigationen, Seeds oder Helper-Aufbauten innerhalb derselben Suite sind nur zulässig, wenn der fachliche Nachweis sonst verloren ginge.
+- Ein neuer Test gilt nicht als gut konstruiert, wenn er zwar korrekt, aber unnötig teuer ist.
+
+### Verbindliche Entwurfs-Checkliste für neue Tests
+
+Vor der Anlage eines neuen Integration- oder Browser-Tests ist mindestens diese Abwägung zu treffen:
+
+1. Welche minimale Isolationsklasse deckt den Test noch korrekt ab?
+2. Welche minimale Baseline deckt den Test noch korrekt ab?
+3. Kann derselbe Nachweis mit `per-suite` statt `per-test` geführt werden?
+4. Welcher vorhandene Registry- oder Helper-Pfad ist wiederverwendbar?
+5. Welche konkrete Assertion verhindert False Positives durch Seed, Restdaten oder ähnliche Namen?
+6. Welche Entwurfsalternative wäre schneller gewesen und warum reicht sie fachlich nicht?
+
+Wenn diese Fragen nicht beantwortet werden können, ist der Test noch nicht reif für die Umsetzung.
+
 ## Zielarchitektur für den späteren Umbau
 
 - `core`- und `seeded`-Baselines als explizite Ausgangszustände
@@ -361,11 +383,34 @@ Jede Phase ist abzubrechen, wenn Fingerprints instabil sind, Canaries nicht ansc
 |---|---|---|---|---|---|---|---|
 | `tests/integration/server/projects.paged-list.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | legacy, candidate, repeat und Canary gruen | erste `candidate-default`-Suite |
 | `tests/integration/server/customers.paged-list.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Canary-Fund im Paging gehaertet, danach stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/appointments.list.sorting.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | legacy, candidate, repeat und Canary fuer Sortierung/OrderNumber stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/projects.scope.mengenlogik.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Scope-Partition all/withAppointments/upcoming/noAppointments unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/entity-appointments-preview.endpoint.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Customer-, Employee- und Project-Preview unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/appointments.direct-projections.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Direkttermine in Listen-, Kalender- und Delete-Projektionen unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/reports.auftragsliste.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Auftragsliste unter legacy, candidate, repeat und Canary fuer Kategorienfilter, Reklamationsausschluss und Storno-Fallback stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/reports.vorlaufliste.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Vorlaufliste nach Idempotenz-Haertung fuer wiederholte Artikel- und Rollenfixtures unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/reports.vorlaufliste.printPreview.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Druckvorschau unter legacy, candidate, repeat und Canary fuer Vollmenge und Listenparitaet stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/appointments.tour-change-preview.integration.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Tour-Change-Preview unter legacy, candidate, repeat und Canary fuer KW-Wechsel und spaetere Tourzuordnung stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/masterData.visibility.by-role.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Masterdata-Sichtbarkeit unter legacy, candidate, repeat und Canary fuer Rollenfilter und Aktiv-Defaults stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/customers.visibility.by-role.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Kunden-Sichtbarkeit nach monotone Credentials- und Kundennummern-Haertung unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/integration/server/employees.visibility.by-role.test.ts` | B | `core` | `per-suite` | `project-list-confusion` | validiert | Mitarbeiter-Sichtbarkeit nach monotone Credentials-Haertung unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
 | `tests/integration/server/appointments.attachments.integration.test.ts` | S | `core` | `per-test` | `attachment-confusion` | validiert mit harter Isolation | Storage-Pilot stabil gruen | bleibt vorerst `pilot-only` |
 | `tests/integration/server/admin.system-seed.integration.test.ts` | S | `core` | `per-test` | `seed-shadow` | validiert mit harter Isolation | `per-suite` ungeeignet, `per-test` stabil | bleibt vorerst `pilot-only` |
 | `tests/integration/server/tourWeekEmployees.integration.test.ts` | A | `core` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | Canary-Fund behoben, danach stabil | bleibt vorerst `pilot-only` |
 | `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | Canary-Fund im Listenreset behoben | zweite `candidate-default`-Suite |
 | `tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | seeded Browser-Scope-Pilot ohne Nachschärfung stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/appointments-list.period-picker.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset plus legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/settingsPage.navigation.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Navigation unter legacy, candidate, repeat und Canary stabil, ohne relevante Canary-Angriffsfläche | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/settingsPage.controls.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | Settings-Persistenz unter legacy, candidate, repeat und Canary stabil, ohne relevante Canary-Angriffsfläche | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/filter-state-persistence.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | Filter- und Scope-Persistenz unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/reports.open-modes.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Inline- und Standalone-Reportausgaben unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/standalone-routing.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Navigation, Popup-Flows und Edit-Rueckwege unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/appointments-list.tour-employee.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Tour-/Mitarbeiter-Terminliste unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/calendar-month-sheet.navigation.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Monatsuebersicht unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/reports.ft26.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; FT26-Reportfluss unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Tourenplan-Vorschau und Browser-Print unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/refresh-button.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Refresh in Haupt- und Standalone-Views unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
+| `tests/e2e-browser/tag-selection-unification.browser.e2e.spec.ts` | B | `seeded` | `per-suite` | `project-list-confusion` | validiert | echter Suite-Pfad im Reset; Picker-, Filter- und Wochenkartenfluss unter legacy, candidate, repeat und Canary stabil | weitere `candidate-default`-Suite |
 | `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts` | S | `seeded` | `per-suite` | `backup-confusion` | validiert | Browser-Backup-Pilot stabil gruen | bleibt vorerst `pilot-only` |
 | `tests/e2e-browser/tour-week-form.browser.e2e.spec.ts` | A | `seeded` | `per-test` | `week-plan-confusion` | validiert mit harter Isolation | komplexer Browser-Wochenplan stabil | bleibt vorerst `pilot-only` |
 
@@ -377,8 +422,31 @@ Nur Suiten, die unter `candidate-baseline` mit `per-suite` sowie Canary und Repe
 
 - `tests/integration/server/projects.paged-list.integration.test.ts`
 - `tests/integration/server/customers.paged-list.integration.test.ts`
+- `tests/integration/server/appointments.list.sorting.integration.test.ts`
+- `tests/integration/server/projects.scope.mengenlogik.integration.test.ts`
+- `tests/integration/server/entity-appointments-preview.endpoint.integration.test.ts`
+- `tests/integration/server/appointments.direct-projections.integration.test.ts`
+- `tests/integration/server/reports.auftragsliste.integration.test.ts`
+- `tests/integration/server/reports.vorlaufliste.integration.test.ts`
+- `tests/integration/server/reports.vorlaufliste.printPreview.integration.test.ts`
+- `tests/integration/server/appointments.tour-change-preview.integration.test.ts`
+- `tests/integration/server/masterData.visibility.by-role.test.ts`
+- `tests/integration/server/customers.visibility.by-role.test.ts`
+- `tests/integration/server/employees.visibility.by-role.test.ts`
 - `tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts`
 - `tests/e2e-browser/projects.filter-scopes.browser.e2e.spec.ts`
+- `tests/e2e-browser/appointments-list.period-picker.browser.e2e.spec.ts`
+- `tests/e2e-browser/settingsPage.navigation.browser.e2e.spec.ts`
+- `tests/e2e-browser/settingsPage.controls.browser.e2e.spec.ts`
+- `tests/e2e-browser/filter-state-persistence.browser.e2e.spec.ts`
+- `tests/e2e-browser/reports.open-modes.browser.e2e.spec.ts`
+- `tests/e2e-browser/standalone-routing.browser.e2e.spec.ts`
+- `tests/e2e-browser/appointments-list.tour-employee.browser.e2e.spec.ts`
+- `tests/e2e-browser/calendar-month-sheet.navigation.browser.e2e.spec.ts`
+- `tests/e2e-browser/reports.ft26.browser.e2e.spec.ts`
+- `tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts`
+- `tests/e2e-browser/refresh-button.browser.e2e.spec.ts`
+- `tests/e2e-browser/tag-selection-unification.browser.e2e.spec.ts`
 
 ### `pilot-only`
 

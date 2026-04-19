@@ -20,7 +20,7 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeEach, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
@@ -29,6 +29,7 @@ import { hashPassword } from "../../../server/security/passwordHash";
 
 let app: express.Express;
 let customerCounter = 1;
+let dispatcherCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -37,10 +38,6 @@ beforeAll(async () => {
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);
   app.use(errorHandler);
-});
-
-beforeEach(async () => {
-  customerCounter = 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
@@ -53,12 +50,14 @@ async function loginAgent(username: string, password: string): Promise<SuperAgen
 }
 
 async function createDispatcherAgent(): Promise<SuperAgentTest> {
-  const username = "test-dispatcher";
-  const password = "test-dispatcher-password";
+  const token = `test-dispatcher-${dispatcherCounter}`;
+  dispatcherCounter += 1;
+  const username = token;
+  const password = `${token}-password`;
   const passwordHash = await hashPassword(password);
   await createUser({
     username,
-    email: "test-dispatcher@local.test",
+    email: `${token}@local.test`,
     firstName: "Test",
     lastName: "Dispatcher",
     passwordHash,
@@ -68,11 +67,12 @@ async function createDispatcherAgent(): Promise<SuperAgentTest> {
 }
 
 async function createCustomerPair() {
+  const pairToken = customerCounter;
   const activeCustomer = await customersService.createCustomer({
-    customerNumber: `C-ACT-${customerCounter}`,
+    customerNumber: `C-ACT-${pairToken}`,
     firstName: "Aktiv",
-    lastName: `Kunde-${customerCounter}`,
-    fullName: `Kunde-${customerCounter}, Aktiv`,
+    lastName: `Kunde-${pairToken}`,
+    fullName: `Kunde-${pairToken}, Aktiv`,
     company: null,
     email: null,
     phone: "11111",
@@ -85,10 +85,10 @@ async function createCustomerPair() {
   customerCounter += 1;
 
   const createdInactive = await customersService.createCustomer({
-    customerNumber: `C-INACT-${customerCounter}`,
+    customerNumber: `C-INACT-${pairToken}`,
     firstName: "Inaktiv",
-    lastName: `Kunde-${customerCounter}`,
-    fullName: `Kunde-${customerCounter}, Inaktiv`,
+    lastName: `Kunde-${pairToken}`,
+    fullName: `Kunde-${pairToken}, Inaktiv`,
     company: null,
     email: null,
     phone: "22222",
