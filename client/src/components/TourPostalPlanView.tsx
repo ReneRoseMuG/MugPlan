@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { addWeeks, format, getISOWeek } from "date-fns";
-import { de } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { format } from "date-fns";
+import { Search } from "lucide-react";
 
-import { TourPostalPlanWeekPreview } from "@/components/calendar/TourPostalPlanWeekPreview";
+import { TourPostalPlanWeekPreview } from "./calendar/TourPostalPlanWeekPreview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,34 +22,27 @@ type TourPostalPlanViewProps = {
 
 const VISIBLE_WEEK_COUNT = 4;
 
-function formatWeekRangeLabel(currentWeekStart: Date): string {
-  const lastVisibleWeek = addWeeks(currentWeekStart, VISIBLE_WEEK_COUNT - 1);
-  return `KW ${getISOWeek(currentWeekStart)} - KW ${getISOWeek(lastVisibleWeek)}`;
-}
-
 export function TourPostalPlanView({ onCreateAppointment }: TourPostalPlanViewProps) {
   const todayDateString = useMemo(() => getBerlinTodayDateString(), []);
   const minimumWeekStart = useMemo(() => resolveTourPostalPlanMinimumWeekStartDate(todayDateString), [todayDateString]);
   const [postalCodeInput, setPostalCodeInput] = useState("");
   const [submittedPostalCode, setSubmittedPostalCode] = useState("");
   const [maxWeekInput, setMaxWeekInput] = useState("");
-  const [weekOffset, setWeekOffset] = useState(0);
-  const currentWeekStart = addWeeks(minimumWeekStart, weekOffset);
+  const [hasFreeAppointments, setHasFreeAppointments] = useState(false);
   const maxWeekStartDate = useMemo(
     () => resolveTourPostalPlanMaxWeekStartDate(maxWeekInput, todayDateString),
     [maxWeekInput, todayDateString],
   );
   const { fromDate, toDate } = useMemo(
     () => buildTourPostalPlanWindow({
-      currentWeekStart,
+      currentWeekStart: minimumWeekStart,
       visibleWeekCount: VISIBLE_WEEK_COUNT,
       maxWeekStartDate,
     }),
-    [currentWeekStart, maxWeekStartDate],
+    [maxWeekStartDate, minimumWeekStart],
   );
   const normalizedPostalCode = normalizeTourPostalPlanPostalCode(submittedPostalCode);
   const queryEnabled = normalizedPostalCode.length > 0 && toDate >= fromDate;
-  const canNavigateLater = maxWeekStartDate === null || addWeeks(currentWeekStart, 1) <= maxWeekStartDate;
 
   const {
     data: weeks = [],
@@ -60,12 +52,12 @@ export function TourPostalPlanView({ onCreateAppointment }: TourPostalPlanViewPr
     postalCode: normalizedPostalCode,
     fromDate: format(fromDate, "yyyy-MM-dd"),
     toDate: format(toDate, "yyyy-MM-dd"),
+    hasFreeAppointments,
     enabled: queryEnabled,
   });
 
   const submitSearch = () => {
     setSubmittedPostalCode(normalizeTourPostalPlanPostalCode(postalCodeInput));
-    setWeekOffset(0);
   };
 
   return (
@@ -112,44 +104,19 @@ export function TourPostalPlanView({ onCreateAppointment }: TourPostalPlanViewPr
               Vorschläge laden
             </Button>
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700" data-testid="tour-postal-plan-free-appointments-option">
+            <input
+              id="input-tour-postal-plan-has-free-appointments"
+              type="checkbox"
+              checked={hasFreeAppointments}
+              onChange={(event) => setHasFreeAppointments(event.target.checked)}
+              className="h-4 w-4 rounded accent-slate-700"
+              data-testid="checkbox-tour-postal-plan-has-free-appointments"
+            />
+            <span>Hat freie Termine</span>
+          </label>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/70 px-6 py-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="px-2"
-          disabled={weekOffset === 0}
-          onClick={() => setWeekOffset((previous) => previous - 1)}
-          data-testid="button-tour-postal-plan-earlier"
-          aria-label="Frühere Wochen"
-        >
-          <ChevronLeft className="h-4 w-4" aria-hidden />
-        </Button>
-
-        <div className="text-center">
-          <div className="text-sm font-semibold text-slate-900" data-testid="tour-postal-plan-range-label">
-            {formatWeekRangeLabel(currentWeekStart)}
-          </div>
-          <div className="text-xs text-slate-500">
-            {format(fromDate, "dd.MM.yyyy", { locale: de })} bis {format(toDate, "dd.MM.yyyy", { locale: de })}
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="px-2"
-          disabled={!canNavigateLater}
-          onClick={() => setWeekOffset((previous) => previous + 1)}
-          data-testid="button-tour-postal-plan-later"
-          aria-label="Spätere Wochen"
-        >
-          <ChevronRight className="h-4 w-4" aria-hidden />
-        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-slate-100 p-6">
@@ -174,78 +141,20 @@ export function TourPostalPlanView({ onCreateAppointment }: TourPostalPlanViewPr
           </div>
         ) : (
           <div className="flex flex-col gap-5">
-            {weeks.map((week) => (
-              <section
-                key={`${week.isoYear}-${week.isoWeek}`}
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm"
-                data-testid={`tour-postal-plan-week-${week.weekStartDate}`}
-              >
-                <div className="border-b border-slate-200 px-5 py-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">
-                        KW {week.isoWeek} · {week.isoYear}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        {format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy", { locale: de })} bis {format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy", { locale: de })}
-                      </div>
-                    </div>
-                    <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600">
-                      {week.suggestions.length === 1 ? "1 Tour-Vorschlag" : `${week.suggestions.length} Tour-Vorschläge`}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-4 p-4">
-                  {week.suggestions.map((suggestion) => (
-                    <section
-                      key={`${week.weekStartDate}-${suggestion.tourId}`}
-                      className="rounded-xl border border-slate-200 bg-slate-50/70"
-                      data-testid={`tour-postal-plan-suggestion-${week.weekStartDate}-${suggestion.tourId}`}
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-white/80 px-4 py-3">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span
-                            className="h-3 w-3 rounded-full border border-slate-300"
-                            style={{ backgroundColor: suggestion.tourColor ?? "#64748b" }}
-                            aria-hidden="true"
-                          />
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold text-slate-900">{suggestion.tourName}</div>
-                            <div className="truncate text-xs text-slate-500">
-                              Nahe PLZ: {suggestion.matchedPostalCodes.join(", ")}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 text-xs">
-                          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700">
-                            {suggestion.scoreLabel}
-                          </span>
-                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-600">
-                            Score {suggestion.score}
-                          </span>
-                          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-600">
-                            {suggestion.matchedAppointmentCount} passende Termine
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-3">
-                        <TourPostalPlanWeekPreview
-                          weekStartDate={week.weekStartDate}
-                          tourId={suggestion.tourId}
-                          tourName={suggestion.tourName}
-                          tourColor={suggestion.tourColor}
-                          appointments={suggestion.appointments}
-                          onCreateAppointment={onCreateAppointment}
-                        />
-                      </div>
-                    </section>
-                  ))}
-                </div>
-              </section>
-            ))}
+            {weeks.flatMap((week) => week.suggestions.map((suggestion) => (
+              <TourPostalPlanWeekPreview
+                key={`${week.weekStartDate}-${suggestion.tourId}`}
+                weekStartDate={week.weekStartDate}
+                weekEndDate={week.weekEndDate}
+                isoWeek={week.isoWeek}
+                isoYear={week.isoYear}
+                tourId={suggestion.tourId}
+                tourName={suggestion.tourName}
+                tourColor={suggestion.tourColor}
+                appointments={suggestion.appointments}
+                onCreateAppointment={onCreateAppointment}
+              />
+            )))}
           </div>
         )}
       </div>

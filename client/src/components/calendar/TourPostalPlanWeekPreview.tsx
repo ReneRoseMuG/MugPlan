@@ -1,4 +1,4 @@
-import { format, parseISO } from "date-fns";
+import { addDays, format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { buildDayGridTemplate, DEFAULT_WEEKEND_COLUMN_PERCENT, getDayWeights } from "@/lib/calendar-layout";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -10,6 +10,9 @@ import { buildWeekLaneRenderData } from "./CalendarWeekView";
 
 type TourPostalPlanWeekPreviewProps = {
   weekStartDate: string;
+  weekEndDate?: string;
+  isoWeek?: number;
+  isoYear?: number;
   tourId: number;
   tourName: string;
   tourColor: string | null;
@@ -32,15 +35,14 @@ type PreviewLane = {
 
 function buildPreviewDays(weekStartDate: string) {
   const weekStart = parseISO(weekStartDate);
-  return Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + index);
-    return date;
-  });
+  return Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
 }
 
 export function TourPostalPlanWeekPreview({
   weekStartDate,
+  weekEndDate,
+  isoWeek,
+  isoYear,
   tourId,
   tourName,
   tourColor,
@@ -49,6 +51,9 @@ export function TourPostalPlanWeekPreview({
   onOpenAppointment,
 }: TourPostalPlanWeekPreviewProps) {
   const days = buildPreviewDays(weekStartDate);
+  const resolvedWeekEndDate = weekEndDate ?? format(days[6], "yyyy-MM-dd");
+  const resolvedIsoWeek = isoWeek ?? Number(format(days[0], "II"));
+  const resolvedIsoYear = isoYear ?? Number(format(days[0], "RRRR"));
   const appointmentsById = new Map(appointments.map((appointment) => [appointment.id, appointment]));
   const lane: PreviewLane = {
     laneKey: `tour-postal-plan-lane-${weekStartDate}-${tourId}`,
@@ -85,10 +90,19 @@ export function TourPostalPlanWeekPreview({
 
   return (
     <section
-      className="rounded-xl border border-slate-200/90 bg-slate-100/80 p-2"
+      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
       data-testid={`tour-postal-plan-week-preview-${weekStartDate}-tour-${tourId}`}
     >
-      <div className="grid rounded-md border border-slate-200/80 bg-white/90" style={{ gridTemplateColumns: weekDayGridTemplate }}>
+      <div className="mb-3">
+        <div className="text-sm font-semibold text-slate-900" data-testid={`tour-postal-plan-week-label-${weekStartDate}-tour-${tourId}`}>
+          KW {resolvedIsoWeek} · {resolvedIsoYear}
+        </div>
+        <div className="text-xs text-slate-500" data-testid={`tour-postal-plan-week-range-${weekStartDate}-tour-${tourId}`}>
+          {format(parseISO(weekStartDate), "dd.MM.yy", { locale: de })} bis {format(parseISO(resolvedWeekEndDate), "dd.MM.yy", { locale: de })}
+        </div>
+      </div>
+
+      <div className="grid rounded-md border border-slate-200/80 bg-white" style={{ gridTemplateColumns: weekDayGridTemplate }}>
         {days.map((day) => (
           <div
             key={`${weekStartDate}-${tourId}-${format(day, "yyyy-MM-dd")}`}

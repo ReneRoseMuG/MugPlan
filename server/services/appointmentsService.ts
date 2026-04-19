@@ -1189,11 +1189,13 @@ export async function listCalendarTourPostalPlan({
   postalCode,
   fromDate,
   toDate,
+  hasFreeAppointments,
   roleKey,
 }: {
   postalCode: string;
   fromDate: string;
   toDate: string;
+  hasFreeAppointments?: boolean;
   roleKey: CanonicalRoleKey;
 }) {
   const minimumFromDate = startOfWeek(addWeeks(parseDateOnly(getBerlinTodayDateString()), 1), { weekStartsOn: 1 });
@@ -1266,7 +1268,20 @@ export async function listCalendarTourPostalPlan({
     }>;
   }>();
 
+  const hasFreeWeekdayInMatchGroup = (matchGroup: (typeof matches)[number]) => {
+    const weekStart = parseDateOnly(matchGroup.weekStartDate);
+    return Array.from({ length: 5 }, (_, index) => toDateOnlyString(addDays(weekStart, index)) ?? "")
+      .some((date) => !matchGroup.matches.some((item) => {
+        const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+        const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+        return date >= appointmentStartDate && date <= appointmentEndDate;
+      }));
+  };
+
   for (const matchGroup of matches) {
+    if (hasFreeAppointments && !hasFreeWeekdayInMatchGroup(matchGroup)) {
+      continue;
+    }
     const weekKey = `${matchGroup.isoYear}-${String(matchGroup.isoWeek).padStart(2, "0")}`;
     const week = weeks.get(weekKey) ?? {
       isoYear: matchGroup.isoYear,

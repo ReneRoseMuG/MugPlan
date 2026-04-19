@@ -10,7 +10,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
 import { TeamManagement } from "@/components/TeamManagement";
-import { TourPostalPlanView } from "@/components/TourPostalPlanView";
+import { TourPostalPlanView } from "../components/TourPostalPlanView";
 import { TourManagement } from "@/components/TourManagement";
 import StandaloneLayout from "@/components/StandaloneLayout";
 

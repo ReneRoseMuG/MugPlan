@@ -264,4 +264,89 @@ describe("calendar tour postal plan integration", () => {
       weeks.flatMap((week) => week.suggestions.flatMap((suggestion) => suggestion.appointments.map((appointment) => appointment.startDate))),
     ).toContain(nextWeekDate);
   });
+
+  it("filtert bei aktivem Frei-Filter voll belegte Werktagwochen heraus und behaelt Wochen mit freiem Werktag", async () => {
+    const agent = await loginAdminAgent(app);
+    const local = seq++;
+    const fullTour = await toursRepository.createTour(`PLZ Voll ${Date.now()}-${local}`, "#1d4ed8");
+    const freeTour = await toursRepository.createTour(`PLZ Frei ${Date.now()}-${local}`, "#15803d");
+
+    const fullCustomer = await customersService.createCustomer({
+      customerNumber: `TPLZ-FULL-${local}`,
+      firstName: "Vera",
+      lastName: `Voll-${local}`,
+      fullName: `Voll-${local}, Vera`,
+      company: null,
+      email: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      postalCode: "26135",
+      city: "Oldenburg",
+      country: null,
+      version: 1,
+    });
+    const freeCustomer = await customersService.createCustomer({
+      customerNumber: `TPLZ-FREE-${local}`,
+      firstName: "Frida",
+      lastName: `Frei-${local}`,
+      fullName: `Frei-${local}, Frida`,
+      company: null,
+      email: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      postalCode: "26135",
+      city: "Oldenburg",
+      country: null,
+      version: 1,
+    });
+
+    const fullProject = await projectsService.createProject({
+      name: `Projekt Voll ${local}`,
+      customerId: fullCustomer.id,
+      orderNumber: `TPLZ-FULL-${local}`,
+      descriptionMd: null,
+      version: 1,
+    });
+    const freeProject = await projectsService.createProject({
+      name: `Projekt Frei ${local}`,
+      customerId: freeCustomer.id,
+      orderNumber: `TPLZ-FREE-${local}`,
+      descriptionMd: null,
+      version: 1,
+    });
+
+    for (const date of ["2099-04-06", "2099-04-07", "2099-04-08", "2099-04-09", "2099-04-10"]) {
+      await appointmentsService.createAppointment({
+        projectId: fullProject.id,
+        startDate: date,
+        employeeIds: [],
+        tourId: fullTour.id,
+      });
+    }
+    for (const date of ["2099-04-06", "2099-04-07", "2099-04-08", "2099-04-09"]) {
+      await appointmentsService.createAppointment({
+        projectId: freeProject.id,
+        startDate: date,
+        employeeIds: [],
+        tourId: freeTour.id,
+      });
+    }
+
+    const response = await agent
+      .get("/api/calendar/tour-postal-plan?postalCode=26135&fromDate=2099-04-06&toDate=2099-05-03&hasFreeAppointments=true")
+      .expect(200);
+
+    const weeks = response.body as Array<{
+      weekStartDate: string;
+      suggestions: Array<{ tourId: number; days: Array<{ date: string; appointments: Array<unknown> }> }>;
+    }>;
+
+    expect(weeks).toHaveLength(1);
+    expect(weeks[0]?.weekStartDate).toBe("2099-04-06");
+    expect(weeks[0]?.suggestions.map((suggestion) => suggestion.tourId)).toEqual([freeTour.id]);
+    const friday = weeks[0]?.suggestions[0]?.days.find((day) => day.date === "2099-04-10");
+    expect(friday?.appointments).toHaveLength(0);
+  });
 });

@@ -791,6 +791,9 @@ export async function listCalendarTourPostalPlan(req: Request, res: Response, ne
     const postalCode = typeof req.query.postalCode === "string" ? req.query.postalCode : undefined;
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+    const hasFreeAppointments = typeof req.query.hasFreeAppointments === "string"
+      ? req.query.hasFreeAppointments === "true"
+      : false;
 
     if (!postalCode || !fromDate || !toDate) {
       res.status(400).json({ message: "postalCode, fromDate und toDate sind erforderlich" });
@@ -817,6 +820,7 @@ export async function listCalendarTourPostalPlan(req: Request, res: Response, ne
       postalCode,
       fromDate,
       toDate,
+      hasFreeAppointments,
       roleKey,
     });
     res.json(plan);

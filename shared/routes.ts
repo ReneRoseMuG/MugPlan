@@ -1742,6 +1742,9 @@ export const api = {
         postalCode: z.string().min(1),
         fromDate: z.string(),
         toDate: z.string(),
+        hasFreeAppointments: z
+          .union([z.literal("true"), z.literal("false")])
+          .optional(),
       }).strict(),
       responses: {
         200: z.array(calendarTourPostalPlanWeekSchema),

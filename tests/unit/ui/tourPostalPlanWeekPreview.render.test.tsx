@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Tour-PLZ-Wochenvorschau rendert den reduzierten Wochenkopf mit Wochentag und Datum.
+ * - Die Tour-PLZ-Wochenvorschau rendert den reduzierten Wochenkopf mit KW sowie Datumsbereich direkt am Wochencontainer.
  * - Die Vorschau erzwingt fuer Einzel- und Mehrtagestermine den Compact-/Collapsed-Pfad der bestehenden Wochenkarten.
  * - Die Tagesaktionen bleiben als `+`-Buttons pro Tag mit tourbezogenem Test-Id-Schema sichtbar.
  *
  * Fehlerfaelle:
- * - Der Wochenkopf weicht wieder auf eine eigene Tageskachel-Darstellung aus.
+ * - Der Wochenkopf am Wochencontainer verschwindet oder zeigt keine KW bzw. keinen Datumsbereich mehr.
  * - Die Vorschau verwendet nicht mehr die bestehenden Wochenkarten-Bausteine.
  * - Die `+`-Buttons pro Tag verschwinden oder verlieren ihre Tour-/Datumszuordnung.
  *
@@ -99,7 +99,7 @@ describe("TourPostalPlanWeekPreview", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders reduced weekday headers and keeps compact week cards plus create actions", () => {
+  it("renders week label and reduced weekday headers while keeping compact week cards plus create actions", () => {
     const html = renderToStaticMarkup(
       <TourPostalPlanWeekPreview
         weekStartDate="2099-04-20"
@@ -116,6 +116,8 @@ describe("TourPostalPlanWeekPreview", () => {
 
     expect(html).toContain("Montag");
     expect(html).toContain("20.04.99");
+    expect(html).toContain("KW 17 · 2099");
+    expect(html).toContain("20.04.99 bis 26.04.99");
     expect(html).toContain("Tour 7");
     expect(html).toContain('data-testid="button-tour-postal-plan-create-2099-04-20-tour-7"');
     expect(html).toContain('data-testid="button-tour-postal-plan-create-2099-04-26-tour-7"');

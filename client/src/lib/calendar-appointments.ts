@@ -142,11 +142,13 @@ export const getCalendarTourPostalPlanQueryKey = ({
   postalCode,
   fromDate,
   toDate,
+  hasFreeAppointments,
 }: {
   postalCode: string;
   fromDate: string;
   toDate: string;
-}) => ["calendarTourPostalPlan", postalCode, fromDate, toDate];
+  hasFreeAppointments?: boolean;
+}) => ["calendarTourPostalPlan", postalCode, fromDate, toDate, hasFreeAppointments ?? false];
 
 export function useCalendarAppointments({
   fromDate,
@@ -281,18 +283,21 @@ export function useCalendarTourPostalPlan({
   postalCode,
   fromDate,
   toDate,
+  hasFreeAppointments,
   enabled,
 }: {
   postalCode: string;
   fromDate: string;
   toDate: string;
+  hasFreeAppointments?: boolean;
   enabled?: boolean;
 }) {
   return useQuery<CalendarTourPostalPlanWeek[]>({
-    queryKey: getCalendarTourPostalPlanQueryKey({ postalCode, fromDate, toDate }),
+    queryKey: getCalendarTourPostalPlanQueryKey({ postalCode, fromDate, toDate, hasFreeAppointments }),
     enabled,
     queryFn: async () => {
       const params = new URLSearchParams({ postalCode, fromDate, toDate });
+      if (hasFreeAppointments) params.set("hasFreeAppointments", "true");
       const response = await fetch(`/api/calendar/tour-postal-plan?${params.toString()}`, {
         headers: {},
       });
