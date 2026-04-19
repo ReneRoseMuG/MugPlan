@@ -83,7 +83,7 @@ function ExpandedContent({
         />
       ) : null}
       {!hasContent ? (
-        <div className="text-[11px] font-medium text-slate-400">{EMPTY_PROJECT_FALLBACK_TEXT}</div>
+        <div className="text-[11px] text-slate-500">{EMPTY_PROJECT_FALLBACK_TEXT}</div>
       ) : null}
     </div>
   );
