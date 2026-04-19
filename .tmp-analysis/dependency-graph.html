@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>dependency-cruiser - results</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style type="text/css">
+    body {
+      font-family: sans-serif;
+      margin: 0 auto;
+      max-width: 90%;
+      line-height: 1.6;
+      font-size: 14px;
+      color: #444;
+      padding: 0 10px;
+      background-color: #fff;
+    }
+
+    footer {
+      color: gray;
+      margin-top: 1.4em;
+      border-top: solid 1px currentColor
+    }
+
+    a {
+      text-decoration: none
+    }
+
+    a.noiseless {
+      color: currentColor
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.2
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 4px;
+    }
+
+    tbody tr:nth-child(odd) {
+      background-color: rgba(128, 128, 128, 0.2);
+    }
+
+    .error {
+      color: red;
+    }
+
+    .warn {
+      color: orange;
+    }
+
+    .info {
+      color: blue;
+    }
+
+    .ignore {
+      color:gray;
+    }
+
+    .ok {
+      color: limegreen;
+    }
+
+    td.nowrap {
+      white-space: nowrap
+    }
+
+    svg {
+      fill: currentColor
+    }
+
+    #show-unviolated {
+      display: block
+    }
+
+    #hide-unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target #show-unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target #hide-unviolated {
+      display: block
+    }
+
+    tr.unviolated {
+      display: none
+    }
+
+    #show-all-the-rules:target tr.unviolated {
+      display: table-row;
+      color: gray;
+    }
+
+    #show-ignored {
+      display: block
+    }
+
+    #hide-ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target #show-ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target #hide-ignored {
+      display: block
+    }
+
+    tr.ignored {
+      display: none
+    }
+
+    #show-ignored-violations:target tr.ignored {
+      display: table-row;
+      color: gray;
+    }
+
+    .p__svg--inline {
+      vertical-align: top;
+      width: 1.2em;
+      height: 1.2em
+    }
+
+    .controls {
+      background-color: #fff;
+      vertical-align: bottom;
+      text-align: center
+    }
+
+    .controls:hover {
+      opacity: 1;
+    }
+
+    .controls a {
+      text-decoration: none;
+      color: gray;
+    }
+
+    .controls a:hover {
+      text-decoration: underline;
+      color: blue;
+    }
+
+    .extra {
+      color: gray;
+    }
+  </style>
+  <style type="text/css" media="print">
+    th,
+    td {
+      border: 1px solid #444;
+    }
+
+    .controls {
+      display: none
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Forbidden dependency check - results</h1>
+  <span id="show-all-the-rules">
+  <h2><svg class="p__svg--inline" viewBox="0 0 14 16" version="1.1" aria-hidden="true">
+      <path fill-rule="evenodd"
+        d="M11.5 8L8.8 5.4 6.6 8.5 5.5 1.6 2.38 8H0v2h3.6l.9-1.8.9 5.4L9 8.5l1.6 1.5H14V8h-2.5z"></path>
+    </svg> Summary</h2>
+  <p>
+    <div style="float:left;padding-right:20px">
+      <strong>953</strong> modules
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>3001</strong> dependencies
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>0</strong> errors
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>19</strong> warnings
+    </div>
+    <div style="float:left;padding-right:20px">
+      <strong>0</strong> informational
+    </div>
+    <div style="float:left;padding-right:20px" class="ignore">
+      <strong>0</strong> ignored
+    </div>
+    &nbsp;
+  </p>
+  <table>
+    <tbody>
+      <thead>
+        <tr>
+          <th></th>
+          <th>severity</th>
+          <th>rule</th>
+          <th>violations</th>
+          <th>ignored</th>
+          <th>explanation</th>
+        </tr>
+      </thead>
+      <tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-instance"
+         id="reports-feature-private-definition" 
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><strong>8</strong></td>
+    <td><strong>0</strong></td>
+    <td>reports darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-instance"
+         id="no-circular-definition" 
+         class="noiseless">no-circular</a>
+    </td>
+    <td><strong>6</strong></td>
+    <td><strong>0</strong></td>
+    <td>Verhindert Zyklen zwischen Modulen und Layern.</td>
+  </tr>
+<tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#calendar-feature-private-instance"
+         id="calendar-feature-private-definition" 
+         class="noiseless">calendar-feature-private</a>
+    </td>
+    <td><strong>2</strong></td>
+    <td><strong>0</strong></td>
+    <td>calendar darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#filters-feature-private-instance"
+         id="filters-feature-private-definition" 
+         class="noiseless">filters-feature-private</a>
+    </td>
+    <td><strong>1</strong></td>
+    <td><strong>0</strong></td>
+    <td>filters darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#repositories-are-terminal-instance"
+         id="repositories-are-terminal-definition" 
+         class="noiseless">repositories-are-terminal</a>
+    </td>
+    <td><strong>1</strong></td>
+    <td><strong>0</strong></td>
+    <td>Repositories dürfen nicht zurück in Controller, Services oder Routen greifen.</td>
+  </tr>
+<tr>
+    <td><span class="warn">&cross;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#routes-to-controllers-only-instance"
+         id="routes-to-controllers-only-definition" 
+         class="noiseless">routes-to-controllers-only</a>
+    </td>
+    <td><strong>1</strong></td>
+    <td><strong>0</strong></td>
+    <td>Server-Routen bleiben an Controller, Contracts und Infrastruktur gebunden.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#controllers-to-services-only-instance"
+         id="controllers-to-services-only-definition" 
+         class="noiseless">controllers-to-services-only</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>Controller dürfen Repository-Zugriffe nicht direkt überspringen.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#document-extraction-feature-private-instance"
+         id="document-extraction-feature-private-definition" 
+         class="noiseless">document-extraction-feature-private</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>document-extraction darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#notes-feature-private-instance"
+         id="notes-feature-private-definition" 
+         class="noiseless">notes-feature-private</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>notes darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#print-feature-private-instance"
+         id="print-feature-private-definition" 
+         class="noiseless">print-feature-private</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>print darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#prod-code-not-to-tests-instance"
+         id="prod-code-not-to-tests-definition" 
+         class="noiseless">prod-code-not-to-tests</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>Produktionscode darf nicht direkt von Tests oder Testhelfern abhängen.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#shared-must-stay-shared-instance"
+         id="shared-must-stay-shared-definition" 
+         class="noiseless">shared-must-stay-shared</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>shared darf nicht von app-spezifischen Client-, Server- oder Testmodulen abhängen.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>warn</td>
+    <td class="nowrap">
+      <a href="#tags-feature-private-instance"
+         id="tags-feature-private-definition" 
+         class="noiseless">tags-feature-private</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>tags darf keine privaten Interna anderer Feature-Unterordner importieren.</td>
+  </tr>
+<tr class="unviolated">
+    <td><span class="ok">&check;</span></td>
+    <td>error</td>
+    <td class="nowrap">
+      <a href="#ui-must-not-reach-server-or-infra-instance"
+         id="ui-must-not-reach-server-or-infra-definition" 
+         class="noiseless">ui-must-not-reach-server-or-infra</a>
+    </td>
+    <td><strong>0</strong></td>
+    <td><strong>0</strong></td>
+    <td>Präsentationscode darf nicht direkt in Server-, Migrations- oder Skriptbereiche greifen.</td>
+  </tr>
+      <tr>
+        <td colspan="6" class="controls">
+          <div id="show-unviolated">
+            &downarrow; <a href="#show-all-the-rules">also show unviolated rules</a>
+          </div>
+          <div id="hide-unviolated">
+            &uparrow; <a href="">hide unviolated rules</a>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  </span>
+
+  <span id="show-ignored-violations">
+      <h2><svg class="p__svg--inline" viewBox="0 0 12 16" version="1.1" aria-hidden="true">
+        <path fill-rule="evenodd"
+          d="M5.05.31c.81 2.17.41 3.38-.52 4.31C3.55 5.67 1.98 6.45.9 7.98c-1.45 2.05-1.7 6.53 3.53 7.7-2.2-1.16-2.67-4.52-.3-6.61-.61 2.03.53 3.33 1.94 2.86 1.39-.47 2.3.53 2.27 1.67-.02.78-.31 1.44-1.13 1.81 3.42-.59 4.78-3.42 4.78-5.56 0-2.84-2.53-3.22-1.25-5.61-1.52.13-2.03 1.13-1.89 2.75.09 1.08-1.02 1.8-1.86 1.33-.67-.41-.66-1.19-.06-1.78C8.18 5.31 8.68 2.45 5.05.32L5.03.3l.02.01z">
+        </path>
+      </svg> All violations</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>severity</th>
+          <th>rule</th>
+          <th>from</th>
+          <th>to</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#calendar-feature-private-definition" 
+         id="calendar-feature-private-instance"
+         class="noiseless">calendar-feature-private</a>
+    </td>
+    <td><a href="client/src/components/calendar/CalendarWeekAppointmentNotesHover.tsx">client/src/components/calendar/CalendarWeekAppointmentNotesHover.tsx</a></td>
+    <td>client/src/components/notes/EntityNotesHoverPreview.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#calendar-feature-private-definition" 
+         id="calendar-feature-private-instance"
+         class="noiseless">calendar-feature-private</a>
+    </td>
+    <td><a href="client/src/components/calendar/CalendarWeekAppointmentTagPicker.tsx">client/src/components/calendar/CalendarWeekAppointmentTagPicker.tsx</a></td>
+    <td>client/src/components/tags/tag-selection-menu-content.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#filters-feature-private-definition" 
+         id="filters-feature-private-instance"
+         class="noiseless">filters-feature-private</a>
+    </td>
+    <td><a href="client/src/components/filters/tag-filter-input.tsx">client/src/components/filters/tag-filter-input.tsx</a></td>
+    <td>client/src/components/tags/tag-selection-menu-content.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="client/src/components/calendar/CalendarWeekView.tsx">client/src/components/calendar/CalendarWeekView.tsx</a></td>
+    <td>client/src/pages/Home.tsx &rightarrow;<br/>client/src/components/CalendarWorkspace.tsx &rightarrow;<br/>client/src/components/WeekGrid.tsx &rightarrow;<br/>client/src/components/calendar/CalendarWeekView.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="client/src/components/CalendarWorkspace.tsx">client/src/components/CalendarWorkspace.tsx</a></td>
+    <td>client/src/pages/Home.tsx &rightarrow;<br/>client/src/components/CalendarWorkspace.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="client/src/components/Sidebar.tsx">client/src/components/Sidebar.tsx</a></td>
+    <td>client/src/pages/Home.tsx &rightarrow;<br/>client/src/components/Sidebar.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="client/src/components/ui/appointment-period-picker.tsx">client/src/components/ui/appointment-period-picker.tsx</a></td>
+    <td>client/src/components/ui/filter-panels/appointments-filter-panel.tsx &rightarrow;<br/>client/src/components/ui/appointment-period-picker.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="client/src/components/WeekGrid.tsx">client/src/components/WeekGrid.tsx</a></td>
+    <td>client/src/pages/Home.tsx &rightarrow;<br/>client/src/components/CalendarWorkspace.tsx &rightarrow;<br/>client/src/components/WeekGrid.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#no-circular-definition" 
+         id="no-circular-instance"
+         class="noiseless">no-circular</a>
+    </td>
+    <td><a href="server/repositories/projectsRepository.ts">server/repositories/projectsRepository.ts</a></td>
+    <td>server/services/projectsService.ts &rightarrow;<br/>server/repositories/projectsRepository.ts</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/ReportProjectCard.tsx">client/src/components/reports/ReportProjectCard.tsx</a></td>
+    <td>client/src/components/calendar/CalendarWeekAppointmentAttachmentsHover.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/ReportProjectCard.tsx">client/src/components/reports/ReportProjectCard.tsx</a></td>
+    <td>client/src/components/calendar/CalendarWeekAppointmentEmployeesHover.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/ReportProjectCard.tsx">client/src/components/reports/ReportProjectCard.tsx</a></td>
+    <td>client/src/components/notes/EntityNotesHoverPreview.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/TourenplanPaginationMeasurement.tsx">client/src/components/reports/TourenplanPaginationMeasurement.tsx</a></td>
+    <td>client/src/components/print/PrintPageShell.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/TourenplanPaginationMeasurement.tsx">client/src/components/reports/TourenplanPaginationMeasurement.tsx</a></td>
+    <td>client/src/components/print/PrintSlimFooter.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/TourenplanPrintPage.tsx">client/src/components/reports/TourenplanPrintPage.tsx</a></td>
+    <td>client/src/components/print/PrintPageShell.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/TourenplanPrintPage.tsx">client/src/components/reports/TourenplanPrintPage.tsx</a></td>
+    <td>client/src/components/print/PrintSlimFooter.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#reports-feature-private-definition" 
+         id="reports-feature-private-instance"
+         class="noiseless">reports-feature-private</a>
+    </td>
+    <td><a href="client/src/components/reports/TourenplanReportPanel.tsx">client/src/components/reports/TourenplanReportPanel.tsx</a></td>
+    <td>client/src/components/print/PrintPreviewDialog.tsx</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#repositories-are-terminal-definition" 
+         id="repositories-are-terminal-instance"
+         class="noiseless">repositories-are-terminal</a>
+    </td>
+    <td><a href="server/repositories/projectsRepository.ts">server/repositories/projectsRepository.ts</a></td>
+    <td>server/services/projectsService.ts</td>
+  </tr>
+  <tr>
+    <td class="warn">warn</td>
+    <td class="nowrap">
+      <a href="#routes-to-controllers-only-definition" 
+         id="routes-to-controllers-only-instance"
+         class="noiseless">routes-to-controllers-only</a>
+    </td>
+    <td><a href="server/routes/dataVersionRoutes.ts">server/routes/dataVersionRoutes.ts</a></td>
+    <td>server/services/dataVersionService.ts</td>
+  </tr>
+      
+      </tbody>
+    </table>
+    </span>
+  <footer>
+    <p><a href="https://github.com/sverweij/dependency-cruiser">dependency-cruiser@17.3.10</a> /
+      2026-04-18T14:12:34.394Z</p>
+  </footer>
+</body>
+</html>
