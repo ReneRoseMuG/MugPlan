@@ -26,6 +26,7 @@ export function CalendarWeekAppointmentPanelCustomer({
   return (
     <CustomerInfoPanel
       mode={mode}
+      hideHeader={mode === "expanded"}
       fullName={fullName || null}
       customerNumber={customerNumber}
       addressLine1={addressLine1}

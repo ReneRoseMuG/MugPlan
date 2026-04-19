@@ -39,11 +39,12 @@ export function CalendarWeekAppointmentPanelProject({
     || normalizedDescriptionText.length > 0;
   const canOpenDescriptionPreview = hasProjectReference && hasProjectContent && enableFullDescriptionPreview;
   const ProjectIcon = domainIcons.projects;
+  const compactArticleListClassName = "list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-slate-700 [&_li]:min-w-0 [&_li]:overflow-hidden [&_li]:whitespace-nowrap [&_li]:text-ellipsis";
 
   const projectHeader = hasProjectReference ? (
-    <div className="flex items-center gap-1.5" data-testid="week-project-header">
+    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap" data-testid="week-project-header">
       <ProjectIcon className="h-3 w-3 flex-shrink-0 text-slate-500" />
-      <div className="min-w-0 text-xs font-semibold text-slate-800">{resolvedProjectName}</div>
+      <div className="min-w-0 truncate text-xs font-semibold text-slate-800">{resolvedProjectName}</div>
       <span className="shrink-0 text-[11px] text-slate-500"> - {resolvedProjectOrderNumber}</span>
     </div>
   ) : (
@@ -55,6 +56,7 @@ export function CalendarWeekAppointmentPanelProject({
       <ProjectArticleDescriptionRenderer
         articleItems={projectArticleItems}
         descriptionHtml={projectDescription}
+        articleListClassName={compactArticleListClassName}
         testIdPrefix="week-project-renderer"
       />
     </div>
@@ -124,6 +126,7 @@ export function CalendarWeekAppointmentPanelProject({
                   <ProjectArticleDescriptionRenderer
                     articleItems={projectArticleItems}
                     descriptionHtml={projectDescription}
+                    articleListClassName={compactArticleListClassName}
                     testIdPrefix="week-project-hover-trigger-renderer"
                   />
                 ) : (

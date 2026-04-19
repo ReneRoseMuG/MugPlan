@@ -7,6 +7,7 @@
  * - expanded-Modus rendert Header, Adresse, Telefon (wenn vorhanden) und E-Mail (wenn vorhanden).
  * - hideHeader in expanded blendet den h5-Namen aus und fuellt fehlende Zeilen sichtbar auf.
  * - Telefon und E-Mail erscheinen nur, wenn sie befuellt sind oder als Platzhalterzeile aufgefuellt werden.
+ * - Header- und Adresszeilen bleiben als nicht umbrechende Einheiten mit konsistentem Innenabstand renderbar.
  *
  * Fehlerfaelle:
  * - collapsed rendert keinen HoverPreview-Wrapper mehr.
@@ -87,8 +88,12 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("Musterstraße 1");
     expect(markup).toContain("12345 Musterstadt");
     expect(markup).toContain("Deutschland");
+    expect(markup).toContain("whitespace-nowrap");
+    expect(markup).toContain("px-2 py-1.5");
     expect(markup).toContain("030 123456");
     expect(markup).toContain("max@example.com");
+    expect(markup).toContain("customer-info-line-phone");
+    expect(markup).toContain("customer-info-line-email");
   });
 
   it("semiexpanded: kein HoverPreview-Wrapper, zeigt Header und Adressblock", () => {

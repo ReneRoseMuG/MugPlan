@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekSpanningTile";
+import { CalendarWeekAppointmentPanelHeader } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanelHeader";
 import {
   WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
@@ -446,5 +447,40 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('week-appointment-menu-trigger-42');
     expect(html).toContain('week-spanning-tile-menu-trigger-42');
     expect(html.match(/Termin löschen/g)).toHaveLength(2);
+  });
+  it("passes expanded week cards through the existing expanded customer panel path and keeps project panel rendering local", () => {
+    const appointment = createAppointment();
+
+    renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={appointment}
+        context="week-calendar"
+        weekTileBodyMode="expanded"
+      />,
+    );
+
+    expect(customerPanelCalls).toHaveLength(1);
+    expect(customerPanelCalls[0]?.mode).toBe("expanded");
+    expect(projectPanelCalls).toHaveLength(1);
+  });
+
+  it("marks the single-card header date as the first responsive hide target while keeping key identifiers no-wrap", () => {
+    const html = renderWithQueryClient(
+      <CalendarWeekAppointmentPanelHeader
+        customerNumber="K-17"
+        postalCode="12345"
+        color="#225588"
+        startDate="2099-03-01"
+        endDate={null}
+        startTime="08:15"
+      />,
+    );
+
+    expect(html).toContain("data-role=\"header-time\"");
+    expect(html).toContain("data-role=\"header-date\"");
+    expect(html).toContain("data-role=\"header-separator\"");
+    expect(html).toContain("@container(max-width:110px)");
+    expect(html).toContain("min-w-0 truncate");
+    expect(html).toContain("whitespace-nowrap");
   });
 });
