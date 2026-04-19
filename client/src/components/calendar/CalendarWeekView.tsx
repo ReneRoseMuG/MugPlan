@@ -1219,7 +1219,10 @@ export function CalendarWeekView({
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
-                      const laneUniformHeightPx = cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null;
+                      const isCompactWeekMode = weekAppointmentDisplayMode === "compact";
+                      const laneUniformHeightPx = isCompactWeekMode
+                        ? null
+                        : (cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null);
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
@@ -1229,10 +1232,15 @@ export function CalendarWeekView({
                       const laneGridTemplateRows =
                         hasLaneContent
                           ? [
-                              ...Array.from({ length: tileRowCount }, () => `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
-                              ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
+                              ...Array.from(
+                                { length: tileRowCount },
+                                () => (isCompactWeekMode ? "auto" : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
+                              ),
+                              ...(needsDayCellRow
+                                ? [isCompactWeekMode ? "auto" : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`]
+                                : []),
                             ].join(" ")
-                          : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`;
+                          : (isCompactWeekMode ? "auto" : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`);
                       const isoYear = getISOWeekYear(weekStart);
                       const isoWeek = getISOWeek(weekStart);
                       const isLaneBlocked = tourLane.tourId != null
@@ -1475,7 +1483,7 @@ export function CalendarWeekView({
                             className="relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
                             style={{
                               gridTemplateColumns: weekDayGridTemplate,
-                              minHeight: `${MIN_WEEK_CARD_HEIGHT_PX}px`,
+                              minHeight: isCompactWeekMode ? undefined : `${MIN_WEEK_CARD_HEIGHT_PX}px`,
                               gridTemplateRows: laneGridTemplateRows,
                             }}
                           >
@@ -1560,6 +1568,7 @@ export function CalendarWeekView({
                                     gridRow: rowIndex + 1,
                                     margin: "0.5rem",
                                     zIndex: 10,
+                                    alignSelf: weekAppointmentDisplayMode === "compact" ? "start" : undefined,
                                   }}
                                   isDragging={draggedAppointmentId === appointment.id}
                                   isLocked={isSegmentLocked}
@@ -1575,8 +1584,14 @@ export function CalendarWeekView({
                                     setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
                                   }
                                   projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                  containerRef={(node) =>
-                                    measureLaneCardHeight(tourLane.laneKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)}
+                                  containerRef={isCompactWeekMode
+                                    ? undefined
+                                    : (node) =>
+                                        measureLaneCardHeight(
+                                          tourLane.laneKey,
+                                          node,
+                                          WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX,
+                                        )}
                                   testId={`week-spanning-tile-${appointment.id}`}
                                 />
                               );
@@ -1598,10 +1613,17 @@ export function CalendarWeekView({
                               return (
                                 <div
                                   key={`week-single-grid-item-${appointment.id}`}
-                                  style={{ gridColumn, gridRow, padding: "0.5rem", zIndex: 10 }}
+                                  style={{
+                                    gridColumn,
+                                    gridRow,
+                                    padding: "0.5rem",
+                                    zIndex: 10,
+                                    alignSelf: weekAppointmentDisplayMode === "compact" ? "start" : undefined,
+                                  }}
                                 >
                                   <CalendarWeekAppointmentPanel
                                     appointment={appointment}
+                                    displayMode={weekAppointmentDisplayMode ?? "standard"}
                                     weekTileBodyMode={weekTileBodyMode}
                                     context="week-calendar"
                                     segment="start"
@@ -1611,8 +1633,14 @@ export function CalendarWeekView({
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                    containerRef={(node) =>
-                                      measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                    containerRef={isCompactWeekMode
+                                      ? undefined
+                                      : (node) =>
+                                          measureLaneCardHeight(
+                                            tourLane.laneKey,
+                                            node,
+                                            WEEK_CARD_FOOTER_SAFE_SPACE_PX,
+                                          )}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
@@ -1662,6 +1690,7 @@ export function CalendarWeekView({
                                       <CalendarWeekAppointmentPanel
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
                                         appointment={appointment}
+                                        displayMode={weekAppointmentDisplayMode ?? "standard"}
                                         weekTileBodyMode={weekTileBodyMode}
                                         context="week-calendar"
                                         segment="start"
@@ -1671,8 +1700,14 @@ export function CalendarWeekView({
                                         showTagActions
                                         canEditTags={canEditAppointmentTags}
                                         projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                        containerRef={(node) =>
-                                          measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                        containerRef={isCompactWeekMode
+                                          ? undefined
+                                          : (node) =>
+                                              measureLaneCardHeight(
+                                                tourLane.laneKey,
+                                                node,
+                                                WEEK_CARD_FOOTER_SAFE_SPACE_PX,
+                                              )}
                                         isDragging={draggedAppointmentId === appointment.id}
                                         isLocked={isSegmentLocked}
                                         highlighted={isHighlighted}

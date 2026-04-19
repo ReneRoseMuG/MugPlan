@@ -27,6 +27,8 @@ export function CalendarWeekAppointmentPanelProject({
   className?: string;
 }) {
   const compactContentClassName = "max-h-24 overflow-hidden";
+  const panelClassName = "flex min-h-0 flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5";
+  const collapsedPanelClassName = "cursor-pointer rounded-md border border-slate-200/90 bg-white px-2 py-1.5";
   const fullDescriptionClassName = "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
   const resolvedProjectName = resolveProjectDisplayName(projectName);
   const hasProjectReference = resolvedProjectName !== "Kein Auftrag hinterlegt";
@@ -79,10 +81,18 @@ export function CalendarWeekAppointmentPanelProject({
   );
   const canOpenCollapsedPreview = enableFullDescriptionPreview && hasProjectReference;
 
-  return (
-    <div className={cn("flex min-h-0 flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5", className)}>
-      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
-      {collapsed && canOpenCollapsedPreview ? (
+  if (collapsed) {
+    const collapsedTrigger = (
+      <div
+        className={cn(collapsedPanelClassName, className)}
+        data-testid="week-project-description-hover-trigger"
+      >
+        {projectHeader}
+      </div>
+    );
+
+    if (canOpenCollapsedPreview) {
+      return (
         <HoverPreview
           preview={hoverPreviewContent}
           closeDelay={80}
@@ -95,48 +105,51 @@ export function CalendarWeekAppointmentPanelProject({
           maxHeight={320}
           className="z-[9999] w-[420px]"
         >
-          <div data-testid="week-project-description-hover-trigger">
-            {projectHeader}
-          </div>
+          {collapsedTrigger}
         </HoverPreview>
-      ) : (
-        projectHeader
-      )}
-      {collapsed ? null : (
-        <>
-          {!canOpenDescriptionPreview && hasProjectContent && compactContent}
-          {canOpenDescriptionPreview && (
-            <HoverPreview
-              preview={hoverPreviewContent}
-              closeDelay={80}
-              mode="cursor"
-              side="right"
-              align="start"
-              cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
-              cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
-              maxWidth={420}
-              maxHeight={320}
-              className="z-[9999] w-[420px]"
+      );
+    }
+
+    return collapsedTrigger;
+  }
+
+  return (
+    <div className={cn(panelClassName, className)}>
+      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
+      {projectHeader}
+      <>
+        {!canOpenDescriptionPreview && hasProjectContent && compactContent}
+        {canOpenDescriptionPreview && (
+          <HoverPreview
+            preview={hoverPreviewContent}
+            closeDelay={80}
+            mode="cursor"
+            side="right"
+            align="start"
+            cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+            cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+            maxWidth={420}
+            maxHeight={320}
+            className="z-[9999] w-[420px]"
+          >
+            <div
+              className={cn("min-h-0 flex-1 overflow-hidden", hasProjectContent ? "mt-1" : "mt-0")}
+              data-testid="week-project-description-hover-trigger"
             >
-              <div
-                className={cn("min-h-0 flex-1 overflow-hidden", hasProjectContent ? "mt-1" : "mt-0")}
-                data-testid="week-project-description-hover-trigger"
-              >
-                {hasProjectContent ? (
-                  <ProjectArticleDescriptionRenderer
-                    articleItems={projectArticleItems}
-                    descriptionHtml={projectDescription}
-                    articleListClassName={compactArticleListClassName}
-                    testIdPrefix="week-project-hover-trigger-renderer"
-                  />
-                ) : (
-                  <div className="text-[11px] text-slate-500">{resolvedProjectName}</div>
-                )}
-              </div>
-            </HoverPreview>
-          )}
-        </>
-      )}
+              {hasProjectContent ? (
+                <ProjectArticleDescriptionRenderer
+                  articleItems={projectArticleItems}
+                  descriptionHtml={projectDescription}
+                  articleListClassName={compactArticleListClassName}
+                  testIdPrefix="week-project-hover-trigger-renderer"
+                />
+              ) : (
+                <div className="text-[11px] text-slate-500">{resolvedProjectName}</div>
+              )}
+            </div>
+          </HoverPreview>
+        )}
+      </>
     </div>
   );
 }

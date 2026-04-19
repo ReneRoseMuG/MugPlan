@@ -349,6 +349,7 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls.every((call) => call.mode === "collapsed")).toBe(true);
     expect(projectPanelCalls).toHaveLength(2);
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
+    expect(projectPanelCalls.every((call) => call.className === "h-8 overflow-hidden")).toBe(true);
     expect(html.match(/height:260px/g)).toHaveLength(2);
     expect(html).toContain('class="flex min-h-0 h-full flex-col"');
     expect(html).toContain('class="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"');
@@ -360,6 +361,7 @@ describe("calendar week appointment card layout", () => {
     const html = renderWithQueryClient(
       <CalendarWeekAppointmentPanel
         appointment={appointment}
+        displayMode="compact"
         context="week-calendar"
         uniformHeightPx={240}
       />,
@@ -367,11 +369,18 @@ describe("calendar week appointment card layout", () => {
 
     expect(customerPanelCalls).toHaveLength(1);
     expect(customerPanelCalls[0]?.mode).toBe("collapsed");
+    expect(customerPanelCalls[0]?.className).toBe("h-8 overflow-hidden");
     expect(projectPanelCalls).toHaveLength(1);
     expect(projectPanelCalls[0]?.collapsed).toBe(true);
+    expect(projectPanelCalls[0]?.className).toBe("h-8 overflow-hidden");
     expect(html).toContain('data-testid="week-appointment-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
-    expect(html).toContain('height:260px');
+    expect(html).not.toContain('height:260px');
+    expect(html).toContain("grid-template-rows:2rem 2rem");
+    expect(html).toContain('class="flex shrink-0 flex-col"');
+    expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
+    expect(html).toContain('class="grid shrink-0 content-start gap-1 overflow-hidden"');
+    expect(html).toContain('class="relative shrink-0 border-t px-1 py-1"');
   });
 
   it("hides the header menu trigger for historical non-Parkplatz appointments on both card types", () => {

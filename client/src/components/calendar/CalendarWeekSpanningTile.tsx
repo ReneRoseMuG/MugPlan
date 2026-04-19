@@ -407,14 +407,34 @@ export function CalendarWeekSpanningTile({
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
   const showCustomerPanel = true;
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
-  const projectCollapsed = weekTileBodyMode === "collapsed";
-  const customerPanelHeightClassName = customerMode === "expanded" ? "h-[6.5rem] overflow-hidden" : "h-8 overflow-hidden";
+  const isCompactPanelMode = effectiveDisplayMode === "compact";
+  const effectiveCustomerMode = isCompactPanelMode ? "collapsed" : customerMode;
+  const projectCollapsed = isCompactPanelMode ? true : weekTileBodyMode === "collapsed";
+  const customerPanelHeightClassName = isCompactPanelMode
+    ? "h-8 overflow-hidden"
+    : effectiveCustomerMode === "expanded"
+      ? "h-[6.5rem] overflow-hidden"
+      : "h-8 overflow-hidden";
+  const projectPanelClassName = projectCollapsed ? "h-8 overflow-hidden" : "min-h-0 h-full";
+  const contentGridTemplateRows = isCompactPanelMode
+    ? "2rem 2rem"
+    : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
+  const bodyShellClassName = isCompactPanelMode ? "flex shrink-0 flex-col" : "flex min-h-0 flex-1 flex-col";
+  const bodyContentContainerClassName = isCompactPanelMode
+    ? "relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"
+    : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
+  const mainContentPanelsClassName = isCompactPanelMode
+    ? "grid shrink-0 content-start gap-1 overflow-hidden"
+    : "grid min-h-0 flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerClassName = isCompactPanelMode
+    ? "relative shrink-0 border-t px-1 py-1"
+    : "relative mt-auto shrink-0 border-t px-1 py-1";
   const conflictOverlayStyle = conflictColor
     ? {
         backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
@@ -422,10 +442,10 @@ export function CalendarWeekSpanningTile({
     : undefined;
 
   const mainContentPanels = (
-    <div className="grid min-h-0 flex-1 gap-1 overflow-hidden" style={{ gridTemplateRows: `${customerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)` }}>
+    <div className={mainContentPanelsClassName} style={{ gridTemplateRows: contentGridTemplateRows }}>
       {showCustomerPanel ? (
         <CalendarWeekAppointmentPanelCustomer
-          mode={customerMode}
+          mode={effectiveCustomerMode}
           fullName={appointment.customer.fullName ?? ""}
           customerNumber={appointment.customer.customerNumber}
           phone={appointment.customer.phone}
@@ -444,7 +464,7 @@ export function CalendarWeekSpanningTile({
         projectDescription={appointment.projectDescription}
         collapsed={projectCollapsed}
         enableFullDescriptionPreview
-        className="min-h-0 h-full"
+        className={projectPanelClassName}
       />
     </div>
   );
@@ -480,8 +500,8 @@ export function CalendarWeekSpanningTile({
   );
 
   const bodyContent = (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+    <div className={bodyShellClassName}>
+      <div className={bodyContentContainerClassName} data-testid={`week-spanning-tile-content-${appointment.id}`}>
         {isConflict ? (
           <div
             className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
@@ -494,7 +514,7 @@ export function CalendarWeekSpanningTile({
         </div>
       </div>
       <div
-        className="relative mt-auto shrink-0 border-t px-1 py-1"
+        className={footerClassName}
         style={footerStyle}
         data-testid={`week-spanning-tile-footer-${appointment.id}`}
       >
@@ -519,7 +539,10 @@ export function CalendarWeekSpanningTile({
         gridTemplateRows: "auto 1fr",
         borderColor: highlighted ? undefined : borderColor,
         boxShadow: uniformBorderShadow,
-        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
+        alignSelf: isCompactPanelMode ? "start" : undefined,
+        ...(!isCompactPanelMode && uniformHeightPx && uniformHeightPx > 0
+          ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` }
+          : {}),
         ...style,
       }}
       onDoubleClick={onDoubleClick}

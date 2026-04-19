@@ -5,6 +5,7 @@
  * - Der Projektblock im Wochenpanel zeigt Projekttitel prominent und die Auftragsnummer dezent dahinter an.
  * - Projektinhalte werden nur bei vorhandenem Inhalt gerendert.
  * - Der Full-Preview-Modus zeigt den Hover-Trigger fuer die ausfuehrliche Projektbeschreibung auch fuer leere Projektinhalte.
+ * - Der kollabierte Compact-Pfad verwendet keine zusaetzliche vertikale Leerzeile unter dem Header.
  *
  * Fehlerfaelle:
  * - Der Projektkopf verliert die neue Reihenfolge oder die dezente Auftragsnummer.
@@ -131,5 +132,7 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(markup).toContain("week-project-description-hover-trigger");
     expect(markup).not.toContain("week-project-renderer");
     expect(markup).toContain("week-project-hover-renderer");
+    expect(markup).toContain("cursor-pointer");
+    expect(markup).toContain("px-2 py-1.5");
   });
 });
