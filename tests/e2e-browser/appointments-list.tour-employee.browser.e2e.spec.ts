@@ -23,21 +23,19 @@
  * Browser-E2E-Nachweis fuer FT28 in beiden Formular-Kontexten.
  */
 import { expect, test } from "@playwright/test";
-import { loginAsAdmin } from "../helpers/browserE2e";
-import { applyTestSystemSeed, resetDatabase } from "../helpers/resetDatabase";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
   createProjectFixture,
   createTourFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
-  await applyTestSystemSeed();
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState("tests/e2e-browser/appointments-list.tour-employee.browser.e2e.spec.ts");
 });
 
 test("tour form appointments table: date sorting persists across appointment scope toggles and no all-day column", async ({ page }) => {

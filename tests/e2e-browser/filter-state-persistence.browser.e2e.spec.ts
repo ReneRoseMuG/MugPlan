@@ -39,7 +39,7 @@ let employeeHit: Awaited<ReturnType<typeof createEmployeeFixtureWithOverrides>>;
 let employeeMiss: Awaited<ReturnType<typeof createEmployeeFixtureWithOverrides>>;
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/filter-state-persistence.browser.e2e.spec.ts");
 
   projectCustomer = await createCustomerFixtureWithOverrides({
     prefix: "FSP-PROJ-CUST",

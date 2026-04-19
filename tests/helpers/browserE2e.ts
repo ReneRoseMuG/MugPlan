@@ -2,12 +2,48 @@ import type { Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 import { applyTestSystemSeed, resetDatabase } from "./resetDatabase";
+import {
+  assertIsolationFingerprintForConfiguredRun,
+  injectConfiguredCanariesForRun,
+  readIsolationExecutionConfigForSuite,
+  shouldInjectConfiguredCanaries,
+} from "./testIsolationExecution";
 import { resetTestDataFactoryState } from "./testDataFactory";
+import { resetIsolatedTestStorage } from "./testStorageIsolation";
 
-export async function resetBrowserSuiteState() {
+export async function resetBrowserSuiteState(testPath?: string) {
+  const resolvedSuitePath = resolveBrowserSuitePath(testPath);
+  const config = readIsolationExecutionConfigForSuite(resolvedSuitePath);
+
+  await resetIsolatedTestStorage();
   resetTestDataFactoryState();
   await resetDatabase();
-  await applyTestSystemSeed();
+  if (config.baseline === "seeded") {
+    await applyTestSystemSeed();
+  }
+  await assertIsolationFingerprintForConfiguredRun(resolvedSuitePath);
+
+  if (shouldInjectConfiguredCanaries()) {
+    await injectConfiguredCanariesForRun();
+  }
+}
+
+function resolveBrowserSuitePath(testPath?: string) {
+  if (testPath) {
+    return testPath;
+  }
+
+  const stack = new Error().stack ?? "";
+  const stackLines = stack.split("\n");
+
+  for (const line of stackLines) {
+    const match = line.match(/tests[\\/](e2e-browser[\\/][^:\)\s]+\.spec\.ts)/);
+    if (match?.[1]) {
+      return `tests/${match[1].replaceAll("\\", "/")}`;
+    }
+  }
+
+  return "browser-suite";
 }
 
 async function isVisible(locator: ReturnType<Page["getByTestId"]> | ReturnType<Page["getByLabel"]>) {

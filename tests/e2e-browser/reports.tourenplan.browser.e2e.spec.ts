@@ -62,7 +62,7 @@ async function readPageSnapshot(locator: ReturnType<import("@playwright/test").P
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts");
 });
 
 async function ensureTag(name: string, color: string): Promise<Tag> {

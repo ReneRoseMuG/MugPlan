@@ -38,7 +38,7 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/reports.ft26.browser.e2e.spec.ts");
 });
 
 async function ensureManagedSpecialMeasureTag() {

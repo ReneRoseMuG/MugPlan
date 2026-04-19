@@ -372,6 +372,17 @@ Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 
 **E2E** — vollständige Workflows, isolierte Daten, Suite-weite Resets nur guardiert.
 
+### Laufzeit ist ein Primärziel neuer Tests
+
+Für neue oder grundlegend umgebaute Tests gilt Laufzeit ausdrücklich als gleichrangiges Entwurfsziel neben Aussagekraft und Stabilität.
+
+- Neue Tests sind so zu entwerfen, dass sie die vorhandene Reset-, Baseline- und Registry-Strategie aktiv nutzen statt neue harte Reset-Pfade einzuführen
+- Härtere Isolation, häufigere Resets oder `seeded`-Baselines sind nur zulässig, wenn der Test fachlich nachweisbar darauf angewiesen ist
+- Wenn ein Test sowohl mit leichterer als auch mit härterer Isolation korrekt wäre, ist die leichtere, schnellere Variante zu wählen
+- Bestehende teure Muster wie unnötige `beforeEach`-Vollresets, doppelte Seeds, wiederholte Logins oder redundante Navigation dürfen nicht blind kopiert werden
+- Browser-Tests sollen vorhandene Suite-Helfer, echte Suite-Pfade und die Registry-basierte Baseline-Wahl verwenden, statt ad hoc eigene Reset-Logik aufzubauen
+- Neue Tests dürfen die Gesamtlaufzeit nicht still verschlechtern, nur weil sie fachlich korrekt sind; wenn ein langsameres Design unvermeidbar ist, muss dies im Plan ausdrücklich benannt und begründet werden
+
 ### Timeout-Regel
 
 Für `npm run test:integration` und `npm run test:e2e` ist standardmäßig ein langer Command-Timeout zu verwenden. `npm run test:e2e:browser` bleibt davon unberührt.
@@ -396,6 +407,7 @@ Vor jedem weiteren Testkommando ist immer das Ergebnis des vorherigen Testkomman
 - Eigene Express-/HTTP-App-Aufbauten in Integrationstests statt `createApiTestApp()`
 - Assertions auf mehrere alternative HTTP-Statuscodes für denselben fachlichen Fehler
 - Schreibzugriffe in Tests außerhalb von `os.tmpdir()`
+- Neue Tests dürfen bestehende weiche Muster nicht blind kopieren, ohne deren Aussagekraft gegen Restdaten-, Seed- und Reihenfolgerisiken zu prüfen
 
 ### Test-Runs dürfen nicht in eigenständigen Fixes münden
 
@@ -409,6 +421,33 @@ Ein explizit angeforderter Testlauf ist immer ein **reiner Report-Auftrag**. Wä
 
 Jeder Test muss einen beobachtbaren Effekt prüfen. Zulässig sind nur Assertions auf Verhalten, Ergebnis, Nebenwirkung oder verweigerte Operationen. Nicht zulässig sind Tests, die nur das Vorhandensein von Quelltext, Namen, Markup-Fragmenten oder anderen Implementierungsdetails bestätigen, ohne das tatsächliche Systemverhalten nachzuweisen.
 
+### Verbindliche Regeln für Isolation und Aussagekraft
+
+- Neue Integration- und Browser-Tests müssen ihre benötigte Isolation ausdrücklich deklarieren: Isolationsklasse `A`, `B`, `C` oder `S`, erwartete Baseline `core` oder `seeded` und Storage-Bedarf `none`, `uploads`, `backups` oder `both`
+- Neue Tests dürfen nicht still von Restdaten in Datenbank oder Storage profitieren. Wenn Verwechslungen möglich sind, sind eindeutig identifizierbare Testdaten-Tokens Pflicht
+- Seed-Daten dürfen nur genutzt werden, wenn der Test auf einer explizit `seeded`-Baseline arbeitet. Eigene Testaktionen müssen zusätzlich so geprüft werden, dass Seed-Vorbestand den Erfolg nicht vortäuschen kann
+- Kritische Pfade dürfen nicht nur über Textsichtbarkeit oder bloße Existenz geprüft werden. In Listen, Tabellen, Overlays, Reports, Reopen-Flows und Aggregationen sind zusätzlich Count-, Identity-, Filter- oder Delta-Nachweise zu verlangen
+- Browser- und UI-Tests dürfen nicht nur auf unscharfe Textsichtbarkeit setzen. Nach Mutationen sind Identität, Reihenfolge, Anzahl oder Ausschluss von Altbestand mitzubelegen
+- Wenn Fremddaten, Seed-Vorbestand oder Canary-Daten ein False Positive auslösen könnten, ist eine Negativprüfung Pflicht. Reine Existenzprüfung reicht dann nicht aus
+- Tests mit Bedarf an harter Leerheit, globalem Systemzustand, Seed-, Storage-, Dump- oder Backup-Kontext sind als Klasse `A` oder `S` zu behandeln und vor dem Lauf gegen einen passenden Fingerprint zu validieren
+- Änderungen an der Teststrategie dürfen nicht allein über grüne Läufe freigegeben werden. Alt-vs-Neu-Validierung, Pollution-Canaries, Wiederholungsläufe und Reihenfolgetests sind dabei verpflichtend
+- Klasse `C` und Worker-/Lauf-weite Baselines dürfen erst nach erfolgreicher Pilotvalidierung für stabile Suites genutzt werden; sie sind kein Default
+
+### Verbindliche Entwurfsfragen vor jedem neuen Integration- oder Browser-Test
+
+Vor dem Schreiben eines neuen Tests muss Codex diese Fragen kurz für sich beantworten und die Antworten im Plan oder in der Testanlage sichtbar berücksichtigen:
+
+1. Welche Isolationsklasse braucht der Test wirklich?
+2. Reicht `core`, oder ist `seeded` fachlich zwingend?
+3. Reicht `per-suite`, oder ist `per-test` wirklich notwendig?
+4. Welcher vorhandene Helper oder Registry-Eintrag deckt den Fall bereits ab?
+5. Welche konkrete Assertion beweist das Zielobjekt eindeutig statt nur dessen Textsichtbarkeit?
+6. Welche leichtere, schnellere Variante wurde bewusst verworfen und warum?
+
+Ohne diese Abwägung darf Codex keinen neuen harten Reset-Pfad, keine neue Seed-Pflicht und keine neue Sonder-Initialisierung in Tests einführen.
+
+Verbindliche Arbeitsgrundlage für den späteren Umbau ist `docs/TEST_ISOLATION_REBUILD_PLAN.md`
+
 ### Leitplanken für Unit-Tests
 
 Unit-Tests prüfen isoliertes fachliches oder technisches Verhalten ohne Datenbank, ohne echtes Dateisystem und ohne Browser. Sie müssen sich auf beobachtbare Ergebnisse öffentlicher Funktionen, Komponenten oder Schnittstellen stützen und dürfen keine Implementierungsdetails wie Quelltext-Strings, interne Funktionsnamen, JSX-Fragmente oder Dateiinhalte prüfen. Ein Unit-Test ist nur dann sinnvoll, wenn seine Assertion zeigt, was das System bei einem Input tatsächlich zurückgibt, verändert, anzeigt oder verweigert.
@@ -417,9 +456,21 @@ Unit-Tests prüfen isoliertes fachliches oder technisches Verhalten ohne Datenba
 
 Integrationstests prüfen das Zusammenspiel realer Anwendungsteile mit Datenbank und temporärem Dateisystem. Sie sollen echte Persistenz, API-Verhalten, Validierung, Rollenrechte, Nebenwirkungen und Fehlerszenarien absichern. Assertions müssen sich auf beobachtbare Systemwirkungen stützen, zum Beispiel HTTP-Responses, Datenbankzustand, erzeugte Dateien oder abgelehnte Operationen. Integrationstests dürfen keine bloßen Verdrahtungsannahmen oder interne Implementierungsdetails absichern, sondern müssen zeigen, dass die fachliche Regel im realen Lauf korrekt durchgesetzt wird.
 
+Zusätzlich gilt für Integrationstests:
+
+- Wenn Listen, Filter, Suchbegriffe, Aggregationen oder ähnliche Namen im Spiel sind, müssen Testdaten eindeutig markiert und die Zielobjekte über ID, Token oder eine gleichwertig eindeutige Kombination nachgewiesen werden
+- Integrationstests dürfen nicht deshalb grün werden, weil die DB leer ist, sofern Leere nicht ausdrücklich Teil der fachlichen Regel ist
+- Suiten mit Seed-, Storage- oder globalem Systemzustand sind als Sonderfall zu behandeln und nicht still an allgemeine Reset-Muster anzulehnen
+
 ### Leitplanken für E2E-Browser-Tests
 
 E2E-Tests prüfen geschäftskritische Nutzerabläufe aus Sicht des Benutzers im Browser. Sie sollen sich an sichtbaren Aktionen und Ergebnissen orientieren, also an Navigation, Eingaben, Klicks, Dialogen, Meldungen, Sperren und erfolgreichen oder abgelehnten Abläufen. E2E-Tests dürfen nicht die interne Struktur der Oberfläche absichern, sondern nur das tatsächlich beobachtbare Verhalten der Anwendung. Sie sollen gezielt die wichtigsten End-to-End-Flows abdecken und nicht Aufgaben übernehmen, die bereits durch Unit- oder Integrationstests schneller und stabiler geprüft werden können.
+
+Zusätzlich gilt für E2E-Browser-Tests:
+
+- Listen, Hover-Previews, Sidebars, Boards und Reopen-Flows dürfen nicht nur per `toContainText(...)` oder reiner Sichtbarkeit abgesichert werden, wenn Altbestand oder ähnlich benannte Objekte plausibel sind
+- Browser-Tests mit Upload-, Backup-, Dump- oder Attachment-Kontext müssen einen ausdrücklich geprüften Storage-Ausgangszustand haben
+- Nach einer Browser-Mutation ist zusätzlich zu prüfen, dass das sichtbare Ergebnis nicht aus Seed, Cache oder Altbestand stammt
 
 ---
 

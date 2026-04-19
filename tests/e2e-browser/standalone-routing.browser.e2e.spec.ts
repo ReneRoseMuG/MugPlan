@@ -117,7 +117,7 @@ test.describe("Sidebar navigation stays unchanged", () => {
   test.describe.configure({ mode: "serial" });
 
   test.beforeAll(async () => {
-    await resetBrowserSuiteState();
+    await resetBrowserSuiteState("tests/e2e-browser/standalone-routing.browser.e2e.spec.ts");
   });
 
   test("opens the week calendar in the same tab", async ({ page }) => {

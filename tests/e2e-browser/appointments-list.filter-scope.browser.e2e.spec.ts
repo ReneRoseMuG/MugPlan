@@ -31,21 +31,22 @@ import {
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts");
 });
 
 test("appointment scopes keep the new all/default semantics and apply valid or invalid filters to real result sets", async ({ page }) => {
+  const scopeToken = "FT04-SCOPE-BROWSER";
   const customer = await createCustomerFixture("FT04-SCOPE-BROWSER-CUST");
   const futureProject = await createProjectFixtureWithOverrides({
     prefix: "FT04-SCOPE-FUTURE",
     customerId: customer.id,
-    name: "FT04 Scope Browser Future",
+    name: `${scopeToken} Future`,
     orderNumber: "43001",
   });
   const pastProject = await createProjectFixtureWithOverrides({
     prefix: "FT04-SCOPE-PAST",
     customerId: customer.id,
-    name: "FT04 Scope Browser Past",
+    name: `${scopeToken} Past`,
     orderNumber: "43002",
   });
 
@@ -65,6 +66,7 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
 
   const table = page.getByTestId("table-appointments-list");
   const rows = table.locator("tbody tr");
+  const tokenRows = rows.filter({ hasText: scopeToken });
   const projectTitleFilter = page.locator("#appointments-filter-project-title");
   const orderNumberFilter = page.locator("#appointments-filter-order-number");
   const ensurePeriodPickerOpen = async () => {
@@ -76,8 +78,9 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
 
   await expect(table).toBeVisible();
 
-  await projectTitleFilter.fill("FT04 Scope Browser");
+  await projectTitleFilter.fill(scopeToken);
   await expect(rows).toHaveCount(2);
+  await expect(tokenRows).toHaveCount(2);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
 
@@ -100,10 +103,10 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(0);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
 
-  await projectTitleFilter.fill("FT04 Scope Browser");
+  await projectTitleFilter.fill(scopeToken);
   await ensurePeriodPickerOpen();
   await page.getByTestId("toggle-appointments-scope-all").click();
-  await expect(rows).toHaveCount(2);
+  await expect(tokenRows).toHaveCount(2);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
 
@@ -111,7 +114,8 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await page.getByTestId("button-appointment-period-reset-all").click();
   await expect(projectTitleFilter).toHaveValue("");
   await expect(orderNumberFilter).toHaveValue("");
-  await expect(rows).toHaveCount(2);
+  await expect(page.getByText("Keine Treffer gefunden.")).toHaveCount(0);
+  await expect(tokenRows).toHaveCount(2);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
 

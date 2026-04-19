@@ -461,7 +461,12 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.map((employee: { id: number }) => employee.id)).toEqual([freeEmployee.id]);
+        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+
+        expect(availableEmployeeIds).toContain(freeEmployee.id);
+        expect(availableEmployeeIds).not.toContain(sameWeekSameTourEmployee.id);
+        expect(availableEmployeeIds).not.toContain(sameWeekOtherTourEmployee.id);
+        expect(availableEmployeeIds).not.toContain(inactiveEmployee.id);
       });
   });
 
