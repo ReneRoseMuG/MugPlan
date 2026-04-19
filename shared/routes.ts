@@ -585,6 +585,42 @@ const calendarBlockedTourWeekSchema = z.object({
   isBlocked: z.boolean(),
 });
 
+const calendarTourPostalPlanDayAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  projectName: z.string().nullable(),
+  customerName: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  displayMode: z.enum(appointmentDisplayModes),
+  isCancelled: z.boolean(),
+});
+
+const calendarTourPostalPlanDaySchema = z.object({
+  date: z.string(),
+  appointments: z.array(calendarTourPostalPlanDayAppointmentSchema),
+});
+
+const calendarTourPostalPlanSuggestionSchema = z.object({
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  tourColor: z.string().nullable(),
+  score: z.number().int().min(1).max(5),
+  scoreLabel: z.enum(["exakt", "sehr nah", "nah", "grob passend", "schwach passend"]),
+  matchedPostalCodes: z.array(z.string()),
+  matchedAppointmentCount: z.number().int().min(0),
+  days: z.array(calendarTourPostalPlanDaySchema).length(7),
+});
+
+const calendarTourPostalPlanWeekSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  suggestions: z.array(calendarTourPostalPlanSuggestionSchema),
+});
+
 const appointmentMutationEventSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("tour_changed"),
@@ -1647,6 +1683,18 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(calendarBlockedTourWeekSchema),
+      },
+    },
+    tourPostalPlan: {
+      method: "GET" as const,
+      path: "/api/calendar/tour-postal-plan",
+      input: z.object({
+        postalCode: z.string().min(1),
+        fromDate: z.string(),
+        toDate: z.string(),
+      }).strict(),
+      responses: {
+        200: z.array(calendarTourPostalPlanWeekSchema),
       },
     },
   },

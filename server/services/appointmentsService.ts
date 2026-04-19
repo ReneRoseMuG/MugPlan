@@ -31,12 +31,15 @@ import {
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
+import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
+type AppointmentTagsByAppointmentId = Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>>;
+type AppointmentTagRelations = AppointmentTagsByAppointmentId extends Map<number, infer TValue> ? TValue : never;
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -173,7 +176,7 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
   return Math.floor(seconds / 3600);
 }
 
-function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>> extends Map<number, infer TValue> ? TValue : never) {
+function resolveVisibleAppointmentTags(tags: AppointmentTagRelations) {
   const appointmentTags = tags ?? [];
   return {
     isCancelled: hasAppointmentCancellationTag(appointmentTags),
@@ -1180,6 +1183,134 @@ export async function listCalendarAppointments({
 
     return baseAppointment;
   });
+}
+
+export async function listCalendarTourPostalPlan({
+  postalCode,
+  fromDate,
+  toDate,
+  roleKey: _roleKey,
+}: {
+  postalCode: string;
+  fromDate: string;
+  toDate: string;
+  roleKey: CanonicalRoleKey;
+}) {
+  const requestedFromDate = parseDateOnly(fromDate);
+  const requestedToDate = parseDateOnly(toDate);
+  if (requestedToDate < requestedFromDate) {
+    throw new AppointmentError("toDate darf nicht vor fromDate liegen", 422, "VALIDATION_ERROR");
+  }
+
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
+    fromDate: requestedFromDate,
+    toDate: requestedToDate,
+  });
+  const matches = buildTourPostalPlanMatches({ postalCode, rows });
+  const appointmentIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.appointment.id))));
+  const appointmentTagsByAppointmentId = appointmentIds.length > 0
+    ? await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds)
+    : new Map<number, AppointmentTagRelations>();
+
+  const weeks = new Map<string, {
+    isoYear: number;
+    isoWeek: number;
+    weekStartDate: string;
+    weekEndDate: string;
+    suggestions: Array<{
+      tourId: number;
+      tourName: string;
+      tourColor: string | null;
+      score: 1 | 2 | 3 | 4 | 5;
+      scoreLabel: "exakt" | "sehr nah" | "nah" | "grob passend" | "schwach passend";
+      matchedPostalCodes: string[];
+      matchedAppointmentCount: number;
+      days: Array<{
+        date: string;
+        appointments: Array<{
+          id: number;
+          startDate: string;
+          endDate: string | null;
+          startTime: string | null;
+          projectName: string | null;
+          customerName: string | null;
+          postalCode: string | null;
+          displayMode: AppointmentDisplayMode;
+          isCancelled: boolean;
+        }>;
+      }>;
+    }>;
+  }>();
+
+  for (const matchGroup of matches) {
+    const weekKey = `${matchGroup.isoYear}-${String(matchGroup.isoWeek).padStart(2, "0")}`;
+    const week = weeks.get(weekKey) ?? {
+      isoYear: matchGroup.isoYear,
+      isoWeek: matchGroup.isoWeek,
+      weekStartDate: matchGroup.weekStartDate,
+      weekEndDate: matchGroup.weekEndDate,
+      suggestions: [],
+    };
+
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = toDateOnlyString(addDays(parseDateOnly(matchGroup.weekStartDate), index)) ?? matchGroup.weekStartDate;
+      const appointments = matchGroup.matches
+        .filter((item) => {
+          const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+          const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+          return date >= appointmentStartDate && date <= appointmentEndDate;
+        })
+        .sort((left, right) => {
+          const leftStart = toDateOnlyString(left.appointment.startDate) ?? "";
+          const rightStart = toDateOnlyString(right.appointment.startDate) ?? "";
+          if (leftStart !== rightStart) return leftStart.localeCompare(rightStart);
+          const leftTime = left.appointment.startTime ?? "99:99:99";
+          const rightTime = right.appointment.startTime ?? "99:99:99";
+          if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+          return left.appointment.id - right.appointment.id;
+        })
+        .map((item) => {
+          const { isCancelled } = resolveVisibleAppointmentTags(
+            appointmentTagsByAppointmentId.get(item.appointment.id) ?? [],
+          );
+          return {
+            id: item.appointment.id,
+            startDate: toDateOnlyString(item.appointment.startDate) ?? "",
+            endDate: toDateOnlyString(item.appointment.endDate),
+            startTime: item.appointment.startTime ?? null,
+            projectName: item.project?.name ?? null,
+            customerName: item.customer.fullName ?? null,
+            postalCode: item.customer.postalCode ?? null,
+            displayMode: item.appointment.displayMode as AppointmentDisplayMode,
+            isCancelled,
+          };
+        });
+      return { date, appointments };
+    });
+
+    week.suggestions.push({
+      tourId: matchGroup.tourId,
+      tourName: matchGroup.tourName,
+      tourColor: matchGroup.tourColor,
+      score: matchGroup.score,
+      scoreLabel: matchGroup.scoreLabel,
+      matchedPostalCodes: matchGroup.matchedPostalCodes,
+      matchedAppointmentCount: matchGroup.matchedAppointmentCount,
+      days,
+    });
+    weeks.set(weekKey, week);
+  }
+
+  return Array.from(weeks.values())
+    .sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate))
+    .map((week) => ({
+      ...week,
+      suggestions: week.suggestions.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.matchedAppointmentCount !== a.matchedAppointmentCount) return b.matchedAppointmentCount - a.matchedAppointmentCount;
+        return a.tourName.localeCompare(b.tourName, "de");
+      }),
+    }));
 }
 
 export async function listCalendarWeekLaneEmployeePreviews({

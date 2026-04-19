@@ -28,6 +28,7 @@ const calendarWorkspaceCalls: Array<Record<string, unknown>> = [];
 const appointmentFormCalls: Array<Record<string, unknown>> = [];
 const employeesPageCalls: Array<Record<string, unknown>> = [];
 const journalPageCalls: Array<Record<string, unknown>> = [];
+const tourPostalPlanViewCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/Sidebar", () => ({
   Sidebar: (props: Record<string, unknown>) => {
@@ -134,6 +135,13 @@ vi.mock("@/components/JournalPage", () => ({
   },
 }));
 
+vi.mock("@/components/TourPostalPlanView", () => ({
+  TourPostalPlanView: (props: Record<string, unknown>) => {
+    tourPostalPlanViewCalls.push(props);
+    return <div data-testid="tour-postal-plan-view">tour-postal-plan-view</div>;
+  },
+}));
+
 vi.mock("@/hooks/useListFilters", () => ({
   useListFilters: () => ({
     filters: { employeeId: null },
@@ -197,6 +205,7 @@ describe("PKG-08 home behavior wiring", () => {
     appointmentFormCalls.length = 0;
     employeesPageCalls.length = 0;
     journalPageCalls.length = 0;
+    tourPostalPlanViewCalls.length = 0;
   });
 
   it("opens the appointment form from the standalone appointments list with return context", async () => {
@@ -362,6 +371,26 @@ describe("PKG-08 home behavior wiring", () => {
     expect(html).toContain("data-testid=\"sidebar\"");
     expect(html).toContain("data-testid=\"journal-page\"");
     expect(journalPageCalls).toHaveLength(1);
+  });
+
+  it("opens the appointment form from the tour postal plan with date and tour prefill", async () => {
+    const { Home, setters } = await loadHome({
+      1: fixedDate,
+      2: "tourPostalPlan",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("data-testid=\"tour-postal-plan-view\"");
+    const onCreateAppointment = tourPostalPlanViewCalls[0].onCreateAppointment as (params: { date: string; tourId: number }) => void;
+    onCreateAppointment({ date: "2099-01-14", tourId: 77 });
+
+    expect(setters.get(24)).toHaveBeenCalledWith({
+      initialDate: "2099-01-14",
+      initialTourId: 77,
+      returnContext: { targetView: "tourPostalPlan" },
+    });
+    expect(setters.get(2)).toHaveBeenCalledWith("appointment");
   });
 
 });

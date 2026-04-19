@@ -785,3 +785,42 @@ export async function listCalendarBlockedTourWeeks(req: Request, res: Response, 
     next(err);
   }
 }
+
+export async function listCalendarTourPostalPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const postalCode = typeof req.query.postalCode === "string" ? req.query.postalCode : undefined;
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+
+    if (!postalCode || !fromDate || !toDate) {
+      res.status(400).json({ message: "postalCode, fromDate und toDate sind erforderlich" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      logWarn(`${logPrefix} list calendar tour postal plan rejected: invalid range ${fromDate}-${toDate}`);
+      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      return;
+    }
+    if (toDate < fromDate) {
+      res.status(400).json({ message: "toDate darf nicht vor fromDate liegen" });
+      return;
+    }
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      return;
+    }
+
+    const plan = await appointmentsService.listCalendarTourPostalPlan({
+      postalCode,
+      fromDate,
+      toDate,
+      roleKey,
+    });
+    res.json(plan);
+  } catch (err) {
+    next(err);
+  }
+}

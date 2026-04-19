@@ -4,6 +4,10 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | Test-Datei | Feature | Bereich | Zweck | Status |
 |------------|---------|---------|-------|--------|
+| [tests/unit/lib/tourPostalPlan.rules.test.ts](../tests/unit/lib/tourPostalPlan.rules.test.ts) | Tour PLZ Plan | Unit | Ranking- und Gruppierungslogik des Tour-PLZ-Plans fuer Präfixstärke, Trefferzahl und Ausschluss unzugeordneter Termine isoliert absichern | Neu |
+| [tests/unit/lib/tourPostalPlan.navigation.test.ts](../tests/unit/lib/tourPostalPlan.navigation.test.ts) | Tour PLZ Plan | Unit | Clientseitige max.-KW-Grenze, Jahreswechsel und Fensterbegrenzung des Tour-PLZ-Plans isoliert absichern | Neu |
+| [tests/integration/server/calendar.tour-postal-plan.integration.test.ts](../tests/integration/server/calendar.tour-postal-plan.integration.test.ts) | Tour PLZ Plan | Integration | Neue Kalenderprojektion `/api/calendar/tour-postal-plan` gegen echte API-Responses mit Score, Label und Tour-Ausschluss pruefen | Neu |
+| [tests/e2e-browser/tour-postal-plan.browser.e2e.spec.ts](../tests/e2e-browser/tour-postal-plan.browser.e2e.spec.ts) | Tour PLZ Plan | E2E Browser | Sidebar-Navigation, sichtbare Vorschläge und die vorbelegte Terminanlage aus dem Tour-PLZ-Plan browserseitig absichern | Neu |
 | [tests/integration/bootstrap/testIsolationFingerprint.integration.test.ts](../tests/integration/bootstrap/testIsolationFingerprint.integration.test.ts) | Test-Isolation-Rebuild | Integration | `core`-/`seeded`-Fingerprints sowie leere Upload-/Backup-Pfade gegen die echte Testumgebung absichern | Neu |
 | [tests/integration/bootstrap/testIsolationCanaries.integration.test.ts](../tests/integration/bootstrap/testIsolationCanaries.integration.test.ts) | Test-Isolation-Rebuild | Integration | DB-Canary-Profile fuer Listen-/Filter-Verwechslung, Wochenplan-Konflikte und Seed-Schatten gegen die echte Test-DB absichern | Neu |
 | [tests/unit/helpers/testIsolationExecution.test.ts](../tests/unit/helpers/testIsolationExecution.test.ts) | Test-Isolation-Rebuild | Unit | Metadaten- und Kandidatenmodus-Parsing fuer Alt-vs-Neu-Pilotlaeufe absichern | Neu |

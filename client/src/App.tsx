@@ -17,6 +17,7 @@ import {
   StandaloneProjects,
   StandaloneReports,
   StandaloneTeams,
+  StandaloneTourPostalPlan,
   StandaloneTours,
 } from "@/pages/StandaloneDomainViews";
 import { getSessionStatus, getSetupStatus, logout } from "@/lib/auth";
@@ -51,6 +52,7 @@ function Router({ onLogout }: RouterProps) {
       <Route path="/standalone/teams" component={StandaloneTeams} />
       <Route path="/standalone/monitoring" component={StandaloneMonitoring} />
       <Route path="/standalone/reports" component={StandaloneReports} />
+      <Route path="/standalone/tour-postal-plan" component={StandaloneTourPostalPlan} />
       <Route
         path="/calendar"
       >

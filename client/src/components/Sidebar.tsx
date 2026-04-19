@@ -169,6 +169,14 @@ export function Sidebar({
             onClick={() => onViewChange("appointmentsList")}
             standaloneUrl="/standalone/appointments"
           />
+          <NavButton
+            icon={CalendarDays}
+            label="Tour PLZ Plan"
+            testId="nav-tour-plz-plan"
+            isActive={currentView === "tourPostalPlan"}
+            onClick={() => onViewChange("tourPostalPlan")}
+            standaloneUrl="/standalone/tour-postal-plan"
+          />
         </NavGroup>
 
         <NavGroup title="Projektplanung">
