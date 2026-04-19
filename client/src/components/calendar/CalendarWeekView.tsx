@@ -69,7 +69,6 @@ import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRu
 type CalendarWeekViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
-  weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
@@ -245,7 +244,6 @@ export function buildWeekLaneRenderData(
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
-  weekAppointmentDisplayMode: weekAppointmentDisplayModeProp,
   weekTileBodyMode: weekTileBodyModeProp,
   weekLanesCollapsed: weekLanesCollapsedProp,
   onWeekLanesCollapsedChange,
@@ -295,7 +293,6 @@ export function CalendarWeekView({
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
-  const weekAppointmentDisplayMode = weekAppointmentDisplayModeProp ?? "detail";
   const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
@@ -420,7 +417,7 @@ export function CalendarWeekView({
     cardHeightByLaneRef.current.clear();
     projectStatusHeightByWeekRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
-  }, [appointments, scrollResetKey, weekTileBodyMode, weekAppointmentDisplayMode]);
+  }, [appointments, scrollResetKey, weekTileBodyMode]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -1219,7 +1216,7 @@ export function CalendarWeekView({
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
-                      const isCompactWeekMode = weekAppointmentDisplayMode === "compact";
+                      const isCompactWeekMode = weekTileBodyMode === "collapsed";
                       const laneUniformHeightPx = isCompactWeekMode
                         ? null
                         : (cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null);
@@ -1555,7 +1552,6 @@ export function CalendarWeekView({
                                   key={`week-spanning-tile-${appointment.id}`}
                                   appointment={appointment}
                                   spanColumns={columnSpan}
-                                  displayMode={weekAppointmentDisplayMode ?? "standard"}
                                   weekTileBodyMode={weekTileBodyMode}
                                   visibleStartDate={visibleStartDate}
                                   visibleDayNumberStart={visibleDayNumberStart}
@@ -1568,7 +1564,7 @@ export function CalendarWeekView({
                                     gridRow: rowIndex + 1,
                                     margin: "0.5rem",
                                     zIndex: 10,
-                                    alignSelf: weekAppointmentDisplayMode === "compact" ? "start" : undefined,
+                                    alignSelf: isCompactWeekMode ? "start" : undefined,
                                   }}
                                   isDragging={draggedAppointmentId === appointment.id}
                                   isLocked={isSegmentLocked}
@@ -1618,12 +1614,11 @@ export function CalendarWeekView({
                                     gridRow,
                                     padding: "0.5rem",
                                     zIndex: 10,
-                                    alignSelf: weekAppointmentDisplayMode === "compact" ? "start" : undefined,
+                                    alignSelf: isCompactWeekMode ? "start" : undefined,
                                   }}
                                 >
                                   <CalendarWeekAppointmentPanel
                                     appointment={appointment}
-                                    displayMode={weekAppointmentDisplayMode ?? "standard"}
                                     weekTileBodyMode={weekTileBodyMode}
                                     context="week-calendar"
                                     segment="start"
@@ -1690,7 +1685,6 @@ export function CalendarWeekView({
                                       <CalendarWeekAppointmentPanel
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
                                         appointment={appointment}
-                                        displayMode={weekAppointmentDisplayMode ?? "standard"}
                                         weekTileBodyMode={weekTileBodyMode}
                                         context="week-calendar"
                                         segment="start"

@@ -49,8 +49,6 @@ const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 const employeePickerViewModeOptions = ["board", "list"] as const;
 type EmployeePickerViewMode = (typeof employeePickerViewModeOptions)[number];
-const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
-type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 const weekTileBodyModeOptions = ["collapsed", "semiexpanded", "expanded"] as const;
 type WeekTileBodyMode = (typeof weekTileBodyModeOptions)[number];
 const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
@@ -575,17 +573,6 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string",
-  },
-  calendarWeekAppointmentDisplayMode: {
-    key: "calendar.weekAppointmentDisplayMode",
-    label: "Wochenansicht Termindarstellung",
-    description: "Speichert den globalen Darstellungsmodus der Terminkarten in der Wochenansicht.",
-    type: "enum",
-    options: weekAppointmentDisplayModeOptions,
-    defaultValue: "standard",
-    allowedScopes: ["USER"],
-    validate: (value: unknown): value is WeekAppointmentDisplayMode =>
-      typeof value === "string" && weekAppointmentDisplayModeOptions.includes(value as WeekAppointmentDisplayMode),
   },
   calendarWeekTileBodyMode: {
     key: "calendar.weekTileBodyMode",

@@ -236,8 +236,6 @@ describe("CalendarWeekView blocked week behavior", () => {
           return 33;
         case "calendarWeekScrollRange":
           return 0;
-        case "calendar.weekAppointmentDisplayMode":
-          return "standard";
         case "calendar.weekTileBodyMode":
           return "semiexpanded";
         case "calendar.weekLanes.isCollapsed":

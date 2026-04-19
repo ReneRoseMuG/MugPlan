@@ -160,7 +160,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           uniformHeightPx={240}
@@ -187,7 +186,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={3}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
         />
@@ -216,7 +214,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           showTagActions
@@ -250,7 +247,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           showTagActions
@@ -282,7 +278,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           isConflict
@@ -310,7 +305,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           isBlocked
@@ -322,7 +316,7 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain("opacity:0.86");
   });
 
-  it("keeps both sub panels visible in collapsed body mode while preserving the shared outer card height", () => {
+  it("keeps both sub panels visible in collapsed body mode while reducing the card shell height", () => {
     const appointment = createAppointment();
 
     const html = renderWithQueryClient(
@@ -336,7 +330,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           weekTileBodyMode="collapsed"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
@@ -350,19 +343,19 @@ describe("calendar week appointment card layout", () => {
     expect(projectPanelCalls).toHaveLength(2);
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
     expect(projectPanelCalls.every((call) => call.className === "h-8 overflow-hidden")).toBe(true);
-    expect(html.match(/height:260px/g)).toHaveLength(2);
-    expect(html).toContain('class="flex min-h-0 h-full flex-col"');
-    expect(html).toContain('class="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"');
+    expect(html).not.toContain("height:260px");
+    expect(html).toContain('class="flex shrink-0 flex-col"');
+    expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
   });
 
-  it("keeps single-day compact appointments on the same shell and only collapses inner panel density", () => {
-    const appointment = createAppointment({ displayMode: "compact" });
+  it("keeps single-day collapsed body cards on the reduced shell and removes the extra body height", () => {
+    const appointment = createAppointment();
 
     const html = renderWithQueryClient(
       <CalendarWeekAppointmentPanel
         appointment={appointment}
-        displayMode="compact"
         context="week-calendar"
+        weekTileBodyMode="collapsed"
         uniformHeightPx={240}
       />,
     );
@@ -395,7 +388,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2000-01-01"
           visibleDayNumberStart={1}
         />
@@ -422,7 +414,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2000-01-01"
           visibleDayNumberStart={1}
         />
@@ -446,7 +437,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
         />

@@ -141,8 +141,6 @@ function configureDefaults(appointments: CalendarAppointment[]) {
       case "calendarMonthScrollRange":
       case "calendarWeekScrollRange":
         return 0;
-      case "calendar.weekAppointmentDisplayMode":
-        return "standard";
       case "calendar.weekTileBodyMode":
         return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":

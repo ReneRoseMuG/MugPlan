@@ -95,7 +95,6 @@ const parseErrorPayload = (rawBody: string): { message?: string; code?: string }
 
 export function CalendarWeekAppointmentPanel({
   appointment,
-  displayMode,
   weekTileBodyMode = "semiexpanded",
   onDoubleClick,
   isDragging,
@@ -122,7 +121,6 @@ export function CalendarWeekAppointmentPanel({
   testId,
 }: {
   appointment: CalendarAppointment;
-  displayMode?: "standard" | "compact" | "detail" | "split";
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   onDoubleClick?: () => void;
   isDragging?: boolean;
@@ -389,8 +387,7 @@ export function CalendarWeekAppointmentPanel({
 
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
-  const effectiveDisplayMode = displayMode ?? appointment.displayMode;
-  const isCompact = effectiveDisplayMode === "compact";
+  const isCompact = weekTileBodyMode === "collapsed";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")

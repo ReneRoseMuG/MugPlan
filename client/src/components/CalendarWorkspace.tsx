@@ -185,7 +185,6 @@ export function CalendarWorkspace({
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
-          weekAppointmentDisplayMode="detail"
           weekTileBodyMode={weekTileBodyModeSetting ?? "semiexpanded"}
           weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
           onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
@@ -346,4 +345,3 @@ export function CalendarWorkspace({
     </div>
   );
 }
-
