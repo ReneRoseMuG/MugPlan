@@ -408,7 +408,7 @@ export function CalendarWeekSpanningTile({
     : effectiveCustomerMode === "expanded"
       ? "h-[6.5rem] overflow-hidden"
       : "h-8 overflow-hidden";
-  const projectPanelClassName = projectCollapsed ? "h-8 overflow-hidden" : "min-h-0 h-full";
+  const projectPanelClassName = projectCollapsed ? "h-8 overflow-hidden" : "min-h-0 self-start";
   const contentGridTemplateRows = isCompactPanelMode
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;

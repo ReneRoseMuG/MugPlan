@@ -461,6 +461,8 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls).toHaveLength(1);
     expect(customerPanelCalls[0]?.mode).toBe("expanded");
     expect(projectPanelCalls).toHaveLength(1);
+    expect(projectPanelCalls[0]?.collapsed).toBe(false);
+    expect(projectPanelCalls[0]?.className).toBe("min-h-0 self-start");
   });
 
   it("marks the single-card header date as the first responsive hide target while keeping key identifiers no-wrap", () => {

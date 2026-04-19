@@ -4,12 +4,12 @@
  * Abgedeckte Regeln:
  * - Der Projektblock im Wochenpanel zeigt Projekttitel prominent und die Auftragsnummer dezent dahinter an.
  * - Projektinhalte werden nur bei vorhandenem Inhalt gerendert.
- * - Der Full-Preview-Modus zeigt den Hover-Trigger fuer die ausfuehrliche Projektbeschreibung auch fuer leere Projektinhalte.
+ * - Der Full-Preview-Modus zeigt nur einen begrenzten Vorschauausschnitt und oeffnet fuer die volle Beschreibung den Hover-Trigger.
  * - Der kollabierte Compact-Pfad verwendet keine zusaetzliche vertikale Leerzeile unter dem Header.
  *
  * Fehlerfaelle:
  * - Der Projektkopf verliert die neue Reihenfolge oder die dezente Auftragsnummer.
- * - Inhaltslose Projekte verlieren den Hover-Trigger im Wochenkarten-Body wieder.
+ * - Projektinhalte wachsen im Wochenkarten-Body wieder ungebremst in die Kartenhoehe.
  *
  * Ziel:
  * Beobachtbares Wochenpanel-Verhalten fuer Projektkopf und Projektinhalt absichern.
@@ -88,6 +88,7 @@ describe("FT03 appointment weekly panel wiring", () => {
 
     expect(withPreview).toContain("week-project-description-hover-trigger");
     expect(withPreview).toContain("week-project-hover-renderer");
+    expect(withPreview).toContain("max-h-[6.75rem]");
     expect(hoverPreviewCalls[0]).toMatchObject({
       mode: "cursor",
       cursorOffsetX: 20,
@@ -133,6 +134,6 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(markup).not.toContain("week-project-renderer");
     expect(markup).toContain("week-project-hover-renderer");
     expect(markup).toContain("cursor-pointer");
-    expect(markup).toContain("px-2 py-1.5");
+    expect(markup).toContain("px-2 py-1");
   });
 });
