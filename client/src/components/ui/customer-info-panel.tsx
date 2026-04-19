@@ -20,6 +20,8 @@ type CustomerInfoPanelProps = {
   className?: string;
 };
 
+const CUSTOMER_DETAIL_TEXT_INDENT_CLASSNAME = "pl-[18px]";
+
 function CustomerHeader({ fullName, customerNumber }: { fullName: string | null; customerNumber: string }) {
   const CustomerIcon = domainIcons.customers;
   return (
@@ -112,6 +114,7 @@ function ExpandedContent({
   email,
 }: Omit<CustomerInfoPanelProps, "mode" | "testId">) {
   const cityLine = [postalCode, city].filter(Boolean).join(" ");
+  const detailTextBlockClassName = cn("min-w-0 space-y-0.5", !hideHeader && CUSTOMER_DETAIL_TEXT_INDENT_CLASSNAME);
 
   if (hideHeader) {
     return (
@@ -128,9 +131,11 @@ function ExpandedContent({
   return (
     <div className="min-w-0 space-y-0.5">
       <CustomerHeader fullName={fullName} customerNumber={customerNumber} />
-      <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} country={country} />
-      {phone?.trim() && <StructuredInfoLine value={phone} testId="customer-info-line-phone" />}
-      {email?.trim() && <StructuredInfoLine value={email} testId="customer-info-line-email" />}
+      <div className={detailTextBlockClassName} data-testid="customer-info-detail-block">
+        <AddressBlock addressLine1={addressLine1} postalCode={postalCode} city={city} country={country} />
+        {phone?.trim() && <StructuredInfoLine value={phone} testId="customer-info-line-phone" />}
+        {email?.trim() && <StructuredInfoLine value={email} testId="customer-info-line-email" />}
+      </div>
     </div>
   );
 }

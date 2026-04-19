@@ -122,6 +122,8 @@ describe("CustomerInfoPanel render", () => {
     expect(markup).toContain("Deutschland");
     expect(markup).toContain("030 123456");
     expect(markup).toContain("max@example.com");
+    expect(markup).toContain("customer-info-detail-block");
+    expect(markup).toContain("pl-[18px]");
   });
 
   it("expanded mit hideHeader: kein h5-Name im Output und feste Informationszeilen", () => {
