@@ -27,13 +27,13 @@ describe("tourPostalPlan ranking rules", () => {
           appointment: { id: 1, startDate: "2099-04-06" },
           project: { id: 11, name: "Projekt exakt" },
           customer: { id: 21, fullName: "Kunde Exakt", postalCode: "26135" },
-          tour: { id: 101, name: "Tour Exakt", color: "#111111" },
+          tour: { id: 101, name: "Tour 1", color: "#111111" },
         },
         {
           appointment: { id: 2, startDate: "2099-04-06" },
           project: { id: 12, name: "Projekt nah" },
           customer: { id: 22, fullName: "Kunde Nah", postalCode: "26199" },
-          tour: { id: 102, name: "Tour Nah", color: "#222222" },
+          tour: { id: 102, name: "Tour 2", color: "#222222" },
         },
       ],
     });
@@ -61,19 +61,19 @@ describe("tourPostalPlan ranking rules", () => {
           appointment: { id: 3, startDate: "2099-04-06" },
           project: { id: 13, name: "Projekt A1" },
           customer: { id: 23, fullName: "Kunde A1", postalCode: "26139" },
-          tour: { id: 103, name: "Tour A", color: "#333333" },
+          tour: { id: 103, name: "Tour 1", color: "#333333" },
         },
         {
           appointment: { id: 4, startDate: "2099-04-07" },
           project: { id: 14, name: "Projekt A2" },
           customer: { id: 24, fullName: "Kunde A2", postalCode: "26137" },
-          tour: { id: 103, name: "Tour A", color: "#333333" },
+          tour: { id: 103, name: "Tour 1", color: "#333333" },
         },
         {
           appointment: { id: 5, startDate: "2099-04-06" },
           project: { id: 15, name: "Projekt B1" },
           customer: { id: 25, fullName: "Kunde B1", postalCode: "26132" },
-          tour: { id: 104, name: "Tour B", color: "#444444" },
+          tour: { id: 104, name: "Tour 2", color: "#444444" },
         },
       ],
     });
@@ -100,6 +100,22 @@ describe("tourPostalPlan ranking rules", () => {
           project: { id: 16, name: "Projekt ohne Tour" },
           customer: { id: 26, fullName: "Kunde Ohne Tour", postalCode: "26135" },
           tour: null,
+        },
+      ],
+    });
+
+    expect(matches).toEqual([]);
+  });
+
+  it("ignoriert Touren ausserhalb des Musters Tour Zahl", () => {
+    const matches = buildTourPostalPlanMatches({
+      postalCode: "26135",
+      rows: [
+        {
+          appointment: { id: 7, startDate: "2099-04-06" },
+          project: { id: 17, name: "Projekt Sondertour" },
+          customer: { id: 27, fullName: "Kunde Sondertour", postalCode: "26135" },
+          tour: { id: 105, name: "Parkplatz", color: "#555555" },
         },
       ],
     });

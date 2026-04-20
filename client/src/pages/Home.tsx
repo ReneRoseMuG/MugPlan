@@ -151,7 +151,7 @@ function resolveViewTitle(view: ViewType): string {
     case "monitoring":
       return "Monitoring";
     case "tourPostalPlan":
-      return "Tour PLZ Plan";
+      return "Tour PLZ Planung";
     default:
       return "MuG Plan";
   }

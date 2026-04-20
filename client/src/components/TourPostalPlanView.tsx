@@ -4,6 +4,7 @@ import { Search } from "lucide-react";
 
 import { TourPostalPlanWeekPreview } from "./calendar/TourPostalPlanWeekPreview";
 import { Button } from "@/components/ui/button";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCalendarTourPostalPlan } from "@/lib/calendar-appointments";
@@ -65,9 +66,12 @@ export function TourPostalPlanView({ onCreateAppointment }: TourPostalPlanViewPr
       <div className="border-b border-border bg-card px-6 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold text-slate-900">Tour PLZ Plan</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">Tour PLZ Planung</h2>
+              <HelpIcon helpKey="tour-postal-plan" size="sm" />
+            </div>
             <p className="text-sm text-slate-500">
-              Vorschlagsansicht für passende Wochen und Touren auf Basis bereits geplanter Postleitzahlen.
+              Vorschlagsansicht für passende Wochen und Touren auf Basis bereits geplanter Termine.
             </p>
           </div>
 

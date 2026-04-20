@@ -42,6 +42,10 @@ export function normalizeTourPostalCode(value: string | null | undefined): strin
   return String(value ?? "").replace(/\D/g, "").slice(0, 5);
 }
 
+export function isEligibleTourPostalPlanName(value: string | null | undefined): boolean {
+  return /^Tour \d+$/.test(String(value ?? "").trim());
+}
+
 export function toDateOnlyString(input: Date | string | null | undefined): string | null {
   if (!input) return null;
   if (typeof input === "string") return input.slice(0, 10);
@@ -87,6 +91,7 @@ export function buildTourPostalPlanMatches<Row extends TourPostalPlanRow>(params
 
   for (const row of params.rows) {
     if (!row.tour?.id) continue;
+    if (!isEligibleTourPostalPlanName(row.tour.name)) continue;
     const matchedPostalCode = normalizeTourPostalCode(row.customer.postalCode);
     if (normalizedPostalCode.length === 0 || matchedPostalCode.length === 0) continue;
 

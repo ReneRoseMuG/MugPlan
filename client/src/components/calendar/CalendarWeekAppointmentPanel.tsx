@@ -409,7 +409,7 @@ export function CalendarWeekAppointmentPanel({
     : effectiveCustomerMode === "expanded"
       ? "h-[6.5rem] overflow-hidden"
       : "h-8 overflow-hidden";
-  const projectPanelClassName = effectiveProjectCollapsed ? "h-8 overflow-hidden" : "min-h-0 self-start";
+  const projectPanelClassName = effectiveProjectCollapsed ? "h-8 w-full overflow-hidden" : "min-h-0 h-full w-full";
   const contentGridTemplateRows = isCompact
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -418,8 +418,8 @@ export function CalendarWeekAppointmentPanel({
     ? "relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"
     : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
   const contentGridClassName = isCompact
-    ? "grid shrink-0 content-start gap-1 overflow-hidden"
-    : "grid min-h-0 flex-1 content-start gap-1 overflow-hidden";
+    ? "grid w-full shrink-0 content-start gap-1 overflow-hidden"
+    : "grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,

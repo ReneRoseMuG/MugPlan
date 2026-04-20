@@ -27,8 +27,8 @@ export function CalendarWeekAppointmentPanelProject({
   className?: string;
 }) {
   const compactContentClassName = "max-h-[6.75rem] overflow-hidden pb-1";
-  const panelClassName = "flex min-h-0 flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5";
-  const collapsedPanelClassName = "cursor-pointer rounded-md border border-slate-200/90 bg-white px-2 py-1";
+  const panelClassName = "flex min-h-0 w-full flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5";
+  const collapsedPanelClassName = "w-full cursor-pointer rounded-md border border-slate-200/90 bg-white px-2 py-1";
   const fullDescriptionClassName = "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
   const resolvedProjectName = resolveProjectDisplayName(projectName);
   const hasProjectReference = resolvedProjectName !== "Kein Auftrag hinterlegt";

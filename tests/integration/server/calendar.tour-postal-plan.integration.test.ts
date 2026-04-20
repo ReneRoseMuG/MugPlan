@@ -33,8 +33,9 @@ beforeAll(async () => {
 
 async function createFixture() {
   const local = seq++;
-  const tourExact = await toursRepository.createTour(`PLZ Exakt ${Date.now()}-${local}`, "#2563eb");
-  const tourNear = await toursRepository.createTour(`PLZ Nah ${Date.now()}-${local}`, "#16a34a");
+  const tourExact = await toursRepository.createTour(`Tour ${local * 10 + 1}`, "#2563eb");
+  const tourNear = await toursRepository.createTour(`Tour ${local * 10 + 2}`, "#16a34a");
+  const ignoredTour = await toursRepository.createTour(`Parkplatz`, "#dc2626");
 
   const exactCustomerA = await customersService.createCustomer({
     customerNumber: `TPLZ-EX-A-${local}`,
@@ -149,14 +150,20 @@ async function createFixture() {
     startDate: "2099-04-09",
     employeeIds: [],
   });
+  await appointmentsService.createAppointment({
+    projectId: nearProject.id,
+    startDate: "2099-04-10",
+    employeeIds: [],
+    tourId: ignoredTour.id,
+  });
 
-  return { tourExact, tourNear };
+  return { tourExact, tourNear, ignoredTour };
 }
 
 describe("calendar tour postal plan integration", () => {
   it("liefert sortierte Vorschläge mit Score, Label und ohne unzugeordnete Termine", async () => {
     const agent = await loginAdminAgent(app);
-    const { tourExact, tourNear } = await createFixture();
+    const { tourExact, tourNear, ignoredTour } = await createFixture();
 
     const response = await agent
       .get("/api/calendar/tour-postal-plan?postalCode=26135&fromDate=2099-04-06&toDate=2099-05-03")
@@ -193,6 +200,7 @@ describe("calendar tour postal plan integration", () => {
       matchedPostalCodes: ["26139"],
       matchedAppointmentCount: 1,
     });
+    expect(weeks[0]?.suggestions.map((suggestion) => suggestion.tourId)).not.toContain(ignoredTour.id);
     expect(weeks[0]?.suggestions.some((suggestion) => suggestion.tourId === 0)).toBe(false);
     expect(
       weeks[0]?.suggestions.flatMap((suggestion) => suggestion.days.flatMap((day) => day.appointments.map((appointment) => appointment.postalCode))),
@@ -215,7 +223,7 @@ describe("calendar tour postal plan integration", () => {
     const nextWeekStart = addWeeks(currentWeekStart, 1);
     const currentWeekDate = berlinToday;
     const nextWeekDate = format(addDays(nextWeekStart, 1), "yyyy-MM-dd");
-    const tour = await toursRepository.createTour(`PLZ Clamp ${Date.now()}-${local}`, "#0f766e");
+    const tour = await toursRepository.createTour(`Tour ${local * 10 + 3}`, "#0f766e");
     const customer = await customersService.createCustomer({
       customerNumber: `TPLZ-CL-${local}`,
       firstName: "Clara",
@@ -268,8 +276,8 @@ describe("calendar tour postal plan integration", () => {
   it("filtert bei aktivem Frei-Filter voll belegte Werktagwochen heraus und behaelt Wochen mit freiem Werktag", async () => {
     const agent = await loginAdminAgent(app);
     const local = seq++;
-    const fullTour = await toursRepository.createTour(`PLZ Voll ${Date.now()}-${local}`, "#1d4ed8");
-    const freeTour = await toursRepository.createTour(`PLZ Frei ${Date.now()}-${local}`, "#15803d");
+    const fullTour = await toursRepository.createTour(`Tour ${local * 10 + 1}`, "#1d4ed8");
+    const freeTour = await toursRepository.createTour(`Tour ${local * 10 + 2}`, "#15803d");
 
     const fullCustomer = await customersService.createCustomer({
       customerNumber: `TPLZ-FULL-${local}`,

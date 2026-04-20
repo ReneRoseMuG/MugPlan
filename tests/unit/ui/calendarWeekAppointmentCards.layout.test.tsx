@@ -198,6 +198,10 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
     expect(html.match(/background-color:rgba\(34, 85, 136, 0\.1\);border-top-color:rgba\(34, 85, 136, 0\.22\)/g)).toHaveLength(2);
+    expect(projectPanelCalls).toHaveLength(2);
+    expect(projectPanelCalls.every((call) => call.className === "min-h-0 h-full w-full")).toBe(true);
+    expect(html).toContain('class="grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden"');
+    expect(html).toContain('class="flex min-h-0 w-full flex-1 overflow-hidden"');
   });
 
   it("keeps the tag action slot local to week cards and opt-in for editing", () => {
@@ -342,7 +346,7 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls.every((call) => call.mode === "collapsed")).toBe(true);
     expect(projectPanelCalls).toHaveLength(2);
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
-    expect(projectPanelCalls.every((call) => call.className === "h-8 overflow-hidden")).toBe(true);
+    expect(projectPanelCalls.every((call) => call.className === "h-8 w-full overflow-hidden")).toBe(true);
     expect(html).not.toContain("height:260px");
     expect(html).toContain('class="flex shrink-0 flex-col"');
     expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
@@ -366,14 +370,14 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls[0]?.className).toBe("h-8 overflow-hidden");
     expect(projectPanelCalls).toHaveLength(1);
     expect(projectPanelCalls[0]?.collapsed).toBe(true);
-    expect(projectPanelCalls[0]?.className).toBe("h-8 overflow-hidden");
+    expect(projectPanelCalls[0]?.className).toBe("h-8 w-full overflow-hidden");
     expect(html).toContain('data-testid="week-appointment-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).not.toContain('height:260px');
     expect(html).toContain("grid-template-rows:2rem 2rem");
     expect(html).toContain('class="flex shrink-0 flex-col"');
     expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
-    expect(html).toContain('class="grid shrink-0 content-start gap-1 overflow-hidden"');
+    expect(html).toContain('class="grid w-full shrink-0 content-start gap-1 overflow-hidden"');
     expect(html).toContain('class="relative shrink-0 border-t px-1 py-1"');
   });
 
@@ -463,7 +467,7 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls[0]?.mode).toBe("expanded");
     expect(projectPanelCalls).toHaveLength(1);
     expect(projectPanelCalls[0]?.collapsed).toBe(false);
-    expect(projectPanelCalls[0]?.className).toBe("min-h-0 self-start");
+    expect(projectPanelCalls[0]?.className).toBe("min-h-0 h-full w-full");
   });
 
   it("marks the single-card header date as the first responsive hide target while keeping key identifiers no-wrap", () => {

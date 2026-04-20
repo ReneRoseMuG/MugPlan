@@ -52,7 +52,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("Monitoring");
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
-    expect(html).toContain("Tour PLZ Plan");
+    expect(html).toContain("Tour PLZ Planung");
     expect(html).toContain("nav-tour-plz-plan");
     expect(html).toContain("nav-tour-plz-plan-open-tab");
     expect(html).toContain("monitoring-trigger-pills");
@@ -79,7 +79,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
 
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
-    expect(html).toContain("Tour PLZ Plan");
+    expect(html).toContain("Tour PLZ Planung");
     expect(html).not.toContain("Reports");
     expect(html).not.toContain("Journal");
     expect(html).not.toContain("Monitoring");

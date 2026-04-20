@@ -171,7 +171,7 @@ export function Sidebar({
           />
           <NavButton
             icon={CalendarDays}
-            label="Tour PLZ Plan"
+            label="Tour PLZ Planung"
             testId="nav-tour-plz-plan"
             isActive={currentView === "tourPostalPlan"}
             onClick={() => onViewChange("tourPostalPlan")}
