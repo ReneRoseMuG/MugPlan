@@ -475,7 +475,7 @@ export function CalendarWeekAppointmentPanel({
   return (
   <>
     <div
-      className={`group/calendar-card relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
