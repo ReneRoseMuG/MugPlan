@@ -54,6 +54,10 @@ async function openWeekPlanning(page: import("@playwright/test").Page, tourId: n
   await expect(page.getByTestId("tour-form-functions-panel")).toContainText("KW einfügen");
 }
 
+function toastWithTitle(page: import("@playwright/test").Page, title: string) {
+  return page.locator("[role='status']").filter({ hasText: title }).first();
+}
+
 test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
@@ -112,12 +116,12 @@ test("validates the footer week picker against min and max bounds", async ({ pag
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek - 1));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByText("Kalenderwoche zu klein")).toBeVisible();
+  await expect(toastWithTitle(page, "Kalenderwoche zu klein")).toBeVisible();
   await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek - 1}`)).toHaveCount(0);
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.maxIsoWeek + 1));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByText("Kalenderwoche zu groß", { exact: true })).toBeVisible();
+  await expect(toastWithTitle(page, "Kalenderwoche zu groß")).toBeVisible();
   await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.maxIsoWeek + 1}`)).toHaveCount(0);
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));

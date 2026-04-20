@@ -402,7 +402,7 @@ export function CalendarWeekSpanningTile({
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
   const isCompactPanelMode = weekTileBodyMode === "collapsed";
   const effectiveCustomerMode = isCompactPanelMode ? "collapsed" : customerMode;
-  const projectCollapsed = isCompactPanelMode ? true : weekTileBodyMode === "collapsed";
+  const projectCollapsed = isCompactPanelMode;
   const customerPanelHeightClassName = isCompactPanelMode
     ? "h-8 overflow-hidden"
     : effectiveCustomerMode === "expanded"

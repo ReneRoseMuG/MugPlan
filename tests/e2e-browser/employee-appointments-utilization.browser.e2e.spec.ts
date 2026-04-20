@@ -59,9 +59,11 @@ test("employee form switches from appointments list to utilization view and show
   const appointmentCard = page.getByTestId(`month-compact-bar-${appointment.id}`);
   await expect(appointmentCard).toBeVisible();
   await appointmentCard.hover();
+  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(previewPanel).toBeVisible();
 
-  await expect(page.getByText("09:30 |", { exact: false }).first()).toBeVisible();
-  await expect(page.getByText("EMP UTIL Projekt").first()).toBeVisible();
-  await expect(page.getByText("K: EMP-UTIL", { exact: false }).first()).toBeVisible();
-  await expect(page.getByText("PLZ:", { exact: false }).first()).toBeVisible();
+  await expect(previewPanel).toContainText("09:30");
+  await expect(previewPanel).toContainText("EMP UTIL Projekt");
+  await expect(previewPanel).toContainText("K: EMP-UTIL");
+  await expect(previewPanel).toContainText("PLZ:");
 });

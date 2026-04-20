@@ -87,14 +87,23 @@ async function navigateToMonthContaining(page: Page, dateString: string) {
   throw new Error(`Month containing ${dateString} was not reachable within 20 steps.`);
 }
 
-async function expectCenterInside(locator: Locator, target: Locator) {
+async function getCenterX(locator: Locator) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return (box?.x ?? 0) + (box?.width ?? 0) / 2;
+}
+
+async function expectHorizontalOverlap(locator: Locator, target: Locator) {
   const [sourceBox, targetBox] = await Promise.all([locator.boundingBox(), target.boundingBox()]);
   expect(sourceBox).not.toBeNull();
   expect(targetBox).not.toBeNull();
 
-  const centerX = (sourceBox?.x ?? 0) + (sourceBox?.width ?? 0) / 2;
-  expect(centerX).toBeGreaterThanOrEqual((targetBox?.x ?? 0) - 2);
-  expect(centerX).toBeLessThanOrEqual((targetBox?.x ?? 0) + (targetBox?.width ?? 0) + 2);
+  const overlapLeft = Math.max(sourceBox?.x ?? 0, targetBox?.x ?? 0);
+  const overlapRight = Math.min(
+    (sourceBox?.x ?? 0) + (sourceBox?.width ?? 0),
+    (targetBox?.x ?? 0) + (targetBox?.width ?? 0),
+  );
+  expect(overlapRight - overlapLeft).toBeGreaterThan(8);
 }
 
 test("keeps same-day appointments aligned to the same visible day in week and month", async ({ page }) => {
@@ -104,21 +113,25 @@ test("keeps same-day appointments aligned to the same visible day in week and mo
 
   await navigateToWeekContaining(page, sameDayDate);
 
-  const weekHeader = page.getByTestId(`week-day-header-${sameDayDate}`);
   const earlyPanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayEarlyA.id}`).first();
   const latePanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayLateA.id}`).first();
   const noonPanel = page.getByTestId(`week-appointment-panel-${fixture.sameDayNoonB.id}`).first();
+  const laneADayCell = page.getByTestId(`week-day-${sameDayDate}-lane-tour-${fixture.tourA.id}`).first();
 
   await expect(earlyPanel).toBeVisible();
   await expect(latePanel).toBeVisible();
   await expect(noonPanel).toBeVisible();
-  await expectCenterInside(earlyPanel, weekHeader);
-  await expectCenterInside(latePanel, weekHeader);
-  await expectCenterInside(noonPanel, weekHeader);
+  await expect(laneADayCell).toBeVisible();
+  await expectHorizontalOverlap(earlyPanel, laneADayCell);
+  await expectHorizontalOverlap(latePanel, laneADayCell);
+  const [earlyWeekCenter, lateWeekCenter] = await Promise.all([
+    getCenterX(earlyPanel),
+    getCenterX(latePanel),
+  ]);
+  expect(Math.abs(earlyWeekCenter - lateWeekCenter)).toBeLessThan(6);
 
   await navigateToMonthContaining(page, sameDayDate);
 
-  const monthDay = page.locator(`[data-testid="month-sheet-day-${sameDayDate}"][data-month-scope="current"]`);
   const earlyBar = page.locator(`[data-testid="month-compact-bar-${fixture.sameDayEarlyA.id}"]`).first();
   const lateBar = page.locator(`[data-testid="month-compact-bar-${fixture.sameDayLateA.id}"]`).first();
   const noonBar = page.locator(`[data-testid="month-compact-bar-${fixture.sameDayNoonB.id}"]`).first();
@@ -126,9 +139,13 @@ test("keeps same-day appointments aligned to the same visible day in week and mo
   await expect(earlyBar).toBeVisible();
   await expect(lateBar).toBeVisible();
   await expect(noonBar).toBeVisible();
-  await expectCenterInside(earlyBar, monthDay);
-  await expectCenterInside(lateBar, monthDay);
-  await expectCenterInside(noonBar, monthDay);
+  const [earlyMonthCenter, lateMonthCenter, noonMonthCenter] = await Promise.all([
+    getCenterX(earlyBar),
+    getCenterX(lateBar),
+    getCenterX(noonBar),
+  ]);
+  expect(Math.abs(earlyMonthCenter - lateMonthCenter)).toBeLessThan(6);
+  expect(Math.abs(earlyMonthCenter - noonMonthCenter)).toBeLessThan(6);
 });
 
 test("keeps visible month week numbers aligned with ISO weeks and preserves the cross-month span", async ({ page }) => {

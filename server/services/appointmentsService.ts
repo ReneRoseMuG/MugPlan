@@ -1216,6 +1216,14 @@ export async function listCalendarTourPostalPlan({
     const appointmentStartDate = toDateOnlyString(row.appointment.startDate) ?? "";
     return appointmentStartDate >= minimumFromDateString;
   });
+  const projectOrderNumberByProjectId = new Map<number, string | null>();
+  for (const row of clampedRows) {
+    const projectId = row.project?.id;
+    if (!projectId || projectOrderNumberByProjectId.has(projectId)) {
+      continue;
+    }
+    projectOrderNumberByProjectId.set(projectId, row.projectOrder?.orderNumber ?? null);
+  }
   const matches = buildTourPostalPlanMatches({ postalCode, rows: clampedRows });
   const appointmentIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.appointment.id))));
   const projectIds = Array.from(new Set(
@@ -1308,7 +1316,7 @@ export async function listCalendarTourPostalPlan({
           projectId,
           projectName: row.project?.name ?? "Ohne Projekt",
           projectVersion: row.project?.version ?? null,
-          projectOrderNumber: row.projectOrder?.orderNumber ?? null,
+          projectOrderNumber: projectId ? (projectOrderNumberByProjectId.get(projectId) ?? null) : null,
           projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
           projectDescription: row.project?.descriptionMd ?? null,
           startDate: toDateOnlyString(row.appointment.startDate) ?? "",
