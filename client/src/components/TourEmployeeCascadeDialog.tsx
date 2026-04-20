@@ -94,7 +94,7 @@ function weekStatusLabel(item: WeekPreviewItem): string | null {
 function appointmentStatusLabel(item: AppointmentPreviewItem): string | null {
   if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
-  if (item.status === "current_only") return "Bleibt nur durch aktuelle Terminzuweisung erhalten";
+  if (item.status === "current_only") return "Bleibt nur durch bestehende Terminzuweisung erhalten";
   if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
   return null;
 }
@@ -314,4 +314,3 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
     </Dialog>
   );
 }
-

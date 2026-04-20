@@ -269,7 +269,7 @@ export function NotesSection({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <StickyNote className="h-5 w-5" />
-              {isEditMode ? "Notiz bearbeiten" : "Neue Notiz"}
+              {isEditMode ? "Notiz bearbeiten" : "Notiz anlegen"}
             </DialogTitle>
             <EditFormContextText className="pl-7">
               {isEditMode ? (noteTitle.trim() || null) : null}

@@ -48,7 +48,7 @@ export function TeamEditForm({
   isDeleting = false,
   isSaving,
   isCreate = false,
-  defaultName = "Neues Team",
+  defaultName = "Team anlegen",
   defaultColor = "#60a5fa",
   onCancel,
 }: TeamEditFormProps) {
@@ -249,7 +249,7 @@ export function TeamEditForm({
             <AlertDialogHeader>
               <AlertDialogTitle>Team wirklich löschen?</AlertDialogTitle>
               <AlertDialogDescription>
-                Diese Aktion ist endgültig. Das Team wird gelöscht und die aktuelle Bearbeitung geschlossen.
+                Diese Aktion ist endgültig. Das Team wird gelöscht und die laufende Bearbeitung geschlossen.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

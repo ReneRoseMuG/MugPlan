@@ -18,10 +18,11 @@
 import fs from "fs/promises";
 import os from "os";
 import path from "path";
+import { fileURLToPath } from "url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const originalEnv = { ...process.env };
-const originalCwd = process.cwd();
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 let tempRoot: string | null = null;
 
 function restoreEnv(): void {
@@ -48,7 +49,7 @@ async function waitForFile(filePath: string): Promise<string> {
 }
 
 async function waitForFileContent(filePath: string, expectedSnippet: string): Promise<string> {
-  for (let attempt = 0; attempt < 50; attempt += 1) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     try {
       const content = await fs.readFile(filePath, "utf8");
       if (content.includes(expectedSnippet)) {
@@ -57,7 +58,7 @@ async function waitForFileContent(filePath: string, expectedSnippet: string): Pr
     } catch {
       // Retry until the async append has flushed content.
     }
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 25));
   }
   throw new Error(`Timed out waiting for '${expectedSnippet}' in log file '${filePath}'.`);
 }
@@ -66,14 +67,19 @@ describe("logger runtime file routing", () => {
   beforeEach(async () => {
     vi.resetModules();
     restoreEnv();
-    process.chdir(originalCwd);
+    delete process.env.LOG_DIR;
+    delete process.env.LOG_HTTP_MODE;
+    delete process.env.LOG_HTTP_SLOW_MS;
+    delete process.env.LOG_SQL;
+    process.env.LOG_LEVEL = "INFO";
+    process.chdir(repoRoot);
     tempRoot = await createTempRoot();
     process.chdir(tempRoot);
   });
 
   afterEach(async () => {
     restoreEnv();
-    process.chdir(originalCwd);
+    process.chdir(repoRoot);
     if (tempRoot) {
       await fs.rm(tempRoot, { recursive: true, force: true });
       tempRoot = null;

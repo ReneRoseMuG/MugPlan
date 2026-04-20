@@ -1499,7 +1499,7 @@ export function ProjectForm({
             <div className="flex min-w-0 flex-col gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <FolderKanban className="w-6 h-6" />
-                {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
+                {isEditing ? "Projekt bearbeiten" : "Projekt anlegen"}
               </h2>
               <EditFormContextText>{projectEditContext}</EditFormContextText>
             </div>

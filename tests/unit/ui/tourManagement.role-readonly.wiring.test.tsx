@@ -144,7 +144,7 @@ describe("FT04 TourManagement readonly behavior", () => {
     const html = renderToStaticMarkup(<TourManagement userRole="DISPONENT" />);
 
     expect(html).toContain("button-new-tour");
-    expect(html).toContain("Neue Tour");
+    expect(html).toContain("Tour anlegen");
     expect(html).not.toContain("members");
   });
 });

@@ -255,7 +255,7 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
                 disabled={createMutation.isPending}
                 data-testid="button-new-team"
               >
-                Neues Team
+                Team anlegen
               </Button>
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">

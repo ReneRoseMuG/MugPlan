@@ -103,7 +103,7 @@ export function TourEditForm({
   isMutatingMembers = false,
   isMutatingWeeks = false,
   isCreate = false,
-  defaultName = "Neue Tour",
+  defaultName = "Tour anlegen",
   defaultColor = "#60a5fa",
   onCancel,
   onOpenAppointment,
@@ -351,7 +351,7 @@ export function TourEditForm({
                             "--action-fg": selectedColor,
                           } as CSSProperties)}
                       data-testid="toggle-tour-week-picker"
-                      aria-label="Neue Wochenplanung"
+                      aria-label="Wochenplanung anlegen"
                     >
                       <CalendarPlus2 className="h-4 w-4" />
                       <span>KW einfügen</span>

@@ -360,7 +360,7 @@ export function ProjectsPage({
           data-testid="button-new-project"
         >
           <Plus className="w-4 h-4" />
-          Neues Projekt
+          Projekt anlegen
         </Button>
       ) : undefined}
       trailingSlot={onCancel ? (
@@ -476,4 +476,3 @@ export function ProjectsPage({
     </>
   );
 }
-

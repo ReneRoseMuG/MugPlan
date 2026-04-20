@@ -123,7 +123,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
       await queryClient.invalidateQueries({ queryKey: ["/api/customers", { scope: "inactive" }] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects?filter=all&scope=all"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/projects/list"] });
-      toast({ title: "Neue Kunden übernommen" });
+      toast({ title: "Kundenimport übernommen" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Übernahme fehlgeschlagen");
     } finally {
@@ -201,7 +201,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
         {result ? (
           <div className="space-y-4">
             <section className="rounded-md border border-border p-3 space-y-2">
-              <h3 className="text-sm font-semibold">A - Neue Kunden</h3>
+              <h3 className="text-sm font-semibold">A - Neu importierte Kunden</h3>
               {result.newCustomers.map((row) => (
                 <label key={row.id} className="flex items-center gap-2 text-sm">
                   <input
@@ -213,7 +213,7 @@ export function CustomerBulkImportDialog({ open, onOpenChange }: CustomerBulkImp
                 </label>
               ))}
               <Button onClick={() => void applyNew()} disabled={selectedNewIds.length === 0 || applyingNew}>
-                {applyingNew ? "Übernehme..." : "Neue Kunden übernehmen"}
+                {applyingNew ? "Übernehme..." : "Kundenimport übernehmen"}
               </Button>
             </section>
 

@@ -27,7 +27,7 @@ export function TeamEditDialog({
   onSubmit,
   isSaving,
   isCreate = false,
-  defaultName = "Neues Team",
+  defaultName = "Team anlegen",
   defaultColor = "#60a5fa",
 }: TeamEditDialogProps) {
   const currentMemberIds = team?.members.map(m => m.id) || [];

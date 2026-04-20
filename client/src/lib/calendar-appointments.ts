@@ -302,7 +302,7 @@ export function useCalendarTourPostalPlan({
         headers: {},
       });
       if (!response.ok) {
-        throw new Error("PLZ-Plan-Vorschlaege konnten nicht geladen werden");
+        throw new Error("PLZ-Plan-Vorschläge konnten nicht geladen werden");
       }
       const payload = (await response.json()) as unknown;
       return Array.isArray(payload) ? payload as CalendarTourPostalPlanWeek[] : [];

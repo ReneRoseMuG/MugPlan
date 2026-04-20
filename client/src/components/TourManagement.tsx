@@ -821,7 +821,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   disabled={createMutation.isPending}
                   data-testid="button-new-tour"
                 >
-                  Neue Tour
+                  Tour anlegen
                 </Button>
               ) : null}
               {onCancel ? (

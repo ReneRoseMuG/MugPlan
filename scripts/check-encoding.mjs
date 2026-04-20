@@ -22,9 +22,15 @@ const allowlist = new Set([
   "touren",
   "Mueller",
   "Bauer",
+  "Neue",
+  "Neuer",
+  "Neuen",
+  "Neues",
   "Neuer",
   "Mauer",
   "Steuer",
+  "aktuelle",
+  "aktuellen",
   "query",
   "Query",
   "request",
@@ -46,6 +52,8 @@ const allowlist = new Set([
   "due",
   "clue",
   "glue",
+  "neuem",
+  "zuerst",
 ]);
 
 const suspiciousWordPattern = /\b\w*(ae|oe|ue)\w*\b/g;

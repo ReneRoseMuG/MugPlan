@@ -42,7 +42,7 @@ type LegacyProduktionsplanungSelection = {
 };
 
 export type UserSettingKey =
-  // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
+  // Historische Benennung: Der Typname enthält auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
   | "helpTextPreviewSize"
   | "entityFormShell.sidebarWidthPx"
