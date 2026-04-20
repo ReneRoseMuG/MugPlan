@@ -71,6 +71,43 @@ export type CalendarBlockedTourWeek = {
   isBlocked: boolean;
 };
 
+export type CalendarTourPostalPlanDayAppointment = {
+  id: number;
+  startDate: string;
+  endDate: string | null;
+  startTime: string | null;
+  projectName: string | null;
+  customerName: string | null;
+  postalCode: string | null;
+  displayMode: "standard" | "compact" | "detail";
+  isCancelled: boolean;
+};
+
+export type CalendarTourPostalPlanDay = {
+  date: string;
+  appointments: CalendarTourPostalPlanDayAppointment[];
+};
+
+export type CalendarTourPostalPlanSuggestion = {
+  tourId: number;
+  tourName: string;
+  tourColor: string | null;
+  score: number;
+  scoreLabel: "exakt" | "sehr nah" | "nah" | "grob passend" | "schwach passend";
+  matchedPostalCodes: string[];
+  matchedAppointmentCount: number;
+  days: CalendarTourPostalPlanDay[];
+  appointments: CalendarAppointment[];
+};
+
+export type CalendarTourPostalPlanWeek = {
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+  suggestions: CalendarTourPostalPlanSuggestion[];
+};
+
 const logPrefix = "[calendar-appointments]";
 
 export const getCalendarAppointmentsQueryKey = ({
@@ -100,6 +137,18 @@ export const getCalendarBlockedTourWeeksQueryKey = ({
   fromDate: string;
   toDate: string;
 }) => ["calendarBlockedTourWeeks", fromDate, toDate];
+
+export const getCalendarTourPostalPlanQueryKey = ({
+  postalCode,
+  fromDate,
+  toDate,
+  hasFreeAppointments,
+}: {
+  postalCode: string;
+  fromDate: string;
+  toDate: string;
+  hasFreeAppointments?: boolean;
+}) => ["calendarTourPostalPlan", postalCode, fromDate, toDate, hasFreeAppointments ?? false];
 
 export function useCalendarAppointments({
   fromDate,
@@ -226,6 +275,37 @@ export function useCalendarBlockedTourWeeks({
       }
       const payload = (await response.json()) as unknown;
       return Array.isArray(payload) ? payload as CalendarBlockedTourWeek[] : [];
+    },
+  });
+}
+
+export function useCalendarTourPostalPlan({
+  postalCode,
+  fromDate,
+  toDate,
+  hasFreeAppointments,
+  enabled,
+}: {
+  postalCode: string;
+  fromDate: string;
+  toDate: string;
+  hasFreeAppointments?: boolean;
+  enabled?: boolean;
+}) {
+  return useQuery<CalendarTourPostalPlanWeek[]>({
+    queryKey: getCalendarTourPostalPlanQueryKey({ postalCode, fromDate, toDate, hasFreeAppointments }),
+    enabled,
+    queryFn: async () => {
+      const params = new URLSearchParams({ postalCode, fromDate, toDate });
+      if (hasFreeAppointments) params.set("hasFreeAppointments", "true");
+      const response = await fetch(`/api/calendar/tour-postal-plan?${params.toString()}`, {
+        headers: {},
+      });
+      if (!response.ok) {
+        throw new Error("PLZ-Plan-Vorschlaege konnten nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      return Array.isArray(payload) ? payload as CalendarTourPostalPlanWeek[] : [];
     },
   });
 }

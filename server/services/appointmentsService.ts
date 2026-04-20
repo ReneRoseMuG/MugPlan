@@ -31,12 +31,15 @@ import {
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
+import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
 
 const logPrefix = "[appointments-service]";
 const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
+type AppointmentTagsByAppointmentId = Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>>;
+type AppointmentTagRelations = AppointmentTagsByAppointmentId extends Map<number, infer TValue> ? TValue : never;
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -173,7 +176,7 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
   return Math.floor(seconds / 3600);
 }
 
-function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>> extends Map<number, infer TValue> ? TValue : never) {
+function resolveVisibleAppointmentTags(tags: AppointmentTagRelations) {
   const appointmentTags = tags ?? [];
   return {
     isCancelled: hasAppointmentCancellationTag(appointmentTags),
@@ -1180,6 +1183,246 @@ export async function listCalendarAppointments({
 
     return baseAppointment;
   });
+}
+
+export async function listCalendarTourPostalPlan({
+  postalCode,
+  fromDate,
+  toDate,
+  hasFreeAppointments,
+  roleKey,
+}: {
+  postalCode: string;
+  fromDate: string;
+  toDate: string;
+  hasFreeAppointments?: boolean;
+  roleKey: CanonicalRoleKey;
+}) {
+  const minimumFromDate = startOfWeek(addWeeks(parseDateOnly(getBerlinTodayDateString()), 1), { weekStartsOn: 1 });
+  const requestedFromDate = parseDateOnly(fromDate) < minimumFromDate
+    ? minimumFromDate
+    : parseDateOnly(fromDate);
+  const requestedToDate = parseDateOnly(toDate);
+  if (requestedToDate < requestedFromDate) {
+    throw new AppointmentError("toDate darf nicht vor fromDate liegen", 422, "VALIDATION_ERROR");
+  }
+
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
+    fromDate: requestedFromDate,
+    toDate: requestedToDate,
+  });
+  const minimumFromDateString = toDateOnlyString(requestedFromDate) ?? "";
+  const clampedRows = rows.filter((row) => {
+    const appointmentStartDate = toDateOnlyString(row.appointment.startDate) ?? "";
+    return appointmentStartDate >= minimumFromDateString;
+  });
+  const projectOrderNumberByProjectId = new Map<number, string | null>();
+  for (const row of clampedRows) {
+    const projectId = row.project?.id;
+    if (!projectId || projectOrderNumberByProjectId.has(projectId)) {
+      continue;
+    }
+    projectOrderNumberByProjectId.set(projectId, row.projectOrder?.orderNumber ?? null);
+  }
+  const matches = buildTourPostalPlanMatches({ postalCode, rows: clampedRows });
+  const appointmentIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.appointment.id))));
+  const projectIds = Array.from(new Set(
+    matches.flatMap((match) => match.matches.map((item) => item.project?.id).filter((id): id is number => Number.isFinite(id))),
+  ));
+  const customerIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.customer.id))));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
+  const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
+  const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
+  const appointmentTagsByAppointmentId = appointmentIds.length > 0
+    ? await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds)
+    : new Map<number, AppointmentTagRelations>();
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
+  const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
+  const parkplatzTourId = await getParkplatzTourId();
+
+  const weeks = new Map<string, {
+    isoYear: number;
+    isoWeek: number;
+    weekStartDate: string;
+    weekEndDate: string;
+    suggestions: Array<{
+      tourId: number;
+      tourName: string;
+      tourColor: string | null;
+      score: 1 | 2 | 3 | 4 | 5;
+      scoreLabel: "exakt" | "sehr nah" | "nah" | "grob passend" | "schwach passend";
+      matchedPostalCodes: string[];
+      matchedAppointmentCount: number;
+      appointments: ReturnType<typeof listCalendarAppointments> extends Promise<(infer T)[]> ? T[] : never;
+      days: Array<{
+        date: string;
+        appointments: Array<{
+          id: number;
+          startDate: string;
+          endDate: string | null;
+          startTime: string | null;
+          projectName: string | null;
+          customerName: string | null;
+          postalCode: string | null;
+          displayMode: AppointmentDisplayMode;
+          isCancelled: boolean;
+        }>;
+      }>;
+    }>;
+  }>();
+
+  const hasFreeWeekdayInMatchGroup = (matchGroup: (typeof matches)[number]) => {
+    const weekStart = parseDateOnly(matchGroup.weekStartDate);
+    return Array.from({ length: 5 }, (_, index) => toDateOnlyString(addDays(weekStart, index)) ?? "")
+      .some((date) => !matchGroup.matches.some((item) => {
+        const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+        const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+        return date >= appointmentStartDate && date <= appointmentEndDate;
+      }));
+  };
+
+  for (const matchGroup of matches) {
+    if (hasFreeAppointments && !hasFreeWeekdayInMatchGroup(matchGroup)) {
+      continue;
+    }
+    const weekKey = `${matchGroup.isoYear}-${String(matchGroup.isoWeek).padStart(2, "0")}`;
+    const week = weeks.get(weekKey) ?? {
+      isoYear: matchGroup.isoYear,
+      isoWeek: matchGroup.isoWeek,
+      weekStartDate: matchGroup.weekStartDate,
+      weekEndDate: matchGroup.weekEndDate,
+      suggestions: [],
+    };
+
+    const previewAppointments = matchGroup.matches
+      .map((item) => {
+        const row = item;
+        const projectId = row.project?.id ?? null;
+        const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+          appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+        );
+        const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+        const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+        const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
+
+        return {
+          id: row.appointment.id,
+          version: row.appointment.version,
+          projectId,
+          projectName: row.project?.name ?? "Ohne Projekt",
+          projectVersion: row.project?.version ?? null,
+          projectOrderNumber: projectId ? (projectOrderNumberByProjectId.get(projectId) ?? null) : null,
+          projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
+          projectDescription: row.project?.descriptionMd ?? null,
+          startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+          endDate: toDateOnlyString(row.appointment.endDate),
+          startTime: row.appointment.startTime ?? null,
+          tourId: row.appointment.tourId ?? null,
+          tourName: row.tour?.name ?? null,
+          tourColor: row.tour?.color ?? null,
+          customer: {
+            id: row.customer.id,
+            customerNumber: row.customer.customerNumber,
+            fullName: row.customer.fullName,
+            phone: row.customer.phone ?? null,
+            email: row.customer.email ?? null,
+            company: row.customer.company ?? null,
+            addressLine1: row.customer.addressLine1 ?? null,
+            addressLine2: row.customer.addressLine2 ?? null,
+            postalCode: row.customer.postalCode ?? null,
+            city: row.customer.city ?? null,
+            country: row.customer.country ?? null,
+          },
+          customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+          projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
+          appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+          customerAttachmentsCount,
+          projectAttachmentsCount,
+          appointmentAttachmentsCount,
+          totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
+          appointmentTags: visibleTags,
+          customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+          projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
+          displayMode: row.appointment.displayMode,
+          employees: employeesByAppointment.get(row.appointment.id) ?? [],
+          isLocked: isAppointmentLockedForRole(row.appointment, roleKey, parkplatzTourId),
+          isCancelled,
+        };
+      })
+      .sort((left, right) => {
+        if (left.startDate !== right.startDate) return left.startDate.localeCompare(right.startDate);
+        const leftTime = left.startTime ?? "99:99:99";
+        const rightTime = right.startTime ?? "99:99:99";
+        if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+        return left.id - right.id;
+      })
+      .filter((appointment, index, appointments) => appointments.findIndex((entry) => entry.id === appointment.id) === index);
+
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = toDateOnlyString(addDays(parseDateOnly(matchGroup.weekStartDate), index)) ?? matchGroup.weekStartDate;
+      const appointments = matchGroup.matches
+        .filter((item) => {
+          const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+          const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+          return date >= appointmentStartDate && date <= appointmentEndDate;
+        })
+        .sort((left, right) => {
+          const leftStart = toDateOnlyString(left.appointment.startDate) ?? "";
+          const rightStart = toDateOnlyString(right.appointment.startDate) ?? "";
+          if (leftStart !== rightStart) return leftStart.localeCompare(rightStart);
+          const leftTime = left.appointment.startTime ?? "99:99:99";
+          const rightTime = right.appointment.startTime ?? "99:99:99";
+          if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+          return left.appointment.id - right.appointment.id;
+        })
+        .map((item) => {
+          const { isCancelled } = resolveVisibleAppointmentTags(
+            appointmentTagsByAppointmentId.get(item.appointment.id) ?? [],
+          );
+          return {
+            id: item.appointment.id,
+            startDate: toDateOnlyString(item.appointment.startDate) ?? "",
+            endDate: toDateOnlyString(item.appointment.endDate),
+            startTime: item.appointment.startTime ?? null,
+            projectName: item.project?.name ?? null,
+            customerName: item.customer.fullName ?? null,
+            postalCode: item.customer.postalCode ?? null,
+            displayMode: item.appointment.displayMode as AppointmentDisplayMode,
+            isCancelled,
+          };
+        });
+      return { date, appointments };
+    });
+
+    week.suggestions.push({
+      tourId: matchGroup.tourId,
+      tourName: matchGroup.tourName,
+      tourColor: matchGroup.tourColor,
+      score: matchGroup.score,
+      scoreLabel: matchGroup.scoreLabel,
+      matchedPostalCodes: matchGroup.matchedPostalCodes,
+      matchedAppointmentCount: matchGroup.matchedAppointmentCount,
+      appointments: previewAppointments,
+      days,
+    });
+    weeks.set(weekKey, week);
+  }
+
+  return Array.from(weeks.values())
+    .sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate))
+    .map((week) => ({
+      ...week,
+      suggestions: week.suggestions.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.matchedAppointmentCount !== a.matchedAppointmentCount) return b.matchedAppointmentCount - a.matchedAppointmentCount;
+        return a.tourName.localeCompare(b.tourName, "de");
+      }),
+    }));
 }
 
 export async function listCalendarWeekLaneEmployeePreviews({

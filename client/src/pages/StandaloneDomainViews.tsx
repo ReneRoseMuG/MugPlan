@@ -10,6 +10,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
 import { TeamManagement } from "@/components/TeamManagement";
+import { TourPostalPlanView } from "../components/TourPostalPlanView";
 import { TourManagement } from "@/components/TourManagement";
 import StandaloneLayout from "@/components/StandaloneLayout";
 
@@ -292,5 +293,37 @@ export function StandaloneReports() {
     <StandaloneLayout title={resolveStandaloneReportTitle(launch)}>
       <ReportsPage standaloneLaunch={launch} />
     </StandaloneLayout>
+  );
+}
+
+export function StandaloneTourPostalPlan() {
+  const [appointmentOverlay, setAppointmentOverlay] = useState<AppointmentOverlayState | null>(null);
+
+  return (
+    <>
+      <StandaloneLayout title="Tour PLZ Plan">
+        <TourPostalPlanView
+          onCreateAppointment={({ date, tourId }) => {
+            setAppointmentOverlay({
+              initialDate: date,
+              initialTourId: tourId,
+            });
+          }}
+        />
+      </StandaloneLayout>
+
+      {appointmentOverlay ? (
+        <StandaloneOverlay>
+          <AppointmentForm
+            appointmentId={appointmentOverlay.appointmentId}
+            initialDate={appointmentOverlay.initialDate}
+            initialTourId={appointmentOverlay.initialTourId}
+            projectId={appointmentOverlay.projectId}
+            onCancel={() => setAppointmentOverlay(null)}
+            onSaved={() => setAppointmentOverlay(null)}
+          />
+        </StandaloneOverlay>
+      ) : null}
+    </>
   );
 }

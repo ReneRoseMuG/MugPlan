@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { api, type MonitoringConfigResponse, type MonitoringListResponse } from "@shared/routes";
 import type { Tour } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
@@ -16,7 +15,6 @@ import {
   type MonitoringFilters,
 } from "@/lib/monitoring-filters";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
-import { useToast } from "@/hooks/use-toast";
 import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -32,10 +30,6 @@ type MonitoringConfigDraft = {
   allAppointments: boolean;
   horizonDays: string;
   minimumEmployees: string;
-};
-
-type MonitoringConfigSaveOptions = {
-  showSuccessToast: boolean;
 };
 
 function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConfigDraft): MonitoringConfigDraft {
@@ -80,7 +74,6 @@ function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appoint
 }
 
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
-  const { toast } = useToast();
   const [draftConfig, setDraftConfig] = useState<MonitoringConfigDraft | null>(null);
   const [filters, setFilters] = useState<MonitoringFilters>(defaultMonitoringFilters);
 
@@ -123,30 +116,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         horizonDays: "14",
         minimumEmployees: "1",
       });
-  const horizonDays = resolvedConfig.horizonDays;
   const minimumEmployees = resolvedConfig.minimumEmployees;
-
-  const saveConfigMutation = useMutation({
-    mutationFn: async ({ payload }: { payload: MonitoringConfigResponse; options: MonitoringConfigSaveOptions }) => {
-      const response = await apiRequest("PUT", api.monitoring.adminConfigSet.path, payload);
-      return (await response.json()) as MonitoringConfigResponse;
-    },
-    onSuccess: async (config, variables) => {
-      queryClient.setQueryData([api.monitoring.adminConfigGet.path], config);
-      setDraftConfig(null);
-      await queryClient.invalidateQueries({ queryKey: [api.monitoring.list.path] });
-      if (variables.options.showSuccessToast) {
-        toast({ title: "Monitoring-Konfiguration gespeichert" });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Monitoring-Konfiguration konnte nicht gespeichert werden",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    },
-  });
 
   const columns = useMemo<TableViewColumnDef<MonitoringListResponse[number]>[]>(() => [
     {
@@ -198,32 +168,6 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
       minWidth: 220,
     },
   ], []);
-
-  const handleSaveConfig = async () => {
-    const parsedHorizonDays = Number(horizonDays);
-    const parsedMinimumEmployees = Number(minimumEmployees);
-    if (!Number.isInteger(parsedHorizonDays) || parsedHorizonDays < 1) {
-      toast({ title: "Vorlaufhorizont muss mindestens 1 Tag sein", variant: "destructive" });
-      return;
-    }
-    if (!Number.isInteger(parsedMinimumEmployees) || parsedMinimumEmployees < 1) {
-      toast({ title: "Mindestzahl Mitarbeiter muss mindestens 1 sein", variant: "destructive" });
-      return;
-    }
-
-    await saveConfigMutation.mutateAsync({
-      payload: {
-        tr01: {
-          allAppointments: true,
-          horizonDays: parsedHorizonDays,
-          minimumEmployees: parsedMinimumEmployees,
-        },
-      },
-      options: {
-        showSuccessToast: true,
-      },
-    });
-  };
 
   const filteredRows = useMemo(
     () => applyMonitoringFilters(monitoringQuery.data, filters),

@@ -118,13 +118,17 @@ vi.mock("@/hooks/useSettings", () => ({
   useSetting: () => true,
 }));
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({
-    data: [],
-    isLoading: false,
-    refetch: vi.fn(),
-  }),
-}));
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useQuery: () => ({
+      data: [],
+      isLoading: false,
+      refetch: vi.fn(),
+    }),
+  };
+});
 
 async function loadHome(view: string) {
   vi.resetModules();

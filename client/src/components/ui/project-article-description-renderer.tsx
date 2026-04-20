@@ -53,7 +53,8 @@ export function renderSelectiveProjectArticleListSection({
       >
         {resolvedArticleItems.map((item) => (
           <li key={`${item.label}:${item.value}`}>
-            <span className="font-semibold text-slate-900">{item.label}:</span> {item.value}
+            <span className="font-semibold text-slate-900">{item.label}:</span>{" "}
+            <span className="inline">{item.value}</span>
           </li>
         ))}
       </ul>

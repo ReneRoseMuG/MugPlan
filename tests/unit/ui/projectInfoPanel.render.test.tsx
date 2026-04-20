@@ -147,6 +147,8 @@ describe("ProjectInfoPanel render", () => {
 
     expect(markup).toContain("Kein Auftrag hinterlegt");
     expect(markup).not.toContain("article-renderer");
+    expect(markup).toContain("text-[11px]");
+    expect(markup).toContain("text-slate-500");
   });
 
   it("fehlende Auftragsnummer wird als Strich dargestellt", () => {

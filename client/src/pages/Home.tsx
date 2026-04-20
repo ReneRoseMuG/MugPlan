@@ -26,6 +26,7 @@ import { MasterDataPage } from "@/components/MasterDataPage";
 import { ReportsPage } from "@/components/ReportsPage";
 import { MonitoringPage } from "@/components/MonitoringPage";
 import { JournalPage } from "@/components/JournalPage";
+import { TourPostalPlanView } from "@/components/TourPostalPlanView";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useSetting } from "@/hooks/useSettings";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
@@ -60,7 +61,8 @@ export type ViewType =
   | "users"
   | "reports"
   | "journal"
-  | "monitoring";
+  | "monitoring"
+  | "tourPostalPlan";
 
 export type CalendarNavCommand = {
   id: number;
@@ -148,6 +150,8 @@ function resolveViewTitle(view: ViewType): string {
       return "Journal";
     case "monitoring":
       return "Monitoring";
+    case "tourPostalPlan":
+      return "Tour PLZ Plan";
     default:
       return "MuG Plan";
   }
@@ -599,6 +603,17 @@ export default function Home({ onLogout }: HomeProps) {
                 });
               }}
             />
+          ) : view === "tourPostalPlan" ? (
+            <TourPostalPlanView
+              onCreateAppointment={({ date, tourId }) => {
+                setAppointmentContext({
+                  initialDate: date,
+                  initialTourId: tourId,
+                  returnContext: { targetView: "tourPostalPlan" },
+                });
+                setView("appointment");
+              }}
+            />
           ) : isContextualCalendarView ? (
             <CalendarWorkspace
               mode="contextual"
@@ -783,4 +798,3 @@ export default function Home({ onLogout }: HomeProps) {
     </div>
   );
 }
-

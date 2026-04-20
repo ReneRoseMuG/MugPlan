@@ -79,4 +79,22 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
     expect(html).toContain("grid-cols-[1.75rem_minmax(0,1fr)]");
     expect(html).toContain("grid-cols-[2.4rem_minmax(0,1fr)]");
   });
+
+  it("supports a reduced preview mode without notes segment or legacy grid split", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(CalendarWeekTourLaneHeaderBar, {
+        label: "Tour Preview",
+        color: "#345678",
+        reduced: true,
+        weekNotesIcon: React.createElement("span", { "data-testid": "notes-icon-marker" }, "I"),
+        weekNotesCount: React.createElement("span", { "data-testid": "notes-count-marker" }, "2"),
+      }),
+    );
+
+    expect(html).toContain("Tour Preview");
+    expect(html).toContain("grid-cols-[minmax(0,1fr)]");
+    expect(html).not.toContain("notes-icon-marker");
+    expect(html).not.toContain("notes-count-marker");
+    expect(html).not.toContain("grid-cols-[2.4rem_minmax(0,1fr)]");
+  });
 });

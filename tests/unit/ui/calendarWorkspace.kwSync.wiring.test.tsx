@@ -43,8 +43,6 @@ vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => ({ setSetting: vi.fn() }),
   useSetting: (key: string) => {
     switch (key) {
-      case "calendar.weekAppointmentDisplayMode":
-        return "standard";
       case "calendar.weekTileBodyMode":
         return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":
@@ -83,7 +81,6 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     );
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
-    expect(filterPanelCalls.at(-1)?.weekAppointmentDisplayMode).toBeUndefined();
     expect(filterPanelCalls.at(-1)?.weekLanesCollapsed).toBe(false);
     expect(filterPanelCalls.at(-1)?.selectedPrintTourId).toBeUndefined();
   });

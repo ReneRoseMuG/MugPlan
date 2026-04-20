@@ -585,6 +585,92 @@ const calendarBlockedTourWeekSchema = z.object({
   isBlocked: z.boolean(),
 });
 
+const calendarTourPostalPlanDayAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  projectName: z.string().nullable(),
+  customerName: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  displayMode: z.enum(appointmentDisplayModes),
+  isCancelled: z.boolean(),
+});
+
+const calendarTourPostalPlanDaySchema = z.object({
+  date: z.string(),
+  appointments: z.array(calendarTourPostalPlanDayAppointmentSchema),
+});
+
+const calendarTourPostalPlanAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  version: z.number().int().min(1),
+  projectId: z.number().int().positive().nullable(),
+  projectName: z.string(),
+  projectVersion: z.number().int().min(1).nullable(),
+  projectOrderNumber: z.string().nullable(),
+  projectArticleItems: z.array(projectArticleItemSchema),
+  projectDescription: z.string().nullable(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  tourId: z.number().int().positive().nullable(),
+  tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
+  customer: z.object({
+    id: z.number().int().positive(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+    phone: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    company: z.string().nullable().optional(),
+    addressLine1: z.string().nullable().optional(),
+    addressLine2: z.string().nullable().optional(),
+    postalCode: z.string().nullable(),
+    city: z.string().nullable(),
+    country: z.string().nullable().optional(),
+  }),
+  customerNotesCount: z.number().int().min(0),
+  projectNotesCount: z.number().int().min(0),
+  appointmentNotesCount: z.number().int().min(0),
+  customerAttachmentsCount: z.number().int().min(0),
+  projectAttachmentsCount: z.number().int().min(0),
+  appointmentAttachmentsCount: z.number().int().min(0),
+  totalAttachmentsCount: z.number().int().min(0),
+  appointmentTags: z.array(tagSchema),
+  customerTags: z.array(tagSchema),
+  projectTags: z.array(tagSchema),
+  displayMode: z.enum(appointmentDisplayModes),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string(),
+    }),
+  ),
+  isLocked: z.boolean(),
+  isCancelled: z.boolean(),
+});
+
+const calendarTourPostalPlanSuggestionSchema = z.object({
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  tourColor: z.string().nullable(),
+  score: z.number().int().min(1).max(5),
+  scoreLabel: z.enum(["exakt", "sehr nah", "nah", "grob passend", "schwach passend"]),
+  matchedPostalCodes: z.array(z.string()),
+  matchedAppointmentCount: z.number().int().min(0),
+  days: z.array(calendarTourPostalPlanDaySchema).length(7),
+  appointments: z.array(calendarTourPostalPlanAppointmentSchema),
+});
+
+const calendarTourPostalPlanWeekSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  suggestions: z.array(calendarTourPostalPlanSuggestionSchema),
+});
+
 const appointmentMutationEventSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("tour_changed"),
@@ -1647,6 +1733,21 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(calendarBlockedTourWeekSchema),
+      },
+    },
+    tourPostalPlan: {
+      method: "GET" as const,
+      path: "/api/calendar/tour-postal-plan",
+      input: z.object({
+        postalCode: z.string().min(1),
+        fromDate: z.string(),
+        toDate: z.string(),
+        hasFreeAppointments: z
+          .union([z.literal("true"), z.literal("false")])
+          .optional(),
+      }).strict(),
+      responses: {
+        200: z.array(calendarTourPostalPlanWeekSchema),
       },
     },
   },

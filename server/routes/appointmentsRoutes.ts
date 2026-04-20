@@ -12,6 +12,7 @@ router.get(api.tourPrintPreview.get.path, appointmentsController.getTourPrintPre
 router.get(api.calendarAppointments.list.path, appointmentsController.listCalendarAppointments);
 router.get(api.calendarAppointments.weekLaneEmployeePreviews.path, appointmentsController.listCalendarWeekLaneEmployeePreviews);
 router.get(api.calendarAppointments.blockedTourWeeks.path, appointmentsController.listCalendarBlockedTourWeeks);
+router.get(api.calendarAppointments.tourPostalPlan.path, appointmentsController.listCalendarTourPostalPlan);
 router.post(api.appointments.create.path, appointmentsController.createAppointment);
 router.post(api.appointments.tourChangePreview.path, appointmentsController.previewAppointmentTourChange);
 router.patch(api.appointments.update.path, appointmentsController.updateAppointment);

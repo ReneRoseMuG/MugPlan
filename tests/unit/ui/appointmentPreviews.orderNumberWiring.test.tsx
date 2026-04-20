@@ -2,13 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Projektblock im Wochenpanel zeigt Auftragsnummer und Projekttitel sichtbar zusammen an.
+ * - Der Projektblock im Wochenpanel zeigt Projekttitel prominent und die Auftragsnummer dezent dahinter an.
  * - Projektinhalte werden nur bei vorhandenem Inhalt gerendert.
- * - Der Full-Preview-Modus zeigt den Hover-Trigger fuer die ausfuehrliche Projektbeschreibung.
+ * - Der Full-Preview-Modus zeigt nur einen begrenzten Vorschauausschnitt und oeffnet fuer die volle Beschreibung den Hover-Trigger.
+ * - Der kollabierte Compact-Pfad verwendet keine zusaetzliche vertikale Leerzeile unter dem Header.
  *
  * Fehlerfaelle:
- * - Der Projektkopf verliert die Auftragsnummer.
- * - Inhaltslose Projekte rendern weiterhin einen leeren Beschreibungsbereich.
+ * - Der Projektkopf verliert die neue Reihenfolge oder die dezente Auftragsnummer.
+ * - Projektinhalte wachsen im Wochenkarten-Body wieder ungebremst in die Kartenhoehe.
  *
  * Ziel:
  * Beobachtbares Wochenpanel-Verhalten fuer Projektkopf und Projektinhalt absichern.
@@ -50,7 +51,7 @@ describe("FT03 appointment weekly panel wiring", () => {
     hoverPreviewCalls.length = 0;
   });
 
-  it("renders a visible project header with order number and project name", () => {
+  it("renders a visible project header with project name and trailing order number", () => {
     const markup = renderToStaticMarkup(
       <CalendarWeekAppointmentPanelProject
         projectName="Projekt Alpha"
@@ -61,7 +62,8 @@ describe("FT03 appointment weekly panel wiring", () => {
     );
 
     expect(markup).toContain("week-project-header");
-    expect(markup).toContain("ORD-77 - Projekt Alpha");
+    expect(markup).toContain("Projekt Alpha");
+    expect(markup).toContain(" - ORD-77");
     expect(markup).toContain("week-project-renderer");
   });
 
@@ -86,6 +88,7 @@ describe("FT03 appointment weekly panel wiring", () => {
 
     expect(withPreview).toContain("week-project-description-hover-trigger");
     expect(withPreview).toContain("week-project-hover-renderer");
+    expect(withPreview).toContain("max-h-[6.75rem]");
     expect(hoverPreviewCalls[0]).toMatchObject({
       mode: "cursor",
       cursorOffsetX: 20,
@@ -95,23 +98,25 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(withoutContent).not.toContain("week-project-description-hover-trigger");
   });
 
-  it("renders den Projekt-Fallback ohne Hover-Trigger, wenn kein Projekt zugeordnet ist", () => {
+  it("renders den Projekt-Fallback mit Hover-Trigger und dezenter Leer-Nachricht im kollabierten Body", () => {
     const markup = renderToStaticMarkup(
       <CalendarWeekAppointmentPanelProject
-        projectName=""
+        projectName="Projekt Leer"
         projectOrderNumber={null}
         projectArticleItems={[]}
         projectDescription={null}
+        collapsed
         enableFullDescriptionPreview
       />,
     );
 
-    expect(markup).toContain("Kein Auftrag hinterlegt");
-    expect(markup).not.toContain("week-project-description-hover-trigger");
-    expect(markup).not.toContain("week-project-hover-renderer");
+    expect(markup).toContain("Projekt Leer");
+    expect(markup).toContain(" - -");
+    expect(markup).toContain("week-project-description-hover-trigger");
+    expect(markup).not.toContain("week-project-renderer");
   });
 
-  it("renders only the project header in collapsed mode", () => {
+  it("renders a hover-enabled collapsed project header in compact mode", () => {
     const markup = renderToStaticMarkup(
       <CalendarWeekAppointmentPanelProject
         projectName="Projekt Gamma"
@@ -123,9 +128,12 @@ describe("FT03 appointment weekly panel wiring", () => {
       />,
     );
 
-    expect(markup).toContain("AUF-9 - Projekt Gamma");
+    expect(markup).toContain("Projekt Gamma");
+    expect(markup).toContain(" - AUF-9");
+    expect(markup).toContain("week-project-description-hover-trigger");
     expect(markup).not.toContain("week-project-renderer");
-    expect(markup).not.toContain("week-project-description-hover-trigger");
-    expect(markup).not.toContain("week-project-hover-renderer");
+    expect(markup).toContain("week-project-hover-renderer");
+    expect(markup).toContain("cursor-pointer");
+    expect(markup).toContain("px-2 py-1");
   });
 });
