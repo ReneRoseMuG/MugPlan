@@ -25,7 +25,7 @@ export async function listEmployees(req: Request, res: Response, next: NextFunct
     const { scope, appointmentDate } = api.employees.list.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (appointmentDate && !/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
@@ -55,7 +55,7 @@ export async function getEmployee(req: Request, res: Response, next: NextFunctio
     const id = Number(req.params.id);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const result = await employeesService.getEmployeeWithRelations(id, roleKey);
@@ -74,7 +74,7 @@ export async function listEmployeeWeekPlans(req: Request, res: Response, next: N
     const id = Number(req.params.id);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const result = await employeesService.listEmployeeWeekPlans(id, roleKey);
@@ -92,7 +92,7 @@ export async function listEmployeeTags(req: Request, res: Response, next: NextFu
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -111,7 +111,7 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -122,7 +122,7 @@ export async function createEmployee(req: Request, res: Response, next: NextFunc
     if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
       res.status(400).json({
         message:
-          "team_id und tour_id koennen nicht ueber die Mitarbeiter-API gesetzt werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
+          "team_id und tour_id können nicht über die Mitarbeiter-API gesetzt werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
       });
       return;
     }
@@ -156,7 +156,7 @@ export async function importEmployeesCsv(req: Request, res: Response, next: Next
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN") {
@@ -196,14 +196,14 @@ export async function updateEmployee(req: Request, res: Response, next: NextFunc
     if (req.body.teamId !== undefined || req.body.tourId !== undefined) {
       res.status(400).json({
         message:
-          "team_id und tour_id koennen nicht ueber die Mitarbeiter-API geaendert werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
+          "team_id und tour_id können nicht über die Mitarbeiter-API geändert werden. Bitte nutzen Sie die Team- oder Tour-Verwaltung.",
       });
       return;
     }
     const input = api.employees.update.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const before = await employeesService.getEmployeeWithRelations(id, roleKey);
@@ -241,7 +241,7 @@ export async function addEmployeeTag(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -260,7 +260,7 @@ export async function addEmployeeTag(req: Request, res: Response, next: NextFunc
       snapshot: employee?.employee ?? null,
       actor: getRequestActor(req),
       triggerKey: "employee.tag.add",
-      messageText: buildTagMessage("hinzugefuegt", "employee", employee?.employee ?? null, relation.tag.name, employeeId),
+      messageText: buildTagMessage("hinzugefügt", "employee", employee?.employee ?? null, relation.tag.name, employeeId),
     });
     res.status(201).json(relation);
   } catch (err) {
@@ -280,7 +280,7 @@ export async function removeEmployeeTag(req: Request, res: Response, next: NextF
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -328,7 +328,7 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
     const input = api.employees.toggleActive.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const before = await employeesService.getEmployeeWithRelations(id, roleKey);
@@ -366,7 +366,7 @@ export async function deleteEmployee(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN") {
@@ -391,18 +391,18 @@ export async function listCurrentAppointments(req: Request, res: Response, next:
   try {
     const employeeId = Number(req.params.id);
     if (Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "Ungueltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-      res.status(400).json({ message: "Ungueltiges fromDate" });
+      res.status(400).json({ message: "Ungültiges fromDate" });
       return;
     }
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -417,14 +417,14 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
   try {
     const employeeId = Number(req.params.id);
     if (Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "Ungueltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
 
     const { scope, fromDate } = api.employees.appointments.list.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -436,7 +436,7 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
       } else if (!allowFromDateOverride) {
         logWarn(`${logPrefix} list appointments ignored fromDate without debug flag employeeId=${employeeId}`);
       } else if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-        res.status(400).json({ message: "Ungueltiges fromDate" });
+        res.status(400).json({ message: "Ungültiges fromDate" });
         return;
       } else {
         effectiveFromDate = fromDate;

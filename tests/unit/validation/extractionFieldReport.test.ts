@@ -66,7 +66,7 @@ describe("FT21 extraction field report", () => {
         key: "phone",
         label: "Telefon",
         section: "customer",
-        reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt.",
+        reason: "Kein gültiges Mobil- oder Telefonfeld erkannt.",
       },
     ]);
     expect(report.recognized.some((item) => item.key === "orderNumber")).toBe(false);
@@ -124,7 +124,7 @@ describe("FT21 extraction field report", () => {
           key: "phone",
           label: "Telefon",
           section: "customer",
-          reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt.",
+          reason: "Kein gültiges Mobil- oder Telefonfeld erkannt.",
         },
         {
           key: "addressLine1",
@@ -148,7 +148,7 @@ describe("FT21 extraction field report", () => {
           key: "country",
           label: "Land",
           section: "customer",
-          reason: "Keine Laenderzeile im Dokumentkopf erkannt.",
+          reason: "Keine Länderzeile im Dokumentkopf erkannt.",
         },
       ]),
     );

@@ -198,7 +198,7 @@ function deriveProductDescription(items: DraftItem[], productIndex: number): str
 export function parseMasterDataArticleItemsDeterministically(sourceText: string): MasterDataDocumentParseResult {
   const items = extractDraftItems(sourceText);
   if (items.length === 0) {
-    throw new Error("Artikelbereich enthaelt keine auswertbaren Positionen");
+    throw new Error("Artikelbereich enthält keine auswertbaren Positionen");
   }
 
   const productIndex = deriveProductIndex(items);
@@ -235,7 +235,7 @@ export function parseMasterDataArticleItemsDeterministically(sourceText: string)
   }).filter((item) => item.name.length > 0);
 
   if (articleItems.length === 0) {
-    throw new Error("Artikelbereich enthaelt keine auswertbaren Positionen");
+    throw new Error("Artikelbereich enthält keine auswertbaren Positionen");
   }
 
   return {

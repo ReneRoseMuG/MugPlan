@@ -52,7 +52,7 @@ export async function createUser(
   requireAdmin(userContext);
 
   if (input.password.length < 10) {
-    throw new UsersError("Ungueltiges Passwort", 422, "VALIDATION_ERROR");
+    throw new UsersError("Ungültiges Passwort", 422, "VALIDATION_ERROR");
   }
 
   const username = input.username.trim();
@@ -60,7 +60,7 @@ export async function createUser(
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
   if (!username || !email || !firstName || !lastName) {
-    throw new UsersError("Ungueltige Eingaben", 422, "VALIDATION_ERROR");
+    throw new UsersError("Ungültige Eingaben", 422, "VALIDATION_ERROR");
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -92,7 +92,7 @@ export async function changeUserRole(
 ) {
   requireAdmin(userContext);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new UsersError("Ungueltige Version", 422, "VALIDATION_ERROR");
+    throw new UsersError("Ungültige Version", 422, "VALIDATION_ERROR");
   }
 
   const target = await usersRepository.getUserRoleRecordById(targetUserId);
@@ -101,7 +101,7 @@ export async function changeUserRole(
   }
 
   if (!target.roleCode) {
-    throw new UsersError("Benutzer hat keine gueltige Rolle", 422, "VALIDATION_ERROR");
+    throw new UsersError("Benutzer hat keine gültige Rolle", 422, "VALIDATION_ERROR");
   }
 
   if (target.roleCode === roleCode) {

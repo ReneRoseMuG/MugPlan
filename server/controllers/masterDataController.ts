@@ -1,4 +1,4 @@
-﻿import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as masterDataService from "../services/masterDataService";
@@ -76,7 +76,7 @@ export async function listProductCategories(req: Request, res: Response, next: N
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.productCategories.list.input.parse(req.query);
@@ -92,7 +92,7 @@ export async function createProductCategory(req: Request, res: Response, next: N
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.productCategories.create.input.parse(req.body);
@@ -120,7 +120,7 @@ export async function updateProductCategory(req: Request, res: Response, next: N
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.productCategories.update.input.parse(req.body);
@@ -152,7 +152,7 @@ export async function deleteProductCategory(req: Request, res: Response, next: N
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.productCategories.delete.input.parse(req.body);
@@ -183,7 +183,7 @@ export async function importProductCategoryCsv(req: Request, res: Response, next
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const parsed = await parseMultipartFile(req, {
@@ -211,7 +211,7 @@ export async function listComponentCategories(req: Request, res: Response, next:
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.componentCategories.list.input.parse(req.query);
@@ -227,7 +227,7 @@ export async function createComponentCategory(req: Request, res: Response, next:
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.componentCategories.create.input.parse(req.body);
@@ -255,7 +255,7 @@ export async function updateComponentCategory(req: Request, res: Response, next:
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.componentCategories.update.input.parse(req.body);
@@ -287,7 +287,7 @@ export async function deleteComponentCategory(req: Request, res: Response, next:
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.componentCategories.delete.input.parse(req.body);
@@ -318,7 +318,7 @@ export async function importComponentCategoryCsv(req: Request, res: Response, ne
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const parsed = await parseMultipartFile(req, {
@@ -345,7 +345,7 @@ export async function listProducts(req: Request, res: Response, next: NextFuncti
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.products.list.input.parse(req.query);
@@ -361,7 +361,7 @@ export async function createProduct(req: Request, res: Response, next: NextFunct
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.products.create.input.parse(req.body);
@@ -392,7 +392,7 @@ export async function updateProduct(req: Request, res: Response, next: NextFunct
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.products.update.input.parse(req.body);
@@ -434,7 +434,7 @@ export async function deleteProduct(req: Request, res: Response, next: NextFunct
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.products.delete.input.parse(req.body);
@@ -463,7 +463,7 @@ export async function listComponents(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.components.list.input.parse(req.query);
@@ -479,7 +479,7 @@ export async function createComponent(req: Request, res: Response, next: NextFun
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.components.create.input.parse(req.body);
@@ -510,7 +510,7 @@ export async function updateComponent(req: Request, res: Response, next: NextFun
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.components.update.input.parse(req.body);
@@ -552,7 +552,7 @@ export async function deleteComponent(req: Request, res: Response, next: NextFun
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.components.delete.input.parse(req.body);
@@ -586,7 +586,7 @@ export async function deleteProductsByCategory(req: Request, res: Response, next
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const previousRows = await masterDataService.listProductsByCategoryId(categoryId, roleKey);
@@ -620,7 +620,7 @@ export async function deleteComponentsByCategory(req: Request, res: Response, ne
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const previousRows = await masterDataService.listComponentsByCategoryId(categoryId, roleKey);
@@ -649,7 +649,7 @@ export async function listTags(req: Request, res: Response, next: NextFunction):
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const rows = await masterDataService.listTags(roleKey);
@@ -664,7 +664,7 @@ export async function createTag(req: Request, res: Response, next: NextFunction)
   try {
     const roleKey = ensureRoleKey(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.tags.create.input.parse(req.body);
@@ -692,7 +692,7 @@ export async function updateTag(req: Request, res: Response, next: NextFunction)
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.tags.update.input.parse(req.body);
@@ -724,7 +724,7 @@ export async function deleteTag(req: Request, res: Response, next: NextFunction)
       return;
     }
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.masterData.tags.delete.input.parse(req.body);

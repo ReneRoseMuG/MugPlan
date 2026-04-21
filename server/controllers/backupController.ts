@@ -10,7 +10,7 @@ export async function listBackupLogs(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const payload = await backupService.listBackupLogs({ roleKey });
@@ -28,7 +28,7 @@ export async function runBackupNow(req: Request, res: Response, next: NextFuncti
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const payload = await backupService.runBackupNow({ roleKey });
@@ -46,7 +46,7 @@ export async function downloadBackupFile(req: Request, res: Response, next: Next
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const backupLogId = Number(req.params.id);

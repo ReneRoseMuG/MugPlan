@@ -1,4 +1,4 @@
-﻿const START_MARKER = "Menge Art.Nr.";
+const START_MARKER = "Menge Art.Nr.";
 const END_MARKER = "Gesamtbetrag";
 
 const QUANTITY_LINE_REGEX = /^(\d+(?:[.,]\d+)?)\s+(.+)$/i;
@@ -121,7 +121,7 @@ export function parseDocumentArticleItemsDeterministically(sourceText: string): 
   );
 
   if (nonEmptyItems.length === 0) {
-    throw new Error("Artikelbereich enthaelt keine auswertbaren Positionen");
+    throw new Error("Artikelbereich enthält keine auswertbaren Positionen");
   }
 
   return nonEmptyItems;

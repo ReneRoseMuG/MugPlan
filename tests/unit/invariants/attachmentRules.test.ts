@@ -83,7 +83,7 @@ describe("PKG-05 Invariant: attachment security rules", () => {
     expect(projectAttachmentsService.getProjectAttachmentById).toHaveBeenCalledWith(42);
     expect(projectAttachmentsService.softDeleteProjectAttachment).toHaveBeenCalledWith(42);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: "Anhang geloescht" });
+    expect(res.json).toHaveBeenCalledWith({ message: "Anhang gelöscht" });
     expect(next).not.toHaveBeenCalled();
   });
 

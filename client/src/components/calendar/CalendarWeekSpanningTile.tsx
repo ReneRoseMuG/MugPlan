@@ -408,7 +408,7 @@ export function CalendarWeekSpanningTile({
     : effectiveCustomerMode === "expanded"
       ? "h-[6.5rem] overflow-hidden"
       : "h-8 overflow-hidden";
-  const projectPanelClassName = projectCollapsed ? "h-8 overflow-hidden" : "min-h-0 self-start";
+  const projectPanelClassName = projectCollapsed ? "h-8 w-full overflow-hidden" : "min-h-0 h-full w-full";
   const contentGridTemplateRows = isCompactPanelMode
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -418,7 +418,7 @@ export function CalendarWeekSpanningTile({
     : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
   const mainContentPanelsClassName = isCompactPanelMode
     ? "grid w-full shrink-0 content-start gap-1 overflow-hidden"
-    : "grid min-h-0 flex-1 content-start gap-1 overflow-hidden";
+    : "grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
@@ -502,7 +502,7 @@ export function CalendarWeekSpanningTile({
             data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
           />
         ) : null}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 w-full flex-1 overflow-hidden">
           {mainContentPanels}
         </div>
       </div>
@@ -526,7 +526,7 @@ export function CalendarWeekSpanningTile({
   return (
   <>
     <div
-      className={`group/calendar-card relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative grid w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       style={{
         gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`,
         gridTemplateRows: "auto 1fr",

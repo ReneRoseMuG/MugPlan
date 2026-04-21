@@ -73,7 +73,7 @@ export async function resolveBackupDownloadPath(
       ? parsed.pdfPath
       : parsed.zipPath;
   if (!configuredPath) {
-    throw new BackupServiceError("Datei fuer diesen Backup-Eintrag nicht verfuegbar", 404, "NOT_FOUND");
+    throw new BackupServiceError("Datei für diesen Backup-Eintrag nicht verfügbar", 404, "NOT_FOUND");
   }
 
   const resolvedPath = path.resolve(configuredPath);

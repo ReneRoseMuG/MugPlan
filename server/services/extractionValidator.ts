@@ -179,14 +179,14 @@ function buildMissingReason(extraction: ValidatedExtraction, key: ExtractionFiel
       }
       return "Kein Personenname im Dokumentkopf erkannt.";
     case "phone":
-      return "Kein gueltiges Mobil- oder Telefonfeld erkannt.";
+      return "Kein gültiges Mobil- oder Telefonfeld erkannt.";
     case "addressLine1":
       return "Keine Strassenzeile erkannt.";
     case "postalCode":
     case "city":
       return "PLZ/Ort im Dokumentkopf nicht eindeutig erkannt.";
     case "country":
-      return "Keine Laenderzeile im Dokumentkopf erkannt.";
+      return "Keine Länderzeile im Dokumentkopf erkannt.";
     case "customerNumber":
       return "Kundennummer nicht erkannt.";
     case "orderNumber":

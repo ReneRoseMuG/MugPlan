@@ -19,7 +19,7 @@ export async function listEmployeeAttachments(req: Request, res: Response, next:
   try {
     const employeeId = Number(req.params.employeeId);
     if (!Number.isFinite(employeeId)) {
-      res.status(400).json({ message: "Ungueltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
     const attachments = await employeeAttachmentsService.listEmployeeAttachments(employeeId);
@@ -33,7 +33,7 @@ export async function createEmployeeAttachment(req: Request, res: Response, next
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -43,7 +43,7 @@ export async function createEmployeeAttachment(req: Request, res: Response, next
 
     const employeeId = Number(req.params.employeeId);
     if (!Number.isFinite(employeeId)) {
-      res.status(400).json({ message: "Ungueltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
     const exists = await employeeAttachmentsService.employeeExists(employeeId);
@@ -102,7 +102,7 @@ export async function downloadEmployeeAttachment(req: Request, res: Response, ne
   try {
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -132,7 +132,7 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -142,7 +142,7 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
 
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -167,7 +167,7 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
       snapshot: attachment,
       actor: getRequestActor(req),
       triggerKey: "employee.attachment.delete",
-      messageText: buildAttachmentMessage("geloescht", "employee", null, attachment.originalName, attachment.employeeId),
+      messageText: buildAttachmentMessage("gelöscht", "employee", null, attachment.originalName, attachment.employeeId),
       contexts: [
         {
           tableName: "employee",
@@ -176,7 +176,7 @@ export async function deleteEmployeeAttachment(req: Request, res: Response, next
         },
       ],
     });
-    res.status(200).json({ message: "Anhang geloescht" });
+    res.status(200).json({ message: "Anhang gelöscht" });
   } catch (err) {
     next(err);
   }

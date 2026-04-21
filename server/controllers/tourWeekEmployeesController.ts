@@ -141,7 +141,7 @@ export async function executeAddTourWeekEmployee(req: Request, res: Response, ne
           snapshot: appointment,
           actor,
           triggerKey: "employee.week_assignment.appointment_add",
-          messageText: buildAppointmentEmployeeMessage("hinzugefuegt", result.employeeName, appointment, appointmentId),
+          messageText: buildAppointmentEmployeeMessage("hinzugefügt", result.employeeName, appointment, appointmentId),
           contexts: [
             weekContext,
             {
@@ -220,7 +220,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
         actor,
         triggerKey: "employee.week_assignment.delete",
         messageText: buildWeekAssignmentMessage(
-          "geloescht",
+          "gelöscht",
           result.employeeName,
           assignmentSnapshot.isoYear,
           assignmentSnapshot.isoWeek,

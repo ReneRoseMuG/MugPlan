@@ -44,7 +44,7 @@ function getBerlinDateString(date: Date): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new TourWeeksError(422, "VALIDATION_ERROR", "Ungueltiges Datum");
+    throw new TourWeeksError(422, "VALIDATION_ERROR", "Ungültiges Datum");
   }
   return parsed;
 }
@@ -64,7 +64,7 @@ export function resolveIsoWeekWindow(isoYear: number, isoWeek: number): {
   const resolvedIsoWeek = getISOWeek(weekStart);
 
   if (resolvedIsoYear !== isoYear || resolvedIsoWeek !== isoWeek) {
-    throw new TourWeeksError(422, "VALIDATION_ERROR", "Ungueltige ISO-Woche");
+    throw new TourWeeksError(422, "VALIDATION_ERROR", "Ungültige ISO-Woche");
   }
 
   const weekEnd = addDays(weekStart, 6);
@@ -104,7 +104,7 @@ export function isWeekLocked(isoYear: number, isoWeek: number, todayBerlin = get
 
 function assertWeekEditable(isoYear: number, isoWeek: number): void {
   if (isWeekLocked(isoYear, isoWeek)) {
-    throw new TourWeeksError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschuetzt");
+    throw new TourWeeksError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschützt");
   }
 }
 
@@ -203,7 +203,7 @@ async function updateBlockedAppointments(params: {
         expectedVersion: Number(appointment.version),
       });
       if (versionResult.kind === "version_conflict") {
-        throw new TourWeeksError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geaendert");
+        throw new TourWeeksError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geändert");
       }
       changedAppointmentIds.push(appointmentId);
     }

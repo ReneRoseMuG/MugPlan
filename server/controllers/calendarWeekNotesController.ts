@@ -39,7 +39,7 @@ export async function createCalendarWeekNote(req: Request, res: Response, next: 
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey === "LESER") {
@@ -81,7 +81,7 @@ export async function deleteCalendarWeekNote(req: Request, res: Response, next: 
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey === "LESER") {

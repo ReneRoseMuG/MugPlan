@@ -215,7 +215,7 @@ export async function getMonitoringSummaryForRole(roleCode: DbRoleCode): Promise
 export async function getMonitoringConfigForAdmin(userId: number, roleKey: CanonicalRoleKey): Promise<MonitoringConfig> {
   assertAdmin(roleKey);
   if (!Number.isInteger(userId) || userId <= 0) {
-    throw new Error("Ungueltiger User-Kontext");
+    throw new Error("Ungültiger User-Kontext");
   }
 
   return readMonitoringConfig();

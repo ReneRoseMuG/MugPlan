@@ -134,6 +134,7 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(markup).not.toContain("week-project-renderer");
     expect(markup).toContain("week-project-hover-renderer");
     expect(markup).toContain("cursor-pointer");
+    expect(markup).toContain("w-full");
     expect(markup).toContain("px-2 py-1");
   });
 });

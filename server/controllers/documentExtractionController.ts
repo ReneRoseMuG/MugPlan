@@ -1,4 +1,4 @@
-﻿import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { MAX_UPLOAD_BYTES } from "../lib/attachmentFiles";
@@ -16,7 +16,7 @@ export async function extractDocument(req: Request, res: Response, next: NextFun
   const input = api.documentExtraction.extract.input.safeParse(req.query);
   if (!input.success) {
     res.status(400).json({
-      message: input.error.errors[0]?.message ?? "Ungueltige Anfrage",
+      message: input.error.errors[0]?.message ?? "Ungültige Anfrage",
       field: input.error.errors[0]?.path.join("."),
     });
     return;
@@ -45,7 +45,7 @@ export async function extractDocument(req: Request, res: Response, next: NextFun
     }
     if (err instanceof z.ZodError) {
       res.status(422).json({
-        message: err.errors[0]?.message ?? "KI-Ausgabe ist strukturell ungueltig",
+        message: err.errors[0]?.message ?? "KI-Ausgabe ist strukturell ungültig",
         field: err.errors[0]?.path.join("."),
       });
       return;

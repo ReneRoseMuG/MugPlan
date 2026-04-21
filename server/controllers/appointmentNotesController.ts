@@ -77,7 +77,7 @@ export async function deleteAppointmentNote(req: Request, res: Response, next: N
         snapshot: existingNote,
         actor: getRequestActor(req),
         triggerKey: "appointment.note.delete",
-        messageText: buildNoteMessage("geloescht", "appointment", null, existingNote.title, appointmentId),
+        messageText: buildNoteMessage("gelöscht", "appointment", null, existingNote.title, appointmentId),
         contexts: [
           {
             tableName: "appointment",

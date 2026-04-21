@@ -129,7 +129,7 @@ describe("FT02 integration: project attachments", () => {
       .delete(`/api/project-attachments/${attachmentId}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.message).toBe("Anhang geloescht");
+        expect(res.body.message).toBe("Anhang gelöscht");
       });
 
     const afterDelete = await admin.get(`/api/projects/${project.id}/attachments`).expect(200);

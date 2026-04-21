@@ -301,7 +301,7 @@ export function StandaloneTourPostalPlan() {
 
   return (
     <>
-      <StandaloneLayout title="Tour PLZ Plan">
+      <StandaloneLayout title="Tour PLZ Planung">
         <TourPostalPlanView
           onCreateAppointment={({ date, tourId }) => {
             setAppointmentOverlay({

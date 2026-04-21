@@ -577,10 +577,10 @@ test("uses the already confirmed preview decision when an existing appointment c
   const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(immediateDialog).toBeVisible();
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",
@@ -643,7 +643,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",

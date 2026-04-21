@@ -73,7 +73,7 @@ export async function deleteProjectNote(req: Request, res: Response, next: NextF
         snapshot: existingNote,
         actor: getRequestActor(req),
         triggerKey: "project.note.delete",
-        messageText: buildNoteMessage("geloescht", "project", null, existingNote.title, projectId),
+        messageText: buildNoteMessage("gelöscht", "project", null, existingNote.title, projectId),
         contexts: [
           {
             tableName: "project",

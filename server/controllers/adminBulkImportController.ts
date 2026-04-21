@@ -118,7 +118,7 @@ export async function analyzeMasterDataPdfMining(req: Request, res: Response, ne
       res.status(413).json({ code: "BULK_IMPORT_LIMIT_EXCEEDED", message: "Payload too large" });
       return;
     }
-    if (err instanceof Error && err.message === "Keine Dateien uebergeben.") {
+    if (err instanceof Error && err.message === "Keine Dateien übergeben.") {
       res.status(400).json({ code: "VALIDATION_ERROR", message: err.message });
       return;
     }

@@ -94,11 +94,16 @@ export function TourPostalPlanWeekPreview({
       data-testid={`tour-postal-plan-week-preview-${weekStartDate}-tour-${tourId}`}
     >
       <div className="mb-3">
-        <div className="text-sm font-semibold text-slate-900" data-testid={`tour-postal-plan-week-label-${weekStartDate}-tour-${tourId}`}>
-          KW {resolvedIsoWeek} · {resolvedIsoYear}
-        </div>
-        <div className="text-xs text-slate-500" data-testid={`tour-postal-plan-week-range-${weekStartDate}-tour-${tourId}`}>
-          {format(parseISO(weekStartDate), "dd.MM.yy", { locale: de })} bis {format(parseISO(resolvedWeekEndDate), "dd.MM.yy", { locale: de })}
+        <div
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-1"
+          data-testid={`tour-postal-plan-week-header-${weekStartDate}-tour-${tourId}`}
+        >
+          <div className="text-sm font-semibold text-slate-900" data-testid={`tour-postal-plan-week-label-${weekStartDate}-tour-${tourId}`}>
+            KW {resolvedIsoWeek} · {resolvedIsoYear}
+          </div>
+          <div className="text-xs text-slate-500" data-testid={`tour-postal-plan-week-range-${weekStartDate}-tour-${tourId}`}>
+            {format(parseISO(weekStartDate), "dd.MM.yy", { locale: de })} bis {format(parseISO(resolvedWeekEndDate), "dd.MM.yy", { locale: de })}
+          </div>
         </div>
       </div>
 

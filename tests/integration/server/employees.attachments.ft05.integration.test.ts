@@ -126,7 +126,7 @@ describe("FT05 integration: employee attachments", () => {
       .delete(`/api/employee-attachments/${attachmentId}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.message).toBe("Anhang geloescht");
+        expect(res.body.message).toBe("Anhang gelöscht");
       });
 
     await admin
