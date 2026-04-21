@@ -1,4 +1,4 @@
-﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
+import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import {
   MANAGED_MESSE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -37,7 +37,7 @@ import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
 
 const logPrefix = "[appointments-service]";
-const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
+const overlapConflictMessage = "Termin überschneidet sich mit bestehenden Mitarbeiter-Terminen";
 type AppointmentTagsByAppointmentId = Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>>;
 type AppointmentTagRelations = AppointmentTagsByAppointmentId extends Map<number, infer TValue> ? TValue : never;
 
@@ -101,7 +101,7 @@ function getBerlinTodayDateString(): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new AppointmentError("Ungueltiges Datum", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültiges Datum", 422, "VALIDATION_ERROR");
   }
   return parsed;
 }
@@ -171,7 +171,7 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
   if (!startTime) return null;
   const seconds = parseTimeToSeconds(startTime);
   if (seconds == null) {
-    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Startzeit", 422, "VALIDATION_ERROR");
   }
   return Math.floor(seconds / 3600);
 }
@@ -204,7 +204,7 @@ async function assertAppointmentWriteAllowed(
 ): Promise<void> {
   if (!options.allowHistorical && isHistoricalAppointmentMutationLocked(appointment, options.parkplatzTourId)) {
     throw new AppointmentError(
-      options.historicalMessage ?? "Historische Termine koennen nicht geaendert werden",
+      options.historicalMessage ?? "Historische Termine können nicht geändert werden",
       409,
       "PAST_APPOINTMENT_READONLY",
     );
@@ -213,14 +213,14 @@ async function assertAppointmentWriteAllowed(
   const appointmentTags = await getAppointmentTagsForGuard(appointmentId);
   if (!options.allowCancelled && hasAppointmentCancellationTag(appointmentTags)) {
     throw new AppointmentError(
-      options.cancelledMessage ?? "Stornierte Termine koennen nicht geaendert werden",
+      options.cancelledMessage ?? "Stornierte Termine können nicht geändert werden",
       409,
       "CANCELLED_APPOINTMENT_READONLY",
     );
   }
   if (!options.allowPlanningBlocked && hasReservedPlanningBlockedTag(appointmentTags)) {
     throw new AppointmentError(
-      options.planningBlockedMessage ?? "Planung blockierte Termine koennen nicht geaendert werden",
+      options.planningBlockedMessage ?? "Planung blockierte Termine können nicht geändert werden",
       409,
       "PLANNING_BLOCKED_APPOINTMENT_READONLY",
     );
@@ -240,7 +240,7 @@ function assertNotHistoricalInput(
 
   const inputTimeSeconds = parseTimeToSeconds(data.startTime);
   if (inputTimeSeconds == null) {
-    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Startzeit", 422, "VALIDATION_ERROR");
   }
   if (inputTimeSeconds < getBerlinCurrentTimeSeconds()) {
     throw new AppointmentError("Startzeit liegt in der Vergangenheit", 409, "VALIDATION_ERROR");
@@ -253,7 +253,7 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
 
 function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
-    throw new AppointmentError("Keine Berechtigung fuer Tag-Aenderungen", 403, "FORBIDDEN");
+    throw new AppointmentError("Keine Berechtigung für Tag-Änderungen", 403, "FORBIDDEN");
   }
 }
 
@@ -265,7 +265,7 @@ async function assertNoInactiveEmployeesTx(
   const inactiveEmployees = await appointmentsRepository.getInactiveEmployeesByIdsTx(tx, employeeIds);
   if (inactiveEmployees.length > 0) {
     throw new AppointmentError(
-      "Inaktive Mitarbeiter koennen keinem Termin zugewiesen werden",
+      "Inaktive Mitarbeiter können keinem Termin zugewiesen werden",
       409,
       "INACTIVE_ENTITY_ASSIGNMENT",
       { conflictEmployees: inactiveEmployees },
@@ -476,7 +476,7 @@ async function ensureActiveCustomer(customerId: number) {
     throw new AppointmentError("Kunde wurde nicht gefunden", 422, "VALIDATION_ERROR");
   }
   if (!customer.isActive) {
-    throw new AppointmentError("Inaktive Kunden koennen nicht zugewiesen werden", 409, "INACTIVE_ENTITY_ASSIGNMENT");
+    throw new AppointmentError("Inaktive Kunden können nicht zugewiesen werden", 409, "INACTIVE_ENTITY_ASSIGNMENT");
   }
   return customer;
 }
@@ -494,7 +494,7 @@ async function resolveAppointmentRelationTx(
   if (nextProjectId != null) {
     const project = await ensureProjectExistsTx(tx, nextProjectId);
     if (typeof data.customerId === "number" && data.customerId !== project.customerId) {
-      throw new AppointmentError("Projekt-Kunde muss mit Termin-Kunde uebereinstimmen", 422, "VALIDATION_ERROR");
+      throw new AppointmentError("Projekt-Kunde muss mit Termin-Kunde übereinstimmen", 422, "VALIDATION_ERROR");
     }
     const customer = await ensureActiveCustomer(project.customerId);
     return {
@@ -681,7 +681,7 @@ export async function updateAppointment(
       parkplatzTourId,
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
-        : "Historische Termine koennen nicht geaendert werden",
+        : "Historische Termine können nicht geändert werden",
     });
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
     assertNotHistoricalInput(
@@ -765,7 +765,7 @@ export async function updateAppointment(
       data: appointmentData,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
@@ -845,7 +845,7 @@ export async function setAppointmentDisplayMode(
       parkplatzTourId,
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
-        : "Historische Termine koennen nicht geaendert werden",
+        : "Historische Termine können nicht geändert werden",
     });
 
     const updateResult = await appointmentsRepository.updateAppointmentDisplayModeWithVersionTx(tx, {
@@ -854,7 +854,7 @@ export async function setAppointmentDisplayMode(
       displayMode: data.displayMode,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     const refreshed = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
@@ -1731,9 +1731,9 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      historicalMessage: "Historische Termine koennen nicht geloescht werden",
-      cancelledMessage: "Stornierte Termine koennen nicht geloescht werden",
-      planningBlockedMessage: "Planung blockierte Termine koennen nicht geloescht werden",
+      historicalMessage: "Historische Termine können nicht gelöscht werden",
+      cancelledMessage: "Stornierte Termine können nicht gelöscht werden",
+      planningBlockedMessage: "Planung blockierte Termine können nicht gelöscht werden",
     });
 
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
@@ -1741,7 +1741,7 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
       expectedVersion,
     });
     if (result.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     return existing;
@@ -1772,10 +1772,10 @@ export async function addAppointmentTag(
     return null;
   }
   if (isAppointmentCancellationTag(tag)) {
-    throw new AppointmentError("Der Storno-Tag kann nur ueber die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Storno-Tag kann nur über die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nur ueber die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Geparkt-Tag kann nur über die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedPlanningBlockedTag(tag)) {
     throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
@@ -1783,9 +1783,9 @@ export async function addAppointmentTag(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geaendert werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+    historicalMessage: "Historische Termine können nicht geändert werden",
+    cancelledMessage: "Stornierte Termine können nicht geändert werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
@@ -1798,7 +1798,7 @@ export async function removeAppointmentTag(
 ) {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
@@ -1818,13 +1818,13 @@ export async function removeAppointmentTag(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geaendert werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+    historicalMessage: "Historische Termine können nicht geändert werden",
+    cancelledMessage: "Stornierte Termine können nicht geändert werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
-    throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
   }
   if (result.kind === "not_found") {
     return null;
@@ -1840,7 +1840,7 @@ export async function removeEmployeeFromAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
@@ -1850,16 +1850,16 @@ export async function removeEmployeeFromAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      historicalMessage: "Historische Termine koennen nicht geaendert werden",
-      cancelledMessage: "Stornierte Termine koennen nicht bearbeitet werden",
-      planningBlockedMessage: "Planung blockierte Termine koennen nicht bearbeitet werden",
+      historicalMessage: "Historische Termine können nicht geändert werden",
+      cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
+      planningBlockedMessage: "Planung blockierte Termine können nicht bearbeitet werden",
     });
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
       expectedVersion,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
     await appointmentsRepository.deleteAppointmentEmployeeTx(tx, appointmentId, employeeId);
     return { found: true } as const;
@@ -1873,7 +1873,7 @@ export async function cancelAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
@@ -1881,7 +1881,7 @@ export async function cancelAppointment(
   const cancellationTag = await tagRelationsService.getTagByName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
   if (!cancellationTag) {
     throw new AppointmentError(
-      "System-Tag 'Storniert' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      "System-Tag 'Storniert' fehlt. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
@@ -1894,7 +1894,7 @@ export async function cancelAppointment(
       parkplatzTourId,
       allowCancelled: true,
       allowPlanningBlocked: true,
-      historicalMessage: "Historische Termine koennen nicht geaendert werden",
+      historicalMessage: "Historische Termine können nicht geändert werden",
     });
 
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
@@ -1902,7 +1902,7 @@ export async function cancelAppointment(
       expectedVersion,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
@@ -1952,7 +1952,7 @@ export async function parkAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
 
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
@@ -1961,15 +1961,15 @@ export async function parkAppointment(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geparkt werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geparkt werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geparkt werden",
+    historicalMessage: "Historische Termine können nicht geparkt werden",
+    cancelledMessage: "Stornierte Termine können nicht geparkt werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geparkt werden",
   });
 
   const parkplatzTour = await getParkplatzTour();
   if (!parkplatzTour) {
     throw new AppointmentError(
-      "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausfuehren.",
+      "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
@@ -1978,7 +1978,7 @@ export async function parkAppointment(
   const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
   if (!geparktTag) {
     throw new AppointmentError(
-      "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
@@ -1998,7 +1998,7 @@ export async function parkAppointment(
       tourId: parkplatzTour.id,
     });
     if (parkResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);

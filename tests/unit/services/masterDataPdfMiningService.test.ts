@@ -116,7 +116,7 @@ describe("FT24 unit: master data pdf mining service", () => {
     ]);
     expect(schlaffassGroup).toBeTruthy();
     expect(result.skipped).toEqual([
-      { fileName: "single.pdf", reason: "Artikelliste enthaelt nur einen Eintrag" },
+      { fileName: "single.pdf", reason: "Artikelliste enthält nur einen Eintrag" },
       { fileName: "nosauna.pdf", reason: "Begriff Sauna kommt in der Artikelliste nicht vor" },
     ]);
   });

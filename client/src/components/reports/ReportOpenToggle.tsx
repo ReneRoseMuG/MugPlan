@@ -33,11 +33,11 @@ export function ReportOpenToggle({
         disabled={disabled}
         className="flex items-center gap-2 border-l border-amber-700/20 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50"
         data-testid={openInTabTestId}
-        title="Im Tab öffnen"
-        aria-label="Im Tab öffnen"
+        title="In neuem Tab öffnen"
+        aria-label="In neuem Tab öffnen"
       >
         <ExternalLink className="h-4 w-4" />
-        Im Tab öffnen
+        In neuem Tab öffnen
       </button>
     </div>
   );

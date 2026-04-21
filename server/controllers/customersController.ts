@@ -33,7 +33,7 @@ export async function listCustomers(req: Request, res: Response, next: NextFunct
     const input = api.customers.list.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customers = await customersService.listCustomers(roleKey, input.scope, parseTagIds(input.tagIds));
@@ -56,7 +56,7 @@ export async function listCustomersPaged(req: Request, res: Response, next: Next
     const input = api.customers.pagedList.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -82,7 +82,7 @@ export async function getCustomer(req: Request, res: Response, next: NextFunctio
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customer = await customersService.getCustomer(Number(req.params.id), roleKey);
@@ -129,7 +129,7 @@ export async function updateCustomer(req: Request, res: Response, next: NextFunc
     const input = api.customers.update.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customerId = Number(req.params.id);
@@ -168,14 +168,14 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
   try {
     const customerId = Number(req.params.id);
     if (Number.isNaN(customerId)) {
-      res.status(400).json({ message: "Ungueltige customerId" });
+      res.status(400).json({ message: "Ungültige customerId" });
       return;
     }
 
     const { scope, fromDate } = api.customers.appointments.list.input.parse(req.query);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -187,7 +187,7 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
       } else if (!allowFromDateOverride) {
         logWarn(`${logPrefix} list appointments ignored fromDate without debug flag customerId=${customerId}`);
       } else if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
-        res.status(400).json({ message: "Ungueltiges fromDate" });
+        res.status(400).json({ message: "Ungültiges fromDate" });
         return;
       } else {
         effectiveFromDate = fromDate;
@@ -214,7 +214,7 @@ export async function listCustomerTags(req: Request, res: Response, next: NextFu
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customerId = Number(req.params.customerId);
@@ -233,7 +233,7 @@ export async function addCustomerTag(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customerId = Number(req.params.customerId);
@@ -252,7 +252,7 @@ export async function addCustomerTag(req: Request, res: Response, next: NextFunc
       snapshot: customer,
       actor: getRequestActor(req),
       triggerKey: "customer.tag.add",
-      messageText: buildTagMessage("hinzugefuegt", "customer", customer, relation.tag.name, customerId),
+      messageText: buildTagMessage("hinzugefügt", "customer", customer, relation.tag.name, customerId),
     });
     res.status(201).json(relation);
   } catch (err) {
@@ -272,7 +272,7 @@ export async function removeCustomerTag(req: Request, res: Response, next: NextF
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const customerId = Number(req.params.customerId);

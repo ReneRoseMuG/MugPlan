@@ -1,4 +1,4 @@
-﻿import type { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 
 import { api } from "@shared/routes";
@@ -14,7 +14,7 @@ export async function getReportConfigDefaults(req: Request, res: Response, next:
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -34,7 +34,7 @@ export async function listVorlaufliste(req: Request, res: Response, next: NextFu
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -66,7 +66,7 @@ export async function getVorlauflistePrintPreview(req: Request, res: Response, n
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -96,7 +96,7 @@ export async function listProduktionsplanung(req: Request, res: Response, next: 
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -127,7 +127,7 @@ export async function listAuftragsliste(req: Request, res: Response, next: NextF
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 

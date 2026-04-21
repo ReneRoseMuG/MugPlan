@@ -26,7 +26,7 @@ export async function updateNote(req: Request, res: Response, next: NextFunction
         snapshot: note,
         actor: getRequestActor(req),
         triggerKey: "note.update",
-        messageText: `Notiz ${note.title} geaendert`,
+        messageText: `Notiz ${note.title} geändert`,
         contexts,
       });
     }

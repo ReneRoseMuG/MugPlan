@@ -117,7 +117,7 @@ export async function deleteCustomerAttachment(req: Request, res: Response, next
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -127,7 +127,7 @@ export async function deleteCustomerAttachment(req: Request, res: Response, next
 
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -152,7 +152,7 @@ export async function deleteCustomerAttachment(req: Request, res: Response, next
       snapshot: attachment,
       actor: getRequestActor(req),
       triggerKey: "customer.attachment.delete",
-      messageText: buildAttachmentMessage("geloescht", "customer", null, attachment.originalName, attachment.customerId),
+      messageText: buildAttachmentMessage("gelöscht", "customer", null, attachment.originalName, attachment.customerId),
       contexts: [
         {
           tableName: "customer",
@@ -161,7 +161,7 @@ export async function deleteCustomerAttachment(req: Request, res: Response, next
         },
       ],
     });
-    res.status(200).json({ message: "Anhang geloescht" });
+    res.status(200).json({ message: "Anhang gelöscht" });
   } catch (err) {
     next(err);
   }

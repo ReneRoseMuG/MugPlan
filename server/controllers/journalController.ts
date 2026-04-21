@@ -7,7 +7,7 @@ export async function listJournalMessages(req: Request, res: Response, next: Nex
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 

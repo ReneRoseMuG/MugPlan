@@ -1,4 +1,4 @@
-﻿import type { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as projectsService from "../services/projectsService";
@@ -97,7 +97,7 @@ export async function getProject(req: Request, res: Response, next: NextFunction
     const projectId = Number(req.params.id);
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -355,7 +355,7 @@ export async function addProjectTag(req: Request, res: Response, next: NextFunct
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const projectId = Number(req.params.projectId);
@@ -374,7 +374,7 @@ export async function addProjectTag(req: Request, res: Response, next: NextFunct
       snapshot: project,
       actor: getRequestActor(req),
       triggerKey: "project.tag.add",
-      messageText: buildTagMessage("hinzugefuegt", "project", project, relation.tag.name, projectId),
+      messageText: buildTagMessage("hinzugefügt", "project", project, relation.tag.name, projectId),
     });
     res.status(201).json(relation);
   } catch (err) {
@@ -394,7 +394,7 @@ export async function removeProjectTag(req: Request, res: Response, next: NextFu
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const projectId = Number(req.params.projectId);

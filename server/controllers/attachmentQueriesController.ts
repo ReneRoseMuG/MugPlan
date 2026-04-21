@@ -7,7 +7,7 @@ export async function listCustomerProjectAttachments(req: Request, res: Response
   try {
     const customerId = Number(req.params.customerId);
     if (!Number.isFinite(customerId)) {
-      res.status(400).json({ message: "Ungueltige customerId" });
+      res.status(400).json({ message: "Ungültige customerId" });
       return;
     }
     const input = api.customerAttachmentAggregates.projectAttachmentsByCustomer.input.parse(req.query);
@@ -46,7 +46,7 @@ export async function getAppointmentAttachmentContext(req: Request, res: Respons
   try {
     const appointmentId = Number(req.params.appointmentId);
     if (!Number.isFinite(appointmentId)) {
-      res.status(400).json({ message: "Ungueltige appointmentId" });
+      res.status(400).json({ message: "Ungültige appointmentId" });
       return;
     }
     const result = await attachmentQueriesService.getAppointmentAttachmentContext(appointmentId);

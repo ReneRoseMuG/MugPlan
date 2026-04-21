@@ -69,6 +69,16 @@ async function readRight(locator: Locator) {
   return Math.round(((box?.x ?? 0) + (box?.width ?? 0)) * 10) / 10;
 }
 
+async function readBox(locator: Locator) {
+  const box = await locator.boundingBox();
+  expect(box).not.toBeNull();
+  return {
+    left: Math.round((box?.x ?? 0) * 10) / 10,
+    width: Math.round((box?.width ?? 0) * 10) / 10,
+    right: Math.round(((box?.x ?? 0) + (box?.width ?? 0)) * 10) / 10,
+  };
+}
+
 async function expectWidthsClose(left: Locator, right: Locator, tolerancePx = 4) {
   const leftWidth = await readWidth(left);
   const rightWidth = await readWidth(right);
@@ -92,6 +102,13 @@ async function expectAlignedDayEdges(top: Locator, bottom: Locator, tolerancePx 
 async function expectBoundaryAlignment(leftBoundary: Locator, rightBoundary: Locator, tolerancePx = 3) {
   const delta = Math.abs((await readLeft(leftBoundary)) - (await readLeft(rightBoundary)));
   expect(delta).toBeLessThanOrEqual(tolerancePx);
+}
+
+async function expectInternalHalfBoundary(tile: Locator, secondSegment: Locator, tolerancePx = 3) {
+  const tileBox = await readBox(tile);
+  const segmentBox = await readBox(secondSegment);
+  const expectedSecondSegmentLeft = tileBox.left + (tileBox.width / 2);
+  expect(Math.abs(segmentBox.left - expectedSecondSegmentLeft)).toBeLessThanOrEqual(tolerancePx);
 }
 
 test("keeps one-day and two-day widths stable when the weekend is occupied in compact mode", async ({ page }) => {
@@ -298,15 +315,18 @@ test("aligns the internal Thursday boundary of a two-day tile with a Thursday si
   await openWeek(page);
 
   const thursdaySinglePanel = page.getByTestId(`week-appointment-panel-${thursdaySingleAppointment.id}`).first();
+  const wednesdayThursdayTile = page.getByTestId(`week-spanning-tile-${wednesdayThursdayAppointment.id}`).first();
   const thursdayHalfOfSpan = page
     .getByTestId(`week-spanning-tile-header-${wednesdayThursdayAppointment.id}`)
     .locator("> div")
     .nth(1);
 
   await expect(thursdaySinglePanel).toBeVisible();
+  await expect(wednesdayThursdayTile).toBeVisible();
   await expect(thursdayHalfOfSpan).toBeVisible();
 
-  await expectBoundaryAlignment(thursdaySinglePanel, thursdayHalfOfSpan, 3);
+  await expectWidthMultiple(wednesdayThursdayTile, thursdaySinglePanel, 2, 10);
+  await expectInternalHalfBoundary(wednesdayThursdayTile, thursdayHalfOfSpan, 3);
 });
 
 test("aligns the internal Thursday boundary of a two-day tile with a Thursday single-day card in detail mode", async ({ page }) => {
@@ -336,15 +356,18 @@ test("aligns the internal Thursday boundary of a two-day tile with a Thursday si
   await openWeek(page, "expanded");
 
   const thursdaySinglePanel = page.getByTestId(`week-appointment-panel-${thursdaySingleAppointment.id}`).first();
+  const wednesdayThursdayTile = page.getByTestId(`week-spanning-tile-${wednesdayThursdayAppointment.id}`).first();
   const thursdayHalfOfSpan = page
     .getByTestId(`week-spanning-tile-header-${wednesdayThursdayAppointment.id}`)
     .locator("> div")
     .nth(1);
 
   await expect(thursdaySinglePanel).toBeVisible();
+  await expect(wednesdayThursdayTile).toBeVisible();
   await expect(thursdayHalfOfSpan).toBeVisible();
 
-  await expectBoundaryAlignment(thursdaySinglePanel, thursdayHalfOfSpan, 3);
+  await expectWidthMultiple(wednesdayThursdayTile, thursdaySinglePanel, 2, 10);
+  await expectInternalHalfBoundary(wednesdayThursdayTile, thursdayHalfOfSpan, 3);
 });
 
 test("keeps the lower overflow monday card aligned with the regular monday column in standard mode", async ({ page }) => {

@@ -1,4 +1,4 @@
-﻿import * as usersRepository from "../repositories/usersRepository";
+import * as usersRepository from "../repositories/usersRepository";
 import * as userSettingsRepository from "../repositories/userSettingsRepository";
 import {
   globalScopeMarker,
@@ -83,7 +83,7 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
     return String(userId);
   }
   if (scopeType === "ROLE") {
-    throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
+    throw new UserSettingsError("ROLE scope nicht verfügbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
   return globalScopeMarker;
 }
@@ -200,7 +200,7 @@ async function assertCanWriteSetting(userId: number, input: SetSettingInput): Pr
 
 export async function getResolvedSettingsForUser(userId: number): Promise<ResolvedSettingRow[]> {
   if (!Number.isFinite(userId) || userId <= 0) {
-    throw new UserSettingsError("Ungueltiger User-Kontext", 400);
+    throw new UserSettingsError("Ungültiger User-Kontext", 400);
   }
 
   const userWithRole = await usersRepository.getUserWithRole(userId);
@@ -303,11 +303,11 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
 
 export async function setSettingForUser(userId: number, input: SetSettingInput): Promise<ResolvedSettingRow[]> {
   if (!Number.isFinite(userId) || userId <= 0) {
-    throw new UserSettingsError("Ungueltiger User-Kontext", 400);
+    throw new UserSettingsError("Ungültiger User-Kontext", 400);
   }
 
   if (input.scopeType === "ROLE") {
-    throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
+    throw new UserSettingsError("ROLE scope nicht verfügbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
   if (!Number.isInteger(input.version) || input.version < 1) {
     throw new UserSettingsError("VALIDATION_ERROR", 422);
@@ -321,12 +321,12 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
   await assertCanWriteSetting(userId, input);
 
   if (!hasAllowedScope(definition, input.scopeType)) {
-    throw new UserSettingsError("Scope fuer dieses Setting nicht erlaubt", 400);
+    throw new UserSettingsError("Scope für dieses Setting nicht erlaubt", 400);
   }
 
   const scopeId = resolveScopeIdForWrite(input.scopeType, userId);
   if (!definition.validate(input.value)) {
-    throw new UserSettingsError("Ungueltiger Wert fuer Setting", 400);
+    throw new UserSettingsError("Ungültiger Wert für Setting", 400);
   }
 
   const upsertResult = await userSettingsRepository.upsertSettingValueWithVersion({

@@ -420,7 +420,7 @@ function parseDumpPayload(raw: unknown): DumpPayload {
 
 function parseDumpManifest(raw: unknown): DumpManifest {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new DumpServiceError("manifest.json hat kein gueltiges Format", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json hat kein gültiges Format", 422, "VALIDATION_ERROR");
   }
 
   const candidate = raw as {
@@ -438,22 +438,22 @@ function parseDumpManifest(raw: unknown): DumpManifest {
   };
 
   if (candidate.formatVersion !== DUMP_FORMAT_VERSION) {
-    throw new DumpServiceError("manifest.json hat eine ungueltige Dump-Version", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json hat eine ungültige Dump-Version", 422, "VALIDATION_ERROR");
   }
   if (typeof candidate.dumpId !== "string" || candidate.dumpId.trim().length === 0) {
-    throw new DumpServiceError("manifest.json enthaelt keine dumpId", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält keine dumpId", 422, "VALIDATION_ERROR");
   }
   if (typeof candidate.exportedAt !== "string" || candidate.exportedAt.trim().length === 0) {
-    throw new DumpServiceError("manifest.json enthaelt kein exportedAt", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält kein exportedAt", 422, "VALIDATION_ERROR");
   }
   if (typeof candidate.schemaRevision !== "string" || candidate.schemaRevision.trim().length === 0) {
-    throw new DumpServiceError("manifest.json enthaelt keine schemaRevision", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält keine schemaRevision", 422, "VALIDATION_ERROR");
   }
   if (!candidate.tables || typeof candidate.tables !== "object" || Array.isArray(candidate.tables)) {
-    throw new DumpServiceError("manifest.json enthaelt keine Tabellenbeschreibung", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält keine Tabellenbeschreibung", 422, "VALIDATION_ERROR");
   }
   if (!candidate.uploads || typeof candidate.uploads !== "object") {
-    throw new DumpServiceError("manifest.json enthaelt keine Upload-Beschreibung", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält keine Upload-Beschreibung", 422, "VALIDATION_ERROR");
   }
 
   const tables = {} as Partial<Record<DumpTableKey, DumpTableManifestEntry>>;
@@ -465,24 +465,24 @@ function parseDumpManifest(raw: unknown): DumpManifest {
       continue;
     }
     if (!value || typeof value !== "object" || Array.isArray(value)) {
-      throw new DumpServiceError(`manifest.json enthaelt keinen gueltigen Tabellen-Eintrag fuer '${key}'`, 422, "VALIDATION_ERROR");
+      throw new DumpServiceError(`manifest.json enthält keinen gültigen Tabellen-Eintrag für '${key}'`, 422, "VALIDATION_ERROR");
     }
     const rowCount = Number((value as { rowCount?: unknown }).rowCount);
     const sha256 = (value as { sha256?: unknown }).sha256;
     if (!Number.isInteger(rowCount) || rowCount < 0 || typeof sha256 !== "string" || sha256.length === 0) {
-      throw new DumpServiceError(`manifest.json ist fuer Tabelle '${key}' ungueltig`, 422, "VALIDATION_ERROR");
+      throw new DumpServiceError(`manifest.json ist für Tabelle '${key}' ungültig`, 422, "VALIDATION_ERROR");
     }
     tables[key] = { rowCount, sha256 };
   }
 
   const uploadFilesRaw = candidate.uploads.files;
   if (!Array.isArray(uploadFilesRaw)) {
-    throw new DumpServiceError("manifest.json enthaelt keine gueltige Upload-Dateiliste", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält keine gültige Upload-Dateiliste", 422, "VALIDATION_ERROR");
   }
 
   const files = uploadFilesRaw.map((entry) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-      throw new DumpServiceError("manifest.json enthaelt einen ungueltigen Upload-Dateieintrag", 422, "VALIDATION_ERROR");
+      throw new DumpServiceError("manifest.json enthält einen ungültigen Upload-Dateieintrag", 422, "VALIDATION_ERROR");
     }
     const relativePath = (entry as { relativePath?: unknown }).relativePath;
     const sizeBytes = Number((entry as { sizeBytes?: unknown }).sizeBytes);
@@ -495,7 +495,7 @@ function parseDumpManifest(raw: unknown): DumpManifest {
       || typeof sha256 !== "string"
       || sha256.length === 0
     ) {
-      throw new DumpServiceError("manifest.json enthaelt einen ungueltigen Upload-Dateieintrag", 422, "VALIDATION_ERROR");
+      throw new DumpServiceError("manifest.json enthält einen ungültigen Upload-Dateieintrag", 422, "VALIDATION_ERROR");
     }
     return { relativePath, sizeBytes, sha256 };
   });
@@ -511,7 +511,7 @@ function parseDumpManifest(raw: unknown): DumpManifest {
     || typeof sha256 !== "string"
     || sha256.length === 0
   ) {
-    throw new DumpServiceError("manifest.json enthaelt ungueltige Upload-Summen", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("manifest.json enthält ungültige Upload-Summen", 422, "VALIDATION_ERROR");
   }
 
   return {
@@ -769,12 +769,12 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
   try {
     directory = await unzipper.Open.buffer(fileBuffer);
   } catch {
-    throw new DumpServiceError("Ungueltige oder beschaedigte ZIP-Datei", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("Ungültige oder beschädigte ZIP-Datei", 422, "VALIDATION_ERROR");
   }
 
   const dataFile = directory.files.find((file) => file.path === "data.json");
   if (!dataFile) {
-    throw new DumpServiceError("ZIP enthaelt keine data.json", 422, "VALIDATION_ERROR");
+    throw new DumpServiceError("ZIP enthält keine data.json", 422, "VALIDATION_ERROR");
   }
 
   const payload = parseDumpPayload(JSON.parse((await dataFile.buffer()).toString("utf8")) as unknown);
@@ -813,20 +813,20 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
         continue;
       }
       if (actualRows.length !== table.rowCount) {
-        blockingIssues.push(`Manifest-Count stimmt fuer Tabelle '${table.key}' nicht mit data.json ueberein.`);
+        blockingIssues.push(`Manifest-Count stimmt für Tabelle '${table.key}' nicht mit data.json überein.`);
       }
       if (sha256Json(actualRows) !== table.sha256) {
-        blockingIssues.push(`Manifest-Hash stimmt fuer Tabelle '${table.key}' nicht mit data.json ueberein.`);
+        blockingIssues.push(`Manifest-Hash stimmt für Tabelle '${table.key}' nicht mit data.json überein.`);
       }
     }
     if (manifest.uploads.fileCount !== uploadSummary.fileCount) {
-      blockingIssues.push("Manifest-Uploadanzahl stimmt nicht mit dem ZIP-Inhalt ueberein.");
+      blockingIssues.push("Manifest-Uploadanzahl stimmt nicht mit dem ZIP-Inhalt überein.");
     }
     if (manifest.uploads.totalBytes !== uploadSummary.totalBytes) {
-      blockingIssues.push("Manifest-Uploadgroesse stimmt nicht mit dem ZIP-Inhalt ueberein.");
+      blockingIssues.push("Manifest-Uploadgroesse stimmt nicht mit dem ZIP-Inhalt überein.");
     }
     if (manifest.uploads.sha256 !== uploadSummary.sha256) {
-      blockingIssues.push("Manifest-Uploadhash stimmt nicht mit dem ZIP-Inhalt ueberein.");
+      blockingIssues.push("Manifest-Uploadhash stimmt nicht mit dem ZIP-Inhalt überein.");
     }
     if (manifest.schemaRevision !== getSchemaRevision()) {
       warnings.push(`Schema-Revision weicht ab: Dump=${manifest.schemaRevision}, Ziel=${getSchemaRevision()}.`);
@@ -835,7 +835,7 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
 
   if (mode === "production") {
     if (!manifest) {
-      blockingIssues.push("Legacy-Dumps ohne manifest.json sind fuer Produktionsimport gesperrt.");
+      blockingIssues.push("Legacy-Dumps ohne manifest.json sind für Produktionsimport gesperrt.");
     }
   }
 
@@ -1014,13 +1014,13 @@ export async function applyDumpImport(
 
   const preview = await inspectDumpArchive(params.fileBuffer);
   if (preview.fileHash !== params.fileHash) {
-    throw new DumpServiceError("Datei wurde seit der Vorschau geaendert", 409, "FILE_HASH_MISMATCH");
+    throw new DumpServiceError("Datei wurde seit der Vorschau geändert", 409, "FILE_HASH_MISMATCH");
   }
   if (
     params.confirmationPhrase !== preview.confirmationPhrase
     || params.productionConfirmationText !== preview.confirmationPhrase
   ) {
-    throw new DumpServiceError("Sicherheitsbestaetigung stimmt nicht", 409, "CONFIRMATION_MISMATCH");
+    throw new DumpServiceError("Sicherheitsbestätigung stimmt nicht", 409, "CONFIRMATION_MISMATCH");
   }
   if (preview.blockingIssues.length > 0) {
     throw new DumpServiceError(
@@ -1116,9 +1116,9 @@ export async function applyDumpImport(
     const blockingIssues = [
       ...verifiedTables
         .filter((entry) => !entry.matches)
-        .map((entry) => `Soll/Ist-Abweichung fuer Tabelle '${entry.key}'.`),
+        .map((entry) => `Soll/Ist-Abweichung für Tabelle '${entry.key}'.`),
       ...(!verifiedUploads.fileCountMatches ? ["Upload-Anzahl weicht nach dem Import ab."] : []),
-      ...(!verifiedUploads.totalBytesMatches ? ["Upload-Gesamtgroesse weicht nach dem Import ab."] : []),
+      ...(!verifiedUploads.totalBytesMatches ? ["Upload-Gesamtgröße weicht nach dem Import ab."] : []),
       ...(!verifiedUploads.sha256Matches ? ["Upload-Hash weicht nach dem Import ab."] : []),
     ];
     const verificationPassed = blockingIssues.length === 0;

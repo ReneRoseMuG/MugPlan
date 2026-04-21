@@ -16,7 +16,7 @@ export async function listEmployeeAbsences(req: Request, res: Response, next: Ne
     const employeeId = parseIdParam(req.params.employeeId);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -37,7 +37,7 @@ export async function getEmployeeAbsence(req: Request, res: Response, next: Next
     const absenceId = parseIdParam(req.params.absenceId);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -62,7 +62,7 @@ export async function createEmployeeAbsence(req: Request, res: Response, next: N
     const input = api.employees.absences.create.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -88,7 +88,7 @@ export async function updateEmployeeAbsence(req: Request, res: Response, next: N
     const input = api.employees.absences.update.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -118,7 +118,7 @@ export async function deleteEmployeeAbsence(req: Request, res: Response, next: N
     const { version } = api.employees.absences.delete.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -147,7 +147,7 @@ export async function previewAffectedAppointments(req: Request, res: Response, n
     const absenceId = parseIdParam(req.params.absenceId);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -169,7 +169,7 @@ export async function bulkReplaceAffectedAppointments(req: Request, res: Respons
     const { replacementEmployeeId } = api.employees.absences.bulkReplaceAppointments.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 

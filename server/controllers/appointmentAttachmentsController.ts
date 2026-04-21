@@ -20,7 +20,7 @@ export async function listAppointmentAttachments(req: Request, res: Response, ne
   try {
     const appointmentId = Number(req.params.appointmentId);
     if (!Number.isFinite(appointmentId)) {
-      res.status(400).json({ message: "Ungueltige appointmentId" });
+      res.status(400).json({ message: "Ungültige appointmentId" });
       return;
     }
     const attachments = await appointmentAttachmentsService.listAppointmentAttachments(appointmentId);
@@ -34,7 +34,7 @@ export async function createAppointmentAttachment(req: Request, res: Response, n
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -44,7 +44,7 @@ export async function createAppointmentAttachment(req: Request, res: Response, n
 
     const appointmentId = Number(req.params.appointmentId);
     if (!Number.isFinite(appointmentId)) {
-      res.status(400).json({ message: "Ungueltige appointmentId" });
+      res.status(400).json({ message: "Ungültige appointmentId" });
       return;
     }
     const exists = await appointmentAttachmentsService.appointmentExists(appointmentId);
@@ -104,7 +104,7 @@ export async function downloadAppointmentAttachment(req: Request, res: Response,
   try {
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -134,7 +134,7 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -144,7 +144,7 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
 
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -176,7 +176,7 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
       snapshot: attachment,
       actor: getRequestActor(req),
       triggerKey: "appointment.attachment.delete",
-      messageText: buildAttachmentMessage("geloescht", "appointment", appointment, attachment.originalName, attachment.appointmentId),
+      messageText: buildAttachmentMessage("gelöscht", "appointment", appointment, attachment.originalName, attachment.appointmentId),
       contexts: [
         {
           tableName: "appointment",
@@ -185,7 +185,7 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
         },
       ],
     });
-    res.status(200).json({ message: "Anhang geloescht" });
+    res.status(200).json({ message: "Anhang gelöscht" });
   } catch (err) {
     next(err);
   }

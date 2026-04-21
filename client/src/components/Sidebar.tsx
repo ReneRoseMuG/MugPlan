@@ -74,8 +74,8 @@ function NavButton({
             onClick={() => window.open(standaloneUrl, "_blank")}
             data-testid={standaloneTestId}
             className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-white hover:text-slate-900"
-            title="In separatem Tab öffnen"
-            aria-label={`${label} in separatem Tab öffnen`}
+            title="In neuem Tab öffnen"
+            aria-label={`${label} in neuem Tab öffnen`}
           >
             <ExternalLink className="h-[13px] w-[13px]" />
           </button>

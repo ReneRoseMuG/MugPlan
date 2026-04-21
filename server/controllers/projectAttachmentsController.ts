@@ -29,7 +29,7 @@ export async function createProjectAttachment(req: Request, res: Response, next:
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -39,7 +39,7 @@ export async function createProjectAttachment(req: Request, res: Response, next:
 
     const projectId = Number(req.params.projectId);
     if (!Number.isFinite(projectId)) {
-      res.status(400).json({ message: "Ungueltige projectId" });
+      res.status(400).json({ message: "Ungültige projectId" });
       return;
     }
     const exists = await projectAttachmentsService.projectExists(projectId);
@@ -98,7 +98,7 @@ export async function downloadProjectAttachment(req: Request, res: Response, nex
   try {
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
     const attachment = await projectAttachmentsService.getProjectAttachmentById(attachmentId);
@@ -126,7 +126,7 @@ export async function deleteProjectAttachment(req: Request, res: Response, next:
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
@@ -136,7 +136,7 @@ export async function deleteProjectAttachment(req: Request, res: Response, next:
 
     const attachmentId = Number(req.params.id);
     if (!Number.isFinite(attachmentId)) {
-      res.status(400).json({ message: "Ungueltige Attachment-ID" });
+      res.status(400).json({ message: "Ungültige Attachment-ID" });
       return;
     }
 
@@ -161,7 +161,7 @@ export async function deleteProjectAttachment(req: Request, res: Response, next:
       snapshot: attachment,
       actor: getRequestActor(req),
       triggerKey: "project.attachment.delete",
-      messageText: buildAttachmentMessage("geloescht", "project", null, attachment.originalName, attachment.projectId),
+      messageText: buildAttachmentMessage("gelöscht", "project", null, attachment.originalName, attachment.projectId),
       contexts: [
         {
           tableName: "project",
@@ -170,7 +170,7 @@ export async function deleteProjectAttachment(req: Request, res: Response, next:
         },
       ],
     });
-    res.status(200).json({ message: "Anhang geloescht" });
+    res.status(200).json({ message: "Anhang gelöscht" });
   } catch (err) {
     next(err);
   }

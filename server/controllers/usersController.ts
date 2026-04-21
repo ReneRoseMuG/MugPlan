@@ -7,7 +7,7 @@ export async function listUsers(req: Request, res: Response, next: NextFunction)
   try {
     const userContext = req.userContext;
     if (!userContext) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -26,7 +26,7 @@ export async function patchUserRole(req: Request, res: Response, next: NextFunct
   try {
     const userContext = req.userContext;
     if (!userContext) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -63,7 +63,7 @@ export async function createUser(req: Request, res: Response, next: NextFunction
   try {
     const userContext = req.userContext;
     if (!userContext) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 

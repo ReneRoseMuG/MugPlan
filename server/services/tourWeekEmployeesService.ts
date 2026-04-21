@@ -58,7 +58,7 @@ function getBerlinTodayDateString(): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungueltiges Datum");
+    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungültiges Datum");
   }
   return parsed;
 }
@@ -73,7 +73,7 @@ function parseStartTimeHour(startTime: string | null | undefined): number | null
   if (!startTime) return null;
   const hour = Number(startTime.split(":")[0]);
   if (!Number.isInteger(hour) || hour < 0 || hour > 23) {
-    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungueltige Startzeit");
+    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungültige Startzeit");
   }
   return hour;
 }
@@ -111,7 +111,7 @@ export function resolveIsoWeekWindow(isoYear: number, isoWeek: number): {
   const resolvedIsoWeek = getISOWeek(weekStart);
 
   if (resolvedIsoYear !== isoYear || resolvedIsoWeek !== isoWeek) {
-    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungueltige ISO-Woche");
+    throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Ungültige ISO-Woche");
   }
 
   const weekEnd = addDays(weekStart, 6);
@@ -145,7 +145,7 @@ export function isWeekLocked(isoYear: number, isoWeek: number, todayBerlin = get
 
 function assertWeekEditable(isoYear: number, isoWeek: number): void {
   if (isWeekLocked(isoYear, isoWeek)) {
-    throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschuetzt");
+    throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschützt");
   }
 }
 
@@ -193,7 +193,7 @@ async function assertWeekPlanningWritable(
 
 function assertWeekAssignmentEmployee(employee: Employee): void {
   if (!employee.isActive) {
-    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Inaktive Mitarbeiter koennen keiner Wochenplanung zugewiesen werden");
+    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Inaktive Mitarbeiter können keiner Wochenplanung zugewiesen werden");
   }
 }
 
@@ -690,7 +690,7 @@ export async function executeAddWeekEmployee(
         expectedVersion: Number(appointment.version),
       });
       if (versionResult.kind === "version_conflict") {
-        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geaendert");
+        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geändert");
       }
       changedAppointmentIds.push(appointmentId);
     }
@@ -839,7 +839,7 @@ export async function executeRemoveWeekEmployee(
         expectedVersion: Number(appointment.version),
       });
       if (versionResult.kind === "version_conflict") {
-        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geaendert");
+        throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Termin wurde zwischenzeitlich geändert");
       }
       changedAppointmentIds.push(appointmentId);
     }
@@ -905,7 +905,7 @@ export async function previewAppointmentTourChange(
   if (toDateOnlyString(appointment.startDate) && toDateOnlyString(appointment.startDate)! < getBerlinTodayDateString()) {
     const parkplatzTourId = await getParkplatzTourId();
     if (appointment.tourId !== parkplatzTourId) {
-      throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Historische Termine koennen nicht ueber Wochenplanung umgestellt werden");
+      throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Historische Termine können nicht über Wochenplanung umgestellt werden");
     }
   }
 
