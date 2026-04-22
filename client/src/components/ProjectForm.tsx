@@ -71,9 +71,10 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
+import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
 import { isManagedRemarksTagName } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
-import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
+import type { Project, Customer, Note, NoteTemplate, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -110,6 +111,14 @@ interface ProjectFormProps {
 }
 
 type DraftProjectNote = Note & {
+  templateId?: number;
+};
+
+type ProjectNoteDraft = {
+  title: string;
+  body: string;
+  cardColor?: string | null;
+  print: boolean;
   templateId?: number;
 };
 
@@ -178,6 +187,8 @@ export function ProjectForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [suggestedProjectNoteDraft, setSuggestedProjectNoteDraft] = useState<ProjectNoteDraft | null>(null);
   const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
@@ -245,6 +256,10 @@ export function ProjectForm({
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("project"),
     queryFn: () => fetchTagCatalog("project"),
+  });
+  const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
+    queryKey: ["/api/note-templates"],
+    queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
 
   // Fetch customers for selection
@@ -914,6 +929,47 @@ export function ProjectForm({
     setDraftProjectNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
+  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+  const openProjectNoteSuggestionForTag = (tagName: string) => {
+    const action = computeTagAddedAction(
+      tagName,
+      effectiveProjectId ?? null,
+      visibleProjectNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind === "show_note_suggestion_dialog") {
+      setNoteSuggestionDialog({ templateTitle: action.templateTitle });
+    }
+  };
+
+  const handleCreateProjectNoteFromSuggestion = async () => {
+    if (!noteSuggestionDialog) return;
+    const templates = noteTemplates.length > 0
+      ? noteTemplates
+      : await queryClient.ensureQueryData({
+        queryKey: ["/api/note-templates"],
+        queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
+      });
+    const template = templates.find((entry) => normalizeTemplateTitle(entry.title) === normalizeTemplateTitle(noteSuggestionDialog.templateTitle));
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSuggestedProjectNoteDraft({
+      title: template.title,
+      body: template.body,
+      cardColor: template.cardColor,
+      print: template.print,
+      templateId: template.id,
+    });
+    setNoteSuggestionDialog(null);
+  };
+
   // Note mutations
   const getProjectNoteVersion = (noteId: number): number => {
     const note = projectNotes.find((entry) => entry.id === noteId);
@@ -930,6 +986,13 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void invalidateProjectNotesQueries();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Notiz konnte nicht angelegt werden",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -999,7 +1062,11 @@ export function ProjectForm({
       const response = await apiRequest('POST', `/api/projects/${effectiveProjectId}/tags`, { tagId });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_relation, tagId) => {
+      const tagName = availableTags.find((tag) => tag.id === tagId)?.name;
+      if (tagName) {
+        openProjectNoteSuggestionForTag(tagName);
+      }
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
       void invalidateProjectQueries();
@@ -1584,6 +1651,10 @@ export function ProjectForm({
                   return;
                 }
                 addDraftProjectTag(tagId);
+                const tagName = availableTags.find((tag) => tag.id === tagId)?.name;
+                if (tagName) {
+                  openProjectNoteSuggestionForTag(tagName);
+                }
               }}
               onRemove={(item) => {
                 if (isEditing) {
@@ -1598,6 +1669,8 @@ export function ProjectForm({
             <NotesSection
               notes={visibleProjectNotes}
               isLoading={isEditing ? notesLoading : false}
+              prefillDraft={suggestedProjectNoteDraft}
+              onPrefillDraftConsumed={() => setSuggestedProjectNoteDraft(null)}
               onAdd={(data) => {
                 if (isEditing) {
                   createNoteMutation.mutate(data);
@@ -1818,6 +1891,26 @@ export function ProjectForm({
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-suggestion">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für dieses Projekt angelegt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={() => setNoteSuggestionDialog(null)}>Überspringen</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-suggestion-confirm"
+              onClick={() => { void handleCreateProjectNoteFromSuggestion(); }}
+            >
+              Jetzt anlegen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>

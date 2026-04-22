@@ -9,6 +9,7 @@
  * - Die Tabellenansicht leitet Row-Doppelklicks in den Termin-Open-Flow weiter.
  * - Monitoring-Zeilen erhalten triggerabhaengige Highlight-Farben.
  * - Die Tabelle rendert nur die neue Trigger-Spaltenstruktur ohne Problem-Spalte.
+ * - Terminzeilen-Previews nutzen die vollstaendige Wochenterminkarten-Hoehe ohne TableView-Hoehenbegrenzung.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsoberflaeche verschwindet fuer Admins.
@@ -83,10 +84,22 @@ vi.mock("@/components/ui/input", () => ({
 }));
 
 vi.mock("@/components/ui/badge-previews/appointment-weekly-panel-preview", () => ({
-  createAppointmentWeeklyPanelPreview: vi.fn(() => ({
-    content: <div data-testid="monitoring-row-preview-content">preview</div>,
-    options: {},
-  })),
+  AppointmentWeeklyPanelPreview: (props: Record<string, unknown>) => (
+    <div data-testid="monitoring-row-preview-content" data-width-px={String(props.widthPx ?? "")}>preview</div>
+  ),
+  appointmentWeeklyPanelPreviewOptions: {
+    openDelayMs: 380,
+    mode: "cursor",
+    side: "right",
+    align: "start",
+    maxWidth: 240,
+    maxHeight: null,
+    scrollY: "visible",
+    cursorOffsetX: 18,
+    cursorOffsetY: 18,
+    viewportPadding: 12,
+  },
+  resolveAppointmentWeeklyPanelPreviewWidthPx: vi.fn(() => 384),
 }));
 
 import { MonitoringPage } from "../../../client/src/components/MonitoringPage";
@@ -176,5 +189,28 @@ describe("FT31 UI: MonitoringPage behavior", () => {
 
     (props.onRowDoubleClick as ((row: { appointmentId: number }) => void) | undefined)?.({ appointmentId: 77 });
     expect(onOpenAppointment).toHaveBeenCalledWith(77);
+  });
+
+  it("forwards full-height weekly appointment preview options to the monitoring table", () => {
+    renderToStaticMarkup(
+      <MonitoringPage isAdmin={false} initialItems={[]} onOpenAppointment={() => undefined} />,
+    );
+
+    const props = tableViewCalls[0];
+    const rowPreviewRenderer = props.rowPreviewRenderer as ((row: {
+      appointmentId: number;
+      startDate: string;
+    }) => { content: React.ReactNode; options: Record<string, unknown> });
+    const preview = rowPreviewRenderer({ appointmentId: 77, startDate: "2099-01-01" });
+    const html = renderToStaticMarkup(preview.content);
+
+    expect(html).toContain("monitoring-row-preview-content");
+    expect(html).toContain("data-width-px=\"384\"");
+    expect(preview.options).toMatchObject({
+      mode: "cursor",
+      maxWidth: 384,
+      maxHeight: null,
+      scrollY: "visible",
+    });
   });
 });

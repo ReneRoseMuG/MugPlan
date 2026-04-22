@@ -16,7 +16,12 @@ import {
 } from "@/lib/monitoring-filters";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
 import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
-import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import {
+  AppointmentWeeklyPanelPreview,
+  appointmentWeeklyPanelPreviewOptions,
+  resolveAppointmentWeeklyPanelPreviewWidthPx,
+} from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type MonitoringPageProps = {
@@ -40,7 +45,15 @@ function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConf
   };
 }
 
-function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appointmentId: number; startDate: string }) {
+function MonitoringAppointmentRowPreview({
+  appointmentId,
+  startDate,
+  widthPx,
+}: {
+  appointmentId: number;
+  startDate: string;
+  widthPx: number;
+}) {
   const previewQuery = useQuery<CalendarAppointment | null>({
     queryKey: ["monitoring-row-preview", appointmentId, startDate],
     queryFn: async () => {
@@ -63,14 +76,31 @@ function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appoint
 
   if (!previewQuery.data) {
     return (
-      <div className="w-[320px] rounded-lg bg-white px-4 py-3 text-sm text-slate-500">
+      <div className="rounded-lg bg-white px-4 py-3 text-sm text-slate-500" style={{ width: widthPx }}>
         Termin-Preview wird geladen...
       </div>
     );
   }
 
-  const preview = createAppointmentWeeklyPanelPreview(previewQuery.data, { sizeProfile: "sidebarTable" });
-  return <>{preview.content}</>;
+  return <AppointmentWeeklyPanelPreview appointment={previewQuery.data} widthPx={widthPx} />;
+}
+
+function createMonitoringAppointmentRowPreview(appointmentId: number, startDate: string): InfoBadgePreview {
+  const previewWidthPx = resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable");
+
+  return {
+    content: (
+      <MonitoringAppointmentRowPreview
+        appointmentId={appointmentId}
+        startDate={startDate}
+        widthPx={previewWidthPx}
+      />
+    ),
+    options: {
+      ...appointmentWeeklyPanelPreviewOptions,
+      maxWidth: previewWidthPx,
+    },
+  };
 }
 
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
@@ -216,9 +246,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         rows={filteredRows}
         rowKey={(row) => row.appointmentId}
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
-        rowPreviewRenderer={(row) => (
-          <MonitoringAppointmentRowPreview appointmentId={row.appointmentId} startDate={row.startDate} />
-        )}
+        rowPreviewRenderer={(row) => createMonitoringAppointmentRowPreview(row.appointmentId, row.startDate)}
         rowStyle={(row) => ({
           backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
         })}
