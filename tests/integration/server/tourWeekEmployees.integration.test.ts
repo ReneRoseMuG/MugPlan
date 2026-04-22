@@ -1017,10 +1017,10 @@ describe("tourWeekEmployees integration", () => {
         startTime: null,
         existingEmployeeIds: [],
       })
-      .expect(200)
+      .expect(409)
       .expect((res) => {
-        expect(res.body.hasWeekPlan).toBe(false);
-        expect(res.body.items).toEqual([]);
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body.message).toBe(`Für ${tour.name}/KW ${isoWeek.isoWeek} wurde die Terminplanung gesperrt.`);
       });
 
     await admin

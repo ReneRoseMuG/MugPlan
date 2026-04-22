@@ -535,6 +535,7 @@ export function CalendarWeekView({
           key[0] === "calendarAppointments"
           || key[0] === "calendarWeekLaneEmployeePreviews"
           || key[0] === "calendarBlockedTourWeeks"
+          || key[0] === "/api/appointments"
           || (typeof key[0] === "string" && key[0].startsWith("/api/tours/") && key[0].endsWith("/week-employees"))
         );
       },

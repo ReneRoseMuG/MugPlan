@@ -306,6 +306,16 @@ const parseErrorPayload = (rawBody: string): ApiErrorPayload | null => {
   };
 };
 
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (!(error instanceof Error)) return fallback;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart >= 0) {
+    const parsed = parseErrorPayload(error.message.slice(jsonStart));
+    if (parsed?.message) return parsed.message;
+  }
+  return error.message || fallback;
+};
+
 const formatConflictEmployees = (conflictEmployees?: ApiConflictEmployee[]) => {
   if (!Array.isArray(conflictEmployees) || conflictEmployees.length === 0) return null;
   const names = conflictEmployees
@@ -554,7 +564,11 @@ export function AppointmentForm({
     queryKey: ["/api/employees", { scope: "active" }],
     queryFn: () => fetchJson<Employee[]>("/api/employees?scope=active"),
   });
-  const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
+  const {
+    data: appointmentDetail,
+    isLoading: appointmentLoading,
+    isFetching: appointmentFetching,
+  } = useQuery<AppointmentDetail>({
     queryKey: ["/api/appointments", appointmentId],
     queryFn: () => fetchJson<AppointmentDetail>(`/api/appointments/${appointmentId}`),
     enabled: Boolean(appointmentId),
@@ -787,6 +801,7 @@ export function AppointmentForm({
       return;
     }
     if (!appointmentDetail || appointmentDetail.id !== appointmentId) return;
+    if (appointmentFetching) return;
     if (hydratedEditAppointmentIdRef.current === appointmentId) return;
     hydratedEditAppointmentIdRef.current = appointmentId;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
@@ -818,7 +833,7 @@ export function AppointmentForm({
         sidebarDraftSignature: null,
       }),
     );
-  }, [appointmentDetail, appointmentId, isEditing]);
+  }, [appointmentDetail, appointmentFetching, appointmentId, isEditing]);
 
   useEffect(() => {
     if (isEditing || initialFormSnapshot !== null) return;
@@ -1073,15 +1088,16 @@ export function AppointmentForm({
   const handleTourChange = (tourId: number | null) => {
     if (tourId === selectedTourId) return;
     void (async () => {
-      applyTourChange(tourId);
       setResolvedAppointmentWeekPlanKey(null);
       if (tourId === null) {
+        applyTourChange(tourId);
         return;
       }
 
       try {
         const resolutionKey = buildAppointmentWeekResolutionKey(tourId, startDate);
         const preview = await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
+        applyTourChange(tourId);
         if (!preview.hasWeekPlan) {
           setResolvedAppointmentWeekPlanKey(resolutionKey);
           return;
@@ -1093,7 +1109,7 @@ export function AppointmentForm({
           resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
         toast({
           title: "Wochenplanung konnte nicht geladen werden",
           description: message,
@@ -1768,7 +1784,7 @@ export function AppointmentForm({
 
         setResolvedAppointmentWeekPlanKey(currentResolutionKey);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
         toast({
           title: "Wochenplanung konnte nicht geladen werden",
           description: message,

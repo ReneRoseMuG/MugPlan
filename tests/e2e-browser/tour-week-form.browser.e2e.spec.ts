@@ -16,7 +16,7 @@
  * Ziel:
  * Browser-E2E-Nachweis fuer das gemeinsame tour_week-Formular mit echten KW-Daten, Notizeditor und sofortiger UI-Reflexion.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { eq } from "drizzle-orm";
 
@@ -96,7 +96,7 @@ async function createBlockWeekScenario(prefix: string) {
   };
 }
 
-async function expectAppointmentParked(page: Parameters<typeof test>[0]["page"], appointmentId: number, parkplatzTourId: number) {
+async function expectAppointmentParked(page: Page, appointmentId: number, parkplatzTourId: number) {
   const response = await page.request.get(`/api/appointments/${appointmentId}`);
   expect(response.ok()).toBeTruthy();
   const body = await response.json();
@@ -107,7 +107,16 @@ async function expectAppointmentParked(page: Parameters<typeof test>[0]["page"],
   expect(tagNames).not.toContain("Planung blockiert");
 }
 
-async function createWeekNote(page: Parameters<typeof test>[0]["page"], params: {
+async function getAppointmentTagIdByName(page: Page, appointmentId: number, tagName: string): Promise<number> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/tags`);
+  expect(response.ok()).toBeTruthy();
+  const tags = await response.json() as Array<{ tag: { id: number; name: string } }>;
+  const tag = tags.find((entry) => entry.tag.name === tagName);
+  if (!tag) throw new Error(`Expected appointment tag ${tagName} to exist.`);
+  return tag.tag.id;
+}
+
+async function createWeekNote(page: Page, params: {
   tourId: number;
   isoYear: number;
   isoWeek: number;
@@ -124,7 +133,7 @@ async function createWeekNote(page: Parameters<typeof test>[0]["page"], params: 
   expect(response.ok()).toBeTruthy();
 }
 
-async function openWeekNotesEditor(page: Parameters<typeof test>[0]["page"], title: string, body: string) {
+async function openWeekNotesEditor(page: Page, title: string, body: string) {
   await page.getByTestId("button-new-note").click();
   const dialog = page.getByRole("dialog");
   await dialog.getByTestId("input-note-title").fill(title);
@@ -168,6 +177,46 @@ test("blocking from the week calendar header parks appointments and shows the bl
   await expect(laneHeader).toBeVisible();
   await expect(page.getByText("Wochenplanung blockiert").first()).toBeVisible();
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
+});
+
+test("blocking a week refreshes the parked appointment edit form after the appointment was opened before blocking", async ({ page }) => {
+  const scenario = await createBlockWeekScenario("TWF-BLOCK-FORM-FRESH");
+  const employeeToken = "TWF-BLOCK-FORM-FRESH-EMP";
+
+  await loginAsAdmin(page);
+  await page.goto(`/standalone/calendar/week?kw=${scenario.targetWeek.isoWeek}&year=${scenario.targetWeek.isoYear}`);
+  await expect(page.getByTestId("calendar-week-view")).toBeVisible();
+
+  const originalAppointmentPanel = page.getByTestId(`week-appointment-panel-${scenario.appointmentId}`).first();
+  await expect(originalAppointmentPanel).toBeVisible();
+  await originalAppointmentPanel.dblclick();
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId("badge-tour")).toContainText(scenario.tour.name);
+  await expect(page.getByTestId("slot-appointment-employees")).toContainText(employeeToken);
+  await expect(page.getByTestId("appointment-tag-picker-assigned-list")).not.toContainText("Geparkt");
+  await page.getByTestId("button-close-appointment").click();
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+
+  await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+
+  const parkedLaneWithAppointment = page.locator("section")
+    .filter({ has: page.getByTestId(`week-tour-lane-header-tour-${scenario.parkplatzTourId}`) })
+    .filter({ has: page.getByTestId(`week-appointment-panel-${scenario.appointmentId}`) })
+    .first();
+  await expect(parkedLaneWithAppointment).toBeVisible();
+  const parkedAppointmentPanel = parkedLaneWithAppointment.getByTestId(`week-appointment-panel-${scenario.appointmentId}`);
+  await expect(parkedAppointmentPanel).toBeVisible();
+  await expect(parkedAppointmentPanel).toContainText("Gepa");
+  await parkedAppointmentPanel.dblclick();
+
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(page.getByTestId("badge-tour")).toContainText("Parkplatz");
+  await expect(page.getByTestId("slot-appointment-employees")).toContainText("Keine Mitarbeiter zugewiesen");
+  await expect(page.getByTestId("slot-appointment-employees")).not.toContainText(employeeToken);
+  const geparktTagId = await getAppointmentTagIdByName(page, scenario.appointmentId, "Geparkt");
+  await expect(page.getByTestId(`appointment-tag-picker-tag-${geparktTagId}`)).toBeVisible();
+  await expect(page.getByTestId("appointment-tag-picker-assigned-list")).toContainText("Gepa");
 });
 
 test("blocked tour weeks remain visible in the month sheet after appointments are parked", async ({ page }) => {

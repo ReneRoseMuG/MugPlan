@@ -139,6 +139,24 @@ async function shouldTreatTourAsMesse(tourId: number | null | undefined): Promis
   return isMesseTourName(tour?.name);
 }
 
+function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWeek: number): string {
+  const label = tourName?.trim() ? tourName.trim() : "Tour";
+  return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
+}
+
+async function assertTargetTourWeekWritable(tourId: number | null | undefined, startDateText: string): Promise<void> {
+  if (tourId == null) return;
+  const startDate = parseDateOnly(startDateText);
+  const isoYear = getISOWeekYear(startDate);
+  const isoWeek = getISOWeek(startDate);
+  if (!(await tourWeeksService.isTourWeekBlocked(tourId, isoYear, isoWeek))) {
+    return;
+  }
+
+  const tour = await toursRepository.getTour(tourId);
+  throw new AppointmentError(formatBlockedTourWeekMessage(tour?.name, isoWeek), 409, "BUSINESS_CONFLICT");
+}
+
 function allowsHistoricalParkplatzMutation(
   existingTourId: number | null | undefined,
   nextTourId: number | null | undefined,
@@ -577,6 +595,7 @@ export async function createAppointment(
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+  await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
@@ -689,6 +708,10 @@ export async function updateAppointment(
         : "Historische Termine können nicht geändert werden",
     });
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
+    const existingStartDate = toDateOnlyString(existing.startDate);
+    if (nextTourId !== existing.tourId || existingStartDate !== data.startDate) {
+      await assertTargetTourWeekWritable(nextTourId, data.startDate);
+    }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
       { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },

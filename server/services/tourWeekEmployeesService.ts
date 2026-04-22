@@ -184,11 +184,17 @@ async function assertWeekPlanningWritable(
   tourId: number,
   isoYear: number,
   isoWeek: number,
+  tourName?: string | null,
 ): Promise<void> {
   const week = await tourWeeksRepository.getWeekByTourAndWeek(tourId, isoYear, isoWeek);
   if (week?.isBlocked) {
-    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Wochenplanung ist blockiert");
+    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", formatBlockedTourWeekMessage(tourName, isoWeek));
   }
+}
+
+function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWeek: number): string {
+  const label = tourName?.trim() ? tourName.trim() : "Tour";
+  return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
 }
 
 function assertWeekAssignmentEmployee(employee: Employee): void {
@@ -581,7 +587,7 @@ export async function previewAddWeekEmployee(
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
   assertWeekEditable(params.isoYear, params.isoWeek);
-  await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek);
+  await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
   const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   await assertWeekUniqueAssignment(tourId, params.employeeId, params.isoYear, params.isoWeek);
 
@@ -614,7 +620,7 @@ export async function executeAddWeekEmployee(
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
   assertWeekEditable(params.isoYear, params.isoWeek);
-  await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek);
+  await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
 
   const selectedAppointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
   const weekAppointmentsResult = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
@@ -719,13 +725,13 @@ export async function previewRemoveWeekEmployee(
   tourId: number,
   params: { assignmentId: number },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   const assignment = await tourWeekEmployeesRepository.getAssignmentById(params.assignmentId);
   if (!assignment || assignment.tourId !== tourId) {
     throw new TourWeekEmployeesError(404, "NOT_FOUND", "Wochenzuordnung nicht gefunden");
   }
   assertWeekEditable(assignment.isoYear, assignment.isoWeek);
-  await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek);
+  await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek, tour.name);
 
   const [{ appointments }, minimumEmployees] = await Promise.all([
     listWeekAppointments(tourId, assignment.isoYear, assignment.isoWeek),
@@ -790,7 +796,7 @@ export async function executeRemoveWeekEmployee(
   assignmentId: number,
   params: { isoYear: number; isoWeek: number; selectedAppointmentIds: number[] },
 ) {
-  await requireTour(tourId);
+  const tour = await requireTour(tourId);
   const assignment = await tourWeekEmployeesRepository.getAssignmentById(assignmentId);
   if (!assignment || assignment.tourId !== tourId) {
     throw new TourWeekEmployeesError(404, "NOT_FOUND", "Wochenzuordnung nicht gefunden");
@@ -801,7 +807,7 @@ export async function executeRemoveWeekEmployee(
   }
 
   assertWeekEditable(assignment.isoYear, assignment.isoWeek);
-  await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek);
+  await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek, tour.name);
 
   const selectedAppointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
   const weekAppointmentsResult = await listWeekAppointments(tourId, assignment.isoYear, assignment.isoWeek);
@@ -876,6 +882,8 @@ export async function previewTourAssignment(
   },
 ) {
   const tour = await requireTour(tourId);
+  const startDate = parseDateOnly(params.startDate);
+  await assertWeekPlanningWritable(tourId, getISOWeekYear(startDate), getISOWeek(startDate), tour.name);
   const currentEmployees = await employeesRepository.getEmployeesByIds(params.existingEmployeeIds);
   return buildAppointmentEmployeePreview({
     tourId,
@@ -912,6 +920,8 @@ export async function previewAppointmentTourChange(
   let nextTourSupportsWeekPlanning = true;
   if (params.newTourId) {
     const nextTour = await requireTour(params.newTourId);
+    const nextStartDate = parseDateOnly(params.newStartDate);
+    await assertWeekPlanningWritable(params.newTourId, getISOWeekYear(nextStartDate), getISOWeek(nextStartDate), nextTour.name);
     nextTourSupportsWeekPlanning = supportsWeekPlanningForTour(nextTour);
   }
 
