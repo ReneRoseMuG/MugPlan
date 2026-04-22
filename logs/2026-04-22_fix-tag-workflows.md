@@ -53,3 +53,27 @@ Ergebnis:
 
 - Der volle Testlauf wurde nicht ausgeführt.
 - Die gezielte Browser-Suite deckt die betroffenen FT06-Workflow- und Latenzfälle ab.
+
+## Follow-up: Projekt-Notizeditor
+
+Nach dem ersten Fix zeigte der Projektformular-Workflow noch eine Abweichung zum Terminformular: Nach Bestätigung der Notizfrage wurde die Projektnotiz sofort angelegt, ohne den Editor dazwischen zu öffnen.
+
+Korrektur:
+
+- `NotesSection` kann nun einen vorbefüllten Notiz-Draft im Editor öffnen.
+- `ProjectForm` nutzt diesen Draft für den Tag-Workflow, statt die Projektnotiz direkt zu speichern.
+- Die Projektnotiz wird erst nach Klick auf `Speichern` im Editor angelegt.
+
+Zusätzliche Prüfung:
+
+- Der Browser-Test für den Projekt-Tag-Workflow prüft jetzt ausdrücklich, dass nach Bestätigung der Notizfrage der Editor geöffnet ist und die Projektnotiz erst nach dem Editor-Speichern existiert.
+
+Zusätzlich ausgeführt:
+
+- `npx tsc --noEmit`
+- `npm run test:e2e:browser -- tests/e2e-browser/tag-rule-engine.workflow.browser.e2e.spec.ts`
+- `npm run lint`
+
+Ergebnis:
+
+- Alle zusätzlichen Prüfungen erfolgreich.

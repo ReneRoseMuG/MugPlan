@@ -259,6 +259,14 @@ test("adds Reklamation-Tag from the project form picker and creates a project no
 
   await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(reklamationTemplate.title);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.map((note) => note.title);
+  }).not.toEqual(expect.arrayContaining([reklamationTemplate.title]));
+
+  await page.getByTestId("button-save-note").click();
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
 
   await expect.poll(async () => {
     const notes = await readProjectNotes(page, project.id);

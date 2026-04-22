@@ -114,6 +114,14 @@ type DraftProjectNote = Note & {
   templateId?: number;
 };
 
+type ProjectNoteDraft = {
+  title: string;
+  body: string;
+  cardColor?: string | null;
+  print: boolean;
+  templateId?: number;
+};
+
 type ProjectOrderNumberResolutionResponse = {
   resolution: "none" | "single" | "multiple";
   count: number;
@@ -180,6 +188,7 @@ export function ProjectForm({
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [suggestedProjectNoteDraft, setSuggestedProjectNoteDraft] = useState<ProjectNoteDraft | null>(null);
   const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
@@ -951,23 +960,7 @@ export function ProjectForm({
       return;
     }
 
-    if (isEditing) {
-      try {
-        await createNoteMutation.mutateAsync({
-          title: template.title,
-          body: template.body,
-          cardColor: template.cardColor,
-          print: template.print,
-          templateId: template.id,
-        });
-        setNoteSuggestionDialog(null);
-      } catch {
-        // onError der Mutation zeigt bereits das Toast an.
-      }
-      return;
-    }
-
-    addDraftProjectNote({
+    setSuggestedProjectNoteDraft({
       title: template.title,
       body: template.body,
       cardColor: template.cardColor,
@@ -1676,6 +1669,8 @@ export function ProjectForm({
             <NotesSection
               notes={visibleProjectNotes}
               isLoading={isEditing ? notesLoading : false}
+              prefillDraft={suggestedProjectNoteDraft}
+              onPrefillDraftConsumed={() => setSuggestedProjectNoteDraft(null)}
               onAdd={(data) => {
                 if (isEditing) {
                   createNoteMutation.mutate(data);
