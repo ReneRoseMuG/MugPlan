@@ -32,6 +32,11 @@ import {
 import { logDebug, logInfo } from "../lib/logger";
 import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
 import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
+import {
+  getAppointmentParkingDefaults,
+  getParkplatzTourId,
+  parkAppointmentTx,
+} from "./appointmentParkingService";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
@@ -132,6 +137,24 @@ async function shouldTreatTourAsMesse(tourId: number | null | undefined): Promis
   const allTours = await toursRepository.getTours();
   const tour = allTours.find((entry) => entry.id === tourId) ?? null;
   return isMesseTourName(tour?.name);
+}
+
+function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWeek: number): string {
+  const label = tourName?.trim() ? tourName.trim() : "Tour";
+  return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
+}
+
+async function assertTargetTourWeekWritable(tourId: number | null | undefined, startDateText: string): Promise<void> {
+  if (tourId == null) return;
+  const startDate = parseDateOnly(startDateText);
+  const isoYear = getISOWeekYear(startDate);
+  const isoWeek = getISOWeek(startDate);
+  if (!(await tourWeeksService.isTourWeekBlocked(tourId, isoYear, isoWeek))) {
+    return;
+  }
+
+  const tour = await toursRepository.getTour(tourId);
+  throw new AppointmentError(formatBlockedTourWeekMessage(tour?.name, isoWeek), 409, "BUSINESS_CONFLICT");
 }
 
 function allowsHistoricalParkplatzMutation(
@@ -572,6 +595,7 @@ export async function createAppointment(
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+  await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
@@ -684,6 +708,10 @@ export async function updateAppointment(
         : "Historische Termine können nicht geändert werden",
     });
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
+    const existingStartDate = toDateOnlyString(existing.startDate);
+    if (nextTourId !== existing.tourId || existingStartDate !== data.startDate) {
+      await assertTargetTourWeekWritable(nextTourId, data.startDate);
+    }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
       { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },
@@ -712,7 +740,7 @@ export async function updateAppointment(
     let nextTourName: string | null = null;
     if (tourChanged && existing.tourId != null) {
       const allTours = await toursRepository.getTours();
-      const parkplatzTour = findParkplatzTour(allTours);
+      const parkplatzTour = allTours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
       if (parkplatzTour && existing.tourId === parkplatzTour.id) {
         const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
         if (geparktTag) {
@@ -1916,19 +1944,6 @@ export async function cancelAppointment(
   return result;
 }
 
-function findParkplatzTour(tours: Awaited<ReturnType<typeof toursRepository.getTours>>) {
-  return tours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
-}
-
-async function getParkplatzTour(): Promise<Awaited<ReturnType<typeof findParkplatzTour>>> {
-  const allTours = await toursRepository.getTours();
-  return findParkplatzTour(allTours);
-}
-
-async function getParkplatzTourId(): Promise<number | null> {
-  return (await getParkplatzTour())?.id ?? null;
-}
-
 function isHistoricalAppointmentMutationLocked(
   appointment: { startDate: Date | string | null | undefined; tourId: number | null | undefined },
   parkplatzTourId: number | null,
@@ -1966,8 +1981,8 @@ export async function parkAppointment(
     planningBlockedMessage: "Planung blockierte Termine können nicht geparkt werden",
   });
 
-  const parkplatzTour = await getParkplatzTour();
-  if (!parkplatzTour) {
+  const parkingDefaults = await getAppointmentParkingDefaults();
+  if (parkingDefaults.kind === "missing_parkplatz_tour") {
     throw new AppointmentError(
       "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausführen.",
       409,
@@ -1975,8 +1990,7 @@ export async function parkAppointment(
     );
   }
 
-  const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
-  if (!geparktTag) {
+  if (parkingDefaults.kind === "missing_geparkt_tag") {
     throw new AppointmentError(
       "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausführen.",
       409,
@@ -1985,24 +1999,21 @@ export async function parkAppointment(
   }
 
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
-    if (!existing) return { found: false } as const;
-
-    if (existing.tourId === parkplatzTour.id) {
+    const parkResult = await parkAppointmentTx(tx, {
+      appointmentId,
+      expectedVersion,
+      parkplatzTourId: parkingDefaults.parkplatzTourId,
+      geparktTagId: parkingDefaults.geparktTagId,
+      alreadyParkedMode: "error",
+    });
+    if (parkResult.kind === "not_found") return { found: false } as const;
+    if (parkResult.kind === "already_parked") {
       throw new AppointmentError("Termin ist bereits geparkt", 409, "ALREADY_PARKED");
     }
 
-    const parkResult = await appointmentsRepository.setAppointmentParkTx(tx, {
-      appointmentId,
-      expectedVersion,
-      tourId: parkplatzTour.id,
-    });
     if (parkResult.kind === "version_conflict") {
       throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
-
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
-    await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, geparktTag.id);
 
     return { found: true } as const;
   });

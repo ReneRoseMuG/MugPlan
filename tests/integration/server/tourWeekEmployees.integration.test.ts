@@ -11,7 +11,7 @@
  * - Wiederholte Add-Executes fuer dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  * - Beim Oeffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
- * - Blockierte Wochen entfernen Termin-Mitarbeiter und Wochen-Zuordnungen, setzen den Schutz-Tag, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
+ * - Blockierte Wochen parken Termine, entfernen Wochen-Zuordnungen, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
  * - Die System-Tour `Parkplatz` bleibt von Seed, Listen, Verfuegbarkeit, Previews und Wochen-Mutationen ausgeschlossen.
  *
  * Fehlerfaelle:
@@ -41,8 +41,10 @@ import { db } from "../../../server/db";
 import { employees, tourWeekEmployees, tourWeeks, tours } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
 import {
+  attachAppointmentTagFixture,
   createAppointmentFixture,
   createEmployeeFixture,
+  ensureSystemTagsFixture,
   createProjectFixture,
   createTourFixture,
   getRelativeBerlinDate,
@@ -98,6 +100,13 @@ async function renameTour(tourId: number, name: string): Promise<void> {
     .update(tours)
     .set({ name })
     .where(eq(tours.id, tourId));
+}
+
+async function getTourIdByName(name: string): Promise<number> {
+  await ensureSystemTagsFixture();
+  const [tour] = await db.select().from(tours).where(eq(tours.name, name));
+  if (!tour) throw new Error(`Expected tour ${name} to exist.`);
+  return tour.id;
 }
 
 async function seedWeekPlanNoise(prefix: string, referenceDate: string) {
@@ -927,9 +936,10 @@ describe("tourWeekEmployees integration", () => {
     expect(employeeAssignments).toHaveLength(1);
   });
 
-  it("blocks a week, strips appointment employees plus week assignments, exposes the blocked calendar feed and suppresses active week-plan previews", async () => {
+  it("blocks a week, parks appointments plus clears week assignments, exposes the blocked calendar feed and suppresses active week-plan previews", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#b45309");
+    const parkplatzTourId = await getTourIdByName("Parkplatz");
     const project = await createProjectFixture({ prefix: "TWE-BLOCK" });
     const employee = await createEmployeeFixture("TWE-BLOCK-EMP");
     const appointment = await createAppointmentFixture({
@@ -967,8 +977,11 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/appointments/${appointment!.id}`)
       .expect(200)
       .expect((res) => {
+        expect(res.body.tourId).toBe(parkplatzTourId);
         expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
-        expect((res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).toContain("Planung blockiert");
+        const tagNames = (res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name);
+        expect(tagNames).toContain("Geparkt");
+        expect(tagNames).not.toContain("Planung blockiert");
       });
 
     await admin
@@ -1004,10 +1017,10 @@ describe("tourWeekEmployees integration", () => {
         startTime: null,
         existingEmployeeIds: [],
       })
-      .expect(200)
+      .expect(409)
       .expect((res) => {
-        expect(res.body.hasWeekPlan).toBe(false);
-        expect(res.body.items).toEqual([]);
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body.message).toBe(`Für ${tour.name}/KW ${isoWeek.isoWeek} wurde die Terminplanung gesperrt.`);
       });
 
     await admin
@@ -1037,9 +1050,10 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
-  it("unblocks a blocked week without restoring removed appointment employees", async () => {
+  it("unblocks a blocked week without restoring parked appointment state", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#1d4ed8");
+    const parkplatzTourId = await getTourIdByName("Parkplatz");
     const project = await createProjectFixture({ prefix: "TWE-UNBLOCK" });
     const employee = await createEmployeeFixture("TWE-UNBLOCK-EMP");
     const appointment = await createAppointmentFixture({
@@ -1081,8 +1095,11 @@ describe("tourWeekEmployees integration", () => {
       .get(`/api/appointments/${appointment!.id}`)
       .expect(200)
       .expect((res) => {
+        expect(res.body.tourId).toBe(parkplatzTourId);
         expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
-        expect((res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).not.toContain("Planung blockiert");
+        const tagNames = (res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name);
+        expect(tagNames).toContain("Geparkt");
+        expect(tagNames).not.toContain("Planung blockiert");
       });
 
     await admin
@@ -1098,6 +1115,71 @@ describe("tourWeekEmployees integration", () => {
           isBlocked: false,
           employees: [],
         }));
+      });
+  });
+
+  it("leaves cancelled appointments in the blocked tour week and excludes them from affected count", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#be123c");
+    const project = await createProjectFixture({ prefix: "TWE-BLOCK-CANCELLED" });
+    const employee = await createEmployeeFixture("TWE-BLOCK-CANCELLED-EMP");
+    const cancelledEmployee = await createEmployeeFixture("TWE-BLOCK-CANCELLED-KEEP");
+    const activeAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(28),
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    const cancelledAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: toDateOnlyString(activeAppointment!.startDate),
+      tourId: tour.id,
+      employeeIds: [cancelledEmployee.id],
+    });
+    const { allTags } = await ensureSystemTagsFixture();
+    const cancellationTag = allTags.find((tag) => tag.name === "Storniert");
+    if (!cancellationTag) throw new Error("Expected Storniert tag to exist.");
+    await attachAppointmentTagFixture(cancelledAppointment!.id, cancellationTag.id);
+    const isoWeek = resolveIsoWeek(activeAppointment!.startDate);
+    const parkplatzTourId = await getTourIdByName("Parkplatz");
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${isoWeek.isoYear}/${isoWeek.isoWeek}/block`)
+      .send({})
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({
+          affectedAppointmentCount: 1,
+          week: expect.objectContaining({
+            tourId: tour.id,
+            isoYear: isoWeek.isoYear,
+            isoWeek: isoWeek.isoWeek,
+            isBlocked: true,
+          }),
+        }));
+      });
+
+    await admin
+      .get(`/api/appointments/${activeAppointment!.id}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.tourId).toBe(parkplatzTourId);
+        expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([]);
+        const tagNames = (res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name);
+        expect(tagNames).toContain("Geparkt");
+        expect(tagNames).not.toContain("Planung blockiert");
+      });
+
+    await admin
+      .get(`/api/appointments/${cancelledAppointment!.id}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.tourId).toBe(tour.id);
+        expect((res.body.employees as Array<{ id: number }>).map((entry) => entry.id)).toEqual([cancelledEmployee.id]);
+        const tagNames = (res.body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name);
+        expect(tagNames).toContain("Storniert");
+        expect(tagNames).not.toContain("Geparkt");
+        expect(tagNames).not.toContain("Planung blockiert");
       });
   });
 

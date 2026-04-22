@@ -22,6 +22,7 @@ export async function invalidateTourWeekQueries(
       const firstKey = query.queryKey[0];
       if (firstKey === "appointments-list") return true;
       if (firstKey === "/api/appointments/list") return true;
+      if (firstKey === "/api/appointments") return true;
       if (firstKey === "calendarAppointments") return true;
       if (firstKey === "calendarWeekLaneEmployeePreviews") return true;
       if (firstKey === "calendarBlockedTourWeeks") return true;
