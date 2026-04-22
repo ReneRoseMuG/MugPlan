@@ -379,7 +379,7 @@ describe("FT04 tour form shell layout integration", () => {
     );
 
     expect(markup).toContain("text-tour-week-blocked-2099-7");
-    expect(markup).toContain("Zugeordnete Mitarbeiter wurden aus den Terminen dieser Woche abgezogen");
+    expect(markup).toContain("Termine dieser Woche wurden auf Parkplatz verschoben");
     expect(markup).not.toContain("Mitarbeiter bleiben sichtbar");
   });
 

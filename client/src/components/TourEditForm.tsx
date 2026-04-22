@@ -541,7 +541,7 @@ export function TourEditForm({
                           className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
                           data-testid={`text-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
                         >
-                          Die Wochenplanung ist blockiert. Zugeordnete Mitarbeiter wurden aus den Terminen dieser Woche abgezogen und können nicht neu geplant werden.
+                          Die Wochenplanung ist blockiert. Termine dieser Woche wurden auf Parkplatz verschoben, als geparkt markiert und können dort weiter bearbeitet werden.
                         </div>
                       ) : null}
                       {week.employees.map((employee) => (
