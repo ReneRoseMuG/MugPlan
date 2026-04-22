@@ -467,6 +467,7 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls[0]?.mode).toBe("expanded");
     expect(projectPanelCalls).toHaveLength(1);
     expect(projectPanelCalls[0]?.collapsed).toBe(false);
+    expect(projectPanelCalls[0]?.displayMode).toBe("detail");
     expect(projectPanelCalls[0]?.className).toBe("min-h-0 h-full w-full");
   });
 

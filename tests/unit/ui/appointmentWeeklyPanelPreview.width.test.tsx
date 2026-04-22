@@ -14,8 +14,24 @@
  * Ziel:
  * Stabilitaet der Breitenauflösung fuer Weekly-Previews absichern.
  */
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveAppointmentWeeklyPanelPreviewWidthPx } from "../../../client/src/components/ui/badge-previews/appointment-weekly-panel-preview";
+
+const panelCalls: Array<Record<string, unknown>> = [];
+
+vi.mock("@/components/calendar/CalendarWeekAppointmentPanel", () => ({
+  CalendarWeekAppointmentPanel: (props: Record<string, unknown>) => {
+    panelCalls.push(props);
+    return <div data-testid="mock-week-panel" />;
+  },
+}));
+
+import {
+  AppointmentWeeklyPanelPreview,
+  appointmentWeeklyPanelPreviewOptions,
+  resolveAppointmentWeeklyPanelPreviewWidthPx,
+} from "../../../client/src/components/ui/badge-previews/appointment-weekly-panel-preview";
 import {
   WEEKLY_PREVIEW_WIDTH_FALLBACK_PX,
   parseStoredWeeklyPreviewWidth,
@@ -25,6 +41,8 @@ import {
 
 describe("FT03 weekly preview width resolution", () => {
   beforeEach(() => {
+    Object.assign(globalThis, { React });
+    panelCalls.length = 0;
     const storage = new Map<string, string>();
     vi.stubGlobal("window", {
       localStorage: {
@@ -65,5 +83,65 @@ describe("FT03 weekly preview width resolution", () => {
   it("uses measured width for sidebar/table profile when it is larger than 320px", () => {
     storeWeeklyPreviewWidth(380);
     expect(resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable")).toBe(380);
+  });
+
+  it("renders weekly appointment previews in detail body mode with cursor positioning", () => {
+    renderToStaticMarkup(
+      <AppointmentWeeklyPanelPreview
+        appointment={{
+          id: 77,
+          version: 1,
+          projectId: 1,
+          projectName: "Projekt",
+          projectVersion: 1,
+          projectOrderNumber: "A-1",
+          projectArticleItems: [],
+          projectDescription: null,
+          project: null,
+          startDate: "2099-04-01",
+          endDate: null,
+          startTime: null,
+          tourId: null,
+          tourName: null,
+          tourColor: null,
+          customer: {
+            id: 1,
+            customerNumber: "K-1",
+            fullName: "Kunde",
+            postalCode: "12345",
+            city: "Berlin",
+            addressLine1: null,
+            phone: null,
+            email: null,
+          },
+          customerNotesCount: 0,
+          projectNotesCount: 0,
+          appointmentNotesCount: 0,
+          customerAttachmentsCount: 0,
+          projectAttachmentsCount: 0,
+          appointmentAttachmentsCount: 0,
+          totalAttachmentsCount: 0,
+          appointmentTags: [],
+          customerTags: [],
+          projectTags: [],
+          displayMode: "standard",
+          employees: [],
+          isLocked: false,
+          isCancelled: false,
+        }}
+        widthPx={320}
+      />,
+    );
+
+    expect(panelCalls[0]).toMatchObject({
+      weekTileBodyMode: "expanded",
+      interactive: false,
+      context: "week-calendar",
+    });
+    expect(appointmentWeeklyPanelPreviewOptions).toMatchObject({
+      mode: "cursor",
+      maxHeight: null,
+      scrollY: "visible",
+    });
   });
 });

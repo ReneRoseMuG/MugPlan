@@ -1226,9 +1226,10 @@ export function CalendarWeekView({
                       const laneRenderData = getLaneRenderData(tourLane);
                       const isCompactWeekMode = weekTileBodyMode === "collapsed";
                       const laneRowMinHeightPx = resolveWeekLaneRowMinHeightPx(weekTileBodyMode);
-                      const laneUniformHeightPx = isCompactWeekMode
+                      const getLaneHeightKey = (rowKey: string) => `${weekKey}:${tourLane.laneKey}:${rowKey}`;
+                      const getLaneUniformHeightPx = (rowKey: string) => isCompactWeekMode
                         ? null
-                        : (cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null);
+                        : (cardHeightByLaneRef.current.get(getLaneHeightKey(rowKey)) ?? null);
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
@@ -1555,6 +1556,7 @@ export function CalendarWeekView({
                               const canDragSegment = !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                              const heightRowKey = `grid-row-${rowIndex}`;
 
                               return (
                                 <div
@@ -1576,7 +1578,7 @@ export function CalendarWeekView({
                                     weekTileBodyMode={weekTileBodyMode}
                                     visibleStartDate={visibleStartDate}
                                     visibleDayNumberStart={visibleDayNumberStart}
-                                    uniformHeightPx={laneUniformHeightPx}
+                                    uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
@@ -1599,7 +1601,7 @@ export function CalendarWeekView({
                                       ? undefined
                                       : (node) =>
                                           measureLaneCardHeight(
-                                            tourLane.laneKey,
+                                            getLaneHeightKey(heightRowKey),
                                             node,
                                             WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX,
                                           )}
@@ -1621,6 +1623,7 @@ export function CalendarWeekView({
                               const canDragSegment = !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                              const heightRowKey = `grid-row-${gridRow - 1}`;
 
                               return (
                                 <div
@@ -1642,7 +1645,7 @@ export function CalendarWeekView({
                                     context="week-calendar"
                                     segment="start"
                                     continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
-                                    uniformHeightPx={laneUniformHeightPx}
+                                    uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
@@ -1651,7 +1654,7 @@ export function CalendarWeekView({
                                       ? undefined
                                       : (node) =>
                                           measureLaneCardHeight(
-                                            tourLane.laneKey,
+                                            getLaneHeightKey(heightRowKey),
                                             node,
                                             WEEK_CARD_FOOTER_SAFE_SPACE_PX,
                                           )}
@@ -1705,6 +1708,7 @@ export function CalendarWeekView({
                                     const canDragSegment = !isSegmentLocked
                                       && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                                     const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                                    const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
 
                                     return (
                                       <div
@@ -1721,7 +1725,7 @@ export function CalendarWeekView({
                                           context="week-calendar"
                                           segment="start"
                                           continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
-                                          uniformHeightPx={laneUniformHeightPx}
+                                          uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                           projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                           showTagActions
                                           canEditTags={canEditAppointmentTags}
@@ -1730,7 +1734,7 @@ export function CalendarWeekView({
                                             ? undefined
                                             : (node) =>
                                                 measureLaneCardHeight(
-                                                  tourLane.laneKey,
+                                                  getLaneHeightKey(heightRowKey),
                                                   node,
                                                   WEEK_CARD_FOOTER_SAFE_SPACE_PX,
                                                 )}

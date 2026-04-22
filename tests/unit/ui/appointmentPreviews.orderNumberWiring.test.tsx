@@ -19,9 +19,13 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoverPreviewCalls: Array<Record<string, unknown>> = [];
+const rendererCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/ui/project-article-description-renderer", () => ({
-  ProjectArticleDescriptionRenderer: ({ testIdPrefix }: { testIdPrefix: string }) => <div>{testIdPrefix}</div>,
+  ProjectArticleDescriptionRenderer: (props: Record<string, unknown> & { testIdPrefix: string }) => {
+    rendererCalls.push(props);
+    return <div>{props.testIdPrefix}</div>;
+  },
 }));
 
 vi.mock("@/components/ui/hover-preview", () => ({
@@ -49,6 +53,7 @@ describe("FT03 appointment weekly panel wiring", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
     hoverPreviewCalls.length = 0;
+    rendererCalls.length = 0;
   });
 
   it("renders a visible project header with project name and trailing order number", () => {
@@ -136,5 +141,38 @@ describe("FT03 appointment weekly panel wiring", () => {
     expect(markup).toContain("cursor-pointer");
     expect(markup).toContain("w-full");
     expect(markup).toContain("px-2 py-1");
+  });
+
+  it("renders full detail content with a wrapped article list and four-line notes clamp", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarWeekAppointmentPanelProject
+        projectName="Projekt Detail"
+        projectOrderNumber="DET-42"
+        projectArticleItems={[
+          { label: "Sauna", value: "Modell Lang" },
+          { label: "Ofen", value: "Bio-Kombiofen" },
+        ]}
+        projectDescription="<p>Eine lange Anmerkung fuer den Detailmodus.</p>"
+        displayMode="detail"
+        enableFullDescriptionPreview
+      />,
+    );
+
+    expect(markup).toContain("week-project-detail-renderer");
+    expect(markup).not.toContain("week-project-hover-trigger-renderer");
+    expect(markup).toContain("week-project-hover-renderer");
+    expect(markup).toContain("week-project-description-hover-trigger");
+    expect(rendererCalls).toHaveLength(2);
+    expect(rendererCalls[0]).toMatchObject({
+      showSectionTitles: true,
+      testIdPrefix: "week-project-detail-renderer",
+    });
+    expect(rendererCalls[1]).toMatchObject({
+      showSectionTitles: true,
+      testIdPrefix: "week-project-hover-renderer",
+    });
+    expect(String(rendererCalls[0]?.articleListClassName)).toContain("[&_li]:min-w-0");
+    expect(String(rendererCalls[0]?.articleListClassName)).not.toContain("whitespace-nowrap");
+    expect(String(rendererCalls[0]?.descriptionHtmlClassName)).toContain("[-webkit-line-clamp:4]");
   });
 });

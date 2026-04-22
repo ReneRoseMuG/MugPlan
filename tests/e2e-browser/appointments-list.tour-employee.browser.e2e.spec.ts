@@ -27,7 +27,10 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
+  createProductFixture,
   createProjectFixture,
+  createProjectFixtureWithOverrides,
+  createProjectOrderItemFixture,
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
@@ -174,4 +177,53 @@ test("employee form appointments table: structure, scope toggle persistence and 
   await scrollViewport.evaluate((element) => {
     element.scrollTop = 220;
   });
+});
+
+test("appointments table preview uses the detail week card and stays inside the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 420 });
+
+  const project = await createProjectFixtureWithOverrides({
+    prefix: "FT28-PREVIEW-DETAIL",
+    name: "Preview Detail Projekt",
+    descriptionMd: "<p>Preview Anmerkung eins.</p><p>Preview Anmerkung zwei.</p><p>Preview Anmerkung drei.</p><p>Preview Anmerkung vier.</p><p>Preview Anmerkung fuenf.</p>",
+  });
+  const orderNumber = project.projectOrder?.orderNumber ?? project.orderNumber ?? "";
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "Preview Detail Sauna",
+    description: "Produkt fuer Terminlistenpreview.",
+  });
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber,
+    productId: product.id,
+    quantity: 1,
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: getRelativeBerlinDate(2),
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-termine").click();
+  const table = page.getByTestId("table-appointments-list");
+  await expect(table).toBeVisible({ timeout: 10_000 });
+  const row = table.locator("tbody tr").filter({ hasText: project.name }).first();
+  await expect(row).toBeVisible();
+
+  const rowBox = await row.boundingBox();
+  expect(rowBox).not.toBeNull();
+  await page.mouse.move((rowBox?.x ?? 0) + (rowBox?.width ?? 0) - 3, (rowBox?.y ?? 0) + ((rowBox?.height ?? 0) / 2));
+
+  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
+  await expect(previewPanel).toBeVisible({ timeout: 5_000 });
+  await expect(previewPanel.getByTestId("week-project-detail-renderer-articles-list")).toContainText(product.name);
+  await expect(previewPanel.getByTestId("week-project-detail-renderer-description")).toContainText("Anmerkungen");
+
+  const previewBox = await previewPanel.boundingBox();
+  expect(previewBox).not.toBeNull();
+  expect((previewBox?.x ?? 0)).toBeGreaterThanOrEqual(0);
+  expect((previewBox?.y ?? 0)).toBeGreaterThanOrEqual(0);
+  expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0)).toBeLessThanOrEqual(900);
+  expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeLessThanOrEqual(420);
 });
