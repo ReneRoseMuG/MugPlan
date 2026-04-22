@@ -404,12 +404,19 @@ export function CalendarWeekAppointmentPanel({
   const projectCollapsed = weekTileBodyMode === "collapsed";
   const effectiveCustomerMode = isCompact ? "collapsed" : customerMode;
   const effectiveProjectCollapsed = isCompact ? true : projectCollapsed;
+  const projectDisplayMode = isCompact
+    ? "compact"
+    : weekTileBodyMode === "expanded"
+      ? "detail"
+      : "standard";
   const customerPanelHeightClassName = isCompact
     ? "h-8 overflow-hidden"
     : effectiveCustomerMode === "expanded"
       ? "h-[6.5rem] overflow-hidden"
       : "h-8 overflow-hidden";
-  const projectPanelClassName = effectiveProjectCollapsed ? "h-8 w-full overflow-hidden" : "min-h-0 h-full w-full";
+  const projectPanelClassName = effectiveProjectCollapsed
+    ? "h-8 w-full overflow-hidden"
+    : "min-h-0 h-full w-full";
   const contentGridTemplateRows = isCompact
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -552,6 +559,7 @@ export function CalendarWeekAppointmentPanel({
                 projectArticleItems={appointment.projectArticleItems}
                 projectDescription={appointment.projectDescription}
                 collapsed={effectiveProjectCollapsed}
+                displayMode={projectDisplayMode}
                 enableFullDescriptionPreview={context === "week-calendar"}
                 className={projectPanelClassName}
               />

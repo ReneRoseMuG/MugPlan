@@ -6,12 +6,16 @@ import type { MouseEvent, ReactNode } from "react";
 
 export type InfoBadgePreviewOptions = {
   openDelayMs: number;
+  mode: "anchored" | "cursor";
   side: "top" | "right" | "bottom" | "left";
   align: "start" | "center" | "end";
   maxWidth: number;
   minWidth?: number;
   maxHeight: number | null;
   scrollY: "auto" | "visible";
+  cursorOffsetX?: number;
+  cursorOffsetY?: number;
+  viewportPadding?: number;
 };
 
 export type InfoBadgePreview = {
@@ -40,6 +44,7 @@ interface InfoBadgeProps {
 
 const defaultPreviewOptions: InfoBadgePreviewOptions = {
   openDelayMs: 380,
+  mode: "anchored",
   side: "right",
   align: "start",
   maxWidth: 360,
@@ -154,13 +159,16 @@ export function InfoBadge({
       preview={previewContent}
       openDelay={previewOptions.openDelayMs}
       closeDelay={80}
-      mode="anchored"
+      mode={previewOptions.mode}
       side={previewOptions.side}
       align={previewOptions.align}
       sideOffset={8}
       maxWidth={previewOptions.maxWidth}
       minWidth={previewOptions.minWidth}
       maxHeight={previewOptions.maxHeight}
+      cursorOffsetX={previewOptions.cursorOffsetX}
+      cursorOffsetY={previewOptions.cursorOffsetY}
+      viewportPadding={previewOptions.viewportPadding}
       className={previewClassName}
       contentClassName="space-y-2"
     >

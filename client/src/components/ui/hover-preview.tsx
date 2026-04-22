@@ -43,6 +43,25 @@ type ResolveOpenDelayParams = {
   openDelay: number | undefined;
 };
 
+export type CursorPreviewLayout = {
+  left: number;
+  top: number;
+  maxHeight: number | null;
+};
+
+export type ResolveCursorPreviewLayoutParams = {
+  cursorX: number;
+  cursorY: number;
+  previewWidth: number;
+  previewHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
+  cursorOffsetX: number;
+  cursorOffsetY: number;
+  viewportPadding: number;
+  configuredMaxHeight: number | null;
+};
+
 export function resolveOpenDelayMs({ globalOpenDelayMs, openDelay }: ResolveOpenDelayParams): number {
   if (typeof globalOpenDelayMs === "number" && Number.isFinite(globalOpenDelayMs)) {
     return Math.max(0, globalOpenDelayMs);
@@ -51,6 +70,41 @@ export function resolveOpenDelayMs({ globalOpenDelayMs, openDelay }: ResolveOpen
     return Math.max(0, openDelay);
   }
   return DEFAULT_OPEN_DELAY;
+}
+
+export function resolveCursorPreviewLayout({
+  cursorX,
+  cursorY,
+  previewWidth,
+  previewHeight,
+  viewportWidth,
+  viewportHeight,
+  cursorOffsetX,
+  cursorOffsetY,
+  viewportPadding,
+  configuredMaxHeight,
+}: ResolveCursorPreviewLayoutParams): CursorPreviewLayout {
+  const safeWidth = Math.max(0, previewWidth);
+  const availableHeight = Math.max(0, viewportHeight - (viewportPadding * 2));
+  const constrainedHeight = configuredMaxHeight == null
+    ? previewHeight
+    : Math.min(previewHeight, configuredMaxHeight);
+  const heightForPosition = Math.min(Math.max(0, constrainedHeight), availableHeight);
+  const resolvedMaxHeight = constrainedHeight > availableHeight ? availableHeight : configuredMaxHeight;
+  const maxLeft = Math.max(viewportPadding, viewportWidth - safeWidth - viewportPadding);
+  const maxTop = Math.max(viewportPadding, viewportHeight - heightForPosition - viewportPadding);
+  const preferredLeft = cursorX + cursorOffsetX;
+  const preferredTop = cursorY + cursorOffsetY;
+  const fallbackLeft = cursorX - safeWidth - cursorOffsetX;
+  const fallbackTop = cursorY - heightForPosition - cursorOffsetY;
+  const resolvedLeft = preferredLeft <= maxLeft ? preferredLeft : fallbackLeft;
+  const resolvedTop = preferredTop <= maxTop ? preferredTop : fallbackTop;
+
+  return {
+    left: Math.max(viewportPadding, Math.min(resolvedLeft, maxLeft)),
+    top: Math.max(viewportPadding, Math.min(resolvedTop, maxTop)),
+    maxHeight: resolvedMaxHeight,
+  };
 }
 
 function useOptionalHoverPreviewDelaySetting(): number | undefined {
@@ -247,35 +301,30 @@ export function HoverPreview({
     );
   }
 
-  const cursorPosition = (() => {
+  const cursorLayout = (() => {
     if (typeof window === "undefined") {
       return {
         left: cursorPos.x + cursorOffsetX,
         top: cursorPos.y + cursorOffsetY,
+        maxHeight: resolvedMaxHeight,
       };
     }
 
     const measuredWidth = previewSize.width > 0 ? previewSize.width : maxWidth;
     const measuredHeight = previewSize.height > 0 ? previewSize.height : resolvedMaxHeight ?? 0;
-    const preferredLeft = cursorPos.x + cursorOffsetX;
-    const preferredTop = cursorPos.y + cursorOffsetY;
-    const fallbackLeft = cursorPos.x - measuredWidth - cursorOffsetX;
-    const fallbackTop = cursorPos.y - measuredHeight - cursorOffsetY;
-    const maxLeft = window.innerWidth - measuredWidth - viewportPadding;
-    const maxTop = resolvedMaxHeight == null
-      ? window.innerHeight - viewportPadding
-      : window.innerHeight - Math.max(0, measuredHeight) - viewportPadding;
-    const resolvedLeft = preferredLeft <= maxLeft
-      ? preferredLeft
-      : Math.max(viewportPadding, fallbackLeft);
-    const resolvedTop = preferredTop <= maxTop
-      ? preferredTop
-      : Math.max(viewportPadding, fallbackTop);
 
-    return {
-      left: Math.max(viewportPadding, Math.min(resolvedLeft, maxLeft)),
-      top: Math.max(viewportPadding, Math.min(resolvedTop, maxTop)),
-    };
+    return resolveCursorPreviewLayout({
+      cursorX: cursorPos.x,
+      cursorY: cursorPos.y,
+      previewWidth: measuredWidth,
+      previewHeight: measuredHeight,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      cursorOffsetX,
+      cursorOffsetY,
+      viewportPadding,
+      configuredMaxHeight: resolvedMaxHeight,
+    });
   })();
 
   return (
@@ -287,17 +336,18 @@ export function HoverPreview({
               ref={previewContainerRef}
               className={cn("fixed z-50", className)}
               style={
-                resolvedMaxHeight == null
+                cursorLayout.maxHeight == null
                   ? {
-                      left: cursorPosition.left,
-                      top: cursorPosition.top,
+                      left: cursorLayout.left,
+                      top: cursorLayout.top,
                       maxWidth,
                     }
                   : {
-                      left: cursorPosition.left,
-                      top: cursorPosition.top,
+                      left: cursorLayout.left,
+                      top: cursorLayout.top,
                       maxWidth,
-                      maxHeight: resolvedMaxHeight,
+                      maxHeight: cursorLayout.maxHeight,
+                      overflowY: "auto",
                     }
               }
               onMouseEnter={handlePreviewMouseEnter}

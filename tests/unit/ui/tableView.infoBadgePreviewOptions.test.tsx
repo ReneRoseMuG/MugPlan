@@ -67,11 +67,15 @@ describe("FT03 table view preview options behavior", () => {
           content: <div>preview-content</div>,
           options: {
             openDelayMs: 120,
+            mode: "cursor",
             side: "left",
             align: "end",
             maxWidth: 420,
             maxHeight: 300,
             scrollY: "auto",
+            cursorOffsetX: 22,
+            cursorOffsetY: 24,
+            viewportPadding: 16,
           },
         })}
       />,
@@ -85,6 +89,9 @@ describe("FT03 table view preview options behavior", () => {
       align: "end",
       maxWidth: 420,
       maxHeight: 300,
+      cursorOffsetX: 22,
+      cursorOffsetY: 24,
+      viewportPadding: 16,
       className: "overflow-y-auto",
     });
   });

@@ -61,6 +61,7 @@ function alignmentClass(align: TableViewColumnAlign | undefined) {
 
 const defaultPreviewOptions: InfoBadgePreviewOptions = {
   openDelayMs: 380,
+  mode: "cursor",
   side: "right",
   align: "start",
   maxWidth: 360,
@@ -400,12 +401,15 @@ export function TableView<T>({
                   <HoverPreview
                     key={resolvedRowKey}
                     preview={resolvedPreview.content}
-                    mode="cursor"
+                    mode={previewOptions.mode}
                     openDelay={previewOptions.openDelayMs}
                     side={previewOptions.side}
                     align={previewOptions.align}
                     maxWidth={previewOptions.maxWidth}
                     maxHeight={previewOptions.maxHeight}
+                    cursorOffsetX={previewOptions.cursorOffsetX}
+                    cursorOffsetY={previewOptions.cursorOffsetY}
+                    viewportPadding={previewOptions.viewportPadding}
                     className={previewOptions.scrollY === "auto" ? "overflow-y-auto" : undefined}
                   >
                     {rowNode}

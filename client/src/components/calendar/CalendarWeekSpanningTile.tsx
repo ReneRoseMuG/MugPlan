@@ -403,12 +403,19 @@ export function CalendarWeekSpanningTile({
   const isCompactPanelMode = weekTileBodyMode === "collapsed";
   const effectiveCustomerMode = isCompactPanelMode ? "collapsed" : customerMode;
   const projectCollapsed = isCompactPanelMode;
+  const projectDisplayMode = isCompactPanelMode
+    ? "compact"
+    : weekTileBodyMode === "expanded"
+      ? "detail"
+      : "standard";
   const customerPanelHeightClassName = isCompactPanelMode
     ? "h-8 overflow-hidden"
     : effectiveCustomerMode === "expanded"
       ? "h-[6.5rem] overflow-hidden"
       : "h-8 overflow-hidden";
-  const projectPanelClassName = projectCollapsed ? "h-8 w-full overflow-hidden" : "min-h-0 h-full w-full";
+  const projectPanelClassName = projectCollapsed
+    ? "h-8 w-full overflow-hidden"
+    : "min-h-0 h-full w-full";
   const contentGridTemplateRows = isCompactPanelMode
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -456,6 +463,7 @@ export function CalendarWeekSpanningTile({
         projectArticleItems={appointment.projectArticleItems}
         projectDescription={appointment.projectDescription}
         collapsed={projectCollapsed}
+        displayMode={projectDisplayMode}
         enableFullDescriptionPreview
         className={projectPanelClassName}
       />

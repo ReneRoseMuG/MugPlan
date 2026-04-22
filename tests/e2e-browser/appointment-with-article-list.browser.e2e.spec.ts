@@ -22,7 +22,9 @@ import {
   createCustomerFixture,
   createProductFixture,
   createProjectFixture,
+  createProjectFixtureWithOverrides,
   createProjectOrderItemFixture,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -296,4 +298,98 @@ test("updates week card and calendar aggregation after assigning a project with 
     productName: product.name,
     componentName: component.name,
   });
+});
+
+test("detail week cards show the full project article list, clamp notes and keep lane heights uniform", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  const appointmentDate = getNextWeekTuesdayDate();
+  const secondAppointmentDate = addDaysToDateOnly(appointmentDate, 1);
+  const tour = await createTourFixture("#2f6f9f");
+  const detailProject = await createProjectFixtureWithOverrides({
+    prefix: "DETAIL-CARD-FULL",
+    name: "Detailkarte Artikelliste",
+    descriptionMd: "<p>Zeile eins der Anmerkung.</p><p>Zeile zwei der Anmerkung.</p><p>Zeile drei der Anmerkung.</p><p>Zeile vier der Anmerkung.</p><p>Zeile fuenf der Anmerkung.</p>",
+  });
+  const compactProject = await createProjectFixture({
+    prefix: "DETAIL-CARD-PEER",
+    name: "Detailkarte Vergleich",
+  });
+  const orderNumber = detailProject.projectOrder?.orderNumber ?? detailProject.orderNumber ?? "";
+
+  const articleNames: string[] = [];
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "Detail Artikel Sauna",
+    description: "Detailmodus Artikel.",
+  });
+  articleNames.push(product.name);
+  await createProjectOrderItemFixture({
+    projectId: detailProject.id,
+    orderNumber,
+    productId: product.id,
+    quantity: 1,
+  });
+
+  const componentCategories = ["\u00d6fen", "Steuerungen", "Dachvarianten", "Fenster", "T\u00fcren"];
+  for (const [index, categoryName] of componentCategories.entries()) {
+    const component = await createComponentFixture({
+      categoryName,
+      name: `Detail Artikel Komponente ${index + 1}`,
+      description: "Detailmodus Artikel.",
+    });
+    articleNames.push(component.name);
+    await createProjectOrderItemFixture({
+      projectId: detailProject.id,
+      orderNumber,
+      componentId: component.id,
+      quantity: 1,
+    });
+  }
+
+  const detailAppointment = await createAppointmentFixture({
+    projectId: detailProject.id,
+    startDate: appointmentDate,
+    tourId: tour.id,
+  });
+  const peerAppointment = await createAppointmentFixture({
+    projectId: compactProject.id,
+    startDate: secondAppointmentDate,
+    tourId: tour.id,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("button-next").click();
+  await page.getByTestId("toggle-week-tile-body-mode-expanded").click();
+
+  const detailPanel = page.getByTestId(`week-appointment-panel-${detailAppointment.id}`).first();
+  const peerPanel = page.getByTestId(`week-appointment-panel-${peerAppointment.id}`).first();
+  await expect(detailPanel).toBeVisible({ timeout: 10_000 });
+  await expect(peerPanel).toBeVisible();
+
+  const articleList = detailPanel.getByTestId("week-project-detail-renderer-articles-list");
+  await expect(articleList).toBeVisible();
+  await expect(articleList.locator("li")).toHaveCount(articleNames.length);
+  for (const articleName of articleNames) {
+    await expect(articleList).toContainText(articleName);
+  }
+
+  const notesSection = detailPanel.getByTestId("week-project-detail-renderer-description");
+  await expect(notesSection).toContainText("Anmerkungen");
+  const noteClamp = await notesSection.locator("div").last().evaluate((element) => ({
+    lineClamp: window.getComputedStyle(element).webkitLineClamp,
+    overflow: window.getComputedStyle(element).overflow,
+  }));
+  expect(noteClamp).toEqual({ lineClamp: "4", overflow: "hidden" });
+  const projectPanelBox = await detailPanel.getByTestId("week-project-panel").boundingBox();
+  const notesBox = await notesSection.boundingBox();
+  expect(projectPanelBox).not.toBeNull();
+  expect(notesBox).not.toBeNull();
+  expect(((projectPanelBox?.y ?? 0) + (projectPanelBox?.height ?? 0)) - ((notesBox?.y ?? 0) + (notesBox?.height ?? 0))).toBeLessThanOrEqual(18);
+
+  const detailBox = await detailPanel.boundingBox();
+  const peerBox = await peerPanel.boundingBox();
+  expect(detailBox).not.toBeNull();
+  expect(peerBox).not.toBeNull();
+  expect(Math.abs((detailBox?.height ?? 0) - (peerBox?.height ?? 0))).toBeLessThanOrEqual(3);
 });
