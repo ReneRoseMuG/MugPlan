@@ -13,8 +13,8 @@
  * - Titelvergleich ist normalisiert (Gross/Klein, Leerzeichen).
  *
  * Fehlerfaelle:
- * - Kein Vorschlag wenn appointmentId fehlt (Create-Kontext ohne persistierte ID).
- * - Kein Dialog wenn existingNotes leer.
+ * - Vorschlag auch ohne persistierte Termin-ID, damit Projekt- und Draft-Kontexte denselben Flow nutzen koennen.
+ * - Kein Entfernen-Dialog wenn existingNotes leer.
  *
  * Ziel:
  * Die reine Entscheidungslogik des useTagRuleEngine-Hooks ohne Browser-Abhaengigkeit absichern.
@@ -46,14 +46,14 @@ describe("useTagRuleEngine: computeTagAddedAction", () => {
     expect(action).toEqual({ kind: "noop" });
   });
 
-  it("loest keinen Vorschlag aus wenn appointmentId null ist", () => {
+  it("loest Vorschlag aus wenn targetId null ist", () => {
     const action = computeTagAddedAction("Reklamation", null, []);
-    expect(action).toEqual({ kind: "noop" });
+    expect(action).toEqual({ kind: "show_note_suggestion_dialog", templateTitle: "Reklamation" });
   });
 
-  it("loest keinen Vorschlag aus wenn appointmentId undefined ist", () => {
+  it("loest Vorschlag aus wenn targetId undefined ist", () => {
     const action = computeTagAddedAction("Reklamation", undefined, []);
-    expect(action).toEqual({ kind: "noop" });
+    expect(action).toEqual({ kind: "show_note_suggestion_dialog", templateTitle: "Reklamation" });
   });
 
   it("loest keinen Vorschlag aus fuer unbekannte Tag-Namen", () => {

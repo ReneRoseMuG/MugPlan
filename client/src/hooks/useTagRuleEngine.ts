@@ -32,11 +32,9 @@ function resolveTemplateTitle(tagName: string): string | null {
 
 export function computeTagAddedAction(
   tagName: string,
-  appointmentId: number | null | undefined,
+  _targetId: number | null | undefined,
   existingNotes: ExistingNote[],
 ): TagAddedAction {
-  if (!appointmentId) return { kind: "noop" };
-
   const templateTitle = resolveTemplateTitle(tagName);
   if (!templateTitle) return { kind: "noop" };
 

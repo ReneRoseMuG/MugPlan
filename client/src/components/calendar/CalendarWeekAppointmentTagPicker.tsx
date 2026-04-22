@@ -133,18 +133,19 @@ export function CalendarWeekAppointmentTagPicker({
       await apiRequest("POST", `/api/appointments/${appointmentId}/tags`, { tagId });
     },
     onSuccess: async (_data, { tagName }) => {
-      const existingNotes = appointmentNotes.length > 0
-        ? appointmentNotes
-        : await queryClient.ensureQueryData({
+      setPickerOpen(false);
+      let existingNotes = appointmentNotes;
+      if (appointmentNotes.length === 0) {
+        existingNotes = await queryClient.ensureQueryData({
           queryKey: appointmentNotesQueryKey,
           queryFn: fetchAppointmentNotes,
-        });
+        }).catch(() => []);
+      }
       const action = computeTagAddedAction(tagName, appointmentId, existingNotes.map((note) => ({ title: note.title })));
       if (action.kind === "show_note_suggestion_dialog") {
         setNoteSuggestionDialog({ templateTitle: action.templateTitle });
       }
-      await invalidateAfterTagMutation();
-      setPickerOpen(false);
+      void invalidateAfterTagMutation();
     },
     onError: (mutationError: Error) => {
       toast({
@@ -172,8 +173,7 @@ export function CalendarWeekAppointmentTagPicker({
       const response = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, { title, body, cardColor, print, templateId });
       return response.json() as Promise<Note>;
     },
-    onSuccess: async (createdNote) => {
-      await invalidateAfterNoteMutation();
+    onSuccess: (createdNote) => {
       setEditingNoteId(createdNote.id);
       setEditingNoteVersion(createdNote.version);
       setNoteTitle(createdNote.title);
@@ -182,6 +182,7 @@ export function CalendarWeekAppointmentTagPicker({
       setNotePrint(createdNote.print);
       setCardColorLocked(createdNote.cardColorLocked);
       setEditorOpen(true);
+      void invalidateAfterNoteMutation();
     },
     onError: (mutationError: Error) => {
       toast({
@@ -210,10 +211,10 @@ export function CalendarWeekAppointmentTagPicker({
       const response = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
       return response.json() as Promise<Note>;
     },
-    onSuccess: async (updatedNote) => {
-      await invalidateAfterNoteMutation();
+    onSuccess: (updatedNote) => {
       setEditingNoteVersion(updatedNote.version);
       setEditorOpen(false);
+      void invalidateAfterNoteMutation();
     },
     onError: (mutationError: Error) => {
       toast({

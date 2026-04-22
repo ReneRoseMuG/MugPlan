@@ -106,6 +106,32 @@ async function readAppointmentNotes(page: Page, appointmentId: number): Promise<
   return response.json() as Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>>;
 }
 
+async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>> {
+  const response = await page.request.get(`/api/projects/${projectId}/notes`);
+  expect(response.ok()).toBeTruthy();
+  return response.json() as Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>>;
+}
+
+async function openProjectForm(page: Page, projectId: number): Promise<void> {
+  await page.getByTestId("nav-projekte").click();
+  await expect(page.getByTestId("button-new-project")).toBeVisible();
+  await page.getByTestId("toggle-project-scope-no-appointments").click();
+  await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
+  await page.getByTestId(`project-card-${projectId}`).dblclick();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+}
+
+async function delayNextGet(page: Page, urlPattern: string, delayMs: number): Promise<void> {
+  let delayed = false;
+  await page.route(urlPattern, async (route) => {
+    if (!delayed && route.request().method() === "GET") {
+      delayed = true;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+    await route.continue();
+  });
+}
+
 function hexToRgb(hex: string): string {
   const normalized = hex.replace("#", "");
   const red = Number.parseInt(normalized.slice(0, 2), 16);
@@ -212,6 +238,47 @@ test("adds Reklamation-Tag from the appointment form picker and opens the templa
   });
 });
 
+test("adds Reklamation-Tag from the project form picker and creates a project note from the suggestion", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT",
+    name: "FT06 Rule Engine Projekt",
+  });
+
+  await loginAsAdmin(page);
+  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
+  const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
+
+  await openProjectForm(page, project.id);
+  await page.getByTestId("project-tag-picker-button-add").click();
+  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
+  await page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`).click();
+
+  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toHaveCount(0);
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
+
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    const match = notes.find((n) => n.title === reklamationTemplate.title);
+    return match
+      ? {
+          title: match.title,
+          body: match.body,
+          cardColor: match.cardColor,
+          print: match.print,
+        }
+      : null;
+  }).toEqual({
+    title: reklamationTemplate.title,
+    body: reklamationTemplate.body,
+    cardColor: reklamationTemplate.cardColor,
+    print: reklamationTemplate.print,
+  });
+});
+
 test("adds Messe-Tag from the week calendar card and suggestion dialog is dismissed with skip so no note is created", async ({ page }) => {
   const customer = await createCustomerFixture("FT06-RULE-MESSE-CUST");
   const project = await createProjectFixture({
@@ -241,6 +308,71 @@ test("adds Messe-Tag from the week calendar card and suggestion dialog is dismis
   const notes = await readAppointmentNotes(page, appointment.id);
   const messeNote = notes.find((n) => n.title === messeTemplate.title);
   expect(messeNote).toBeUndefined();
+});
+
+test("week card tag picker closes after successful add while calendar refetch is slow", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-SLOW-TAG-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-SLOW-TAG",
+    customerId: customer.id,
+    name: "FT06 Rule Engine Slow Tag",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(4),
+  });
+
+  await loginAsAdmin(page);
+  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
+
+  await openAppointmentInCalendar(page, appointment.id);
+  await delayNextGet(page, "**/api/calendar/appointments?**", 1_500);
+  const tagResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === `/api/appointments/${appointment.id}/tags`
+  ));
+  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  const tagResponse = await tagResponsePromise;
+  expect(tagResponse.ok(), await tagResponse.text()).toBeTruthy();
+
+  await expect(page.getByTestId(`week-appointment-tags-${appointment.id}-dialog`)).toHaveCount(0, { timeout: 750 });
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+});
+
+test("week card template note editor closes after successful save while notes refetch is slow", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-SLOW-NOTE-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-SLOW-NOTE",
+    customerId: customer.id,
+    name: "FT06 Rule Engine Slow Note",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(4),
+  });
+
+  await loginAsAdmin(page);
+  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
+
+  await openAppointmentInCalendar(page, appointment.id);
+  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+
+  await delayNextGet(page, `**/api/appointments/${appointment.id}/notes`, 1_500);
+  const noteUpdateResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PUT"
+    && /^\/api\/notes\/\d+$/.test(new URL(response.url()).pathname)
+  ));
+  await page.getByTestId("button-save-note").click();
+  const noteUpdateResponse = await noteUpdateResponsePromise;
+  expect(noteUpdateResponse.ok(), await noteUpdateResponse.text()).toBeTruthy();
+
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0, { timeout: 750 });
 });
 
 test("removes Reklamation-Tag when note exists and removal dialog deletes note on confirm", async ({ page }) => {
