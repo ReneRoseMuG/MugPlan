@@ -49,6 +49,12 @@ export type TourenplanPrintPageData = {
   weeks: TourenplanWeekSection[];
 };
 
+export type TourenplanPrintSection = {
+  sectionKey: string;
+  tourName: string;
+  weeks: TourenplanWeekGroup[];
+};
+
 type TourenplanTagPresentation = {
   kind: TourenplanResolvedTagKind;
   label: string | null;
@@ -367,18 +373,20 @@ export function paginateTourenplanWeekGroups(params: {
   weeks: TourenplanWeekGroup[];
   pageCapacityPx: number;
   cardHeights: Record<number, number>;
+  startPageNumber?: number;
 }): TourenplanPrintPageData[] {
   const pages: TourenplanPrintPageData[] = [];
   let currentWeeks: TourenplanWeekSection[] = [];
   let usedCapacity = 0;
   let markerOffset = 4;
+  const startPageNumber = params.startPageNumber ?? 1;
 
   const flushPage = () => {
     if (currentWeeks.length === 0) {
       return;
     }
     pages.push({
-      pageNumber: pages.length + 1,
+      pageNumber: startPageNumber + pages.length,
       tourName: params.tourName,
       weeks: currentWeeks,
     });
@@ -435,8 +443,33 @@ export function paginateTourenplanWeekGroups(params: {
   flushPage();
 
   return pages.length > 0 ? pages : [{
-    pageNumber: 1,
+    pageNumber: startPageNumber,
     tourName: params.tourName,
+    weeks: [],
+  }];
+}
+
+export function paginateTourenplanPrintSections(params: {
+  sections: TourenplanPrintSection[];
+  pageCapacityPx: number;
+  cardHeights: Record<number, number>;
+}): TourenplanPrintPageData[] {
+  const pages: TourenplanPrintPageData[] = [];
+
+  for (const section of params.sections) {
+    const sectionPages = paginateTourenplanWeekGroups({
+      tourName: section.tourName,
+      weeks: section.weeks,
+      pageCapacityPx: params.pageCapacityPx,
+      cardHeights: params.cardHeights,
+      startPageNumber: pages.length + 1,
+    });
+    pages.push(...sectionPages);
+  }
+
+  return pages.length > 0 ? pages : [{
+    pageNumber: 1,
+    tourName: "Tourenplan",
     weeks: [],
   }];
 }
@@ -452,6 +485,41 @@ export function buildTourenplanPrintPages(
   return paginateTourenplanWeekGroups({
     tourName: previewData.tour.name,
     weeks,
+    pageCapacityPx: PAGE_CAPACITY_PX,
+    cardHeights,
+  });
+}
+
+export function buildTourenplanPrintSections(
+  sections: Array<{
+    sectionKey: string;
+    previewData: TourenplanPreviewResponse;
+    appointmentItems: TourenplanAppointmentListItem[];
+  }>,
+): TourenplanPrintSection[] {
+  return sections.map((section) => ({
+    sectionKey: section.sectionKey,
+    tourName: section.previewData.tour.name,
+    weeks: buildTourenplanWeekGroups(section.previewData, section.appointmentItems),
+  }));
+}
+
+export function buildTourenplanPrintPagesForSections(
+  sections: Array<{
+    sectionKey: string;
+    previewData: TourenplanPreviewResponse;
+    appointmentItems: TourenplanAppointmentListItem[];
+  }>,
+): TourenplanPrintPageData[] {
+  const printSections = buildTourenplanPrintSections(sections);
+  const cardHeights = Object.fromEntries(
+    printSections.flatMap((section) =>
+      section.weeks.flatMap((week) => week.appointments.map((appointment) => [appointment.id, estimateCardHeight(appointment)])),
+    ),
+  );
+
+  return paginateTourenplanPrintSections({
+    sections: printSections,
     pageCapacityPx: PAGE_CAPACITY_PX,
     cardHeights,
   });

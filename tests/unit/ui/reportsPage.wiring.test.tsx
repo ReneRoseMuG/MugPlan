@@ -327,7 +327,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("reports-produktionsplanung-config-panel");
     expect(html).toContain("reports-auftragsliste-config-panel");
     expect(html).toContain("reports-tourenplan-config-panel");
-    expect(html).toContain("select-reports-tourenplan-tour");
+    expect(html).toContain("reports-tourenplan-tour-list");
+    expect(html).toContain("checkbox-reports-tourenplan-all-tours");
     expect(html).toContain("checkbox-reports-tourenplan-use-shortcodes");
   });
 

@@ -5,16 +5,15 @@ import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppoin
 import type {
   TourenplanFontSize,
   TourenplanOrientation,
+  TourenplanPrintSection,
   TourenplanPrintMode,
-  TourenplanWeekGroup,
 } from "@/components/reports/tourenplan-model";
 import {
   TOURENPLAN_WEEK_SECTION_GAP_PX,
 } from "@/components/reports/tourenplan-model";
 
 type TourenplanPaginationMeasurementProps = {
-  tourName: string;
-  weeks: TourenplanWeekGroup[];
+  sections: TourenplanPrintSection[];
   printMode: TourenplanPrintMode;
   fontSize: TourenplanFontSize;
   orientation: TourenplanOrientation;
@@ -25,8 +24,7 @@ type TourenplanPaginationMeasurementProps = {
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
 
 export function TourenplanPaginationMeasurement({
-  tourName,
-  weeks,
+  sections,
   printMode,
   fontSize,
   orientation,
@@ -42,18 +40,20 @@ export function TourenplanPaginationMeasurement({
 
   useIsomorphicLayoutEffect(() => {
     const pageContentNode = pageContentRef.current;
-    if (!pageContentNode || weeks.length === 0) {
+    if (!pageContentNode || sections.length === 0) {
       return;
     }
 
     const cardHeights: Record<number, number> = {};
-    for (const week of weeks) {
-      for (const appointment of week.appointments) {
-        const node = cardNodesRef.current.get(appointment.id);
-        if (!node) {
-          return;
+    for (const section of sections) {
+      for (const week of section.weeks) {
+        for (const appointment of week.appointments) {
+          const node = cardNodesRef.current.get(appointment.id);
+          if (!node) {
+            return;
+          }
+          cardHeights[appointment.id] = Math.ceil(node.getBoundingClientRect().height);
         }
-        cardHeights[appointment.id] = Math.ceil(node.getBoundingClientRect().height);
       }
     }
 
@@ -61,7 +61,7 @@ export function TourenplanPaginationMeasurement({
       pageCapacityPx: Math.floor(pageContentNode.getBoundingClientRect().height),
       cardHeights,
     });
-  }, [fontSize, onMeasured, orientation, printMode, useShortCodes, weeks]);
+  }, [fontSize, onMeasured, orientation, printMode, sections, useShortCodes]);
 
   return (
     <div
@@ -78,30 +78,34 @@ export function TourenplanPaginationMeasurement({
       >
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <header className="border-b border-slate-200 pb-1 text-[10px] font-medium text-slate-500">
-            {tourName}
+            {sections[0]?.tourName ?? "Tourenplan"}
           </header>
 
           <div ref={pageContentRef} className="flex min-h-0 flex-1 gap-0">
             <aside className="mr-2.5 w-7 shrink-0" />
 
             <div className="flex min-h-0 flex-1 flex-col">
-              {weeks.map((week, weekIndex) => (
-                <React.Fragment key={`${week.weekStart}-${weekIndex}`}>
-                  {week.appointments.map((appointment, appointmentIndex) => (
-                    <div
-                      key={appointment.id}
-                      ref={registerCardNode(appointment.id)}
-                      className={appointmentIndex > 0 ? "mt-1.5" : undefined}
-                    >
-                      <TourenplanAppointmentCard
-                        appointment={appointment}
-                        printMode={printMode}
-                        fontSize={fontSize}
-                        useShortCodes={useShortCodes}
-                      />
-                    </div>
+              {sections.map((section) => (
+                <React.Fragment key={section.sectionKey}>
+                  {section.weeks.map((week, weekIndex) => (
+                    <React.Fragment key={`${section.sectionKey}-${week.weekStart}-${weekIndex}`}>
+                      {week.appointments.map((appointment, appointmentIndex) => (
+                        <div
+                          key={appointment.id}
+                          ref={registerCardNode(appointment.id)}
+                          className={appointmentIndex > 0 ? "mt-1.5" : undefined}
+                        >
+                          <TourenplanAppointmentCard
+                            appointment={appointment}
+                            printMode={printMode}
+                            fontSize={fontSize}
+                            useShortCodes={useShortCodes}
+                          />
+                        </div>
+                      ))}
+                      {weekIndex < section.weeks.length - 1 ? <div style={{ height: `${TOURENPLAN_WEEK_SECTION_GAP_PX}px` }} /> : null}
+                    </React.Fragment>
                   ))}
-                  {weekIndex < weeks.length - 1 ? <div style={{ height: `${TOURENPLAN_WEEK_SECTION_GAP_PX}px` }} /> : null}
                 </React.Fragment>
               ))}
             </div>

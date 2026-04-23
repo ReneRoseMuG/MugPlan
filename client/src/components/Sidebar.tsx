@@ -200,7 +200,7 @@ export function Sidebar({
 
         {canAccessReports ? (
           <NavGroup title="Reports">
-          <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} />
+          <NavButton icon={ReportsIcon} label="Reports" isActive={currentView === "reports"} onClick={() => onViewChange("reports")} standaloneUrl="/standalone/reports" />
           <NavButton icon={JournalIcon} label="Journal" isActive={currentView === "journal"} onClick={() => onViewChange("journal")} />
           <div className="flex flex-col gap-2">
             <NavButton

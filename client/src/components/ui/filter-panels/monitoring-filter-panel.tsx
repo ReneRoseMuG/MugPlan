@@ -13,6 +13,7 @@ import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MonitoringFilters } from "@/lib/monitoring-filters";
+import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
 interface MonitoringFilterPanelProps {
   filters: MonitoringFilters;
@@ -25,6 +26,8 @@ export function MonitoringFilterPanel({
   onChange,
   tours,
 }: MonitoringFilterPanelProps) {
+  const sortedTours = sortToursForDisplay(tours);
+
   return (
     <div className="flex w-full flex-col gap-4">
       <FilterPanel title="Monitoringfilter" layout="row">
@@ -83,7 +86,7 @@ export function MonitoringFilterPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Touren</SelectItem>
-              {tours.map((tour) => (
+              {sortedTours.map((tour) => (
                 <SelectItem key={tour.id} value={String(tour.id)}>
                   {tour.name}
                 </SelectItem>

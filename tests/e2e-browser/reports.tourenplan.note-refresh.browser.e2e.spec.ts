@@ -87,8 +87,8 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
 
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
-  await page.getByTestId("select-reports-tourenplan-tour").click();
-  await page.getByRole("option", { name: tour.name }).click();
+  await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
   await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
   await page.getByTestId("button-reports-tourenplan-preview").click();
@@ -122,8 +122,8 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
 
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
-  await page.getByTestId("select-reports-tourenplan-tour").click();
-  await page.getByRole("option", { name: tour.name }).click();
+  await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
   await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
   await page.getByTestId("button-reports-tourenplan-preview").click();

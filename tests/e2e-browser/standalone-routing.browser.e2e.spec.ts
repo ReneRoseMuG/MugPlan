@@ -208,7 +208,7 @@ test.describe("Sidebar navigation stays unchanged", () => {
 test.describe("Sidebar standalone buttons", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("shows all nine standalone buttons in the sidebar", async ({ page }) => {
+  test("shows all ten standalone buttons in the sidebar", async ({ page }) => {
     await loginAsAdmin(page);
 
     await expect(page.getByTestId("nav-wochenuebersicht-open-tab")).toBeVisible();
@@ -219,6 +219,7 @@ test.describe("Sidebar standalone buttons", () => {
     await expect(page.getByTestId("nav-mitarbeiter-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-touren-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-teams-open-tab")).toBeVisible();
+    await expect(page.getByTestId("nav-reports-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-monitoring-open-tab")).toBeVisible();
   });
 
@@ -318,6 +319,14 @@ test.describe("Sidebar standalone buttons", () => {
         .filter({ hasText: "Mindestzahl Mitarbeiter" })
         .first(),
     );
+    await popup.close();
+  });
+
+  test("opens reports in a new tab and shows the reports panel", async ({ page }) => {
+    await loginAsAdmin(page);
+    const popup = await openStandalonePopup(page, "nav-reports-open-tab");
+
+    await expectStandaloneViewLoaded(popup, popup.getByTestId("reports-panel"));
     await popup.close();
   });
 
@@ -489,6 +498,13 @@ test.describe("Standalone routes", () => {
     await page.goto("/standalone/teams");
 
     await expectStandaloneViewLoaded(page, page.getByTestId("list-teams"));
+  });
+
+  test("loads the standalone reports view without the sidebar", async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto("/standalone/reports");
+
+    await expectStandaloneViewLoaded(page, page.getByTestId("reports-panel"));
   });
 });
 

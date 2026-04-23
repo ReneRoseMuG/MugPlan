@@ -272,8 +272,8 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await expect(page.getByTestId("button-reports-tourenplan-print-mode-spardruck")).toBeVisible();
   await expect(page.getByTestId("select-reports-tourenplan-font-size")).toBeVisible();
 
-  await page.getByTestId("select-reports-tourenplan-tour").click();
-  await page.getByRole("option", { name: tour.name }).click();
+  await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await page.getByTestId("reports-tourenplan-from-date").fill(monday);
   await page.getByTestId("reports-tourenplan-to-date").fill(finalPreviewDate);
 
@@ -352,4 +352,109 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   const portraitPrintMediaSnapshot = await readPageSnapshot(printRootFirstPage);
   expect(portraitPrintMediaSnapshot).toEqual(portraitScreenSnapshot);
   await page.emulateMedia({ media: "screen" });
+});
+
+test("builds a multi-tour print preview with hard page breaks between tour sections", async ({ page }) => {
+  const tourA = await createTourFixture("#335577");
+  const tourB = await createTourFixture("#775533");
+  const reportDate = getRelativeBerlinDate(15);
+
+  const customerA = await createCustomerFixtureWithOverrides({
+    prefix: "TP-MULTI-A-CUST",
+    fullName: "Tourabschnitt, Anna",
+    postalCode: "26135",
+    city: "Oldenburg",
+    country: "Deutschland",
+  });
+  const projectA = await createProjectFixtureWithOverrides({
+    prefix: "TP-MULTI-A-PROJ",
+    customerId: customerA.id,
+    name: "Tourenplan Multi Tour A",
+    descriptionMd: "<p>Abschnitt A darf nicht mit Abschnitt B gemischt werden.</p>",
+  });
+  const appointmentA = await createAppointmentFixture({
+    projectId: projectA.id,
+    customerId: customerA.id,
+    startDate: reportDate,
+    tourId: tourA.id,
+  });
+
+  const customerB = await createCustomerFixtureWithOverrides({
+    prefix: "TP-MULTI-B-CUST",
+    fullName: "Tourabschnitt, Bernd",
+    postalCode: "28201",
+    city: "Bremen",
+    country: "Deutschland",
+  });
+  const projectB = await createProjectFixtureWithOverrides({
+    prefix: "TP-MULTI-B-PROJ",
+    customerId: customerB.id,
+    name: "Tourenplan Multi Tour B",
+    descriptionMd: "<p>Abschnitt B muss auf einer neuen Seite beginnen.</p>",
+  });
+  const appointmentB = await createAppointmentFixture({
+    projectId: projectB.id,
+    customerId: customerB.id,
+    startDate: reportDate,
+    tourId: tourB.id,
+  });
+
+  const customerWithoutTour = await createCustomerFixtureWithOverrides({
+    prefix: "TP-MULTI-OHNE-CUST",
+    fullName: "Ohnetour, Carla",
+    postalCode: "10115",
+    city: "Berlin",
+    country: "Deutschland",
+  });
+  const projectWithoutTour = await createProjectFixtureWithOverrides({
+    prefix: "TP-MULTI-OHNE-PROJ",
+    customerId: customerWithoutTour.id,
+    name: "Tourenplan Multi Ohne Tour",
+    descriptionMd: "<p>Ohne Tour steht am Ende der Druckmappe.</p>",
+  });
+  const appointmentWithoutTour = await createAppointmentFixture({
+    projectId: projectWithoutTour.id,
+    customerId: customerWithoutTour.id,
+    startDate: reportDate,
+    tourId: null,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-reports").click();
+  await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
+
+  await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tourA.id}`).click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tourB.id}`).click();
+  await page.getByTestId("checkbox-reports-tourenplan-without-tour").click();
+  await page.getByTestId("reports-tourenplan-from-date").fill(reportDate);
+  await page.getByTestId("reports-tourenplan-to-date").fill(reportDate);
+
+  await page.getByTestId("button-reports-tourenplan-preview").click();
+  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+
+  const printPages = page.locator('[data-testid="print-document-root"] [data-testid="print-document-page"]');
+  await expect(printPages).toHaveCount(3);
+  const pageOne = page.locator('[data-testid="print-document-root"] [data-testid="tourenplan-print-page-1"]').first();
+  const pageTwo = page.locator('[data-testid="print-document-root"] [data-testid="tourenplan-print-page-2"]').first();
+  const pageThree = page.locator('[data-testid="print-document-root"] [data-testid="tourenplan-print-page-3"]').first();
+
+  await expect(pageOne).toContainText(tourA.name);
+  await expect(pageOne.getByTestId(`tourenplan-print-page-1-appointment-${appointmentA!.id}`)).toBeVisible();
+  await expect(pageOne).not.toContainText(projectB.name);
+  await expect(pageOne).not.toContainText(projectWithoutTour.name);
+
+  await expect(pageTwo).toContainText(tourB.name);
+  await expect(pageTwo.getByTestId(`tourenplan-print-page-2-appointment-${appointmentB!.id}`)).toBeVisible();
+  await expect(pageTwo).not.toContainText(projectA.name);
+  await expect(pageTwo).not.toContainText(projectWithoutTour.name);
+
+  await expect(pageThree).toContainText("Ohne Tour");
+  await expect(pageThree.getByTestId(`tourenplan-print-page-3-appointment-${appointmentWithoutTour!.id}`)).toBeVisible();
+  await expect(pageThree).not.toContainText(projectA.name);
+  await expect(pageThree).not.toContainText(projectB.name);
+
+  await expect(pageOne).toContainText("Seite 1");
+  await expect(pageTwo).toContainText("Seite 2");
+  await expect(pageThree).toContainText("Seite 3");
 });
