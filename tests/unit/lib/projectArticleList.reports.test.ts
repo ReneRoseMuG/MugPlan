@@ -20,6 +20,7 @@ describe("FT26 unit: project article report mappings", () => {
   it("recognizes sauna product category aliases for reports", () => {
     expect(isReportSaunaProductCategoryName("Fass Saunen")).toBe(true);
     expect(isReportSaunaProductCategoryName("Fasssaunen")).toBe(true);
+    expect(isReportSaunaProductCategoryName("Sauna Modell")).toBe(true);
     expect(isReportSaunaProductCategoryName("Andere Kategorie")).toBe(false);
   });
 

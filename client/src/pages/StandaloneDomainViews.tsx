@@ -49,6 +49,12 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
   const componentCategoryIds = params.getAll("componentCategoryIds")
     .map((value) => Number(value))
     .filter((value) => Number.isInteger(value) && value > 0);
+  const tagIds = params.getAll("tagIds")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
+  const saunaModels = params.getAll("saunaModels")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
 
   if (
     (reportType !== "vorlaufliste" && reportType !== "produktionsplanung" && reportType !== "auftragsliste")
@@ -67,6 +73,8 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
     weekCount,
     productCategoryIds,
     componentCategoryIds,
+    tagIds,
+    saunaModels,
     useShortCodes: params.get("useShortCodes") === "true",
   };
 }

@@ -18,6 +18,8 @@ type ProduktionsplanungSelection = {
 type AuftragslisteSelection = {
   productCategoryIds?: number[];
   componentCategoryIds?: number[];
+  tagIds?: number[];
+  saunaModels?: string[];
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = "farbdruck" | "spardruck";
@@ -167,7 +169,7 @@ export function resolveProduktionsplanungSelection(value: unknown): Produktionsp
 
 export function resolveAuftragslisteSelection(value: unknown): AuftragslisteSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false };
+    return { productCategoryIds: [], componentCategoryIds: [], tagIds: [], saunaModels: [], useShortCodes: false };
   }
   const candidate = value as Record<string, unknown>;
   const productCategoryIds = Array.isArray(candidate.productCategoryIds)
@@ -176,9 +178,20 @@ export function resolveAuftragslisteSelection(value: unknown): AuftragslisteSele
   const componentCategoryIds = Array.isArray(candidate.componentCategoryIds)
     ? candidate.componentCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
     : [];
+  const tagIds = Array.isArray(candidate.tagIds)
+    ? candidate.tagIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+    : [];
+  const saunaModels = Array.isArray(candidate.saunaModels)
+    ? candidate.saunaModels
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0)
+    : [];
   return {
     productCategoryIds: Array.from(new Set(productCategoryIds)),
     componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+    tagIds: Array.from(new Set(tagIds)),
+    saunaModels: Array.from(new Set(saunaModels)),
     useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : false,
   };
 }

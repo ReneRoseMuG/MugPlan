@@ -84,6 +84,8 @@ export async function listAuftragsliste(
     toDate?: string;
     productCategoryIds: number[];
     componentCategoryIds: number[];
+    tagIds: number[];
+    saunaModels: string[];
     useShortCodes: boolean;
   },
   roleKey: CanonicalRoleKey,

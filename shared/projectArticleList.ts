@@ -83,6 +83,8 @@ export type ProjectArticleListRenderOptions = {
 const REPORT_SAUNA_PRODUCT_CATEGORY_ALIASES = [
   "Fass Saunen",
   "Fasssaunen",
+  "Sauna Modell",
+  "Saunamodell",
 ] as const;
 
 export function normalizeProjectArticleValue(value: string): string {

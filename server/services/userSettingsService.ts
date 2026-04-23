@@ -157,11 +157,22 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
     const componentCategoryIds = Array.isArray(candidate.componentCategoryIds)
       ? candidate.componentCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
       : (definition.defaultValue as Record<string, unknown>).componentCategoryIds;
+    const tagIds = Array.isArray(candidate.tagIds)
+      ? candidate.tagIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+      : (definition.defaultValue as Record<string, unknown>).tagIds;
+    const saunaModels = Array.isArray(candidate.saunaModels)
+      ? candidate.saunaModels
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+      : (definition.defaultValue as Record<string, unknown>).saunaModels;
 
     return {
       ...(definition.defaultValue as Record<string, unknown>),
       productCategoryIds: Array.from(new Set(productCategoryIds as number[])),
       componentCategoryIds: Array.from(new Set(componentCategoryIds as number[])),
+      tagIds: Array.from(new Set(tagIds as number[])),
+      saunaModels: Array.from(new Set(saunaModels as string[])),
       useShortCodes: typeof candidate.useShortCodes === "boolean"
         ? candidate.useShortCodes
         : (definition.defaultValue as Record<string, unknown>).useShortCodes,

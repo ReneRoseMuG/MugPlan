@@ -800,6 +800,7 @@ const reportAuftragslisteProjectRowSchema = z.object({
   actualDate: z.string(),
   durationDays: z.number().int().min(1),
   tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
   employees: z.array(
     z.object({
       id: z.number().int().positive(),
@@ -822,6 +823,7 @@ const reportAuftragslisteProjectRowSchema = z.object({
 const reportAuftragslisteResponseSchema = z.object({
   productCategories: z.array(reportVorlauflisteCategorySchema),
   componentCategories: z.array(reportVorlauflisteCategorySchema),
+  availableSaunaModels: z.array(z.string().min(1)),
   items: z.array(reportAuftragslisteProjectRowSchema),
 });
 
@@ -4153,6 +4155,14 @@ export const api = {
           componentCategoryIds: z.preprocess(
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          tagIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          saunaModels: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.string().trim().min(1)).default([]),
           ),
           useShortCodes: z.preprocess(
             (value) => value === "true" || value === true,

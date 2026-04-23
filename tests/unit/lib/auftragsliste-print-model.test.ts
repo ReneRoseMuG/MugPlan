@@ -27,6 +27,8 @@ function buildRow(projectId: number, description = ""): ReportAuftragslisteProje
     customerFullName: `Kunde ${projectId}`,
     actualDate: "2099-11-05",
     durationDays: 2,
+    tourName: "Tour 1",
+    tourColor: "#0f766e",
     employees: [{ id: 1, fullName: "Max Muster" }],
     customerNotesCount: 0,
     projectNotesCount: 0,

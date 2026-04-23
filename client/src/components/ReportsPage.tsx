@@ -4,15 +4,21 @@ import { useRef } from "react";
 import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear, getISOWeeksInYear } from "date-fns";
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
-import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
+import {
+  MANAGED_REMARKS_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
+  type AppointmentCancellationReportState,
+} from "@shared/appointmentCancellation";
+import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
 import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } from "@shared/routes";
-import type { ComponentCategory, ProductCategory, Tag } from "@shared/schema";
+import type { ComponentCategory, Product, ProductCategory, Tag } from "@shared/schema";
 
 import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
 import { AuftragslistePrintLayout } from "@/components/reports/AuftragslistePrintLayout";
 import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
+import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
@@ -117,6 +123,7 @@ type ReportConfigDefaultsResponse = {
 type AuftragslisteResponse = {
   productCategories: VorlauflisteCategory[];
   componentCategories: VorlauflisteCategory[];
+  availableSaunaModels: string[];
   items: ReportAuftragslisteResponse["items"];
 };
 
@@ -129,6 +136,8 @@ type SubmittedFilters = {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  tagIds: number[];
+  saunaModels: string[];
   useShortCodes: boolean;
 };
 
@@ -152,6 +161,8 @@ type ProduktionsplanungSelection = {
 type AuftragslisteSelection = {
   productCategoryIds?: number[];
   componentCategoryIds?: number[];
+  tagIds?: number[];
+  saunaModels?: string[];
   useShortCodes?: boolean;
 };
 
@@ -205,6 +216,8 @@ type AuftragslisteRequestParams = {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  tagIds: number[];
+  saunaModels: string[];
   useShortCodes: boolean;
 };
 
@@ -223,6 +236,13 @@ const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
 const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 const AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX = 920;
+function normalizeFilterLabel(value: string): string {
+  return value.trim().toLocaleLowerCase("de");
+}
+
+function toTestIdToken(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
+}
 
 function formatDate(value: string | null): string {
   if (!value) return "-";
@@ -425,6 +445,8 @@ export function buildAuftragslisteReportUrl(params: AuftragslisteRequestParams):
   if (params.toDate) searchParams.set("toDate", params.toDate);
   for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
   for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  for (const id of params.tagIds) searchParams.append("tagIds", String(id));
+  for (const model of params.saunaModels) searchParams.append("saunaModels", model);
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
   return `/api/reports/auftragsliste?${searchParams.toString()}`;
 }
@@ -440,6 +462,8 @@ export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string
   if (typeof params.weekCount === "number") searchParams.set("weekCount", String(params.weekCount));
   for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
   for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  for (const id of params.tagIds) searchParams.append("tagIds", String(id));
+  for (const model of params.saunaModels) searchParams.append("saunaModels", model);
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
   return `/standalone/reports?${searchParams.toString()}`;
 }
@@ -634,9 +658,17 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     queryKey: ["/api/admin/master-data/product-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/product-categories?active=all"),
   });
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ["/api/admin/master-data/products?active=all"],
+    queryFn: () => fetchJson("/api/admin/master-data/products?active=all"),
+  });
   const { data: componentCategories = [] } = useQuery<ComponentCategory[]>({
     queryKey: ["/api/admin/master-data/component-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/component-categories?active=all"),
+  });
+  const { data: tags = [] } = useQuery<Tag[]>({
+    queryKey: ["/api/tags"],
+    queryFn: () => fetchJson("/api/tags"),
   });
   const activeProductCategories = useMemo<ActiveProduktionsplanungCategory[]>(
     () => productCategories
@@ -673,7 +705,11 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [useAuftragslisteShortCodes, setUseAuftragslisteShortCodes] = useState(false);
   const [selectedAuftragslisteProductCategoryIds, setSelectedAuftragslisteProductCategoryIds] = useState<number[]>([]);
   const [selectedAuftragslisteComponentCategoryIds, setSelectedAuftragslisteComponentCategoryIds] = useState<number[]>([]);
+  const [selectedAuftragslisteTagIds, setSelectedAuftragslisteTagIds] = useState<number[]>([]);
+  const [selectedAuftragslisteSaunaModels, setSelectedAuftragslisteSaunaModels] = useState<string[]>([]);
   const [isAuftragslisteCategoryPopoverOpen, setIsAuftragslisteCategoryPopoverOpen] = useState(false);
+  const [isAuftragslisteTagPickerOpen, setIsAuftragslisteTagPickerOpen] = useState(false);
+  const [isAuftragslisteSaunaModelPopoverOpen, setIsAuftragslisteSaunaModelPopoverOpen] = useState(false);
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
   const [activeAuftragslistePrintPageIndex, setActiveAuftragslistePrintPageIndex] = useState(0);
   const hasHydratedVorlauflisteSelectionRef = useRef(false);
@@ -708,6 +744,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     setUseAuftragslisteShortCodes(auftragslisteSelection?.useShortCodes ?? false);
     setSelectedAuftragslisteProductCategoryIds(auftragslisteSelection?.productCategoryIds ?? []);
     setSelectedAuftragslisteComponentCategoryIds(auftragslisteSelection?.componentCategoryIds ?? []);
+    setSelectedAuftragslisteTagIds(auftragslisteSelection?.tagIds ?? []);
+    setSelectedAuftragslisteSaunaModels(auftragslisteSelection?.saunaModels ?? []);
   }, [auftragslisteSelection]);
 
   useEffect(() => {
@@ -767,6 +805,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       setUseAuftragslisteShortCodes(standaloneLaunch.useShortCodes);
       setSelectedAuftragslisteProductCategoryIds(standaloneLaunch.productCategoryIds);
       setSelectedAuftragslisteComponentCategoryIds(standaloneLaunch.componentCategoryIds);
+      setSelectedAuftragslisteTagIds(standaloneLaunch.tagIds);
+      setSelectedAuftragslisteSaunaModels(standaloneLaunch.saunaModels);
     }
 
     setPage(1);
@@ -776,6 +816,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       toDate: standaloneLaunch.toDate,
       productCategoryIds: standaloneLaunch.productCategoryIds,
       componentCategoryIds: standaloneLaunch.componentCategoryIds,
+      tagIds: standaloneLaunch.tagIds,
+      saunaModels: standaloneLaunch.saunaModels,
       useShortCodes: standaloneLaunch.useShortCodes,
     });
     setReportRequestId((current) => current + 1);
@@ -807,6 +849,32 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     const selectedIds = selectedAuftragslisteComponentCategoryIds.filter((id) => activeComponentCategoryIds.has(id));
     return selectedIds.length > 0 ? selectedIds : allActiveAuftragslisteComponentCategoryIds;
   }, [activeComponentCategoryIds, allActiveAuftragslisteComponentCategoryIds, selectedAuftragslisteComponentCategoryIds]);
+  const auftragslisteTagOptions = useMemo(
+    () => tags
+      .filter((tag) =>
+        normalizeFilterLabel(tag.name) === normalizeFilterLabel(MANAGED_SPECIAL_MEASURE_TAG_NAME)
+        || normalizeFilterLabel(tag.name) === normalizeFilterLabel(MANAGED_REMARKS_TAG_NAME))
+      .sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id),
+    [tags],
+  );
+  const auftragslisteTagOptionIds = useMemo(
+    () => new Set(auftragslisteTagOptions.map((tag) => tag.id)),
+    [auftragslisteTagOptions],
+  );
+  const effectiveAuftragslisteTagIds = useMemo(
+    () => selectedAuftragslisteTagIds.filter((id) => auftragslisteTagOptionIds.has(id)),
+    [auftragslisteTagOptionIds, selectedAuftragslisteTagIds],
+  );
+  const selectedAuftragslisteTags = useMemo(
+    () => effectiveAuftragslisteTagIds
+      .map((id) => auftragslisteTagOptions.find((tag) => tag.id === id))
+      .filter((tag): tag is Tag => Boolean(tag)),
+    [auftragslisteTagOptions, effectiveAuftragslisteTagIds],
+  );
+  const unselectedAuftragslisteTags = useMemo(() => {
+    const selectedIds = new Set(effectiveAuftragslisteTagIds);
+    return auftragslisteTagOptions.filter((tag) => !selectedIds.has(tag.id));
+  }, [auftragslisteTagOptions, effectiveAuftragslisteTagIds]);
   const effectiveProduktionsplanungCategoryIds = useMemo(
     () => (isProduktionsplanungCategoryLayoutConfigured
       ? getCategoryLayoutIds(categoryLayoutConfig ?? []).filter((id) =>
@@ -859,6 +927,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       const value: AuftragslisteSelection = {
         productCategoryIds: Array.from(new Set((auftragslisteNext.productCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
         componentCategoryIds: Array.from(new Set((auftragslisteNext.componentCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
+        tagIds: Array.from(new Set((auftragslisteNext.tagIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
+        saunaModels: Array.from(new Set((auftragslisteNext.saunaModels ?? [])
+          .map((value) => value.trim())
+          .filter((value) => value.length > 0))),
         useShortCodes: auftragslisteNext.useShortCodes ?? false,
       };
       await setSetting({
@@ -892,6 +964,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     await persistSelection("auftragsliste", {
       productCategoryIds: next?.productCategoryIds ?? effectiveAuftragslisteProductCategoryIds,
       componentCategoryIds: next?.componentCategoryIds ?? effectiveAuftragslisteComponentCategoryIds,
+      tagIds: next?.tagIds ?? effectiveAuftragslisteTagIds,
+      saunaModels: next?.saunaModels ?? effectiveAuftragslisteSaunaModels,
       useShortCodes: next?.useShortCodes ?? useAuftragslisteShortCodes,
     });
   };
@@ -987,9 +1061,31 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       toDate: submittedFilters?.toDate,
       productCategoryIds: submittedFilters?.productCategoryIds ?? [],
       componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
+      tagIds: submittedFilters?.tagIds ?? [],
+      saunaModels: submittedFilters?.saunaModels ?? [],
       useShortCodes: submittedFilters?.useShortCodes ?? false,
     }), { cache: "no-store" }),
   });
+  const auftragslisteSaunaModelOptions = useMemo(() => {
+    if ((auftragslisteData?.availableSaunaModels?.length ?? 0) > 0) {
+      return auftragslisteData?.availableSaunaModels ?? [];
+    }
+    const saunaModelCategory = activeProductCategories.find((category) =>
+      isReportSaunaProductCategoryName(category.name));
+    if (!saunaModelCategory) return [];
+
+    return Array.from(new Set(
+      products
+        .filter((product) => product.isActive && product.categoryId === saunaModelCategory.id && product.name.trim().length > 0)
+        .map((product) => product.name.trim()),
+    )).sort((left, right) => left.localeCompare(right, "de", { sensitivity: "base", numeric: true }));
+  }, [activeProductCategories, auftragslisteData?.availableSaunaModels, products]);
+  const effectiveAuftragslisteSaunaModels = useMemo(() => {
+    const availableModels = new Set(auftragslisteSaunaModelOptions);
+    return selectedAuftragslisteSaunaModels
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0 && (availableModels.size === 0 || availableModels.has(value)));
+  }, [auftragslisteSaunaModelOptions, selectedAuftragslisteSaunaModels]);
   const availableVorlauflisteProductCategories = useMemo<VorlauflisteCategory[]>(() => {
     if ((vorlauflisteData?.productCategories?.length ?? 0) > 0) {
       return vorlauflisteData?.productCategories ?? [];
@@ -1317,6 +1413,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       weekCount,
       productCategoryIds,
       componentCategoryIds,
+      tagIds: isAuftragsliste ? effectiveAuftragslisteTagIds : [],
+      saunaModels: isAuftragsliste ? effectiveAuftragslisteSaunaModels : [],
       useShortCodes: isVorlaufliste ? useVorlauflisteShortCodes : isAuftragsliste ? useAuftragslisteShortCodes : useProduktionsplanungShortCodes,
     };
   };
@@ -1331,6 +1429,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       toDate: launch.toDate,
       productCategoryIds: launch.productCategoryIds,
       componentCategoryIds: launch.componentCategoryIds,
+      tagIds: launch.tagIds,
+      saunaModels: launch.saunaModels,
       useShortCodes: launch.useShortCodes,
     });
     setReportRequestId((current) => current + 1);
@@ -1746,20 +1846,89 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     </Popover>
                   )}
                   optionsSlot={(
-                    <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-auftragsliste-shortcodes-option">
-                      <input
-                        type="checkbox"
-                        checked={useAuftragslisteShortCodes}
-                        onChange={(event) => {
-                          const next = event.target.checked;
-                          setUseAuftragslisteShortCodes(next);
-                          void persistAuftragslisteSelection({ useShortCodes: next });
+                    <div
+                      className="flex h-full min-h-[190px] w-full max-w-[420px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+                      data-testid="reports-auftragsliste-filter-box"
+                    >
+                      <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-auftragsliste-shortcodes-option">
+                        <input
+                          type="checkbox"
+                          checked={useAuftragslisteShortCodes}
+                          onChange={(event) => {
+                            const next = event.target.checked;
+                            setUseAuftragslisteShortCodes(next);
+                            void persistAuftragslisteSelection({ useShortCodes: next });
+                          }}
+                          className="h-4 w-4 rounded accent-slate-700"
+                          data-testid="checkbox-reports-auftragsliste-use-shortcodes"
+                        />
+                        <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+                      </label>
+                      <TagFilterInput
+                        label="Tags"
+                        selectedTags={selectedAuftragslisteTags}
+                        availableTags={unselectedAuftragslisteTags}
+                        isOpen={isAuftragslisteTagPickerOpen}
+                        onOpenChange={setIsAuftragslisteTagPickerOpen}
+                        onAddTag={(tagId) => {
+                          const nextIds = Array.from(new Set([...effectiveAuftragslisteTagIds, tagId]));
+                          setSelectedAuftragslisteTagIds(nextIds);
+                          void persistAuftragslisteSelection({ tagIds: nextIds });
                         }}
-                        className="h-4 w-4 rounded accent-slate-700"
-                        data-testid="checkbox-reports-auftragsliste-use-shortcodes"
+                        onRemoveTag={(tagId) => {
+                          const nextIds = effectiveAuftragslisteTagIds.filter((id) => id !== tagId);
+                          setSelectedAuftragslisteTagIds(nextIds);
+                          void persistAuftragslisteSelection({ tagIds: nextIds });
+                        }}
+                        addButtonTestId="button-reports-auftragsliste-add-tag-filter"
+                        testIdPrefix="reports-auftragsliste-tag-filter"
+                        className="sm:min-w-0"
                       />
-                      <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-                    </label>
+                      <div className="flex flex-1 flex-col gap-1" data-testid="reports-auftragsliste-sauna-model-filter">
+                        <span className="text-xs text-slate-500">Sauna Modell</span>
+                        <Popover open={isAuftragslisteSaunaModelPopoverOpen} onOpenChange={setIsAuftragslisteSaunaModelPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="flex min-h-9 w-full items-center justify-between gap-3 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+                              data-testid="button-reports-auftragsliste-open-sauna-model-filter"
+                            >
+                              <span className="truncate">
+                                {effectiveAuftragslisteSaunaModels.length > 0
+                                  ? effectiveAuftragslisteSaunaModels.join(", ")
+                                  : "Alle Modelle"}
+                              </span>
+                              <Columns3 className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-80" data-testid="reports-auftragsliste-sauna-model-popover">
+                            <div className="space-y-2">
+                              {auftragslisteSaunaModelOptions.length > 0 ? auftragslisteSaunaModelOptions.map((model) => {
+                                const checked = effectiveAuftragslisteSaunaModels.includes(model);
+                                return (
+                                  <label key={model} className="flex items-center gap-3 text-sm text-foreground">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(nextChecked) => {
+                                        const nextModels = Boolean(nextChecked)
+                                          ? Array.from(new Set([...effectiveAuftragslisteSaunaModels, model]))
+                                          : effectiveAuftragslisteSaunaModels.filter((value) => value !== model);
+                                        setSelectedAuftragslisteSaunaModels(nextModels);
+                                        void persistAuftragslisteSelection({ saunaModels: nextModels });
+                                      }}
+                                      data-testid={`checkbox-reports-auftragsliste-sauna-model-${toTestIdToken(model)}`}
+                                    />
+                                    <span>{model}</span>
+                                  </label>
+                                );
+                              }) : (
+                                <p className="text-sm text-muted-foreground">Keine Sauna-Modelle verfügbar</p>
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
                   )}
                   footer={(
                     <ReportOpenToggle

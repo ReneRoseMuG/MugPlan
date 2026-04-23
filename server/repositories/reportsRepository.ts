@@ -1,6 +1,7 @@
 ﻿import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
 import { differenceInCalendarDays } from "date-fns";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
+import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
 
 import { db } from "../db";
 import {
@@ -149,6 +150,7 @@ export type AuftragslisteRow = {
   actualDate: string;
   durationDays: number;
   tourName: string | null;
+  tourColor: string | null;
   employees: ReportEmployeeSummary[];
   customerNotesCount: number;
   projectNotesCount: number;
@@ -166,6 +168,7 @@ export type AuftragslisteRow = {
 export type AuftragslisteResult = {
   productCategories: VorlauflisteCategory[];
   componentCategories: VorlauflisteCategory[];
+  availableSaunaModels: string[];
   items: AuftragslisteRow[];
 };
 
@@ -182,6 +185,7 @@ type NormalizedProjectAppointmentRow = {
   endDate: string | null;
   tourId: number | null;
   tourName: string | null;
+  tourColor: string | null;
 };
 
 type ProjectAppointmentTagRow = {
@@ -202,6 +206,7 @@ type VorlauflisteAppointmentMeta = {
   actualDate: string;
   durationDays: number;
   tourName: string | null;
+  tourColor: string | null;
   appointmentTags: Tag[];
   reportState: AppointmentCancellationReportState;
 };
@@ -243,6 +248,66 @@ function joinSorted(values: Set<string>): string | null {
 function resolveArticleName(name: string, shortCode: string | null | undefined, useShortCodes: boolean): string {
   if (useShortCodes && shortCode && shortCode.trim().length > 0) return shortCode.trim();
   return name;
+}
+
+function normalizeReportName(value: string): string {
+  return value.trim().toLocaleLowerCase("de");
+}
+
+function isSaunaModelCategoryName(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return isReportSaunaProductCategoryName(value);
+}
+
+const TOUR_NUMBER_PATTERN = /^Tour\s+(\d+)$/i;
+
+function resolveAuftragslisteTourRank(tourName: string | null): { group: 0 | 1 | 2; numberValue: number; nameValue: string } {
+  if (!tourName || tourName.trim().length === 0) {
+    return {
+      group: 2,
+      numberValue: Number.POSITIVE_INFINITY,
+      nameValue: "",
+    };
+  }
+
+  const trimmedTourName = tourName.trim();
+  const match = trimmedTourName.match(TOUR_NUMBER_PATTERN);
+  if (match) {
+    return {
+      group: 0,
+      numberValue: Number(match[1]),
+      nameValue: trimmedTourName,
+    };
+  }
+
+  return {
+    group: 1,
+    numberValue: Number.POSITIVE_INFINITY,
+    nameValue: trimmedTourName,
+  };
+}
+
+function compareAuftragslisteRows(left: Pick<AuftragslisteRow, "tourName" | "actualDate" | "projectId">, right: Pick<AuftragslisteRow, "tourName" | "actualDate" | "projectId">): number {
+  const leftRank = resolveAuftragslisteTourRank(left.tourName);
+  const rightRank = resolveAuftragslisteTourRank(right.tourName);
+
+  if (leftRank.group !== rightRank.group) {
+    return leftRank.group - rightRank.group;
+  }
+  if (leftRank.numberValue !== rightRank.numberValue) {
+    return leftRank.numberValue - rightRank.numberValue;
+  }
+
+  const nameCompare = leftRank.nameValue.localeCompare(rightRank.nameValue, "de", {
+    numeric: true,
+    sensitivity: "base",
+  });
+  if (nameCompare !== 0) {
+    return nameCompare;
+  }
+
+  return left.actualDate.localeCompare(right.actualDate, "de")
+    || left.projectId - right.projectId;
 }
 
 function buildAppointmentConditions(params: { fromDate: string; toDate?: string }): SQL<unknown>[] {
@@ -362,6 +427,7 @@ async function buildVorlauflisteProjectMeta(params: {
       endDate: sql<string | null>`case when ${appointments.endDate} is null then null else date_format(${appointments.endDate}, '%Y-%m-%d') end`,
       tourId: appointments.tourId,
       tourName: tours.name,
+      tourColor: tours.color,
     })
     .from(appointments)
     .leftJoin(tours, eq(appointments.tourId, tours.id))
@@ -422,6 +488,7 @@ async function buildVorlauflisteProjectMeta(params: {
         new Date(`${row.startDate}T00:00:00`),
       ) + 1,
       tourName: row.tourName ?? null,
+      tourColor: row.tourColor ?? null,
       appointmentTags: appointmentTagsByAppointmentId.get(row.appointmentId) ?? [],
     };
 
@@ -912,6 +979,8 @@ export async function getAuftragsliste(params: {
   toDate?: string;
   productCategoryIds: number[];
   componentCategoryIds: number[];
+  tagIds: number[];
+  saunaModels: string[];
   useShortCodes: boolean;
 }): Promise<AuftragslisteResult> {
   const [allCategories, projectMeta] = await Promise.all([
@@ -930,6 +999,7 @@ export async function getAuftragsliste(params: {
       componentCategories: params.componentCategoryIds.length > 0
         ? allActiveComponentCategories.filter((category) => params.componentCategoryIds.includes(category.id))
         : allActiveComponentCategories,
+      availableSaunaModels: [],
       items: [],
     };
   }
@@ -953,6 +1023,7 @@ export async function getAuftragsliste(params: {
     return {
       productCategories: productCategoriesForReport,
       componentCategories: componentCategoriesForReport,
+      availableSaunaModels: [],
       items: [],
     };
   }
@@ -1028,6 +1099,7 @@ export async function getAuftragsliste(params: {
   }
 
   const articleBucketsByProjectId = new Map<number, ReportArticleBuckets>();
+  const saunaModelsByProjectId = new Map<number, Set<string>>();
   for (const row of orderItemRows) {
     const articleBuckets = articleBucketsByProjectId.get(row.item.projectId) ?? createEmptyBuckets();
 
@@ -1035,10 +1107,17 @@ export async function getAuftragsliste(params: {
       row.product
       && row.productCategory
       && row.product.name.trim().length > 0
-      && productCategoryIdsForReport.has(row.productCategory.id)
     ) {
-      const displayName = resolveArticleName(row.product.name.trim(), row.product.shortCode, params.useShortCodes);
-      addToBucket(articleBuckets, row.productCategory.id, displayName);
+      const trimmedProductName = row.product.name.trim();
+      if (productCategoryIdsForReport.has(row.productCategory.id)) {
+        const displayName = resolveArticleName(trimmedProductName, row.product.shortCode, params.useShortCodes);
+        addToBucket(articleBuckets, row.productCategory.id, displayName);
+      }
+      if (isSaunaModelCategoryName(row.productCategory.name)) {
+        const saunaModels = saunaModelsByProjectId.get(row.item.projectId) ?? new Set<string>();
+        saunaModels.add(trimmedProductName);
+        saunaModelsByProjectId.set(row.item.projectId, saunaModels);
+      }
     }
 
     if (
@@ -1053,6 +1132,16 @@ export async function getAuftragsliste(params: {
 
     articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
   }
+
+  const availableSaunaModels = Array.from(new Set(
+    eligibleProjectIds.flatMap((projectId) => Array.from(saunaModelsByProjectId.get(projectId) ?? [])),
+  )).sort((left, right) => left.localeCompare(right, "de", { sensitivity: "base", numeric: true }));
+  const selectedTagIds = new Set(params.tagIds);
+  const selectedSaunaModels = new Set(
+    params.saunaModels
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  );
 
   const projectDetailsById = new Map(projectDetails.map((row) => [row.project.id, row] as const));
   const items = eligibleProjectIds
@@ -1074,6 +1163,25 @@ export async function getAuftragsliste(params: {
       const attachmentsCount = customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount;
       const projectTags = projectMeta.tagsByProjectId.get(projectId) ?? [];
       const articleBuckets = articleBucketsByProjectId.get(projectId) ?? createEmptyBuckets();
+      const reportTagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
+      const filterTags = Array.from(new Map(
+        [
+          ...projectTags,
+          ...appointmentMeta.appointmentTags,
+          reportTagState.specialMeasureTag,
+          reportTagState.remarksTag,
+        ]
+          .filter((tag): tag is Tag => Boolean(tag))
+          .map((tag) => [tag.id, tag] as const),
+      ).values());
+      if (selectedTagIds.size > 0 && !filterTags.some((tag) => selectedTagIds.has(tag.id))) {
+        return null;
+      }
+
+      const saunaModelsForProject = saunaModelsByProjectId.get(projectId) ?? new Set<string>();
+      if (selectedSaunaModels.size > 0 && !Array.from(saunaModelsForProject).some((value) => selectedSaunaModels.has(value))) {
+        return null;
+      }
 
       const row: AuftragslisteRow = {
         projectId,
@@ -1086,6 +1194,7 @@ export async function getAuftragsliste(params: {
         actualDate: appointmentMeta.actualDate,
         durationDays: appointmentMeta.durationDays,
         tourName: appointmentMeta.tourName,
+        tourColor: appointmentMeta.tourColor,
         employees: employeesByAppointmentId.get(appointmentMeta.appointmentId) ?? [],
         customerNotesCount,
         projectNotesCount,
@@ -1107,11 +1216,12 @@ export async function getAuftragsliste(params: {
       return row;
     })
     .filter((entry): entry is AuftragslisteRow => entry !== null)
-    .sort((left, right) => left.actualDate.localeCompare(right.actualDate, "de") || left.projectId - right.projectId);
+    .sort(compareAuftragslisteRows);
 
   return {
     productCategories: productCategoriesForReport,
     componentCategories: componentCategoriesForReport,
+    availableSaunaModels,
     items,
   };
 }

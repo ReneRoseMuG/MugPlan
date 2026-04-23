@@ -217,7 +217,7 @@ describe("FT26 UI: ReportsPage behavior", () => {
       }
       if (key === "reports-auftragsliste") {
         return {
-          data: { productCategories: [], componentCategories: [], items: [] },
+          data: { productCategories: [], componentCategories: [], availableSaunaModels: [], items: [] },
           isLoading: false,
         };
       }
@@ -305,6 +305,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
       toDate: "2026-03-30",
       productCategoryIds: [1],
       componentCategoryIds: [2, 4],
+      tagIds: [8],
+      saunaModels: ["Modell Alpha"],
       useShortCodes: true,
     });
 
@@ -314,6 +316,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("productCategoryIds=1");
     expect(url).toContain("componentCategoryIds=2");
     expect(url).toContain("componentCategoryIds=4");
+    expect(url).toContain("tagIds=8");
+    expect(url).toContain("saunaModels=Modell+Alpha");
     expect(url).toContain("useShortCodes=true");
   });
 
@@ -327,6 +331,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
       weekCount: 1,
       productCategoryIds: [1],
       componentCategoryIds: [2],
+      tagIds: [8],
+      saunaModels: ["Modell Alpha"],
       useShortCodes: true,
     });
 
@@ -339,6 +345,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("weekCount=1");
     expect(url).toContain("productCategoryIds=1");
     expect(url).toContain("componentCategoryIds=2");
+    expect(url).toContain("tagIds=8");
+    expect(url).toContain("saunaModels=Modell+Alpha");
     expect(url).toContain("useShortCodes=true");
   });
 });

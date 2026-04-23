@@ -48,7 +48,10 @@ function PrintProjectCard({
       className="break-inside-avoid rounded-lg border border-slate-300 bg-white shadow-sm"
       data-testid={`print-auftragsliste-project-card-${row.projectId}`}
     >
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3">
+      <div
+        className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3"
+        style={row.tourColor ? { borderColor: row.tourColor } : undefined}
+      >
         <div className="min-w-0 text-xs">
           <div className="flex min-w-0 flex-nowrap items-baseline gap-x-2">
             {specialMeasureTag ? (

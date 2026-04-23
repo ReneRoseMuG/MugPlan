@@ -486,7 +486,7 @@ export function TourenplanReportPanel({
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div className="flex h-full min-h-[190px] w-full max-w-[420px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4" data-testid="reports-tourenplan-filter-box">
               <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
                 <Checkbox
                   checked={useShortCodes}
@@ -495,7 +495,6 @@ export function TourenplanReportPanel({
                 />
                 <span className="text-sm text-slate-600">Shortcodes verwenden</span>
               </label>
-              {quickRangeOptions}
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
@@ -554,6 +553,7 @@ export function TourenplanReportPanel({
                   </ToggleGroup>
                 ) : null}
               </div>
+              {quickRangeOptions}
             </div>
           </div>
         )}

@@ -65,6 +65,8 @@ type ProduktionsplanungSelection = {
 type AuftragslisteSelection = {
   productCategoryIds?: number[];
   componentCategoryIds?: number[];
+  tagIds?: number[];
+  saunaModels?: string[];
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = (typeof tourenplanPrintModeOptions)[number];
@@ -218,6 +220,8 @@ function isValidAuftragslisteSelection(value: unknown): value is AuftragslisteSe
   const parsed = value as Record<string, unknown>;
   if (parsed.productCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
   if (parsed.componentCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.tagIds !== undefined && !isValidPositiveIntegerArray(parsed.tagIds)) return false;
+  if (parsed.saunaModels !== undefined && !isValidStringArray(parsed.saunaModels)) return false;
   if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
   return true;
 }
@@ -613,6 +617,8 @@ export const userSettingsRegistry = {
     defaultValue: {
       productCategoryIds: [],
       componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
       useShortCodes: false,
     },
     allowedScopes: ["USER"],

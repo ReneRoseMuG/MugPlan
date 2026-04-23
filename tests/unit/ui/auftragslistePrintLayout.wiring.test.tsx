@@ -44,6 +44,7 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
             actualDate: "2099-11-05",
             durationDays: 2,
             tourName: "Tour Nord",
+            tourColor: "#0f766e",
             employees: [{ id: 8, fullName: "Max Muster" }],
             customerNotesCount: 1,
             projectNotesCount: 2,

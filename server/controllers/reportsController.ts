@@ -137,6 +137,8 @@ export async function listAuftragsliste(req: Request, res: Response, next: NextF
       toDate: input.toDate,
       productCategoryIds: input.productCategoryIds,
       componentCategoryIds: input.componentCategoryIds,
+      tagIds: input.tagIds,
+      saunaModels: input.saunaModels,
       useShortCodes: input.useShortCodes,
     }, roleKey);
 

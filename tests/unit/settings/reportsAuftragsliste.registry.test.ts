@@ -22,10 +22,12 @@ describe("settings registry: Auftragsliste report settings", () => {
     expect(definition.key).toBe("reports.auftragsliste.selection");
     expect(definition.type).toBe("json");
     expect(definition.allowedScopes).toEqual(["USER"]);
-    expect(definition.defaultValue).toEqual({ productCategoryIds: [], componentCategoryIds: [], useShortCodes: false });
-    expect(definition.validate({ productCategoryIds: [1], componentCategoryIds: [2], useShortCodes: true })).toBe(true);
+    expect(definition.defaultValue).toEqual({ productCategoryIds: [], componentCategoryIds: [], tagIds: [], saunaModels: [], useShortCodes: false });
+    expect(definition.validate({ productCategoryIds: [1], componentCategoryIds: [2], tagIds: [3], saunaModels: ["Modell Alpha"], useShortCodes: true })).toBe(true);
     expect(definition.validate({ productCategoryIds: [1, 1], componentCategoryIds: [2], useShortCodes: true })).toBe(false);
     expect(definition.validate({ componentCategoryIds: ["1"], useShortCodes: true })).toBe(false);
+    expect(definition.validate({ tagIds: [3, 3], useShortCodes: true })).toBe(false);
+    expect(definition.validate({ saunaModels: ["Modell Alpha", "Modell Alpha"], useShortCodes: true })).toBe(false);
   });
 
   it("validates the dedicated range config", () => {
