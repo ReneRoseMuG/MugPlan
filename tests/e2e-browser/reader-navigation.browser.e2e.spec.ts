@@ -2,13 +2,13 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Leser sehen Monitoring in der Sidebar, aber weder Reports noch Journal noch Tour-PLZ-Planung.
+ * - Leser sehen Monitoring in der Sidebar, aber weder Reports noch Journal noch Tour-PLZ-Planung noch Mitarbeiter.
  * - Leser können Monitoring im Hauptlayout und als Standalone-Ansicht öffnen.
  * - Die Standalone-Tour-PLZ-Planung bleibt für Leser gesperrt.
  *
  * Fehlerfälle:
  * - Monitoring verschwindet für Leser wieder oder lädt trotz Freigabe nicht.
- * - Reports/Journal/Tour-PLZ-Planung bleiben für Leser sichtbar.
+ * - Reports/Journal/Tour-PLZ-Planung/Mitarbeiter bleiben für Leser sichtbar.
  * - Die Standalone-Tour-PLZ-Planung bleibt für Leser erreichbar.
  *
  * Ziel:
@@ -30,13 +30,15 @@ test.describe("Reader navigation", () => {
     await resetBrowserSuiteState("tests/e2e-browser/reader-navigation.browser.e2e.spec.ts");
   });
 
-  test("shows monitoring but hides reports, journal and tour postal planning in the sidebar", async ({ page }) => {
+  test("shows monitoring but hides reports, journal, tour postal planning and employees in the sidebar", async ({ page }) => {
     await loginAsReader(page);
 
     await expect(page.getByTestId("nav-monitoring")).toBeVisible();
     await expect(page.getByTestId("nav-monitoring-open-tab")).toBeVisible();
     await expect(page.getByTestId("nav-tour-plz-plan")).toHaveCount(0);
     await expect(page.getByTestId("nav-tour-plz-plan-open-tab")).toHaveCount(0);
+    await expect(page.getByTestId("nav-mitarbeiter")).toHaveCount(0);
+    await expect(page.getByTestId("nav-mitarbeiter-open-tab")).toHaveCount(0);
     await expect(page.getByText("Reports")).toHaveCount(0);
     await expect(page.getByText("Journal")).toHaveCount(0);
   });

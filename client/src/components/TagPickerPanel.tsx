@@ -18,8 +18,8 @@ interface TagPickerPanelProps {
   availableTags: Tag[];
   isLoading?: boolean;
   loadErrorMessage?: string | null;
-  onAdd: (tagId: number) => void;
-  onRemove: (item: TagRelationItem) => void;
+  onAdd?: (tagId: number) => void;
+  onRemove?: (item: TagRelationItem) => void;
   title?: string;
   emptyText?: string;
   canEdit?: boolean;
@@ -48,7 +48,7 @@ export function TagPickerPanel({
   );
   const handleAddTag = (tagId: number) => {
     setPickerOpen(false);
-    onAdd(tagId);
+    onAdd?.(tagId);
   };
 
   return (
@@ -109,7 +109,7 @@ export function TagPickerPanel({
                 key={item.tag.id}
                 tag={item.tag}
                 action={canEdit ? "remove" : "none"}
-                onRemove={canEdit ? () => onRemove(item) : undefined}
+                onRemove={canEdit ? () => onRemove?.(item) : undefined}
                 fullWidth
                 testId={`${testIdPrefix}-tag-${item.tag.id}`}
               />

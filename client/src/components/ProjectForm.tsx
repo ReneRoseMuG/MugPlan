@@ -1743,11 +1743,6 @@ export function ProjectForm({
       >
         {activeMainTab === "details" ? (
           <div className="w-full space-y-6" data-testid="project-form-main-column">
-        {isReadOnlyView ? (
-          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive" data-testid="project-readonly-alert">
-            Diese Rolle darf Projekte öffnen und lesen, aber nicht bearbeiten.
-          </div>
-        ) : null}
         {isEditing ? (
           <ProjectOrderForm
             name={name}

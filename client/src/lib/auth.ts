@@ -49,6 +49,7 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
 }
 
 function persistRole(payload: AuthenticatedPayload): void {
+  if (typeof window === "undefined") return;
   window.localStorage.setItem("userRole", payload.roleCode);
 }
 
@@ -65,6 +66,9 @@ export function resolveClientRole(value: string | null | undefined): ClientRoleC
 }
 
 export function getStoredUserRole(): ClientRoleCode {
+  if (typeof window === "undefined") {
+    return resolveClientRole(null);
+  }
   return resolveClientRole(window.localStorage.getItem("userRole"));
 }
 
@@ -94,7 +98,9 @@ export async function getSessionStatus(): Promise<AuthenticatedPayload> {
 
   if (!response.ok) {
     if (response.status === 401) {
-      window.localStorage.removeItem("userRole");
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("userRole");
+      }
     }
     throw new Error(`Session status failed: ${response.status}`);
   }

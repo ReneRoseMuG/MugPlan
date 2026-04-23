@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear } from "date-fns";
 import { Calendar, CalendarDays, ExternalLink, LogOut, RefreshCw } from "lucide-react";
 
-import { canAccessMonitoring, canAccessReports, canAccessTourPostalPlan } from "@/lib/auth";
+import { canAccessMonitoring, canAccessReports, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { domainIcons } from "@/lib/domain-icons";
 import type { ViewType } from "@/pages/Home";
 import type { MonitoringTriggerSummaryItemResponse } from "@shared/routes";
@@ -110,6 +110,7 @@ export function Sidebar({
   const canOpenReports = canAccessReports(userRole);
   const canOpenMonitoring = canAccessMonitoring(userRole);
   const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
+  const canOpenEmployees = !isReaderRole(userRole);
   const CustomersIcon = domainIcons.customers;
   const ProjectsIcon = domainIcons.projects;
   const AppointmentsIcon = domainIcons.appointmentsList;
@@ -251,14 +252,16 @@ export function Sidebar({
         ) : null}
 
         <NavGroup title="Mitarbeiter Verwaltung">
-          <NavButton
-            icon={EmployeesIcon}
-            label="Mitarbeiter"
-            testId="nav-mitarbeiter"
-            isActive={currentView === "employees"}
-            onClick={() => onViewChange("employees")}
-            standaloneUrl="/standalone/employees"
-          />
+          {canOpenEmployees ? (
+            <NavButton
+              icon={EmployeesIcon}
+              label="Mitarbeiter"
+              testId="nav-mitarbeiter"
+              isActive={currentView === "employees"}
+              onClick={() => onViewChange("employees")}
+              standaloneUrl="/standalone/employees"
+            />
+          ) : null}
           <NavButton
             icon={TeamsIcon}
             label="Teams"

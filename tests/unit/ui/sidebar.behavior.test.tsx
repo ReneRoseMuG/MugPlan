@@ -6,13 +6,13 @@
  * Abgedeckte Regeln:
  * - Dispatcher sehen Reports, Journal und Monitoring inklusive triggerweiser Pills direkt unter dem Navigationseintrag.
  * - Die globale Kalendernavigation bietet eine Wochenübersicht und die neue Monatsübersicht als monatliche Hauptansicht.
- * - Reader sehen Monitoring, aber keine Reports-/Journal-Navigation und keinen Einstieg in die Tour-PLZ-Planung.
+ * - Reader sehen Monitoring, aber keine Reports-/Journal-Navigation, keinen Einstieg in die Tour-PLZ-Planung und keinen Menüpunkt Mitarbeiter.
  * - Backup-Disablement bleibt als sichtbare Seitenmarkierung erhalten.
  *
  * Fehlerfaelle:
  * - Reports, Journal oder Monitoring verschwinden fuer berechtigte Rollen.
  * - Trigger-Pills erscheinen nicht oder an der falschen Stelle oder zeigen falsche Zaehler.
- * - Reader erhalten unberechtigte Navigationseintraege, verlieren Monitoring oder behalten Tour-PLZ-Planung sichtbar.
+ * - Reader erhalten unberechtigte Navigationseintraege, verlieren Monitoring oder behalten Tour-PLZ-Planung oder Mitarbeiter sichtbar.
  *
  * Ziel:
  * Die sichtbare Navigationsrolle der Sidebar ueber gerendertes Verhalten absichern.
@@ -92,6 +92,8 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("TR-01: 2");
     expect(html).not.toContain("nav-tour-plz-plan");
     expect(html).not.toContain("nav-tour-plz-plan-open-tab");
+    expect(html).not.toContain("nav-mitarbeiter");
+    expect(html).not.toContain("nav-mitarbeiter-open-tab");
     expect(html).not.toContain("nav-reports-open-tab");
     expect(html).toContain("Meine Einstellungen");
   });

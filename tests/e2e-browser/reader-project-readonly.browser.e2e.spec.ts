@@ -71,7 +71,7 @@ test.describe("Reader projects readonly", () => {
     await expect(entry).toBeVisible();
     await entry.dblclick();
 
-    await expect(page.getByTestId("project-readonly-alert")).toBeVisible();
+    await expect(page.getByTestId("project-readonly-alert")).toHaveCount(0);
     await expect(page.getByTestId("button-save-project")).toHaveCount(0);
     await expect(page.getByTestId("button-delete-project")).toHaveCount(0);
     await expect(page.getByTestId("button-select-customer")).toHaveCount(0);

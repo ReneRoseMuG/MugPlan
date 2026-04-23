@@ -432,7 +432,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
 
     const markup = renderToStaticMarkup(<EmployeeForm employeeId={17} onCancel={vi.fn()} />);
 
-    expect(markup).toContain("employee-readonly-alert");
+    expect(markup).not.toContain("employee-readonly-alert");
     expect(markup).not.toContain("button-save-employee");
     expect(employeeAttachmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true, canDelete: false });
     expect(tagPickerPanelCalls.at(-1)?.canEdit).toBe(false);

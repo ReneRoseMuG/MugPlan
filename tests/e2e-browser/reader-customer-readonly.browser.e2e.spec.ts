@@ -48,7 +48,7 @@ test.describe("Reader customers readonly", () => {
     await expect(entry).toBeVisible();
     await entry.dblclick();
 
-    await expect(page.getByTestId("customer-readonly-alert")).toBeVisible();
+    await expect(page.getByTestId("customer-readonly-alert")).toHaveCount(0);
     await expect(page.getByTestId("button-save-customer")).toHaveCount(0);
     await expect(page.getByTestId("customer-tag-picker-button-add")).toHaveCount(0);
     await expect(page.getByTestId("button-new-note")).toHaveCount(0);

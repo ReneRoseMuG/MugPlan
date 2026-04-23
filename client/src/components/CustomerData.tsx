@@ -892,11 +892,6 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       >
         {activeMainTab === "details" ? (
           <div className="w-full space-y-6" data-testid="customer-form-main-column">
-              {isReadOnlyView ? (
-                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive" data-testid="customer-readonly-alert">
-                  Diese Rolle darf Kunden öffnen und lesen, aber nicht bearbeiten.
-                </div>
-              ) : null}
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />

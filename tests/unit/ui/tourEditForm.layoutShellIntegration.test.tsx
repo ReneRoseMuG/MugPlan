@@ -395,7 +395,7 @@ describe("FT04 tour form shell layout integration", () => {
       />,
     );
 
-    expect(markup).toContain("tour-readonly-alert");
+    expect(markup).not.toContain("tour-readonly-alert");
     expect(markup).not.toContain("button-save-tour");
     expect(markup).not.toContain("tour-form-functions-panel");
     expect(markup).not.toContain("toggle-tour-week-picker");

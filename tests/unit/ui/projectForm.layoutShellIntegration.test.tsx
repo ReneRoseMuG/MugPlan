@@ -344,7 +344,7 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
 
     const markup = renderToStaticMarkup(<ProjectForm projectId={7} />);
 
-    expect(markup).toContain("project-readonly-alert");
+    expect(markup).not.toContain("project-readonly-alert");
     expect(markup).not.toContain("project-form-functions-panel");
     expect(markup).not.toContain("button-delete-project");
     expect(markup).not.toContain("button-save-project");

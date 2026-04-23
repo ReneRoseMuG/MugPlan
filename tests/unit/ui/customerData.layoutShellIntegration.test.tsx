@@ -325,7 +325,7 @@ describe("FT28 customer data shell layout integration", () => {
 
     const markup = renderToStaticMarkup(<CustomerData customerId={11} onCancel={vi.fn()} onOpenProject={vi.fn()} />);
 
-    expect(markup).toContain("customer-readonly-alert");
+    expect(markup).not.toContain("customer-readonly-alert");
     expect(markup).not.toContain("button-save-customer");
     expect(customerAttachmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true, canDelete: false });
     expect(tagPickerPanelCalls.at(-1)?.canEdit).toBe(false);

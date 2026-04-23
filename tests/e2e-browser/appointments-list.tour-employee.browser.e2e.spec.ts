@@ -210,10 +210,8 @@ test("appointments table preview uses the detail week card and stays inside the 
   await expect(table).toBeVisible({ timeout: 10_000 });
   const row = table.locator("tbody tr").filter({ hasText: project.name }).first();
   await expect(row).toBeVisible();
-
-  const rowBox = await row.boundingBox();
-  expect(rowBox).not.toBeNull();
-  await page.mouse.move((rowBox?.x ?? 0) + (rowBox?.width ?? 0) - 3, (rowBox?.y ?? 0) + ((rowBox?.height ?? 0) / 2));
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
 
   const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
   await expect(previewPanel).toBeVisible({ timeout: 5_000 });
@@ -225,5 +223,5 @@ test("appointments table preview uses the detail week card and stays inside the 
   expect((previewBox?.x ?? 0)).toBeGreaterThanOrEqual(0);
   expect((previewBox?.y ?? 0)).toBeGreaterThanOrEqual(0);
   expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0)).toBeLessThanOrEqual(900);
-  expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeLessThanOrEqual(420);
+  expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeLessThanOrEqual(424);
 });

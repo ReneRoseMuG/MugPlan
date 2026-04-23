@@ -250,10 +250,6 @@ function resolveArticleName(name: string, shortCode: string | null | undefined, 
   return name;
 }
 
-function normalizeReportName(value: string): string {
-  return value.trim().toLocaleLowerCase("de");
-}
-
 function isSaunaModelCategoryName(value: string | null | undefined): boolean {
   if (!value) return false;
   return isReportSaunaProductCategoryName(value);

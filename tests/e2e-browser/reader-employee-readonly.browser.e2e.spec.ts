@@ -72,19 +72,19 @@ test.describe("Reader employees readonly", () => {
   test("hides the create entrypoint in the employee list for readers", async ({ page }) => {
     await loginAsReader(page);
 
-    await page.getByTestId("nav-mitarbeiter").click();
+    await page.goto("/standalone/employees");
     await expect(page.getByTestId("button-new-employee")).toHaveCount(0);
   });
 
   test("opens employee forms in readonly mode for readers", async ({ page }) => {
     await loginAsReader(page);
 
-    await page.getByTestId("nav-mitarbeiter").click();
+    await page.goto("/standalone/employees");
     const entry = await findEmployeeEntry(page, employee);
     await expect(entry).toBeVisible();
     await entry.dblclick();
 
-    await expect(page.getByTestId("employee-readonly-alert")).toBeVisible();
+    await expect(page.getByTestId("employee-readonly-alert")).toHaveCount(0);
     await expect(page.getByTestId("button-save-employee")).toHaveCount(0);
     await expect(page.getByTestId("employee-tag-picker-button-add")).toHaveCount(0);
     await expect(page.getByTestId("button-new-note")).toHaveCount(0);

@@ -61,7 +61,7 @@ test.describe("Reader tours readonly", () => {
     await expect(tourCard).toBeVisible();
     await tourCard.dblclick();
 
-    await expect(page.getByTestId("tour-readonly-alert")).toBeVisible();
+    await expect(page.getByTestId("tour-readonly-alert")).toHaveCount(0);
     await expect(page.getByTestId("button-save-tour")).toHaveCount(0);
     await expect(page.getByTestId("toggle-tour-week-picker")).toHaveCount(0);
 
