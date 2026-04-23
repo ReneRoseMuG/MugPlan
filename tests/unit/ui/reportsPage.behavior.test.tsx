@@ -187,13 +187,17 @@ describe("FT26 UI: ReportsPage behavior", () => {
       }
       if (key === "reports-tourenplan-preview") {
         return {
-          data: {
-            fromDate: "2026-03-30",
-            toDate: "2026-04-05",
-            weeks: [],
-            appointments: [],
-            tour: { id: 1, name: "Testtour" },
-          },
+          data: [{
+            sectionKey: "tour-1",
+            previewData: {
+              fromDate: "2026-03-30",
+              toDate: "2026-04-05",
+              weeks: [],
+              appointments: [],
+              tour: { id: 1, name: "Testtour", color: "#2266aa" },
+            },
+            appointmentItems: [],
+          }],
           isLoading: false,
           isError: false,
         };
