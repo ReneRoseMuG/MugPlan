@@ -5,6 +5,7 @@ import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 interface WeekGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
+  readOnly?: boolean;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
@@ -22,6 +23,7 @@ interface WeekGridProps {
 export function WeekGrid({
   currentDate,
   employeeFilterId,
+  readOnly = false,
   weekTileBodyMode,
   weekLanesCollapsed,
   onWeekLanesCollapsedChange,
@@ -40,6 +42,7 @@ export function WeekGrid({
       <CalendarWeekView
         currentDate={currentDate}
         employeeFilterId={employeeFilterId}
+        readOnly={readOnly}
         weekTileBodyMode={weekTileBodyMode}
         weekLanesCollapsed={weekLanesCollapsed}
         onWeekLanesCollapsedChange={onWeekLanesCollapsedChange}

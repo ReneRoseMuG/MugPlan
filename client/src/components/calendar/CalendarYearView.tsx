@@ -15,6 +15,7 @@ import {
 } from "date-fns";
 import { de } from "date-fns/locale";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import {
   getAppointmentEndDate,
@@ -25,6 +26,7 @@ import { CalendarAppointmentCompactBar } from "./CalendarAppointmentCompactBar";
 type CalendarYearViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
+  readOnly?: boolean;
   onNewAppointment?: (date: string) => void;
   onOpenAppointment?: (appointmentId: number) => void;
 };
@@ -34,13 +36,12 @@ const logPrefix = "[calendar-year]";
 export function CalendarYearView({
   currentDate,
   employeeFilterId,
+  readOnly = false,
   onNewAppointment,
   onOpenAppointment,
 }: CalendarYearViewProps) {
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
+  const userRole = useMemo(() => getStoredUserRole(), []);
+  const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
   const isAdmin = userRole === "ADMIN";
   const berlinToday = getBerlinTodayDateString();
 
@@ -122,7 +123,7 @@ export function CalendarYearView({
                     className={`border border-border/30 rounded-sm p-0.5 min-h-[34px] ${!isCurrentMonth ? "bg-muted/10" : "bg-white"}`}
                   >
                     <div className="flex items-center justify-between">
-                      {dayKey >= berlinToday ? (
+                      {!isReaderCalendarReadOnly && dayKey >= berlinToday ? (
                         <button
                           onClick={() => onNewAppointment?.(dayKey)}
                           className="w-4 h-4 flex items-center justify-center text-muted-foreground/50 hover:text-primary hover:bg-primary/10 rounded"

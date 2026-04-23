@@ -36,7 +36,7 @@ import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan } from "@/lib/auth";
+import { canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
 
 export type ViewType =
@@ -240,6 +240,7 @@ export default function Home({ onLogout }: HomeProps) {
   const [teamFormVisible, setTeamFormVisible] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
+  const isReader = isReaderRole(userRole);
   const canAccessReports = canAccessReportsRole(userRole);
   const canAccessMonitoring = canAccessMonitoringRole(userRole);
   const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
@@ -706,7 +707,8 @@ export default function Home({ onLogout }: HomeProps) {
                   <CalendarYearView
                     currentDate={currentDate}
                     employeeFilterId={calendarFilters.employeeId}
-                    onNewAppointment={(date) => {
+                    readOnly={isReader}
+                    onNewAppointment={isReader ? undefined : (date) => {
                       setAppointmentContext({
                         initialDate: date,
                         returnContext: { targetView: "year" },

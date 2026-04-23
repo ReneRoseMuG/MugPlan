@@ -249,4 +249,48 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
       returnView: "monthSheet",
     });
   });
+
+  it("keeps week and month sheet calendars readonly for reader roles", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="week"
+        currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+      />,
+    );
+
+    renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="monthSheet"
+        currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+      />,
+    );
+
+    const weekProps = weekGridCalls.at(-1);
+    const monthSheetProps = monthSheetGridCalls.at(-1);
+
+    expect(weekProps?.readOnly).toBe(true);
+    expect(weekProps?.onNewAppointment).toBeUndefined();
+    expect(monthSheetProps?.readOnly).toBe(true);
+    expect(monthSheetProps?.onNewAppointment).toBeUndefined();
+  });
 });

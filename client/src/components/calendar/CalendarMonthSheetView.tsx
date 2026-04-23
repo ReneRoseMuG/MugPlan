@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import {
   useCalendarAppointments,
@@ -140,10 +141,8 @@ export function CalendarMonthSheetView({
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
+  const userRole = useMemo(() => getStoredUserRole(), []);
+  const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
@@ -318,6 +317,12 @@ export function CalendarMonthSheetView({
   };
 
   const handleDrop = async (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => {
+    if (isReaderCalendarReadOnly) {
+      event.preventDefault();
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     event.preventDefault();
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
     if (!appointmentId) return;
@@ -430,7 +435,7 @@ export function CalendarMonthSheetView({
           blockedTourWeekKeys={blockedTourWeekKeys}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
-          readOnly={readOnly}
+          readOnly={isReaderCalendarReadOnly}
           showMonthHeader={visibleWeekCount === undefined}
           draggedAppointmentId={draggedAppointmentId}
           getSlotBarPosition={getSlotBarPosition}
@@ -730,6 +735,7 @@ function MonthSheetSection({
                                 isLocked={isLocked}
                                 isDragging={false}
                                 isBlocked={isSlotBlocked}
+                                onDoubleClick={() => onAppointmentClick(appointment.id)}
                               />
                             ) : (
                               <MonthCompactBarWithMenu
@@ -791,6 +797,7 @@ const parseMonthErrorPayload = (rawBody: string): { message?: string; code?: str
 
 function MonthCompactBarWithMenu({
   appointment,
+  readOnly = false,
   isFirstDay,
   isLastDay,
   isConflict = false,
@@ -803,6 +810,7 @@ function MonthCompactBarWithMenu({
   onDragEnd,
 }: {
   appointment: CalendarAppointment;
+  readOnly?: boolean;
   isFirstDay: boolean;
   isLastDay: boolean;
   isConflict?: boolean;
@@ -954,7 +962,7 @@ function MonthCompactBarWithMenu({
             Termin öffnen
           </DropdownMenuItem>
         )}
-        {!appointment.isCancelled && (
+        {!readOnly && !appointment.isCancelled && (
           <DropdownMenuItem
             onClick={() => setCancelConfirmOpen(true)}
             className="gap-2 text-xs cursor-pointer"
@@ -964,7 +972,7 @@ function MonthCompactBarWithMenu({
             Stornieren
           </DropdownMenuItem>
         )}
-        {!appointment.isCancelled && !isParked && (
+        {!readOnly && !appointment.isCancelled && !isParked && (
           <DropdownMenuItem
             onClick={() => setParkConfirmOpen(true)}
             className="gap-2 text-xs cursor-pointer"

@@ -19,7 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let currentRole = "DISPATCHER";
-let currentMode: "historical" | "historicalParked" | "cancelled" | "planningBlocked" = "historical";
+let currentMode: "future" | "historical" | "historicalParked" | "cancelled" | "planningBlocked" = "historical";
 const attachmentPanelCalls: Array<Record<string, unknown>> = [];
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
@@ -191,7 +191,7 @@ vi.mock("@/components/DocumentExtractionDialog", () => ({
 
 import { AppointmentForm } from "../../../client/src/components/AppointmentForm";
 
-function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cancelled" | "planningBlocked") {
+function buildAppointmentDetail(mode: "future" | "historical" | "historicalParked" | "cancelled" | "planningBlocked") {
   return {
     id: 77,
     version: 3,
@@ -201,7 +201,7 @@ function buildAppointmentDetail(mode: "historical" | "historicalParked" | "cance
     tourId: mode === "historicalParked" ? 88 : null,
     title: "Termin A",
     description: null,
-    startDate: mode === "cancelled" || mode === "planningBlocked" ? "2099-01-02" : "2000-01-01",
+    startDate: mode === "future" || mode === "cancelled" || mode === "planningBlocked" ? "2099-01-02" : "2000-01-01",
     startTime: "08:00:00",
     endDate: "2099-01-02",
     endTime: "09:00:00",
@@ -388,5 +388,38 @@ describe("FT01 UI: appointment form readonly modes", () => {
     expect(latestEmployeeSlotCall?.isLocked).toBe(false);
     expect(latestNotesSectionCall?.readOnly).toBe(false);
     expect(latestTagPickerCall?.canEdit).toBe(true);
+  });
+
+  it("renders future appointments for readers as pure readonly mode", () => {
+    currentRole = "READER";
+    currentMode = "future";
+
+    const markup = renderToStaticMarkup(
+      <AppointmentForm
+        appointmentId={77}
+        showBackButton
+        onBack={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Nur Lesemodus");
+    expect(markup).not.toContain("button-save-appointment");
+    expect(markup).not.toContain("button-cancel-appointment");
+    expect(markup).not.toContain("button-park-appointment");
+    expect(markup).not.toContain("button-delete-appointment");
+    expect(markup).not.toContain("button-select-project");
+    expect(markup).not.toContain("button-select-customer");
+
+    const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
+    const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
+    const latestNotesSectionCall = notesSectionCalls[notesSectionCalls.length - 1];
+    const latestTagPickerCall = tagPickerCalls[tagPickerCalls.length - 1];
+
+    expect(latestAttachmentPanelCall?.readOnly).toBe(true);
+    expect(latestEmployeeSlotCall?.readOnly).toBe(true);
+    expect(latestEmployeeSlotCall?.isLocked).toBe(true);
+    expect(latestNotesSectionCall?.readOnly).toBe(true);
+    expect(latestTagPickerCall?.canEdit).toBe(false);
   });
 });
