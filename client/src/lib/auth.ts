@@ -25,6 +25,8 @@ type LoginPayload =
 
 type QuickLoginRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 
+export type ClientRoleCode = QuickLoginRoleCode;
+
 type QuickLoginTargetsResponse = {
   roles: Array<{
     roleCode: QuickLoginRoleCode;
@@ -48,6 +50,40 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
 
 function persistRole(payload: AuthenticatedPayload): void {
   window.localStorage.setItem("userRole", payload.roleCode);
+}
+
+function normalizeClientRole(value: string | null | undefined): ClientRoleCode | null {
+  const normalized = value?.trim().toUpperCase();
+  if (normalized === "ADMIN" || normalized === "DISPATCHER" || normalized === "READER") {
+    return normalized;
+  }
+  return null;
+}
+
+export function resolveClientRole(value: string | null | undefined): ClientRoleCode {
+  return normalizeClientRole(value) ?? "DISPATCHER";
+}
+
+export function getStoredUserRole(): ClientRoleCode {
+  return resolveClientRole(window.localStorage.getItem("userRole"));
+}
+
+export function isReaderRole(value: string | null | undefined): boolean {
+  return resolveClientRole(value) === "READER";
+}
+
+export function canAccessReports(value: string | null | undefined): boolean {
+  const role = resolveClientRole(value);
+  return role === "ADMIN" || role === "DISPATCHER";
+}
+
+export function canAccessMonitoring(value: string | null | undefined): boolean {
+  const role = resolveClientRole(value);
+  return role === "ADMIN" || role === "DISPATCHER" || role === "READER";
+}
+
+export function canAccessTourPostalPlan(value: string | null | undefined): boolean {
+  return !isReaderRole(value);
 }
 
 export async function getSessionStatus(): Promise<AuthenticatedPayload> {

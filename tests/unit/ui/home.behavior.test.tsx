@@ -393,4 +393,39 @@ describe("PKG-08 home behavior wiring", () => {
     expect(setters.get(2)).toHaveBeenCalledWith("appointment");
   });
 
+  it("renders monitoring for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "monitoring",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("monitoring-page");
+  });
+
+  it("blocks the tour postal plan view for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "tourPostalPlan",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("tour-postal-plan-unavailable");
+    expect(html).not.toContain("tour-postal-plan-view");
+  });
+
 });

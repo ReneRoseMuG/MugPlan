@@ -10,6 +10,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
 import { TeamManagement } from "@/components/TeamManagement";
+import { canAccessMonitoring, canAccessTourPostalPlan, getStoredUserRole } from "@/lib/auth";
 import { TourPostalPlanView } from "../components/TourPostalPlanView";
 import { TourManagement } from "@/components/TourManagement";
 import StandaloneLayout from "@/components/StandaloneLayout";
@@ -127,8 +128,19 @@ export function StandaloneAppointments() {
 
 export function StandaloneMonitoring() {
   const [appointmentOverlay, setAppointmentOverlay] = useState<{ appointmentId: number } | null>(null);
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
+  const canOpenMonitoring = canAccessMonitoring(userRole);
+
+  if (!canOpenMonitoring) {
+    return (
+      <StandaloneLayout title="Monitoring">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500" data-testid="standalone-monitoring-unavailable">
+          Diese Ansicht ist für diese Rolle nicht verfügbar.
+        </div>
+      </StandaloneLayout>
+    );
+  }
 
   return (
     <>
@@ -306,6 +318,18 @@ export function StandaloneReports() {
 
 export function StandaloneTourPostalPlan() {
   const [appointmentOverlay, setAppointmentOverlay] = useState<AppointmentOverlayState | null>(null);
+  const [userRole] = useState(() => getStoredUserRole());
+  const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
+
+  if (!canOpenTourPostalPlan) {
+    return (
+      <StandaloneLayout title="Tour PLZ Planung">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500" data-testid="standalone-tour-postal-plan-unavailable">
+          Diese Ansicht ist für diese Rolle nicht verfügbar.
+        </div>
+      </StandaloneLayout>
+    );
+  }
 
   return (
     <>

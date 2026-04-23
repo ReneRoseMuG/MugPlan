@@ -90,7 +90,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 function assertMonitoringReadRole(roleKey: CanonicalRoleKey): void {
-  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT" && roleKey !== "LESER") {
     throw new MonitoringError(403, "FORBIDDEN");
   }
 }

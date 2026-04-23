@@ -1,14 +1,10 @@
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { MONITORING_TRIGGER_NAMES, type MonitoringTriggerCode } from "@shared/monitoring";
+import { canAccessMonitoring, getStoredUserRole } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
 import type { useToast } from "@/hooks/use-toast";
 
 type ToastFn = ReturnType<typeof useToast>["toast"];
-
-function canAccessMonitoring(): boolean {
-  const role = window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
-  return role === "ADMIN" || role === "DISPATCHER" || role === "DISPONENT";
-}
 
 function buildTriggerSet(items: MonitoringListResponse | undefined): Set<MonitoringTriggerCode> {
   return new Set((items ?? []).flatMap((item) => item.triggerCodes));
@@ -31,12 +27,12 @@ function shouldNotify(previousItems: MonitoringListResponse | undefined, nextIte
 }
 
 export async function invalidateMonitoringQueries(): Promise<void> {
-  if (!canAccessMonitoring()) return;
+  if (!canAccessMonitoring(getStoredUserRole())) return;
   await queryClient.invalidateQueries({ queryKey: [api.monitoring.list.path] });
 }
 
 export async function refreshMonitoringWithNotification(toast: ToastFn): Promise<void> {
-  if (!canAccessMonitoring()) return;
+  if (!canAccessMonitoring(getStoredUserRole())) return;
 
   const previousItems = queryClient.getQueryData<MonitoringListResponse>([api.monitoring.list.path]);
   await invalidateMonitoringQueries();
