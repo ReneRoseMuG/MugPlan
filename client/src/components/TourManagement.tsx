@@ -504,6 +504,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   };
 
   const handleOpenCreate = () => {
+    if (!canMutateTours) return;
     setEditingTour(null);
     setIsCreating(true);
   };
@@ -731,6 +732,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       <>
         <TourEditForm
           tour={activeTour}
+          readOnly={!canMutateTours}
           onSubmit={handleSubmitTour}
           onCreateWeek={activeTour ? handleCreateWeek : undefined}
           onBlockWeek={activeTour ? handleBlockWeek : undefined}
@@ -755,6 +757,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           <TourWeekForm
             week={activeTourWeek}
             scope="tour"
+            readOnly={!canMutateTours}
             onClose={() => setActiveTourWeek(null)}
             onOpenAppointment={onOpenAppointment}
             onAddWeekEmployees={({ employeeIds, isoYear, isoWeek }) =>

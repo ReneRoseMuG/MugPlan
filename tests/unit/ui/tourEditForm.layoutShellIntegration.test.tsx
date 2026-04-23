@@ -383,4 +383,24 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).not.toContain("Mitarbeiter bleiben sichtbar");
   });
 
+  it("renders edit mode as readonly for reader roles", () => {
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        readOnly
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("tour-readonly-alert");
+    expect(markup).not.toContain("button-save-tour");
+    expect(markup).not.toContain("tour-form-functions-panel");
+    expect(markup).not.toContain("toggle-tour-week-picker");
+    expect(markup).not.toContain("button-add-tour-week-member-2099-6");
+    expect(markup).not.toContain("button-tour-week-menu-2099-6");
+  });
+
 });
