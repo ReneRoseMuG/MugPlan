@@ -453,108 +453,108 @@ export function TourenplanReportPanel({
       <ReportConfigPanel
         title="Tourenplan"
         helpKey="report-tourenplan"
-        actionButton={(
-          <div className="min-w-[210px] rounded-md border border-slate-200 bg-white p-2" data-testid="reports-tourenplan-tour-list">
-            <label className="flex cursor-pointer items-center gap-2 py-1 text-xs font-semibold text-slate-700">
-              <Checkbox
-                checked={allToursSelected}
-                onCheckedChange={(checked) => toggleAllTours(Boolean(checked))}
-                data-testid="checkbox-reports-tourenplan-all-tours"
-              />
-              <span>Alle Touren</span>
-            </label>
-            <div className="mt-1 max-h-36 space-y-1 overflow-y-auto border-t border-slate-100 pt-1">
-              {activeTours.map((tour) => (
-                <label key={tour.id} className="flex cursor-pointer items-center gap-2 py-1 text-xs text-slate-600">
-                  <Checkbox
-                    checked={allToursSelected || selectedTourIdSet.has(tour.id)}
-                    onCheckedChange={(checked) => toggleTour(tour.id, Boolean(checked))}
-                    data-testid={`checkbox-reports-tourenplan-tour-${tour.id}`}
-                  />
-                  <span className="min-w-0 truncate">{tour.name}</span>
-                </label>
-              ))}
-              <label className="flex cursor-pointer items-center gap-2 border-t border-slate-100 py-1 pt-2 text-xs text-slate-600">
-                <Checkbox
-                  checked={includeWithoutTour}
-                  onCheckedChange={(checked) => setIncludeWithoutTour(Boolean(checked))}
-                  data-testid="checkbox-reports-tourenplan-without-tour"
-                />
-                <span>Ohne Tour</span>
-              </label>
-            </div>
-          </div>
-        )}
         optionsSlot={(
-          <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
-              <Checkbox
-                checked={useShortCodes}
-                onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
-                data-testid="checkbox-reports-tourenplan-use-shortcodes"
-              />
-              <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-            </label>
-            {quickRangeOptions}
-          </div>
-        )}
-        secondaryOptionsSlot={(
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
-              <span className="text-sm text-slate-600">Schriftgröße</span>
-              <Select
-                value={fontSize}
-                onValueChange={(value) => {
-                  const nextFontSize = value === "small" || value === "large" ? value : "medium";
-                  setFontSize(nextFontSize);
-                  void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
-                }}
-              >
-                <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
-                  <SelectValue placeholder="Schriftgröße" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="min-w-[210px] rounded-md border border-slate-200 bg-white p-2" data-testid="reports-tourenplan-tour-list">
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-xs font-semibold text-slate-700">
+                <Checkbox
+                  checked={allToursSelected}
+                  onCheckedChange={(checked) => toggleAllTours(Boolean(checked))}
+                  data-testid="checkbox-reports-tourenplan-all-tours"
+                />
+                <span>Alle Touren</span>
+              </label>
+              <div className="mt-1 max-h-36 space-y-1 overflow-y-auto border-t border-slate-100 pt-1">
+                {activeTours.map((tour) => (
+                  <label key={tour.id} className="flex cursor-pointer items-center gap-2 py-1 text-xs text-slate-600">
+                    <Checkbox
+                      checked={allToursSelected || selectedTourIdSet.has(tour.id)}
+                      onCheckedChange={(checked) => toggleTour(tour.id, Boolean(checked))}
+                      data-testid={`checkbox-reports-tourenplan-tour-${tour.id}`}
+                    />
+                    <span className="min-w-0 truncate">{tour.name}</span>
+                  </label>
+                ))}
+                <label className="flex cursor-pointer items-center gap-2 border-t border-slate-100 py-1 pt-2 text-xs text-slate-600">
+                  <Checkbox
+                    checked={includeWithoutTour}
+                    onCheckedChange={(checked) => setIncludeWithoutTour(Boolean(checked))}
+                    data-testid="checkbox-reports-tourenplan-without-tour"
+                  />
+                  <span>Ohne Tour</span>
+                </label>
+              </div>
             </div>
-            {isAdmin ? (
-              <ToggleGroup
-                type="single"
-                value={printMode}
-                onValueChange={(value) => {
-                  if (value === "farbdruck" || value === "spardruck") {
-                    setPrintMode(value);
-                    void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
-                  }
-                }}
-                className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
-                data-testid="reports-tourenplan-print-mode-toggle"
-              >
-                <ToggleGroupItem
-                  value="farbdruck"
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
-                    "data-[state=on]:border-amber-200 data-[state=on]:bg-amber-50 data-[state=on]:text-amber-700 data-[state=on]:shadow-sm",
-                  )}
-                  data-testid="button-reports-tourenplan-print-mode-farbdruck"
-                >
-                  Farbdruck
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="spardruck"
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
-                    "data-[state=on]:border-slate-400 data-[state=on]:bg-white data-[state=on]:text-slate-700 data-[state=on]:shadow-sm",
-                  )}
-                  data-testid="button-reports-tourenplan-print-mode-spardruck"
-                >
-                  Spardruck
-                </ToggleGroupItem>
-              </ToggleGroup>
-            ) : null}
+
+            <div className="space-y-3">
+              <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
+                <Checkbox
+                  checked={useShortCodes}
+                  onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
+                  data-testid="checkbox-reports-tourenplan-use-shortcodes"
+                />
+                <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+              </label>
+              {quickRangeOptions}
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
+                  <span className="text-sm text-slate-600">Schriftgröße</span>
+                  <Select
+                    value={fontSize}
+                    onValueChange={(value) => {
+                      const nextFontSize = value === "small" || value === "large" ? value : "medium";
+                      setFontSize(nextFontSize);
+                      void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
+                      <SelectValue placeholder="Schriftgröße" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isAdmin ? (
+                  <ToggleGroup
+                    type="single"
+                    value={printMode}
+                    onValueChange={(value) => {
+                      if (value === "farbdruck" || value === "spardruck") {
+                        setPrintMode(value);
+                        void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
+                      }
+                    }}
+                    className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
+                    data-testid="reports-tourenplan-print-mode-toggle"
+                  >
+                    <ToggleGroupItem
+                      value="farbdruck"
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                        "data-[state=on]:border-amber-200 data-[state=on]:bg-amber-50 data-[state=on]:text-amber-700 data-[state=on]:shadow-sm",
+                      )}
+                      data-testid="button-reports-tourenplan-print-mode-farbdruck"
+                    >
+                      Farbdruck
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="spardruck"
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                        "data-[state=on]:border-slate-400 data-[state=on]:bg-white data-[state=on]:text-slate-700 data-[state=on]:shadow-sm",
+                      )}
+                      data-testid="button-reports-tourenplan-print-mode-spardruck"
+                    >
+                      Spardruck
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                ) : null}
+              </div>
+            </div>
           </div>
         )}
         footer={(

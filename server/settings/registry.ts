@@ -370,8 +370,8 @@ function isValidCategoryLayoutConfig(value: unknown): value is CategoryLayoutCon
 export const userSettingsRegistry = {
   attachmentPreviewSize: {
     key: "attachmentPreviewSize",
-    label: "Datei Vorschau Groesse",
-    description: "Steuert die Groesse der Dateivorschau im Attachment-Badge.",
+    label: "Datei Vorschau Größe",
+    description: "Steuert die Größe der Dateivorschau im Attachment-Badge.",
     type: "enum",
     options: attachmentPreviewSizeOptions,
     defaultValue: "large",
@@ -381,8 +381,8 @@ export const userSettingsRegistry = {
   },
   helpTextPreviewSize: {
     key: "helpTextPreviewSize",
-    label: "Hilfetext Vorschau Groesse",
-    description: "Steuert die Groesse von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
+    label: "Hilfetext Vorschau Größe",
+    description: "Steuert die Größe von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
     type: "enum",
     options: helpTextPreviewSizeOptions,
     defaultValue: "large",
@@ -531,8 +531,8 @@ export const userSettingsRegistry = {
   },
   hoverPreviewOpenDelayMs: {
     key: "hoverPreviewOpenDelayMs",
-    label: "Hover Vorschau Verzoegerung (ms)",
-    description: "Verzoegerung bis Hover-Previews geoeffnet werden.",
+    label: "Hover Vorschau Verzögerung (ms)",
+    description: "Verzögerung bis Hover-Previews geöffnet werden.",
     type: "number",
     defaultValue: 380,
     min: 0,
