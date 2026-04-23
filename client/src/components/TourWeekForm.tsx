@@ -234,6 +234,7 @@ export function TourWeekForm({
   );
 
   const footerActionDisabled = isMutatingMembers || isMutatingWeeks;
+  const showFunctionsPanel = isTourScope;
 
   return (
     <>
@@ -258,6 +259,50 @@ export function TourWeekForm({
           )}
           sidebar={(
             <div className="min-w-0 space-y-6 p-6" data-testid="tour-week-form-sidebar">
+              {showFunctionsPanel ? (
+                <div className="sub-panel space-y-3" data-testid="tour-week-form-functions-panel">
+                  <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                  <div className="flex flex-col gap-2">
+                    {!resolvedWeek.isBlocked ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          void onBlockWeek?.({
+                            tourId: resolvedWeek.tourId,
+                            isoYear: resolvedWeek.isoYear,
+                            isoWeek: resolvedWeek.isoWeek,
+                          });
+                        }}
+                        disabled={resolvedWeek.isLocked || footerActionDisabled}
+                        data-testid="button-block-tour-week"
+                        className="w-full justify-start"
+                      >
+                        <Lock className="mr-2 h-4 w-4" />
+                        Planung blockieren
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          void onUnblockWeek?.({
+                            tourId: resolvedWeek.tourId,
+                            isoYear: resolvedWeek.isoYear,
+                            isoWeek: resolvedWeek.isoWeek,
+                          });
+                        }}
+                        disabled={resolvedWeek.isLocked || footerActionDisabled}
+                        data-testid="button-unblock-tour-week"
+                        className="w-full justify-start"
+                      >
+                        <LockOpen className="mr-2 h-4 w-4" />
+                        Planung freigeben
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ) : null}
               <NotesSection
                 title="Notizen"
                 notes={notes}
@@ -274,46 +319,6 @@ export function TourWeekForm({
               <Button type="button" variant="outline" onClick={onClose}>
                 Schließen
               </Button>
-
-              {isTourScope ? (
-                <div className="flex items-center gap-2">
-                  {!resolvedWeek.isBlocked ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        void onBlockWeek?.({
-                          tourId: resolvedWeek.tourId,
-                          isoYear: resolvedWeek.isoYear,
-                          isoWeek: resolvedWeek.isoWeek,
-                        });
-                      }}
-                      disabled={resolvedWeek.isLocked || footerActionDisabled}
-                      data-testid="button-block-tour-week"
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Wochenplanung blockieren
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        void onUnblockWeek?.({
-                          tourId: resolvedWeek.tourId,
-                          isoYear: resolvedWeek.isoYear,
-                          isoWeek: resolvedWeek.isoWeek,
-                        });
-                      }}
-                      disabled={resolvedWeek.isLocked || footerActionDisabled}
-                      data-testid="button-unblock-tour-week"
-                    >
-                      <LockOpen className="mr-2 h-4 w-4" />
-                      Wochenplanung freigeben
-                    </Button>
-                  )}
-                </div>
-              ) : null}
             </div>
           )}
         >

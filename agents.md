@@ -107,6 +107,44 @@ Eine breitere Analyse über weitere Verzeichnisse oder Schichten ist nur zuläss
 
 Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angelegt, wenn der Auftrag dies explizit verlangt oder bestehende Strukturen nachweislich ungeeignet sind. Dieser Nachweis muss dokumentiert werden.
 
+### 7.1 Rollen, Berechtigungen und Sichtbarkeitsgrenzen (harte Pflicht)
+
+Rollenlogik, Berechtigungen und Sichtbarkeitsgrenzen sind vor jeder Änderung als eigenständiger Prüfpunkt zu behandeln. Codex darf niemals stillschweigend davon ausgehen, dass bestehende UI-, Service- oder API-Strukturen bereits automatisch korrekt rollenbeschränkt sind.
+
+Für jede Änderung mit möglichem Einfluss auf Sichtbarkeit, Bedienbarkeit, Mutationen, Endpunkte, Aktionen, Listen, Formulare, Navigation, Buttons, Dialoge, Tabs, Reports, Bulk-Aktionen, Statuswechsel, Freigaben, Exporte, Importe oder Hintergrundprozesse gilt:
+
+1. Codex prüft ausdrücklich, welche Rollen den betroffenen Vorgang sehen dürfen.
+2. Codex prüft ausdrücklich, welche Rollen den betroffenen Vorgang ausführen dürfen.
+3. Codex prüft ausdrücklich, wo diese Berechtigung heute technisch durchgesetzt wird:
+   - nur in der UI,
+   - im Frontend und Backend,
+   - oder ausschließlich serverseitig.
+4. Codex behandelt eine reine UI-Ausblendung niemals als ausreichende Berechtigungsdurchsetzung.
+5. Codex darf keine bestehende Rollenbeschränkung aufweichen, umgehen, verschieben oder unbeabsichtigt erweitern.
+6. Codex darf keine neue Aktion, kein neues UI-Element und keinen neuen Endpunkt einführen, ohne die zulässigen Rollen ausdrücklich zu benennen.
+7. Codex muss bei jeder Änderung prüfen, ob neben Sichtbarkeit auch direkte Aufrufe, Deep Links, API-Calls, Nebenpfade und bereits geöffnete Ansichten sauber abgesichert sind.
+8. Codex muss bei Mutationen und sicherheitsrelevanten Lesezugriffen grundsätzlich von serverseitiger Durchsetzung ausgehen. Fehlt diese Absicherung, ist dies als Sicherheitslücke oder Blocker zu behandeln, nicht als optionale Verbesserung.
+9. Codex darf vorhandenen Code niemals so interpretieren, dass „wahrscheinlich schon die richtige Rolle gemeint ist“. Wenn Rollenwirkung, Zielrolle oder gewünschte Einschränkung nicht eindeutig belegt ist, muss Codex vor der Umsetzung nachfragen.
+10. Unklarheiten zu Rollen, Rechten, Ausnahmen oder Sonderfällen sind kein Anlass für Annahmen, sondern ein Pflicht-Blocker mit Rückfrage.
+
+Verbindliche Arbeitsregel:
+Vor jeder Umsetzung mit Rollenbezug dokumentiert Codex kurz und ausdrücklich:
+- betroffene Rolle oder Rollen,
+- erlaubte Sichtbarkeit,
+- erlaubte Aktionen,
+- technische Durchsetzung der Beschränkung,
+- offene Unklarheiten oder Risiken.
+
+Fehlt eine dieser Angaben oder ist die Rollenlage fachlich nicht eindeutig, darf Codex keine Umsetzung vornehmen, die Rechte verändert, erweitert, sichtbar macht oder faktisch umgeht.
+
+Zusätzliche Verbote:
+- Keine Freigabe durch bloße UI-Sichtbarkeit ableiten
+- Keine Berechtigung aus ähnlichem Verhalten anderer Screens kopieren
+- Keine Rollenlogik in Frontend-Komponenten „nachbauen“, wenn die serverseitige Regel unklar ist
+- Keine Tests grün melden, wenn nur die Sichtbarkeit geprüft wurde, nicht aber die verweigerte Operation für unzulässige Rollen
+- Keine Formulierung wie „analog zu Rolle X auch für Rolle Y“, wenn dies nicht ausdrücklich belegt oder beauftragt ist
+
+Wenn eine Änderung Rollen berührt, muss der Plan und der Abschlussbericht diesen Rollenbezug ausdrücklich benennen. Schweigende Änderungen an Rollenverhalten sind unzulässig.
 ---
 
 ## 3. Planung
@@ -183,6 +221,8 @@ Für Auftragsklasse 4 reicht eine knappe, aber nachvollziehbare Einordnung. In d
 Jeder Planschritt muss einen stabilen, nachvollziehbaren Zwischenstand hinterlassen. Risiken, Seiteneffekte und Unsicherheiten werden nicht verkürzt oder beschönigt, sondern ausdrücklich benannt. Wenn ein Schritt potentiell kritische Bereiche berührt, muss Codex das vor der Umsetzung klar sagen.
 
 Änderungen sind nur zulässig, wenn sie im Auftrag oder im bestätigten Plan stehen. Weitet sich der Eingriff während der Analyse oder Umsetzung aus, muss Codex diese Ausweitung vorab benennen und neu einordnen.
+
+Bei Aufträgen mit möglichem Rollen-, Auth-, Sichtbarkeits- oder Berechtigungsbezug ist die Rollenprüfung verpflichtender Teil von Analyse und Plan. Ein Plan ohne ausdrückliche Benennung der betroffenen Rollen und ihrer zulässigen Aktionen ist unvollständig.
 
 ### 3.4 Kurzkommandos
 

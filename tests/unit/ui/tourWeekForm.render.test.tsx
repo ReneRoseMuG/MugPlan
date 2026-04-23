@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TourWeekForm rendert Tabs, Sidebar-Notizen und KW-fixierte Terminliste im gemeinsamen Shell-Layout.
+ * - TourWeekForm rendert Tabs, Funktionspanel, Sidebar-Notizen und KW-fixierte Terminliste im gemeinsamen Shell-Layout.
  * - Im Tour-Scope bleibt der Mitarbeiter-Picker verdrahtet und bietet Einzel- sowie Mehrfachuebernahme.
  * - Im Mitarbeiter-Scope bleibt die Mitarbeiterliste read-only und die Terminliste auf den Mitarbeiterkontext fixiert.
  *
  * Fehlerfaelle:
- * - Das Wochenformular verliert Tabs, Notiz-Sidebar oder den fixen KW-Terminfilter.
+ * - Das Wochenformular verliert Tabs, Funktionspanel, Notiz-Sidebar oder den fixen KW-Terminfilter.
  * - Der Mitarbeiter-Picker ist im Tour-Scope nicht mehr vollstaendig verdrahtet.
  * - Der Mitarbeiter-Scope rendert weiterhin editierbare Picker-Aktionen.
  *
@@ -194,12 +194,16 @@ describe("tourWeekForm render", () => {
     expect(markup).toContain("tour-week-form-overlay");
     expect(markup).toContain("tab-tour-week-stammdaten");
     expect(markup).toContain("tab-tour-week-termine");
+    expect(markup).toContain("tour-week-form-functions-panel");
+    expect(markup).toContain("Funktionen");
     expect(markup).toContain("tour-week-notes-marker");
     expect(markup).toContain("Wochennotiz");
     expect(markup).toContain("button-open-tour-week-employee-picker");
     expect(markup).toContain("button-block-tour-week");
+    expect(markup).toContain("Planung blockieren");
     expect(markup).toContain("badge-tour-week-form-member-91");
     expect(markup).toContain("27.04.26 - 03.05.26");
+    expect(markup.indexOf("tour-week-form-functions-panel")).toBeLessThan(markup.indexOf("tour-week-notes-marker"));
 
     expect(employeePickerCalls).toHaveLength(1);
     expect(employeePickerCalls[0]).toMatchObject({
@@ -232,6 +236,7 @@ describe("tourWeekForm render", () => {
 
     expect(markup).toContain("Tour Nord");
     expect(markup).toContain("tour-week-notes-marker");
+    expect(markup).not.toContain("tour-week-form-functions-panel");
     expect(markup).not.toContain("button-open-tour-week-employee-picker");
     expect(markup).not.toContain("button-block-tour-week");
     expect(markup).toContain("badge-tour-week-form-member-91");
