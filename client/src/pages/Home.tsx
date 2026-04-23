@@ -534,7 +534,7 @@ export default function Home({ onLogout }: HomeProps) {
               onSortKeyChange={setProjectSortKey}
               sortDirection={projectSortDirection}
               onSortDirectionChange={setProjectSortDirection}
-              onNewProject={() => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
+              onNewProject={isReader ? undefined : () => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />
           ) : view === "noteTemplates" && isAdmin ? (

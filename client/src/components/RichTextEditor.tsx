@@ -8,6 +8,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   className?: string;
+  readOnly?: boolean;
 }
 
 const COLORS = [
@@ -21,7 +22,7 @@ const COLORS = [
   { name: "Grau", value: "#6b7280" },
 ];
 
-export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, className, readOnly = false }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [bgColorPickerOpen, setBgColorPickerOpen] = useState(false);
@@ -38,6 +39,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   }, [value]);
 
   const execCommand = (command: string, value?: string) => {
+    if (readOnly) return;
     editorRef.current?.focus();
     document.execCommand(command, false, value);
     handleContentChange();
@@ -48,12 +50,17 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
   };
 
   const handleContentChange = () => {
+    if (readOnly) return;
     if (editorRef.current) {
       onChange(editorRef.current.innerHTML);
     }
   };
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    if (readOnly) {
+      event.preventDefault();
+      return;
+    }
     event.preventDefault();
     const plainText = event.clipboardData.getData("text/plain");
     editorRef.current?.focus();
@@ -82,6 +89,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("bold")}
           className="h-8 w-8"
           title="Fett"
+          disabled={readOnly}
           data-testid="button-bold"
         >
           <Bold className="w-4 h-4" />
@@ -94,6 +102,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("italic")}
           className="h-8 w-8"
           title="Kursiv"
+          disabled={readOnly}
           data-testid="button-italic"
         >
           <Italic className="w-4 h-4" />
@@ -106,6 +115,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("underline")}
           className="h-8 w-8"
           title="Unterstrichen"
+          disabled={readOnly}
           data-testid="button-underline"
         >
           <Underline className="w-4 h-4" />
@@ -121,6 +131,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
               variant="ghost"
               className="h-8 w-8"
               title="Textfarbe"
+              disabled={readOnly}
               data-testid="button-color"
             >
               <Palette className="w-4 h-4" />
@@ -151,6 +162,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
               variant="ghost"
               className="h-8 w-8"
               title="Hintergrundfarbe"
+              disabled={readOnly}
               data-testid="button-bgcolor"
             >
               <Highlighter className="w-4 h-4" />
@@ -183,6 +195,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("insertUnorderedList")}
           className="h-8 w-8"
           title="Aufzählung"
+          disabled={readOnly}
           data-testid="button-list"
         >
           <List className="w-4 h-4" />
@@ -195,6 +208,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("insertOrderedList")}
           className="h-8 w-8"
           title="Nummerierte Liste"
+          disabled={readOnly}
           data-testid="button-list-ordered"
         >
           <ListOrdered className="w-4 h-4" />
@@ -210,6 +224,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("justifyLeft")}
           className="h-8 w-8"
           title="Linksbündig"
+          disabled={readOnly}
           data-testid="button-align-left"
         >
           <AlignLeft className="w-4 h-4" />
@@ -222,6 +237,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("justifyCenter")}
           className="h-8 w-8"
           title="Zentriert"
+          disabled={readOnly}
           data-testid="button-align-center"
         >
           <AlignCenter className="w-4 h-4" />
@@ -234,6 +250,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           onClick={() => execCommand("justifyRight")}
           className="h-8 w-8"
           title="Rechtsbündig"
+          disabled={readOnly}
           data-testid="button-align-right"
         >
           <AlignRight className="w-4 h-4" />
@@ -242,7 +259,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
 
       <div
         ref={editorRef}
-        contentEditable
+        contentEditable={!readOnly}
         dir="ltr"
         onInput={handleContentChange}
         onPaste={handlePaste}

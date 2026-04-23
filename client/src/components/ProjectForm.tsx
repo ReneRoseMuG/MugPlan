@@ -74,6 +74,7 @@ import { useToast } from "@/hooks/use-toast";
 import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
 import { isManagedRemarksTagName } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { Project, Customer, Note, NoteTemplate, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -200,10 +201,12 @@ export function ProjectForm({
   const hydratedEditProjectFormIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
-  const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const isReader = isReaderRole(userRole);
+  const isReadOnlyView = isReader;
+  const canManageProjectTags = !isReader && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
     attachment.originalName === file.name && attachment.mimeType === (file.type || null) && attachment.file.size === file.size;
 
@@ -1315,6 +1318,10 @@ export function ProjectForm({
   };
 
   const handleSubmit = async () => {
+    if (isReadOnlyView) {
+      toast({ title: "Nur Lesemodus", description: "Diese Rolle darf Projekte nicht bearbeiten.", variant: "destructive" });
+      return;
+    }
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
       return;
@@ -1593,7 +1600,7 @@ export function ProjectForm({
                 </TabsList>
               </div>
             ) : null}
-            {isEditing ? (
+            {isEditing && !isReadOnlyView ? (
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
@@ -1622,6 +1629,7 @@ export function ProjectForm({
               projectId={effectiveProjectId}
               projectName={projectNamePreview}
               isEditing={isEditing}
+              readOnly={isReadOnlyView}
               className="h-auto"
               onOpenAppointment={onOpenAppointment}
               onOpenCalendarWorkspace={onOpenCalendarWorkspace}
@@ -1631,6 +1639,7 @@ export function ProjectForm({
               projectId={effectiveProjectId}
               customerId={customerId}
               isEditing={isEditing}
+              readOnly={isReadOnlyView}
               canDelete={canDeleteAttachments}
               pendingProjectAttachments={draftProjectAttachments}
               onUploadPendingProjectAttachment={addDraftProjectAttachment}
@@ -1642,7 +1651,7 @@ export function ProjectForm({
               availableTags={availableTags}
               isLoading={isEditing ? assignedTagsLoading : false}
               loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
-              canEdit={canManageProjectTags}
+              canEdit={!isReadOnlyView && canManageProjectTags}
               title="Tags"
               testIdPrefix="project-tag-picker"
               onAdd={(tagId) => {
@@ -1669,6 +1678,7 @@ export function ProjectForm({
             <NotesSection
               notes={visibleProjectNotes}
               isLoading={isEditing ? notesLoading : false}
+              readOnly={isReadOnlyView}
               prefillDraft={suggestedProjectNoteDraft}
               onPrefillDraftConsumed={() => setSuggestedProjectNoteDraft(null)}
               onAdd={(data) => {
@@ -1718,19 +1728,26 @@ export function ProjectForm({
               </Button>
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitPending}
-              data-testid="button-save-project"
-            >
-              {isSubmitPending ? "Speichern..." : "Speichern"}
-            </Button>
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={isSubmitPending}
+                data-testid="button-save-project"
+              >
+                {isSubmitPending ? "Speichern..." : "Speichern"}
+              </Button>
+            ) : null}
           </div>
         )}
       >
         {activeMainTab === "details" ? (
           <div className="w-full space-y-6" data-testid="project-form-main-column">
+        {isReadOnlyView ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive" data-testid="project-readonly-alert">
+            Diese Rolle darf Projekte öffnen und lesen, aber nicht bearbeiten.
+          </div>
+        ) : null}
         {isEditing ? (
           <ProjectOrderForm
             name={name}
@@ -1739,6 +1756,7 @@ export function ProjectForm({
             plannedDateText={plannedDateText}
             plannedWeek={plannedWeek}
             isEditing={isEditing}
+            readOnly={isReadOnlyView}
             onNameChange={setName}
             onOrderNumberChange={setOrderNumber}
             onAmountChange={setAmount}
@@ -1753,6 +1771,7 @@ export function ProjectForm({
             plannedDateText={plannedDateText}
             plannedWeek={plannedWeek}
             isEditing={isEditing}
+            readOnly={isReadOnlyView}
             onNameChange={setName}
             onOrderNumberChange={setOrderNumber}
             onAmountChange={setAmount}
@@ -1776,6 +1795,7 @@ export function ProjectForm({
                         value={descriptionMd}
                         onChange={setDescriptionMd}
                         placeholder="Projektbeschreibung eingeben..."
+                        readOnly={isReadOnlyView}
                       />
                     </div>
                   </TabsContent>
@@ -1793,6 +1813,7 @@ export function ProjectForm({
                         componentCategories={componentCategories}
                         productCategories={productCategories}
                         isAdmin={isAdmin}
+                        readOnly={isReadOnlyView}
                         onSelectField={(fieldKey, selectedValue) => void handleFieldSelection(fieldKey, selectedValue)}
                         onSelectDynamic={(slotId, selectedValue) => void handleDynamicFieldSelection(slotId, selectedValue)}
                         onCreateForField={(fieldKey, input) => handleCreateForField(fieldKey, input)}
@@ -1809,6 +1830,7 @@ export function ProjectForm({
                   <RichTextEditor
                     value={extractedArticleListHtml}
                     onChange={setExtractedArticleListHtml}
+                    readOnly={isReadOnlyView}
                   />
                 </div>
               ) : null}
@@ -1817,9 +1839,9 @@ export function ProjectForm({
                 <RelationSlot
                   title="Kunde"
                   icon={<UserCircle className="w-4 h-4" />}
-                  state={selectedCustomer ? "active" : "empty"}
-                  onAdd={() => setCustomerDialogOpen(true)}
-                  onRemove={() => setCustomerId(null)}
+                  state={isReadOnlyView ? "readonly" : selectedCustomer ? "active" : "empty"}
+                  onAdd={isReadOnlyView ? undefined : () => setCustomerDialogOpen(true)}
+                  onRemove={isReadOnlyView ? undefined : () => setCustomerId(null)}
                   addLabel="Kunde auswählen"
                   emptyText="Kein Kunde ausgewählt"
                   testId="slot-customer-relation-project"
@@ -1830,7 +1852,7 @@ export function ProjectForm({
                 </RelationSlot>
               </div>
 
-              {!isEditing ? (
+              {!isEditing && !isReadOnlyView ? (
                 <DocumentExtractionDropzone
                   onFileSelected={(file) => {
                     void runDocumentExtraction(file);

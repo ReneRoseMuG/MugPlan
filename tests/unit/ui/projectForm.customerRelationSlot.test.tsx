@@ -346,4 +346,21 @@ describe("FT02 project form customer relation slot", () => {
     );
     vi.doUnmock("react");
   });
+
+  it("renders the customer slot as readonly for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { ProjectForm } = await importProjectForm();
+    renderToStaticMarkup(<ProjectForm projectId={7} />);
+
+    const slot = getCustomerSlot();
+
+    expect(slot.state).toBe("readonly");
+    expect(slot.onAdd).toBeUndefined();
+    expect(slot.onRemove).toBeUndefined();
+  });
 });

@@ -334,4 +334,24 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(getIndex(editMarkup, "project-form-functions-panel")).toBeLessThan(getIndex(editMarkup, "project-appointments-panel-marker"));
     expect(getIndex(editMarkup, "button-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));
   });
+
+  it("renders edit mode as readonly for reader roles", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const markup = renderToStaticMarkup(<ProjectForm projectId={7} />);
+
+    expect(markup).toContain("project-readonly-alert");
+    expect(markup).not.toContain("project-form-functions-panel");
+    expect(markup).not.toContain("button-delete-project");
+    expect(markup).not.toContain("button-save-project");
+
+    expect(projectAppointmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true });
+    expect(projectAttachmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true });
+    expect(tagPickerPanelCalls.at(-1)?.canEdit).toBe(false);
+    expect(notesSectionCalls.at(-1)?.readOnly).toBe(true);
+  });
 });

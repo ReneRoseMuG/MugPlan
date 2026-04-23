@@ -27,6 +27,7 @@ interface ProjectOrderFormProps {
   plannedDateText: string;
   plannedWeek: string;
   isEditing: boolean;
+  readOnly?: boolean;
   onNameChange: (value: string) => void;
   onOrderNumberChange: (value: string) => void;
   onAmountChange: (value: string) => void;
@@ -50,6 +51,7 @@ interface ProjectProductFieldsProps {
   componentCategories: ComponentCategory[];
   productCategories: ProductCategory[];
   isAdmin: boolean;
+  readOnly?: boolean;
   onSelectField: (fieldKey: ProjectProductFieldKey, selectedValue: string) => void;
   onSelectDynamic: (slotId: string, selectedValue: string) => void;
   onCreateForField: (fieldKey: ProjectProductFieldKey, input: ArticleCreateInput) => Promise<void>;
@@ -63,6 +65,7 @@ export function ProjectOrderForm({
   plannedDateText,
   plannedWeek,
   isEditing,
+  readOnly = false,
   onNameChange,
   onOrderNumberChange,
   onAmountChange,
@@ -79,7 +82,7 @@ export function ProjectOrderForm({
             value={orderNumber}
             onChange={(e) => onOrderNumberChange(e.target.value)}
             maxLength={10}
-            readOnly={isEditing}
+            readOnly={isEditing || readOnly}
             data-testid="input-project-order-number"
           />
         </div>
@@ -89,6 +92,7 @@ export function ProjectOrderForm({
             id="projectName"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
+            readOnly={readOnly}
             data-testid="input-project-name"
           />
         </div>
@@ -101,6 +105,7 @@ export function ProjectOrderForm({
             inputMode="decimal"
             maxLength={10}
             placeholder="z. B. 14999.90"
+            readOnly={readOnly}
             data-testid="input-project-amount"
           />
         </div>
@@ -113,6 +118,7 @@ export function ProjectOrderForm({
             value={plannedDateText}
             onChange={(e) => onPlannedDateTextChange(e.target.value)}
             placeholder="Freitext"
+            readOnly={readOnly}
             data-testid="input-project-planned-date-text"
           />
         </div>
@@ -123,6 +129,7 @@ export function ProjectOrderForm({
             value={plannedWeek}
             onChange={(e) => onPlannedWeekChange(e.target.value)}
             placeholder="z. B. KW 14"
+            readOnly={readOnly}
             data-testid="input-project-planned-week"
           />
         </div>
@@ -144,6 +151,7 @@ export function ProjectProductFields({
   componentCategories,
   productCategories,
   isAdmin,
+  readOnly = false,
   onSelectField,
   onSelectDynamic,
   onCreateForField,
@@ -213,6 +221,7 @@ export function ProjectProductFields({
             onChange={(e) => {
               onSelectField(field.key, e.target.value);
             }}
+            disabled={readOnly}
             className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
             data-testid={`select-project-product-${field.key}`}
           >
@@ -221,7 +230,7 @@ export function ProjectProductFields({
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
           </select>
-          {isAdmin ? (
+          {isAdmin && !readOnly ? (
             <Button
               type="button"
               variant="outline"
@@ -261,6 +270,7 @@ export function ProjectProductFields({
             onChange={(e) => {
               onSelectDynamic(slot.slotId, e.target.value);
             }}
+            disabled={readOnly}
             className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
             data-testid={`select-project-product-${slot.slotId}`}
           >
@@ -269,7 +279,7 @@ export function ProjectProductFields({
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
           </select>
-          {isAdmin ? (
+          {isAdmin && !readOnly ? (
             <Button
               type="button"
               variant="outline"
