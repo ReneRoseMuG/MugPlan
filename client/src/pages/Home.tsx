@@ -456,7 +456,7 @@ export default function Home({ onLogout }: HomeProps) {
               onSortKeyChange={setCustomerSortKey}
               sortDirection={customerSortDirection}
               onSortDirectionChange={setCustomerSortDirection}
-              onNewCustomer={() => { setSelectedCustomerId(null); setView("customer"); }}
+              onNewCustomer={isReader ? undefined : () => { setSelectedCustomerId(null); setView("customer"); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView("customer"); }}
             />
           ) : view === "tours" ? (
