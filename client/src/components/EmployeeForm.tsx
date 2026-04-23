@@ -24,6 +24,7 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { resolveEmployeeEditLabel } from "@/lib/edit-form-context";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
@@ -83,11 +84,12 @@ function extractApiCode(error: unknown): string | null {
 export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment, onOpenTourWeek }: EmployeeFormProps) {
   const { toast } = useToast();
   const isEditing = Boolean(employeeId);
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const userRole = getStoredUserRole();
+  const isReadOnlyView = isReaderRole(userRole);
   const isAdmin = userRole === "ADMIN";
-  const canManageEmployeeTags = isAdmin || userRole === "DISPATCHER";
-  const canManageEmployeeNotes = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const canManageEmployeeTags = !isReadOnlyView && (isAdmin || userRole === "DISPATCHER");
+  const canManageEmployeeNotes = !isReadOnlyView && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReadOnlyView && (isAdmin || userRole === "DISPATCHER");
   const [formData, setFormData] = useState<EmployeeFormData>({
     firstName: "",
     lastName: "",
@@ -608,6 +610,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   };
 
   const handleSubmit = async () => {
+    if (isReadOnlyView) {
+      toast({
+        title: "Nur Lesemodus",
+        description: "Diese Rolle darf Mitarbeiter nicht bearbeiten.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       toast({
         title: "Pflichtfelder fehlen",
@@ -787,8 +798,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               employeeId={employeeId}
               isEditing={isEditing}
               canDelete={canDeleteAttachments}
+              readOnly={isReadOnlyView}
               pendingEmployeeAttachments={isEditing ? undefined : draftEmployeeAttachments}
-              onUploadPendingEmployeeAttachment={isEditing ? undefined : addDraftEmployeeAttachment}
+              onUploadPendingEmployeeAttachment={!isEditing && !isReadOnlyView ? addDraftEmployeeAttachment : undefined}
               className="h-auto"
             />
 
@@ -800,14 +812,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               canEdit={canManageEmployeeTags}
               title="Tags"
               testIdPrefix="employee-tag-picker"
-              onAdd={(tagId) => {
+              onAdd={isReadOnlyView ? undefined : (tagId) => {
                 if (isEditing) {
                   addEmployeeTagMutation.mutate(tagId);
                   return;
                 }
                 addDraftEmployeeTag(tagId);
               }}
-              onRemove={(item) => {
+              onRemove={isReadOnlyView ? undefined : (item) => {
                 if (isEditing) {
                   removeEmployeeTagMutation.mutate(item);
                   return;
@@ -865,14 +877,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               ) : null}
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitPending}
-              data-testid="button-save-employee"
-            >
-              {isSubmitPending ? "Speichern..." : "Speichern"}
-            </Button>
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={isSubmitPending}
+                data-testid="button-save-employee"
+              >
+                {isSubmitPending ? "Speichern..." : "Speichern"}
+              </Button>
+            ) : null}
           </div>
         )}
       >
@@ -896,6 +910,11 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
 
           <TabsContent value="stammdaten" className="min-h-[620px]">
             <div className="w-full space-y-6 min-h-0">
+              {isReadOnlyView ? (
+                <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive" data-testid="employee-readonly-alert">
+                  Diese Rolle darf Mitarbeiter öffnen und lesen, aber nicht bearbeiten.
+                </div>
+              ) : null}
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -908,6 +927,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                       id="firstName"
                       value={formData.firstName}
                       onChange={(event) => setFormData((prev) => ({ ...prev, firstName: event.target.value }))}
+                      readOnly={isReadOnlyView}
                       placeholder="Vorname..."
                       data-testid="input-employee-firstname"
                     />
@@ -918,6 +938,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                       id="lastName"
                       value={formData.lastName}
                       onChange={(event) => setFormData((prev) => ({ ...prev, lastName: event.target.value }))}
+                      readOnly={isReadOnlyView}
                       placeholder="Nachname..."
                       data-testid="input-employee-lastname"
                     />
@@ -940,6 +961,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                       id="phone"
                       value={formData.phone}
                       onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                      readOnly={isReadOnlyView}
                       placeholder="Telefonnummer..."
                       data-testid="input-employee-phone"
                     />
@@ -954,6 +976,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                       type="email"
                       value={formData.email}
                       onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                      readOnly={isReadOnlyView}
                       placeholder="E-Mail-Adresse..."
                       data-testid="input-employee-email"
                     />
@@ -961,7 +984,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                 </div>
               </div>
 
-              {isAdmin && isEditing && employeeDetails ? (
+              {isAdmin && isEditing && employeeDetails && !isReadOnlyView ? (
                 <div className="sub-panel space-y-4">
                   <h3 className="text-sm font-bold tracking-wider text-primary">
                     Status
@@ -983,14 +1006,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
 
           <TabsContent value="termine" className="flex min-h-0 flex-1 flex-col">
             {employeeId ? (
-              <AppointmentsListPage
-                title="Termine"
-                helpKey="appointments.list.employeeForm"
-                context={{ type: "employee", employeeId }}
-                onOpenAppointment={onOpenAppointment}
-                onRemoveEmployee={(appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
-                className="min-h-0 flex-1"
-              />
+                <AppointmentsListPage
+                  title="Termine"
+                  helpKey="appointments.list.employeeForm"
+                  context={{ type: "employee", employeeId }}
+                  onOpenAppointment={onOpenAppointment}
+                  onRemoveEmployee={isReadOnlyView ? undefined : (appointmentId, version) => removeFromAppointmentMutation.mutate({ appointmentId, version })}
+                  className="min-h-0 flex-1"
+                />
             ) : (
               <p className="py-4 text-sm text-slate-400">
                 Nach dem Speichern des Mitarbeiters werden Termine angezeigt.
@@ -1025,7 +1048,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                       borderColor={weekPlan.tourColor}
                       testId={`card-employee-week-plan-${weekPlan.assignmentId}`}
                       memberTestIdPrefix="badge-employee-week-plan-member"
-                      onOpen={() => onOpenTourWeek?.({ ...weekPlan, employees: weekPlan.employees ?? weekPlan.members })}
+                      onOpen={isReadOnlyView ? undefined : () => onOpenTourWeek?.({ ...weekPlan, employees: weekPlan.employees ?? weekPlan.members })}
                       footerVisibility="visible"
                       footer={(
                         <div className="space-y-1 text-xs text-slate-500">

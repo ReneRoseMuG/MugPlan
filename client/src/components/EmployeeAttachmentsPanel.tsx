@@ -20,6 +20,7 @@ interface EmployeeAttachmentsPanelProps {
   employeeId?: number | null;
   isEditing?: boolean;
   canDelete?: boolean;
+  readOnly?: boolean;
   className?: string;
   pendingEmployeeAttachments?: PendingEmployeeAttachmentItem[];
   onUploadPendingEmployeeAttachment?: (file: File) => void;
@@ -29,6 +30,7 @@ export function EmployeeAttachmentsPanel({
   employeeId,
   isEditing = true,
   canDelete = false,
+  readOnly = false,
   className,
   pendingEmployeeAttachments = [],
   onUploadPendingEmployeeAttachment,
@@ -93,7 +95,7 @@ export function EmployeeAttachmentsPanel({
     () => (isEditing ? attachments : pendingEmployeeAttachments),
     [attachments, isEditing, pendingEmployeeAttachments],
   );
-  const canUploadEmployeeAttachment = Boolean(employeeId) || typeof onUploadPendingEmployeeAttachment === "function";
+  const canUploadEmployeeAttachment = !readOnly && (Boolean(employeeId) || typeof onUploadPendingEmployeeAttachment === "function");
   const handleEmployeeUpload = (file: File) => {
     if (employeeId) {
       uploadMutation.mutate(file);
@@ -115,7 +117,7 @@ export function EmployeeAttachmentsPanel({
       onUpload={handleEmployeeUpload}
       buildOpenUrl={(id) => employeeId ? `/api/employee-attachments/${id}/download` : buildPendingAttachmentUrl(id)}
       buildDownloadUrl={(id) => employeeId ? `/api/employee-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id)}
-      buildActionSlot={employeeId
+      buildActionSlot={employeeId && !readOnly
         ? (id) => (
             <AttachmentDeleteAction
               attachmentId={id}

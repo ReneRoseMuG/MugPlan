@@ -419,4 +419,23 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     });
     expect(utilizationBoardCalls).toHaveLength(0);
   });
+
+  it("renders edit mode as readonly for reader roles", () => {
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: vi.fn(() => "READER"),
+        },
+      },
+      configurable: true,
+    });
+
+    const markup = renderToStaticMarkup(<EmployeeForm employeeId={17} onCancel={vi.fn()} />);
+
+    expect(markup).toContain("employee-readonly-alert");
+    expect(markup).not.toContain("button-save-employee");
+    expect(employeeAttachmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true, canDelete: false });
+    expect(tagPickerPanelCalls.at(-1)?.canEdit).toBe(false);
+    expect(notesSectionCalls.at(-1)?.readOnly).toBe(true);
+  });
 });

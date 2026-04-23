@@ -30,6 +30,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import type { AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeTableHoverPreview } from "@/components/ui/table-hover-previews";
@@ -132,7 +133,8 @@ export function EmployeesPage({
   });
   const [internalSortKey, setInternalSortKey] = useState<EmployeeSortKey>("lastName");
   const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [userRole] = useState(() => getStoredUserRole());
+  const isReader = isReaderRole(userRole);
   const isAdmin = userRole === "ADMIN";
   const berlinToday = getBerlinTodayDateString();
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
@@ -402,6 +404,7 @@ export function EmployeesPage({
   };
 
   const handleOpenCreate = () => {
+    if (isReader) return;
     setSelectedEmployeeId(null);
     setIsCreating(true);
   };
@@ -485,15 +488,17 @@ export function EmployeesPage({
           Import
         </Button>
       )}
-      <Button
-        variant="outline"
-        onClick={handleOpenCreate}
-        className="flex items-center gap-2"
-        data-testid="button-new-employee"
-      >
-        <Plus className="w-4 h-4" />
-        Neuer Mitarbeiter
-      </Button>
+      {!isReader ? (
+        <Button
+          variant="outline"
+          onClick={handleOpenCreate}
+          className="flex items-center gap-2"
+          data-testid="button-new-employee"
+        >
+          <Plus className="w-4 h-4" />
+          Neuer Mitarbeiter
+        </Button>
+      ) : null}
     </div>
   );
   const layoutFooter = viewMode === "board" ? tableFooter : undefined;
