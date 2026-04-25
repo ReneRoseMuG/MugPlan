@@ -1,5 +1,6 @@
 import React from "react";
 import { useSetting } from "@/hooks/useSettings";
+import { useEntityFormEditLock } from "@/providers/ChangeNotificationsProvider";
 
 interface EntityFormShellProps {
   header?: React.ReactNode;
@@ -24,6 +25,7 @@ export function EntityFormShell({
   className,
   mainClassName,
 }: EntityFormShellProps) {
+  useEntityFormEditLock(true);
   const resolvedSidebarWidth = useSetting("entityFormShell.sidebarWidthPx");
   const resolvedContentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx");
   const effectiveSidebarWidth = sidebarWidth ?? resolvedSidebarWidth ?? 360;

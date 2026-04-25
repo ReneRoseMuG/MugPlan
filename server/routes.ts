@@ -38,6 +38,7 @@ import authRoutes from "./routes/authRoutes";
 import attachmentQueriesRoutes from "./routes/attachmentQueriesRoutes";
 import adminBulkImportRoutes from "./routes/adminBulkImportRoutes";
 import calendarWeekNotesRoutes from "./routes/calendarWeekNotesRoutes";
+import changeNotificationsRoutes from "./routes/changeNotificationsRoutes";
 import systemSeedRoutes from "./routes/systemSeedRoutes";
 import journalRoutes from "./routes/journalRoutes";
 
@@ -76,6 +77,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(reportsRoutes);
   app.use(monitoringRoutes);
   app.use(dataVersionRoutes);
+  app.use(changeNotificationsRoutes);
   app.use(projectNotesRoutes);
   app.use(projectAttachmentsRoutes);
   app.use(calendarWeekNotesRoutes);

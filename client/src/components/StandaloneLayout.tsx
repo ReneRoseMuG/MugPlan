@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useStandaloneMode } from "@/hooks/useStandaloneMode";
-import { queryClient } from "@/lib/queryClient";
+import { useChangeNotificationsContext } from "@/providers/ChangeNotificationsProvider";
 
 type StandaloneLayoutProps = {
   title: string;
@@ -11,6 +11,12 @@ type StandaloneLayoutProps = {
 
 export default function StandaloneLayout({ title, children }: StandaloneLayoutProps) {
   const isStandaloneMode = useStandaloneMode();
+  const {
+    updatesAvailable,
+    isReloadDisabled,
+    isReloadPending,
+    triggerGlobalReload,
+  } = useChangeNotificationsContext();
 
   useEffect(() => {
     document.title = `MuG Plan | ${title}`;
@@ -29,11 +35,24 @@ export default function StandaloneLayout({ title, children }: StandaloneLayoutPr
         <div className="min-w-0 truncate px-4 text-sm font-medium text-slate-700">{title}</div>
         <button
           type="button"
-          onClick={() => void queryClient.invalidateQueries()}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+          onClick={() => void triggerGlobalReload()}
+          disabled={isReloadDisabled}
+          className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+            isReloadDisabled
+              ? "cursor-not-allowed text-slate-300"
+              : updatesAvailable
+                ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+          }`}
           data-testid="standalone-refresh"
-          title="Daten neu laden"
-          aria-label="Daten neu laden"
+          title={
+            isReloadDisabled
+              ? "Neu Laden ist gesperrt, solange irgendwo eine Bearbeitung offen ist"
+              : updatesAvailable
+                ? "Änderungen verfügbar"
+                : "Daten neu laden"
+          }
+          aria-label={isReloadPending ? "Daten werden neu geladen" : "Daten neu laden"}
         >
           <RefreshCw className="h-4 w-4" />
         </button>

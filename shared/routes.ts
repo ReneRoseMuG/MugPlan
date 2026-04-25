@@ -838,6 +838,13 @@ const authenticatedResponseSchema = z.object({
   roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
 });
 
+const changeNotificationEventSchema = z.object({
+  id: z.number().int().positive(),
+  actorUserId: z.number().int().positive().nullable(),
+  triggerKey: z.string().nullable(),
+  createdAt: z.string().min(1),
+});
+
 const monitoringItemSchema = z.object({
   appointmentId: z.number().int().positive(),
   startDate: z.string(),
@@ -4277,6 +4284,16 @@ export const api = {
       },
     },
   },
+  changeNotifications: {
+    stream: {
+      method: "GET" as const,
+      path: "/api/change-notifications/stream",
+      responses: {
+        200: z.any(),
+        401: z.object({ code: z.literal("UNAUTHORIZED") }),
+      },
+    },
+  },
   dataVersion: {
     get: {
       path: "/api/data-version",
@@ -4329,6 +4346,7 @@ export type EmployeeAbsenceUpdateInput = z.infer<typeof api.employees.absences.u
 export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.create.responses[201]>;
 export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
 export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
+export type ChangeNotificationEvent = z.infer<typeof changeNotificationEventSchema>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;

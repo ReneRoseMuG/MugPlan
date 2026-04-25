@@ -35,6 +35,9 @@ type QuickLoginTargetsResponse = {
   }>;
 };
 
+const AUTH_ROLE_STORAGE_KEY = "userRole";
+const AUTH_USER_ID_STORAGE_KEY = "userId";
+
 export async function getSetupStatus(): Promise<SetupStatusResponse> {
   const response = await fetch("/api/auth/setup-status", {
     method: "GET",
@@ -50,7 +53,23 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
 
 function persistRole(payload: AuthenticatedPayload): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem("userRole", payload.roleCode);
+  window.localStorage.setItem(AUTH_ROLE_STORAGE_KEY, payload.roleCode);
+  window.localStorage.setItem(AUTH_USER_ID_STORAGE_KEY, String(payload.userId));
+}
+
+function clearPersistedAuth(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_ROLE_STORAGE_KEY);
+  window.localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY);
+}
+
+export function getStoredUserId(): number | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const stored = window.localStorage.getItem(AUTH_USER_ID_STORAGE_KEY);
+  const parsed = Number(stored);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function normalizeClientRole(value: string | null | undefined): ClientRoleCode | null {
@@ -98,9 +117,7 @@ export async function getSessionStatus(): Promise<AuthenticatedPayload> {
 
   if (!response.ok) {
     if (response.status === 401) {
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem("userRole");
-      }
+      clearPersistedAuth();
     }
     throw new Error(`Session status failed: ${response.status}`);
   }
@@ -229,5 +246,5 @@ export async function logout(): Promise<void> {
   if (!response.ok) {
     throw new Error(`Logout failed: ${response.status}`);
   }
-  window.localStorage.removeItem("userRole");
+  clearPersistedAuth();
 }
