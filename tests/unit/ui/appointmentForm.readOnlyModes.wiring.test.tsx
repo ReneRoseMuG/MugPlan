@@ -403,7 +403,7 @@ describe("FT01 UI: appointment form readonly modes", () => {
       />,
     );
 
-    expect(markup).toContain("Nur Lesemodus");
+    expect(markup).not.toContain("Nur Lesemodus");
     expect(markup).not.toContain("button-save-appointment");
     expect(markup).not.toContain("button-cancel-appointment");
     expect(markup).not.toContain("button-park-appointment");

@@ -187,7 +187,7 @@ export function TourEditForm({
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error("VerfÃ¼gbare Mitarbeiter konnten nicht geladen werden");
+        throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
       }
       return response.json() as Promise<Employee[]>;
     },
@@ -221,7 +221,7 @@ export function TourEditForm({
     if (!Number.isInteger(isoWeek)) {
       toast({
         title: "Kalenderwoche fehlt",
-        description: "Bitte eine gÃ¼ltige Kalenderwoche auswÃ¤hlen.",
+        description: "Bitte eine gültige Kalenderwoche auswählen.",
         variant: "destructive",
       });
       return;
@@ -230,7 +230,7 @@ export function TourEditForm({
     if (isoWeek < nextEditableWeek.isoWeek) {
       toast({
         title: "Kalenderwoche zu klein",
-        description: `FrÃ¼hestens KW ${String(nextEditableWeek.isoWeek).padStart(2, "0")} ist zulÃ¤ssig.`,
+        description: `Frühestens KW ${String(nextEditableWeek.isoWeek).padStart(2, "0")} ist zulässig.`,
         variant: "destructive",
       });
       return;
@@ -238,8 +238,8 @@ export function TourEditForm({
 
     if (isoWeek > nextEditableWeek.maxIsoWeek) {
       toast({
-        title: "Kalenderwoche zu groÃŸ",
-        description: `FÃ¼r ${nextEditableWeek.isoYear} ist spÃ¤testens KW ${String(nextEditableWeek.maxIsoWeek).padStart(2, "0")} zulÃ¤ssig.`,
+        title: "Kalenderwoche zu groß",
+        description: `Für ${nextEditableWeek.isoYear} ist spätestens KW ${String(nextEditableWeek.maxIsoWeek).padStart(2, "0")} zulässig.`,
         variant: "destructive",
       });
       return;
@@ -314,7 +314,7 @@ export function TourEditForm({
                   onClick={onCancel}
                   data-testid="button-cancel-tour"
                 >
-                  SchlieÃŸen
+                  Schließen
                 </Button>
               </div>
               {!readOnly ? (
@@ -361,7 +361,7 @@ export function TourEditForm({
                       aria-label="Wochenplanung anlegen"
                     >
                       <CalendarPlus2 className="h-4 w-4" />
-                      <span>KW einfÃ¼gen</span>
+                      <span>KW einfügen</span>
                     </Toggle>
                   ) : null}
 
@@ -381,7 +381,7 @@ export function TourEditForm({
                       data-testid="button-delete-tour-form"
                     >
                       <Trash2 className="w-4 h-4" />
-                      {isDeleting ? "LÃ¶schen..." : "LÃ¶schen"}
+                      {isDeleting ? "Löschen..." : "Löschen"}
                     </Button>
                   ) : null}
                 </div>
@@ -425,7 +425,7 @@ export function TourEditForm({
                 </div>
                 {isCreate ? (
                   <p className="text-sm text-slate-500" data-testid="text-tour-generated-name-hint">
-                    Der Tourname wird beim Speichern serverseitig vergeben. Die Anzeige zeigt den nÃ¤chsten freien Namen.
+                    Der Tourname wird beim Speichern serverseitig vergeben. Die Anzeige zeigt den nächsten freien Namen.
                   </p>
                 ) : null}
               </div>
@@ -463,9 +463,9 @@ export function TourEditForm({
                   className="sub-panel mx-auto w-full max-w-[760px] space-y-3"
                   data-testid="panel-tour-week-planning-unsupported"
                 >
-                  <h3 className="text-base font-semibold text-slate-900">Keine Wochenplanung fÃ¼r diese Tour</h3>
+                  <h3 className="text-base font-semibold text-slate-900">Keine Wochenplanung für diese Tour</h3>
                   <p className="text-sm text-slate-600" data-testid="text-tour-week-planning-unsupported">
-                    Die Parkplatz-Tour unterstÃ¼tzt keine Mitarbeiter-Planung. Die Parkplatz-Tour ist Zwischenspeicher und dient nicht der konkreten Terminplanung.
+                    Die Parkplatz-Tour unterstützt keine Mitarbeiter-Planung. Die Parkplatz-Tour ist Zwischenspeicher und dient nicht der konkreten Terminplanung.
                   </p>
                 </div>
               ) : (
@@ -493,7 +493,7 @@ export function TourEditForm({
                         {!readOnly && !week.isLocked && !week.isBlocked ? (
                           <PlusActionButton
                             onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
-                            aria-label="Mitarbeiter zur KW hinzufÃ¼gen"
+                            aria-label="Mitarbeiter zur KW hinzufügen"
                             disabled={isSaving || isMutatingMembers || isMutatingWeeks}
                             data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
                           />
@@ -542,7 +542,7 @@ export function TourEditForm({
                       </>
                     )}
                     legacyLabel=
-                          {week.isLocked ? "SchreibgeschÃ¼tzt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
+                          {week.isLocked ? "Schreibgeschützt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
                   >
                     <div className="space-y-2">
                       {week.isBlocked ? (
@@ -550,7 +550,7 @@ export function TourEditForm({
                           className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
                           data-testid={`text-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
                         >
-                          Die Wochenplanung ist blockiert. Termine dieser Woche wurden auf Parkplatz verschoben, als geparkt markiert und kÃ¶nnen dort weiter bearbeitet werden.
+                          Die Wochenplanung ist blockiert. Termine dieser Woche wurden auf Parkplatz verschoben, als geparkt markiert und können dort weiter bearbeitet werden.
                         </div>
                       ) : null}
                       {week.employees.map((employee) => (
@@ -588,7 +588,7 @@ export function TourEditForm({
             <div className="space-y-4">
               <div className="space-y-1">
                 <h3 className="text-base font-semibold text-slate-900" data-testid="text-tour-week-dialog-title">
-                  KW einfÃ¼gen
+                  KW einfügen
                 </h3>
                 <p className="text-sm text-slate-500" data-testid="text-tour-week-dialog-year">
                   Jahr {nextEditableWeek.isoYear}
@@ -609,7 +609,7 @@ export function TourEditForm({
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setWeekPickerOpen(false)}>
-                  ZurÃ¼ck
+                  Zurück
                 </Button>
                 <Button
                   type="button"
@@ -635,7 +635,7 @@ export function TourEditForm({
               isLoading={availableEmployeesLoading}
               allowBulkSelection
               viewModeSettingKey="appointmentEmployeePicker.viewMode"
-              title="Mitarbeiter auswÃ¤hlen"
+              title="Mitarbeiter auswählen"
               onSelectEmployee={(employeeId) => {
                 if (pendingWeekSelection) {
                   void onAddWeekEmployee?.({
@@ -681,9 +681,9 @@ export function TourEditForm({
         <AlertDialog open={!readOnly && deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Tour wirklich lÃ¶schen?</AlertDialogTitle>
+              <AlertDialogTitle>Tour wirklich löschen?</AlertDialogTitle>
               <AlertDialogDescription>
-                Diese Aktion ist endgÃ¼ltig. Die Tour wird nur gelÃ¶scht, wenn keine blockierenden VerknÃ¼pfungen bestehen.
+                Diese Aktion ist endgültig. Die Tour wird nur gelöscht, wenn keine blockierenden Verknüpfungen bestehen.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -697,7 +697,7 @@ export function TourEditForm({
                 }}
                 data-testid="button-confirm-delete-tour"
               >
-                Tour lÃ¶schen
+                Tour löschen
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
