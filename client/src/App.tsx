@@ -23,6 +23,7 @@ import {
 import { getSessionStatus, getSetupStatus, logout } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { SettingsProvider } from "@/providers/SettingsProvider";
+import { ChangeNotificationsProvider } from "@/providers/ChangeNotificationsProvider";
 import { FloatingPreviewKeeperProvider } from "@/contexts/floating-preview-keeper";
 
 type RouterProps = {
@@ -151,15 +152,17 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <SettingsProvider>
-          <FloatingPreviewKeeperProvider>
-            <Toaster />
-            <AuthenticatedApp
-              onLogout={() => {
-                void logout();
-                setStage("login");
-              }}
-            />
-          </FloatingPreviewKeeperProvider>
+          <ChangeNotificationsProvider>
+            <FloatingPreviewKeeperProvider>
+              <Toaster />
+              <AuthenticatedApp
+                onLogout={() => {
+                  void logout();
+                  setStage("login");
+                }}
+              />
+            </FloatingPreviewKeeperProvider>
+          </ChangeNotificationsProvider>
         </SettingsProvider>
       </TooltipProvider>
     </QueryClientProvider>

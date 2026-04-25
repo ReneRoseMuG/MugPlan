@@ -1,11 +1,11 @@
 import type { ElementType, ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { getISOWeek, getISOWeekYear } from "date-fns";
 import { Calendar, CalendarDays, ExternalLink, LogOut, RefreshCw } from "lucide-react";
 
 import { domainIcons } from "@/lib/domain-icons";
 import type { ViewType } from "@/pages/Home";
 import type { MonitoringTriggerSummaryItemResponse } from "@shared/routes";
+import { useChangeNotificationsContext } from "@/providers/ChangeNotificationsProvider";
 
 interface SidebarProps {
   onViewChange: (view: ViewType) => void;
@@ -104,7 +104,12 @@ export function Sidebar({
   backupDisabled = false,
   monitoringSummary = [],
 }: SidebarProps) {
-  const queryClient = useQueryClient();
+  const {
+    updatesAvailable,
+    isReloadDisabled,
+    isReloadPending,
+    triggerGlobalReload,
+  } = useChangeNotificationsContext();
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   const canAccessReports = isAdmin || userRole?.toUpperCase() === "DISPATCHER";
   const CustomersIcon = domainIcons.customers;
@@ -133,13 +138,26 @@ export function Sidebar({
         </h1>
         <button
           type="button"
-          onClick={() => void queryClient.invalidateQueries()}
-          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 hover:bg-white hover:text-slate-600"
+          onClick={() => void triggerGlobalReload()}
+          disabled={isReloadDisabled}
+          className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+            isReloadDisabled
+              ? "cursor-not-allowed text-slate-300"
+              : updatesAvailable
+                ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                : "text-slate-400 hover:bg-white hover:text-slate-600"
+          }`}
           data-testid="sidebar-refresh"
-          title="Daten neu laden"
+          title={
+            isReloadDisabled
+              ? "Neu Laden ist gesperrt, solange irgendwo eine Bearbeitung offen ist"
+              : updatesAvailable
+                ? "Änderungen verfügbar"
+                : "Daten neu laden"
+          }
         >
           <RefreshCw className="h-3 w-3" />
-          Neu Laden
+          {isReloadPending ? "Lädt..." : "Neu Laden"}
         </button>
       </div>
 
