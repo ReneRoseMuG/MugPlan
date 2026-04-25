@@ -311,4 +311,24 @@ describe("FT28 customer data shell layout integration", () => {
       notes: [],
     });
   });
+
+  it("renders edit mode as readonly for reader roles", () => {
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: vi.fn(() => "READER"),
+        },
+        confirm: vi.fn(() => true),
+      },
+      configurable: true,
+    });
+
+    const markup = renderToStaticMarkup(<CustomerData customerId={11} onCancel={vi.fn()} onOpenProject={vi.fn()} />);
+
+    expect(markup).not.toContain("customer-readonly-alert");
+    expect(markup).not.toContain("button-save-customer");
+    expect(customerAttachmentsPanelCalls.at(-1)).toMatchObject({ readOnly: true, canDelete: false });
+    expect(tagPickerPanelCalls.at(-1)?.canEdit).toBe(false);
+    expect(notesSectionCalls.at(-1)?.readOnly).toBe(true);
+  });
 });

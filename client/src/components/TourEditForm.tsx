@@ -42,7 +42,7 @@ type TourWeekEmployeeMember = {
   fullName: string;
 };
 
-const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ÃŸ/g, "ss");
 
 function isParkplatzTourName(value: string | null | undefined): boolean {
   return normalizeTourName(value) === normalizeTourName("Parkplatz");
@@ -80,6 +80,7 @@ interface TourEditFormProps {
   isMutatingMembers?: boolean;
   isMutatingWeeks?: boolean;
   isCreate?: boolean;
+  readOnly?: boolean;
   defaultName?: string;
   defaultColor?: string;
   onCancel: () => void;
@@ -103,6 +104,7 @@ export function TourEditForm({
   isMutatingMembers = false,
   isMutatingWeeks = false,
   isCreate = false,
+  readOnly = false,
   defaultName = "Tour anlegen",
   defaultColor = "#60a5fa",
   onCancel,
@@ -269,10 +271,13 @@ export function TourEditForm({
 
   const title = isCreate ? defaultName : "Tour bearbeiten";
   const tourEditContext = !isCreate ? (selectedName.trim() || tour?.name?.trim() || null) : null;
-  const handleSubmit = async () => onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
+  const handleSubmit = async () => {
+    if (readOnly) return;
+    await onSubmit(tour?.id ?? null, [], selectedName, selectedColor);
+  };
   const showWeekInsertAction = !isCreate && activeTab === "wochenplanung" && isWeekPlanningSupported;
   const showDeleteAction = !isCreate && canDelete && tour && onDelete;
-  const showFunctionsPanel = showWeekInsertAction || showDeleteAction;
+  const showFunctionsPanel = !readOnly && (showWeekInsertAction || showDeleteAction);
 
   return (
     <div className="flex h-full min-h-0 w-full flex-1">
@@ -312,16 +317,18 @@ export function TourEditForm({
                   Schließen
                 </Button>
               </div>
-              <Button
-                type="button"
-                onClick={() => {
-                  void handleSubmit();
-                }}
-                disabled={isSaving || !selectedName.trim()}
-                data-testid="button-save-tour"
-              >
-                {isSaving ? "Speichern..." : "Speichern"}
-              </Button>
+              {!readOnly ? (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    void handleSubmit();
+                  }}
+                  disabled={isSaving || !selectedName.trim()}
+                  data-testid="button-save-tour"
+                >
+                  {isSaving ? "Speichern..." : "Speichern"}
+                </Button>
+              ) : null}
             </div>
           </div>
         )}
@@ -409,8 +416,8 @@ export function TourEditForm({
                   <Input
                     id="tour-name"
                     value={selectedName}
-                    readOnly={isCreate}
-                    disabled={isSaving}
+                    readOnly={isCreate || readOnly}
+                    disabled={isSaving || readOnly}
                     onChange={(event) => setSelectedName(event.target.value)}
                     placeholder="Tourname eingeben"
                     data-testid="input-tour-name"
@@ -432,7 +439,7 @@ export function TourEditForm({
                   color={selectedColor}
                   onChange={setSelectedColor}
                   testId="button-tour-color-picker"
-                  disabled={isSaving}
+                  disabled={isSaving || readOnly}
                 />
               </div>
             </div>
@@ -474,7 +481,7 @@ export function TourEditForm({
                     blockedTextTestId={`text-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
                     blockedBadgeTestId={`badge-tour-week-blocked-${week.isoYear}-${week.isoWeek}`}
                     onOpen={() => onOpenTourWeek?.(week)}
-                    onRemoveEmployee={(employee) => {
+                    onRemoveEmployee={readOnly ? undefined : (employee) => {
                       void onRemoveWeekEmployee?.({
                         ...employee,
                         isoYear: week.isoYear,
@@ -483,7 +490,7 @@ export function TourEditForm({
                     }}
                     actions={(
                       <>
-                        {!week.isLocked && !week.isBlocked ? (
+                        {!readOnly && !week.isLocked && !week.isBlocked ? (
                           <PlusActionButton
                             onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
                             aria-label="Mitarbeiter zur KW hinzufügen"
@@ -491,6 +498,7 @@ export function TourEditForm({
                             data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
                           />
                         ) : null}
+                        {!readOnly ? (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -530,6 +538,7 @@ export function TourEditForm({
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        ) : null}
                       </>
                     )}
                     legacyLabel=
@@ -549,8 +558,8 @@ export function TourEditForm({
                           key={employee.assignmentId}
                           id={employee.employeeId}
                           fullName={employee.fullName}
-                          action={week.isLocked || week.isBlocked ? "none" : "remove"}
-                          onRemove={() => {
+                          action={readOnly || week.isLocked || week.isBlocked ? "none" : "remove"}
+                          onRemove={readOnly ? undefined : () => {
                             void onRemoveWeekEmployee?.({
                               ...employee,
                               isoYear: week.isoYear,
@@ -574,7 +583,7 @@ export function TourEditForm({
           ) : null}
         </Tabs>
 
-        <Dialog open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
+        <Dialog open={!readOnly && weekPickerOpen} onOpenChange={setWeekPickerOpen}>
           <DialogContent className="sm:max-w-md">
             <div className="space-y-4">
               <div className="space-y-1">
@@ -617,7 +626,7 @@ export function TourEditForm({
           </DialogContent>
         </Dialog>
 
-        <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
+        <Dialog open={!readOnly && employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
           <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
             <EmployeePickerDialogList
               employees={availableEmployees}
@@ -669,7 +678,7 @@ export function TourEditForm({
           </DialogContent>
         </Dialog>
 
-        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialog open={!readOnly && deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Tour wirklich löschen?</AlertDialogTitle>

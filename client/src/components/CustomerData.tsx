@@ -27,6 +27,7 @@ import { joinEditFormContext, resolveCustomerEditLabel } from "@/lib/edit-form-c
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { Customer, Note, Tag } from "@shared/schema";
 
 interface CustomerDataProps {
@@ -55,10 +56,11 @@ type DraftCustomerNote = Note & { templateId?: number };
 
 export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
   const { toast } = useToast();
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const userRole = getStoredUserRole();
+  const isReadOnlyView = isReaderRole(userRole);
   const isAdmin = userRole === "ADMIN";
-  const canManageCustomerTags = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const canManageCustomerTags = !isReadOnlyView && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReadOnlyView && (isAdmin || userRole === "DISPATCHER");
   const invalidateAppointmentProjectionQueries = async () => {
     await invalidateTagProjectionQueries();
   };
@@ -498,6 +500,15 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   };
 
   const handleSubmit = async () => {
+    if (isReadOnlyView) {
+      toast({
+        title: "Nur Lesemodus",
+        description: "Diese Rolle darf Kunden nicht bearbeiten.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.customerNumber.trim()) {
       toast({
         title: "Fehler",
@@ -809,8 +820,9 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               customerId={customerId}
               isEditing={isEditMode}
               canDelete={canDeleteAttachments}
+              readOnly={isReadOnlyView}
               pendingCustomerAttachments={isEditMode ? undefined : draftCustomerAttachments}
-              onUploadPendingCustomerAttachment={isEditMode ? undefined : addDraftCustomerAttachment}
+              onUploadPendingCustomerAttachment={!isEditMode && !isReadOnlyView ? addDraftCustomerAttachment : undefined}
               className="h-auto"
             />
 
@@ -822,14 +834,14 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               canEdit={canManageCustomerTags}
               title="Tags"
               testIdPrefix="customer-tag-picker"
-              onAdd={(tagId) => {
+              onAdd={isReadOnlyView ? undefined : (tagId) => {
                 if (isEditMode) {
                   addCustomerTagMutation.mutate(tagId);
                   return;
                 }
                 addDraftCustomerTag(tagId);
               }}
-              onRemove={(item) => {
+              onRemove={isReadOnlyView ? undefined : (item) => {
                 if (isEditMode) {
                   removeCustomerTagMutation.mutate(item);
                   return;
@@ -842,6 +854,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
             <NotesSection
               notes={visibleCustomerNotes}
               isLoading={isEditMode ? notesLoading : false}
+              readOnly={isReadOnlyView}
               onAdd={handleAddNote}
               onUpdate={handleUpdateNote}
               onTogglePin={handleTogglePin}
@@ -864,14 +877,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
               ) : null}
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitPending}
-              data-testid="button-save-customer"
-            >
-              {isSubmitPending ? "Speichern..." : "Speichern"}
-            </Button>
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={isSubmitPending}
+                data-testid="button-save-customer"
+              >
+                {isSubmitPending ? "Speichern..." : "Speichern"}
+              </Button>
+            ) : null}
           </div>
         )}
       >
@@ -888,7 +903,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="customerNumber" 
                     value={formData.customerNumber}
                     onChange={(e) => setFormData({ ...formData, customerNumber: e.target.value })}
-                    readOnly={isEditMode}
+                    readOnly={isEditMode || isReadOnlyView}
                     className="max-w-[200px]"
                     data-testid="input-customernumber"
                   />
@@ -900,6 +915,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       id="firstName" 
                       value={formData.firstName}
                       onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      readOnly={isReadOnlyView}
                       data-testid="input-firstname"
                     />
                   </div>
@@ -909,6 +925,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       id="lastName" 
                       value={formData.lastName}
                       onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      readOnly={isReadOnlyView}
                       data-testid="input-lastname"
                     />
                   </div>
@@ -919,6 +936,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="company" 
                     value={formData.company}
                     onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-company"
                   />
                 </div>
@@ -935,6 +953,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="phone" 
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-phone"
                   />
                 </div>
@@ -948,6 +967,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-email"
                   />
                 </div>
@@ -964,6 +984,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="addressLine1" 
                     value={formData.addressLine1}
                     onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-addressline1"
                   />
                 </div>
@@ -973,6 +994,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="addressLine2" 
                     value={formData.addressLine2}
                     onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-addressline2"
                   />
                 </div>
@@ -983,6 +1005,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       id="postalCode" 
                       value={formData.postalCode}
                       onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                      readOnly={isReadOnlyView}
                       data-testid="input-postalcode"
                     />
                   </div>
@@ -992,6 +1015,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                       id="city" 
                       value={formData.city}
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      readOnly={isReadOnlyView}
                       data-testid="input-city"
                     />
                   </div>
@@ -1002,12 +1026,13 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                     id="country"
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    readOnly={isReadOnlyView}
                     data-testid="input-country"
                   />
                 </div>
               </div>
 
-              {!isEditMode ? (
+              {!isEditMode && !isReadOnlyView ? (
                 <DocumentExtractionDropzone
                   onFileSelected={(file) => {
                     void runDocumentExtractionCustomer(file);
@@ -1016,7 +1041,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 />
               ) : null}
 
-              {isEditMode && isAdmin && (
+              {isEditMode && isAdmin && !isReadOnlyView && (
                 <div className="sub-panel space-y-4">
                   <h3 className="text-sm font-bold tracking-wider text-primary">
                     Status

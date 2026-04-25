@@ -1806,7 +1806,7 @@ export async function addAppointmentTag(
     throw new AppointmentError("Der Geparkt-Tag kann nur über die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
@@ -1838,10 +1838,10 @@ export async function removeAppointmentTag(
     throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Geparkt-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {

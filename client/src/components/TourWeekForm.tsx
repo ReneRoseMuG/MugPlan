@@ -24,6 +24,7 @@ type EmployeeWeekPlanResponse = Array<TourWeekCardData & {
 interface TourWeekFormProps {
   week: TourWeekCardData;
   scope: "tour" | "employee";
+  readOnly?: boolean;
   employeeId?: number | null;
   onClose: () => void;
   onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
@@ -63,6 +64,7 @@ function normalizeWeekResponseItem(
 export function TourWeekForm({
   week,
   scope,
+  readOnly = false,
   employeeId = null,
   onClose,
   onOpenAppointment,
@@ -234,7 +236,7 @@ export function TourWeekForm({
   );
 
   const footerActionDisabled = isMutatingMembers || isMutatingWeeks;
-  const showFunctionsPanel = isTourScope;
+  const showFunctionsPanel = isTourScope && !readOnly;
 
   return (
     <>
@@ -307,6 +309,7 @@ export function TourWeekForm({
                 title="Notizen"
                 notes={notes}
                 isLoading={notesLoading}
+                readOnly={readOnly}
                 onAdd={(data) => createNoteMutation.mutate(data)}
                 onUpdate={(noteId, data) => updateNoteMutation.mutate({ noteId, ...data, version: currentNoteVersion(noteId) })}
                 onTogglePin={(noteId, isPinned) => togglePinMutation.mutate({ noteId, isPinned, version: currentNoteVersion(noteId) })}
@@ -344,7 +347,7 @@ export function TourWeekForm({
                     </div>
                   </div>
 
-                  {isTourScope ? (
+                  {isTourScope && !readOnly ? (
                     <Button
                       type="button"
                       variant="outline"
@@ -371,15 +374,15 @@ export function TourWeekForm({
                       id={member.employeeId}
                       fullName={member.fullName}
                       tourName={!isTourScope ? resolvedWeek.tourName : undefined}
-                      action={isTourScope && !resolvedWeek.isLocked && !resolvedWeek.isBlocked ? "remove" : "none"}
-                      onRemove={() => {
+                      action={isTourScope && !readOnly && !resolvedWeek.isLocked && !resolvedWeek.isBlocked ? "remove" : "none"}
+                      onRemove={isTourScope && !readOnly && !resolvedWeek.isLocked && !resolvedWeek.isBlocked ? () => {
                         void onRemoveWeekEmployee?.({
                           ...member,
                           tourId: resolvedWeek.tourId,
                           isoYear: resolvedWeek.isoYear,
                           isoWeek: resolvedWeek.isoWeek,
                         });
-                      }}
+                      } : undefined}
                       size="sm"
                       fullWidth
                       showPreview={false}
@@ -413,7 +416,7 @@ export function TourWeekForm({
         </EntityFormShell>
       </div>
 
-      <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
+      <Dialog open={!readOnly && employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
         <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}

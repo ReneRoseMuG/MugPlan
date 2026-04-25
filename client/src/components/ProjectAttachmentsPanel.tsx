@@ -21,6 +21,7 @@ interface ProjectAttachmentsPanelProps {
   projectId?: number | null;
   customerId?: number | null;
   isEditing: boolean;
+  readOnly?: boolean;
   canDelete?: boolean;
   className?: string;
   pendingProjectAttachments?: PendingProjectAttachmentItem[];
@@ -31,6 +32,7 @@ export function ProjectAttachmentsPanel({
   projectId,
   customerId,
   isEditing,
+  readOnly = false,
   canDelete = false,
   className,
   pendingProjectAttachments = [],
@@ -105,7 +107,7 @@ export function ProjectAttachmentsPanel({
   const resolvedProjectAttachments = isEditing
     ? [...attachments, ...pendingProjectAttachments]
     : pendingProjectAttachments;
-  const canUploadProjectAttachment = Boolean(projectId) || typeof onUploadPendingProjectAttachment === "function";
+  const canUploadProjectAttachment = !readOnly && (Boolean(projectId) || typeof onUploadPendingProjectAttachment === "function");
   const handleProjectUpload = (file: File) => {
     if (projectId) {
       uploadMutation.mutate(file);
@@ -136,7 +138,7 @@ export function ProjectAttachmentsPanel({
           buildDownloadUrl: (id) => pendingAttachmentUrlsById.has(id)
             ? buildPendingAttachmentUrl(id)
             : `/api/project-attachments/${id}/download?download=1`,
-          buildActionSlot: projectId
+          buildActionSlot: projectId && !readOnly
             ? (id) => (
                 <AttachmentDeleteAction
                   attachmentId={id}

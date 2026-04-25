@@ -6,13 +6,13 @@
  * Abgedeckte Regeln:
  * - Dispatcher sehen Reports, Journal und Monitoring inklusive triggerweiser Pills direkt unter dem Navigationseintrag.
  * - Die globale Kalendernavigation bietet eine Wochenübersicht und die neue Monatsübersicht als monatliche Hauptansicht.
- * - Reader sehen keine Reports-/Journal-/Monitoring-Navigation, aber den allgemeinen Einstieg in die Benutzereinstellungen.
+ * - Reader sehen Monitoring, aber keine Reports-/Journal-Navigation, keinen Einstieg in die Tour-PLZ-Planung und keinen Menüpunkt Mitarbeiter.
  * - Backup-Disablement bleibt als sichtbare Seitenmarkierung erhalten.
  *
  * Fehlerfaelle:
  * - Reports, Journal oder Monitoring verschwinden fuer berechtigte Rollen.
  * - Trigger-Pills erscheinen nicht oder an der falschen Stelle oder zeigen falsche Zaehler.
- * - Reader erhalten unberechtigte Navigationseintraege oder verlieren den Zugriff auf eigene Einstellungen.
+ * - Reader erhalten unberechtigte Navigationseintraege, verlieren Monitoring oder behalten Tour-PLZ-Planung oder Mitarbeiter sichtbar.
  *
  * Ziel:
  * Die sichtbare Navigationsrolle der Sidebar ueber gerendertes Verhalten absichern.
@@ -68,26 +68,33 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("Meine Einstellungen");
   });
 
-  it("hides reports and monitoring for reader roles", () => {
+  it("shows monitoring but hides reports, journal and tour postal planning for reader roles", () => {
     const html = renderToStaticMarkup(
       <Sidebar
         onViewChange={vi.fn()}
         onLogout={vi.fn()}
-        currentView="appointmentsList"
+        currentView="monitoring"
         userRole="READER"
+        monitoringSummary={[
+          { triggerCode: "TR-01", triggerName: "Mindestzahl Mitarbeiter", count: 2, color: "#DC2626" },
+        ]}
       />,
     );
 
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
-    expect(html).toContain("Tour PLZ Planung");
     expect(html).not.toContain("Reports");
     expect(html).not.toContain("Journal");
-    expect(html).not.toContain("Monitoring");
-    expect(html).not.toContain("nav-monitoring");
-    expect(html).not.toContain("nav-monitoring-open-tab");
+    expect(html).toContain("Monitoring");
+    expect(html).toContain("nav-monitoring");
+    expect(html).toContain("nav-monitoring-open-tab");
+    expect(html).toContain("monitoring-trigger-pills");
+    expect(html).toContain("TR-01: 2");
+    expect(html).not.toContain("nav-tour-plz-plan");
+    expect(html).not.toContain("nav-tour-plz-plan-open-tab");
+    expect(html).not.toContain("nav-mitarbeiter");
+    expect(html).not.toContain("nav-mitarbeiter-open-tab");
     expect(html).not.toContain("nav-reports-open-tab");
-    expect(html).not.toContain("monitoring-trigger-pills");
     expect(html).toContain("Meine Einstellungen");
   });
 });

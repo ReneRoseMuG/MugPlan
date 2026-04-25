@@ -929,7 +929,7 @@ export const insertEmployeeAttachmentSchema = createInsertSchema(employeeAttachm
 export type EmployeeAttachment = typeof employeeAttachments.$inferSelect;
 export type InsertEmployeeAttachment = z.infer<typeof insertEmployeeAttachmentSchema>;
 
-// Appointment Attachment - Terminanhaenge (FT 24)
+// Appointment Attachment - Terminanhänge (FT 24)
 export const appointmentAttachments = mysqlTable("appointment_attachment", {
   id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
   appointmentId: bigint("appointment_id", { mode: "number" }).notNull().references(() => appointments.id, { onDelete: "cascade" }),

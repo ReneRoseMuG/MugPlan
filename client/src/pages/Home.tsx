@@ -36,6 +36,7 @@ import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
 
 export type ViewType =
@@ -239,8 +240,10 @@ export default function Home({ onLogout }: HomeProps) {
   const [teamFormVisible, setTeamFormVisible] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
-  const canAccessReports = isAdmin || userRole === "DISPATCHER";
-  const canAccessMonitoring = canAccessReports;
+  const isReader = isReaderRole(userRole);
+  const canAccessReports = canAccessReportsRole(userRole);
+  const canAccessMonitoring = canAccessMonitoringRole(userRole);
+  const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
   const {
@@ -453,7 +456,7 @@ export default function Home({ onLogout }: HomeProps) {
               onSortKeyChange={setCustomerSortKey}
               sortDirection={customerSortDirection}
               onSortDirectionChange={setCustomerSortDirection}
-              onNewCustomer={() => { setSelectedCustomerId(null); setView("customer"); }}
+              onNewCustomer={isReader ? undefined : () => { setSelectedCustomerId(null); setView("customer"); }}
               onSelectCustomer={(id) => { setSelectedCustomerId(id); setView("customer"); }}
             />
           ) : view === "tours" ? (
@@ -531,7 +534,7 @@ export default function Home({ onLogout }: HomeProps) {
               onSortKeyChange={setProjectSortKey}
               sortDirection={projectSortDirection}
               onSortDirectionChange={setProjectSortDirection}
-              onNewProject={() => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
+              onNewProject={isReader ? undefined : () => { setSelectedProjectId(null); setProjectReturnView("projectList"); setView("project"); }}
               onSelectProject={(id) => { setSelectedProjectId(id); setProjectReturnView("projectList"); setView("project"); }}
             />
           ) : view === "noteTemplates" && isAdmin ? (
@@ -603,7 +606,7 @@ export default function Home({ onLogout }: HomeProps) {
                 });
               }}
             />
-          ) : view === "tourPostalPlan" ? (
+          ) : view === "tourPostalPlan" && canOpenTourPostalPlan ? (
             <TourPostalPlanView
               onCreateAppointment={({ date, tourId }) => {
                 setAppointmentContext({
@@ -614,6 +617,13 @@ export default function Home({ onLogout }: HomeProps) {
                 setView("appointment");
               }}
             />
+          ) : view === "tourPostalPlan" ? (
+            <div
+              className="flex h-full items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500"
+              data-testid="tour-postal-plan-unavailable"
+            >
+              Diese Ansicht ist für diese Rolle nicht verfügbar.
+            </div>
           ) : isContextualCalendarView ? (
             <CalendarWorkspace
               mode="contextual"
@@ -697,7 +707,8 @@ export default function Home({ onLogout }: HomeProps) {
                   <CalendarYearView
                     currentDate={currentDate}
                     employeeFilterId={calendarFilters.employeeId}
-                    onNewAppointment={(date) => {
+                    readOnly={isReader}
+                    onNewAppointment={isReader ? undefined : (date) => {
                       setAppointmentContext({
                         initialDate: date,
                         returnContext: { targetView: "year" },

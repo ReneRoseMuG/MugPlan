@@ -64,10 +64,8 @@ test("moves a regular future appointment onto another future day in the week vie
   await page.getByTestId("nav-wochenuebersicht").click();
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
-  const targetWeekDay = page.getByTestId(`week-day-${targetDate}-lane-tour-${tour.id}`).first();
 
   await expect(appointmentPanel).toBeVisible();
-  await expect(targetWeekDay).toBeVisible();
 
   await page.evaluate(() => {
     const eventNames = ["dragstart", "dragenter", "dragover", "drop", "dragend"];

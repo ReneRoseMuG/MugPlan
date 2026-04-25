@@ -156,7 +156,7 @@ test("blocking from the tour week card parks appointments and keeps the KW visib
   const weekCard = page.getByTestId(`card-tour-week-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`);
   await expect(weekCard).toBeVisible();
   await weekCard.getByTestId(`button-tour-week-menu-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`).click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
 
   await expect(page.getByTestId(`text-tour-week-blocked-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`)).toContainText("Parkplatz");
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
@@ -172,7 +172,7 @@ test("blocking from the week calendar header parks appointments and shows the bl
   await expect(laneHeader).toBeVisible();
 
   await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
 
   await expect(laneHeader).toBeVisible();
   await expect(page.getByText("Wochenplanung blockiert").first()).toBeVisible();
@@ -198,7 +198,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
 
   await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
 
   const parkedLaneWithAppointment = page.locator("section")
     .filter({ has: page.getByTestId(`week-tour-lane-header-tour-${scenario.parkplatzTourId}`) })

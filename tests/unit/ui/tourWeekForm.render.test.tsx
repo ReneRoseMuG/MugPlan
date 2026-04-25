@@ -22,6 +22,7 @@ const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 const employeePickerCalls: Array<Record<string, unknown>> = [];
 const appointmentsListCalls: Array<Record<string, unknown>> = [];
+const notesSectionCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-query")>();
@@ -60,12 +61,17 @@ vi.mock("@/components/ui/entity-form-shell", () => ({
 }));
 
 vi.mock("@/components/NotesSection", () => ({
-  NotesSection: ({ title, notes }: { title?: string; notes?: Array<{ title: string }> }) => (
-    <section data-testid="tour-week-notes-marker">
-      {title}
-      {notes?.map((note) => <div key={note.title}>{note.title}</div>)}
-    </section>
-  ),
+  NotesSection: (props: Record<string, unknown>) => {
+    notesSectionCalls.push(props);
+    const title = typeof props.title === "string" ? props.title : undefined;
+    const notes = Array.isArray(props.notes) ? props.notes as Array<{ title: string }> : [];
+    return (
+      <section data-testid="tour-week-notes-marker">
+        {title}
+        {notes.map((note) => <div key={note.title}>{note.title}</div>)}
+      </section>
+    );
+  },
 }));
 
 vi.mock("@/components/AppointmentsListPage", () => ({
@@ -147,6 +153,7 @@ describe("tourWeekForm render", () => {
   beforeEach(() => {
     employeePickerCalls.length = 0;
     appointmentsListCalls.length = 0;
+    notesSectionCalls.length = 0;
     useMutationMock.mockReset();
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
       if (Array.isArray(queryKey) && queryKey[0] === `/api/tours/${baseWeek.tourId}/week-employees`) {
@@ -249,5 +256,24 @@ describe("tourWeekForm render", () => {
         dateTo: baseWeek.weekEndDate,
       },
     });
+  });
+
+  it("renders the tour scope as readonly for reader roles", () => {
+    const markup = renderToStaticMarkup(
+      <TourWeekForm
+        week={baseWeek}
+        scope="tour"
+        readOnly
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Tour Nord");
+    expect(markup).toContain("tour-week-notes-marker");
+    expect(markup).not.toContain("tour-week-form-functions-panel");
+    expect(markup).not.toContain("button-open-tour-week-employee-picker");
+    expect(markup).not.toContain("button-block-tour-week");
+    expect(markup).not.toContain("button-unblock-tour-week");
+    expect(notesSectionCalls.at(-1)?.readOnly).toBe(true);
   });
 });

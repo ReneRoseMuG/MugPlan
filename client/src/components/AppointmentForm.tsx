@@ -61,6 +61,7 @@ import { formatAppointmentEditContext, resolveCustomerEditLabel } from "@/lib/ed
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import {
   createEmptyProjectProductSelections,
   type ProjectProductSelections,
@@ -495,12 +496,11 @@ export function AppointmentForm({
       sidebarDraftSignature: input.sidebarDraftSignature ?? null,
     });
 
-  const [userRole] = useState(() =>
-    window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-  );
+  const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
-  const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const isReader = isReaderRole(userRole);
+  const canManageAppointmentTags = !isReader && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const invalidateTourenplanReportQueries = async () => {
     await queryClient.invalidateQueries({ queryKey: ["reports-tourenplan-preview"] });
@@ -959,13 +959,15 @@ export function AppointmentForm({
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
   const isPlanningBlocked = (appointmentDetail?.appointmentTags ?? []).some((tag) => isReservedPlanningBlockedTagName(tag.name));
-  const readOnlyReason = isHistoricalReadOnly
-    ? "historical"
-    : isCancelled
-      ? "cancelled"
-      : isPlanningBlocked
-        ? "planningBlocked"
-        : null;
+  const readOnlyReason = isReader
+    ? "reader"
+    : isHistoricalReadOnly
+      ? "historical"
+      : isCancelled
+        ? "cancelled"
+        : isPlanningBlocked
+          ? "planningBlocked"
+          : null;
   const isReadOnlyView = readOnlyReason !== null;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
@@ -1720,6 +1722,11 @@ export function AppointmentForm({
 
   const submitAppointment = async () => {
     if (isMutationLocked) {
+      if (readOnlyReason === "reader") {
+        toast({ title: "Nur Lesemodus", description: "Diese Rolle darf Termine nicht bearbeiten.", variant: "destructive" });
+        console.info(`${logPrefix} save blocked: reader role`);
+        return;
+      }
       if (readOnlyReason === "cancelled") {
         toast({ title: "Termin ist storniert", description: "Stornierte Termine können nicht mehr bearbeitet werden.", variant: "destructive" });
         console.info(`${logPrefix} save blocked: cancelled appointment`);
@@ -2611,7 +2618,6 @@ export function AppointmentForm({
               </AlertDescription>
             </Alert>
           )}
-
           <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />

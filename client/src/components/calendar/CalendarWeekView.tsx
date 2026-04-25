@@ -65,10 +65,12 @@ import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { NoteTemplate, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
+  readOnly?: boolean;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
@@ -251,6 +253,7 @@ export function buildWeekLaneRenderData(
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
+  readOnly = false,
   weekTileBodyMode: weekTileBodyModeProp,
   weekLanesCollapsed: weekLanesCollapsedProp,
   onWeekLanesCollapsedChange,
@@ -283,10 +286,8 @@ export function CalendarWeekView({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
+  const userRole = useMemo(() => getStoredUserRole(), []);
+  const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
 
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
@@ -294,7 +295,7 @@ export function CalendarWeekView({
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
   const isAdmin = userRole === "ADMIN";
-  const canWriteNotes = userRole !== "LESER";
+  const canWriteNotes = userRole !== "READER";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const extraWeekCount =
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
@@ -303,8 +304,8 @@ export function CalendarWeekView({
   const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
-  const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
-  const canManageWeekPlanning = userRole === "ADMIN" || userRole === "DISPATCHER";
+  const canManageAppointmentTags = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
+  const canManageWeekPlanning = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
   const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates"],
     queryFn: async () => {
@@ -886,6 +887,12 @@ export function CalendarWeekView({
   };
 
   const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
+    if (isReaderCalendarReadOnly) {
+      event.preventDefault();
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     event.preventDefault();
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
     if (!appointmentId) return;
@@ -1312,7 +1319,7 @@ export function CalendarWeekView({
                                       <StickyNote className="h-3.5 w-3.5 shrink-0" />
                                       {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
                                     </DropdownMenuItem>
-                                    {tourLane.tourId != null ? (
+                                    {!isReaderCalendarReadOnly && tourLane.tourId != null ? (
                                       isLaneBlocked ? (
                                         <DropdownMenuItem
                                           onClick={() => {
@@ -1446,7 +1453,7 @@ export function CalendarWeekView({
                                     ) : (
                                       <span className="ml-auto" />
                                     )}
-                                    {dayBucket.dateKey >= berlinToday ? (
+                                    {!isReaderCalendarReadOnly && dayBucket.dateKey >= berlinToday ? (
                                       <button
                                         onClick={(event) => {
                                           event.stopPropagation();
@@ -1515,7 +1522,7 @@ export function CalendarWeekView({
                                 aria-hidden
                               />
                             ) : null}
-                            {hasLaneContent && draggedAppointmentId !== null ? (
+                            {hasLaneContent && draggedAppointmentId !== null && !isReaderCalendarReadOnly ? (
                               <div
                                 className="absolute inset-0 grid z-20"
                                 style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -1553,7 +1560,8 @@ export function CalendarWeekView({
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked
+                              const canDragSegment = !isReaderCalendarReadOnly
+                                && !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
                               const heightRowKey = `grid-row-${rowIndex}`;
@@ -1620,7 +1628,8 @@ export function CalendarWeekView({
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked
+                              const canDragSegment = !isReaderCalendarReadOnly
+                                && !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
                               const heightRowKey = `grid-row-${gridRow - 1}`;
@@ -1705,7 +1714,8 @@ export function CalendarWeekView({
                                     const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                                     const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
-                                    const canDragSegment = !isSegmentLocked
+                                    const canDragSegment = !isReaderCalendarReadOnly
+                                      && !isSegmentLocked
                                       && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                                     const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
                                     const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
