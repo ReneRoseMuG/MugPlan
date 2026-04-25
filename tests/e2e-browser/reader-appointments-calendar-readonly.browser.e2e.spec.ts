@@ -68,7 +68,6 @@ test.describe("Reader appointments and calendars readonly", () => {
 
     await appointmentPanel.dblclick();
 
-    await expect(page.getByText("Nur Lesemodus")).toBeVisible();
     await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
     await expect(page.getByTestId("button-cancel-appointment")).toHaveCount(0);
     await expect(page.getByTestId("button-park-appointment")).toHaveCount(0);

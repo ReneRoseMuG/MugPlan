@@ -2618,15 +2618,6 @@ export function AppointmentForm({
               </AlertDescription>
             </Alert>
           )}
-          {readOnlyReason === "reader" && (
-            <Alert variant="destructive">
-              <AlertTitle>Nur Lesemodus</AlertTitle>
-              <AlertDescription>
-                Diese Rolle darf Termine öffnen und lesen, aber nicht bearbeiten.
-              </AlertDescription>
-            </Alert>
-          )}
-
           <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />

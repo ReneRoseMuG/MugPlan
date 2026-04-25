@@ -108,7 +108,10 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const [weekDialogState, setWeekDialogState] = useState<WeekDialogState | null>(null);
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
   const isAdmin = effectiveUserRole === "ADMIN";
-  const canMutateTours = effectiveUserRole === "ADMIN" || effectiveUserRole === "DISPONENT";
+  const canMutateTours =
+    effectiveUserRole === "ADMIN"
+    || effectiveUserRole === "DISPATCHER"
+    || effectiveUserRole === "DISPONENT";
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
