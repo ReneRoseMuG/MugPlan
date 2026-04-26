@@ -11,7 +11,8 @@
  * - Stornierte Zeilen verlieren ihre Kennzeichnung oder bleiben fuer Entfernen-Aktionen aktiv.
  *
  * Ziel:
- * Laufzeitverhalten der wiederverwendeten Terminliste statt Quelltext-Verdrahtung absichern.
+ * Einen sichtbaren Listen-Smoke-Test fuer Tour-Kontext, Markup-Markierung und
+ * deaktivierte Aktionen absichern, nicht eine vollstaendige Fachabsicherung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -156,7 +157,7 @@ vi.mock("@/lib/list-display-format", () => ({
 
 import { AppointmentsListPage } from "../../../client/src/components/AppointmentsListPage";
 
-describe("FT04 appointments list page tour locking wiring", () => {
+describe("FT04 appointments list page tour locking smoke", () => {
   beforeEach(() => {
     appointmentItems = [
       {
@@ -215,7 +216,7 @@ describe("FT04 appointments list page tour locking wiring", () => {
     expect(markup).toContain("close-visible");
     expect(markup).toContain(">tour<");
     expect(markup).toContain("Storniert");
-    expect(markup).toContain("data-row-class=\"bg-amber-50/70 text-muted-foreground\"");
+    expect(markup).toMatch(/data-row-class="[^"]*bg-amber-50\/70[^"]*text-muted-foreground|data-row-class="[^"]*text-muted-foreground[^"]*bg-amber-50\/70/);
     expect(markup).toContain("button-remove-employee-from-appointment-72");
     expect(markup).toContain("disabled=&quot;&quot;");
   });

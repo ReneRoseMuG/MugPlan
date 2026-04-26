@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 
 import { db } from "../../server/db";
+import * as calendarWeekNotesService from "../../server/services/calendarWeekNotesService";
 import { tourWeekEmployees } from "../../shared/schema";
 import {
+  createCustomerFixture,
+  createProjectFixture,
+  createRawAppointmentFixture,
   createEmployeeFixture,
   createTourFixture,
   getRelativeBerlinDate,
@@ -26,6 +30,7 @@ test.describe("Reader tours readonly", () => {
 
   let tour: Awaited<ReturnType<typeof createTourFixture>>;
   let employeeAssignmentId = 0;
+  let projectName = "";
   const week = resolveNextReadableWeek();
 
   test.beforeAll(async () => {
@@ -33,6 +38,32 @@ test.describe("Reader tours readonly", () => {
 
     tour = await createTourFixture("#225588");
     const employee = await createEmployeeFixture("READER-TOUR-EMP");
+    const customer = await createCustomerFixture("READER-TOUR-CUST");
+    const project = await createProjectFixture({
+      prefix: "READER-TOUR-PROJ",
+      customerId: customer.id,
+      name: "Reader Tour Projekt Fokus",
+    });
+    projectName = project.name;
+
+    await createRawAppointmentFixture({
+      projectId: project.id,
+      startDate: week.weekStartDate,
+      title: "Reader Tour Wochenauftrag Fokus",
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+    await calendarWeekNotesService.createCalendarWeekNote(
+      week.isoYear,
+      week.isoWeek,
+      tour.id,
+      {
+        title: "Reader Wochennotiz Fokus",
+        body: "<p>Wochennotiz bleibt sichtbar.</p>",
+        print: false,
+        cardColor: null,
+      },
+    );
 
     const insertResult = await db.insert(tourWeekEmployees).values({
       tourId: tour.id,
@@ -64,6 +95,7 @@ test.describe("Reader tours readonly", () => {
     await expect(page.getByTestId("tour-readonly-alert")).toHaveCount(0);
     await expect(page.getByTestId("button-save-tour")).toHaveCount(0);
     await expect(page.getByTestId("toggle-tour-week-picker")).toHaveCount(0);
+    await expect(page.getByTestId("input-tour-name")).toHaveValue(tour.name);
 
     await page.getByTestId("tab-tour-wochenplanung").click();
     await expect(page.getByTestId(`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`)).toHaveCount(0);
@@ -80,5 +112,10 @@ test.describe("Reader tours readonly", () => {
     await expect(page.getByTestId("button-block-tour-week")).toHaveCount(0);
     await expect(page.getByTestId("button-unblock-tour-week")).toHaveCount(0);
     await expect(page.getByTestId("button-new-note")).toHaveCount(0);
+    await expect(page.getByTestId("list-notes")).toContainText("Reader Wochennotiz Fokus");
+
+    await page.getByTestId("tab-tour-week-termine").click();
+    await expect(page.getByTestId("table-appointments-list")).toBeVisible();
+    await expect(page.getByTestId("table-appointments-list")).toContainText(projectName);
   });
 });

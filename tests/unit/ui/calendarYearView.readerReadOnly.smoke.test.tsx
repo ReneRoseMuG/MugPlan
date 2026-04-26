@@ -10,7 +10,8 @@
  * - Die neue Leser-Sperre blendet die Jahresanlage versehentlich fuer alle Rollen aus.
  *
  * Ziel:
- * Die Leser-Readonly-Verdrahtung der Jahresansicht ueber sichtbare Create-Einstiege regressionssicher absichern.
+ * Einen Markup-Smoke-Test fuer sichtbare Create-Einstiege der Jahresansicht absichern,
+ * nicht echte serverseitige Mutationsverweigerung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -32,7 +33,7 @@ vi.mock("@/lib/project-appointments", () => ({
   getBerlinTodayDateString: () => "2099-01-01",
 }));
 
-describe("calendar year view reader readonly", () => {
+describe("calendar year view reader readonly smoke", () => {
   beforeEach(() => {
     useCalendarAppointmentsMock.mockReset();
     useCalendarAppointmentsMock.mockReturnValue({ data: [] });

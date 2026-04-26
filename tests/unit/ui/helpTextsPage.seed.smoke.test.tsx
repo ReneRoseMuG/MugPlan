@@ -4,15 +4,17 @@
  * Feature: FT28 - Hilfetext Auto-Seed
  *
  * Abgedeckte Regeln:
- * - HelpTextsPage startet beim Oeffnen den Seed-Endpunkt.
+ * - Die HelpTextsPage startet browserfern den Seed-Endpunkt beim Oeffnen.
  * - Nach erfolgreichem Seed wird die HelpText-Liste invalidiert.
- * - Board-Karten zeigen den HelpKey sichtbar an.
+ * - Die statische Render-Ausgabe behaelt die erwarteten Grundelemente.
  *
  * Fehlerfaelle:
- * - Seed bleibt aus oder fehlende Keys sind in der UI nicht nachvollziehbar.
+ * - Seed bleibt im Mount-Effekt aus.
+ * - Der kleine Seiten-Shell-Render verliert zentrale Grundelemente.
  *
  * Ziel:
- * Den kleinen FT28-Gap im HelpTexts-Bereich ueber beobachtbares Page-Verhalten absichern.
+ * Einen kleinen Smoke-Test fuer Seed-Trigger und Grundrender der Seite absichern,
+ * nicht die fachliche Seed-Wirkung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -109,7 +111,7 @@ async function loadHelpTextsPageWithEffect() {
   return import("../../../client/src/components/HelpTextsPage");
 }
 
-describe("FT28 help texts page seed behavior", () => {
+describe("FT28 help texts page seed smoke", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
     apiRequestMock.mockReset();

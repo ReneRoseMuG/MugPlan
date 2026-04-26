@@ -447,6 +447,9 @@ Vor jedem weiteren Testkommando ist immer das Ergebnis des vorherigen Testkomman
 - Eigene Express-/HTTP-App-Aufbauten in Integrationstests statt `createApiTestApp()`
 - Assertions auf mehrere alternative HTTP-Statuscodes für denselben fachlichen Fehler
 - Schreibzugriffe in Tests außerhalb von `os.tmpdir()`
+- Fachliche Tests mit leeren Arrays, leeren Objekten oder Minimalobjekten, sofern der leere Zustand nicht selbst die geprüfte Fachregel ist
+- Reine Render- oder Sichtbarkeitsprüfungen als Ersatz für fachliche Daten-, Rollen-, Persistenz- oder Regelprüfungen
+- Mocks oder Helper, die das erwartete Ergebnis bereits künstlich liefern und dadurch die eigentliche Fachlogik umgehen
 - Neue Tests dürfen bestehende weiche Muster nicht blind kopieren, ohne deren Aussagekraft gegen Restdaten-, Seed- und Reihenfolgerisiken zu prüfen
 
 ### Test-Runs dürfen nicht in eigenständigen Fixes münden
@@ -460,6 +463,60 @@ Ein explizit angeforderter Testlauf ist immer ein **reiner Report-Auftrag**. Wä
 ### Allgemeine Regel
 
 Jeder Test muss einen beobachtbaren Effekt prüfen. Zulässig sind nur Assertions auf Verhalten, Ergebnis, Nebenwirkung oder verweigerte Operationen. Nicht zulässig sind Tests, die nur das Vorhandensein von Quelltext, Namen, Markup-Fragmenten oder anderen Implementierungsdetails bestätigen, ohne das tatsächliche Systemverhalten nachzuweisen.
+
+### Nachweispflicht für fachlich aussagekräftige Tests
+
+Codex darf einen Test nur dann als fachlich aussagekräftig bezeichnen, wenn der Test nachweisbar mit konkreten, realistischen und eindeutig identifizierbaren Testdaten arbeitet und diese Daten im Ergebnis ausdrücklich überprüft.
+
+Ein Test mit leeren Arrays, leeren Objekten, Dummy-IDs, generischen Platzhaltern oder rein künstlichen Minimaldaten gilt standardmäßig nur als Smoke-Test. Er darf nur dann als ausreichend gelten, wenn genau der leere Zustand selbst die fachliche Regel ist und diese Erwartung ausdrücklich im Testnamen, Testkommentar oder Testprotokoll benannt wird.
+
+Für fachliche UI-, Browser-, Integration- und Report-Tests gilt verbindlich:
+
+Der Test muss mindestens ein fachlich relevantes Zielobjekt erzeugen oder über eine eindeutig kontrollierte Fixture bereitstellen. Dieses Zielobjekt muss realistische Pflichtfelder, sinnvolle Beziehungen und einen eindeutigen Testdaten-Token enthalten.
+
+Der Test muss nachweisen, dass genau dieses Zielobjekt verarbeitet, angezeigt, gespeichert, geändert, gefiltert, abgelehnt oder entfernt wurde. Eine bloße Sichtbarkeitsprüfung eines allgemeinen Textes reicht nicht aus.
+
+Der Test muss mindestens eine Assertion enthalten, die bei einem echten Bruch der geprüften Fachregel rot würde. Wenn ein Test auch dann grün bliebe, wenn die geprüfte Regel entfernt, falsch verdrahtet oder durch Seed-Daten vorgetäuscht würde, ist der Test unzureichend.
+
+Bei Listen, Tabellen, Kalenderansichten, Boards, Reports, Overlays und Reopen-Flows muss der Test zusätzlich zur Textsichtbarkeit mindestens einen Identitäts-, Anzahl-, Reihenfolge-, Filter-, Delta- oder Ausschlussnachweis führen. Der Test muss also belegen, dass nicht irgendein ähnlicher Altbestand angezeigt wird, sondern das konkret vorbereitete Zielobjekt.
+
+Bei Mutationen muss der Test den Zustand nach der Aktion prüfen. Je nach Testschicht erfolgt dieser Nachweis durch sichtbare UI-Werte, erneutes Laden, API-Response, Datenbankzustand oder einen zweiten unabhängigen Abruf. Eine Mutation gilt nicht als ausreichend getestet, wenn nur ein Button geklickt und anschließend irgendein Toast oder irgendein Text gefunden wird.
+
+Bei Integrationstests muss der Datenbankzustand vor und nach der geprüften Aktion so geprüft werden, dass die fachliche Wirkung eindeutig ist. Dazu gehören bei Bedarf ID-Abgleich, eindeutiger Token, erwartete Feldwerte, erwartete Beziehungen und der Ausschluss unerwünschter Nebenwirkungen.
+
+Bei Browser-Tests muss nachgewiesen werden, dass angezeigte Daten aus der durchgeführten Testaktion oder aus einer eindeutig kontrollierten Fixture stammen. Seed-Daten, Cache, Restdaten oder zufällig ähnliche Texte dürfen den Test nicht grün machen können.
+
+Codex darf keine Tests als „mit echten Daten getestet“ beschreiben, wenn der Test nur Komponentenprops mit leeren Arrays, generischen Mocks oder Minimalobjekten übergibt. In diesem Fall muss Codex den Test ausdrücklich als Smoke-Test oder Strukturtest kennzeichnen.
+
+Codex muss bei jedem neu geschriebenen oder wesentlich geänderten Test im Abschlussbericht folgende Fragen beantworten:
+
+1. Welches konkrete Zielobjekt wurde erzeugt oder kontrolliert bereitgestellt?
+2. Welcher eindeutige Token, welche ID oder welche eindeutige Feldkombination weist dieses Zielobjekt nach?
+3. Welche realistischen Pflichtfelder und Beziehungen enthält das Zielobjekt?
+4. Welche Assertion beweist, dass genau dieses Zielobjekt verarbeitet oder angezeigt wurde?
+5. Welche Assertion würde rot werden, wenn die geprüfte Fachregel kaputt wäre?
+6. Welche Fremd-, Seed-, Cache- oder Restdaten könnten den Test theoretisch vortäuschen, und wie verhindert der Test das?
+7. Ist der Test ein fachlicher Test oder nur ein Smoke-Test?
+
+Wenn Codex eine dieser Fragen nicht konkret beantworten kann, darf der Test nicht als fachlich abgesichert gemeldet werden.
+
+### Verbot gegen „Grünbiegen“ von Tests
+
+Codex darf Tests nicht dadurch erfolgreich machen, dass ihre fachliche Aussagekraft reduziert wird.
+
+Unzulässig sind insbesondere:
+
+- Assertions entfernen, abschwächen oder durch allgemeinere Erwartungen ersetzen
+- konkrete fachliche Werte durch leere Arrays, leere Objekte, Dummy-Daten oder beliebige Platzhalter ersetzen
+- Mocks so erweitern, dass sie das erwartete Ergebnis bereits fertig liefern und die eigentliche Fachlogik nicht mehr geprüft wird
+- relevante Nutzeraktionen, Persistenzpfade, API-Aufrufe oder Datenbankprüfungen umgehen
+- `test.skip`, `describe.skip`, `it.skip`, `todo`, bedingte Returns oder ähnliche Mechanismen verwenden, um grüne Läufe zu erreichen
+- Fehlermeldungen, Rollenprüfungen, Validierungen oder Negativfälle entfernen
+- fachliche Tests auf reine Render-, Sichtbarkeits- oder Smoke-Tests zurückbauen
+
+Ein Test darf nur dann angepasst werden, wenn die bisherige Erwartung nachweislich fachlich falsch war. Dieser Nachweis muss im Abschlussbericht konkret begründet werden.
+
+Wenn ein fachlich sinnvoller Test rot wird, ist das nicht automatisch ein Problem des Tests. Es kann ein echter Bug, eine fehlende Implementierung oder eine unvollständige Testinfrastruktur sein. In diesem Fall dokumentiert Codex die Ursache und bricht bei unzulässigem Scope kontrolliert ab, statt den Test still grün zu biegen.
 
 ### Verbindliche Regeln für Isolation und Aussagekraft
 
@@ -563,8 +620,19 @@ Zusätzlich zum vollständigen Bericht liefert Codex nach einem Audit immer eine
  *
  * Ziel:
  * <Kurzbeschreibung der Absicherung>
+ *
+ * Aussagekraft-Nachweis:
+ * - Zielobjekt: <konkrete Entität oder konkreter Flow>
+ * - Eindeutiger Nachweis: <ID, Token oder eindeutige Feldkombination>
+ * - Realistische Daten: <Pflichtfelder und Beziehungen>
+ * - Kritische Assertion: <Assertion, die bei Regelbruch rot wird>
+ * - False-Positive-Schutz: <Ausschluss von Seed, Cache, Altbestand oder ähnlichen Treffern>
  */
 ```
+
+Der Abschnitt `Aussagekraft-Nachweis` ist für neue oder wesentlich geänderte Testdateien verpflichtend. Fehlt dieser Nachweis, gilt die Teständerung als unvollständig.
+
+Bei reinen Smoke-Tests muss der Kommentar ausdrücklich sagen, dass es sich nur um einen Smoke-Test handelt und welche begrenzte Aussage dieser Test hat. Ein Smoke-Test darf nicht als fachliche Absicherung einer Regel, eines Reports, einer Berechtigung oder eines Workflows dokumentiert werden.
 
 ### Pflege von docs/TEST_MATRIX.md
 
@@ -576,7 +644,9 @@ Bei jeder Erstellung oder Erweiterung von Tests pflegt Codex `docs/TEST_MATRIX.m
 | [datei.test.ts](../tests/...) | FT14 | Unit | Kurzbeschreibung | ✓ |
 ```
 
-Fehlt die Aktualisierung der Test-Matrix, gilt die Teständerung als unvollständig.
+Die Test-Matrix muss bei neuen oder wesentlich geänderten Tests zusätzlich erkennen lassen, ob der Test fachlich stark, begrenzt, Smoke-Test oder technische Absicherung ist. Wenn ein Test nur ein Smoke-Test ist, darf die Matrix ihn nicht als vollständige Absicherung einer Fachregel darstellen.
+
+Fehlt die Aktualisierung der Test-Matrix oder ist die Aussagekraft dort falsch eingeordnet, gilt die Teständerung als unvollständig.
 
 ---
 

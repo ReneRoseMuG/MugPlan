@@ -12,7 +12,8 @@
  * - Der Mitarbeiter-Scope rendert weiterhin editierbare Picker-Aktionen.
  *
  * Ziel:
- * Das gemeinsame tour_week-Formular ueber sichtbare Struktur und zentrale Prop-Verdrahtung regressionssicher absichern.
+ * Das gemeinsame tour_week-Formular als sichtbaren Struktur- und Prop-Smoke-Test
+ * absichern, nicht als Nachweis echter Rollen- oder Persistenzwirkung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -149,7 +150,7 @@ const baseWeek = {
   ],
 };
 
-describe("tourWeekForm render", () => {
+describe("tourWeekForm smoke", () => {
   beforeEach(() => {
     employeePickerCalls.length = 0;
     appointmentsListCalls.length = 0;

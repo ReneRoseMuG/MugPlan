@@ -16,35 +16,98 @@
  */
 import { expect, test } from "@playwright/test";
 
+import * as appointmentAttachmentsService from "../../server/services/appointmentAttachmentsService";
+import * as appointmentNotesService from "../../server/services/appointmentNotesService";
+import * as customerAttachmentsService from "../../server/services/customerAttachmentsService";
+import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";
 import {
+  attachAppointmentTagFixture,
   createAppointmentFixture,
-  createCustomerFixture,
-  createProjectFixture,
+  createCustomerFixtureWithOverrides,
+  createEmployeeFixtureWithOverrides,
+  createExactTagFixture,
+  createProjectFixtureWithOverrides,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsReader, resetBrowserSuiteState } from "../helpers/browserE2e";
+
+function buildAttachmentPayload(prefix: string, label: string) {
+  return {
+    filename: `${prefix}.pdf`,
+    originalName: `${label}-${prefix}.pdf`,
+    mimeType: "application/pdf",
+    fileSize: 128,
+    storagePath: `reader-appointment/${prefix}.pdf`,
+    version: 1,
+  };
+}
 
 test.describe("Reader appointments and calendars readonly", () => {
   test.describe.configure({ mode: "serial" });
 
   let appointmentId: number;
+  let appointmentDate: string;
+  let customerNumber = "";
+  let projectName = "";
+  let employeeId = 0;
+  let appointmentTagId = 0;
+  let customerAttachmentName = "";
+  let projectAttachmentName = "";
+  let appointmentAttachmentName = "";
 
   test.beforeAll(async () => {
     await resetBrowserSuiteState("tests/e2e-browser/reader-appointments-calendar-readonly.browser.e2e.spec.ts");
 
-    const customer = await createCustomerFixture("READER-CAL-CUST");
-    const project = await createProjectFixture({
+    appointmentDate = getRelativeBerlinDate(2);
+    const customer = await createCustomerFixtureWithOverrides({
+      prefix: "READER-CAL-CUST",
+      firstName: "Lena",
+      lastName: "Lesertermin",
+      fullName: "Lena Lesertermin",
+      company: "Reader Termin GmbH",
+      city: "Oldenburg",
+      country: "Deutschland",
+    });
+    const project = await createProjectFixtureWithOverrides({
       prefix: "READER-CAL-PROJ",
       customerId: customer.id,
       name: "Reader Kalender Projekt",
+      descriptionMd: "<p>Readonly appointment project</p>",
     });
+    const employee = await createEmployeeFixtureWithOverrides({
+      prefix: "READER-CAL-EMP",
+      firstName: "Mara",
+      lastName: "Montage",
+    });
+    const appointmentTag = await createExactTagFixture("Reader Termin Tag Fokus");
     const appointment = await createAppointmentFixture({
       projectId: project.id,
       customerId: customer.id,
-      startDate: getRelativeBerlinDate(2),
+      startDate: appointmentDate,
+      employeeIds: [employee.id],
     });
+    await attachAppointmentTagFixture(appointment.id, appointmentTag.id);
+    await appointmentNotesService.createAppointmentNote(appointment.id, {
+      title: "Reader Terminnotiz Fokus",
+      body: "<p>Diese Notiz muss sichtbar bleiben.</p>",
+      print: false,
+      cardColor: null,
+    });
+    const customerAttachment = buildAttachmentPayload("reader-appointment-customer", "kundendokument");
+    customerAttachmentName = customerAttachment.originalName;
+    await customerAttachmentsService.createCustomerAttachment({ customerId: customer.id, ...customerAttachment });
+    const projectAttachment = buildAttachmentPayload("reader-appointment-project", "projektdokument");
+    projectAttachmentName = projectAttachment.originalName;
+    await projectAttachmentsService.createProjectAttachment({ projectId: project.id, ...projectAttachment });
+    const appointmentAttachment = buildAttachmentPayload("reader-appointment-self", "termindokument");
+    appointmentAttachmentName = appointmentAttachment.originalName;
+    await appointmentAttachmentsService.createAppointmentAttachment({ appointmentId: appointment.id, ...appointmentAttachment });
 
     appointmentId = appointment.id;
+    customerNumber = customer.customerNumber;
+    projectName = project.name;
+    employeeId = employee.id;
+    appointmentTagId = appointmentTag.id;
   });
 
   test("hides create entrypoints in week and month calendar views for readers", async ({ page }) => {
@@ -75,5 +138,16 @@ test.describe("Reader appointments and calendars readonly", () => {
     await expect(page.getByTestId("button-add-employee")).toHaveCount(0);
     await expect(page.getByTestId("appointment-tag-picker-button-add")).toHaveCount(0);
     await expect(page.getByTestId("button-new-note")).toHaveCount(0);
+    await expect(page.getByTestId("button-add-document-header")).toHaveCount(0);
+    await expect(page.getByTestId("input-start-date")).toBeDisabled();
+    await expect(page.getByTestId("input-start-date")).toHaveValue(appointmentDate);
+    await expect(page.getByTestId("badge-project")).toContainText(projectName);
+    await expect(page.getByTestId("badge-customer-number")).toContainText(customerNumber.slice(0, 10));
+    await expect(page.getByTestId(`appointment-tag-picker-tag-${appointmentTagId}`)).toBeVisible();
+    await expect(page.getByTestId("list-notes")).toContainText("Reader Terminnotiz Fokus");
+    await expect(page.getByTestId("appointment-form-sidebar")).toContainText(customerAttachmentName);
+    await expect(page.getByTestId("appointment-form-sidebar")).toContainText(projectAttachmentName);
+    await expect(page.getByTestId("appointment-form-sidebar")).toContainText(appointmentAttachmentName);
+    await expect(page.getByTestId(`badge-employee-${employeeId}`)).toBeVisible();
   });
 });

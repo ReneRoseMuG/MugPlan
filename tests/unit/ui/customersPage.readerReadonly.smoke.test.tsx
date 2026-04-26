@@ -60,7 +60,7 @@ vi.mock("@/components/ui/list-paging-footer", () => ({
 
 import { CustomersPage } from "../../../client/src/components/CustomersPage";
 
-describe("Reader customers page readonly", () => {
+describe("Reader customers page readonly smoke", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     vi.stubGlobal("window", {

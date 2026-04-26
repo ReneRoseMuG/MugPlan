@@ -11,7 +11,6 @@ import * as employeesService from "../../server/services/employeesService";
 import * as projectsService from "../../server/services/projectsService";
 import * as teamEmployeesService from "../../server/services/teamEmployeesService";
 import * as teamsService from "../../server/services/teamsService";
-import * as tourEmployeesService from "../../server/services/tourEmployeesService";
 import * as toursService from "../../server/services/toursService";
 
 let fixtureCounter = 1;
@@ -88,11 +87,6 @@ export async function assignEmployeesToTeamFixture(teamId: number, employees: Em
   const versionById = new Map(currentRows.map((row) => [row.id, row.version] as const));
   const items = employees.map((employee) => ({ employeeId: employee.id, version: versionById.get(employee.id) ?? employee.version }));
   return teamEmployeesService.assignEmployeesToTeam(teamId, items);
-}
-
-export async function assignEmployeesToTourFixture(tourId: number, employees: Employee[]) {
-  void tourId;
-  return employees;
 }
 
 export async function createAppointmentFixture(input: {

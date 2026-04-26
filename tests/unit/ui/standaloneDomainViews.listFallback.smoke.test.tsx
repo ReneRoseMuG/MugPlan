@@ -8,7 +8,8 @@
  * - Standalone-Aufrufer aktivieren versehentlich den neuen `Home`-gesteuerten Modus.
  *
  * Ziel:
- * Den uncontrolled Fallback der Standalone-Views gegen Regressionen absichern.
+ * Einen kleinen Smoke-Test fuer den uncontrolled Fallback der Standalone-Views absichern,
+ * nicht fachliche Listenwirkung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -75,7 +76,7 @@ vi.mock("@/components/TourManagement", () => ({
   TourManagement: () => <div>tours</div>,
 }));
 
-describe("standalone domain views list fallback", () => {
+describe("standalone domain views list fallback smoke", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
     projectsPageCalls.length = 0;

@@ -28,7 +28,6 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import {
   assertNoDuplicateAppointmentEmployeePairs,
   assignEmployeesToTeamFixture,
-  assignEmployeesToTourFixture,
   createAppointmentFixture,
   createEmployeeFixture,
   createProjectFixture,
@@ -73,8 +72,6 @@ describe("FT01 integration: employee overlap follow-up flows", () => {
     const tourTwo = await createTourFixture("#993355");
     const teamOne = await createTeamFixture("#3355aa");
 
-    await assignEmployeesToTourFixture(tourOne.id, [employeeA, employeeB]);
-    await assignEmployeesToTourFixture(tourTwo.id, [employeeB, employeeC]);
     await assignEmployeesToTeamFixture(teamOne.id, [employeeA, employeeC]);
 
     await createAppointmentFixture({
