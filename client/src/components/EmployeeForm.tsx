@@ -872,7 +872,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                   onClick={onCancel}
                   data-testid="button-cancel-employee"
                 >
-                  SchlieÃŸen
+                  Schließen
                 </Button>
               ) : null}
             </div>
