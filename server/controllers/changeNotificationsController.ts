@@ -3,14 +3,14 @@ import * as changeNotificationsService from "../services/changeNotificationsServ
 
 const SSE_HEARTBEAT_INTERVAL_MS = 20_000;
 
-function parseLastEventId(headerValue: string | string[] | undefined): number {
+function parseLastEventId(headerValue: string | string[] | undefined): number | null {
   const candidate = Array.isArray(headerValue) ? headerValue[0] : headerValue;
   if (!candidate) {
-    return 0;
+    return null;
   }
 
   const parsed = Number(candidate);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : 0;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 export async function streamChangeNotifications(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -28,12 +28,12 @@ export async function streamChangeNotifications(req: Request, res: Response, nex
 
     changeNotificationsService.writeSseHandshake(res);
 
-    const replayEvents = await changeNotificationsService.listReplayChangeNotifications(
-      parseLastEventId(req.headers["last-event-id"]),
-    );
-
-    for (const event of replayEvents) {
-      changeNotificationsService.writeChangeNotification(res, event);
+    const lastEventId = parseLastEventId(req.headers["last-event-id"]);
+    if (lastEventId != null) {
+      const replayEvents = await changeNotificationsService.listReplayChangeNotifications(lastEventId);
+      for (const event of replayEvents) {
+        changeNotificationsService.writeChangeNotification(res, event);
+      }
     }
 
     const unsubscribe = changeNotificationsService.subscribeToChangeNotifications((event) => {

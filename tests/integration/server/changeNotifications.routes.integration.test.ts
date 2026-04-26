@@ -133,6 +133,32 @@ describe("FT-32 integration: change notification stream", () => {
     expect(response.text).toContain(": connected");
   });
 
+  it("does not replay historical events on a fresh connection without Last-Event-ID", async () => {
+    const dispatcher = await createRoleAgent("DISPATCHER");
+
+    const historicalId = await insertJournalEntry({
+      tableName: "customer",
+      recordId: 3003,
+      op: "update",
+      actorUserId: 21,
+      actorName: "History Only",
+      triggerKey: "customer.update",
+      messageText: "historical change",
+      isRaw: false,
+      contexts: [{ contextTable: "customer", contextId: 3003, relationRole: "self" }],
+    });
+
+    const response = await readSseUntil({
+      agent: dispatcher,
+      path: "/api/change-notifications/stream",
+      stopWhen: (text) => text.includes(": connected"),
+    });
+
+    expect(response.text).toContain(": connected");
+    expect(response.text).not.toContain(`id: ${historicalId}`);
+    expect(response.text).not.toContain(`"id":${historicalId}`);
+  });
+
   it("replays only events newer than Last-Event-ID", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
 
