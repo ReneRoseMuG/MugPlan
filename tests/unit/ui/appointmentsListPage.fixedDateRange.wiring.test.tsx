@@ -97,6 +97,13 @@ describe("appointmentsListPage fixedDateRange wiring", () => {
             pageSize: 25,
             total: 0,
             totalPages: 0,
+            focusAppointment: {
+              appointmentId: 42,
+              page: 3,
+              indexOnPage: 1,
+              startDate: "2026-04-29",
+              startTime: null,
+            },
             availableRange: { dateFrom: "2026-04-27", dateTo: "2026-05-03" },
             items: [],
           },

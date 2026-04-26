@@ -1319,6 +1319,13 @@ export const api = {
           pageSize: z.number().int().min(1),
           total: z.number().int().min(0),
           totalPages: z.number().int().min(0),
+          focusAppointment: z.object({
+            appointmentId: z.number().int().min(1),
+            page: z.number().int().min(1),
+            indexOnPage: z.number().int().min(0),
+            startDate: z.string(),
+            startTime: z.string().nullable(),
+          }).nullable(),
           availableRange: z.object({
             dateFrom: z.string().nullable(),
             dateTo: z.string().nullable(),

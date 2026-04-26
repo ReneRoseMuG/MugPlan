@@ -125,3 +125,83 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await expect(page.getByTestId("input-appointment-period-to")).not.toHaveValue("");
   await expect(page.getByTestId("appointment-period-summary")).toContainText(/\S/);
 });
+
+test("all scope opens directly on the page of the next upcoming appointment, while earlier historical rows remain reachable", async ({ page }) => {
+  const scopeToken = "FT04-FOCUS-BROWSER";
+  const customer = await createCustomerFixture("FT04-FOCUS-BROWSER-CUST");
+  const historicProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-FOCUS-HIST",
+    customerId: customer.id,
+    name: `${scopeToken} Historie`,
+    orderNumber: "43101",
+  });
+  const futureProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-FOCUS-FUTURE",
+    customerId: customer.id,
+    name: `${scopeToken} Zukunft`,
+    orderNumber: "43102",
+  });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-02-${String(index + 1).padStart(2, "0")}`,
+      title: `${scopeToken} Historic ${index + 1}`,
+    });
+  }
+  await createAppointmentFixture({
+    projectId: futureProject.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(1),
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await page.locator("#appointments-filter-project-title").fill(scopeToken);
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+
+  const focusedRow = table.locator("tbody tr").filter({ hasText: futureProject.name }).first();
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
+  await expect(table.locator("tbody tr").filter({ hasText: historicProject.name })).toHaveCount(0);
+
+  await page.getByTestId("button-appointments-page-prev").click();
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 2");
+  await expect(table.locator("tbody tr").filter({ hasText: historicProject.name })).toHaveCount(25);
+  await expect(table.locator("tbody tr").filter({ hasText: futureProject.name })).toHaveCount(0);
+});
+
+test("all scope keeps historical-only result sets on their original first page without a false future highlight", async ({ page }) => {
+  const scopeToken = "FT04-HISTORY-ONLY-BROWSER";
+  const customer = await createCustomerFixture("FT04-HISTORY-ONLY-CUST");
+  const historicProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-HISTORY-ONLY-PROJ",
+    customerId: customer.id,
+    name: `${scopeToken} Historie`,
+    orderNumber: "43111",
+  });
+
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-07-01",
+    title: `${scopeToken} Historic 1`,
+  });
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-07-02",
+    title: `${scopeToken} Historic 2`,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await page.locator("#appointments-filter-project-title").fill(scopeToken);
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
+
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  await expect(historicRow).toBeVisible();
+  await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
+});

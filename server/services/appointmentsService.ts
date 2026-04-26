@@ -1643,7 +1643,7 @@ export async function listAppointmentsList(params: {
   const normalizedCustomerLastName = params.customerLastName?.trim();
   const normalizedCustomerNumber = params.customerNumber?.trim();
 
-  const { rows, total, availableRange } = await appointmentsRepository.listAppointmentsForList(
+  const { rows, total, availableRange, focusAppointment } = await appointmentsRepository.listAppointmentsForList(
     {
       employeeId: params.employeeId,
       projectId: params.projectId,
@@ -1661,6 +1661,7 @@ export async function listAppointmentsList(params: {
       singleEmployeeOnly: params.singleEmployeeOnly,
       lockedOnly: params.lockedOnly,
       lockedBeforeDate: berlinToday,
+      focusStartDate: berlinToday,
     },
     {
       page: params.page,
@@ -1747,6 +1748,7 @@ export async function listAppointmentsList(params: {
     pageSize: params.pageSize,
     total,
     totalPages,
+    focusAppointment,
     availableRange,
     items,
   };

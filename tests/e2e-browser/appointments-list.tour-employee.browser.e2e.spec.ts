@@ -31,6 +31,7 @@ import {
   createProjectFixture,
   createProjectFixtureWithOverrides,
   createProjectOrderItemFixture,
+  createRawAppointmentFixture,
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
@@ -224,4 +225,125 @@ test("appointments table preview uses the detail week card and stays inside the 
   expect((previewBox?.y ?? 0)).toBeGreaterThanOrEqual(0);
   expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0)).toBeLessThanOrEqual(900);
   expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeLessThanOrEqual(424);
+});
+
+test("tour form jumps to the page of the next upcoming appointment and highlights it", async ({ page }) => {
+  const tour = await createTourFixture("#1769aa");
+  const historicProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-HIST", name: "Tour Focus Historic" });
+  const futureProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-FUT", name: "Tour Focus Future" });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-03-${String(index + 1).padStart(2, "0")}`,
+      title: `Tour Focus Historic ${index + 1}`,
+      tourId: tour.id,
+    });
+  }
+  await createAppointmentFixture({
+    projectId: futureProject.id,
+    startDate: getRelativeBerlinDate(1),
+    tourId: tour.id,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  const focusedRow = table.locator("tbody tr").filter({ hasText: futureProject.name }).first();
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
+});
+
+test("employee form jumps to the page of the next upcoming appointment and highlights it", async ({ page }) => {
+  const employee = await createEmployeeFixture("FT28-EMP-FOCUS");
+  const historicProject = await createProjectFixture({ prefix: "FT28-EMP-FOCUS-HIST", name: "Emp Focus Historic" });
+  const futureProject = await createProjectFixture({ prefix: "FT28-EMP-FOCUS-FUT", name: "Emp Focus Future" });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-04-${String(index + 1).padStart(2, "0")}`,
+      title: `Emp Focus Historic ${index + 1}`,
+      employeeIds: [employee.id],
+    });
+  }
+  const focusAppointment = await createAppointmentFixture({
+    projectId: futureProject.id,
+    startDate: getRelativeBerlinDate(1),
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-mitarbeiter").click();
+  await page.getByTestId(`employee-card-${employee.id}`).dblclick();
+  await page.getByTestId("tab-employee-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  const focusedRow = table.locator("tbody tr").filter({ hasText: futureProject.name }).first();
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
+  await expect(table.getByTestId(`button-remove-employee-from-appointment-${focusAppointment.id}`)).toBeVisible();
+});
+
+test("tour form leaves historical-only rows on page one without a false focus highlight", async ({ page }) => {
+  const tour = await createTourFixture("#225577");
+  const historicProject = await createProjectFixture({ prefix: "FT28-TOUR-HISTORY", name: "Tour History Only" });
+
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-08-01",
+    title: "Tour History Only 1",
+    tourId: tour.id,
+  });
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-08-02",
+    title: "Tour History Only 2",
+    tourId: tour.id,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
+  await expect(historicRow).toBeVisible();
+  await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
+});
+
+test("employee form leaves historical-only rows on page one without a false focus highlight", async ({ page }) => {
+  const employee = await createEmployeeFixture("FT28-EMP-HISTORY");
+  const historicProject = await createProjectFixture({ prefix: "FT28-EMP-HISTORY", name: "Emp History Only" });
+
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-09-01",
+    title: "Emp History Only 1",
+    employeeIds: [employee.id],
+  });
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-09-02",
+    title: "Emp History Only 2",
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-mitarbeiter").click();
+  await page.getByTestId(`employee-card-${employee.id}`).dblclick();
+  await page.getByTestId("tab-employee-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
+  await expect(historicRow).toBeVisible();
+  await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
 });
