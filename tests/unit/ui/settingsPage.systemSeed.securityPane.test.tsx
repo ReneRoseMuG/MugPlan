@@ -53,6 +53,12 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/checkbox", () => ({
+  Checkbox: (props: Record<string, unknown>) => (
+    <input type="checkbox" data-testid={String(props["data-testid"] ?? "")} checked={Boolean(props.checked)} readOnly />
+  ),
+}));
+
 vi.mock("@/components/ui/input", () => ({
   Input: (props: Record<string, unknown>) => <input data-testid={String(props["data-testid"] ?? "")} />,
 }));
@@ -94,22 +100,28 @@ describe("SettingsPage system seed section", () => {
   });
 
   it("renders the system seed section in the security pane", () => {
-    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false });
+    useMutationMock
+      .mockReturnValueOnce({ mutate: vi.fn(), isPending: false })
+      .mockReturnValueOnce({ mutate: vi.fn(), isPending: false });
 
     const html = renderToStaticMarkup(<SettingsPage />);
 
     expect(html).toContain("settings-pane-sicherheit");
     expect(html).toContain("settings-system-seed-section");
-    expect(html).toContain("button-run-system-seed");
-    expect(html).toContain("System-Seed ausführen");
+    expect(html).toContain("button-preview-system-seed");
+    expect(html).toContain("System-Seed prüfen");
+    expect(html).toContain("button-apply-system-seed");
+    expect(html).toContain("Ausgewählte Einträge anlegen");
   });
 
-  it("shows the pending label while the system seed mutation runs", () => {
-    useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: true });
+  it("shows the pending label while the system seed preview runs", () => {
+    useMutationMock
+      .mockReturnValueOnce({ mutate: vi.fn(), isPending: true })
+      .mockReturnValueOnce({ mutate: vi.fn(), isPending: false });
 
     const html = renderToStaticMarkup(<SettingsPage />);
 
-    expect(html).toContain("System-Seed läuft...");
-    expect(html).toMatch(/button-run-system-seed[^>]*disabled/);
+    expect(html).toContain("System-Seed wird geprüft...");
+    expect(html).toMatch(/button-preview-system-seed[^>]*disabled/);
   });
 });

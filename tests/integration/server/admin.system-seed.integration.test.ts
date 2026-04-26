@@ -2,8 +2,9 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - POST /api/admin/system-seed ist ADMIN-only.
- * - Der Endpoint seeded System-Tags inklusive "Planung blockiert", Soll-Touren und Notizvorlagen mit stabilem Vertrag.
+ * - GET/POST /api/admin/system-seed sind ADMIN-only.
+ * - Der Preview-Endpoint meldet fehlende Soll-Eintraege strukturiert vor der Ausfuehrung.
+ * - Der Apply-Endpoint seeded ausgewaehlte System-Tags, Soll-Touren und Notizvorlagen mit stabilem Vertrag.
  * - Ein zweiter Lauf bleibt idempotent und liefert unveraenderte Eintraege statt Duplikaten.
  * - Bestehende Notizvorlagen-Bodies werden beim Endpoint-Seed nicht ueberschrieben.
  *
@@ -50,24 +51,68 @@ async function createReaderAgent() {
 }
 
 describe("integration: admin system seed", () => {
-  it("returns 403 for non-admin", async () => {
+  it("returns 403 for non-admin on preview and apply", async () => {
     const reader = await createReaderAgent();
 
     await reader
+      .get("/api/admin/system-seed")
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.code).toBe("FORBIDDEN");
+      });
+
+    await reader
       .post("/api/admin/system-seed")
-      .send({})
+      .send({ selectedKeys: [] })
       .expect(403)
       .expect(({ body }) => {
         expect(body.code).toBe("FORBIDDEN");
       });
   });
 
-  it("seeds tags, tours and note templates on first run", async () => {
+  it("reports missing system entries before apply and seeds only selected items", async () => {
     const admin = await loginAdminAgent(app);
+
+    const preview = await admin
+      .get("/api/admin/system-seed")
+      .expect(200);
+
+    expect(preview.body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: "tag:storniert",
+        kind: "tag",
+        label: "Storniert",
+        status: "missing",
+        canApply: true,
+      }),
+      expect.objectContaining({
+        key: "tour:parkplatz",
+        kind: "tour",
+        label: "Parkplatz",
+        status: "missing",
+        canApply: true,
+      }),
+      expect.objectContaining({
+        key: "noteTemplate:reklamation",
+        kind: "noteTemplate",
+        label: "Reklamation",
+        status: "missing",
+        canApply: true,
+      }),
+    ]));
 
     const response = await admin
       .post("/api/admin/system-seed")
-      .send({})
+      .send({
+        selectedKeys: [
+          "tag:storniert",
+          "tag:reklamation",
+          "tag:geparkt",
+          "tag:planung blockiert",
+          "tour:parkplatz",
+          "noteTemplate:reklamation",
+        ],
+      })
       .expect(200);
 
     expect(response.body.logLines).toEqual(expect.arrayContaining([
@@ -88,12 +133,12 @@ describe("integration: admin system seed", () => {
     expect(planningBlockedTag).toMatchObject({ color: "#3B2025", isDefault: true });
     expect(tours).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "Parkplatz", color: "#D4537E" }),
-      expect.objectContaining({ name: "Tour 1", color: "#006B6F" }),
     ]));
+    expect(tours.find((tour) => tour.name === "Tour 1")).toBeUndefined();
     expect(templates).toEqual(expect.arrayContaining([
       expect.objectContaining({ title: "Reklamation", cardColor: "#FF011B", print: true }),
-      expect.objectContaining({ title: "Info zum Termin", cardColor: "#888780", print: true }),
     ]));
+    expect(templates.find((template) => template.title === "Info zum Termin")).toBeUndefined();
   });
 
   it("is idempotent on repeated runs and keeps existing template bodies", async () => {
@@ -109,8 +154,13 @@ describe("integration: admin system seed", () => {
       version: 1,
     });
 
-    await admin.post("/api/admin/system-seed").send({}).expect(200);
-    const secondRun = await admin.post("/api/admin/system-seed").send({}).expect(200);
+    const preview = await admin.get("/api/admin/system-seed").expect(200);
+    const selectedKeys = preview.body.items
+      .filter((item: { checkedByDefault: boolean }) => item.checkedByDefault)
+      .map((item: { key: string }) => item.key);
+
+    await admin.post("/api/admin/system-seed").send({ selectedKeys }).expect(200);
+    const secondRun = await admin.post("/api/admin/system-seed").send({ selectedKeys }).expect(200);
 
     expect(secondRun.body.logLines).toEqual(expect.arrayContaining([
       "Tag unverändert: Reklamation",
@@ -130,5 +180,35 @@ describe("integration: admin system seed", () => {
       sortOrder: 10,
       isActive: false,
     });
+  });
+
+  it("does not create preview candidates that are intentionally left unchecked", async () => {
+    const admin = await loginAdminAgent(app);
+
+    const preview = await admin.get("/api/admin/system-seed").expect(200);
+
+    expect(preview.body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: "noteTemplate:reklamation",
+        status: "missing",
+        canApply: true,
+      }),
+      expect.objectContaining({
+        key: "noteTemplate:info zum termin",
+        status: "missing",
+        canApply: true,
+      }),
+    ]));
+
+    await admin.post("/api/admin/system-seed").send({
+      selectedKeys: ["noteTemplate:reklamation"],
+    }).expect(200);
+
+    const templates = await noteTemplatesRepository.getNoteTemplates(false);
+    expect(templates.find((template) => template.title === "Reklamation")).toMatchObject({
+      cardColor: "#FF011B",
+      print: true,
+    });
+    expect(templates.find((template) => template.title === "Info zum Termin")).toBeUndefined();
   });
 });

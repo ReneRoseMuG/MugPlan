@@ -51,7 +51,7 @@ vi.mock("../../../server/repositories/noteTemplatesRepository", () => ({
   updateNoteTemplateWithVersion: (...args: unknown[]) => updateNoteTemplateWithVersionMock(...args),
 }));
 
-import { applySystemSeed } from "../../../server/services/systemSeedService";
+import { applySystemSeed, getSystemSeedPreview } from "../../../server/services/systemSeedService";
 
 describe("systemSeedService", () => {
   beforeEach(() => {
@@ -117,6 +117,34 @@ describe("systemSeedService", () => {
     expect(result.logLines).toContain("Tag angelegt: Planung blockiert");
   });
 
+  it("meldet fehlende Soll-Einträge in der Preview als anlegbar", async () => {
+    const preview = await getSystemSeedPreview();
+
+    expect(preview.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: "tag:storniert",
+        kind: "tag",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "tour:parkplatz",
+        kind: "tour",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "noteTemplate:reklamation",
+        kind: "noteTemplate",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+    ]));
+  });
+
   it("behandelt vorhandene Tags idempotent", async () => {
     getTagByNormalizedNameMock.mockImplementation(async (name: string) => {
       if (name === "Reklamation") {
@@ -151,8 +179,33 @@ describe("systemSeedService", () => {
     expect(result.logLines).toContain("Tour angelegt: Parkplatz");
   });
 
+  it("führt nur explizit ausgewählte Seed-Schritte aus", async () => {
+    const result = await applySystemSeed(["tour:parkplatz"]);
+
+    expect(createTourMock).toHaveBeenCalledWith("Parkplatz", "#D4537E");
+    expect(ensureTagDefinitionMock).not.toHaveBeenCalled();
+    expect(createNoteTemplateMock).not.toHaveBeenCalled();
+    expect(result.logLines).toEqual(["Tour angelegt: Parkplatz"]);
+  });
+
   it("aktualisiert bestehende Tour-Farben auf den Sollzustand", async () => {
     getToursMock
+      .mockResolvedValueOnce([
+        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
+        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
+        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
+        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
+        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
+        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
+      ])
+      .mockResolvedValueOnce([
+        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
+        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
+        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
+        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
+        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
+        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
+      ])
       .mockResolvedValueOnce([
         { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
         { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },

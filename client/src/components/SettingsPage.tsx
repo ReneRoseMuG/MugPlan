@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
@@ -91,6 +92,16 @@ type DumpImportApplyRow = {
     totalBytesMatches: boolean;
     sha256Matches: boolean;
   };
+};
+
+type SystemSeedPreviewItem = {
+  key: string;
+  kind: "tag" | "tour" | "noteTemplate";
+  label: string;
+  status: "missing" | "unchanged" | "update" | "migrate";
+  message: string;
+  canApply: boolean;
+  checkedByDefault: boolean;
 };
 
 function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; pdfPath?: string; zipPath?: string } {
@@ -192,15 +203,42 @@ export function SettingsPage() {
     },
   });
 
-  const systemSeedMutation = useMutation({
+  const systemSeedPreviewMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(api.admin.systemSeed.path, {
+      const response = await fetch(api.admin.systemSeedPreview.path, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "System-Seed-Prüfung konnte nicht ausgeführt werden");
+      }
+      return response.json() as Promise<{ items: SystemSeedPreviewItem[] }>;
+    },
+    onMutate: () => {
+      setSystemSeedError(null);
+      setSystemSeedLogLines([]);
+    },
+    onSuccess: (payload) => {
+      setSystemSeedPreviewItems(payload.items);
+      setSelectedSystemSeedKeys(payload.items.filter((item) => item.checkedByDefault).map((item) => item.key));
+    },
+    onError: (error) => {
+      setSystemSeedPreviewItems([]);
+      setSelectedSystemSeedKeys([]);
+      setSystemSeedError(error instanceof Error ? error.message : "System-Seed-Prüfung konnte nicht ausgeführt werden");
+    },
+  });
+
+  const systemSeedApplyMutation = useMutation({
+    mutationFn: async (selectedKeys: string[]) => {
+      const response = await fetch(api.admin.systemSeedApply.path, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ selectedKeys }),
       });
       if (!response.ok) {
         const text = await response.text();
@@ -346,6 +384,8 @@ export function SettingsPage() {
   const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
   const [authTwoFactorEnabledSaved, setAuthTwoFactorEnabledSaved] = useState(false);
   const [systemSeedError, setSystemSeedError] = useState<string | null>(null);
+  const [systemSeedPreviewItems, setSystemSeedPreviewItems] = useState<SystemSeedPreviewItem[]>([]);
+  const [selectedSystemSeedKeys, setSelectedSystemSeedKeys] = useState<string[]>([]);
   const [systemSeedLogLines, setSystemSeedLogLines] = useState<string[]>([]);
   const [isRunningBackupNow, setIsRunningBackupNow] = useState(false);
   const [backupRunInfo, setBackupRunInfo] = useState<string | null>(null);
@@ -1167,19 +1207,86 @@ export function SettingsPage() {
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="settings-system-seed-section">
                     <p className="font-semibold text-slate-900 text-sm">System-Stammdaten</p>
                     <p className="mb-3 text-xs text-slate-500">
-                      Führt den System-Seed für Tags, Touren und Notizvorlagen auf den definierten Sollzustand aus.
+                      Prüft definierte System-Tags, Soll-Touren und Notizvorlagen, zeigt Abweichungen mit Checkboxen und führt nur die bestätigten Schritte aus.
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
                         size="sm"
-                        onClick={() => systemSeedMutation.mutate()}
-                        disabled={systemSeedMutation.isPending || isSaving}
-                        data-testid="button-run-system-seed"
+                        onClick={() => systemSeedPreviewMutation.mutate()}
+                        disabled={systemSeedPreviewMutation.isPending || systemSeedApplyMutation.isPending || isSaving}
+                        data-testid="button-preview-system-seed"
                       >
-                        {systemSeedMutation.isPending ? "System-Seed läuft..." : "System-Seed ausführen"}
+                        {systemSeedPreviewMutation.isPending ? "System-Seed wird geprüft..." : "System-Seed prüfen"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => systemSeedApplyMutation.mutate(selectedSystemSeedKeys)}
+                        disabled={selectedSystemSeedKeys.length === 0 || systemSeedPreviewMutation.isPending || systemSeedApplyMutation.isPending || isSaving}
+                        data-testid="button-apply-system-seed"
+                      >
+                        {systemSeedApplyMutation.isPending ? "Auswahl wird angelegt..." : "Ausgewählte Einträge anlegen"}
                       </Button>
                     </div>
                     {systemSeedError && <p className="mt-2 text-xs text-destructive">{systemSeedError}</p>}
+                    {systemSeedPreviewItems.length > 0 ? (
+                      <div className="mt-3 space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="system-seed-preview-items">
+                        <p className="text-xs text-slate-600">
+                          {selectedSystemSeedKeys.length} von {systemSeedPreviewItems.filter((item) => item.canApply).length} anlegbaren oder aktualisierbaren Einträgen ausgewählt.
+                        </p>
+                        <ul className="space-y-2">
+                          {systemSeedPreviewItems.map((item) => {
+                            const checked = selectedSystemSeedKeys.includes(item.key);
+                            const statusLabel = item.status === "missing"
+                              ? "Fehlt"
+                              : item.status === "update"
+                                ? "Abweichung"
+                                : item.status === "migrate"
+                                  ? "Migration"
+                                  : "Vorhanden";
+
+                            return (
+                              <li
+                                key={item.key}
+                                className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2"
+                                data-testid={`system-seed-preview-item-${item.key}`}
+                              >
+                                <div className="flex items-start gap-3">
+                                  <Checkbox
+                                    checked={checked}
+                                    disabled={!item.canApply || systemSeedApplyMutation.isPending}
+                                    onCheckedChange={(nextChecked) => {
+                                      setSelectedSystemSeedKeys((current) => {
+                                        const next = new Set(current);
+                                        if (nextChecked) {
+                                          next.add(item.key);
+                                        } else {
+                                          next.delete(item.key);
+                                        }
+                                        return Array.from(next);
+                                      });
+                                    }}
+                                    data-testid={`checkbox-system-seed-${item.key}`}
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="text-sm font-medium text-slate-900">{item.label}</span>
+                                      <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                                        {item.kind === "noteTemplate" ? "Notizvorlage" : item.kind === "tour" ? "Tour" : "Tag"}
+                                      </span>
+                                      <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                                        {statusLabel}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1 text-xs text-slate-600">{item.message}</p>
+                                  </div>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ) : null}
                     {systemSeedLogLines.length > 0 ? (
                       <ul className="mt-3 space-y-1 text-xs text-slate-700" data-testid="system-seed-log-lines">
                         {systemSeedLogLines.map((line) => (

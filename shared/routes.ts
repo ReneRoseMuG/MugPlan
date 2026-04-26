@@ -3901,10 +3901,30 @@ export const api = {
         413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
       },
     },
-    systemSeed: {
+    systemSeedPreview: {
+      method: "GET" as const,
+      path: "/api/admin/system-seed",
+      responses: {
+        200: z.object({
+          items: z.array(z.object({
+            key: z.string().min(1),
+            kind: z.enum(["tag", "tour", "noteTemplate"]),
+            label: z.string().min(1),
+            status: z.enum(["missing", "unchanged", "update", "migrate"]),
+            message: z.string().min(1),
+            canApply: z.boolean(),
+            checkedByDefault: z.boolean(),
+          })),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    systemSeedApply: {
       method: "POST" as const,
       path: "/api/admin/system-seed",
-      input: z.object({}).strict(),
+      input: z.object({
+        selectedKeys: z.array(z.string().min(1)),
+      }).strict(),
       responses: {
         200: z.object({
           logLines: z.array(z.string()),
