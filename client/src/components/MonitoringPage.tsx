@@ -15,7 +15,6 @@ import {
   type MonitoringFilters,
 } from "@/lib/monitoring-filters";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
-import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
 import {
   AppointmentWeeklyPanelPreview,
   appointmentWeeklyPanelPreviewOptions,
@@ -261,7 +260,6 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
         rowPreviewRenderer={(row) => createMonitoringAppointmentRowPreview(row.appointmentId, row.startDate)}
         rowStyle={(row) => ({
-          backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
           boxShadow: row.appointmentId === focusedAppointmentId ? "inset 0 0 0 2px rgba(15, 23, 42, 0.45)" : undefined,
         })}
         testId="table-monitoring"

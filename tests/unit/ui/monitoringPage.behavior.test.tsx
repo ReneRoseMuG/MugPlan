@@ -7,14 +7,14 @@
  * - Admins sehen den sichtbaren Konfigurationsbereich mit Mindestmitarbeiter-Eingabe und Save-Aktion.
  * - Das Monitoring-Filterpanel bleibt unterhalb der Tabelle im unteren Seitenbereich verdrahtet.
  * - Die Tabellenansicht leitet Row-Doppelklicks in den Termin-Open-Flow weiter.
- * - Monitoring-Zeilen erhalten triggerabhaengige Highlight-Farben und eine zusaetzliche Fokus-Markierung fuer den naechsten Termin.
+ * - Monitoring-Zeilen behalten nur die Fokus-Markierung fuer den naechsten Termin und keine triggerabhaengige Flaechenfaerbung.
  * - Die Tabelle rendert nur die neue Trigger-Spaltenstruktur ohne Problem-Spalte.
  * - Terminzeilen-Previews nutzen die vollstaendige Wochenterminkarten-Hoehe ohne TableView-Hoehenbegrenzung.
  *
  * Fehlerfaelle:
  * - Die Konfigurationsoberflaeche verschwindet fuer Admins.
  * - Monitoring-Zeilen verlieren ihre Oeffnen-Aktion.
- * - Triggerfarben, Fokus-Markierung oder Spaltenkonfiguration gehen verloren.
+ * - Fokus-Markierung oder Spaltenkonfiguration gehen verloren.
  *
  * Ziel:
  * Das sichtbare Monitoring-Seitenverhalten ueber gerenderte Props und Markup absichern.
@@ -218,7 +218,7 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     });
   });
 
-  it("keeps trigger color on all rows and adds the focus outline only to the nearest filtered appointment", () => {
+  it("keeps only the focus outline on the nearest filtered appointment", () => {
     renderToStaticMarkup(
       <MonitoringPage isAdmin={false} initialItems={[]} onOpenAppointment={() => undefined} />,
     );
@@ -227,11 +227,9 @@ describe("FT31 UI: MonitoringPage behavior", () => {
     const rowStyle = props.rowStyle as ((row: { appointmentId: number; triggerCode: string }) => Record<string, string | undefined>);
 
     expect(rowStyle({ appointmentId: 77, triggerCode: "TR-01" })).toEqual({
-      backgroundColor: "rgba(220, 38, 38, 0.14)",
       boxShadow: "inset 0 0 0 2px rgba(15, 23, 42, 0.45)",
     });
     expect(rowStyle({ appointmentId: 999, triggerCode: "TR-01" })).toEqual({
-      backgroundColor: "rgba(220, 38, 38, 0.14)",
       boxShadow: undefined,
     });
   });
