@@ -103,6 +103,10 @@ function createMonitoringAppointmentRowPreview(appointmentId: number, startDate:
   };
 }
 
+function resolveMonitoringRowSortValue(row: Pick<MonitoringListResponse[number], "startDate" | "startTime" | "appointmentId">): string {
+  return `${row.startDate}|${row.startTime ?? ""}|${String(row.appointmentId).padStart(12, "0")}`;
+}
+
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
   const [draftConfig, setDraftConfig] = useState<MonitoringConfigDraft | null>(null);
   const [filters, setFilters] = useState<MonitoringFilters>(defaultMonitoringFilters);
@@ -203,6 +207,15 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     () => applyMonitoringFilters(monitoringQuery.data, filters),
     [filters, monitoringQuery.data],
   );
+  const focusedAppointmentId = useMemo(() => {
+    if (filteredRows.length === 0) return null;
+    return filteredRows.reduce((best, current) => {
+      if (!best) return current;
+      return resolveMonitoringRowSortValue(current).localeCompare(resolveMonitoringRowSortValue(best), "de") < 0
+        ? current
+        : best;
+    }, filteredRows[0] ?? null)?.appointmentId ?? null;
+  }, [filteredRows]);
 
   const filterPanel = (
     <MonitoringFilterPanel
@@ -249,6 +262,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         rowPreviewRenderer={(row) => createMonitoringAppointmentRowPreview(row.appointmentId, row.startDate)}
         rowStyle={(row) => ({
           backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
+          boxShadow: row.appointmentId === focusedAppointmentId ? "inset 0 0 0 2px rgba(15, 23, 42, 0.45)" : undefined,
         })}
         testId="table-monitoring"
         stickyHeader
