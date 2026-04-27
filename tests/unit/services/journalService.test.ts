@@ -48,6 +48,7 @@ vi.mock("../../../server/lib/logger", () => ({
 import {
   JournalError,
   buildCalendarWeekContext,
+  buildTourContext,
   listJournalMessages,
   listNoteContexts,
   recordJournalEntry,
@@ -235,6 +236,14 @@ describe("FT-Journal unit: journalService", () => {
       tableName: "calendar_week",
       recordId: null,
       recordKey: "2026-05-3",
+      relationRole: "self",
+    });
+  });
+
+  it("builds a stable tour self context", () => {
+    expect(buildTourContext(17)).toEqual({
+      tableName: "tour",
+      recordId: 17,
       relationRole: "self",
     });
   });

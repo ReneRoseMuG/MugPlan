@@ -359,6 +359,14 @@ export async function listNoteOwners(noteId: number): Promise<JournalContextRow[
       contextKey: `${row.yearNumber}-${String(row.weekNumber).padStart(2, "0")}-${row.tourId ?? 0}`,
       relationRole: "owner",
     })),
+    ...calendarWeekOwnerRows
+      .filter((row) => row.tourId != null)
+      .map((row) => ({
+        contextTable: "tour",
+        contextId: row.tourId,
+        contextKey: null,
+        relationRole: "tour",
+      })),
   ];
 }
 

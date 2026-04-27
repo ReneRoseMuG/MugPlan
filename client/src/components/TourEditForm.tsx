@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
-import { CalendarPlus2, Lock, LockOpen, MoreVertical, Route, Trash2, X } from "lucide-react";
+import { CalendarPlus2, LayoutList, Lock, LockOpen, MoreVertical, Route, ScrollText, Trash2, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
@@ -9,6 +9,7 @@ import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -63,6 +64,13 @@ type TourWeekEmployeesWeek = {
   employees: TourWeekEmployeeMember[];
 };
 
+function readStoredUserRole(): string {
+  if (typeof window === "undefined") {
+    return "DISPATCHER";
+  }
+  return window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
+}
+
 interface TourEditFormProps {
   tour: Tour | null;
   allEmployees?: Employee[];
@@ -113,7 +121,10 @@ export function TourEditForm({
 }: TourEditFormProps) {
   const { toast } = useToast();
   const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
+  const [userRole] = useState(readStoredUserRole);
   const isWeekPlanningSupported = !isCreate && !isParkplatzTourName(tour?.name);
+  const canAccessJournal = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
+  const showJournalTab = !isCreate && tour?.id != null && canAccessJournal;
   const nextEditableWeek = useMemo(() => {
     const nextWeek = addWeeks(startOfISOWeek(new Date()), 1);
     const isoYear = getISOWeekYear(nextWeek);
@@ -127,6 +138,7 @@ export function TourEditForm({
   }, []);
   const [selectedName, setSelectedName] = useState<string>(() => tour?.name ?? defaultName);
   const [selectedColor, setSelectedColor] = useState<string>(() => tour?.color ?? defaultColor);
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
@@ -142,11 +154,6 @@ export function TourEditForm({
   useEffect(() => {
     setSelectedColor(tour?.color ?? defaultColor);
   }, [defaultColor, tour?.color, tour?.id]);
-
-  useEffect(() => {
-    setPendingWeekInput(String(nextEditableWeek.isoWeek));
-    setPendingWeekScrollTarget(null);
-  }, [nextEditableWeek.isoWeek, tour?.id]);
 
   useEffect(() => {
     if (activeTab !== "wochenplanung") return;
@@ -169,6 +176,30 @@ export function TourEditForm({
       return response.json() as Promise<TourWeekEmployeesWeek[]>;
     },
   });
+
+  const nextAvailableWeek = useMemo(() => {
+    const existingWeeks = new Set(
+      allWeeks
+        .filter((week) => week.isoYear === nextEditableWeek.isoYear)
+        .map((week) => week.isoWeek),
+    );
+
+    for (let isoWeek = nextEditableWeek.isoWeek; isoWeek <= nextEditableWeek.maxIsoWeek; isoWeek += 1) {
+      if (!existingWeeks.has(isoWeek)) {
+        return {
+          isoYear: nextEditableWeek.isoYear,
+          isoWeek,
+        };
+      }
+    }
+
+    return null;
+  }, [allWeeks, nextEditableWeek.isoWeek, nextEditableWeek.isoYear, nextEditableWeek.maxIsoWeek]);
+
+  useEffect(() => {
+    setPendingWeekInput(String(nextAvailableWeek?.isoWeek ?? nextEditableWeek.isoWeek));
+    setPendingWeekScrollTarget(null);
+  }, [nextAvailableWeek?.isoWeek, nextEditableWeek.isoWeek, tour?.id]);
 
   const { data: availableEmployees = [], isLoading: availableEmployeesLoading } = useQuery<Employee[]>({
     queryKey: [
@@ -217,6 +248,15 @@ export function TourEditForm({
   };
 
   const confirmWeekInputSelection = async () => {
+    if (!nextAvailableWeek) {
+      toast({
+        title: "Keine freie Kalenderwoche verfügbar",
+        description: `Für ${nextEditableWeek.isoYear} ist keine weitere freie KW mehr verfügbar.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const isoWeek = Number(pendingWeekInput);
     if (!Number.isInteger(isoWeek)) {
       toast({
@@ -280,7 +320,12 @@ export function TourEditForm({
   const showFunctionsPanel = !readOnly && (showWeekInsertAction || showDeleteAction);
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-1">
+    <Tabs
+      value={showJournalTab ? activeMainTab : "details"}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      className="h-full"
+    >
+      <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
         header={(
@@ -334,6 +379,21 @@ export function TourEditForm({
         )}
         sidebar={(
           <div className="min-w-0 space-y-6 p-6" data-testid="tour-form-sidebar">
+            {showJournalTab ? (
+              <div className="sub-panel space-y-3">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
+                <TabsList className="w-full" data-testid="tabs-tour-main">
+                  <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-tour-details-main">
+                    <LayoutList className="w-4 h-4" />
+                    Details
+                  </TabsTrigger>
+                  <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-tour-journal">
+                    <ScrollText className="w-4 h-4" />
+                    Journal
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            ) : null}
             {showFunctionsPanel ? (
               <div className="sub-panel space-y-3" data-testid="tour-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
@@ -391,6 +451,7 @@ export function TourEditForm({
         )}
         contentMaxWidth={99999}
       >
+        {activeMainTab === "details" || !showJournalTab ? (
         <Tabs
           value={activeTab}
           onValueChange={setActiveTab}
@@ -582,6 +643,13 @@ export function TourEditForm({
             </TabsContent>
           ) : null}
         </Tabs>
+        ) : (
+          <JournalRecordsView
+            context={{ tableName: "tour", recordId: tour?.id ?? null }}
+            pageSize={25}
+            testIdPrefix="tour-journal"
+          />
+        )}
 
         <Dialog open={!readOnly && weekPickerOpen} onOpenChange={setWeekPickerOpen}>
           <DialogContent className="sm:max-w-md">
@@ -703,6 +771,7 @@ export function TourEditForm({
           </AlertDialogContent>
         </AlertDialog>
       </EntityFormShell>
-    </div>
+      </div>
+    </Tabs>
   );
 }

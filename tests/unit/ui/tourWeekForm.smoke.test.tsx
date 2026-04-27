@@ -24,6 +24,7 @@ const useMutationMock = vi.fn();
 const employeePickerCalls: Array<Record<string, unknown>> = [];
 const appointmentsListCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
+const journalRecordsCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-query")>();
@@ -121,6 +122,13 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
+vi.mock("@/components/JournalRecordsView", () => ({
+  JournalRecordsView: (props: Record<string, unknown>) => {
+    journalRecordsCalls.push(props);
+    return <section data-testid="tour-week-journal-marker">journal</section>;
+  },
+}));
+
 vi.mock("@/lib/queryClient", () => ({
   apiRequest: vi.fn(),
 }));
@@ -155,6 +163,7 @@ describe("tourWeekForm smoke", () => {
     employeePickerCalls.length = 0;
     appointmentsListCalls.length = 0;
     notesSectionCalls.length = 0;
+    journalRecordsCalls.length = 0;
     useMutationMock.mockReset();
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
       if (Array.isArray(queryKey) && queryKey[0] === `/api/tours/${baseWeek.tourId}/week-employees`) {
@@ -200,6 +209,9 @@ describe("tourWeekForm smoke", () => {
     );
 
     expect(markup).toContain("tour-week-form-overlay");
+    expect(markup).toContain("tabs-tour-week-main");
+    expect(markup).toContain("tab-tour-week-details-main");
+    expect(markup).toContain("tab-tour-week-journal");
     expect(markup).toContain("tab-tour-week-stammdaten");
     expect(markup).toContain("tab-tour-week-termine");
     expect(markup).toContain("tour-week-form-functions-panel");
@@ -230,6 +242,7 @@ describe("tourWeekForm smoke", () => {
         dateTo: baseWeek.weekEndDate,
       },
     });
+    expect(journalRecordsCalls).toHaveLength(0);
   });
 
   it("keeps the employee scope read-only while preserving week-fixed employee appointments", () => {
@@ -244,6 +257,8 @@ describe("tourWeekForm smoke", () => {
 
     expect(markup).toContain("Tour Nord");
     expect(markup).toContain("tour-week-notes-marker");
+    expect(markup).not.toContain("tabs-tour-week-main");
+    expect(markup).not.toContain("tab-tour-week-journal");
     expect(markup).not.toContain("tour-week-form-functions-panel");
     expect(markup).not.toContain("button-open-tour-week-employee-picker");
     expect(markup).not.toContain("button-block-tour-week");

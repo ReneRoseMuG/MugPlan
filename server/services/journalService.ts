@@ -385,3 +385,11 @@ export function buildCalendarWeekContext(params: {
     relationRole: "self",
   };
 }
+
+export function buildTourContext(tourId: number): JournalContextInput {
+  return {
+    tableName: "tour",
+    recordId: tourId,
+    relationRole: "self",
+  };
+}

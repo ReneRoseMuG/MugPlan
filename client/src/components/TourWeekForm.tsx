@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Lock, LockOpen, Route, Users, X } from "lucide-react";
+import { LayoutList, Lock, LockOpen, Route, ScrollText, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
+import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { NotesSection } from "@/components/NotesSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
@@ -61,6 +62,13 @@ function normalizeWeekResponseItem(
   };
 }
 
+function readStoredUserRole(): string {
+  if (typeof window === "undefined") {
+    return "DISPATCHER";
+  }
+  return window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER";
+}
+
 export function TourWeekForm({
   week,
   scope,
@@ -77,9 +85,13 @@ export function TourWeekForm({
 }: TourWeekFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [userRole] = useState(readStoredUserRole);
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
   const isTourScope = scope === "tour";
+  const canAccessJournal = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
+  const showJournalTab = isTourScope && canAccessJournal;
 
   const { data: resolvedWeekResponse } = useQuery<TourWeekCardData | null>({
     queryKey: isTourScope
@@ -237,9 +249,15 @@ export function TourWeekForm({
 
   const footerActionDisabled = isMutatingMembers || isMutatingWeeks;
   const showFunctionsPanel = isTourScope && !readOnly;
+  const journalContextKey = `${resolvedWeek.isoYear}-${String(resolvedWeek.isoWeek).padStart(2, "0")}-${resolvedWeek.tourId}`;
 
   return (
     <>
+      <Tabs
+        value={showJournalTab ? activeMainTab : "details"}
+        onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+        className="h-full"
+      >
       <div className="fixed inset-0 z-50 bg-background overflow-y-auto" data-testid="tour-week-form-overlay">
         <EntityFormShell
           header={(
@@ -261,6 +279,21 @@ export function TourWeekForm({
           )}
           sidebar={(
             <div className="min-w-0 space-y-6 p-6" data-testid="tour-week-form-sidebar">
+              {showJournalTab ? (
+                <div className="sub-panel space-y-3">
+                  <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
+                  <TabsList className="w-full" data-testid="tabs-tour-week-main">
+                    <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-tour-week-details-main">
+                      <LayoutList className="w-4 h-4" />
+                      Details
+                    </TabsTrigger>
+                    <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-tour-week-journal">
+                      <ScrollText className="w-4 h-4" />
+                      Journal
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              ) : null}
               {showFunctionsPanel ? (
                 <div className="sub-panel space-y-3" data-testid="tour-week-form-functions-panel">
                   <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
@@ -325,6 +358,7 @@ export function TourWeekForm({
             </div>
           )}
         >
+          {activeMainTab === "details" || !showJournalTab ? (
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
             <TabsList className="mb-6 w-full justify-start">
               <TabsTrigger value="stammdaten" data-testid="tab-tour-week-stammdaten">
@@ -413,8 +447,16 @@ export function TourWeekForm({
               />
             </TabsContent>
           </Tabs>
+          ) : (
+            <JournalRecordsView
+              context={{ tableName: "calendar_week", recordKey: journalContextKey }}
+              pageSize={25}
+              testIdPrefix="tour-week-journal"
+            />
+          )}
         </EntityFormShell>
       </div>
+      </Tabs>
 
       <Dialog open={!readOnly && employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
         <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">

@@ -2,6 +2,7 @@ const entityLabels: Record<string, string> = {
   appointment: "Termin",
   customer: "Kunde",
   project: "Projekt",
+  tour: "Tour",
   employee: "Mitarbeiter",
   appointment_attachment: "Terminanhang",
   customer_attachment: "Kundenanhang",
@@ -95,9 +96,15 @@ export function buildWeekAssignmentMessage(action: "erstellt" | "geändert" | "g
   return `Wochenplanung für ${employeeName} ${scope} ${action}`;
 }
 
-export function buildCalendarWeekMessage(action: "blockiert" | "freigegeben" | "notiz_erstellt" | "notiz_geloescht", isoYear: number, isoWeek: number, tourName: string | null): string {
+export function buildCalendarWeekMessage(
+  action: "erstellt" | "blockiert" | "freigegeben" | "notiz_erstellt" | "notiz_geloescht",
+  isoYear: number,
+  isoWeek: number,
+  tourName: string | null,
+): string {
   const weekLabel = `KW ${String(isoWeek).padStart(2, "0")}/${isoYear}`;
   const scope = tourName ? `${weekLabel} (${tourName})` : weekLabel;
+  if (action === "erstellt") return `Kalenderwoche ${scope} angelegt`;
   if (action === "blockiert") return `Kalenderwoche ${scope} blockiert`;
   if (action === "freigegeben") return `Kalenderwoche ${scope} freigegeben`;
   if (action === "notiz_erstellt") return `Kalenderwochennotiz für ${scope} erstellt`;

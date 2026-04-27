@@ -37,6 +37,25 @@ export async function createTourWeek(req: Request, res: Response, next: NextFunc
     const tourId = Number(req.params.tourId);
     const input = api.tourWeeks.create.input.parse(req.body);
     const result = await tourWeeksService.createTourWeek(tourId, input);
+    const weekContext = journalService.buildCalendarWeekContext({
+      yearNumber: result.isoYear,
+      weekNumber: result.isoWeek,
+      tourId,
+    });
+    await journalService.recordJournalEntry({
+      tableName: "calendar_week",
+      recordKey: weekContext.recordKey ?? null,
+      op: "create",
+      newValue: result,
+      snapshot: result,
+      actor: getRequestActor(req),
+      triggerKey: "calendar_week.create",
+      messageText: buildCalendarWeekMessage("erstellt", result.isoYear, result.isoWeek, result.tourName ?? null),
+      contexts: [
+        weekContext,
+        journalService.buildTourContext(tourId),
+      ],
+    });
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;
@@ -73,7 +92,10 @@ export async function blockTourWeek(req: Request, res: Response, next: NextFunct
       actor: getRequestActor(req),
       triggerKey: "calendar_week.block",
       messageText: buildCalendarWeekMessage("blockiert", isoYear, isoWeek, result.tourName ?? null),
-      contexts: [journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId })],
+      contexts: [
+        journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId }),
+        journalService.buildTourContext(tourId),
+      ],
     });
     res.json(result);
   } catch (err) {
@@ -111,7 +133,10 @@ export async function unblockTourWeek(req: Request, res: Response, next: NextFun
       actor: getRequestActor(req),
       triggerKey: "calendar_week.unblock",
       messageText: buildCalendarWeekMessage("freigegeben", isoYear, isoWeek, result.tourName ?? null),
-      contexts: [journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId })],
+      contexts: [
+        journalService.buildCalendarWeekContext({ yearNumber: isoYear, weekNumber: isoWeek, tourId }),
+        journalService.buildTourContext(tourId),
+      ],
     });
     res.json(result);
   } catch (err) {

@@ -16,6 +16,10 @@ export async function listTours(): Promise<Tour[]> {
   return toursRepository.getTours();
 }
 
+export async function getTour(id: number): Promise<Tour | null> {
+  return toursRepository.getTour(id);
+}
+
 function normalizeTourName(name: string): string {
   return name.trim().toLocaleLowerCase("de");
 }
