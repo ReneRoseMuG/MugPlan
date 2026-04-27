@@ -6,7 +6,7 @@ import * as userSettingsService from "../services/userSettingsService";
 export async function getResolvedSettings(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.userId) {
-      res.status(400).json({ message: "Ungueltiger User-Kontext" });
+      res.status(400).json({ message: "Ungültiger User-Kontext" });
       return;
     }
 
@@ -24,7 +24,7 @@ export async function getResolvedSettings(req: Request, res: Response, next: Nex
 export async function setSetting(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.userId) {
-      res.status(400).json({ message: "Ungueltiger User-Kontext" });
+      res.status(400).json({ message: "Ungültiger User-Kontext" });
       return;
     }
 

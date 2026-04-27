@@ -585,6 +585,92 @@ const calendarBlockedTourWeekSchema = z.object({
   isBlocked: z.boolean(),
 });
 
+const calendarTourPostalPlanDayAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  projectName: z.string().nullable(),
+  customerName: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  displayMode: z.enum(appointmentDisplayModes),
+  isCancelled: z.boolean(),
+});
+
+const calendarTourPostalPlanDaySchema = z.object({
+  date: z.string(),
+  appointments: z.array(calendarTourPostalPlanDayAppointmentSchema),
+});
+
+const calendarTourPostalPlanAppointmentSchema = z.object({
+  id: z.number().int().positive(),
+  version: z.number().int().min(1),
+  projectId: z.number().int().positive().nullable(),
+  projectName: z.string(),
+  projectVersion: z.number().int().min(1).nullable(),
+  projectOrderNumber: z.string().nullable(),
+  projectArticleItems: z.array(projectArticleItemSchema),
+  projectDescription: z.string().nullable(),
+  startDate: z.string(),
+  endDate: z.string().nullable(),
+  startTime: z.string().nullable(),
+  tourId: z.number().int().positive().nullable(),
+  tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
+  customer: z.object({
+    id: z.number().int().positive(),
+    customerNumber: z.string(),
+    fullName: z.string().nullable(),
+    phone: z.string().nullable().optional(),
+    email: z.string().nullable().optional(),
+    company: z.string().nullable().optional(),
+    addressLine1: z.string().nullable().optional(),
+    addressLine2: z.string().nullable().optional(),
+    postalCode: z.string().nullable(),
+    city: z.string().nullable(),
+    country: z.string().nullable().optional(),
+  }),
+  customerNotesCount: z.number().int().min(0),
+  projectNotesCount: z.number().int().min(0),
+  appointmentNotesCount: z.number().int().min(0),
+  customerAttachmentsCount: z.number().int().min(0),
+  projectAttachmentsCount: z.number().int().min(0),
+  appointmentAttachmentsCount: z.number().int().min(0),
+  totalAttachmentsCount: z.number().int().min(0),
+  appointmentTags: z.array(tagSchema),
+  customerTags: z.array(tagSchema),
+  projectTags: z.array(tagSchema),
+  displayMode: z.enum(appointmentDisplayModes),
+  employees: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      fullName: z.string(),
+    }),
+  ),
+  isLocked: z.boolean(),
+  isCancelled: z.boolean(),
+});
+
+const calendarTourPostalPlanSuggestionSchema = z.object({
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  tourColor: z.string().nullable(),
+  score: z.number().int().min(1).max(5),
+  scoreLabel: z.enum(["exakt", "sehr nah", "nah", "grob passend", "schwach passend"]),
+  matchedPostalCodes: z.array(z.string()),
+  matchedAppointmentCount: z.number().int().min(0),
+  days: z.array(calendarTourPostalPlanDaySchema).length(7),
+  appointments: z.array(calendarTourPostalPlanAppointmentSchema),
+});
+
+const calendarTourPostalPlanWeekSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  suggestions: z.array(calendarTourPostalPlanSuggestionSchema),
+});
+
 const appointmentMutationEventSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("tour_changed"),
@@ -714,6 +800,7 @@ const reportAuftragslisteProjectRowSchema = z.object({
   actualDate: z.string(),
   durationDays: z.number().int().min(1),
   tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
   employees: z.array(
     z.object({
       id: z.number().int().positive(),
@@ -736,6 +823,7 @@ const reportAuftragslisteProjectRowSchema = z.object({
 const reportAuftragslisteResponseSchema = z.object({
   productCategories: z.array(reportVorlauflisteCategorySchema),
   componentCategories: z.array(reportVorlauflisteCategorySchema),
+  availableSaunaModels: z.array(z.string().min(1)),
   items: z.array(reportAuftragslisteProjectRowSchema),
 });
 
@@ -748,6 +836,13 @@ const authenticatedResponseSchema = z.object({
   userId: z.number().int().positive(),
   username: z.string(),
   roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
+});
+
+const _changeNotificationEventSchema = z.object({
+  id: z.number().int().positive(),
+  actorUserId: z.number().int().positive().nullable(),
+  triggerKey: z.string().nullable(),
+  createdAt: z.string().min(1),
 });
 
 const monitoringItemSchema = z.object({
@@ -1224,6 +1319,13 @@ export const api = {
           pageSize: z.number().int().min(1),
           total: z.number().int().min(0),
           totalPages: z.number().int().min(0),
+          focusAppointment: z.object({
+            appointmentId: z.number().int().min(1),
+            page: z.number().int().min(1),
+            indexOnPage: z.number().int().min(0),
+            startDate: z.string(),
+            startTime: z.string().nullable(),
+          }).nullable(),
           availableRange: z.object({
             dateFrom: z.string().nullable(),
             dateTo: z.string().nullable(),
@@ -1647,6 +1749,21 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(calendarBlockedTourWeekSchema),
+      },
+    },
+    tourPostalPlan: {
+      method: "GET" as const,
+      path: "/api/calendar/tour-postal-plan",
+      input: z.object({
+        postalCode: z.string().min(1),
+        fromDate: z.string(),
+        toDate: z.string(),
+        hasFreeAppointments: z
+          .union([z.literal("true"), z.literal("false")])
+          .optional(),
+      }).strict(),
+      responses: {
+        200: z.array(calendarTourPostalPlanWeekSchema),
       },
     },
   },
@@ -3784,10 +3901,30 @@ export const api = {
         413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
       },
     },
-    systemSeed: {
+    systemSeedPreview: {
+      method: "GET" as const,
+      path: "/api/admin/system-seed",
+      responses: {
+        200: z.object({
+          items: z.array(z.object({
+            key: z.string().min(1),
+            kind: z.enum(["tag", "tour", "noteTemplate"]),
+            label: z.string().min(1),
+            status: z.enum(["missing", "unchanged", "update", "migrate"]),
+            message: z.string().min(1),
+            canApply: z.boolean(),
+            checkedByDefault: z.boolean(),
+          })),
+        }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    systemSeedApply: {
       method: "POST" as const,
       path: "/api/admin/system-seed",
-      input: z.object({}).strict(),
+      input: z.object({
+        selectedKeys: z.array(z.string().min(1)),
+      }).strict(),
       responses: {
         200: z.object({
           logLines: z.array(z.string()),
@@ -4053,6 +4190,14 @@ export const api = {
             (value) => value == null ? [] : Array.isArray(value) ? value : [value],
             z.array(z.coerce.number().int().positive()).default([]),
           ),
+          tagIds: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.coerce.number().int().positive()).default([]),
+          ),
+          saunaModels: z.preprocess(
+            (value) => value == null ? [] : Array.isArray(value) ? value : [value],
+            z.array(z.string().trim().min(1)).default([]),
+          ),
           useShortCodes: z.preprocess(
             (value) => value === "true" || value === true,
             z.boolean().default(false),
@@ -4166,6 +4311,16 @@ export const api = {
       },
     },
   },
+  changeNotifications: {
+    stream: {
+      method: "GET" as const,
+      path: "/api/change-notifications/stream",
+      responses: {
+        200: z.any(),
+        401: z.object({ code: z.literal("UNAUTHORIZED") }),
+      },
+    },
+  },
   dataVersion: {
     get: {
       path: "/api/data-version",
@@ -4218,6 +4373,7 @@ export type EmployeeAbsenceUpdateInput = z.infer<typeof api.employees.absences.u
 export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.create.responses[201]>;
 export type AuthLoginResponse = z.infer<typeof api.auth.login.responses[200]>;
 export type AuthenticatedResponse = z.infer<typeof api.auth.twoFactorVerify.responses[200]>;
+export type ChangeNotificationEvent = z.infer<typeof _changeNotificationEventSchema>;
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;

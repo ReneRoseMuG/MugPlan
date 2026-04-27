@@ -52,7 +52,7 @@ export const MONTH_SLOT_PADDING_BOTTOM_PX = 4;
 
 /**
  * Baut die geordnete Slot-Liste aus dem Tour-Stammdatensatz.
- * Reihenfolge im aktuellen Repo-Stand: benannte Touren alphabetisch,
+ * Reihenfolge im derzeitigen Repo-Stand: benannte Touren alphabetisch,
  * dann "Ohne Tour" (tourId = null).
  */
 export function buildMonthTourSlots(tours: Tour[]): MonthTourSlot[] {
@@ -133,7 +133,7 @@ export function buildMonthWeekRowLayout(
 
 /**
  * Gibt die sortierten Balken für einen Tag und einen Tour-Slot zurück.
- * Mehrtagestermine landen in subRowIndex 0 … n-1 (Reihenfolge: Mehrtagestermine zuerst,
+ * Mehrtagestermine landen in subRowIndex 0 … n-1 (Reihenfolge: Mehrtagestermine als Erstes,
  * dann Einzeltermine – analog zur WeekView).
  */
 export function buildMonthSlotBarsForDay(

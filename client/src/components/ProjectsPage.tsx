@@ -19,6 +19,7 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 
 type ViewMode = "board" | "table";
 export type SortDirection = "asc" | "desc";
@@ -117,6 +118,8 @@ export function ProjectsPage({
   onSortDirectionChange,
 }: ProjectsPageProps) {
   const { settingsByKey, setSetting } = useSettings();
+  const userRole = getStoredUserRole();
+  const isReader = isReaderRole(userRole);
   const viewModeKey = "projects";
   const settingsViewModeKey = `${viewModeKey}.viewMode`;
   const resolvedViewMode = parseViewMode(settingsByKey.get(settingsViewModeKey)?.resolvedValue);
@@ -352,7 +355,7 @@ export function ProjectsPage({
       prevTestId="button-projects-page-prev"
       nextTestId="button-projects-page-next"
       stateTestId="text-projects-page-state"
-      leadingSlot={onNewProject ? (
+      leadingSlot={onNewProject && !isReader ? (
         <Button
           variant="outline"
           onClick={onNewProject}
@@ -360,7 +363,7 @@ export function ProjectsPage({
           data-testid="button-new-project"
         >
           <Plus className="w-4 h-4" />
-          Neues Projekt
+          Projekt anlegen
         </Button>
       ) : undefined}
       trailingSlot={onCancel ? (
@@ -476,4 +479,3 @@ export function ProjectsPage({
     </>
   );
 }
-

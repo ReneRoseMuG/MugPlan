@@ -14,6 +14,7 @@ interface ProjectAppointmentsPanelProps {
   projectId?: number | null;
   projectName?: string | null;
   isEditing: boolean;
+  readOnly?: boolean;
   onOpenAppointment?: (context: { projectId?: number; appointmentId?: number }) => void;
   onOpenCalendarWorkspace?: (ctx: { projectId: number }) => void;
   className?: string;
@@ -27,6 +28,7 @@ export function ProjectAppointmentsPanel({
   projectId,
   projectName,
   isEditing,
+  readOnly = false,
   onOpenCalendarWorkspace,
   className,
 }: ProjectAppointmentsPanelProps) {
@@ -84,7 +86,7 @@ export function ProjectAppointmentsPanel({
     }));
   }, [sortedAppointments, projectName]);
 
-  const addAction = isEditing && onOpenCalendarWorkspace && projectId
+  const addAction = !readOnly && isEditing && onOpenCalendarWorkspace && projectId
     ? {
         onClick: () => onOpenCalendarWorkspace({ projectId }),
         ariaLabel: "Termin hinzufügen",
@@ -107,4 +109,3 @@ export function ProjectAppointmentsPanel({
     />
   );
 }
-

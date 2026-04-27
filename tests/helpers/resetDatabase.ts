@@ -20,6 +20,7 @@ const expectedTarget = assertSafeDestructiveOperationTarget({
 
 export async function resetDatabase() {
   const connection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
+  let lockAcquired = false;
 
   try {
     await assertSqlDatabaseIdentity(connection, expectedTarget.dbName);
@@ -32,6 +33,7 @@ export async function resetDatabase() {
     if (lockStatus !== 1) {
       throw new Error("resetDatabase lock konnte nicht erworben werden.");
     }
+    lockAcquired = true;
 
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
@@ -46,18 +48,8 @@ export async function resetDatabase() {
     }
 
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-  } finally {
-    try {
-      await connection.query("DO RELEASE_LOCK(?)", [RESET_DB_LOCK_NAME]);
-    } finally {
-      await connection.end();
-    }
-  }
 
-  const ensureConnection = await mysql.createConnection(runtimeConfig.mysqlDatabaseUrl);
-  try {
-    await assertSqlDatabaseIdentity(ensureConnection, expectedTarget.dbName);
-    const [columnRows] = await ensureConnection.query(
+    const [columnRows] = await connection.query(
       `
         SELECT COLUMN_NAME
         FROM INFORMATION_SCHEMA.COLUMNS
@@ -70,40 +62,60 @@ export async function resetDatabase() {
       (columnRows as Array<{ COLUMN_NAME: string }>).map((row) => row.COLUMN_NAME),
     );
     if (!existingColumns.has("two_factor_secret_encrypted")) {
-      await ensureConnection.query(
+      await connection.query(
         "ALTER TABLE users ADD COLUMN two_factor_secret_encrypted text NULL",
       );
     }
     if (!existingColumns.has("two_factor_backup_codes_reserved")) {
-      await ensureConnection.query(
+      await connection.query(
         "ALTER TABLE users ADD COLUMN two_factor_backup_codes_reserved text NULL",
       );
     }
-  } finally {
-    await ensureConnection.end();
-  }
 
-  const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
-  const { ensureMasterDataDefaults } = await import("../../server/bootstrap/ensureMasterDataDefaults");
-  const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");
-  const { hashPassword } = await import("../../server/security/passwordHash");
-  await ensureSystemRoles();
-  await ensureMasterDataDefaults();
+    const { ensureSystemRoles } = await import("../../server/bootstrap/ensureSystemRoles");
+    const { ensureMasterDataDefaults } = await import("../../server/bootstrap/ensureMasterDataDefaults");
+    const { getAuthUserByUsername, createAdminUser } = await import("../../server/repositories/usersRepository");
+    const { hashPassword } = await import("../../server/security/passwordHash");
+    await ensureSystemRoles();
+    await ensureMasterDataDefaults();
 
-  const username = "test-admin";
-  const existing = await getAuthUserByUsername(username);
-  if (!existing) {
-    const passwordHash = await hashPassword("test-admin-password");
-    try {
-      await createAdminUser({ username, passwordHash });
-    } catch (error) {
-      const mysqlError = error as { code?: string; errno?: number } | null;
-      const isDuplicate = mysqlError?.code === "ER_DUP_ENTRY" || mysqlError?.errno === 1062;
-      if (!isDuplicate) {
-        throw error;
+    const username = "test-admin";
+    const existing = await getAuthUserByUsername(username);
+    if (!existing) {
+      const passwordHash = await hashPassword("test-admin-password");
+      try {
+        await createAdminUser({ username, passwordHash });
+      } catch (error) {
+        if (!isDuplicateEntryError(error)) {
+          throw error;
+        }
       }
     }
+  } finally {
+    try {
+      if (lockAcquired) {
+        await connection.query("DO RELEASE_LOCK(?)", [RESET_DB_LOCK_NAME]);
+      }
+    } finally {
+      await connection.end();
+    }
   }
+}
+
+function isDuplicateEntryError(error: unknown): boolean {
+  const seen = new Set<unknown>();
+  let current: unknown = error;
+
+  while (current && typeof current === "object" && !seen.has(current)) {
+    seen.add(current);
+    const mysqlError = current as { code?: string; errno?: number; cause?: unknown };
+    if (mysqlError.code === "ER_DUP_ENTRY" || mysqlError.errno === 1062) {
+      return true;
+    }
+    current = mysqlError.cause;
+  }
+
+  return false;
 }
 
 export async function applyTestSystemSeed() {

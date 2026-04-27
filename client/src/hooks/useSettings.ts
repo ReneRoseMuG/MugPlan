@@ -18,6 +18,8 @@ type ProduktionsplanungSelection = {
 type AuftragslisteSelection = {
   productCategoryIds?: number[];
   componentCategoryIds?: number[];
+  tagIds?: number[];
+  saunaModels?: string[];
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = "farbdruck" | "spardruck";
@@ -42,7 +44,7 @@ type LegacyProduktionsplanungSelection = {
 };
 
 export type UserSettingKey =
-  // Historische Benennung: Der Typname enthaelt auch GLOBAL Settings-Keys.
+  // Historische Benennung: Der Typname enthält auch GLOBAL Settings-Keys.
   | "attachmentPreviewSize"
   | "helpTextPreviewSize"
   | "entityFormShell.sidebarWidthPx"
@@ -60,7 +62,6 @@ export type UserSettingKey =
   | "cardListColumns"
   | "calendar.weekLanes.isCollapsed"
   | "calendar.weekLanes.expandedLaneId"
-  | "calendar.weekAppointmentDisplayMode"
   | "calendar.weekTileBodyMode"
   | "reports.vorlaufliste.categorySelection"
   | "reports.produktionsplanung.selection"
@@ -91,7 +92,6 @@ type UserSettingValueByKey = {
   cardListColumns: number;
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
-  "calendar.weekAppointmentDisplayMode": "standard" | "compact" | "detail" | "split";
   "calendar.weekTileBodyMode": "collapsed" | "semiexpanded" | "expanded";
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
@@ -104,13 +104,6 @@ type UserSettingValueByKey = {
   "reports.tourenplan.fontSize": TourenplanFontSize;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
-
-export function resolveWeekAppointmentDisplayMode(value: unknown): UserSettingValueByKey["calendar.weekAppointmentDisplayMode"] {
-  if (value === "standard" || value === "compact" || value === "detail" || value === "split") {
-    return value;
-  }
-  return "standard";
-}
 
 export function resolveWeekTileBodyMode(value: unknown): UserSettingValueByKey["calendar.weekTileBodyMode"] {
   if (value === "collapsed" || value === "semiexpanded" || value === "expanded") {
@@ -176,7 +169,7 @@ export function resolveProduktionsplanungSelection(value: unknown): Produktionsp
 
 export function resolveAuftragslisteSelection(value: unknown): AuftragslisteSelection {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { productCategoryIds: [], componentCategoryIds: [], useShortCodes: false };
+    return { productCategoryIds: [], componentCategoryIds: [], tagIds: [], saunaModels: [], useShortCodes: false };
   }
   const candidate = value as Record<string, unknown>;
   const productCategoryIds = Array.isArray(candidate.productCategoryIds)
@@ -185,9 +178,20 @@ export function resolveAuftragslisteSelection(value: unknown): AuftragslisteSele
   const componentCategoryIds = Array.isArray(candidate.componentCategoryIds)
     ? candidate.componentCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
     : [];
+  const tagIds = Array.isArray(candidate.tagIds)
+    ? candidate.tagIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+    : [];
+  const saunaModels = Array.isArray(candidate.saunaModels)
+    ? candidate.saunaModels
+      .filter((entry): entry is string => typeof entry === "string")
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0)
+    : [];
   return {
     productCategoryIds: Array.from(new Set(productCategoryIds)),
     componentCategoryIds: Array.from(new Set(componentCategoryIds)),
+    tagIds: Array.from(new Set(tagIds)),
+    saunaModels: Array.from(new Set(saunaModels)),
     useShortCodes: typeof candidate.useShortCodes === "boolean" ? candidate.useShortCodes : false,
   };
 }
@@ -434,9 +438,6 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];
-    }
-    if (key === "calendar.weekAppointmentDisplayMode") {
-      return resolveWeekAppointmentDisplayMode(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekTileBodyMode") {
       return resolveWeekTileBodyMode(setting?.resolvedValue) as UserSettingValueByKey[K];

@@ -479,23 +479,14 @@ test("shows an extracted document only as project attachment after successful pr
     return body.map((item: { tag: { name: string } }) => item.tag.name);
   }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 
-  await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
-  }
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
-    if (!response.ok()) return 0;
+    if (!response.ok()) return [];
     const body = await response.json();
-    return Array.isArray(body) ? body.length : 0;
-  }).toBe(1);
-
-  const appointmentsResponse = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
-  const appointments = await appointmentsResponse.json();
-  const createdAppointmentId = Number(appointments[0]?.id);
-  expect(createdAppointmentId).toBeGreaterThan(0);
+    return Array.isArray(body) ? body.map((item: { id: number }) => item.id) : [];
+  }).toEqual(expect.arrayContaining([createdAppointmentId]));
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${createdAppointmentId}/attachment-context`);

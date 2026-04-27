@@ -34,11 +34,13 @@ function resolveNextEditableWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
   const nextWeekStart = startOfISOWeek(addWeeks(today, 1));
   const secondDay = addDays(nextWeekStart, 1);
+  const nextFreeWeekStart = addWeeks(nextWeekStart, 4);
   return {
     weekStartDate: format(nextWeekStart, "yyyy-MM-dd"),
     weekSecondDate: format(secondDay, "yyyy-MM-dd"),
     isoYear: getISOWeekYear(nextWeekStart),
     isoWeek: getISOWeek(nextWeekStart),
+    nextFreeIsoWeek: getISOWeek(nextFreeWeekStart),
     maxIsoWeek: getISOWeek(new Date(getISOWeekYear(nextWeekStart), 11, 28)),
   };
 }
@@ -52,6 +54,10 @@ async function openWeekPlanning(page: import("@playwright/test").Page, tourId: n
   await expect(page.getByTestId("toggle-tour-week-picker")).toBeVisible();
   await expect(page.getByTestId("tour-form-functions-panel")).toContainText("Funktionen");
   await expect(page.getByTestId("tour-form-functions-panel")).toContainText("KW einfügen");
+}
+
+function toastWithTitle(page: import("@playwright/test").Page, title: string) {
+  return page.locator("[role='status']").filter({ hasText: title }).first();
 }
 
 test.beforeAll(async () => {
@@ -101,7 +107,7 @@ test("hides employees that are already assigned to another tour in the same ISO 
   }).toEqual([]);
 });
 
-test("validates the footer week picker against min and max bounds", async ({ page }) => {
+test("prefills the next free KW and keeps duplicate/min/max validation intact", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const tour = await createTourFixture("#556677");
 
@@ -109,20 +115,25 @@ test("validates the footer week picker against min and max bounds", async ({ pag
 
   await page.getByTestId("toggle-tour-week-picker").click();
   await expect(page.getByTestId("text-tour-week-dialog-year")).toContainText(String(nextWeek.isoYear));
+  await expect(page.getByTestId("input-tour-week")).toHaveValue(String(nextWeek.nextFreeIsoWeek));
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek - 1));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByText("Kalenderwoche zu klein")).toBeVisible();
+  await expect(toastWithTitle(page, "Kalenderwoche zu klein")).toBeVisible();
   await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek - 1}`)).toHaveCount(0);
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.maxIsoWeek + 1));
   await page.getByTestId("button-confirm-tour-week").click();
-  await expect(page.getByText("Kalenderwoche zu groß", { exact: true })).toBeVisible();
+  await expect(toastWithTitle(page, "Kalenderwoche zu groß")).toBeVisible();
   await expect(page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.maxIsoWeek + 1}`)).toHaveCount(0);
 
   await page.getByTestId("input-tour-week").fill(String(nextWeek.isoWeek));
   await page.getByTestId("button-confirm-tour-week").click();
-  const insertedWeekCard = page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.isoWeek}`);
+  await expect(toastWithTitle(page, "Kalenderwoche bereits vorhanden")).toBeVisible();
+
+  await page.getByTestId("input-tour-week").fill(String(nextWeek.nextFreeIsoWeek));
+  await page.getByTestId("button-confirm-tour-week").click();
+  const insertedWeekCard = page.getByTestId(`card-tour-week-${nextWeek.isoYear}-${nextWeek.nextFreeIsoWeek}`);
   await expect(insertedWeekCard).toBeVisible();
 });
 

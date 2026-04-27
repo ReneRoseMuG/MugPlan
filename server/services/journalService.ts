@@ -1,5 +1,6 @@
 import type { CanonicalRoleKey } from "../settings/registry";
 import { logError } from "../lib/logger";
+import * as changeNotificationsService from "./changeNotificationsService";
 import * as journalRepository from "../repositories/journalRepository";
 
 export class JournalError extends Error {
@@ -302,7 +303,7 @@ export async function recordJournalEntry(input: RecordJournalEntryInput): Promis
     const contexts = await resolveJournalContexts(input);
     const messageText = input.messageText?.trim() || buildRawFallback(input);
 
-    await journalRepository.insertJournalEntry({
+    const entryId = await journalRepository.insertJournalEntry({
       tableName: input.tableName,
       recordId: input.recordId ?? null,
       recordKey: input.recordKey ?? null,
@@ -317,6 +318,13 @@ export async function recordJournalEntry(input: RecordJournalEntryInput): Promis
       messageText,
       isRaw: !input.messageText,
       contexts: contexts.map(toRepositoryContext),
+    });
+
+    changeNotificationsService.publishChangeNotification({
+      id: entryId,
+      actorUserId: input.actor?.userId ?? null,
+      triggerKey: input.triggerKey ?? null,
+      createdAt: new Date().toISOString(),
     });
   } catch (error) {
     logError("[journal] write failed", {
@@ -374,6 +382,14 @@ export function buildCalendarWeekContext(params: {
     tableName: "calendar_week",
     recordId: null,
     recordKey: `${params.yearNumber}-${String(params.weekNumber).padStart(2, "0")}-${params.tourId ?? 0}`,
+    relationRole: "self",
+  };
+}
+
+export function buildTourContext(tourId: number): JournalContextInput {
+  return {
+    tableName: "tour",
+    recordId: tourId,
     relationRole: "self",
   };
 }

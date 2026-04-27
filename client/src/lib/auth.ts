@@ -25,6 +25,8 @@ type LoginPayload =
 
 type QuickLoginRoleCode = "READER" | "DISPATCHER" | "ADMIN";
 
+export type ClientRoleCode = QuickLoginRoleCode;
+
 type QuickLoginTargetsResponse = {
   roles: Array<{
     roleCode: QuickLoginRoleCode;
@@ -32,6 +34,9 @@ type QuickLoginTargetsResponse = {
     username?: string;
   }>;
 };
+
+const AUTH_ROLE_STORAGE_KEY = "userRole";
+const AUTH_USER_ID_STORAGE_KEY = "userId";
 
 export async function getSetupStatus(): Promise<SetupStatusResponse> {
   const response = await fetch("/api/auth/setup-status", {
@@ -47,7 +52,61 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
 }
 
 function persistRole(payload: AuthenticatedPayload): void {
-  window.localStorage.setItem("userRole", payload.roleCode);
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(AUTH_ROLE_STORAGE_KEY, payload.roleCode);
+  window.localStorage.setItem(AUTH_USER_ID_STORAGE_KEY, String(payload.userId));
+}
+
+function clearPersistedAuth(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(AUTH_ROLE_STORAGE_KEY);
+  window.localStorage.removeItem(AUTH_USER_ID_STORAGE_KEY);
+}
+
+export function getStoredUserId(): number | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const stored = window.localStorage.getItem(AUTH_USER_ID_STORAGE_KEY);
+  const parsed = Number(stored);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function normalizeClientRole(value: string | null | undefined): ClientRoleCode | null {
+  const normalized = value?.trim().toUpperCase();
+  if (normalized === "ADMIN" || normalized === "DISPATCHER" || normalized === "READER") {
+    return normalized;
+  }
+  return null;
+}
+
+export function resolveClientRole(value: string | null | undefined): ClientRoleCode {
+  return normalizeClientRole(value) ?? "DISPATCHER";
+}
+
+export function getStoredUserRole(): ClientRoleCode {
+  if (typeof window === "undefined") {
+    return resolveClientRole(null);
+  }
+  return resolveClientRole(window.localStorage.getItem("userRole"));
+}
+
+export function isReaderRole(value: string | null | undefined): boolean {
+  return resolveClientRole(value) === "READER";
+}
+
+export function canAccessReports(value: string | null | undefined): boolean {
+  const role = resolveClientRole(value);
+  return role === "ADMIN" || role === "DISPATCHER";
+}
+
+export function canAccessMonitoring(value: string | null | undefined): boolean {
+  const role = resolveClientRole(value);
+  return role === "ADMIN" || role === "DISPATCHER" || role === "READER";
+}
+
+export function canAccessTourPostalPlan(value: string | null | undefined): boolean {
+  return !isReaderRole(value);
 }
 
 export async function getSessionStatus(): Promise<AuthenticatedPayload> {
@@ -58,7 +117,7 @@ export async function getSessionStatus(): Promise<AuthenticatedPayload> {
 
   if (!response.ok) {
     if (response.status === 401) {
-      window.localStorage.removeItem("userRole");
+      clearPersistedAuth();
     }
     throw new Error(`Session status failed: ${response.status}`);
   }
@@ -187,5 +246,5 @@ export async function logout(): Promise<void> {
   if (!response.ok) {
     throw new Error(`Logout failed: ${response.status}`);
   }
-  window.localStorage.removeItem("userRole");
+  clearPersistedAuth();
 }

@@ -23,21 +23,23 @@
  * Browser-E2E-Nachweis fuer FT28 in beiden Formular-Kontexten.
  */
 import { expect, test } from "@playwright/test";
-import { loginAsAdmin } from "../helpers/browserE2e";
-import { applyTestSystemSeed, resetDatabase } from "../helpers/resetDatabase";
+import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
+  createProductFixture,
   createProjectFixture,
+  createProjectFixtureWithOverrides,
+  createProjectOrderItemFixture,
+  createRawAppointmentFixture,
   createTourFixture,
   getRelativeBerlinDate,
-  resetTestDataFactoryState,
 } from "../helpers/testDataFactory";
 
-test.beforeEach(async () => {
-  resetTestDataFactoryState();
-  await resetDatabase();
-  await applyTestSystemSeed();
+test.describe.configure({ mode: "serial" });
+
+test.beforeAll(async () => {
+  await resetBrowserSuiteState("tests/e2e-browser/appointments-list.tour-employee.browser.e2e.spec.ts");
 });
 
 test("tour form appointments table: date sorting persists across appointment scope toggles and no all-day column", async ({ page }) => {
@@ -176,4 +178,172 @@ test("employee form appointments table: structure, scope toggle persistence and 
   await scrollViewport.evaluate((element) => {
     element.scrollTop = 220;
   });
+});
+
+test("appointments table preview uses the detail week card and stays inside the viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 420 });
+
+  const project = await createProjectFixtureWithOverrides({
+    prefix: "FT28-PREVIEW-DETAIL",
+    name: "Preview Detail Projekt",
+    descriptionMd: "<p>Preview Anmerkung eins.</p><p>Preview Anmerkung zwei.</p><p>Preview Anmerkung drei.</p><p>Preview Anmerkung vier.</p><p>Preview Anmerkung fuenf.</p>",
+  });
+  const orderNumber = project.projectOrder?.orderNumber ?? project.orderNumber ?? "";
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "Preview Detail Sauna",
+    description: "Produkt fuer Terminlistenpreview.",
+  });
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber,
+    productId: product.id,
+    quantity: 1,
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: getRelativeBerlinDate(2),
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-termine").click();
+  const table = page.getByTestId("table-appointments-list");
+  await expect(table).toBeVisible({ timeout: 10_000 });
+  const row = table.locator("tbody tr").filter({ hasText: project.name }).first();
+  await expect(row).toBeVisible();
+  await row.scrollIntoViewIfNeeded();
+  await row.hover();
+
+  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
+  await expect(previewPanel).toBeVisible({ timeout: 5_000 });
+  await expect(previewPanel.getByTestId("week-project-detail-renderer-articles-list")).toContainText(product.name);
+  await expect(previewPanel.getByTestId("week-project-detail-renderer-description")).toContainText("Anmerkungen");
+
+  const previewBox = await previewPanel.boundingBox();
+  expect(previewBox).not.toBeNull();
+  expect((previewBox?.x ?? 0)).toBeGreaterThanOrEqual(0);
+  expect((previewBox?.y ?? 0)).toBeGreaterThanOrEqual(0);
+  expect((previewBox?.x ?? 0) + (previewBox?.width ?? 0)).toBeLessThanOrEqual(900);
+  expect((previewBox?.y ?? 0) + (previewBox?.height ?? 0)).toBeLessThanOrEqual(424);
+});
+
+test("tour form jumps to the page of the next upcoming appointment and highlights it", async ({ page }) => {
+  const tour = await createTourFixture("#1769aa");
+  const historicProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-HIST", name: "Tour Focus Historic" });
+  const futureProject = await createProjectFixture({ prefix: "FT28-TOUR-FOCUS-FUT", name: "Tour Focus Future" });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-03-${String(index + 1).padStart(2, "0")}`,
+      title: `Tour Focus Historic ${index + 1}`,
+      tourId: tour.id,
+    });
+  }
+  await createAppointmentFixture({
+    projectId: futureProject.id,
+    startDate: getRelativeBerlinDate(1),
+    tourId: tour.id,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  const focusedRow = table.locator("tbody tr").filter({ hasText: futureProject.name }).first();
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
+});
+
+test("employee form jumps to the page of the next upcoming appointment and highlights it", async ({ page }) => {
+  const employee = await createEmployeeFixture("FT28-EMP-FOCUS");
+  const historicProject = await createProjectFixture({ prefix: "FT28-EMP-FOCUS-HIST", name: "Emp Focus Historic" });
+  const futureProject = await createProjectFixture({ prefix: "FT28-EMP-FOCUS-FUT", name: "Emp Focus Future" });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-04-${String(index + 1).padStart(2, "0")}`,
+      title: `Emp Focus Historic ${index + 1}`,
+      employeeIds: [employee.id],
+    });
+  }
+  const focusAppointment = await createAppointmentFixture({
+    projectId: futureProject.id,
+    startDate: getRelativeBerlinDate(1),
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-mitarbeiter").click();
+  await page.getByTestId(`employee-card-${employee.id}`).dblclick();
+  await page.getByTestId("tab-employee-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  const focusedRow = table.locator("tbody tr").filter({ hasText: futureProject.name }).first();
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
+  await expect(table.getByTestId(`button-remove-employee-from-appointment-${focusAppointment.id}`)).toBeVisible();
+});
+
+test("tour form leaves historical-only rows on page one without a false focus highlight", async ({ page }) => {
+  const tour = await createTourFixture("#225577");
+  const historicProject = await createProjectFixture({ prefix: "FT28-TOUR-HISTORY", name: "Tour History Only" });
+
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-08-01",
+    title: "Tour History Only 1",
+    tourId: tour.id,
+  });
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-08-02",
+    title: "Tour History Only 2",
+    tourId: tour.id,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
+  await expect(historicRow).toBeVisible();
+  await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
+});
+
+test("employee form leaves historical-only rows on page one without a false focus highlight", async ({ page }) => {
+  const employee = await createEmployeeFixture("FT28-EMP-HISTORY");
+  const historicProject = await createProjectFixture({ prefix: "FT28-EMP-HISTORY", name: "Emp History Only" });
+
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-09-01",
+    title: "Emp History Only 1",
+    employeeIds: [employee.id],
+  });
+  await createRawAppointmentFixture({
+    projectId: historicProject.id,
+    startDate: "2000-09-02",
+    title: "Emp History Only 2",
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-mitarbeiter").click();
+  await page.getByTestId(`employee-card-${employee.id}`).dblclick();
+  await page.getByTestId("tab-employee-termine").click();
+
+  const table = page.getByTestId("table-appointments-list");
+  const historicRow = table.locator("tbody tr").filter({ hasText: historicProject.name }).first();
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 1 von 1");
+  await expect(historicRow).toBeVisible();
+  await expect(historicRow).not.toHaveClass(/bg-sky-100\/80/);
 });

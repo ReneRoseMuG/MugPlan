@@ -65,7 +65,7 @@ async function recordAppointmentEmployeeDelta(params: {
       ],
       actor: params.actor,
       triggerKey: "appointment.employee.add",
-      messageText: buildAppointmentEmployeeMessage("hinzugefuegt", employee.fullName, params.appointmentSnapshot, params.appointmentId),
+      messageText: buildAppointmentEmployeeMessage("hinzugefügt", employee.fullName, params.appointmentSnapshot, params.appointmentId),
     })),
     ...removed.map((employee) => ({
       tableName: "appointment_employee",
@@ -149,7 +149,7 @@ export async function updateAppointment(req: Request, res: Response, next: NextF
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -234,7 +234,7 @@ export async function setAppointmentDisplayMode(req: Request, res: Response, nex
     const input = api.appointments.setDisplayMode.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -275,20 +275,20 @@ export async function listProjectAppointments(req: Request, res: Response, next:
   try {
     const projectId = Number(req.params.projectId);
     if (Number.isNaN(projectId)) {
-      res.status(400).json({ message: "Ungueltige projectId" });
+      res.status(400).json({ message: "Ungültige projectId" });
       return;
     }
 
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
       logWarn(`${logPrefix} list project appointments rejected: invalid fromDate=${fromDate}`);
-      res.status(400).json({ message: "Ungueltiges fromDate" });
+      res.status(400).json({ message: "Ungültiges fromDate" });
       return;
     }
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -304,20 +304,20 @@ export async function listTourAppointments(req: Request, res: Response, next: Ne
   try {
     const tourId = Number(req.params.tourId);
     if (Number.isNaN(tourId)) {
-      res.status(400).json({ message: "Ungueltige tourId" });
+      res.status(400).json({ message: "Ungültige tourId" });
       return;
     }
 
     const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
     if (fromDate && !/^\d{4}-\d{2}-\d{2}$/.test(fromDate)) {
       logWarn(`${logPrefix} list tour appointments rejected: invalid fromDate=${fromDate}`);
-      res.status(400).json({ message: "Ungueltiges fromDate" });
+      res.status(400).json({ message: "Ungültiges fromDate" });
       return;
     }
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -333,7 +333,7 @@ export async function getTourPrintPreview(req: Request, res: Response, next: Nex
   try {
     const tourId = Number(req.params.tourId);
     if (Number.isNaN(tourId)) {
-      res.status(400).json({ message: "Ungueltige tourId" });
+      res.status(400).json({ message: "Ungültige tourId" });
       return;
     }
 
@@ -362,7 +362,7 @@ export async function listAppointmentsList(req: Request, res: Response, next: Ne
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -400,7 +400,7 @@ export async function addAppointmentTag(req: Request, res: Response, next: NextF
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const appointmentId = Number(req.params.appointmentId);
@@ -419,7 +419,7 @@ export async function addAppointmentTag(req: Request, res: Response, next: NextF
       snapshot: appointment,
       actor: getRequestActor(req),
       triggerKey: "appointment.tag.add",
-      messageText: buildTagMessage("hinzugefuegt", "appointment", appointment, relation.tag.name, appointmentId),
+      messageText: buildTagMessage("hinzugefügt", "appointment", appointment, relation.tag.name, appointmentId),
     });
     res.status(201).json(relation);
   } catch (err) {
@@ -439,7 +439,7 @@ export async function removeAppointmentTag(req: Request, res: Response, next: Ne
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const appointmentId = Number(req.params.appointmentId);
@@ -485,7 +485,7 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.appointments.cancel.input.parse(req.body);
@@ -535,7 +535,7 @@ export async function parkAppointment(req: Request, res: Response, next: NextFun
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.appointments.park.input.parse(req.body);
@@ -585,7 +585,7 @@ export async function removeEmployeeFromAppointment(req: Request, res: Response,
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const input = api.appointmentEmployees.remove.input.parse(req.body);
@@ -626,7 +626,7 @@ export async function deleteAppointment(req: Request, res: Response, next: NextF
     const input = api.appointments.delete.input.parse(req.body);
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -676,7 +676,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       logWarn(`${logPrefix} list calendar appointments rejected: invalid range ${fromDate}-${toDate}`);
-      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
       return;
     }
     if (toDate < fromDate) {
@@ -686,18 +686,18 @@ export async function listCalendarAppointments(req: Request, res: Response, next
 
     const employeeId = employeeIdParam ? Number(employeeIdParam) : undefined;
     if (employeeIdParam && Number.isNaN(employeeId)) {
-      res.status(400).json({ message: "Ungueltige employeeId" });
+      res.status(400).json({ message: "Ungültige employeeId" });
       return;
     }
     if (detailParam && detailParam !== "compact" && detailParam !== "full") {
-      res.status(400).json({ message: "Ungueltiger detail-Parameter" });
+      res.status(400).json({ message: "Ungültiger detail-Parameter" });
       return;
     }
     const detail = detailParam === "full" ? "full" : "compact";
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -729,7 +729,7 @@ export async function listCalendarWeekLaneEmployeePreviews(req: Request, res: Re
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       logWarn(`${logPrefix} list calendar week lane previews rejected: invalid range ${fromDate}-${toDate}`);
-      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
       return;
     }
     if (toDate < fromDate) {
@@ -739,7 +739,7 @@ export async function listCalendarWeekLaneEmployeePreviews(req: Request, res: Re
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -766,7 +766,7 @@ export async function listCalendarBlockedTourWeeks(req: Request, res: Response, 
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
       logWarn(`${logPrefix} list calendar blocked tour weeks rejected: invalid range ${fromDate}-${toDate}`);
-      res.status(400).json({ message: "Ungueltiger Datumsbereich" });
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
       return;
     }
 
@@ -782,6 +782,49 @@ export async function listCalendarBlockedTourWeeks(req: Request, res: Response, 
       res.status(err.status).json({ code: err.code, message: err.message });
       return;
     }
+    next(err);
+  }
+}
+
+export async function listCalendarTourPostalPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const postalCode = typeof req.query.postalCode === "string" ? req.query.postalCode : undefined;
+    const fromDate = typeof req.query.fromDate === "string" ? req.query.fromDate : undefined;
+    const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
+    const hasFreeAppointments = typeof req.query.hasFreeAppointments === "string"
+      ? req.query.hasFreeAppointments === "true"
+      : false;
+
+    if (!postalCode || !fromDate || !toDate) {
+      res.status(400).json({ message: "postalCode, fromDate und toDate sind erforderlich" });
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fromDate) || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) {
+      logWarn(`${logPrefix} list calendar tour postal plan rejected: invalid range ${fromDate}-${toDate}`);
+      res.status(400).json({ message: "Ungültiger Datumsbereich" });
+      return;
+    }
+    if (toDate < fromDate) {
+      res.status(400).json({ message: "toDate darf nicht vor fromDate liegen" });
+      return;
+    }
+
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+
+    const plan = await appointmentsService.listCalendarTourPostalPlan({
+      postalCode,
+      fromDate,
+      toDate,
+      hasFreeAppointments,
+      roleKey,
+    });
+    res.json(plan);
+  } catch (err) {
     next(err);
   }
 }

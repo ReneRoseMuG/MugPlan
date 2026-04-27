@@ -31,6 +31,8 @@ export function AuftragslisteProjectCard({
     <ReportProjectCard
       row={row}
       testIdPrefix={testIdPrefix}
+      headerClassName={row.tourColor ? "border" : undefined}
+      headerStyle={row.tourColor ? { borderColor: row.tourColor } : undefined}
       bodyContent={hasBodyContent ? (
         <>
           {articleSection}

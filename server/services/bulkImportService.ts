@@ -94,7 +94,7 @@ function cleanupExpiredSessions() {
 
 function enforceBulkLimits(files: BulkFileInput[]) {
   if (files.length === 0) {
-    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine Dateien uebergeben.");
+    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine Dateien übergeben.");
   }
   if (files.length > BULK_IMPORT_LIMITS.maxFiles) {
     throw new BulkImportError(
@@ -109,7 +109,7 @@ function enforceBulkLimits(files: BulkFileInput[]) {
       throw new BulkImportError(
         413,
         "BULK_IMPORT_LIMIT_EXCEEDED",
-        `Datei ${file.fileName} ueberschreitet das Einzeldatei-Limit.`,
+        `Datei ${file.fileName} überschreitet das Einzeldatei-Limit.`,
       );
     }
     totalBytes += file.buffer.length;
@@ -118,7 +118,7 @@ function enforceBulkLimits(files: BulkFileInput[]) {
     throw new BulkImportError(
       413,
       "BULK_IMPORT_LIMIT_EXCEEDED",
-      "Gesamtgroesse der Anfrage ueberschreitet das Limit.",
+      "Gesamtgröße der Anfrage überschreitet das Limit.",
     );
   }
 }
@@ -255,7 +255,7 @@ function getCustomerSession(sessionId: string) {
   cleanupExpiredSessions();
   const session = sessionStore.get(sessionId);
   if (!session || session.kind !== "customers") {
-    throw new BulkImportError(400, "VALIDATION_ERROR", "Bulk-Import-Session ungueltig oder abgelaufen.");
+    throw new BulkImportError(400, "VALIDATION_ERROR", "Bulk-Import-Session ungültig oder abgelaufen.");
   }
   return session;
 }
@@ -264,7 +264,7 @@ export async function applyNewCustomers(sessionId: string, selectedIds: string[]
   const session = getCustomerSession(sessionId);
   const selectedRows = session.newCustomers.filter((row) => selectedIds.includes(row.id));
   if (selectedRows.length === 0) {
-    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine gueltigen Eintraege ausgewaehlt.");
+    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine gültigen Eintraege ausgewaehlt.");
   }
 
   const detailErrors: Array<{ id: string; field: string; message: string }> = [];
@@ -353,7 +353,7 @@ function getProjectSession(sessionId: string) {
   cleanupExpiredSessions();
   const session = sessionStore.get(sessionId);
   if (!session || session.kind !== "projects") {
-    throw new BulkImportError(400, "VALIDATION_ERROR", "Bulk-Import-Session ungueltig oder abgelaufen.");
+    throw new BulkImportError(400, "VALIDATION_ERROR", "Bulk-Import-Session ungültig oder abgelaufen.");
   }
   return session;
 }
@@ -503,7 +503,7 @@ export async function applyNewProjects(sessionId: string, selectedIds: string[])
   const session = getProjectSession(sessionId);
   const selectedRows = session.newProjects.filter((row) => selectedIds.includes(row.id));
   if (selectedRows.length === 0) {
-    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine gueltigen Eintraege ausgewaehlt.");
+    throw new BulkImportError(400, "VALIDATION_ERROR", "Keine gültigen Eintraege ausgewaehlt.");
   }
 
   const detailErrors: Array<{ id: string; field: string; message: string }> = [];
@@ -521,7 +521,7 @@ export async function applyNewProjects(sessionId: string, selectedIds: string[])
     for (const row of selectedRows) {
       const customerResolution = await documentProcessingService.resolveCustomerByNumber(row.customerNumber);
       if (customerResolution.resolution !== "single" || !customerResolution.customer) {
-        throw new BulkImportError(422, "VALIDATION_ERROR", "Kundenzuordnung ungueltig", [
+        throw new BulkImportError(422, "VALIDATION_ERROR", "Kundenzuordnung ungültig", [
           { id: row.id, field: "customerNumber", message: "Kunde existiert nicht eindeutig" },
         ]);
       }

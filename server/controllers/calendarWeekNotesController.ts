@@ -39,7 +39,7 @@ export async function createCalendarWeekNote(req: Request, res: Response, next: 
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey === "LESER") {
@@ -61,7 +61,10 @@ export async function createCalendarWeekNote(req: Request, res: Response, next: 
       actor: getRequestActor(req),
       triggerKey: "calendar_week.note.create",
       messageText: buildCalendarWeekMessage("notiz_erstellt", yearNumber, weekNumber, null),
-      contexts: [journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId })],
+      contexts: [
+        journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId }),
+        ...(tourId != null ? [journalService.buildTourContext(tourId)] : []),
+      ],
     });
     res.status(201).json(note);
   } catch (err) {
@@ -81,7 +84,7 @@ export async function deleteCalendarWeekNote(req: Request, res: Response, next: 
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     if (roleKey === "LESER") {
@@ -106,7 +109,10 @@ export async function deleteCalendarWeekNote(req: Request, res: Response, next: 
         actor: getRequestActor(req),
         triggerKey: "calendar_week.note.delete",
         messageText: buildCalendarWeekMessage("notiz_geloescht", yearNumber, weekNumber, null),
-        contexts: [journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId })],
+        contexts: [
+          journalService.buildCalendarWeekContext({ yearNumber, weekNumber, tourId }),
+          ...(tourId != null ? [journalService.buildTourContext(tourId)] : []),
+        ],
       });
     }
     res.status(204).send();

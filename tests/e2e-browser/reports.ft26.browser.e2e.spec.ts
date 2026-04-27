@@ -20,7 +20,10 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
 import * as projectsService from "../../server/services/projectsService";
-import { MANAGED_SPECIAL_MEASURE_TAG_NAME } from "../../shared/appointmentCancellation";
+import {
+  MANAGED_REMARKS_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
+} from "../../shared/appointmentCancellation";
 import { componentCategories, productCategories, tags, type Tag } from "../../shared/schema";
 import {
   attachProjectTagFixture,
@@ -31,6 +34,7 @@ import {
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -38,7 +42,7 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/reports.ft26.browser.e2e.spec.ts");
 });
 
 async function ensureManagedSpecialMeasureTag() {
@@ -59,6 +63,26 @@ async function ensureManagedSpecialMeasureTag() {
   }
 
   return createExactTagFixture(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#1e3a8a");
+}
+
+async function ensureExactReportTag(name: string, color: string) {
+  const [existing] = await db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      color: tags.color,
+      isDefault: tags.isDefault,
+      version: tags.version,
+    })
+    .from(tags)
+    .where(eq(tags.name, name))
+    .limit(1);
+
+  if (existing) {
+    return existing;
+  }
+
+  return createExactTagFixture(name, color);
 }
 
 async function markReportCategoriesAsDefault(params: {
@@ -187,6 +211,63 @@ async function createBrowserReportProjectFixture(params: {
   };
 }
 
+async function createAuftragslisteFilterBrowserProject(params: {
+  prefix: string;
+  appointmentDate: string;
+  tourId: number;
+  modelProductId: number;
+  projectTags: Tag[];
+}) {
+  const customer = await createCustomerFixtureWithOverrides({
+    prefix: `${params.prefix}-CUST`,
+    firstName: "Browser",
+    lastName: params.prefix,
+    fullName: `Browser ${params.prefix}`,
+    postalCode: "26135",
+    city: "Oldenburg",
+  });
+  const project = await createProjectFixture({
+    prefix: `${params.prefix}-PROJ`,
+    customerId: customer.id,
+    name: `${params.prefix} Projekt`,
+  });
+
+  const orderNumber = project.orderNumber;
+  if (!orderNumber) {
+    throw new Error("Expected order number for Auftragsliste browser fixture.");
+  }
+
+  await createAppointmentFixture({
+    projectId: project.id,
+    startDate: params.appointmentDate,
+    tourId: params.tourId,
+  });
+
+  for (const tag of params.projectTags) {
+    await attachProjectTagFixture(project.id, tag.id);
+  }
+
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber,
+    productId: params.modelProductId,
+    quantity: 1,
+  });
+
+  const visibleProduct = await createProductFixture({
+    categoryName: "Zubehör",
+    name: `${params.prefix} Sichtbar`,
+  });
+  await createProjectOrderItemFixture({
+    projectId: project.id,
+    orderNumber,
+    productId: visibleProduct.id,
+    quantity: 1,
+  });
+
+  return { customer, project };
+}
+
 async function openReports(page: Page) {
   try {
     await loginAsAdmin(page);
@@ -197,6 +278,28 @@ async function openReports(page: Page) {
   }
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
+}
+
+async function clearSelectedAuftragslisteTagFilters(page: Page) {
+  const removeButtons = page
+    .locator("[data-testid^='reports-auftragsliste-tag-filter-'][data-testid$='-remove']");
+
+  while (await removeButtons.count()) {
+    await removeButtons.first().click();
+  }
+}
+
+async function clearSelectedAuftragslisteSaunaModels(page: Page) {
+  await page.getByTestId("button-reports-auftragsliste-open-sauna-model-filter").click();
+  const checkedOptions = page
+    .getByTestId("reports-auftragsliste-sauna-model-popover")
+    .locator("[data-state='checked']");
+
+  while (await checkedOptions.count()) {
+    await checkedOptions.first().click();
+  }
+
+  await page.keyboard.press("Escape");
 }
 
 function rowByText(table: Locator, text: string): Locator {
@@ -460,4 +563,115 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Teilglas Browser");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Panorama Browser");
+});
+
+test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay, print preview and browser print", async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as Window & { __printCalls?: number }).__printCalls = 0;
+    window.print = () => {
+      (window as Window & { __printCalls?: number }).__printCalls = ((window as Window & { __printCalls?: number }).__printCalls ?? 0) + 1;
+    };
+  });
+
+  const inRangeDate = getRelativeBerlinDate(20);
+  const laterInRangeDate = getRelativeBerlinDate(22);
+  const remarksTag = await ensureExactReportTag(MANAGED_REMARKS_TAG_NAME, "#888780");
+  const specialMeasureTag = await ensureManagedSpecialMeasureTag();
+  const tourOne = await createTourFixture("#0f766e");
+  const tourTwo = await createTourFixture("#1d4ed8");
+  const modelAlpha = await createProductFixture({ categoryName: "Fass Saunen", name: "Browser Modell Alpha Filter" });
+  const modelBeta = await createProductFixture({ categoryName: "Fass Saunen", name: "Browser Modell Beta Filter" });
+
+  await markReportCategoriesAsDefault({
+    productCategoryIds: [modelAlpha.categoryId],
+    componentCategoryIds: [],
+  });
+
+  const tourOneEarlier = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-T1-EARLY",
+    appointmentDate: inRangeDate,
+    tourId: tourOne.id,
+    modelProductId: modelAlpha.id,
+    projectTags: [specialMeasureTag],
+  });
+  const tourOneLater = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-T1-LATE",
+    appointmentDate: laterInRangeDate,
+    tourId: tourOne.id,
+    modelProductId: modelAlpha.id,
+    projectTags: [specialMeasureTag],
+  });
+  const tourTwoEarlier = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-T2",
+    appointmentDate: getRelativeBerlinDate(19),
+    tourId: tourTwo.id,
+    modelProductId: modelAlpha.id,
+    projectTags: [specialMeasureTag],
+  });
+  const remarksOnlyProject = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-REMARKS",
+    appointmentDate: getRelativeBerlinDate(21),
+    tourId: tourOne.id,
+    modelProductId: modelAlpha.id,
+    projectTags: [remarksTag],
+  });
+  const betaProject = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-BETA",
+    appointmentDate: getRelativeBerlinDate(18),
+    tourId: tourOne.id,
+    modelProductId: modelBeta.id,
+    projectTags: [specialMeasureTag],
+  });
+
+  await openReports(page);
+  await page.getByTestId("reports-auftragsliste-from-date").fill(getRelativeBerlinDate(18));
+  await page.getByTestId("reports-auftragsliste-to-date").fill(getRelativeBerlinDate(24));
+
+  await clearSelectedAuftragslisteTagFilters(page);
+  await clearSelectedAuftragslisteSaunaModels(page);
+  await page.getByTestId("button-reports-auftragsliste-add-tag-filter").click();
+  await page.getByTestId(`reports-auftragsliste-tag-filter-add-${specialMeasureTag.id}-add`).click();
+  await expect(page.getByTestId(`reports-auftragsliste-tag-filter-${specialMeasureTag.id}`)).toBeVisible();
+  await page.getByTestId("button-reports-auftragsliste-open-sauna-model-filter").click();
+  await page.getByTestId("checkbox-reports-auftragsliste-sauna-model-browser-modell-alpha-filter").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("button-reports-auftragsliste-open-sauna-model-filter")).toContainText(modelAlpha.name);
+
+  const auftragslisteResponsePromise = page.waitForResponse((response) =>
+    response.url().includes("/api/reports/auftragsliste")
+    && response.request().method() === "GET");
+  await page.getByTestId("button-reports-auftragsliste-generate").click();
+  const auftragslisteResponse = await auftragslisteResponsePromise;
+  const requestUrl = new URL(auftragslisteResponse.url());
+  expect(requestUrl.searchParams.getAll("tagIds")).toEqual([String(specialMeasureTag.id)]);
+  expect(requestUrl.searchParams.getAll("saunaModels")).toEqual([modelAlpha.name]);
+
+  const cards = page.getByTestId("reports-auftragsliste-project-cards").locator("article[data-testid^='reports-auftragsliste-project-card-']");
+  await expect(cards).toHaveCount(3);
+  await expect(cards.nth(0)).toContainText(tourOneEarlier.customer.fullName ?? "");
+  await expect(cards.nth(1)).toContainText(tourOneLater.customer.fullName ?? "");
+  await expect(cards.nth(2)).toContainText(tourTwoEarlier.customer.fullName ?? "");
+  await expect(page.getByTestId("reports-auftragsliste-project-cards")).not.toContainText(remarksOnlyProject.customer.fullName ?? "");
+  await expect(page.getByTestId("reports-auftragsliste-project-cards")).not.toContainText(betaProject.customer.fullName ?? "");
+
+  await expect.poll(async () => cards.nth(0).evaluate((element) => element.innerHTML.includes("border-color"))).toBe(true);
+
+  await page.getByTestId("button-reports-auftragsliste-print-preview").click();
+  await expect(page.getByTestId("dialog-auftragsliste-print-preview")).toBeVisible();
+  const activePrintShell = page.getByTestId("auftragsliste-print-preview-active-page-shell");
+  await expect(activePrintShell).toContainText(tourOneEarlier.customer.fullName ?? "");
+  await expect(activePrintShell).toContainText(tourOneLater.customer.fullName ?? "");
+  await expect(activePrintShell).toContainText(tourTwoEarlier.customer.fullName ?? "");
+  await expect(activePrintShell).not.toContainText(remarksOnlyProject.customer.fullName ?? "");
+  await expect(activePrintShell).not.toContainText(betaProject.customer.fullName ?? "");
+
+  const printRoot = page.locator('[data-testid="print-document-root"]');
+  await expect(printRoot).toContainText(tourOneEarlier.customer.fullName ?? "");
+  await expect(printRoot).toContainText(tourOneLater.customer.fullName ?? "");
+  await expect(printRoot).toContainText(tourTwoEarlier.customer.fullName ?? "");
+  await expect(printRoot).not.toContainText(remarksOnlyProject.customer.fullName ?? "");
+  await expect(printRoot).not.toContainText(betaProject.customer.fullName ?? "");
+
+  await page.getByTestId("button-reports-auftragsliste-print").click();
+  await expect.poll(async () => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls ?? 0)).toBe(1);
 });

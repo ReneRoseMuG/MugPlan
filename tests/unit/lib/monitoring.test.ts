@@ -4,12 +4,12 @@
  * Abgedeckte Regeln:
  * - Monitoring-Refresh informiert nur bei neuen oder verschaerften Treffern.
  * - Gleichstand oder Verbesserung erzeugen keinen Toast.
- * - Rollen ohne Monitoring-Zugriff triggern weder Fetch noch Toast.
+ * - Leser dürfen Monitoring lesen und triggern denselben Refresh-Pfad ohne Sonderblockade.
  * - Triggerbeschreibungen fuer Toasts verwenden die verkuerzten Triggernamen.
  *
  * Fehlerfaelle:
  * - Jeder Refresh erzeugt Spam-Toast trotz unveraendertem Stand.
- * - Rollen ohne Monitoring-Zugriff laden Monitoring trotzdem nach.
+ * - Leser werden im Frontend weiter fälschlich wie blockierte Rollen behandelt.
  *
  * Ziel:
  * Die zentrale Frontend-Helferlogik fuer FT31-Refresh und Hinweisverhalten isoliert absichern.
@@ -126,13 +126,18 @@ describe("FT31 unit: monitoring refresh helper", () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it("skips monitoring refresh for roles without monitoring access", async () => {
+  it("refreshes monitoring for reader roles as well", async () => {
     window.localStorage.setItem("userRole", "READER");
-    global.fetch = vi.fn();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [],
+    } as Response);
 
     await refreshMonitoringWithNotification(toast);
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledWith(api.monitoring.list.path, {
+      credentials: "include",
+    });
     expect(toast).not.toHaveBeenCalled();
   });
 });

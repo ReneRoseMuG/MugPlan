@@ -592,6 +592,8 @@ describe("FT26 integration: report vorlaufliste", () => {
 
   it("keeps partial and empty article rows stable when all report categories are selected", async () => {
     const admin = await loginAdminAgent(app);
+    const partialDoorValue = "FT26-PARTIAL Teilglas";
+    const partialWindowValue = "FT26-PARTIAL Panorama";
 
     const partialProject = await createReportProjectFixture({
       prefix: "FT26-PARTIAL",
@@ -603,8 +605,8 @@ describe("FT26 integration: report vorlaufliste", () => {
       postalCode: "26135",
       city: "Oldenburg",
       articleValues: {
-        door: "Teilglas",
-        window: "Panorama",
+        door: partialDoorValue,
+        window: partialWindowValue,
       },
     });
     const emptyProject = await createReportProjectFixture({
@@ -700,8 +702,8 @@ describe("FT26 integration: report vorlaufliste", () => {
     const emptyValues = new Map(emptyRow?.articleValues.map((entry) => [entry.categoryId, entry.value]));
 
     expect(partialValues.get(lookupProduct.categoryId)).toBeNull();
-    expect(partialValues.get(lookupDoor.categoryId)).toBe("Teilglas");
-    expect(partialValues.get(lookupWindow.categoryId)).toBe("Panorama");
+    expect(partialValues.get(lookupDoor.categoryId)).toBe(partialDoorValue);
+    expect(partialValues.get(lookupWindow.categoryId)).toBe(partialWindowValue);
     expect(partialValues.get(lookupOven.categoryId)).toBeNull();
     expect(partialValues.get(lookupControl.categoryId)).toBeNull();
     expect(partialValues.get(lookupRoof.categoryId)).toBeNull();

@@ -593,7 +593,7 @@ describe("FT21 deterministic header parser", () => {
     expect(result.header.city).toBe("Brouch");
     expect(result.header.country).toBe("Luxemburg");
     expect(result.warnings).toEqual([
-      "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
+      "Kundendaten konnten nur teilweise erkannt werden. Projektdaten können trotzdem übernommen werden.",
     ]);
   });
 

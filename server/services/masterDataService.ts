@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Component,
   ComponentCategory,
   InsertComponent,
@@ -294,7 +294,7 @@ function parseCategoryImportCsv(rawBuffer: Buffer): {
         lineNumber: line.lineNumber,
         name: "",
         status: "INVALID",
-        message: "CSV-Zeile ist ungueltig formatiert",
+        message: "CSV-Zeile ist ungültig formatiert",
       });
       continue;
     }

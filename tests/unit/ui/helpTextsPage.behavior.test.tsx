@@ -202,6 +202,19 @@ describe("FT16/FT28 UI: HelpTextsPage behavior", () => {
     expect(html).toContain("table-helptexts");
   });
 
+  it("treats null helptext responses as an empty list instead of crashing", () => {
+    useQueryMock.mockReturnValue({ data: null, isLoading: false });
+
+    const html = renderToStaticMarkup(
+      <HelpTextsPage onCreateHelpText={vi.fn()} onEditHelpText={vi.fn()} />,
+    );
+
+    expect(tableViewCalls).toHaveLength(1);
+    expect(Array.isArray(tableViewCalls[0].rows)).toBe(true);
+    expect(tableViewCalls[0].rows).toEqual([]);
+    expect(html).toContain("table-helptexts");
+  });
+
   it("forwards table row double clicks and renders the preview fallback for empty bodies", () => {
     const onEditHelpText = vi.fn();
     useSettingsMock.mockReturnValue({

@@ -16,7 +16,7 @@ export async function listEmployeeNotes(req: Request, res: Response, next: NextF
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -35,7 +35,7 @@ export async function createEmployeeNote(req: Request, res: Response, next: Next
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -84,7 +84,7 @@ export async function deleteEmployeeNote(req: Request, res: Response, next: Next
   try {
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
     const employeeId = Number(req.params.employeeId);
@@ -106,7 +106,7 @@ export async function deleteEmployeeNote(req: Request, res: Response, next: Next
         snapshot: existingNote,
         actor: getRequestActor(req),
         triggerKey: "employee.note.delete",
-        messageText: buildNoteMessage("geloescht", "employee", null, existingNote.title, employeeId),
+        messageText: buildNoteMessage("gelöscht", "employee", null, existingNote.title, employeeId),
         contexts: [
           {
             tableName: "employee",

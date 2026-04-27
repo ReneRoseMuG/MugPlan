@@ -9,7 +9,7 @@
  * - FT04-Wochenplan-Entfernungen machen unterbesetzte Tour-Termine unmittelbar im Monitoring sichtbar.
  *
  * Fehlerfaelle:
- * - Reader kann Monitoring lesen oder konfigurieren.
+ * - Leser verliert den freigegebenen Monitoring-Lesezugriff oder erhält fälschlich Admin-Konfigrechte.
  * - Geparkte Termine fehlen trotz System-Tag im Monitoring.
  * - Stornierte oder historische Treffer bleiben sichtbar.
  * - TR-01-Konfiguration beeinflusst faelschlich den Geparkt-Trigger.
@@ -107,7 +107,7 @@ async function parkAppointment(agent: Awaited<ReturnType<typeof createRoleAgent>
 }
 
 describe("FT31 integration: monitoring", () => {
-  it("returns TR-01 only for under-staffed appointments and rejects readers", async () => {
+  it("returns TR-01 only for under-staffed appointments and allows readers to read", async () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
@@ -194,8 +194,18 @@ describe("FT31 integration: monitoring", () => {
     const adminResponse = await admin.agent.get("/api/monitoring").expect(200);
     expect(adminResponse.body).toHaveLength(2);
 
-    await reader.agent.get("/api/monitoring").expect(403).expect(({ body }) => {
-      expect(body.code).toBe("FORBIDDEN");
+    await reader.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
+      expect(body).toHaveLength(2);
+      expect(body).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          appointmentId: underStaffed.id,
+          triggerCode: "TR-01",
+        }),
+        expect.objectContaining({
+          appointmentId: directCustomerUnderStaffed.id,
+          triggerCode: "TR-01",
+        }),
+      ]));
     });
   });
 

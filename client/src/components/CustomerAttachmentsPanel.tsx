@@ -11,6 +11,7 @@ interface CustomerAttachmentsPanelProps {
   customerId?: number | null;
   isEditing?: boolean;
   canDelete?: boolean;
+  readOnly?: boolean;
   className?: string;
   pendingCustomerAttachments?: PendingCustomerAttachmentItem[];
   onUploadPendingCustomerAttachment?: (file: File) => void;
@@ -49,6 +50,7 @@ export function CustomerAttachmentsPanel({
   customerId,
   isEditing = true,
   canDelete = false,
+  readOnly = false,
   className,
   pendingCustomerAttachments = [],
   onUploadPendingCustomerAttachment,
@@ -140,7 +142,7 @@ export function CustomerAttachmentsPanel({
       }))),
     [projectAttachmentAggregate],
   );
-  const canUploadCustomerAttachment = Boolean(customerId) || typeof onUploadPendingCustomerAttachment === "function";
+  const canUploadCustomerAttachment = !readOnly && (Boolean(customerId) || typeof onUploadPendingCustomerAttachment === "function");
   const handleCustomerUpload = (file: File) => {
     if (customerId) {
       uploadMutation.mutate(file);
@@ -167,7 +169,7 @@ export function CustomerAttachmentsPanel({
           onUpload: handleCustomerUpload,
           buildOpenUrl: (id) => customerId ? `/api/customer-attachments/${id}/download` : buildPendingAttachmentUrl(id),
           buildDownloadUrl: (id) => customerId ? `/api/customer-attachments/${id}/download?download=1` : buildPendingAttachmentUrl(id),
-          buildActionSlot: customerId
+          buildActionSlot: customerId && !readOnly
             ? (id) => (
                 <AttachmentDeleteAction
                   attachmentId={id}
@@ -202,4 +204,3 @@ export function CustomerAttachmentsPanel({
     />
   );
 }
-

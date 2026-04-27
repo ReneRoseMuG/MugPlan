@@ -61,6 +61,7 @@ import { formatAppointmentEditContext, resolveCustomerEditLabel } from "@/lib/ed
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import {
   createEmptyProjectProductSelections,
   type ProjectProductSelections,
@@ -306,6 +307,16 @@ const parseErrorPayload = (rawBody: string): ApiErrorPayload | null => {
   };
 };
 
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (!(error instanceof Error)) return fallback;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart >= 0) {
+    const parsed = parseErrorPayload(error.message.slice(jsonStart));
+    if (parsed?.message) return parsed.message;
+  }
+  return error.message || fallback;
+};
+
 const formatConflictEmployees = (conflictEmployees?: ApiConflictEmployee[]) => {
   if (!Array.isArray(conflictEmployees) || conflictEmployees.length === 0) return null;
   const names = conflictEmployees
@@ -485,12 +496,11 @@ export function AppointmentForm({
       sidebarDraftSignature: input.sidebarDraftSignature ?? null,
     });
 
-  const [userRole] = useState(() =>
-    window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-  );
+  const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
-  const canManageAppointmentTags = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const isReader = isReaderRole(userRole);
+  const canManageAppointmentTags = !isReader && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const projectAppointmentsUpcomingFromDate = getBerlinTodayDateString();
   const invalidateTourenplanReportQueries = async () => {
     await queryClient.invalidateQueries({ queryKey: ["reports-tourenplan-preview"] });
@@ -554,7 +564,11 @@ export function AppointmentForm({
     queryKey: ["/api/employees", { scope: "active" }],
     queryFn: () => fetchJson<Employee[]>("/api/employees?scope=active"),
   });
-  const { data: appointmentDetail, isLoading: appointmentLoading } = useQuery<AppointmentDetail>({
+  const {
+    data: appointmentDetail,
+    isLoading: appointmentLoading,
+    isFetching: appointmentFetching,
+  } = useQuery<AppointmentDetail>({
     queryKey: ["/api/appointments", appointmentId],
     queryFn: () => fetchJson<AppointmentDetail>(`/api/appointments/${appointmentId}`),
     enabled: Boolean(appointmentId),
@@ -787,6 +801,7 @@ export function AppointmentForm({
       return;
     }
     if (!appointmentDetail || appointmentDetail.id !== appointmentId) return;
+    if (appointmentFetching) return;
     if (hydratedEditAppointmentIdRef.current === appointmentId) return;
     hydratedEditAppointmentIdRef.current = appointmentId;
     console.info(`${logPrefix} appointment detail loaded`, { appointmentId: appointmentDetail.id });
@@ -818,7 +833,7 @@ export function AppointmentForm({
         sidebarDraftSignature: null,
       }),
     );
-  }, [appointmentDetail, appointmentId, isEditing]);
+  }, [appointmentDetail, appointmentFetching, appointmentId, isEditing]);
 
   useEffect(() => {
     if (isEditing || initialFormSnapshot !== null) return;
@@ -944,13 +959,15 @@ export function AppointmentForm({
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
   const isPlanningBlocked = (appointmentDetail?.appointmentTags ?? []).some((tag) => isReservedPlanningBlockedTagName(tag.name));
-  const readOnlyReason = isHistoricalReadOnly
-    ? "historical"
-    : isCancelled
-      ? "cancelled"
-      : isPlanningBlocked
-        ? "planningBlocked"
-        : null;
+  const readOnlyReason = isReader
+    ? "reader"
+    : isHistoricalReadOnly
+      ? "historical"
+      : isCancelled
+        ? "cancelled"
+        : isPlanningBlocked
+          ? "planningBlocked"
+          : null;
   const isReadOnlyView = readOnlyReason !== null;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
@@ -1073,15 +1090,16 @@ export function AppointmentForm({
   const handleTourChange = (tourId: number | null) => {
     if (tourId === selectedTourId) return;
     void (async () => {
-      applyTourChange(tourId);
       setResolvedAppointmentWeekPlanKey(null);
       if (tourId === null) {
+        applyTourChange(tourId);
         return;
       }
 
       try {
         const resolutionKey = buildAppointmentWeekResolutionKey(tourId, startDate);
         const preview = await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
+        applyTourChange(tourId);
         if (!preview.hasWeekPlan) {
           setResolvedAppointmentWeekPlanKey(resolutionKey);
           return;
@@ -1093,7 +1111,7 @@ export function AppointmentForm({
           resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
         });
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
         toast({
           title: "Wochenplanung konnte nicht geladen werden",
           description: message,
@@ -1704,6 +1722,11 @@ export function AppointmentForm({
 
   const submitAppointment = async () => {
     if (isMutationLocked) {
+      if (readOnlyReason === "reader") {
+        toast({ title: "Nur Lesemodus", description: "Diese Rolle darf Termine nicht bearbeiten.", variant: "destructive" });
+        console.info(`${logPrefix} save blocked: reader role`);
+        return;
+      }
       if (readOnlyReason === "cancelled") {
         toast({ title: "Termin ist storniert", description: "Stornierte Termine können nicht mehr bearbeitet werden.", variant: "destructive" });
         console.info(`${logPrefix} save blocked: cancelled appointment`);
@@ -1768,7 +1791,7 @@ export function AppointmentForm({
 
         setResolvedAppointmentWeekPlanKey(currentResolutionKey);
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Vorschau konnte nicht geladen werden.";
+        const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
         toast({
           title: "Wochenplanung konnte nicht geladen werden",
           description: message,
@@ -2595,7 +2618,6 @@ export function AppointmentForm({
               </AlertDescription>
             </Alert>
           )}
-
           <div className="sub-panel space-y-3">
             <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
               <Clock className="w-4 h-4" />

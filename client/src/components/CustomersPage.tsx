@@ -18,6 +18,7 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { formatListDateTime } from "@/lib/list-display-format";
 import { CustomerTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { CustomerFilters } from "@/lib/customer-filters";
 
 type ViewMode = "board" | "table";
@@ -114,7 +115,8 @@ export function CustomersPage({
   });
   const [internalSortKey, setInternalSortKey] = useState<CustomerSortKey>("customerNumber");
   const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [userRole] = useState(() => getStoredUserRole());
+  const isReader = isReaderRole(userRole);
   const isAdmin = userRole === "ADMIN";
   const [internalCustomerScope, setInternalCustomerScope] = useState<CustomerScope>("active");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
@@ -349,7 +351,7 @@ export function CustomersPage({
       prevTestId="button-customers-page-prev"
       nextTestId="button-customers-page-next"
       stateTestId="text-customers-page-state"
-      leadingSlot={onNewCustomer ? (
+      leadingSlot={onNewCustomer && !isReader ? (
         <Button
           variant="outline"
           onClick={onNewCustomer}
@@ -462,4 +464,3 @@ export function CustomersPage({
     </>
   );
 }
-

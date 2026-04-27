@@ -467,7 +467,7 @@ function parseEmployeeImportCsv(rawBuffer: Buffer): ParseImportResult {
         firstName: "",
         lastName: "",
         status: "INVALID",
-        message: "CSV-Zeile ist ungueltig formatiert",
+        message: "CSV-Zeile ist ungültig formatiert",
       });
       continue;
     }

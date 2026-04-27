@@ -97,15 +97,17 @@ export function HelpTextsPage({ onCreateHelpText, onEditHelpText }: HelpTextsPag
     };
   }, [toast]);
 
-  const { data: helpTexts = [], isLoading } = useQuery<HelpText[]>({
+  const { data: helpTextsResponse, isLoading } = useQuery<HelpText[]>({
     queryKey: ["/api/help-texts", searchQuery],
     queryFn: async () => {
       const url = searchQuery ? `/api/help-texts?query=${encodeURIComponent(searchQuery)}` : "/api/help-texts";
       const response = await fetch(url);
       if (!response.ok) throw new Error("Fehler beim Laden");
-      return response.json();
+      const payload = await response.json();
+      return Array.isArray(payload) ? payload as HelpText[] : [];
     },
   });
+  const helpTexts = Array.isArray(helpTextsResponse) ? helpTextsResponse : [];
 
   const sortedHelpTexts = useMemo(() => {
     const data = [...helpTexts];

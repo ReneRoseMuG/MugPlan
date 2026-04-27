@@ -198,11 +198,22 @@ function buildQueryResponseOverrides(overrides: Record<string, unknown> = {}) {
       isLoading: false,
     },
     "/api/admin/master-data/product-categories?active=all": {
-      data: [{ id: 1, name: "Fass Saunen", isDefault: true, isActive: true }],
+      data: [
+        { id: 1, name: "Fass Saunen", isDefault: true, isActive: true },
+        { id: 3, name: "Sauna Modell", isDefault: false, isActive: true },
+      ],
+      isLoading: false,
+    },
+    "/api/admin/master-data/products?active=all": {
+      data: [{ id: 9, name: "Modell Alpha", categoryId: 3, isActive: true, shortCode: null, description: null, version: 1 }],
       isLoading: false,
     },
     "/api/admin/master-data/component-categories?active=all": {
       data: [{ id: 2, name: "Fenster", isDefault: true, isActive: true }],
+      isLoading: false,
+    },
+    "/api/tags": {
+      data: [{ id: 8, name: "Sondermaß", color: "#BA7517", isDefault: false, version: 1 }],
       isLoading: false,
     },
     "/api/tours": {
@@ -254,7 +265,7 @@ function buildQueryResponseOverrides(overrides: Record<string, unknown> = {}) {
       isLoading: false,
     },
     "reports-auftragsliste": {
-      data: { productCategories: [], componentCategories: [], items: [] },
+      data: { productCategories: [], componentCategories: [], availableSaunaModels: [], items: [] },
       isLoading: false,
     },
     "reports-tourenplan-preview": {
@@ -314,6 +325,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("toggle-reports-auftragsliste-calendarWeek");
     expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
     expect(html).toContain("button-reports-auftragsliste-open-categories");
+    expect(html).toContain("button-reports-auftragsliste-add-tag-filter");
+    expect(html).toContain("button-reports-auftragsliste-open-sauna-model-filter");
     expect(html).toContain("button-reports-vorlaufliste-open-tab");
     expect(html).toContain("button-reports-produktionsplanung-open-tab");
     expect(html).toContain("button-reports-auftragsliste-open-tab");
@@ -327,7 +340,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("reports-produktionsplanung-config-panel");
     expect(html).toContain("reports-auftragsliste-config-panel");
     expect(html).toContain("reports-tourenplan-config-panel");
-    expect(html).toContain("select-reports-tourenplan-tour");
+    expect(html).toContain("reports-tourenplan-tour-list");
+    expect(html).toContain("checkbox-reports-tourenplan-all-tours");
     expect(html).toContain("checkbox-reports-tourenplan-use-shortcodes");
   });
 
@@ -364,6 +378,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
         data: {
           productCategories: [{ id: 1, name: "Fass Saunen" }],
           componentCategories: [{ id: 2, name: "Fenster" }],
+          availableSaunaModels: ["Modell Alpha"],
           items: [{
             projectId: 31,
             customerId: 44,
@@ -375,6 +390,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
             actualDate: "2026-04-07",
             durationDays: 2,
             tourName: "Tour 1",
+            tourColor: "#0f766e",
             employees: [],
             customerNotesCount: 0,
             projectNotesCount: 0,
@@ -402,6 +418,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
           toDate: "2026-05-03",
           productCategoryIds: [1],
           componentCategoryIds: [2],
+          tagIds: [8],
+          saunaModels: ["Modell Alpha"],
           useShortCodes: false,
         }}
       />,
@@ -435,7 +453,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
         isLoading: false,
       },
       "reports-auftragsliste": {
-        data: { productCategories: [], componentCategories: [], items: [] },
+        data: { productCategories: [], componentCategories: [], availableSaunaModels: [], items: [] },
         isLoading: false,
       },
     });
@@ -444,7 +462,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
 
     expect(html).toContain("Fass Saunen");
     expect(html).toContain("Fenster");
-    expect(html).toContain("data-column-ids=\"__indicator,amount,customerFullName,postalCode,city,product-1,component-2,plannedDateText,plannedWeek,actualDate,projectDescription\"");
+    expect(html).toContain("data-column-ids=\"__indicator,amount,customerFullName,postalCode,city,product-1,product-3,component-2,plannedDateText,plannedWeek,actualDate,projectDescription\"");
   });
 
   it("removes the legacy produktionsplanung config blocks for non-admins", () => {

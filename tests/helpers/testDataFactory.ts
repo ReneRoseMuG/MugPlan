@@ -13,7 +13,6 @@ import * as employeesService from "../../server/services/employeesService";
 import * as masterDataService from "../../server/services/masterDataService";
 import * as projectsService from "../../server/services/projectsService";
 import * as teamsService from "../../server/services/teamsService";
-import * as tourEmployeesService from "../../server/services/tourEmployeesService";
 import * as toursService from "../../server/services/toursService";
 import { getBerlinTodayDateString } from "../../client/src/lib/project-appointments";
 
@@ -372,14 +371,6 @@ export async function createTourFixture(color = "#0088cc") {
   return toursService.createTour({ color });
 }
 
-export async function assignEmployeesToTourFixture(
-  tourId: number,
-  employees: Array<{ id: number; version: number }>,
-) {
-  void tourId;
-  return employees;
-}
-
 export async function createAppointmentFixture(params: {
   projectId?: number | null;
   customerId?: number;
@@ -597,7 +588,6 @@ export async function createAppointmentBrowserFixture(params?: {
   );
 
   const tour = await createTourFixture("#226688");
-  await assignEmployeesToTourFixture(tour.id, employees);
 
   return {
     customer,
@@ -639,7 +629,6 @@ export async function createProjectCreateEditBrowserFixture(params?: {
   );
 
   const tour = await createTourFixture("#225588");
-  await assignEmployeesToTourFixture(tour.id, employees);
 
   const product = await createProductFixture({
     categoryName: "Fass Saunen",

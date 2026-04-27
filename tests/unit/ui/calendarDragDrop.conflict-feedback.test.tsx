@@ -142,8 +142,6 @@ function configureDefaults(appointments: CalendarAppointment[]) {
       case "calendarMonthScrollRange":
       case "calendarWeekScrollRange":
         return 0;
-      case "calendar.weekAppointmentDisplayMode":
-        return "standard";
       case "calendar.weekTileBodyMode":
         return "semiexpanded";
       case "calendar.weekLanes.isCollapsed":
@@ -271,5 +269,24 @@ describe("calendar drag and drop conflict feedback", () => {
 
     expect(typeof parkedWeek?.onDragStart).toBe("function");
     expect(regularWeek?.onDragStart).toBeUndefined();
+  });
+
+  it("blocks drag interactions for reader readonly mode in month sheet and week view", async () => {
+    configureDefaults([
+      createAppointment({ id: 71, startDate: "2099-07-01" }),
+      createAppointment({ id: 72, startDate: "2099-07-02" }),
+    ]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(<CalendarMonthSheetView currentDate={new Date("2099-07-01T00:00:00Z")} readOnly />);
+
+    const monthReaderAppointment = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 71);
+    expect(monthReaderAppointment?.onDragStart).toBeUndefined();
+
+    const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
+    renderToStaticMarkup(<CalendarWeekView currentDate={new Date("2099-07-01T00:00:00Z")} readOnly />);
+
+    const weekReaderAppointment = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 72);
+    expect(weekReaderAppointment?.onDragStart).toBeUndefined();
   });
 });

@@ -36,6 +36,8 @@ import {
 import * as projectsService from "../../../server/services/projectsService";
 import {
   MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_REMARKS_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import { tags, type Tag } from "../../../shared/schema";
@@ -84,7 +86,7 @@ async function createAuftragslisteProjectFixture(params: {
   prefix: string;
   appointmentDates: Array<{ startDate: string; employeeIds?: number[]; tourId?: number | null }>;
   descriptionMd?: string | null;
-  productItems?: Array<{ categoryName: string; name: string; shortCode?: string | null; quantity?: number }>;
+  productItems?: Array<{ categoryName: string; name: string; shortCode?: string | null; productId?: number; quantity?: number }>;
   componentItems?: Array<{ categoryName: string; name: string; shortCode?: string | null; quantity?: number }>;
   projectTags?: Tag[];
   appointmentTagsByIndex?: Tag[][];
@@ -130,7 +132,9 @@ async function createAuftragslisteProjectFixture(params: {
   }
 
   for (const item of params.productItems ?? []) {
-    const product = await createProductFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
+    const product = item.productId
+      ? { id: item.productId }
+      : await createProductFixture({ categoryName: item.categoryName, name: item.name, shortCode: item.shortCode ?? null });
     await createProjectOrderItemFixture({
       projectId: project.id,
       orderNumber,
@@ -233,6 +237,87 @@ describe("integration: report auftragsliste", () => {
     expect(response.body.items.map((item: { projectId: number }) => item.projectId)).not.toContain(excludedProject.project.id);
     const fallbackRow = response.body.items.find((item: { projectId: number }) => item.projectId === fallbackProject.project.id);
     expect(fallbackRow.actualDate).toBe("2099-10-03");
+  });
+
+  it("filters by report tags and Sauna Modell values and sorts by tour before date", async () => {
+    const admin = await loginAdminAgent(app);
+    const specialMeasureTag = await ensureExactTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, "#BA7517");
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#888780");
+    const tourOne = await createTourFixture("#0f766e");
+    const tourTwo = await createTourFixture("#1d4ed8");
+    const modelAlpha = await createProductFixture({ categoryName: "Fass Saunen", name: "Modell Alpha" });
+    const modelBeta = await createProductFixture({ categoryName: "Fass Saunen", name: "Modell Beta" });
+
+    const tourOneLater = await createAuftragslisteProjectFixture({
+      prefix: "AL-FILTER-T1-LATE",
+      appointmentDates: [{ startDate: "2099-12-12", tourId: tourOne.id }],
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Modell Alpha", productId: modelAlpha.id },
+        { categoryName: "Zubehör", name: "Filter Sauna Tour Eins Spaet" },
+      ],
+      projectTags: [specialMeasureTag],
+    });
+    const tourOneEarlier = await createAuftragslisteProjectFixture({
+      prefix: "AL-FILTER-T1-EARLY",
+      appointmentDates: [{ startDate: "2099-12-10", tourId: tourOne.id }],
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Modell Alpha", productId: modelAlpha.id },
+        { categoryName: "Zubehör", name: "Filter Sauna Tour Eins Frueh" },
+      ],
+      projectTags: [specialMeasureTag],
+    });
+    const tourTwoEarlier = await createAuftragslisteProjectFixture({
+      prefix: "AL-FILTER-T2-EARLY",
+      appointmentDates: [{ startDate: "2099-12-01", tourId: tourTwo.id }],
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Modell Alpha", productId: modelAlpha.id },
+        { categoryName: "Zubehör", name: "Filter Sauna Tour Zwei" },
+      ],
+      projectTags: [specialMeasureTag],
+    });
+    const remarksOnlyProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-FILTER-REMARKS",
+      appointmentDates: [{ startDate: "2099-12-11", tourId: tourOne.id }],
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Modell Alpha", productId: modelAlpha.id },
+        { categoryName: "Zubehör", name: "Filter Sauna Anmerkung" },
+      ],
+      projectTags: [remarksTag],
+    });
+    const betaModelProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-FILTER-BETA",
+      appointmentDates: [{ startDate: "2099-12-09", tourId: tourOne.id }],
+      productItems: [
+        { categoryName: "Fass Saunen", name: "Modell Beta", productId: modelBeta.id },
+        { categoryName: "Zubehör", name: "Filter Sauna Beta" },
+      ],
+      projectTags: [specialMeasureTag],
+    });
+
+    const response = await admin
+      .get(`/api/reports/auftragsliste?fromDate=2099-12-01&toDate=2099-12-31&tagIds=${specialMeasureTag.id}&saunaModels=Modell%20Alpha`)
+      .expect(200);
+
+    expect(response.body.availableSaunaModels).toEqual(["Modell Alpha", "Modell Beta"]);
+    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).toEqual([
+      tourOneEarlier.project.id,
+      tourOneLater.project.id,
+      tourTwoEarlier.project.id,
+    ]);
+    expect(response.body.items[0]).toEqual(expect.objectContaining({
+      tourName: tourOne.name,
+      tourColor: tourOne.color,
+      articleValues: expect.arrayContaining([
+        expect.objectContaining({ value: expect.stringContaining("Modell Alpha") }),
+      ]),
+    }));
+    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).not.toContain(remarksOnlyProject.project.id);
+    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).not.toContain(betaModelProject.project.id);
+
+    const remarksResponse = await admin
+      .get(`/api/reports/auftragsliste?fromDate=2099-12-01&toDate=2099-12-31&tagIds=${remarksTag.id}&saunaModels=Modell%20Alpha`)
+      .expect(200);
+    expect(remarksResponse.body.items.map((item: { projectId: number }) => item.projectId)).toEqual([remarksOnlyProject.project.id]);
   });
 
   it("rejects readers", async () => {

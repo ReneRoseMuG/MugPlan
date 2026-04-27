@@ -547,7 +547,8 @@ test("deletes projects without appointments and keeps projects with appointments
   await openProjectById(page, blockedProject.id);
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();
-  await expect(page.getByText("Projekt kann nicht geloescht werden", { exact: true })).toBeVisible();
+  await expect(page.getByText("Projekt kann nicht gelöscht werden", { exact: true })).toBeVisible();
+  await expect(page.getByText("Projekt kann nicht gelöscht werden, weil Termine vorhanden sind.", { exact: true })).toBeVisible();
   await expect.poll(async () => {
     const response = await page.request.get(`/api/projects/${blockedProject.id}`);
     return response.status();

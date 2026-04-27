@@ -156,7 +156,7 @@ describe("FT24 integration: appointment attachments", () => {
       .delete(`/api/appointment-attachments/${adminAttachmentId}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.message).toBe("Anhang geloescht");
+        expect(res.body.message).toBe("Anhang gelöscht");
       });
 
     const afterDelete = await admin.get(`/api/appointments/${appointment?.id}/attachments`).expect(200);

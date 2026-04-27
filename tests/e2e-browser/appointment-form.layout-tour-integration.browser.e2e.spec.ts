@@ -346,6 +346,32 @@ test("assigns a tour without week planning and keeps the existing employees unch
   });
 });
 
+test("rejects selecting a blocked tour week in the appointment form", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT04-BLOCKED-TOUR-CUST");
+  const blockedTour = await createTourFixture("#991b1b");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: null,
+  });
+  await seedAppointmentFormNoise("FT04-BLOCKED-TOUR", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  const blockResponse = await page.request.post(
+    `/api/tours/${blockedTour.id}/weeks/${nextWeek.isoYear}/${nextWeek.isoWeek}/block`,
+    { data: {} },
+  );
+  expect(blockResponse.ok()).toBeTruthy();
+
+  await expect(page.getByTestId("section-tour-picker")).toBeVisible();
+  await page.getByTestId(`badge-tour-select-${blockedTour.id}-add`).click();
+
+  await expect(page.getByText(`Für ${blockedTour.name}/KW ${nextWeek.isoWeek} wurde die Terminplanung gesperrt.`).first()).toBeVisible();
+  await expect(page.getByTestId("section-tour-picker")).toBeVisible();
+  await expect(page.locator('[data-testid="badge-tour"]')).toHaveCount(0);
+});
+
 test("adds the managed Messe tag when an appointment is switched to Tour Messe", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const customer = await createCustomerFixture("FT06-MESSE-BROWSER-CUST");
@@ -577,10 +603,10 @@ test("uses the already confirmed preview decision when an existing appointment c
   const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(immediateDialog).toBeVisible();
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",
@@ -643,7 +669,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch aktuelle Terminzuweisung erhalten",
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",

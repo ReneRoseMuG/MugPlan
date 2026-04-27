@@ -60,14 +60,6 @@ export function ProjectFilterPanel({
   return (
     <div className="flex w-full flex-col gap-4">
       <FilterPanel title="Projektfilter" layout="row">
-        <ProjectTitleFilterInput
-          value={projectTitle}
-          onChange={onProjectTitleChange}
-          onClear={onProjectTitleClear}
-          maxLength={20}
-          className="w-full sm:min-w-[11rem] sm:max-w-[18ch]"
-          helpKey="projects.filter.projectName"
-        />
         <CustomerNameFilterInput
           value={customerLastName}
           onChange={onCustomerLastNameChange}
@@ -87,6 +79,14 @@ export function ProjectFilterPanel({
           label="Kunde Nr."
           helpKey="projects.filter.customerNumber"
         />
+        <ProjectTitleFilterInput
+          value={projectTitle}
+          onChange={onProjectTitleChange}
+          onClear={onProjectTitleClear}
+          maxLength={20}
+          className="w-full sm:min-w-[11rem] sm:max-w-[18ch]"
+          helpKey="projects.filter.projectName"
+        />
         <ProjectOrderNumberFilterInput
           value={orderNumber}
           onChange={onOrderNumberChange}
@@ -97,7 +97,7 @@ export function ProjectFilterPanel({
           label="Auftrag Nr."
           helpKey="projects.filter.orderNumber"
         />
-        <div className="flex w-full min-w-[20rem] flex-col gap-1">
+        <div className="flex min-w-[20rem] flex-col gap-1">
           <div className="flex min-h-5 items-center gap-1">
             <HelpIcon helpKey="projects.filter.scope.all" size="sm" />
             <Label className="text-xs">Projekte</Label>
@@ -112,7 +112,7 @@ export function ProjectFilterPanel({
             }}
             variant="outline"
             size="sm"
-            className="flex w-full flex-wrap justify-start"
+            className="flex flex-wrap justify-start"
             data-testid="toggle-project-scope"
           >
             <ToggleGroupItem value="all" data-testid="toggle-project-scope-all">

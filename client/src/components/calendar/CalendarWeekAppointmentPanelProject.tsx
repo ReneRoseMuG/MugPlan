@@ -2,6 +2,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { ProjectArticleDescriptionRenderer } from "@/components/ui/project-article-description-renderer";
 import { resolveProjectDisplayName } from "@/components/ui/project-info-panel";
+import { domainIcons } from "@/lib/domain-icons";
 import { cn } from "@/lib/utils";
 
 const PANEL_PREVIEW_CURSOR_OFFSET_PX = 20;
@@ -12,6 +13,7 @@ export function CalendarWeekAppointmentPanelProject({
   projectArticleItems,
   projectDescription,
   collapsed = false,
+  displayMode = "standard",
   showSectionTitle = false,
   enableFullDescriptionPreview = false,
   className,
@@ -21,17 +23,21 @@ export function CalendarWeekAppointmentPanelProject({
   projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
   collapsed?: boolean;
+  displayMode?: "compact" | "standard" | "detail";
   showSectionTitle?: boolean;
   enableFullDescriptionPreview?: boolean;
   className?: string;
 }) {
-  const compactContentClassName = "max-h-24 overflow-hidden";
+  const isDetailMode = displayMode === "detail";
+  const compactContentClassName = "max-h-[6.75rem] overflow-hidden pb-1";
+  const panelClassName = "flex min-h-0 w-full flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5";
+  const collapsedPanelClassName = "w-full cursor-pointer rounded-md border border-slate-200/90 bg-white px-2 py-1";
   const fullDescriptionClassName = "max-h-[280px] overflow-y-auto text-[11px] leading-snug text-slate-600 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5";
+  const detailArticleListClassName = "list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-slate-700 [&_li]:min-w-0";
+  const detailDescriptionClassName = "text-[11px] leading-snug text-slate-600 [-webkit-box-orient:vertical] [-webkit-line-clamp:4] [display:-webkit-box] overflow-hidden [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mb-0.5 [&_li:last-child]:mb-0";
   const resolvedProjectName = resolveProjectDisplayName(projectName);
   const hasProjectReference = resolvedProjectName !== "Kein Auftrag hinterlegt";
-  const resolvedProjectHeader = hasProjectReference
-    ? [projectOrderNumber?.trim() || "-", resolvedProjectName].join(" - ")
-    : resolvedProjectName;
+  const resolvedProjectOrderNumber = projectOrderNumber?.trim() || "-";
   const normalizedDescriptionText = (projectDescription ?? "")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/g, " ")
@@ -39,36 +45,73 @@ export function CalendarWeekAppointmentPanelProject({
   const hasProjectContent = projectArticleItems.some((item) => item.label.trim().length > 0 && item.value.trim().length > 0)
     || normalizedDescriptionText.length > 0;
   const canOpenDescriptionPreview = hasProjectReference && hasProjectContent && enableFullDescriptionPreview;
+  const ProjectIcon = domainIcons.projects;
+  const compactArticleListClassName = "list-disc space-y-0.5 pl-4 text-[11px] leading-snug text-slate-700 [&_li]:min-w-0 [&_li]:overflow-hidden [&_li]:whitespace-nowrap [&_li]:text-ellipsis";
 
-  return (
-    <div className={cn("flex min-h-0 flex-col rounded-md border border-slate-200/90 bg-white px-2 py-1.5", className)}>
-      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
-      <div className="shrink-0 text-xs font-semibold text-slate-800" data-testid="week-project-header">{resolvedProjectHeader}</div>
-      {collapsed ? null : (
-        <>
-      {!canOpenDescriptionPreview && hasProjectContent && (
-        <div className={cn("mt-1 min-h-0 flex-1 overflow-hidden", compactContentClassName)}>
-          <ProjectArticleDescriptionRenderer
-            articleItems={projectArticleItems}
-            descriptionHtml={projectDescription}
-            testIdPrefix="week-project-renderer"
-          />
-        </div>
+  const projectHeader = hasProjectReference ? (
+    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap" data-testid="week-project-header">
+      <ProjectIcon className="h-3 w-3 flex-shrink-0 text-slate-500" />
+      <div className="min-w-0 truncate text-xs font-semibold text-slate-800">{resolvedProjectName}</div>
+      <span className="shrink-0 text-[11px] text-slate-500"> - {resolvedProjectOrderNumber}</span>
+    </div>
+  ) : (
+    <div className="text-[11px] text-slate-500" data-testid="week-project-header-empty">{resolvedProjectName}</div>
+  );
+
+  const compactContent = (
+    <div className={cn("mt-1 min-h-0 flex-1 overflow-hidden", compactContentClassName)}>
+      <ProjectArticleDescriptionRenderer
+        articleItems={projectArticleItems}
+        descriptionHtml={projectDescription}
+        articleListClassName={compactArticleListClassName}
+        testIdPrefix="week-project-renderer"
+      />
+    </div>
+  );
+  const detailContent = (
+    <div className="mt-1 min-h-0 flex-1 overflow-hidden pb-1">
+      <ProjectArticleDescriptionRenderer
+        articleItems={projectArticleItems}
+        descriptionHtml={projectDescription}
+        showSectionTitles
+        articleListClassName={detailArticleListClassName}
+        descriptionHtmlClassName={detailDescriptionClassName}
+        testIdPrefix="week-project-detail-renderer"
+      />
+    </div>
+  );
+  const hoverPreviewContent = (
+    <div className="rounded-lg bg-white p-2">
+      <div className="mb-2">{projectHeader}</div>
+      {hasProjectContent ? (
+        <ProjectArticleDescriptionRenderer
+          articleItems={projectArticleItems}
+          descriptionHtml={projectDescription}
+          showSectionTitles
+          descriptionHtmlClassName={fullDescriptionClassName}
+          testIdPrefix="week-project-hover-renderer"
+        />
+      ) : (
+        <div className="text-[11px] text-slate-500">{resolvedProjectName}</div>
       )}
-      {canOpenDescriptionPreview && (
+    </div>
+  );
+  const canOpenCollapsedPreview = enableFullDescriptionPreview && hasProjectReference;
+
+  if (collapsed) {
+    const collapsedTrigger = (
+      <div
+        className={cn(collapsedPanelClassName, className)}
+        data-testid="week-project-description-hover-trigger"
+      >
+        {projectHeader}
+      </div>
+    );
+
+    if (canOpenCollapsedPreview) {
+      return (
         <HoverPreview
-          preview={(
-            <div className="rounded-lg bg-white p-2">
-              <div className="mb-2 text-xs font-semibold text-slate-800">{resolvedProjectHeader}</div>
-              <ProjectArticleDescriptionRenderer
-                articleItems={projectArticleItems}
-                descriptionHtml={projectDescription}
-                showSectionTitles
-                descriptionHtmlClassName={fullDescriptionClassName}
-                testIdPrefix="week-project-hover-renderer"
-              />
-            </div>
-          )}
+          preview={hoverPreviewContent}
           closeDelay={80}
           mode="cursor"
           side="right"
@@ -79,20 +122,75 @@ export function CalendarWeekAppointmentPanelProject({
           maxHeight={320}
           className="z-[9999] w-[420px]"
         >
-          <div
-            className={cn("mt-1 min-h-0 flex-1 overflow-hidden", compactContentClassName)}
-            data-testid="week-project-description-hover-trigger"
-          >
-            <ProjectArticleDescriptionRenderer
-              articleItems={projectArticleItems}
-              descriptionHtml={projectDescription}
-              testIdPrefix="week-project-hover-trigger-renderer"
-            />
-          </div>
+          {collapsedTrigger}
         </HoverPreview>
-      )}
-        </>
-      )}
+      );
+    }
+
+    return collapsedTrigger;
+  }
+
+  return (
+    <div className={cn(panelClassName, className)} data-testid="week-project-panel">
+      {showSectionTitle && <div className="mb-1 text-[10px] font-semibold text-slate-500">Projekt</div>}
+      {projectHeader}
+      <>
+        {isDetailMode && hasProjectContent && (
+          canOpenDescriptionPreview ? (
+            <HoverPreview
+              preview={hoverPreviewContent}
+              closeDelay={80}
+              mode="cursor"
+              side="right"
+              align="start"
+              cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+              cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+              maxWidth={420}
+              maxHeight={320}
+              className="z-[9999] w-[420px]"
+            >
+              <div data-testid="week-project-description-hover-trigger">
+                {detailContent}
+              </div>
+            </HoverPreview>
+          ) : detailContent
+        )}
+        {!isDetailMode && !canOpenDescriptionPreview && hasProjectContent && compactContent}
+        {!isDetailMode && canOpenDescriptionPreview && (
+          <HoverPreview
+            preview={hoverPreviewContent}
+            closeDelay={80}
+            mode="cursor"
+            side="right"
+            align="start"
+            cursorOffsetX={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+            cursorOffsetY={PANEL_PREVIEW_CURSOR_OFFSET_PX}
+            maxWidth={420}
+            maxHeight={320}
+            className="z-[9999] w-[420px]"
+          >
+            <div
+              className={cn(
+                "min-h-0 overflow-hidden",
+                hasProjectContent ? "mt-1" : "mt-0",
+                hasProjectContent ? compactContentClassName : undefined,
+              )}
+              data-testid="week-project-description-hover-trigger"
+            >
+              {hasProjectContent ? (
+                <ProjectArticleDescriptionRenderer
+                  articleItems={projectArticleItems}
+                  descriptionHtml={projectDescription}
+                  articleListClassName={compactArticleListClassName}
+                  testIdPrefix="week-project-hover-trigger-renderer"
+                />
+              ) : (
+                <div className="text-[11px] text-slate-500">{resolvedProjectName}</div>
+              )}
+            </div>
+          </HoverPreview>
+        )}
+      </>
     </div>
   );
 }

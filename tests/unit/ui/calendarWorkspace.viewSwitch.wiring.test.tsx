@@ -72,8 +72,6 @@ vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => ({ setSetting: vi.fn() }),
   useSetting: (key: string) => {
     switch (key) {
-      case "calendar.weekAppointmentDisplayMode":
-        return "standard";
       case "calendar.weekTileBodyMode":
         return "collapsed";
       case "calendar.weekLanes.isCollapsed":
@@ -123,7 +121,6 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     const props = weekGridCalls.at(-1);
     expect(props?.employeeFilterId).toBe(17);
     expect(props?.restoreRequest).toEqual({ scrollLeft: 144, scrollTop: 55 });
-    expect(props?.weekAppointmentDisplayMode).toBe("detail");
     expect(props?.weekTileBodyMode).toBe("collapsed");
     expect(props?.weekLanesCollapsed).toBe(false);
     expect(props?.conflictHighlightActive).toBe(false);
@@ -251,5 +248,49 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
       appointmentId: 701,
       returnView: "monthSheet",
     });
+  });
+
+  it("keeps week and month sheet calendars readonly for reader roles", () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="week"
+        currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+      />,
+    );
+
+    renderToStaticMarkup(
+      <CalendarWorkspace
+        mode="global"
+        activeView="monthSheet"
+        currentDate={new Date("2099-01-07")}
+        monitoringItems={monitoringItems}
+        employeeFilterId={null}
+        onEmployeeFilterChange={() => undefined}
+        onViewChange={() => undefined}
+        onDateChange={() => undefined}
+        onOpenAppointmentForm={openAppointmentFormMock}
+      />,
+    );
+
+    const weekProps = weekGridCalls.at(-1);
+    const monthSheetProps = monthSheetGridCalls.at(-1);
+
+    expect(weekProps?.readOnly).toBe(true);
+    expect(weekProps?.onNewAppointment).toBeUndefined();
+    expect(monthSheetProps?.readOnly).toBe(true);
+    expect(monthSheetProps?.onNewAppointment).toBeUndefined();
   });
 });

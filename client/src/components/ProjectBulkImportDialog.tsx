@@ -141,7 +141,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
         throw new Error(payload?.message ?? "Übernahme fehlgeschlagen");
       }
       await invalidateQueries();
-      toast({ title: "Neue Projekte übernommen" });
+      toast({ title: "Projektimport übernommen" });
     } catch (applyError) {
       setError(applyError instanceof Error ? applyError.message : "Übernahme fehlgeschlagen");
     } finally {
@@ -216,7 +216,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
         {result ? (
           <div className="space-y-4">
             <section className="rounded-md border border-border p-3 space-y-2">
-              <h3 className="text-sm font-semibold">A - Neue Projekte</h3>
+              <h3 className="text-sm font-semibold">A - Neu importierte Projekte</h3>
               {result.newProjects.map((row) => (
                 <label key={row.id} className="flex items-center gap-2 text-sm">
                   <input
@@ -228,7 +228,7 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
                 </label>
               ))}
               <Button onClick={() => void applyNew()} disabled={selectedNewIds.length === 0 || applyingNew}>
-                {applyingNew ? "Übernehme..." : "Neue Projekte übernehmen"}
+                {applyingNew ? "Übernehme..." : "Projektimport übernehmen"}
               </Button>
             </section>
 
@@ -285,4 +285,3 @@ export function ProjectBulkImportDialog({ open, onOpenChange }: ProjectBulkImpor
     </Dialog>
   );
 }
-

@@ -2,56 +2,313 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Projekt-Extraktion kann die reale PDF-Fixture mit auslaendischer Adresse vollstaendig verarbeiten.
- * - Eine fuehrende Hausnummer in der Strassenzeile wird deterministisch erkannt.
- * - Die explizite Laenderzeile wird in `country` und den Feldreport uebernommen.
+ * - Alle hinterlegten Projekt-PDF-Fallbeispiele laufen ueber den echten `project_form`-Extract.
+ * - Varianten fuer Firmenkunde, Personenkunde, unterschiedliche Telefonlabels und Ausland werden vollstaendig ausgewertet.
+ * - Der Feldreport markiert fehlende statt nicht vorhandener Daten deterministisch, ohne Warnings oder Komplettabbruch.
  *
  * Fehlerfaelle:
- * - Die reale Fixture fuehrt weiterhin zu einem Komplettabbruch im project_form-Extract.
- * - Strasse oder Land gehen trotz gueltigem Auslandsadressblock verloren.
+ * - Eine reale Fixture fuehrt zu Extract-Fehlern, unvollstaendigen Kerndaten oder unerwarteten Warnings.
+ * - Namens-, Firmen-, Telefon- oder Länderfaelle werden nicht stabil erkannt.
  *
  * Ziel:
- * Die echte PDF-Fixture als Regression fuer Auslandsadresse und `country` im project_form-Extract absichern.
+ * Die reale Projekt-Fixture-Suite als Regression fuer den vollstaendigen Doc-Extract absichern.
  */
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { extractFromPdf } from "../../../server/services/documentProcessingService";
 
-describe("FT21 integration: project extraction fixture with foreign customer address", () => {
-  it("extracts order data from the Tom Voosen fixture including street and country", async () => {
-    const fixturePath = path.resolve(process.cwd(), "tests/fixtures/Tom Voosen 160673 A0218277A.pdf");
-    expect(fs.existsSync(fixturePath)).toBe(true);
+type ProjectFixtureExpectation = {
+  file: string;
+  customer: {
+    customerNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    company: string | null;
+    phone: string | null;
+    addressLine1: string;
+    postalCode: string;
+    city: string;
+    country: string;
+  };
+  orderNumber: string;
+  amount: string;
+  saunaModel: string;
+  recognizedKeys: string[];
+  missing: Array<{
+    key: string;
+    reason: string;
+  }>;
+};
 
-    const pdfBuffer = fs.readFileSync(fixturePath);
-    const result = await extractFromPdf({
-      scope: "project_form",
-      fileBuffer: pdfBuffer,
-    });
+const projectExtractFixtures: ProjectFixtureExpectation[] = [
+  {
+    file: "BSP CompanyName Only.pdf",
+    customer: {
+      customerNumber: "161979",
+      firstName: null,
+      lastName: null,
+      company: "B&E Wohnprojekte GmbH",
+      phone: "01520-5613413",
+      addressLine1: "Carl-Reuther-Str. 1",
+      postalCode: "68305",
+      city: "Mannheim",
+      country: "Deutschland",
+    },
+    orderNumber: "A0218253A",
+    amount: "6264.50",
+    saunaModel: "S1004388 Sonderposten Thermoholz D-AB in verschiedenen Abmessungen auf",
+    recognizedKeys: [
+      "customerNumber",
+      "company",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "firstName", reason: "Firmenkunde ohne Personenname im Dokumentkopf." },
+      { key: "lastName", reason: "Firmenkunde ohne Personenname im Dokumentkopf." },
+    ],
+  },
+  {
+    file: "BSP Country.pdf",
+    customer: {
+      customerNumber: "160673",
+      firstName: "Tom",
+      lastName: "Voosen",
+      company: null,
+      phone: "00352-621222479",
+      addressLine1: "1 Tommesknapp",
+      postalCode: "7419",
+      city: "Brouch",
+      country: "Luxemburg",
+    },
+    orderNumber: "A0218277A",
+    amount: "19515.00",
+    saunaModel: "Exklusiv Sauna",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "company", reason: "Keine Firmenzeile im Dokumentkopf erkannt." },
+    ],
+  },
+  {
+    file: "BSP Customer CompanyName.pdf",
+    customer: {
+      customerNumber: "163180",
+      firstName: "Lars",
+      lastName: "Bartilla",
+      company: "Fahrrad Meinhold GmbH",
+      phone: null,
+      addressLine1: "Hannoversche Straße 164",
+      postalCode: "30823",
+      city: "Garbsen",
+      country: "Deutschland",
+    },
+    orderNumber: "BE19322",
+    amount: "54.40",
+    saunaModel: "S1004511 Kopfkissen KARAT 80 x 80",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "company",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "phone", reason: "Kein gültiges Mobil- oder Telefonfeld erkannt." },
+    ],
+  },
+  {
+    file: "BSP Customer.pdf",
+    customer: {
+      customerNumber: "163033",
+      firstName: "Leif",
+      lastName: "Döpking",
+      company: null,
+      phone: "0152-53500769",
+      addressLine1: "Ellerdamm 28",
+      postalCode: "27339",
+      city: "Riede, Kreis Verden",
+      country: "Deutschland",
+    },
+    orderNumber: "A0118067A",
+    amount: "8850.00",
+    saunaModel: "Suuri Sauna",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "company", reason: "Keine Firmenzeile im Dokumentkopf erkannt." },
+    ],
+  },
+  {
+    file: "BSP Mobil.pdf",
+    customer: {
+      customerNumber: "163059",
+      firstName: "Holger",
+      lastName: "Haake",
+      company: null,
+      phone: "0172-4540748",
+      addressLine1: "Uhlhornskamp 12",
+      postalCode: "27243",
+      city: "Harpstedt",
+      country: "Deutschland",
+    },
+    orderNumber: "A0117990A",
+    amount: "7000.00",
+    saunaModel: "FassSauna",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "company", reason: "Keine Firmenzeile im Dokumentkopf erkannt." },
+    ],
+  },
+  {
+    file: "BSP Tel.pdf",
+    customer: {
+      customerNumber: "163053",
+      firstName: "Christoph",
+      lastName: "Becker",
+      company: null,
+      phone: "024614068760",
+      addressLine1: "Vogelsangstr. 5 a",
+      postalCode: "52428",
+      city: "Jülich",
+      country: "Deutschland",
+    },
+    orderNumber: "A0118045A",
+    amount: "7600.00",
+    saunaModel: "FassSauna",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "company", reason: "Keine Firmenzeile im Dokumentkopf erkannt." },
+    ],
+  },
+  {
+    file: "BSP default.pdf",
+    customer: {
+      customerNumber: "163059",
+      firstName: "Holger",
+      lastName: "Haake",
+      company: null,
+      phone: "0172-4540748",
+      addressLine1: "Uhlhornskamp 12",
+      postalCode: "27243",
+      city: "Harpstedt",
+      country: "Deutschland",
+    },
+    orderNumber: "A0117990A",
+    amount: "7000.00",
+    saunaModel: "FassSauna",
+    recognizedKeys: [
+      "customerNumber",
+      "firstName",
+      "lastName",
+      "phone",
+      "addressLine1",
+      "postalCode",
+      "city",
+      "country",
+      "orderNumber",
+      "amount",
+      "saunaModel",
+    ],
+    missing: [
+      { key: "company", reason: "Keine Firmenzeile im Dokumentkopf erkannt." },
+    ],
+  },
+];
 
-    expect(result.customer.customerNumber).toBe("160673");
-    expect(result.customer.firstName).toBe("Tom");
-    expect(result.customer.lastName).toBe("Voosen");
-    expect(result.customer.phone).toBe("00352-621222479");
-    expect(result.customer.addressLine1).toBe("1 Tommesknapp");
-    expect(result.customer.postalCode).toBe("7419");
-    expect(result.customer.city).toBe("Brouch");
-    expect(result.customer.country).toBe("Luxemburg");
-    expect(result.orderNumber).toBe("A0218277A");
-    expect(result.amount).toBe("19515.00");
-    expect(result.saunaModel).toBe("Exklusiv Sauna");
-    expect(result.articleItems.length).toBeGreaterThan(5);
-    expect(result.warnings).toEqual([]);
-    expect(result.fieldReport.recognized).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ key: "orderNumber", value: "A0218277A" }),
-        expect.objectContaining({ key: "amount", value: "19515.00" }),
-        expect.objectContaining({ key: "addressLine1", value: "1 Tommesknapp" }),
-        expect.objectContaining({ key: "postalCode", value: "7419" }),
-        expect.objectContaining({ key: "country", value: "Luxemburg" }),
-      ]),
-    );
-    expect(result.fieldReport.missing.some((item) => item.key === "addressLine1")).toBe(false);
-    expect(result.fieldReport.missing.some((item) => item.key === "country")).toBe(false);
-  });
+describe("FT21 integration: project extraction fixture suite", () => {
+  it.each(projectExtractFixtures)(
+    "extracts order data from $file without warnings or hard errors",
+    async (fixture) => {
+      const fixturePath = path.resolve(process.cwd(), "tests/fixtures/Doc Extract", fixture.file);
+      expect(fs.existsSync(fixturePath)).toBe(true);
+
+      const pdfBuffer = fs.readFileSync(fixturePath);
+      const result = await extractFromPdf({
+        scope: "project_form",
+        fileBuffer: pdfBuffer,
+      });
+
+      expect(result.customer.customerNumber).toBe(fixture.customer.customerNumber);
+      expect(result.customer.firstName).toBe(fixture.customer.firstName);
+      expect(result.customer.lastName).toBe(fixture.customer.lastName);
+      expect(result.customer.company).toBe(fixture.customer.company);
+      expect(result.customer.phone).toBe(fixture.customer.phone);
+      expect(result.customer.addressLine1).toBe(fixture.customer.addressLine1);
+      expect(result.customer.postalCode).toBe(fixture.customer.postalCode);
+      expect(result.customer.city).toBe(fixture.customer.city);
+      expect(result.customer.country).toBe(fixture.customer.country);
+      expect(result.orderNumber).toBe(fixture.orderNumber);
+      expect(result.amount).toBe(fixture.amount);
+      expect(result.saunaModel).toBe(fixture.saunaModel);
+      expect(result.articleItems.length).toBeGreaterThan(0);
+      expect(result.warnings).toEqual([]);
+      expect(result.fieldReport.recognized.map((item) => item.key)).toEqual(fixture.recognizedKeys);
+      expect(
+        result.fieldReport.missing.map((item) => ({
+          key: item.key,
+          reason: item.reason,
+        })),
+      ).toEqual(fixture.missing);
+    },
+  );
 });

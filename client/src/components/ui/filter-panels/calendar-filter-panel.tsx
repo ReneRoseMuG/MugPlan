@@ -251,43 +251,50 @@ export function CalendarFilterPanel({
     </button>
   ) : null;
 
+  const monthGridColumnCount =
+    1 +
+    (showKwJumpControls ? 1 : 0) +
+    (showConflictHighlightControls ? 1 : 0);
+  const monthGridTemplateColumns = Array.from({ length: monthGridColumnCount }, (_, index) => (
+    index === 0 ? "220px" : "max-content"
+  )).join(" ");
+
   return (
     <FilterPanel title="Kalenderfilter" layout="row">
-      <div className="flex w-full flex-wrap items-start gap-4">
-        <div className="min-w-[220px]">
-          <Label className="text-xs">Mitarbeiter</Label>
-          <div className="mt-1">
-            <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
-          </div>
-        </div>
+      <div
+        className="grid w-full items-start gap-x-4 gap-y-1"
+        style={{ gridTemplateColumns: monthGridTemplateColumns }}
+      >
+        <Label className="text-xs">Mitarbeiter</Label>
+        {showKwJumpControls ? <Label className="text-xs">KW</Label> : null}
+        {showConflictHighlightControls ? <Label className="text-xs">Konflikte</Label> : null}
+
+        <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
         {showKwJumpControls ? (
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs">KW</Label>
-            <div className="flex items-end gap-2">
-              <KwJumpSpinner
-                value={kwJumpValue}
-                min={1}
-                max={53}
-                error={kwJumpError}
-                onChange={onKwJumpChange}
-                onSubmit={onKwJumpSubmit}
-                onCommitValue={onKwJumpValueCommit}
-              />
-              {showKwJumpBack && typeof onKwJumpBack === "function" ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-9 self-end rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                  onClick={onKwJumpBack}
-                  data-testid="button-calendar-kw-jump-back"
-                >
-                  ← Zurück
-                </Button>
-              ) : null}
-            </div>
+          <div className="flex items-end gap-2">
+            <KwJumpSpinner
+              value={kwJumpValue}
+              min={1}
+              max={53}
+              error={kwJumpError}
+              onChange={onKwJumpChange}
+              onSubmit={onKwJumpSubmit}
+              onCommitValue={onKwJumpValueCommit}
+            />
+            {showKwJumpBack && typeof onKwJumpBack === "function" ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 self-end rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                onClick={onKwJumpBack}
+                data-testid="button-calendar-kw-jump-back"
+              >
+                ← Zurück
+              </Button>
+            ) : null}
           </div>
         ) : null}
-        {conflictControls}
+        {showConflictHighlightControls ? conflictControls : null}
       </div>
     </FilterPanel>
   );

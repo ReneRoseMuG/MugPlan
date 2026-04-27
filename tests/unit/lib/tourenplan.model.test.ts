@@ -22,10 +22,12 @@ import {
   buildTourenplanPrintPages,
   formatTourenplanEmployeeBadges,
   formatTourenplanProjectDescription,
+  paginateTourenplanPrintSections,
   paginateTourenplanWeekGroups,
   resolveTourenplanTagKind,
   type TourenplanAppointmentListItem,
   type TourenplanPreviewResponse,
+  type TourenplanResolvedAppointment,
 } from "../../../client/src/components/reports/tourenplan-model";
 
 function createTag(id: number, name: string): Tag {
@@ -134,6 +136,37 @@ function createDetailedAppointmentListItem(params: {
     isCancelled: false,
     allDay: true,
     singleEmployee: false,
+  };
+}
+
+function createResolvedAppointment(id: number, startDate: string, projectName: string): TourenplanResolvedAppointment {
+  return {
+    id,
+    projectId: 100 + id,
+    projectName,
+    startDate,
+    endDate: startDate,
+    startTime: null,
+    durationDays: 1,
+    saunaModel: null,
+    customer: {
+      id: 200 + id,
+      customerNumber: `C-${id}`,
+      fullName: `Kunde ${id}`,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      postalCode: "26135",
+      city: "Oldenburg",
+      country: "Deutschland",
+    },
+    employees: [],
+    printNotes: [],
+    appointmentTags: [],
+    customerTags: [],
+    projectTags: [],
+    projectArticleItems: [],
+    projectDescription: null,
   };
 }
 
@@ -653,5 +686,60 @@ describe("Tourenplan model", () => {
       { weekNumber: 16, ids: [41, 42] },
       { weekNumber: 17, ids: [43] },
     ]);
+  });
+
+  it("starts every selected tour section on a new page and keeps page numbers continuous", () => {
+    const pages = paginateTourenplanPrintSections({
+      pageCapacityPx: 500,
+      cardHeights: {
+        501: 120,
+        601: 120,
+        701: 120,
+      },
+      sections: [
+        {
+          sectionKey: "tour-1",
+          tourName: "Tour 1",
+          weeks: [{
+            weekStart: "2026-04-13",
+            weekEnd: "2026-04-19",
+            weekNumber: 16,
+            appointments: [createResolvedAppointment(501, "2026-04-14", "Projekt Tour 1")],
+            weekNotes: [],
+          }],
+        },
+        {
+          sectionKey: "tour-2",
+          tourName: "Tour 2",
+          weeks: [{
+            weekStart: "2026-04-13",
+            weekEnd: "2026-04-19",
+            weekNumber: 16,
+            appointments: [createResolvedAppointment(601, "2026-04-15", "Projekt Tour 2")],
+            weekNotes: [],
+          }],
+        },
+        {
+          sectionKey: "without-tour",
+          tourName: "Ohne Tour",
+          weeks: [{
+            weekStart: "2026-04-13",
+            weekEnd: "2026-04-19",
+            weekNumber: 16,
+            appointments: [createResolvedAppointment(701, "2026-04-16", "Projekt Ohne Tour")],
+            weekNotes: [],
+          }],
+        },
+      ],
+    });
+
+    expect(pages.map((page) => ({ pageNumber: page.pageNumber, tourName: page.tourName }))).toEqual([
+      { pageNumber: 1, tourName: "Tour 1" },
+      { pageNumber: 2, tourName: "Tour 2" },
+      { pageNumber: 3, tourName: "Ohne Tour" },
+    ]);
+    expect(pages[0]?.weeks[0]?.appointments.map((appointment) => appointment.id)).toEqual([501]);
+    expect(pages[1]?.weeks[0]?.appointments.map((appointment) => appointment.id)).toEqual([601]);
+    expect(pages[2]?.weeks[0]?.appointments.map((appointment) => appointment.id)).toEqual([701]);
   });
 });

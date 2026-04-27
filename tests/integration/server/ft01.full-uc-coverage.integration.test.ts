@@ -23,7 +23,6 @@ import { db } from "../../../server/db";
 import { appointmentEmployees, appointments, type Appointment } from "@shared/schema";
 import {
   assignEmployeesToTeamFixture,
-  assignEmployeesToTourFixture,
   assertNoDuplicateAppointmentEmployeePairs,
   createAppointmentFixture,
   createCustomerFixture,
@@ -294,7 +293,6 @@ describe("FT01 UC coverage integration", () => {
     const employeeA = await createEmployeeFixture("UC01-04-A");
     const employeeB = await createEmployeeFixture("UC01-04-B");
     const tour = await createTourFixture("#224488");
-    await assignEmployeesToTourFixture(tour.id, [employeeA, employeeB]);
 
     const appt = await createAppointmentFixture({
       projectId: project.id,
@@ -330,7 +328,6 @@ describe("FT01 UC coverage integration", () => {
     const newEmployeeA = await createEmployeeFixture("NEW-A");
     const newEmployeeB = await createEmployeeFixture("NEW-B");
     const tour = await createTourFixture("#669933");
-    await assignEmployeesToTourFixture(tour.id, [newEmployeeA, newEmployeeB]);
 
     const appt = await createAppointmentFixture({
       projectId: project.id,
@@ -374,7 +371,6 @@ describe("FT01 UC coverage integration", () => {
     const companion = await createEmployeeFixture("COMP");
     const old = await createEmployeeFixture("OLD");
     const tour = await createTourFixture("#777777");
-    await assignEmployeesToTourFixture(tour.id, [blocker, companion]);
 
     await createAppointmentFixture({ projectId: project.id, startDate: "2099-10-06", employeeIds: [blocker.id] });
     const appt = await createAppointmentFixture({ projectId: project.id, startDate: "2099-10-06", employeeIds: [old.id] });
@@ -479,7 +475,6 @@ describe("FT01 UC coverage integration", () => {
     const employee = await createEmployeeFixture("VIEWS");
     const blockedEmployee = await createEmployeeFixture("VIEWS-BLOCK");
     const tour = await createTourFixture("#123abc");
-    await assignEmployeesToTourFixture(tour.id, [employee]);
     await createAppointmentFixture({
       projectId: project.id,
       startDate: "2099-10-09",

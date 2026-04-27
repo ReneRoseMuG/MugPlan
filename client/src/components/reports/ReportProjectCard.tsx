@@ -19,6 +19,7 @@ type ReportProjectCardRow = {
   actualDate: string | null;
   durationDays: number;
   employees: Array<{ id: number; fullName: string }>;
+  tourColor?: string | null;
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
@@ -86,6 +87,7 @@ export function ReportProjectCard({
   bodyContent,
   className,
   headerClassName,
+  headerStyle,
   bodyClassName,
   footerClassName,
 }: {
@@ -94,6 +96,7 @@ export function ReportProjectCard({
   bodyContent?: React.ReactNode;
   className?: string;
   headerClassName?: string;
+  headerStyle?: React.CSSProperties;
   bodyClassName?: string;
   footerClassName?: string;
 }) {
@@ -102,7 +105,10 @@ export function ReportProjectCard({
       className={cn("rounded-lg border border-border bg-white shadow-sm", className)}
       data-testid={testIdPrefix}
     >
-      <div className={cn("grid gap-2 border-b border-border px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-4", headerClassName)}>
+      <div
+        className={cn("grid gap-2 border-b border-border px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-4", headerClassName)}
+        style={headerStyle}
+      >
         <div className="min-w-0 text-sm">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 md:flex-nowrap">
             <span className="truncate font-semibold text-foreground">{resolveValue(row.customerFullName)}</span>

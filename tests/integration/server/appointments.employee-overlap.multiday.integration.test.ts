@@ -25,7 +25,6 @@ import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import {
   assignEmployeesToTeamFixture,
-  assignEmployeesToTourFixture,
   createAppointmentFixture,
   createEmployeeFixture,
   createProjectFixture,
@@ -60,7 +59,6 @@ describe("FT01 integration: employee overlap multiday scenarios", () => {
     const employeeD = await createEmployeeFixture("D");
     const employeeE = await createEmployeeFixture("E");
     const tour = await createTourFixture("#8844aa");
-    await assignEmployeesToTourFixture(tour.id, [employeeD, employeeE]);
 
     await createAppointmentFixture({
       projectId: project.id,

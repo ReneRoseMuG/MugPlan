@@ -80,11 +80,16 @@ describe("FT31 UI: MonitoringFilterPanel wiring", () => {
   it("forwards customer and order identifier patches and converts the selected tour to a number", () => {
     const onChange = vi.fn();
 
-    renderToStaticMarkup(
+    const html = renderToStaticMarkup(
       <MonitoringFilterPanel
         filters={defaultMonitoringFilters}
         onChange={onChange}
-        tours={[{ id: 7, name: "Tour 7", color: "#2563eb", version: 1 }]}
+        tours={[
+          { id: 10, name: "Beta", color: "#2563eb", version: 1 },
+          { id: 7, name: "Tour 10", color: "#2563eb", version: 1 },
+          { id: 8, name: "Tour 2", color: "#2563eb", version: 1 },
+          { id: 9, name: "Alpha", color: "#2563eb", version: 1 },
+        ]}
       />,
     );
 
@@ -98,14 +103,18 @@ describe("FT31 UI: MonitoringFilterPanel wiring", () => {
     expect(selectCalls).toHaveLength(2);
     expect(selectCalls[0].value).toBe("all");
     expect(selectCalls[1].value).toBe("all");
+    expect(html.indexOf("Alle Touren")).toBeLessThan(html.indexOf("Tour 2"));
+    expect(html.indexOf("Tour 2")).toBeLessThan(html.indexOf("Tour 10"));
+    expect(html.indexOf("Tour 10")).toBeLessThan(html.indexOf("Alpha"));
+    expect(html.indexOf("Alpha")).toBeLessThan(html.indexOf("Beta"));
 
     (customerNumberFilterCalls[0].onChange as ((value: string) => void))("C-2100");
     (orderNumberFilterCalls[0].onChange as ((value: string) => void))("A-0218229A");
-    (selectCalls[0].onValueChange as ((value: string) => void))("7");
+    (selectCalls[0].onValueChange as ((value: string) => void))("8");
 
     expect(onChange).toHaveBeenCalledWith({ customerNumber: "C-2100" });
     expect(onChange).toHaveBeenCalledWith({ orderNumber: "A-0218229A" });
-    expect(onChange).toHaveBeenCalledWith({ tourId: 7 });
+    expect(onChange).toHaveBeenCalledWith({ tourId: 8 });
   });
 
   it("resets tour and trigger filters back to undefined for the all state", () => {

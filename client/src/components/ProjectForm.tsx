@@ -71,9 +71,11 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
+import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
 import { isManagedRemarksTagName } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
-import type { Project, Customer, Note, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
+import type { Project, Customer, Note, NoteTemplate, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
@@ -110,6 +112,14 @@ interface ProjectFormProps {
 }
 
 type DraftProjectNote = Note & {
+  templateId?: number;
+};
+
+type ProjectNoteDraft = {
+  title: string;
+  body: string;
+  cardColor?: string | null;
+  print: boolean;
   templateId?: number;
 };
 
@@ -178,6 +188,8 @@ export function ProjectForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [suggestedProjectNoteDraft, setSuggestedProjectNoteDraft] = useState<ProjectNoteDraft | null>(null);
   const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
@@ -189,10 +201,12 @@ export function ProjectForm({
   const hydratedEditProjectFormIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
-  const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
-  const canManageProjectTags = isAdmin || userRole === "DISPATCHER";
-  const canDeleteAttachments = isAdmin || userRole === "DISPATCHER";
+  const isReader = isReaderRole(userRole);
+  const isReadOnlyView = isReader;
+  const canManageProjectTags = !isReader && (isAdmin || userRole === "DISPATCHER");
+  const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
     attachment.originalName === file.name && attachment.mimeType === (file.type || null) && attachment.file.size === file.size;
 
@@ -245,6 +259,10 @@ export function ProjectForm({
   const { data: availableTags = [] } = useQuery<Tag[]>({
     queryKey: getTagCatalogQueryKey("project"),
     queryFn: () => fetchTagCatalog("project"),
+  });
+  const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
+    queryKey: ["/api/note-templates"],
+    queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
 
   // Fetch customers for selection
@@ -914,6 +932,47 @@ export function ProjectForm({
     setDraftProjectNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
+  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+  const openProjectNoteSuggestionForTag = (tagName: string) => {
+    const action = computeTagAddedAction(
+      tagName,
+      effectiveProjectId ?? null,
+      visibleProjectNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind === "show_note_suggestion_dialog") {
+      setNoteSuggestionDialog({ templateTitle: action.templateTitle });
+    }
+  };
+
+  const handleCreateProjectNoteFromSuggestion = async () => {
+    if (!noteSuggestionDialog) return;
+    const templates = noteTemplates.length > 0
+      ? noteTemplates
+      : await queryClient.ensureQueryData({
+        queryKey: ["/api/note-templates"],
+        queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
+      });
+    const template = templates.find((entry) => normalizeTemplateTitle(entry.title) === normalizeTemplateTitle(noteSuggestionDialog.templateTitle));
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSuggestedProjectNoteDraft({
+      title: template.title,
+      body: template.body,
+      cardColor: template.cardColor,
+      print: template.print,
+      templateId: template.id,
+    });
+    setNoteSuggestionDialog(null);
+  };
+
   // Note mutations
   const getProjectNoteVersion = (noteId: number): number => {
     const note = projectNotes.find((entry) => entry.id === noteId);
@@ -930,6 +989,13 @@ export function ProjectForm({
     },
     onSuccess: () => {
       void invalidateProjectNotesQueries();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Notiz konnte nicht angelegt werden",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -999,7 +1065,11 @@ export function ProjectForm({
       const response = await apiRequest('POST', `/api/projects/${effectiveProjectId}/tags`, { tagId });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (_relation, tagId) => {
+      const tagName = availableTags.find((tag) => tag.id === tagId)?.name;
+      if (tagName) {
+        openProjectNoteSuggestionForTag(tagName);
+      }
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
       void invalidateProjectQueries();
@@ -1248,6 +1318,10 @@ export function ProjectForm({
   };
 
   const handleSubmit = async () => {
+    if (isReadOnlyView) {
+      toast({ title: "Nur Lesemodus", description: "Diese Rolle darf Projekte nicht bearbeiten.", variant: "destructive" });
+      return;
+    }
     if (!name.trim()) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
       return;
@@ -1499,7 +1573,7 @@ export function ProjectForm({
             <div className="flex min-w-0 flex-col gap-3">
               <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
                 <FolderKanban className="w-6 h-6" />
-                {isEditing ? "Projekt bearbeiten" : "Neues Projekt"}
+                {isEditing ? "Projekt bearbeiten" : "Projekt anlegen"}
               </h2>
               <EditFormContextText>{projectEditContext}</EditFormContextText>
             </div>
@@ -1526,7 +1600,7 @@ export function ProjectForm({
                 </TabsList>
               </div>
             ) : null}
-            {isEditing ? (
+            {isEditing && !isReadOnlyView ? (
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
@@ -1555,6 +1629,7 @@ export function ProjectForm({
               projectId={effectiveProjectId}
               projectName={projectNamePreview}
               isEditing={isEditing}
+              readOnly={isReadOnlyView}
               className="h-auto"
               onOpenAppointment={onOpenAppointment}
               onOpenCalendarWorkspace={onOpenCalendarWorkspace}
@@ -1564,6 +1639,7 @@ export function ProjectForm({
               projectId={effectiveProjectId}
               customerId={customerId}
               isEditing={isEditing}
+              readOnly={isReadOnlyView}
               canDelete={canDeleteAttachments}
               pendingProjectAttachments={draftProjectAttachments}
               onUploadPendingProjectAttachment={addDraftProjectAttachment}
@@ -1575,7 +1651,7 @@ export function ProjectForm({
               availableTags={availableTags}
               isLoading={isEditing ? assignedTagsLoading : false}
               loadErrorMessage={isEditing && assignedTagsError instanceof Error ? assignedTagsError.message : null}
-              canEdit={canManageProjectTags}
+              canEdit={!isReadOnlyView && canManageProjectTags}
               title="Tags"
               testIdPrefix="project-tag-picker"
               onAdd={(tagId) => {
@@ -1584,6 +1660,10 @@ export function ProjectForm({
                   return;
                 }
                 addDraftProjectTag(tagId);
+                const tagName = availableTags.find((tag) => tag.id === tagId)?.name;
+                if (tagName) {
+                  openProjectNoteSuggestionForTag(tagName);
+                }
               }}
               onRemove={(item) => {
                 if (isEditing) {
@@ -1598,6 +1678,9 @@ export function ProjectForm({
             <NotesSection
               notes={visibleProjectNotes}
               isLoading={isEditing ? notesLoading : false}
+              readOnly={isReadOnlyView}
+              prefillDraft={suggestedProjectNoteDraft}
+              onPrefillDraftConsumed={() => setSuggestedProjectNoteDraft(null)}
               onAdd={(data) => {
                 if (isEditing) {
                   createNoteMutation.mutate(data);
@@ -1645,14 +1728,16 @@ export function ProjectForm({
               </Button>
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={isSubmitPending}
-              data-testid="button-save-project"
-            >
-              {isSubmitPending ? "Speichern..." : "Speichern"}
-            </Button>
+            {!isReadOnlyView ? (
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={isSubmitPending}
+                data-testid="button-save-project"
+              >
+                {isSubmitPending ? "Speichern..." : "Speichern"}
+              </Button>
+            ) : null}
           </div>
         )}
       >
@@ -1666,6 +1751,7 @@ export function ProjectForm({
             plannedDateText={plannedDateText}
             plannedWeek={plannedWeek}
             isEditing={isEditing}
+            readOnly={isReadOnlyView}
             onNameChange={setName}
             onOrderNumberChange={setOrderNumber}
             onAmountChange={setAmount}
@@ -1680,6 +1766,7 @@ export function ProjectForm({
             plannedDateText={plannedDateText}
             plannedWeek={plannedWeek}
             isEditing={isEditing}
+            readOnly={isReadOnlyView}
             onNameChange={setName}
             onOrderNumberChange={setOrderNumber}
             onAmountChange={setAmount}
@@ -1703,6 +1790,7 @@ export function ProjectForm({
                         value={descriptionMd}
                         onChange={setDescriptionMd}
                         placeholder="Projektbeschreibung eingeben..."
+                        readOnly={isReadOnlyView}
                       />
                     </div>
                   </TabsContent>
@@ -1720,6 +1808,7 @@ export function ProjectForm({
                         componentCategories={componentCategories}
                         productCategories={productCategories}
                         isAdmin={isAdmin}
+                        readOnly={isReadOnlyView}
                         onSelectField={(fieldKey, selectedValue) => void handleFieldSelection(fieldKey, selectedValue)}
                         onSelectDynamic={(slotId, selectedValue) => void handleDynamicFieldSelection(slotId, selectedValue)}
                         onCreateForField={(fieldKey, input) => handleCreateForField(fieldKey, input)}
@@ -1736,6 +1825,7 @@ export function ProjectForm({
                   <RichTextEditor
                     value={extractedArticleListHtml}
                     onChange={setExtractedArticleListHtml}
+                    readOnly={isReadOnlyView}
                   />
                 </div>
               ) : null}
@@ -1744,9 +1834,9 @@ export function ProjectForm({
                 <RelationSlot
                   title="Kunde"
                   icon={<UserCircle className="w-4 h-4" />}
-                  state={selectedCustomer ? "active" : "empty"}
-                  onAdd={() => setCustomerDialogOpen(true)}
-                  onRemove={() => setCustomerId(null)}
+                  state={isReadOnlyView ? "readonly" : selectedCustomer ? "active" : "empty"}
+                  onAdd={isReadOnlyView ? undefined : () => setCustomerDialogOpen(true)}
+                  onRemove={isReadOnlyView ? undefined : () => setCustomerId(null)}
                   addLabel="Kunde auswählen"
                   emptyText="Kein Kunde ausgewählt"
                   testId="slot-customer-relation-project"
@@ -1757,7 +1847,7 @@ export function ProjectForm({
                 </RelationSlot>
               </div>
 
-              {!isEditing ? (
+              {!isEditing && !isReadOnlyView ? (
                 <DocumentExtractionDropzone
                   onFileSelected={(file) => {
                     void runDocumentExtraction(file);
@@ -1818,6 +1908,26 @@ export function ProjectForm({
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
+        <AlertDialogContent data-testid="dialog-note-suggestion">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für dieses Projekt angelegt werden?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={() => setNoteSuggestionDialog(null)}>Überspringen</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-note-suggestion-confirm"
+              onClick={() => { void handleCreateProjectNoteFromSuggestion(); }}
+            >
+              Jetzt anlegen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>

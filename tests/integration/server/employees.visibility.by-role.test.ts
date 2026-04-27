@@ -20,7 +20,7 @@
 import express from "express";
 import { createServer } from "http";
 import request, { type SuperAgentTest } from "supertest";
-import { beforeEach, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as employeesService from "../../../server/services/employeesService";
@@ -29,6 +29,7 @@ import { hashPassword } from "../../../server/security/passwordHash";
 
 let app: express.Express;
 let employeeCounter = 1;
+let dispatcherCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -37,10 +38,6 @@ beforeAll(async () => {
   const httpServer = createServer(app);
   await registerRoutes(httpServer, app);
   app.use(errorHandler);
-});
-
-beforeEach(async () => {
-  employeeCounter = 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
@@ -53,12 +50,14 @@ async function loginAgent(username: string, password: string): Promise<SuperAgen
 }
 
 async function createDispatcherAgent(): Promise<SuperAgentTest> {
-  const username = "test-dispatcher";
-  const password = "test-dispatcher-password";
+  const token = `test-dispatcher-${dispatcherCounter}`;
+  dispatcherCounter += 1;
+  const username = token;
+  const password = `${token}-password`;
   const passwordHash = await hashPassword(password);
   await createUser({
     username,
-    email: "test-dispatcher@local.test",
+    email: `${token}@local.test`,
     firstName: "Test",
     lastName: "Dispatcher",
     passwordHash,

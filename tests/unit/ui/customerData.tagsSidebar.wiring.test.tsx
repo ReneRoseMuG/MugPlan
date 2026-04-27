@@ -209,4 +209,25 @@ describe("FT28 customer data tags sidebar wiring", () => {
       queryKey: ["/api/tags", "customer"],
     }));
   });
+
+  it("renders the customer tag picker as readonly for reader roles", () => {
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: vi.fn(() => "READER"),
+        },
+      },
+      configurable: true,
+    });
+
+    const markup = renderToStaticMarkup(<CustomerData customerId={11} />);
+
+    expect(markup).toContain("customer-tag-picker-marker");
+    expect(tagPickerCalls).toHaveLength(1);
+    expect(tagPickerCalls[0]).toMatchObject({
+      testIdPrefix: "customer-tag-picker",
+      canEdit: false,
+      availableTags: [{ id: 7, name: "Service" }],
+    });
+  });
 });

@@ -6,6 +6,7 @@ import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filt
 import { useToast } from "@/hooks/use-toast";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
 import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
@@ -81,6 +82,8 @@ export function CalendarWorkspace({
   const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
+  const userRole = getStoredUserRole();
+  const isReaderCalendarReadOnly = isReaderRole(userRole);
   const conflictAppointmentMap = useMemo(
     () => buildMonitoringConflictMap(monitoringItems),
     [monitoringItems],
@@ -185,13 +188,13 @@ export function CalendarWorkspace({
         <WeekGrid
           currentDate={currentDate}
           employeeFilterId={employeeFilterId}
-          weekAppointmentDisplayMode="detail"
+          readOnly={isReaderCalendarReadOnly}
           weekTileBodyMode={weekTileBodyModeSetting ?? "semiexpanded"}
           weekLanesCollapsed={Boolean(weekLanesCollapsedSetting)}
           onWeekLanesCollapsedChange={persistWeekLanesCollapsed}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentMap={conflictAppointmentMap}
-          onNewAppointment={(date, options) => {
+          onNewAppointment={isReaderCalendarReadOnly ? undefined : (date, options) => {
             onOpenAppointmentForm({
               initialDate: date,
               initialTourId: options?.tourId ?? null,
@@ -225,9 +228,10 @@ export function CalendarWorkspace({
       <MonthSheetGrid
         currentDate={currentDate}
         employeeFilterId={employeeFilterId}
+        readOnly={isReaderCalendarReadOnly}
         conflictHighlightActive={conflictHighlightActive}
         conflictAppointmentMap={conflictAppointmentMap}
-        onNewAppointment={(date) => {
+        onNewAppointment={isReaderCalendarReadOnly ? undefined : (date) => {
           onOpenAppointmentForm({
             initialDate: date,
             projectId,
@@ -346,4 +350,3 @@ export function CalendarWorkspace({
     </div>
   );
 }
-

@@ -175,6 +175,9 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(page.getByTestId(`badge-employee-${employee.id}`)).toBeVisible();
   const openCancelWorkflowButton = page.getByTestId("button-cancel-appointment");
   await expect(openCancelWorkflowButton).toBeVisible();
+  await openCancelWorkflowButton.click();
+  await expect(page.getByRole("button", { name: "Termin stornieren" })).toBeVisible();
+
   const cancelDetailResponse = await page.request.get(`/api/appointments/${appointmentId}`);
   expect(cancelDetailResponse.ok()).toBeTruthy();
   const cancelDetail = await cancelDetailResponse.json() as { version: number };
@@ -183,7 +186,6 @@ test("runs the browser cancellation flow from regular future appointment to canc
     response.request().method() === "POST"
     && response.url().includes(`/api/appointments/${appointmentId}/cancel`)
   ));
-  await openCancelWorkflowButton.click();
   await page.getByRole("button", { name: "Termin stornieren" }).click();
   const cancelResponse = await cancelResponsePromise;
   expect(cancelResponse.status()).toBe(204);

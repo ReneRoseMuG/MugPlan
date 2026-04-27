@@ -99,6 +99,7 @@ export async function executeAddTourWeekEmployee(req: Request, res: Response, ne
         weekNumber: assignmentSnapshot.isoWeek,
         tourId,
       });
+      const tourContext = journalService.buildTourContext(tourId);
 
       await journalService.recordJournalEntry({
         tableName: "employee_week_assignment",
@@ -118,6 +119,7 @@ export async function executeAddTourWeekEmployee(req: Request, res: Response, ne
         ),
         contexts: [
           weekContext,
+          tourContext,
           {
             tableName: "employee",
             recordId: result.employeeId,
@@ -141,9 +143,10 @@ export async function executeAddTourWeekEmployee(req: Request, res: Response, ne
           snapshot: appointment,
           actor,
           triggerKey: "employee.week_assignment.appointment_add",
-          messageText: buildAppointmentEmployeeMessage("hinzugefuegt", result.employeeName, appointment, appointmentId),
+          messageText: buildAppointmentEmployeeMessage("hinzugefügt", result.employeeName, appointment, appointmentId),
           contexts: [
             weekContext,
+            tourContext,
             {
               tableName: "appointment",
               recordId: appointmentId,
@@ -209,6 +212,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
         weekNumber: assignmentSnapshot.isoWeek,
         tourId,
       });
+      const tourContext = journalService.buildTourContext(tourId);
 
       await journalService.recordJournalEntry({
         tableName: "employee_week_assignment",
@@ -220,7 +224,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
         actor,
         triggerKey: "employee.week_assignment.delete",
         messageText: buildWeekAssignmentMessage(
-          "geloescht",
+          "gelöscht",
           result.employeeName,
           assignmentSnapshot.isoYear,
           assignmentSnapshot.isoWeek,
@@ -228,6 +232,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
         ),
         contexts: [
           weekContext,
+          tourContext,
           {
             tableName: "employee",
             recordId: result.employeeId,
@@ -254,6 +259,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
           messageText: buildAppointmentEmployeeMessage("entfernt", result.employeeName, appointment, appointmentId),
           contexts: [
             weekContext,
+            tourContext,
             {
               tableName: "appointment",
               recordId: appointmentId,

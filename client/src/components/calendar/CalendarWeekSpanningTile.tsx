@@ -93,7 +93,6 @@ const parseErrorPayload = (rawBody: string): { message?: string; code?: string }
 type CalendarWeekSpanningTileProps = {
   appointment: CalendarAppointment;
   spanColumns: number;
-  displayMode: "standard" | "compact" | "detail" | "split";
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   visibleStartDate: string;
   visibleDayNumberStart: number;
@@ -121,7 +120,6 @@ type CalendarWeekSpanningTileProps = {
 export function CalendarWeekSpanningTile({
   appointment,
   spanColumns,
-  displayMode,
   weekTileBodyMode = "semiexpanded",
   visibleStartDate,
   visibleDayNumberStart,
@@ -377,12 +375,7 @@ export function CalendarWeekSpanningTile({
   const highlightClass = highlighted ? "shadow-md ring-1 ring-primary/30" : "";
   const uniformBorderShadow = highlighted ? undefined : `inset 0 0 0 1px ${borderColor}`;
   const resolvedProjectName = appointment.projectName;
-  const effectiveDisplayMode = displayMode;
-  const isCenteredMode = effectiveDisplayMode === "compact";
-  const isFilledMode = effectiveDisplayMode === "detail";
-  const isSplitMode = effectiveDisplayMode === "split";
   const visibleColumns = Math.max(1, spanColumns);
-  const bodyColumnWidth = `calc(100% / ${visibleColumns})`;
   const headerDays = Array.from({ length: visibleColumns }, (_, dayOffset) => {
     const dayDate = new Date(`${visibleStartDate}T00:00:00`);
     dayDate.setDate(dayDate.getDate() + dayOffset);
@@ -407,14 +400,41 @@ export function CalendarWeekSpanningTile({
   const resolvedPostalCode = appointment.customer.postalCode?.trim() || "-";
   const showCustomerPanel = true;
   const customerMode = weekTileBodyMode === "expanded" ? "expanded" : "collapsed";
-  const projectCollapsed = weekTileBodyMode === "collapsed";
-  const customerPanelHeightClassName = customerMode === "expanded" ? "h-[6.5rem] overflow-hidden" : "h-8 overflow-hidden";
+  const isCompactPanelMode = weekTileBodyMode === "collapsed";
+  const effectiveCustomerMode = isCompactPanelMode ? "collapsed" : customerMode;
+  const projectCollapsed = isCompactPanelMode;
+  const projectDisplayMode = isCompactPanelMode
+    ? "compact"
+    : weekTileBodyMode === "expanded"
+      ? "detail"
+      : "standard";
+  const customerPanelHeightClassName = isCompactPanelMode
+    ? "h-8 overflow-hidden"
+    : effectiveCustomerMode === "expanded"
+      ? "h-[6.5rem] overflow-hidden"
+      : "h-8 overflow-hidden";
+  const projectPanelClassName = projectCollapsed
+    ? "h-8 w-full overflow-hidden"
+    : "min-h-0 h-full w-full";
+  const contentGridTemplateRows = isCompactPanelMode
+    ? "2rem 2rem"
+    : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
+  const bodyShellClassName = isCompactPanelMode ? "flex shrink-0 flex-col" : "flex min-h-0 flex-1 flex-col";
+  const bodyContentContainerClassName = isCompactPanelMode
+    ? "relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"
+    : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
+  const mainContentPanelsClassName = isCompactPanelMode
+    ? "grid w-full shrink-0 content-start gap-1 overflow-hidden"
+    : "grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerClassName = isCompactPanelMode
+    ? "relative shrink-0 border-t px-1 py-1"
+    : "relative mt-auto shrink-0 border-t px-1 py-1";
   const conflictOverlayStyle = conflictColor
     ? {
         backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
@@ -422,10 +442,10 @@ export function CalendarWeekSpanningTile({
     : undefined;
 
   const mainContentPanels = (
-    <div className="grid min-h-0 flex-1 gap-1 overflow-hidden" style={{ gridTemplateRows: `${customerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)` }}>
+    <div className={mainContentPanelsClassName} style={{ gridTemplateRows: contentGridTemplateRows }}>
       {showCustomerPanel ? (
         <CalendarWeekAppointmentPanelCustomer
-          mode={customerMode}
+          mode={effectiveCustomerMode}
           fullName={appointment.customer.fullName ?? ""}
           customerNumber={appointment.customer.customerNumber}
           phone={appointment.customer.phone}
@@ -443,8 +463,9 @@ export function CalendarWeekSpanningTile({
         projectArticleItems={appointment.projectArticleItems}
         projectDescription={appointment.projectDescription}
         collapsed={projectCollapsed}
+        displayMode={projectDisplayMode}
         enableFullDescriptionPreview
-        className="min-h-0 h-full"
+        className={projectPanelClassName}
       />
     </div>
   );
@@ -480,8 +501,8 @@ export function CalendarWeekSpanningTile({
   );
 
   const bodyContent = (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2" data-testid={`week-spanning-tile-content-${appointment.id}`}>
+    <div className={bodyShellClassName}>
+      <div className={bodyContentContainerClassName} data-testid={`week-spanning-tile-content-${appointment.id}`}>
         {isConflict ? (
           <div
             className="pointer-events-none absolute inset-0 rounded-sm opacity-100 transition-opacity duration-200 group-hover/calendar-card:opacity-25"
@@ -489,12 +510,12 @@ export function CalendarWeekSpanningTile({
             data-testid={`week-spanning-tile-conflict-overlay-${appointment.id}`}
           />
         ) : null}
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="flex min-h-0 w-full flex-1 overflow-hidden">
           {mainContentPanels}
         </div>
       </div>
       <div
-        className="relative mt-auto shrink-0 border-t px-1 py-1"
+        className={footerClassName}
         style={footerStyle}
         data-testid={`week-spanning-tile-footer-${appointment.id}`}
       >
@@ -513,13 +534,16 @@ export function CalendarWeekSpanningTile({
   return (
   <>
     <div
-      className={`group/calendar-card relative grid min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative grid w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       style={{
         gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`,
         gridTemplateRows: "auto 1fr",
         borderColor: highlighted ? undefined : borderColor,
         boxShadow: uniformBorderShadow,
-        ...(uniformHeightPx && uniformHeightPx > 0 ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` } : {}),
+        alignSelf: isCompactPanelMode ? "start" : undefined,
+        ...(!isCompactPanelMode && uniformHeightPx && uniformHeightPx > 0
+          ? { height: `${uniformHeightPx + WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX}px` }
+          : {}),
         ...style,
       }}
       onDoubleClick={onDoubleClick}
@@ -591,81 +615,13 @@ export function CalendarWeekSpanningTile({
           </div>
         ))}
       </div>
-      {isFilledMode ? (
-        <div
-          className="flex min-h-0 h-full flex-col bg-white/90"
-          style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}
-          data-testid={`week-spanning-tile-body-filled-${appointment.id}`}
-        >
-          {bodyContent}
-        </div>
-      ) : isSplitMode ? (
-        <>
-          {headerDays.map((headerDay, dayIndex) => (
-            <div
-              key={`week-spanning-tile-body-split-${appointment.id}-${headerDay.key}`}
-              className="flex min-h-0 h-full flex-col bg-white/90"
-              style={{
-                gridColumn: `${dayIndex + 1} / span 1`,
-                gridRow: 2,
-                borderLeft: headerDay.isFirst ? undefined : "1px solid rgba(226,232,240,0.9)",
-              }}
-              data-testid={`week-spanning-tile-body-split-${appointment.id}-${dayIndex}`}
-            >
-              {bodyContent}
-            </div>
-          ))}
-        </>
-      ) : isCenteredMode ? (
-        <div
-          className="flex min-h-0 items-stretch"
-          style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}
-          data-testid={`week-spanning-tile-body-centered-${appointment.id}`}
-        >
-          <div
-            className="min-w-0 flex-1"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(135deg, rgba(148,163,184,0.20) 0 8px, rgba(148,163,184,0.07) 8px 16px)",
-              backgroundColor: "rgba(241,245,249,0.45)",
-            }}
-            aria-hidden
-          />
-          <div className="flex min-h-0 h-full flex-col" style={{ width: bodyColumnWidth }}>
-            {bodyContent}
-          </div>
-          <div
-            className="min-w-0 flex-1 border-l border-slate-200/60"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(135deg, rgba(148,163,184,0.20) 0 8px, rgba(148,163,184,0.07) 8px 16px)",
-              backgroundColor: "rgba(241,245,249,0.45)",
-            }}
-            aria-hidden
-          />
-        </div>
-      ) : (
-        <>
-          <div
-            className="flex min-h-0 h-full flex-col bg-white/90"
-            style={{ gridColumn: "1 / span 1", gridRow: 2 }}
-            data-testid={`week-spanning-tile-body-standard-${appointment.id}`}
-          >
-            {bodyContent}
-          </div>
-          <div
-            className="border-l border-slate-200/60"
-            style={{
-              gridColumn: `${Math.min(2, spanColumns)} / span ${Math.max(1, spanColumns - 1)}`,
-              gridRow: 2,
-              backgroundImage:
-                "repeating-linear-gradient(135deg, rgba(148,163,184,0.20) 0 8px, rgba(148,163,184,0.07) 8px 16px)",
-              backgroundColor: "rgba(241,245,249,0.45)",
-            }}
-            aria-hidden
-          />
-        </>
-      )}
+      <div
+        className="flex min-h-0 h-full flex-col bg-white/90"
+        style={{ gridColumn: `1 / span ${visibleColumns}`, gridRow: 2 }}
+        data-testid={`week-spanning-tile-body-filled-${appointment.id}`}
+      >
+        {bodyContent}
+      </div>
     </div>
     <AppointmentCancelConfirmDialog
       open={cancelConfirmOpen}

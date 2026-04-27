@@ -1,6 +1,15 @@
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
 import { WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX } from "./weekAppointmentCardStyles";
 
+function buildHeaderTopLineClassName(hasStartTime: boolean) {
+  return [
+    "min-w-0 overflow-hidden text-center whitespace-nowrap",
+    hasStartTime ? "[container-type:inline-size]" : "",
+    hasStartTime ? "[@container(max-width:110px)]:[&_span[data-role='header-date']]:hidden" : "",
+    hasStartTime ? "[@container(max-width:110px)]:[&_span[data-role='header-separator']]:hidden" : "",
+  ].filter(Boolean).join(" ");
+}
+
 export function CalendarWeekAppointmentPanelHeader({
   customerNumber,
   postalCode,
@@ -40,7 +49,7 @@ export function CalendarWeekAppointmentPanelHeader({
   const dayCountLabel = `${dayCount} ${dayCount === 1 ? "Tag" : "Tage"}`;
   const TimingIcon = dayCount > 1 ? CalendarRange : hasStartTime ? Clock3 : CalendarDays;
   const resolvedStartTime = startTime?.trim().slice(0, 5) || null;
-  const topLineItems = [resolvedStartTime, formattedStartDate].filter(Boolean);
+  const topLineClassName = buildHeaderTopLineClassName(hasStartTime);
 
   return (
     <div
@@ -62,13 +71,17 @@ export function CalendarWeekAppointmentPanelHeader({
       <div className="flex h-full flex-col justify-between text-[10px] font-semibold tracking-wide">
         <div className={`grid items-center gap-1 ${menuSlot ? "grid-cols-[auto_1fr_auto_auto]" : "grid-cols-[auto_1fr_auto]"}`}>
           <span
-            className="inline-flex items-center justify-center"
+            className="inline-flex shrink-0 items-center justify-center"
             title={dayCount > 1 ? "Mehrtagestermin" : hasStartTime ? "Termin mit Startzeit" : "Tagestermin"}
           >
             <TimingIcon className="h-3.5 w-3.5" aria-hidden />
           </span>
-          <div className="min-w-0 text-center">
-            <span className="truncate">{topLineItems.join(" | ")}</span>
+          <div className={topLineClassName}>
+            <span className="inline-flex max-w-full items-center overflow-hidden whitespace-nowrap">
+              {resolvedStartTime ? <span className="shrink-0" data-role="header-time">{resolvedStartTime}</span> : null}
+              {resolvedStartTime ? <span className="shrink-0 px-1" data-role="header-separator" aria-hidden>|</span> : null}
+              <span className="truncate" data-role="header-date">{formattedStartDate}</span>
+            </span>
           </div>
           <span
             className="shrink-0 text-right justify-self-end"
@@ -82,9 +95,9 @@ export function CalendarWeekAppointmentPanelHeader({
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
-          <span className="truncate">K: {resolvedCustomerNumber}</span>
-          <span className="truncate text-right">PLZ: {resolvedPostalCode}</span>
+        <div className="flex min-w-0 items-center justify-between gap-2 border-t border-white/20 pt-1 whitespace-nowrap">
+          <span className="min-w-0 truncate">K: {resolvedCustomerNumber}</span>
+          <span className="shrink-0 truncate text-right">PLZ: {resolvedPostalCode}</span>
         </div>
       </div>
     </div>

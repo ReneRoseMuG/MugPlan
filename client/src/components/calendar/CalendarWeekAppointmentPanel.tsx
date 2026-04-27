@@ -387,7 +387,7 @@ export function CalendarWeekAppointmentPanel({
 
   const isContinuation = segment === "continuation";
   const resolvedContinuationHeightPx = continuationHeightPx ?? DEFAULT_CONTINUATION_HEIGHT_PX;
-  const isCompact = appointment.displayMode === "compact";
+  const isCompact = weekTileBodyMode === "collapsed";
   const canDrag = interactive && Boolean(onDragStart);
   const interactiveClass = interactive
     ? (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md")
@@ -404,13 +404,38 @@ export function CalendarWeekAppointmentPanel({
   const projectCollapsed = weekTileBodyMode === "collapsed";
   const effectiveCustomerMode = isCompact ? "collapsed" : customerMode;
   const effectiveProjectCollapsed = isCompact ? true : projectCollapsed;
-  const customerPanelHeightClassName = effectiveCustomerMode === "expanded" ? "h-[6.5rem] overflow-hidden" : "h-8 overflow-hidden";
+  const projectDisplayMode = isCompact
+    ? "compact"
+    : weekTileBodyMode === "expanded"
+      ? "detail"
+      : "standard";
+  const customerPanelHeightClassName = isCompact
+    ? "h-8 overflow-hidden"
+    : effectiveCustomerMode === "expanded"
+      ? "h-[6.5rem] overflow-hidden"
+      : "h-8 overflow-hidden";
+  const projectPanelClassName = effectiveProjectCollapsed
+    ? "h-8 w-full overflow-hidden"
+    : "min-h-0 h-full w-full";
+  const contentGridTemplateRows = isCompact
+    ? "2rem 2rem"
+    : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
+  const panelShellClassName = isCompact ? "flex shrink-0 flex-col" : "flex min-h-0 h-full flex-col";
+  const contentContainerClassName = isCompact
+    ? "relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"
+    : "relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2";
+  const contentGridClassName = isCompact
+    ? "grid w-full shrink-0 content-start gap-1 overflow-hidden"
+    : "grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden";
   const mergedTags = mergeUniqueTags(
     appointment.appointmentTags,
     appointment.customerTags,
     appointment.projectTags,
   );
   const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerClassName = isCompact
+    ? "relative shrink-0 border-t px-1 py-1"
+    : "relative mt-auto shrink-0 border-t px-1 py-1";
   const conflictOverlayStyle = conflictColor
     ? {
         backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
@@ -450,14 +475,14 @@ export function CalendarWeekAppointmentPanel({
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
-    : uniformHeightPx && uniformHeightPx > 0
+    : !isCompact && uniformHeightPx && uniformHeightPx > 0
       ? { height: `${uniformHeightPx + WEEK_CARD_FOOTER_SAFE_SPACE_PX}px` }
       : undefined;
 
   return (
   <>
     <div
-      className={`group/calendar-card relative overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
@@ -473,7 +498,7 @@ export function CalendarWeekAppointmentPanel({
       }}
     >
       {!isContinuation && (
-        <div className="flex min-h-0 h-full flex-col">
+        <div className={panelShellClassName}>
           <div className={showPreviewTourNameLine ? "space-y-0" : undefined}>
             <CalendarWeekAppointmentPanelHeader
               customerNumber={appointment.customer.customerNumber}
@@ -503,7 +528,7 @@ export function CalendarWeekAppointmentPanel({
             )}
           </div>
           <div
-            className="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"
+            className={contentContainerClassName}
             data-testid={`week-appointment-content-${appointment.id}`}
           >
             {isConflict ? (
@@ -513,7 +538,7 @@ export function CalendarWeekAppointmentPanel({
                 data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
               />
             ) : null}
-            <div className="grid min-h-0 flex-1 gap-1 overflow-hidden" style={{ gridTemplateRows: `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)` }}>
+            <div className={contentGridClassName} style={{ gridTemplateRows: contentGridTemplateRows }}>
               {showCustomerPanel ? (
                 <CalendarWeekAppointmentPanelCustomer
                   mode={effectiveCustomerMode}
@@ -534,13 +559,14 @@ export function CalendarWeekAppointmentPanel({
                 projectArticleItems={appointment.projectArticleItems}
                 projectDescription={appointment.projectDescription}
                 collapsed={effectiveProjectCollapsed}
+                displayMode={projectDisplayMode}
                 enableFullDescriptionPreview={context === "week-calendar"}
-                className="min-h-0 h-full"
+                className={projectPanelClassName}
               />
             </div>
           </div>
           <div
-            className="relative mt-auto shrink-0 border-t px-1 py-1"
+            className={footerClassName}
             style={footerStyle}
             data-testid={`week-appointment-footer-${appointment.id}`}
           >

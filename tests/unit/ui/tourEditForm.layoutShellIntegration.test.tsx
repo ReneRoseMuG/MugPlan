@@ -26,6 +26,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
 const employeePickerCalls: Array<Record<string, unknown>> = [];
+const journalRecordsCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@tanstack/react-query")>();
@@ -134,7 +135,7 @@ vi.mock("@/components/ui/label", () => ({
 
 vi.mock("@/components/ui/tabs", () => ({
   Tabs: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
-  TabsList: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  TabsList: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   TabsTrigger: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <button type="button" {...props}>{children}</button>,
   TabsContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
 }));
@@ -158,6 +159,13 @@ vi.mock("@/hooks/use-toast", () => ({
   }),
 }));
 
+vi.mock("@/components/JournalRecordsView", () => ({
+  JournalRecordsView: (props: Record<string, unknown>) => {
+    journalRecordsCalls.push(props);
+    return <section data-testid="tour-journal-marker">journal</section>;
+  },
+}));
+
 import { TourEditForm } from "../../../client/src/components/TourEditForm";
 
 const tourFixture = {
@@ -172,6 +180,7 @@ describe("FT04 tour form shell layout integration", () => {
 
   beforeEach(() => {
     employeePickerCalls.length = 0;
+    journalRecordsCalls.length = 0;
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
       if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
         return {
@@ -228,6 +237,8 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("tour-form-sidebar");
     expect(markup).not.toContain("tour-form-functions-panel");
+    expect(markup).not.toContain("tabs-tour-main");
+    expect(markup).not.toContain("tab-tour-journal");
     expect(markup).toContain("button-close-tour");
     expect(markup).toContain("button-cancel-tour");
     expect(markup).toContain("button-save-tour");
@@ -272,6 +283,9 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell");
     expect(markup).toContain("entity-form-shell-sidebar");
     expect(markup).toContain("tour-form-sidebar");
+    expect(markup).toContain("tabs-tour-main");
+    expect(markup).toContain("tab-tour-details-main");
+    expect(markup).toContain("tab-tour-journal");
     expect(markup).toContain("tour-form-functions-panel");
     expect(markup).toContain("button-delete-tour-form");
     expect(markup).not.toContain("toggle-tour-week-picker");
@@ -288,6 +302,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain('data-testid="tour-form-main-column"');
     expect(markup).toContain('class="w-full"');
     expect(markup).not.toContain("button-add-tour-week-footer");
+    expect(journalRecordsCalls).toHaveLength(0);
   });
 
   it("shows an explicit unsupported hint instead of week planning cards for Parkplatz", () => {
@@ -379,8 +394,28 @@ describe("FT04 tour form shell layout integration", () => {
     );
 
     expect(markup).toContain("text-tour-week-blocked-2099-7");
-    expect(markup).toContain("Zugeordnete Mitarbeiter wurden aus den Terminen dieser Woche abgezogen");
+    expect(markup).toContain("Termine dieser Woche wurden auf Parkplatz verschoben");
     expect(markup).not.toContain("Mitarbeiter bleiben sichtbar");
+  });
+
+  it("renders edit mode as readonly for reader roles", () => {
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        readOnly
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).not.toContain("tour-readonly-alert");
+    expect(markup).not.toContain("button-save-tour");
+    expect(markup).not.toContain("tour-form-functions-panel");
+    expect(markup).not.toContain("toggle-tour-week-picker");
+    expect(markup).not.toContain("button-add-tour-week-member-2099-6");
+    expect(markup).not.toContain("button-tour-week-menu-2099-6");
   });
 
 });

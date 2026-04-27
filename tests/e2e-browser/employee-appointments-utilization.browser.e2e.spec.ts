@@ -3,16 +3,16 @@
  *
  * Abgedeckte Regeln:
  * - Der Termine-Tab im Mitarbeiterformular startet weiterhin in der Listenansicht.
- * - Die neue Auslastungsansicht ist ueber den lokalen Toggle erreichbar und zeigt den festen 6-Wochen-Bereich.
- * - Klick auf eine Termin-Karte der Auslastungsansicht oeffnet denselben Termin im Formular.
+ * - Die Auslastungsansicht ist ueber den eigenen Tab erreichbar und zeigt den aktuellen Wochenbereich.
+ * - Ein Termin in der Auslastungsansicht zeigt seine verdichteten Vorschauinformationen sichtbar an.
  *
  * Fehlerfaelle:
- * - Der Toggle im Mitarbeiterformular fehlt oder die Listenansicht ist nicht mehr der Standard.
- * - Die Auslastungsansicht baut keine sichtbare Termin-Karte fuer den Mitarbeiter auf.
- * - Kartenklick oeffnet den Termin nicht mehr.
+ * - Der Auslastungs-Tab fehlt oder die Listenansicht ist nicht mehr der Standard.
+ * - Die Auslastungsansicht baut keine sichtbare Monatsansicht fuer den Mitarbeiter auf.
+ * - Ein Termin in der Auslastungsansicht zeigt die erwarteten Vorschauinformationen nicht mehr an.
  *
  * Ziel:
- * Den sichtbaren Nutzerfluss fuer die neue Mitarbeiter-Auslastungsansicht browserseitig absichern.
+ * Den sichtbaren Nutzerfluss fuer die aktuelle Mitarbeiter-Auslastungsansicht browserseitig absichern.
  */
 import { expect, test } from "@playwright/test";
 
@@ -31,7 +31,7 @@ test.beforeEach(async () => {
   await resetBrowserSuiteState();
 });
 
-test("employee form switches from appointments list to utilization board and opens a clicked appointment", async ({ page }) => {
+test("employee form switches from appointments list to utilization view and shows the appointment preview", async ({ page }) => {
   const employee = await createEmployeeFixture("EMP-UTIL");
   const tour = await createTourFixture("#225588");
   const project = await createProjectFixture({ prefix: "EMP-UTIL", name: "EMP UTIL Projekt" });
@@ -49,20 +49,21 @@ test("employee form switches from appointments list to utilization board and ope
   await page.getByTestId("nav-mitarbeiter").click();
   await page.getByTestId(`employee-card-${employee.id}`).dblclick();
   await page.getByTestId("tab-employee-termine").click();
-
-  await expect(page.getByTestId("toggle-employee-appointments-view")).toBeVisible();
   await expect(page.getByTestId("table-appointments-list")).toBeVisible();
+  await page.getByTestId("tab-employee-auslastung").click();
 
-  await page.getByTestId("toggle-employee-appointments-utilization").click();
-
-  const board = page.getByTestId("employee-appointments-utilization-board");
-  await expect(board).toBeVisible();
-  const appointmentCard = page.getByTestId(`button-employee-utilization-appointment-${appointment.id}-${appointmentDate}`);
+  const utilizationView = page.getByTestId("employee-utilization-view");
+  await expect(utilizationView).toBeVisible();
+  await expect(page.getByTestId("employee-utilization-nav-top")).toBeVisible();
+  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
+  const appointmentCard = page.getByTestId(`month-compact-bar-${appointment.id}`);
   await expect(appointmentCard).toBeVisible();
-  await expect(appointmentCard).toContainText("EMP UTIL Projekt");
-  await expect(appointmentCard).toContainText(tour.name);
+  await appointmentCard.hover();
+  const previewPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
+  await expect(previewPanel).toBeVisible();
 
-  await appointmentCard.click();
-
-  await expect(page.getByTestId("button-save-appointment")).toBeVisible();
+  await expect(previewPanel).toContainText("09:30");
+  await expect(previewPanel).toContainText("EMP UTIL Projekt");
+  await expect(previewPanel).toContainText("K: EMP-UTIL");
+  await expect(previewPanel).toContainText("PLZ:");
 });

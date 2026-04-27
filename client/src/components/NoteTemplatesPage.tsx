@@ -238,7 +238,7 @@ export function NoteTemplatesPage() {
             disabled={createMutation.isPending}
             data-testid="button-new-template"
           >
-            Neue Vorlage
+            Vorlage anlegen
           </Button>
         )}
         contentSlot={(
@@ -268,7 +268,7 @@ export function NoteTemplatesPage() {
       <ColorSelectEntityEditDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title={editingTemplate ? "Vorlage bearbeiten" : "Neue Vorlage"}
+        title={editingTemplate ? "Vorlage bearbeiten" : "Vorlage anlegen"}
         subtitle={templateEditContext}
         icon={FileText}
         selectedColor={formCardColor}
@@ -345,4 +345,3 @@ export function NoteTemplatesPage() {
     </>
   );
 }
-

@@ -221,7 +221,7 @@ test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async () => {
   sequence = 1;
-  await resetBrowserSuiteState();
+  await resetBrowserSuiteState("tests/e2e-browser/refresh-button.browser.e2e.spec.ts");
 });
 
 test("refreshes customers in the main customers board via the sidebar button", async ({ page }) => {

@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { api, type MonitoringConfigResponse, type MonitoringListResponse } from "@shared/routes";
 import type { Tour } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ListLayout } from "@/components/ui/list-layout";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
@@ -16,9 +15,12 @@ import {
   type MonitoringFilters,
 } from "@/lib/monitoring-filters";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
-import { useToast } from "@/hooks/use-toast";
-import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
-import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import {
+  AppointmentWeeklyPanelPreview,
+  appointmentWeeklyPanelPreviewOptions,
+  resolveAppointmentWeeklyPanelPreviewWidthPx,
+} from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import type { InfoBadgePreview } from "@/components/ui/info-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 type MonitoringPageProps = {
@@ -34,10 +36,6 @@ type MonitoringConfigDraft = {
   minimumEmployees: string;
 };
 
-type MonitoringConfigSaveOptions = {
-  showSuccessToast: boolean;
-};
-
 function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConfigDraft): MonitoringConfigDraft {
   return {
     allAppointments: config.allAppointments,
@@ -46,7 +44,15 @@ function toDraftConfig(config: MonitoringConfigResponse["tr01"] | MonitoringConf
   };
 }
 
-function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appointmentId: number; startDate: string }) {
+function MonitoringAppointmentRowPreview({
+  appointmentId,
+  startDate,
+  widthPx,
+}: {
+  appointmentId: number;
+  startDate: string;
+  widthPx: number;
+}) {
   const previewQuery = useQuery<CalendarAppointment | null>({
     queryKey: ["monitoring-row-preview", appointmentId, startDate],
     queryFn: async () => {
@@ -69,18 +75,38 @@ function MonitoringAppointmentRowPreview({ appointmentId, startDate }: { appoint
 
   if (!previewQuery.data) {
     return (
-      <div className="w-[320px] rounded-lg bg-white px-4 py-3 text-sm text-slate-500">
+      <div className="rounded-lg bg-white px-4 py-3 text-sm text-slate-500" style={{ width: widthPx }}>
         Termin-Preview wird geladen...
       </div>
     );
   }
 
-  const preview = createAppointmentWeeklyPanelPreview(previewQuery.data, { sizeProfile: "sidebarTable" });
-  return <>{preview.content}</>;
+  return <AppointmentWeeklyPanelPreview appointment={previewQuery.data} widthPx={widthPx} />;
+}
+
+function createMonitoringAppointmentRowPreview(appointmentId: number, startDate: string): InfoBadgePreview {
+  const previewWidthPx = resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable");
+
+  return {
+    content: (
+      <MonitoringAppointmentRowPreview
+        appointmentId={appointmentId}
+        startDate={startDate}
+        widthPx={previewWidthPx}
+      />
+    ),
+    options: {
+      ...appointmentWeeklyPanelPreviewOptions,
+      maxWidth: previewWidthPx,
+    },
+  };
+}
+
+function resolveMonitoringRowSortValue(row: Pick<MonitoringListResponse[number], "startDate" | "startTime" | "appointmentId">): string {
+  return `${row.startDate}|${row.startTime ?? ""}|${String(row.appointmentId).padStart(12, "0")}`;
 }
 
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
-  const { toast } = useToast();
   const [draftConfig, setDraftConfig] = useState<MonitoringConfigDraft | null>(null);
   const [filters, setFilters] = useState<MonitoringFilters>(defaultMonitoringFilters);
 
@@ -123,30 +149,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         horizonDays: "14",
         minimumEmployees: "1",
       });
-  const horizonDays = resolvedConfig.horizonDays;
   const minimumEmployees = resolvedConfig.minimumEmployees;
-
-  const saveConfigMutation = useMutation({
-    mutationFn: async ({ payload }: { payload: MonitoringConfigResponse; options: MonitoringConfigSaveOptions }) => {
-      const response = await apiRequest("PUT", api.monitoring.adminConfigSet.path, payload);
-      return (await response.json()) as MonitoringConfigResponse;
-    },
-    onSuccess: async (config, variables) => {
-      queryClient.setQueryData([api.monitoring.adminConfigGet.path], config);
-      setDraftConfig(null);
-      await queryClient.invalidateQueries({ queryKey: [api.monitoring.list.path] });
-      if (variables.options.showSuccessToast) {
-        toast({ title: "Monitoring-Konfiguration gespeichert" });
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Monitoring-Konfiguration konnte nicht gespeichert werden",
-        description: error instanceof Error ? error.message : "Unbekannter Fehler",
-        variant: "destructive",
-      });
-    },
-  });
 
   const columns = useMemo<TableViewColumnDef<MonitoringListResponse[number]>[]>(() => [
     {
@@ -199,36 +202,19 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     },
   ], []);
 
-  const handleSaveConfig = async () => {
-    const parsedHorizonDays = Number(horizonDays);
-    const parsedMinimumEmployees = Number(minimumEmployees);
-    if (!Number.isInteger(parsedHorizonDays) || parsedHorizonDays < 1) {
-      toast({ title: "Vorlaufhorizont muss mindestens 1 Tag sein", variant: "destructive" });
-      return;
-    }
-    if (!Number.isInteger(parsedMinimumEmployees) || parsedMinimumEmployees < 1) {
-      toast({ title: "Mindestzahl Mitarbeiter muss mindestens 1 sein", variant: "destructive" });
-      return;
-    }
-
-    await saveConfigMutation.mutateAsync({
-      payload: {
-        tr01: {
-          allAppointments: true,
-          horizonDays: parsedHorizonDays,
-          minimumEmployees: parsedMinimumEmployees,
-        },
-      },
-      options: {
-        showSuccessToast: true,
-      },
-    });
-  };
-
   const filteredRows = useMemo(
     () => applyMonitoringFilters(monitoringQuery.data, filters),
     [filters, monitoringQuery.data],
   );
+  const focusedAppointmentId = useMemo(() => {
+    if (filteredRows.length === 0) return null;
+    return filteredRows.reduce((best, current) => {
+      if (!best) return current;
+      return resolveMonitoringRowSortValue(current).localeCompare(resolveMonitoringRowSortValue(best), "de") < 0
+        ? current
+        : best;
+    }, filteredRows[0] ?? null)?.appointmentId ?? null;
+  }, [filteredRows]);
 
   const filterPanel = (
     <MonitoringFilterPanel
@@ -272,11 +258,9 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         rows={filteredRows}
         rowKey={(row) => row.appointmentId}
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
-        rowPreviewRenderer={(row) => (
-          <MonitoringAppointmentRowPreview appointmentId={row.appointmentId} startDate={row.startDate} />
-        )}
+        rowPreviewRenderer={(row) => createMonitoringAppointmentRowPreview(row.appointmentId, row.startDate)}
         rowStyle={(row) => ({
-          backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
+          boxShadow: row.appointmentId === focusedAppointmentId ? "inset 0 0 0 2px rgba(15, 23, 42, 0.45)" : undefined,
         })}
         testId="table-monitoring"
         stickyHeader

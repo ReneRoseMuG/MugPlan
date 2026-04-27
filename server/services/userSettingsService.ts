@@ -1,4 +1,4 @@
-﻿import * as usersRepository from "../repositories/usersRepository";
+import * as usersRepository from "../repositories/usersRepository";
 import * as userSettingsRepository from "../repositories/userSettingsRepository";
 import {
   globalScopeMarker,
@@ -83,7 +83,7 @@ function resolveScopeIdForWrite(scopeType: SettingScopeType, userId: number): st
     return String(userId);
   }
   if (scopeType === "ROLE") {
-    throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
+    throw new UserSettingsError("ROLE scope nicht verfügbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
   return globalScopeMarker;
 }
@@ -157,11 +157,22 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
     const componentCategoryIds = Array.isArray(candidate.componentCategoryIds)
       ? candidate.componentCategoryIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
       : (definition.defaultValue as Record<string, unknown>).componentCategoryIds;
+    const tagIds = Array.isArray(candidate.tagIds)
+      ? candidate.tagIds.filter((entry): entry is number => typeof entry === "number" && Number.isInteger(entry) && entry > 0)
+      : (definition.defaultValue as Record<string, unknown>).tagIds;
+    const saunaModels = Array.isArray(candidate.saunaModels)
+      ? candidate.saunaModels
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+      : (definition.defaultValue as Record<string, unknown>).saunaModels;
 
     return {
       ...(definition.defaultValue as Record<string, unknown>),
       productCategoryIds: Array.from(new Set(productCategoryIds as number[])),
       componentCategoryIds: Array.from(new Set(componentCategoryIds as number[])),
+      tagIds: Array.from(new Set(tagIds as number[])),
+      saunaModels: Array.from(new Set(saunaModels as string[])),
       useShortCodes: typeof candidate.useShortCodes === "boolean"
         ? candidate.useShortCodes
         : (definition.defaultValue as Record<string, unknown>).useShortCodes,
@@ -200,7 +211,7 @@ async function assertCanWriteSetting(userId: number, input: SetSettingInput): Pr
 
 export async function getResolvedSettingsForUser(userId: number): Promise<ResolvedSettingRow[]> {
   if (!Number.isFinite(userId) || userId <= 0) {
-    throw new UserSettingsError("Ungueltiger User-Kontext", 400);
+    throw new UserSettingsError("Ungültiger User-Kontext", 400);
   }
 
   const userWithRole = await usersRepository.getUserWithRole(userId);
@@ -303,11 +314,11 @@ export async function getResolvedSettingsForUser(userId: number): Promise<Resolv
 
 export async function setSettingForUser(userId: number, input: SetSettingInput): Promise<ResolvedSettingRow[]> {
   if (!Number.isFinite(userId) || userId <= 0) {
-    throw new UserSettingsError("Ungueltiger User-Kontext", 400);
+    throw new UserSettingsError("Ungültiger User-Kontext", 400);
   }
 
   if (input.scopeType === "ROLE") {
-    throw new UserSettingsError("ROLE scope nicht verfuegbar, solange Rollenmodell nicht aktiv ist.", 400);
+    throw new UserSettingsError("ROLE scope nicht verfügbar, solange Rollenmodell nicht aktiv ist.", 400);
   }
   if (!Number.isInteger(input.version) || input.version < 1) {
     throw new UserSettingsError("VALIDATION_ERROR", 422);
@@ -321,12 +332,12 @@ export async function setSettingForUser(userId: number, input: SetSettingInput):
   await assertCanWriteSetting(userId, input);
 
   if (!hasAllowedScope(definition, input.scopeType)) {
-    throw new UserSettingsError("Scope fuer dieses Setting nicht erlaubt", 400);
+    throw new UserSettingsError("Scope für dieses Setting nicht erlaubt", 400);
   }
 
   const scopeId = resolveScopeIdForWrite(input.scopeType, userId);
   if (!definition.validate(input.value)) {
-    throw new UserSettingsError("Ungueltiger Wert fuer Setting", 400);
+    throw new UserSettingsError("Ungültiger Wert für Setting", 400);
   }
 
   const upsertResult = await userSettingsRepository.upsertSettingValueWithVersion({

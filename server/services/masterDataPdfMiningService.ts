@@ -37,7 +37,7 @@ function normalizeGroupingKey(value: string): string {
 
 function enforceBulkLimits(files: BulkFileInput[]) {
   if (files.length === 0) {
-    throw new Error("Keine Dateien uebergeben.");
+    throw new Error("Keine Dateien übergeben.");
   }
   if (files.length > BULK_IMPORT_LIMITS.maxFiles) {
     throw new Error(`Maximal ${BULK_IMPORT_LIMITS.maxFiles} Dateien pro Anfrage erlaubt.`);
@@ -46,12 +46,12 @@ function enforceBulkLimits(files: BulkFileInput[]) {
   let totalBytes = 0;
   for (const file of files) {
     if (file.buffer.length > BULK_IMPORT_LIMITS.maxFileSizeBytes) {
-      throw new Error(`Datei ${file.fileName} ueberschreitet das Einzeldatei-Limit.`);
+      throw new Error(`Datei ${file.fileName} überschreitet das Einzeldatei-Limit.`);
     }
     totalBytes += file.buffer.length;
   }
   if (totalBytes > BULK_IMPORT_LIMITS.maxTotalBytes) {
-    throw new Error("Gesamtgroesse der Anfrage ueberschreitet das Limit.");
+    throw new Error("Gesamtgröße der Anfrage überschreitet das Limit.");
   }
 }
 
@@ -132,7 +132,7 @@ export async function analyzeMasterDataPdfMining(files: BulkFileInput[]) {
       const hasAllowedSingleItemProduct = containsAllowedSingleItemProduct(parsed.articleItems);
 
       if (parsed.articleItems.length <= 1 && !hasAllowedSingleItemProduct) {
-        skipped.push({ fileName: file.fileName, reason: "Artikelliste enthaelt nur einen Eintrag" });
+        skipped.push({ fileName: file.fileName, reason: "Artikelliste enthält nur einen Eintrag" });
         continue;
       }
 

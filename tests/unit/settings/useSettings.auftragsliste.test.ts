@@ -23,16 +23,22 @@ describe("useSettings auftragsliste resolvers", () => {
     expect(resolveAuftragslisteSelection({
       productCategoryIds: [3, 3, 4],
       componentCategoryIds: [7, 7, 8],
+      tagIds: [11, 11, 12],
+      saunaModels: ["Modell Alpha", "Modell Alpha", "  Modell Beta  ", ""],
       useShortCodes: true,
     })).toEqual({
       productCategoryIds: [3, 4],
       componentCategoryIds: [7, 8],
+      tagIds: [11, 12],
+      saunaModels: ["Modell Alpha", "Modell Beta"],
       useShortCodes: true,
     });
 
     expect(resolveAuftragslisteSelection(null)).toEqual({
       productCategoryIds: [],
       componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
       useShortCodes: false,
     });
   });

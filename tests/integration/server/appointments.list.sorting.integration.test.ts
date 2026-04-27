@@ -34,6 +34,7 @@ import {
   loginAdminAgent,
   resetAppointmentOverlapFixtureCounters,
 } from "../../helpers/appointmentOverlapFixtures";
+import { createRawAppointmentFixture, getRelativeBerlinDate } from "../../helpers/testDataFactory";
 
 let app: express.Express;
 
@@ -94,6 +95,13 @@ describe("FT28 integration: appointments list default sorting", () => {
     const items = response.body.items as Array<{ id: number; tourId: number | null }>;
     expect(items.map((entry) => entry.id)).toEqual([older.id, sameDateEarlier.id, sameDateLater.id]);
     expect(items.every((entry) => entry.tourId === tour.id)).toBe(true);
+    expect(response.body.focusAppointment).toEqual(expect.objectContaining({
+      appointmentId: older.id,
+      page: 1,
+      indexOnPage: expect.any(Number),
+      startDate: "2099-10-10",
+      startTime: "09:00:00",
+    }));
   });
 
   it("returns employee-filtered list ascending by date", async () => {
@@ -135,6 +143,13 @@ describe("FT28 integration: appointments list default sorting", () => {
     const items = response.body.items as Array<{ id: number; employees: Array<{ id: number }> }>;
     expect(items.map((entry) => entry.id)).toEqual([oldest.id, middle.id, newest.id]);
     expect(items.every((entry) => entry.employees.some((assigned) => assigned.id === employee.id))).toBe(true);
+    expect(response.body.focusAppointment).toEqual(expect.objectContaining({
+      appointmentId: oldest.id,
+      page: 1,
+      indexOnPage: expect.any(Number),
+      startDate: "2099-11-01",
+      startTime: "09:00:00",
+    }));
     expect(response.body.availableRange).toEqual({
       dateFrom: "2099-11-01",
       dateTo: "2099-11-03",
@@ -215,6 +230,112 @@ describe("FT28 integration: appointments list default sorting", () => {
     expect(response.body.availableRange).toEqual({
       dateFrom: "2099-08-01",
       dateTo: "2099-08-15",
+    });
+    expect(response.body.focusAppointment).toEqual(expect.objectContaining({
+      appointmentId: visible.id,
+      page: 1,
+      indexOnPage: expect.any(Number),
+      startDate: "2099-08-15",
+      startTime: "10:00:00",
+    }));
+  });
+
+  it("returns the focus appointment page for mixed historical and future rows across a page boundary", async () => {
+    const agent = await loginAdminAgent(app);
+    const tour = await createTourFixture("#3366aa");
+    const { project } = await createProjectFixture("FT28-FOCUS-PAGE");
+    const tomorrowAppointmentDate = getRelativeBerlinDate(1);
+    const expectedFocusIds: number[] = [];
+
+    for (let index = 0; index < 25; index += 1) {
+      const appointmentId = await createRawAppointmentFixture({
+        projectId: project.id,
+        startDate: `2000-01-${String(index + 1).padStart(2, "0")}`,
+        title: `FT28 focus historic ${index + 1}`,
+        tourId: tour.id,
+      });
+      expectedFocusIds.push(appointmentId);
+    }
+
+    const focusAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: tomorrowAppointmentDate,
+      tourId: tour.id,
+      employeeIds: [],
+    });
+
+    const response = await agent
+      .get(`/api/appointments/list?tourId=${tour.id}&page=1&pageSize=25`)
+      .expect(200);
+
+    const items = response.body.items as Array<{ id: number }>;
+    expect(items.map((entry) => entry.id)).toEqual(expectedFocusIds);
+    expect(response.body.focusAppointment).toEqual(expect.objectContaining({
+      appointmentId: focusAppointment.id,
+      page: 2,
+      indexOnPage: expect.any(Number),
+      startDate: tomorrowAppointmentDate,
+      startTime: null,
+    }));
+  });
+
+  it("omits focus metadata when only historical rows remain after filtering", async () => {
+    const agent = await loginAdminAgent(app);
+    const employee = await createEmployeeFixture("FT28-FOCUS-PAST");
+    const { project } = await createProjectFixture("FT28-FOCUS-PAST");
+
+    await createRawAppointmentFixture({
+      projectId: project.id,
+      startDate: "2001-04-01",
+      title: "FT28 focus only past 1",
+      employeeIds: [employee.id],
+    });
+    await createRawAppointmentFixture({
+      projectId: project.id,
+      startDate: "2001-04-02",
+      title: "FT28 focus only past 2",
+      employeeIds: [employee.id],
+    });
+
+    const response = await agent
+      .get(`/api/appointments/list?employeeId=${employee.id}&page=1&pageSize=25`)
+      .expect(200);
+
+    expect(response.body.focusAppointment).toBeNull();
+  });
+
+  it("prefers a same-day appointment over later future appointments and keeps availableRange unchanged", async () => {
+    const agent = await loginAdminAgent(app);
+    const { project } = await createProjectFixture("FT28-FOCUS-TODAY");
+    const todayAppointmentDate = getRelativeBerlinDate(0);
+    const futureAppointmentDate = getRelativeBerlinDate(2);
+
+    const todayAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: todayAppointmentDate,
+      employeeIds: [],
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: futureAppointmentDate,
+      startTime: "08:00:00",
+      employeeIds: [],
+    });
+
+    const response = await agent
+      .get(`/api/appointments/list?projectTitle=${encodeURIComponent(project.name)}&page=1&pageSize=25`)
+      .expect(200);
+
+    expect(response.body.focusAppointment).toEqual(expect.objectContaining({
+      appointmentId: todayAppointment.id,
+      page: 1,
+      indexOnPage: expect.any(Number),
+      startDate: todayAppointmentDate,
+      startTime: null,
+    }));
+    expect(response.body.availableRange).toEqual({
+      dateFrom: todayAppointmentDate,
+      dateTo: futureAppointmentDate,
     });
   });
 });

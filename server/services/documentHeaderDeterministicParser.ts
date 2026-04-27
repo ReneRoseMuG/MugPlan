@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 
 const START_MARKER = "Menge Art.Nr.";
 const POSTAL_CITY_REGEX = /^(\d{4,5})\s+(.+)$/;
@@ -396,7 +396,7 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
   const addressRegionLines = extractAddressRegionLines(sourceText);
 
   if (allLines.length === 0) {
-    throw new Error("Dokumentkopf enthaelt keine auswertbaren Zeilen");
+    throw new Error("Dokumentkopf enthält keine auswertbaren Zeilen");
   }
 
   const labelValues = collectLabelValues(allLines);
@@ -506,7 +506,7 @@ export function parseDocumentHeaderForProjectExtraction(sourceText: string): Pro
         country: normalizeCountryLine(postalContext?.countryLine ?? null),
       },
       warnings: [
-        "Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.",
+        "Kundendaten konnten nur teilweise erkannt werden. Projektdaten können trotzdem übernommen werden.",
       ],
     };
   }

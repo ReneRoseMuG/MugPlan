@@ -19,6 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekSpanningTile";
+import { CalendarWeekAppointmentPanelHeader } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanelHeader";
 import {
   WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
@@ -159,7 +160,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           uniformHeightPx={240}
@@ -186,7 +186,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={3}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
         />
@@ -199,6 +198,10 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-appointment-footer-42"');
     expect(html).toContain('data-testid="week-spanning-tile-footer-42"');
     expect(html.match(/background-color:rgba\(34, 85, 136, 0\.1\);border-top-color:rgba\(34, 85, 136, 0\.22\)/g)).toHaveLength(2);
+    expect(projectPanelCalls).toHaveLength(2);
+    expect(projectPanelCalls.every((call) => call.className === "min-h-0 h-full w-full")).toBe(true);
+    expect(html).toContain('class="grid min-h-0 w-full flex-1 content-start gap-1 overflow-hidden"');
+    expect(html).toContain('class="flex min-h-0 w-full flex-1 overflow-hidden"');
   });
 
   it("keeps the tag action slot local to week cards and opt-in for editing", () => {
@@ -215,7 +218,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           showTagActions
@@ -249,7 +251,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           showTagActions
@@ -281,7 +282,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           isConflict
@@ -309,7 +309,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
           isBlocked
@@ -321,7 +320,7 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain("opacity:0.86");
   });
 
-  it("keeps both sub panels visible in collapsed body mode while preserving the shared outer card height", () => {
+  it("keeps both sub panels visible in collapsed body mode while reducing the card shell height", () => {
     const appointment = createAppointment();
 
     const html = renderWithQueryClient(
@@ -335,7 +334,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           weekTileBodyMode="collapsed"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
@@ -348,29 +346,39 @@ describe("calendar week appointment card layout", () => {
     expect(customerPanelCalls.every((call) => call.mode === "collapsed")).toBe(true);
     expect(projectPanelCalls).toHaveLength(2);
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
-    expect(html.match(/height:260px/g)).toHaveLength(2);
-    expect(html).toContain('class="flex min-h-0 h-full flex-col"');
-    expect(html).toContain('class="relative flex min-h-0 flex-1 flex-col bg-white/90 px-1 pt-1 pb-2"');
+    expect(projectPanelCalls.every((call) => call.className === "h-8 w-full overflow-hidden")).toBe(true);
+    expect(html).not.toContain("height:260px");
+    expect(html).toContain('class="flex shrink-0 flex-col"');
+    expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
+    expect(html).toContain('class="grid w-full shrink-0 content-start gap-1 overflow-hidden"');
   });
 
-  it("keeps single-day compact appointments on the same shell and only collapses inner panel density", () => {
-    const appointment = createAppointment({ displayMode: "compact" });
+  it("keeps single-day collapsed body cards on the reduced shell and removes the extra body height", () => {
+    const appointment = createAppointment();
 
     const html = renderWithQueryClient(
       <CalendarWeekAppointmentPanel
         appointment={appointment}
         context="week-calendar"
+        weekTileBodyMode="collapsed"
         uniformHeightPx={240}
       />,
     );
 
     expect(customerPanelCalls).toHaveLength(1);
     expect(customerPanelCalls[0]?.mode).toBe("collapsed");
+    expect(customerPanelCalls[0]?.className).toBe("h-8 overflow-hidden");
     expect(projectPanelCalls).toHaveLength(1);
     expect(projectPanelCalls[0]?.collapsed).toBe(true);
+    expect(projectPanelCalls[0]?.className).toBe("h-8 w-full overflow-hidden");
     expect(html).toContain('data-testid="week-appointment-content-42"');
     expect(html).toContain('data-testid="week-appointment-footer-42"');
-    expect(html).toContain('height:260px');
+    expect(html).not.toContain('height:260px');
+    expect(html).toContain("grid-template-rows:2rem 2rem");
+    expect(html).toContain('class="flex shrink-0 flex-col"');
+    expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
+    expect(html).toContain('class="grid w-full shrink-0 content-start gap-1 overflow-hidden"');
+    expect(html).toContain('class="relative shrink-0 border-t px-1 py-1"');
   });
 
   it("hides the header menu trigger for historical non-Parkplatz appointments on both card types", () => {
@@ -385,7 +393,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2000-01-01"
           visibleDayNumberStart={1}
         />
@@ -412,7 +419,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2000-01-01"
           visibleDayNumberStart={1}
         />
@@ -436,7 +442,6 @@ describe("calendar week appointment card layout", () => {
         <CalendarWeekSpanningTile
           appointment={appointment}
           spanColumns={2}
-          displayMode="detail"
           visibleStartDate="2099-03-01"
           visibleDayNumberStart={1}
         />
@@ -446,5 +451,43 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('week-appointment-menu-trigger-42');
     expect(html).toContain('week-spanning-tile-menu-trigger-42');
     expect(html.match(/Termin löschen/g)).toHaveLength(2);
+  });
+  it("passes expanded week cards through the existing expanded customer panel path and keeps project panel rendering local", () => {
+    const appointment = createAppointment();
+
+    renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={appointment}
+        context="week-calendar"
+        weekTileBodyMode="expanded"
+      />,
+    );
+
+    expect(customerPanelCalls).toHaveLength(1);
+    expect(customerPanelCalls[0]?.mode).toBe("expanded");
+    expect(projectPanelCalls).toHaveLength(1);
+    expect(projectPanelCalls[0]?.collapsed).toBe(false);
+    expect(projectPanelCalls[0]?.displayMode).toBe("detail");
+    expect(projectPanelCalls[0]?.className).toBe("min-h-0 h-full w-full");
+  });
+
+  it("marks the single-card header date as the first responsive hide target while keeping key identifiers no-wrap", () => {
+    const html = renderWithQueryClient(
+      <CalendarWeekAppointmentPanelHeader
+        customerNumber="K-17"
+        postalCode="12345"
+        color="#225588"
+        startDate="2099-03-01"
+        endDate={null}
+        startTime="08:15"
+      />,
+    );
+
+    expect(html).toContain("data-role=\"header-time\"");
+    expect(html).toContain("data-role=\"header-date\"");
+    expect(html).toContain("data-role=\"header-separator\"");
+    expect(html).toContain("@container(max-width:110px)");
+    expect(html).toContain("min-w-0 truncate");
+    expect(html).toContain("whitespace-nowrap");
   });
 });

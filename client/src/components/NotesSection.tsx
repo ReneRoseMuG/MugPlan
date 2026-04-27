@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +33,8 @@ interface NotesSectionProps {
   onDelete?: (id: number) => void;
   title?: string;
   readOnly?: boolean;
+  prefillDraft?: NoteInput | null;
+  onPrefillDraftConsumed?: () => void;
 }
 
 function NoteCard({
@@ -126,6 +129,8 @@ export function NotesSection({
   onDelete,
   title = "Notizen",
   readOnly = false,
+  prefillDraft = null,
+  onPrefillDraftConsumed,
 }: NotesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
@@ -163,6 +168,19 @@ export function NotesSection({
     setCardColorLocked(false);
     setDialogOpen(true);
   };
+
+  useEffect(() => {
+    if (!prefillDraft || dialogOpen || readOnly) return;
+    setEditingNoteId(null);
+    setNoteTitle(prefillDraft.title);
+    setNoteBody(prefillDraft.body);
+    setNoteCardColor(prefillDraft.cardColor ?? fallbackCardColor);
+    setNotePrint(prefillDraft.print);
+    setSelectedTemplateId(prefillDraft.templateId ? String(prefillDraft.templateId) : "none");
+    setCardColorLocked(prefillDraft.cardColor !== null && prefillDraft.cardColor !== undefined);
+    setDialogOpen(true);
+    onPrefillDraftConsumed?.();
+  }, [dialogOpen, onPrefillDraftConsumed, prefillDraft, readOnly]);
 
   const handleOpenEdit = (note: Note) => {
     setEditingNoteId(note.id);
@@ -269,7 +287,7 @@ export function NotesSection({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <StickyNote className="h-5 w-5" />
-              {isEditMode ? "Notiz bearbeiten" : "Neue Notiz"}
+              {isEditMode ? "Notiz bearbeiten" : "Notiz anlegen"}
             </DialogTitle>
             <EditFormContextText className="pl-7">
               {isEditMode ? (noteTitle.trim() || null) : null}

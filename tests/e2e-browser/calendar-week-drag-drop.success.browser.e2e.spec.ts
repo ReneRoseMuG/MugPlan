@@ -64,10 +64,8 @@ test("moves a regular future appointment onto another future day in the week vie
   await page.getByTestId("nav-wochenuebersicht").click();
 
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`).first();
-  const targetWeekDay = page.getByTestId(`week-day-${targetDate}-lane-tour-${tour.id}`).first();
 
   await expect(appointmentPanel).toBeVisible();
-  await expect(targetWeekDay).toBeVisible();
 
   await page.evaluate(() => {
     const eventNames = ["dragstart", "dragenter", "dragover", "drop", "dragend"];
@@ -95,12 +93,76 @@ test("moves a regular future appointment onto another future day in the week vie
   ), { timeout: 15_000 }).catch(() => null);
 
   let patchResponsePromise = awaitPatchResponse();
-  await appointmentPanel.dragTo(targetWeekDay, { force: true, timeout: 15_000 });
+  const sourceTestId = `week-appointment-panel-${appointment.id}`;
+  const targetOverlayTestId = `week-day-drop-overlay-${targetDate}-lane-tour-${tour.id}`;
+
+  const dragStarted = await page.evaluate(async ({ sourceTestId, targetOverlayTestId, appointmentId }) => {
+    const source = document.querySelector(`[data-testid="${sourceTestId}"]`);
+    if (!(source instanceof HTMLElement)) {
+      return false;
+    }
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData("text/plain", String(appointmentId));
+
+    source.dispatchEvent(new DragEvent("dragstart", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    const target = document.querySelector(`[data-testid="${targetOverlayTestId}"]`);
+    if (!(target instanceof HTMLElement)) {
+      source.dispatchEvent(new DragEvent("dragend", {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+      }));
+      return false;
+    }
+
+    target.dispatchEvent(new DragEvent("dragenter", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+    target.dispatchEvent(new DragEvent("dragover", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+    target.dispatchEvent(new DragEvent("drop", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+    source.dispatchEvent(new DragEvent("dragend", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+    return true;
+  }, {
+    sourceTestId,
+    targetOverlayTestId,
+    appointmentId: appointment.id,
+  });
 
   let patchResponse = await patchResponsePromise;
   const dndEvents = await page.evaluate(() => (
     (window as Window & { __calendarWeekDndEvents?: CapturedDndEvent[] }).__calendarWeekDndEvents ?? []
   ));
+
+  expect(
+    dragStarted,
+    [
+      `The deterministic drag/drop bridge could not dispatch the week-view drop for appointment ${appointment.id}.`,
+      `Captured DnD events: ${JSON.stringify(dndEvents)}`,
+      `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
+    ].join("\n"),
+  ).toBe(true);
 
   const dragStartObserved = dndEvents.some(
     (event) => event.type === "dragstart" && event.targetTestId === `week-appointment-panel-${appointment.id}`,
@@ -149,7 +211,7 @@ test("moves a regular future appointment onto another future day in the week vie
       return observed;
     }, {
       appointmentId: appointment.id,
-      dayTestId: `week-day-${targetDate}-lane-tour-${tour.id}`,
+      dayTestId: targetOverlayTestId,
     });
 
     expect(

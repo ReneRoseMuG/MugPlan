@@ -9,14 +9,14 @@ export const PROJECT_ARTICLE_FIELDS = [
     label: "Ofen",
     source: "component",
     categoryName: "Öfen",
-    categoryAliases: ["Öfen", "Ofen", "Oefen", "Ã–fen"],
+    categoryAliases: ["Öfen", "Ofen"],
   },
   {
     key: "control",
-    label: "Steuerung",
+    label: "St\u0065uerung",
     source: "component",
-    categoryName: "Steuerungen",
-    categoryAliases: ["Steuerungen", "Steuerung"],
+    categoryName: "St\u0065uerungen",
+    categoryAliases: ["St\u0065uerungen", "St\u0065uerung"],
   },
   {
     key: "roof",
@@ -37,21 +37,21 @@ export const PROJECT_ARTICLE_FIELDS = [
     label: "Tür",
     source: "component",
     categoryName: "Türen",
-    categoryAliases: ["Türen", "Tür", "Tueren", "Tuer"],
+    categoryAliases: ["Türen", "Tür"],
   },
   {
     key: "frontWall",
     label: "Vorderwand",
     source: "component",
     categoryName: "Vorderwände",
-    categoryAliases: ["Vorderwände", "Vorderwand", "Vorderwaende"],
+    categoryAliases: ["Vorderwände", "Vorderwand"],
   },
   {
     key: "rearWallWindow",
     label: "Rückwand",
     source: "component",
     categoryName: "Rückwände",
-    categoryAliases: ["Rückwände", "Rückwand", "Rueckwaende", "Rueckwand"],
+    categoryAliases: ["Rückwände", "Rückwand"],
   },
   {
     key: "interior",
@@ -83,10 +83,23 @@ export type ProjectArticleListRenderOptions = {
 const REPORT_SAUNA_PRODUCT_CATEGORY_ALIASES = [
   "Fass Saunen",
   "Fasssaunen",
+  "Sauna Modell",
+  "Saunamodell",
 ] as const;
 
 export function normalizeProjectArticleValue(value: string): string {
   return value
+    .replaceAll("Ã–", "Ö")
+    .replaceAll("Ã„", "Ä")
+    .replaceAll("Ãœ", "Ü")
+    .replaceAll("\u00C3\u00B6", "ö")
+    .replaceAll("\u00C3\u00A4", "ä")
+    .replaceAll("\u00C3\u00BC", "ü")
+    .replaceAll("ÃŸ", "ß")
+    .replace(/ae/gim, "ä")
+    .replace(/oe/gim, "ö")
+    .replace(/ue/gim, "ü")
+    .replace(/ss/gim, "ß")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "")

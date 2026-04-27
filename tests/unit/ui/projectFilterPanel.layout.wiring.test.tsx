@@ -4,7 +4,7 @@
  * Feature: FT02 - Projektlistenfilter Layout
  *
  * Abgedeckte Regeln:
- * - Projektname, Nachname, Kundennummer, Auftragsnummer, Scope-Toggle und Tagfilter liegen in einer gemeinsamen Reihenstruktur.
+ * - Nachname, Kundennummer, Projektname, Auftragsnummer, Scope-Toggle und Tagfilter liegen in einer gemeinsamen Reihenstruktur.
  * - Kundennummer und Auftragsnummer bleiben als sichtbare Labels mit Placeholder `Suche: Nr.` erhalten.
  * - Die sichtbaren Feldbreiten bleiben fuer die Nummernfelder begrenzt.
  *
@@ -128,7 +128,7 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     />,
   );
 
-  it("renders the shared row with project and customer filters in the expected order", () => {
+  it("renders the shared row with customer and project filters in the expected order", () => {
     const html = renderPanel({ projectTitle: "Projekt A", customerLastName: "Muster", customerNumber: "C-1", orderNumber: "ORD-1" });
 
     const projectIndex = html.indexOf("filter-project-title");
@@ -141,9 +141,10 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     const tagIndex = html.indexOf("filter-project-tag");
 
     expect(projectIndex).toBeGreaterThan(-1);
-    expect(customerIndex).toBeGreaterThan(projectIndex);
+    expect(customerIndex).toBeGreaterThan(-1);
     expect(customerNumberIndex).toBeGreaterThan(customerIndex);
-    expect(orderNumberIndex).toBeGreaterThan(customerNumberIndex);
+    expect(projectIndex).toBeGreaterThan(customerNumberIndex);
+    expect(orderNumberIndex).toBeGreaterThan(projectIndex);
     expect(allProjectsIndex).toBeGreaterThan(orderNumberIndex);
     expect(upcomingProjectsIndex).toBeGreaterThan(allProjectsIndex);
     expect(noAppointmentsIndex).toBeGreaterThan(upcomingProjectsIndex);

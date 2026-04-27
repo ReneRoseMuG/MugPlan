@@ -170,6 +170,8 @@ describe("integration: FT26 report settings persistence", () => {
     expect(getSetting(reloaded, "reports.auftragsliste.selection").resolvedValue).toEqual({
       productCategoryIds: [11, 12],
       componentCategoryIds: [21, 34],
+      tagIds: [],
+      saunaModels: [],
       useShortCodes: true,
     });
     expect(getSetting(reloaded, "reports.auftragsliste.rangeConfig").resolvedValue).toEqual({

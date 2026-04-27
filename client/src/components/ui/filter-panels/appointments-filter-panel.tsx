@@ -9,6 +9,7 @@ import { CustomerNumberFilterInput } from "@/components/filters/customer-number-
 import { ProjectOrderNumberFilterInput } from "@/components/filters/project-order-number-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
 import { AppointmentPeriodPicker, type AppointmentListAvailableRange } from "@/components/ui/appointment-period-picker";
+import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
 export type AppointmentListFilters = {
   employeeId?: number;
@@ -55,6 +56,8 @@ export function AppointmentsFilterPanel({
   hideTourFilter = false,
   hidePeriodPicker = false,
 }: AppointmentsFilterPanelProps) {
+  const sortedTours = sortToursForDisplay(tours);
+
   return (
     <FilterPanel title="Terminfilter" layout="row">
       <CustomerNameFilterInput
@@ -114,7 +117,7 @@ export function AppointmentsFilterPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Alle Touren</SelectItem>
-              {tours.map((tour) => (
+              {sortedTours.map((tour) => (
                 <SelectItem key={tour.id} value={String(tour.id)}>
                   {tour.name}
                 </SelectItem>

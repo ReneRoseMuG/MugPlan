@@ -107,6 +107,44 @@ Eine breitere Analyse über weitere Verzeichnisse oder Schichten ist nur zuläss
 
 Neue Dateien, Controller, Services, Endpoints oder Strukturen werden nur angelegt, wenn der Auftrag dies explizit verlangt oder bestehende Strukturen nachweislich ungeeignet sind. Dieser Nachweis muss dokumentiert werden.
 
+### 7.1 Rollen, Berechtigungen und Sichtbarkeitsgrenzen (harte Pflicht)
+
+Rollenlogik, Berechtigungen und Sichtbarkeitsgrenzen sind vor jeder Änderung als eigenständiger Prüfpunkt zu behandeln. Codex darf niemals stillschweigend davon ausgehen, dass bestehende UI-, Service- oder API-Strukturen bereits automatisch korrekt rollenbeschränkt sind.
+
+Für jede Änderung mit möglichem Einfluss auf Sichtbarkeit, Bedienbarkeit, Mutationen, Endpunkte, Aktionen, Listen, Formulare, Navigation, Buttons, Dialoge, Tabs, Reports, Bulk-Aktionen, Statuswechsel, Freigaben, Exporte, Importe oder Hintergrundprozesse gilt:
+
+1. Codex prüft ausdrücklich, welche Rollen den betroffenen Vorgang sehen dürfen.
+2. Codex prüft ausdrücklich, welche Rollen den betroffenen Vorgang ausführen dürfen.
+3. Codex prüft ausdrücklich, wo diese Berechtigung heute technisch durchgesetzt wird:
+   - nur in der UI,
+   - im Frontend und Backend,
+   - oder ausschließlich serverseitig.
+4. Codex behandelt eine reine UI-Ausblendung niemals als ausreichende Berechtigungsdurchsetzung.
+5. Codex darf keine bestehende Rollenbeschränkung aufweichen, umgehen, verschieben oder unbeabsichtigt erweitern.
+6. Codex darf keine neue Aktion, kein neues UI-Element und keinen neuen Endpunkt einführen, ohne die zulässigen Rollen ausdrücklich zu benennen.
+7. Codex muss bei jeder Änderung prüfen, ob neben Sichtbarkeit auch direkte Aufrufe, Deep Links, API-Calls, Nebenpfade und bereits geöffnete Ansichten sauber abgesichert sind.
+8. Codex muss bei Mutationen und sicherheitsrelevanten Lesezugriffen grundsätzlich von serverseitiger Durchsetzung ausgehen. Fehlt diese Absicherung, ist dies als Sicherheitslücke oder Blocker zu behandeln, nicht als optionale Verbesserung.
+9. Codex darf vorhandenen Code niemals so interpretieren, dass „wahrscheinlich schon die richtige Rolle gemeint ist“. Wenn Rollenwirkung, Zielrolle oder gewünschte Einschränkung nicht eindeutig belegt ist, muss Codex vor der Umsetzung nachfragen.
+10. Unklarheiten zu Rollen, Rechten, Ausnahmen oder Sonderfällen sind kein Anlass für Annahmen, sondern ein Pflicht-Blocker mit Rückfrage.
+
+Verbindliche Arbeitsregel:
+Vor jeder Umsetzung mit Rollenbezug dokumentiert Codex kurz und ausdrücklich:
+- betroffene Rolle oder Rollen,
+- erlaubte Sichtbarkeit,
+- erlaubte Aktionen,
+- technische Durchsetzung der Beschränkung,
+- offene Unklarheiten oder Risiken.
+
+Fehlt eine dieser Angaben oder ist die Rollenlage fachlich nicht eindeutig, darf Codex keine Umsetzung vornehmen, die Rechte verändert, erweitert, sichtbar macht oder faktisch umgeht.
+
+Zusätzliche Verbote:
+- Keine Freigabe durch bloße UI-Sichtbarkeit ableiten
+- Keine Berechtigung aus ähnlichem Verhalten anderer Screens kopieren
+- Keine Rollenlogik in Frontend-Komponenten „nachbauen“, wenn die serverseitige Regel unklar ist
+- Keine Tests grün melden, wenn nur die Sichtbarkeit geprüft wurde, nicht aber die verweigerte Operation für unzulässige Rollen
+- Keine Formulierung wie „analog zu Rolle X auch für Rolle Y“, wenn dies nicht ausdrücklich belegt oder beauftragt ist
+
+Wenn eine Änderung Rollen berührt, muss der Plan und der Abschlussbericht diesen Rollenbezug ausdrücklich benennen. Schweigende Änderungen an Rollenverhalten sind unzulässig.
 ---
 
 ## 3. Planung
@@ -184,6 +222,8 @@ Jeder Planschritt muss einen stabilen, nachvollziehbaren Zwischenstand hinterlas
 
 Änderungen sind nur zulässig, wenn sie im Auftrag oder im bestätigten Plan stehen. Weitet sich der Eingriff während der Analyse oder Umsetzung aus, muss Codex diese Ausweitung vorab benennen und neu einordnen.
 
+Bei Aufträgen mit möglichem Rollen-, Auth-, Sichtbarkeits- oder Berechtigungsbezug ist die Rollenprüfung verpflichtender Teil von Analyse und Plan. Ein Plan ohne ausdrückliche Benennung der betroffenen Rollen und ihrer zulässigen Aktionen ist unvollständig.
+
 ### 3.4 Kurzkommandos
 
 Zur Reduktion von Dialog- und Kontextverbrauch darf der Nutzer kurze Kommandos verwenden. Codex übersetzt diese Kommandos in die zugehörigen Handlungen. Fehlt ein Kommando, gilt das normale Verhalten aus den übrigen Abschnitten.
@@ -197,7 +237,7 @@ Codex legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angeg
 Codex klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne die Branch-Frage erneut zu stellen.
 
 `audit`  
-Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus und berichtet die Ergebnisse vollständig nach den dort definierten Regeln.
+Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus. Wenn im Repository ein lokaler Audit-Runner vorhanden ist, der die in Abschnitt 12 definierten Kommandos seriell ausführt, nutzt Codex diesen bevorzugt. Anschließend berichtet Codex die Ergebnisse vollständig nach den dort definierten Regeln und zusätzlich in einem kurzen zusammenfassenden Report.
 
 `test`  
 Codex führt den vollen Testlauf gemäß Abschnitt 12 als reinen Report-Auftrag aus und beachtet dabei zusätzlich alle Regeln aus Abschnitt 11. Während dieses Auftrags nimmt Codex keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor.
@@ -372,6 +412,17 @@ Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
 
 **E2E** — vollständige Workflows, isolierte Daten, Suite-weite Resets nur guardiert.
 
+### Laufzeit ist ein Primärziel neuer Tests
+
+Für neue oder grundlegend umgebaute Tests gilt Laufzeit ausdrücklich als gleichrangiges Entwurfsziel neben Aussagekraft und Stabilität.
+
+- Neue Tests sind so zu entwerfen, dass sie die vorhandene Reset-, Baseline- und Registry-Strategie aktiv nutzen statt neue harte Reset-Pfade einzuführen
+- Härtere Isolation, häufigere Resets oder `seeded`-Baselines sind nur zulässig, wenn der Test fachlich nachweisbar darauf angewiesen ist
+- Wenn ein Test sowohl mit leichterer als auch mit härterer Isolation korrekt wäre, ist die leichtere, schnellere Variante zu wählen
+- Bestehende teure Muster wie unnötige `beforeEach`-Vollresets, doppelte Seeds, wiederholte Logins oder redundante Navigation dürfen nicht blind kopiert werden
+- Browser-Tests sollen vorhandene Suite-Helfer, echte Suite-Pfade und die Registry-basierte Baseline-Wahl verwenden, statt ad hoc eigene Reset-Logik aufzubauen
+- Neue Tests dürfen die Gesamtlaufzeit nicht still verschlechtern, nur weil sie fachlich korrekt sind; wenn ein langsameres Design unvermeidbar ist, muss dies im Plan ausdrücklich benannt und begründet werden
+
 ### Timeout-Regel
 
 Für `npm run test:integration` und `npm run test:e2e` ist standardmäßig ein langer Command-Timeout zu verwenden. `npm run test:e2e:browser` bleibt davon unberührt.
@@ -396,6 +447,10 @@ Vor jedem weiteren Testkommando ist immer das Ergebnis des vorherigen Testkomman
 - Eigene Express-/HTTP-App-Aufbauten in Integrationstests statt `createApiTestApp()`
 - Assertions auf mehrere alternative HTTP-Statuscodes für denselben fachlichen Fehler
 - Schreibzugriffe in Tests außerhalb von `os.tmpdir()`
+- Fachliche Tests mit leeren Arrays, leeren Objekten oder Minimalobjekten, sofern der leere Zustand nicht selbst die geprüfte Fachregel ist
+- Reine Render- oder Sichtbarkeitsprüfungen als Ersatz für fachliche Daten-, Rollen-, Persistenz- oder Regelprüfungen
+- Mocks oder Helper, die das erwartete Ergebnis bereits künstlich liefern und dadurch die eigentliche Fachlogik umgehen
+- Neue Tests dürfen bestehende weiche Muster nicht blind kopieren, ohne deren Aussagekraft gegen Restdaten-, Seed- und Reihenfolgerisiken zu prüfen
 
 ### Test-Runs dürfen nicht in eigenständigen Fixes münden
 
@@ -409,6 +464,87 @@ Ein explizit angeforderter Testlauf ist immer ein **reiner Report-Auftrag**. Wä
 
 Jeder Test muss einen beobachtbaren Effekt prüfen. Zulässig sind nur Assertions auf Verhalten, Ergebnis, Nebenwirkung oder verweigerte Operationen. Nicht zulässig sind Tests, die nur das Vorhandensein von Quelltext, Namen, Markup-Fragmenten oder anderen Implementierungsdetails bestätigen, ohne das tatsächliche Systemverhalten nachzuweisen.
 
+### Nachweispflicht für fachlich aussagekräftige Tests
+
+Codex darf einen Test nur dann als fachlich aussagekräftig bezeichnen, wenn der Test nachweisbar mit konkreten, realistischen und eindeutig identifizierbaren Testdaten arbeitet und diese Daten im Ergebnis ausdrücklich überprüft.
+
+Ein Test mit leeren Arrays, leeren Objekten, Dummy-IDs, generischen Platzhaltern oder rein künstlichen Minimaldaten gilt standardmäßig nur als Smoke-Test. Er darf nur dann als ausreichend gelten, wenn genau der leere Zustand selbst die fachliche Regel ist und diese Erwartung ausdrücklich im Testnamen, Testkommentar oder Testprotokoll benannt wird.
+
+Für fachliche UI-, Browser-, Integration- und Report-Tests gilt verbindlich:
+
+Der Test muss mindestens ein fachlich relevantes Zielobjekt erzeugen oder über eine eindeutig kontrollierte Fixture bereitstellen. Dieses Zielobjekt muss realistische Pflichtfelder, sinnvolle Beziehungen und einen eindeutigen Testdaten-Token enthalten.
+
+Der Test muss nachweisen, dass genau dieses Zielobjekt verarbeitet, angezeigt, gespeichert, geändert, gefiltert, abgelehnt oder entfernt wurde. Eine bloße Sichtbarkeitsprüfung eines allgemeinen Textes reicht nicht aus.
+
+Der Test muss mindestens eine Assertion enthalten, die bei einem echten Bruch der geprüften Fachregel rot würde. Wenn ein Test auch dann grün bliebe, wenn die geprüfte Regel entfernt, falsch verdrahtet oder durch Seed-Daten vorgetäuscht würde, ist der Test unzureichend.
+
+Bei Listen, Tabellen, Kalenderansichten, Boards, Reports, Overlays und Reopen-Flows muss der Test zusätzlich zur Textsichtbarkeit mindestens einen Identitäts-, Anzahl-, Reihenfolge-, Filter-, Delta- oder Ausschlussnachweis führen. Der Test muss also belegen, dass nicht irgendein ähnlicher Altbestand angezeigt wird, sondern das konkret vorbereitete Zielobjekt.
+
+Bei Mutationen muss der Test den Zustand nach der Aktion prüfen. Je nach Testschicht erfolgt dieser Nachweis durch sichtbare UI-Werte, erneutes Laden, API-Response, Datenbankzustand oder einen zweiten unabhängigen Abruf. Eine Mutation gilt nicht als ausreichend getestet, wenn nur ein Button geklickt und anschließend irgendein Toast oder irgendein Text gefunden wird.
+
+Bei Integrationstests muss der Datenbankzustand vor und nach der geprüften Aktion so geprüft werden, dass die fachliche Wirkung eindeutig ist. Dazu gehören bei Bedarf ID-Abgleich, eindeutiger Token, erwartete Feldwerte, erwartete Beziehungen und der Ausschluss unerwünschter Nebenwirkungen.
+
+Bei Browser-Tests muss nachgewiesen werden, dass angezeigte Daten aus der durchgeführten Testaktion oder aus einer eindeutig kontrollierten Fixture stammen. Seed-Daten, Cache, Restdaten oder zufällig ähnliche Texte dürfen den Test nicht grün machen können.
+
+Codex darf keine Tests als „mit echten Daten getestet“ beschreiben, wenn der Test nur Komponentenprops mit leeren Arrays, generischen Mocks oder Minimalobjekten übergibt. In diesem Fall muss Codex den Test ausdrücklich als Smoke-Test oder Strukturtest kennzeichnen.
+
+Codex muss bei jedem neu geschriebenen oder wesentlich geänderten Test im Abschlussbericht folgende Fragen beantworten:
+
+1. Welches konkrete Zielobjekt wurde erzeugt oder kontrolliert bereitgestellt?
+2. Welcher eindeutige Token, welche ID oder welche eindeutige Feldkombination weist dieses Zielobjekt nach?
+3. Welche realistischen Pflichtfelder und Beziehungen enthält das Zielobjekt?
+4. Welche Assertion beweist, dass genau dieses Zielobjekt verarbeitet oder angezeigt wurde?
+5. Welche Assertion würde rot werden, wenn die geprüfte Fachregel kaputt wäre?
+6. Welche Fremd-, Seed-, Cache- oder Restdaten könnten den Test theoretisch vortäuschen, und wie verhindert der Test das?
+7. Ist der Test ein fachlicher Test oder nur ein Smoke-Test?
+
+Wenn Codex eine dieser Fragen nicht konkret beantworten kann, darf der Test nicht als fachlich abgesichert gemeldet werden.
+
+### Verbot gegen „Grünbiegen“ von Tests
+
+Codex darf Tests nicht dadurch erfolgreich machen, dass ihre fachliche Aussagekraft reduziert wird.
+
+Unzulässig sind insbesondere:
+
+- Assertions entfernen, abschwächen oder durch allgemeinere Erwartungen ersetzen
+- konkrete fachliche Werte durch leere Arrays, leere Objekte, Dummy-Daten oder beliebige Platzhalter ersetzen
+- Mocks so erweitern, dass sie das erwartete Ergebnis bereits fertig liefern und die eigentliche Fachlogik nicht mehr geprüft wird
+- relevante Nutzeraktionen, Persistenzpfade, API-Aufrufe oder Datenbankprüfungen umgehen
+- `test.skip`, `describe.skip`, `it.skip`, `todo`, bedingte Returns oder ähnliche Mechanismen verwenden, um grüne Läufe zu erreichen
+- Fehlermeldungen, Rollenprüfungen, Validierungen oder Negativfälle entfernen
+- fachliche Tests auf reine Render-, Sichtbarkeits- oder Smoke-Tests zurückbauen
+
+Ein Test darf nur dann angepasst werden, wenn die bisherige Erwartung nachweislich fachlich falsch war. Dieser Nachweis muss im Abschlussbericht konkret begründet werden.
+
+Wenn ein fachlich sinnvoller Test rot wird, ist das nicht automatisch ein Problem des Tests. Es kann ein echter Bug, eine fehlende Implementierung oder eine unvollständige Testinfrastruktur sein. In diesem Fall dokumentiert Codex die Ursache und bricht bei unzulässigem Scope kontrolliert ab, statt den Test still grün zu biegen.
+
+### Verbindliche Regeln für Isolation und Aussagekraft
+
+- Neue Integration- und Browser-Tests müssen ihre benötigte Isolation ausdrücklich deklarieren: Isolationsklasse `A`, `B`, `C` oder `S`, erwartete Baseline `core` oder `seeded` und Storage-Bedarf `none`, `uploads`, `backups` oder `both`
+- Neue Tests dürfen nicht still von Restdaten in Datenbank oder Storage profitieren. Wenn Verwechslungen möglich sind, sind eindeutig identifizierbare Testdaten-Tokens Pflicht
+- Seed-Daten dürfen nur genutzt werden, wenn der Test auf einer explizit `seeded`-Baseline arbeitet. Eigene Testaktionen müssen zusätzlich so geprüft werden, dass Seed-Vorbestand den Erfolg nicht vortäuschen kann
+- Kritische Pfade dürfen nicht nur über Textsichtbarkeit oder bloße Existenz geprüft werden. In Listen, Tabellen, Overlays, Reports, Reopen-Flows und Aggregationen sind zusätzlich Count-, Identity-, Filter- oder Delta-Nachweise zu verlangen
+- Browser- und UI-Tests dürfen nicht nur auf unscharfe Textsichtbarkeit setzen. Nach Mutationen sind Identität, Reihenfolge, Anzahl oder Ausschluss von Altbestand mitzubelegen
+- Wenn Fremddaten, Seed-Vorbestand oder Canary-Daten ein False Positive auslösen könnten, ist eine Negativprüfung Pflicht. Reine Existenzprüfung reicht dann nicht aus
+- Tests mit Bedarf an harter Leerheit, globalem Systemzustand, Seed-, Storage-, Dump- oder Backup-Kontext sind als Klasse `A` oder `S` zu behandeln und vor dem Lauf gegen einen passenden Fingerprint zu validieren
+- Änderungen an der Teststrategie dürfen nicht allein über grüne Läufe freigegeben werden. Alt-vs-Neu-Validierung, Pollution-Canaries, Wiederholungsläufe und Reihenfolgetests sind dabei verpflichtend
+- Klasse `C` und Worker-/Lauf-weite Baselines dürfen erst nach erfolgreicher Pilotvalidierung für stabile Suites genutzt werden; sie sind kein Default
+
+### Verbindliche Entwurfsfragen vor jedem neuen Integration- oder Browser-Test
+
+Vor dem Schreiben eines neuen Tests muss Codex diese Fragen kurz für sich beantworten und die Antworten im Plan oder in der Testanlage sichtbar berücksichtigen:
+
+1. Welche Isolationsklasse braucht der Test wirklich?
+2. Reicht `core`, oder ist `seeded` fachlich zwingend?
+3. Reicht `per-suite`, oder ist `per-test` wirklich notwendig?
+4. Welcher vorhandene Helper oder Registry-Eintrag deckt den Fall bereits ab?
+5. Welche konkrete Assertion beweist das Zielobjekt eindeutig statt nur dessen Textsichtbarkeit?
+6. Welche leichtere, schnellere Variante wurde bewusst verworfen und warum?
+
+Ohne diese Abwägung darf Codex keinen neuen harten Reset-Pfad, keine neue Seed-Pflicht und keine neue Sonder-Initialisierung in Tests einführen.
+
+Verbindliche Arbeitsgrundlage für den späteren Umbau ist `docs/TEST_ISOLATION_REBUILD_PLAN.md`
+
 ### Leitplanken für Unit-Tests
 
 Unit-Tests prüfen isoliertes fachliches oder technisches Verhalten ohne Datenbank, ohne echtes Dateisystem und ohne Browser. Sie müssen sich auf beobachtbare Ergebnisse öffentlicher Funktionen, Komponenten oder Schnittstellen stützen und dürfen keine Implementierungsdetails wie Quelltext-Strings, interne Funktionsnamen, JSX-Fragmente oder Dateiinhalte prüfen. Ein Unit-Test ist nur dann sinnvoll, wenn seine Assertion zeigt, was das System bei einem Input tatsächlich zurückgibt, verändert, anzeigt oder verweigert.
@@ -417,9 +553,21 @@ Unit-Tests prüfen isoliertes fachliches oder technisches Verhalten ohne Datenba
 
 Integrationstests prüfen das Zusammenspiel realer Anwendungsteile mit Datenbank und temporärem Dateisystem. Sie sollen echte Persistenz, API-Verhalten, Validierung, Rollenrechte, Nebenwirkungen und Fehlerszenarien absichern. Assertions müssen sich auf beobachtbare Systemwirkungen stützen, zum Beispiel HTTP-Responses, Datenbankzustand, erzeugte Dateien oder abgelehnte Operationen. Integrationstests dürfen keine bloßen Verdrahtungsannahmen oder interne Implementierungsdetails absichern, sondern müssen zeigen, dass die fachliche Regel im realen Lauf korrekt durchgesetzt wird.
 
+Zusätzlich gilt für Integrationstests:
+
+- Wenn Listen, Filter, Suchbegriffe, Aggregationen oder ähnliche Namen im Spiel sind, müssen Testdaten eindeutig markiert und die Zielobjekte über ID, Token oder eine gleichwertig eindeutige Kombination nachgewiesen werden
+- Integrationstests dürfen nicht deshalb grün werden, weil die DB leer ist, sofern Leere nicht ausdrücklich Teil der fachlichen Regel ist
+- Suiten mit Seed-, Storage- oder globalem Systemzustand sind als Sonderfall zu behandeln und nicht still an allgemeine Reset-Muster anzulehnen
+
 ### Leitplanken für E2E-Browser-Tests
 
 E2E-Tests prüfen geschäftskritische Nutzerabläufe aus Sicht des Benutzers im Browser. Sie sollen sich an sichtbaren Aktionen und Ergebnissen orientieren, also an Navigation, Eingaben, Klicks, Dialogen, Meldungen, Sperren und erfolgreichen oder abgelehnten Abläufen. E2E-Tests dürfen nicht die interne Struktur der Oberfläche absichern, sondern nur das tatsächlich beobachtbare Verhalten der Anwendung. Sie sollen gezielt die wichtigsten End-to-End-Flows abdecken und nicht Aufgaben übernehmen, die bereits durch Unit- oder Integrationstests schneller und stabiler geprüft werden können.
+
+Zusätzlich gilt für E2E-Browser-Tests:
+
+- Listen, Hover-Previews, Sidebars, Boards und Reopen-Flows dürfen nicht nur per `toContainText(...)` oder reiner Sichtbarkeit abgesichert werden, wenn Altbestand oder ähnlich benannte Objekte plausibel sind
+- Browser-Tests mit Upload-, Backup-, Dump- oder Attachment-Kontext müssen einen ausdrücklich geprüften Storage-Ausgangszustand haben
+- Nach einer Browser-Mutation ist zusätzlich zu prüfen, dass das sichtbare Ergebnis nicht aus Seed, Cache oder Altbestand stammt
 
 ---
 
@@ -438,8 +586,21 @@ E2E-Tests prüfen geschäftskritische Nutzerabläufe aus Sicht des Benutzers im 
 - `npm run lint`
 - `npm run audit`
 - `npm run secrets`
+- `npm run analyze:arch`
+- `npm run analyze:boundaries`
+- `npm run analyze:coverage`
+- `npm run analyze:knip`
 
 Nach Ausführung muss Codex explizit berichten: welche Kommandos ausgeführt wurden, welches Ergebnis jedes hatte, welche Teile nicht ausgeführt wurden und warum. „Alles grün" ist nur zulässig, wenn alle verpflichtenden Kommandos erfolgreich abgeschlossen wurden.
+
+Wenn das Repository einen lokalen Sammelbefehl wie `npm run audit:local` bereitstellt, darf Codex diesen für die Ausführung verwenden, sofern der Befehl exakt diese Audit-Kommandos seriell abdeckt oder sichtbar orchestriert. Der Abschlussbericht bleibt trotzdem kommandogenau.
+
+Zusätzlich zum vollständigen Bericht liefert Codex nach einem Audit immer einen kurzen Management-Report mit:
+
+- Gesamtstatus (`grün`, `gelb` oder `rot`)
+- Anzahl erfolgreicher und fehlgeschlagener Teilprüfungen
+- den 1 bis 3 wichtigsten Problemursachen
+- einer knappen Einschätzung, ob der Branch audit-seitig mergefähig wirkt oder noch klar blockiert ist
 
 ---
 
@@ -459,8 +620,19 @@ Nach Ausführung muss Codex explizit berichten: welche Kommandos ausgeführt wur
  *
  * Ziel:
  * <Kurzbeschreibung der Absicherung>
+ *
+ * Aussagekraft-Nachweis:
+ * - Zielobjekt: <konkrete Entität oder konkreter Flow>
+ * - Eindeutiger Nachweis: <ID, Token oder eindeutige Feldkombination>
+ * - Realistische Daten: <Pflichtfelder und Beziehungen>
+ * - Kritische Assertion: <Assertion, die bei Regelbruch rot wird>
+ * - False-Positive-Schutz: <Ausschluss von Seed, Cache, Altbestand oder ähnlichen Treffern>
  */
 ```
+
+Der Abschnitt `Aussagekraft-Nachweis` ist für neue oder wesentlich geänderte Testdateien verpflichtend. Fehlt dieser Nachweis, gilt die Teständerung als unvollständig.
+
+Bei reinen Smoke-Tests muss der Kommentar ausdrücklich sagen, dass es sich nur um einen Smoke-Test handelt und welche begrenzte Aussage dieser Test hat. Ein Smoke-Test darf nicht als fachliche Absicherung einer Regel, eines Reports, einer Berechtigung oder eines Workflows dokumentiert werden.
 
 ### Pflege von docs/TEST_MATRIX.md
 
@@ -472,7 +644,9 @@ Bei jeder Erstellung oder Erweiterung von Tests pflegt Codex `docs/TEST_MATRIX.m
 | [datei.test.ts](../tests/...) | FT14 | Unit | Kurzbeschreibung | ✓ |
 ```
 
-Fehlt die Aktualisierung der Test-Matrix, gilt die Teständerung als unvollständig.
+Die Test-Matrix muss bei neuen oder wesentlich geänderten Tests zusätzlich erkennen lassen, ob der Test fachlich stark, begrenzt, Smoke-Test oder technische Absicherung ist. Wenn ein Test nur ein Smoke-Test ist, darf die Matrix ihn nicht als vollständige Absicherung einer Fachregel darstellen.
+
+Fehlt die Aktualisierung der Test-Matrix oder ist die Aussagekraft dort falsch eingeordnet, gilt die Teständerung als unvollständig.
 
 ---
 

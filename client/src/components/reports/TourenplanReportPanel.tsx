@@ -9,12 +9,13 @@ import { TourenplanPaginationMeasurement } from "@/components/reports/Tourenplan
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { TourenplanPrintPage } from "@/components/reports/TourenplanPrintPage";
 import {
-  buildTourenplanWeekGroups,
-  buildTourenplanPrintPages,
-  paginateTourenplanWeekGroups,
+  buildTourenplanPrintPagesForSections,
+  buildTourenplanPrintSections,
+  paginateTourenplanPrintSections,
   type TourenplanAppointmentListItem,
   type TourenplanFontSize,
   type TourenplanOrientation,
+  type TourenplanPrintSection,
   type TourenplanPreviewResponse,
   type TourenplanPrintMode,
 } from "@/components/reports/tourenplan-model";
@@ -26,6 +27,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
+import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
 type TourEntity = z.infer<typeof api.tours.list.responses[200]>[number];
 type TourenplanRangeConfig = {
@@ -46,6 +48,16 @@ type TourenplanReportPanelProps = {
   defaultIsoWeek: number;
   defaultIsoWeekYear: number;
   isAdmin: boolean;
+};
+
+type TourenplanSelectionItem =
+  | { kind: "tour"; tourId: number }
+  | { kind: "without-tour" };
+
+type TourenplanSectionRequestData = {
+  sectionKey: string;
+  previewData: TourenplanPreviewResponse;
+  appointmentItems: TourenplanAppointmentListItem[];
 };
 
 const TOURENPLAN_RANGE_SETTING_KEY = "reports.tourenplan.rangeConfig";
@@ -148,6 +160,40 @@ async function fetchAllTourenplanAppointmentDetails(params: {
   return items;
 }
 
+function buildTourenplanSelectionKey(items: TourenplanSelectionItem[]): string {
+  return items.map((item) => item.kind === "tour" ? `tour:${item.tourId}` : "without-tour").join("|");
+}
+
+function selectionItemToTourId(item: TourenplanSelectionItem): number {
+  return item.kind === "tour" ? item.tourId : 0;
+}
+
+function selectionItemToSectionKey(item: TourenplanSelectionItem): string {
+  return item.kind === "tour" ? `tour-${item.tourId}` : "without-tour";
+}
+
+async function fetchTourenplanSections(params: {
+  items: TourenplanSelectionItem[];
+  fromDate: string;
+  weekCount: number;
+}): Promise<TourenplanSectionRequestData[]> {
+  return Promise.all(params.items.map(async (item) => {
+    const tourId = selectionItemToTourId(item);
+    const previewData = await fetchJson<TourenplanPreviewResponse>(`/api/tours/${tourId}/print-preview?fromDate=${params.fromDate}&weekCount=${params.weekCount}`);
+    const appointmentItems = await fetchAllTourenplanAppointmentDetails({
+      tourId,
+      fromDate: previewData.fromDate,
+      toDate: previewData.toDate,
+    });
+
+    return {
+      sectionKey: selectionItemToSectionKey(item),
+      previewData,
+      appointmentItems,
+    };
+  }));
+}
+
 export function TourenplanReportPanel({
   defaultReportRange,
   defaultIsoWeek,
@@ -158,7 +204,9 @@ export function TourenplanReportPanel({
   const rangeConfig = useSetting(TOURENPLAN_RANGE_SETTING_KEY) as TourenplanRangeConfig | undefined;
   const configuredPrintMode = useSetting(TOURENPLAN_PRINT_MODE_SETTING_KEY) as TourenplanPrintMode | undefined;
   const configuredFontSize = useSetting(TOURENPLAN_FONT_SIZE_SETTING_KEY) as TourenplanFontSize | undefined;
-  const [selectedTourId, setSelectedTourId] = React.useState<number | null>(null);
+  const [allToursSelected, setAllToursSelected] = React.useState(true);
+  const [selectedTourIds, setSelectedTourIds] = React.useState<number[]>([]);
+  const [includeWithoutTour, setIncludeWithoutTour] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<ReportConfigPanelMode>("date");
   const [fromDate, setFromDate] = React.useState(defaultReportRange.fromDate);
   const [toDate, setToDate] = React.useState(defaultReportRange.toDate);
@@ -248,31 +296,61 @@ export function TourenplanReportPanel({
     queryFn: () => fetchJson("/api/tours"),
   });
 
-  const activeTours = React.useMemo(() => tours, [tours]);
+  const activeTours = React.useMemo(() => sortToursForDisplay(tours), [tours]);
+  const activeTourIds = React.useMemo(() => activeTours.map((tour) => tour.id), [activeTours]);
+  const selectedTourIdSet = React.useMemo(() => new Set(selectedTourIds), [selectedTourIds]);
+  const selectedItems = React.useMemo<TourenplanSelectionItem[]>(() => {
+    const selectedRealTourIds = allToursSelected
+      ? activeTourIds
+      : activeTourIds.filter((tourId) => selectedTourIdSet.has(tourId));
+    const items: TourenplanSelectionItem[] = selectedRealTourIds.map((tourId) => ({ kind: "tour", tourId }));
+    if (includeWithoutTour) {
+      items.push({ kind: "without-tour" });
+    }
+    return items;
+  }, [activeTourIds, allToursSelected, includeWithoutTour, selectedTourIdSet]);
+  const selectedItemsKey = React.useMemo(() => buildTourenplanSelectionKey(selectedItems), [selectedItems]);
 
-  const { data: previewData, isLoading: isPreviewLoading, isError: isPreviewError } = useQuery<TourenplanPreviewResponse>({
-    queryKey: ["reports-tourenplan-preview", selectedTourId, previewRequest.fromDate, previewRequest.weekCount],
-    enabled: isPreviewOpen && selectedTourId !== null && previewRequest.fromDate.length > 0,
-    queryFn: () => fetchJson(`/api/tours/${selectedTourId}/print-preview?fromDate=${previewRequest.fromDate}&weekCount=${previewRequest.weekCount}`),
-  });
+  const toggleAllTours = React.useCallback((checked: boolean) => {
+    setAllToursSelected(checked);
+    setSelectedTourIds(checked ? [] : []);
+  }, []);
 
-  const { data: appointmentDetails = [], isLoading: isAppointmentDetailsLoading } = useQuery<TourenplanAppointmentListItem[]>({
-    queryKey: ["reports-tourenplan-appointments", selectedTourId, previewData?.fromDate, previewData?.toDate],
-    enabled: isPreviewOpen && selectedTourId !== null && Boolean(previewData?.fromDate && previewData?.toDate),
-    queryFn: () => fetchAllTourenplanAppointmentDetails({
-      tourId: selectedTourId!,
-      fromDate: previewData!.fromDate,
-      toDate: previewData!.toDate,
+  const toggleTour = React.useCallback((tourId: number, checked: boolean) => {
+    setAllToursSelected(false);
+    setSelectedTourIds((currentIds) => {
+      const currentSet = allToursSelected ? new Set(activeTourIds) : new Set(currentIds);
+      if (checked) {
+        currentSet.add(tourId);
+      } else {
+        currentSet.delete(tourId);
+      }
+      const nextIds = activeTourIds.filter((activeTourId) => currentSet.has(activeTourId));
+      if (nextIds.length === activeTourIds.length && activeTourIds.length > 0) {
+        setAllToursSelected(true);
+        return [];
+      }
+      return nextIds;
+    });
+  }, [activeTourIds, allToursSelected]);
+
+  const { data: sectionData = [], isLoading: isPreviewLoading, isError: isPreviewError } = useQuery<TourenplanSectionRequestData[]>({
+    queryKey: ["reports-tourenplan-preview", selectedItemsKey, previewRequest.fromDate, previewRequest.weekCount],
+    enabled: isPreviewOpen && selectedItems.length > 0 && previewRequest.fromDate.length > 0,
+    queryFn: () => fetchTourenplanSections({
+      items: selectedItems,
+      fromDate: previewRequest.fromDate,
+      weekCount: previewRequest.weekCount,
     }),
   });
 
-  const measuredWeeks = React.useMemo(
-    () => previewData ? buildTourenplanWeekGroups(previewData, appointmentDetails) : [],
-    [appointmentDetails, previewData],
+  const measuredSections = React.useMemo<TourenplanPrintSection[]>(
+    () => buildTourenplanPrintSections(sectionData),
+    [sectionData],
   );
   const estimatedPages = React.useMemo(
-    () => previewData ? buildTourenplanPrintPages(previewData, appointmentDetails) : [],
-    [appointmentDetails, previewData],
+    () => buildTourenplanPrintPagesForSections(sectionData),
+    [sectionData],
   );
   const [paginationMeasurement, setPaginationMeasurement] = React.useState<{
     pageCapacityPx: number;
@@ -281,20 +359,19 @@ export function TourenplanReportPanel({
 
   React.useEffect(() => {
     setPaginationMeasurement(null);
-  }, [fontSize, measuredWeeks, orientation, printMode, useShortCodes]);
+  }, [fontSize, measuredSections, orientation, printMode, useShortCodes]);
 
   const measuredPages = React.useMemo(
     () => (
-      previewData && paginationMeasurement
-        ? paginateTourenplanWeekGroups({
-            tourName: previewData.tour.name,
-            weeks: measuredWeeks,
+      sectionData.length > 0 && paginationMeasurement
+        ? paginateTourenplanPrintSections({
+            sections: measuredSections,
             pageCapacityPx: paginationMeasurement.pageCapacityPx,
             cardHeights: paginationMeasurement.cardHeights,
           })
         : []
     ),
-    [measuredWeeks, paginationMeasurement, previewData],
+    [measuredSections, paginationMeasurement, sectionData.length],
   );
   const pages = React.useMemo(
     () => (typeof window === "undefined" ? estimatedPages : measuredPages),
@@ -302,8 +379,7 @@ export function TourenplanReportPanel({
   );
   const isPaginationMeasuring = typeof window !== "undefined"
     && isPreviewOpen
-    && Boolean(previewData)
-    && !isAppointmentDetailsLoading
+    && sectionData.length > 0
     && paginationMeasurement === null;
 
   React.useEffect(() => {
@@ -311,7 +387,7 @@ export function TourenplanReportPanel({
   }, [pages.length]);
 
   const dialogWidthClassName = orientation === "portrait" ? "w-[calc(210mm+88px)]" : undefined;
-  const isGenerateDisabled = selectedTourId === null || previewRequest.fromDate.length === 0;
+  const isGenerateDisabled = selectedItems.length === 0 || previewRequest.fromDate.length === 0;
   const quickRangeOptions = (
     <div className="hidden" data-testid="reports-tourenplan-quick-range-options">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Termine ab:</div>
@@ -377,97 +453,108 @@ export function TourenplanReportPanel({
       <ReportConfigPanel
         title="Tourenplan"
         helpKey="report-tourenplan"
-        actionButton={(
-          <div className="min-w-[150px]">
-            <Select
-              value={selectedTourId !== null ? String(selectedTourId) : "none"}
-              onValueChange={(value) => setSelectedTourId(value === "none" ? null : Number(value))}
-            >
-              <SelectTrigger className="h-8 bg-white text-xs" data-testid="select-reports-tourenplan-tour">
-                <SelectValue placeholder="Tour" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Tour</SelectItem>
-                <SelectItem value="0">Ohne Tour</SelectItem>
-                {activeTours.map((tour) => (
-                  <SelectItem key={tour.id} value={String(tour.id)}>
-                    {tour.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
         optionsSlot={(
-          <div className="space-y-3">
-            <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
-              <Checkbox
-                checked={useShortCodes}
-                onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
-                data-testid="checkbox-reports-tourenplan-use-shortcodes"
-              />
-              <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-            </label>
-            {quickRangeOptions}
-          </div>
-        )}
-        secondaryOptionsSlot={(
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
-              <span className="text-sm text-slate-600">Schriftgröße</span>
-              <Select
-                value={fontSize}
-                onValueChange={(value) => {
-                  const nextFontSize = value === "small" || value === "large" ? value : "medium";
-                  setFontSize(nextFontSize);
-                  void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
-                }}
-              >
-                <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
-                  <SelectValue placeholder="Schriftgröße" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">Small</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="large">Large</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-wrap items-start gap-6">
+            <div className="min-w-[210px] rounded-md border border-slate-200 bg-white p-2" data-testid="reports-tourenplan-tour-list">
+              <label className="flex cursor-pointer items-center gap-2 py-1 text-xs font-semibold text-slate-700">
+                <Checkbox
+                  checked={allToursSelected}
+                  onCheckedChange={(checked) => toggleAllTours(Boolean(checked))}
+                  data-testid="checkbox-reports-tourenplan-all-tours"
+                />
+                <span>Alle Touren</span>
+              </label>
+              <div className="mt-1 max-h-36 space-y-1 overflow-y-auto border-t border-slate-100 pt-1">
+                {activeTours.map((tour) => (
+                  <label key={tour.id} className="flex cursor-pointer items-center gap-2 py-1 text-xs text-slate-600">
+                    <Checkbox
+                      checked={allToursSelected || selectedTourIdSet.has(tour.id)}
+                      onCheckedChange={(checked) => toggleTour(tour.id, Boolean(checked))}
+                      data-testid={`checkbox-reports-tourenplan-tour-${tour.id}`}
+                    />
+                    <span className="min-w-0 truncate">{tour.name}</span>
+                  </label>
+                ))}
+                <label className="flex cursor-pointer items-center gap-2 border-t border-slate-100 py-1 pt-2 text-xs text-slate-600">
+                  <Checkbox
+                    checked={includeWithoutTour}
+                    onCheckedChange={(checked) => setIncludeWithoutTour(Boolean(checked))}
+                    data-testid="checkbox-reports-tourenplan-without-tour"
+                  />
+                  <span>Ohne Tour</span>
+                </label>
+              </div>
             </div>
-            {isAdmin ? (
-              <ToggleGroup
-                type="single"
-                value={printMode}
-                onValueChange={(value) => {
-                  if (value === "farbdruck" || value === "spardruck") {
-                    setPrintMode(value);
-                    void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
-                  }
-                }}
-                className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
-                data-testid="reports-tourenplan-print-mode-toggle"
-              >
-                <ToggleGroupItem
-                  value="farbdruck"
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
-                    "data-[state=on]:border-amber-200 data-[state=on]:bg-amber-50 data-[state=on]:text-amber-700 data-[state=on]:shadow-sm",
-                  )}
-                  data-testid="button-reports-tourenplan-print-mode-farbdruck"
-                >
-                  Farbdruck
-                </ToggleGroupItem>
-                <ToggleGroupItem
-                  value="spardruck"
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
-                    "data-[state=on]:border-slate-400 data-[state=on]:bg-white data-[state=on]:text-slate-700 data-[state=on]:shadow-sm",
-                  )}
-                  data-testid="button-reports-tourenplan-print-mode-spardruck"
-                >
-                  Spardruck
-                </ToggleGroupItem>
-              </ToggleGroup>
-            ) : null}
+
+            <div className="flex h-full min-h-[190px] w-full max-w-[420px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4" data-testid="reports-tourenplan-filter-box">
+              <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
+                <Checkbox
+                  checked={useShortCodes}
+                  onCheckedChange={(nextChecked) => setUseShortCodes(Boolean(nextChecked))}
+                  data-testid="checkbox-reports-tourenplan-use-shortcodes"
+                />
+                <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+              </label>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2" data-testid="reports-tourenplan-font-size-option">
+                  <span className="text-sm text-slate-600">Schriftgröße</span>
+                  <Select
+                    value={fontSize}
+                    onValueChange={(value) => {
+                      const nextFontSize = value === "small" || value === "large" ? value : "medium";
+                      setFontSize(nextFontSize);
+                      void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
+                      <SelectValue placeholder="Schriftgröße" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Small</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="large">Large</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {isAdmin ? (
+                  <ToggleGroup
+                    type="single"
+                    value={printMode}
+                    onValueChange={(value) => {
+                      if (value === "farbdruck" || value === "spardruck") {
+                        setPrintMode(value);
+                        void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
+                      }
+                    }}
+                    className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
+                    data-testid="reports-tourenplan-print-mode-toggle"
+                  >
+                    <ToggleGroupItem
+                      value="farbdruck"
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                        "data-[state=on]:border-amber-200 data-[state=on]:bg-amber-50 data-[state=on]:text-amber-700 data-[state=on]:shadow-sm",
+                      )}
+                      data-testid="button-reports-tourenplan-print-mode-farbdruck"
+                    >
+                      Farbdruck
+                    </ToggleGroupItem>
+                    <ToggleGroupItem
+                      value="spardruck"
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-xs font-semibold text-slate-500 transition-all hover:text-slate-700",
+                        "data-[state=on]:border-slate-400 data-[state=on]:bg-white data-[state=on]:text-slate-700 data-[state=on]:shadow-sm",
+                      )}
+                      data-testid="button-reports-tourenplan-print-mode-spardruck"
+                    >
+                      Spardruck
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                ) : null}
+              </div>
+              {quickRangeOptions}
+            </div>
           </div>
         )}
         footer={(
@@ -523,10 +610,9 @@ export function TourenplanReportPanel({
         />
       </ReportConfigPanel>
 
-      {isPreviewOpen && previewData && !isAppointmentDetailsLoading ? (
+      {isPreviewOpen && sectionData.length > 0 ? (
         <TourenplanPaginationMeasurement
-          tourName={previewData.tour.name}
-          weeks={measuredWeeks}
+          sections={measuredSections}
           printMode={printMode}
           fontSize={fontSize}
           orientation={orientation}

@@ -65,11 +65,12 @@ import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { NoteTemplate, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
+import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
   employeeFilterId?: number | null;
-  weekAppointmentDisplayMode?: "standard" | "compact" | "detail" | "split";
+  readOnly?: boolean;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   weekLanesCollapsed?: boolean;
   onWeekLanesCollapsedChange?: (collapsed: boolean) => void;
@@ -126,12 +127,19 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
+const MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX = 180;
 
 const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
   const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
   if (priorityCompare !== 0) return priorityCompare;
   return getAppointmentSortValue(a).localeCompare(getAppointmentSortValue(b));
 };
+
+function resolveWeekLaneRowMinHeightPx(weekTileBodyMode: "collapsed" | "semiexpanded" | "expanded") {
+  return weekTileBodyMode === "collapsed"
+    ? Math.min(MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX, MIN_WEEK_CARD_HEIGHT_PX)
+    : MIN_WEEK_CARD_HEIGHT_PX;
+}
 
 export function resolveVisibleWeekStartFromScroll(params: {
   baseWeekStart: Date;
@@ -245,7 +253,7 @@ export function buildWeekLaneRenderData(
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
-  weekAppointmentDisplayMode: weekAppointmentDisplayModeProp,
+  readOnly = false,
   weekTileBodyMode: weekTileBodyModeProp,
   weekLanesCollapsed: weekLanesCollapsedProp,
   onWeekLanesCollapsedChange,
@@ -278,10 +286,8 @@ export function CalendarWeekView({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
-  const userRole = useMemo(
-    () => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER",
-    [],
-  );
+  const userRole = useMemo(() => getStoredUserRole(), []);
+  const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
 
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const weekScrollRangeSetting = useSetting("calendarWeekScrollRange");
@@ -289,18 +295,17 @@ export function CalendarWeekView({
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
   const isAdmin = userRole === "ADMIN";
-  const canWriteNotes = userRole !== "LESER";
+  const canWriteNotes = userRole !== "READER";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const extraWeekCount =
     typeof weekScrollRangeSetting === "number" && Number.isInteger(weekScrollRangeSetting) && weekScrollRangeSetting >= 0
       ? Math.min(weekScrollRangeSetting, 12)
       : 4;
-  const weekAppointmentDisplayMode = weekAppointmentDisplayModeProp ?? "detail";
   const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
-  const canManageAppointmentTags = userRole === "ADMIN" || userRole === "DISPATCHER";
-  const canManageWeekPlanning = userRole === "ADMIN" || userRole === "DISPATCHER";
+  const canManageAppointmentTags = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
+  const canManageWeekPlanning = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
   const { data: noteTemplates = [] } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates"],
     queryFn: async () => {
@@ -420,7 +425,7 @@ export function CalendarWeekView({
     cardHeightByLaneRef.current.clear();
     projectStatusHeightByWeekRef.current.clear();
     setAppointmentHeightVersion((prev) => prev + 1);
-  }, [appointments, scrollResetKey, weekTileBodyMode, weekAppointmentDisplayMode]);
+  }, [appointments, scrollResetKey, weekTileBodyMode]);
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -531,6 +536,7 @@ export function CalendarWeekView({
           key[0] === "calendarAppointments"
           || key[0] === "calendarWeekLaneEmployeePreviews"
           || key[0] === "calendarBlockedTourWeeks"
+          || key[0] === "/api/appointments"
           || (typeof key[0] === "string" && key[0].startsWith("/api/tours/") && key[0].endsWith("/week-employees"))
         );
       },
@@ -881,6 +887,12 @@ export function CalendarWeekView({
   };
 
   const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
+    if (isReaderCalendarReadOnly) {
+      event.preventDefault();
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     event.preventDefault();
     const appointmentId = Number(event.dataTransfer.getData("text/plain"));
     if (!appointmentId) return;
@@ -1219,7 +1231,12 @@ export function CalendarWeekView({
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
-                      const laneUniformHeightPx = cardHeightByLaneRef.current.get(tourLane.laneKey) ?? null;
+                      const isCompactWeekMode = weekTileBodyMode === "collapsed";
+                      const laneRowMinHeightPx = resolveWeekLaneRowMinHeightPx(weekTileBodyMode);
+                      const getLaneHeightKey = (rowKey: string) => `${weekKey}:${tourLane.laneKey}:${rowKey}`;
+                      const getLaneUniformHeightPx = (rowKey: string) => isCompactWeekMode
+                        ? null
+                        : (cardHeightByLaneRef.current.get(getLaneHeightKey(rowKey)) ?? null);
                       const projectStatusAreaHeightPx = projectStatusHeightByWeekRef.current.get(weekKey) ?? null;
                       const tileRowCount = laneRenderData.tileRowCount;
                       const needsDayCellRow = laneRenderData.needsDayCellRow;
@@ -1229,10 +1246,15 @@ export function CalendarWeekView({
                       const laneGridTemplateRows =
                         hasLaneContent
                           ? [
-                              ...Array.from({ length: tileRowCount }, () => `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`),
-                              ...(needsDayCellRow ? [`minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`] : []),
+                              ...Array.from(
+                                { length: tileRowCount },
+                                () => `minmax(${laneRowMinHeightPx}px, auto)`,
+                              ),
+                              ...(needsDayCellRow
+                                ? [`minmax(${laneRowMinHeightPx}px, auto)`]
+                                : []),
                             ].join(" ")
-                          : `minmax(${MIN_WEEK_CARD_HEIGHT_PX}px, auto)`;
+                          : `minmax(${laneRowMinHeightPx}px, auto)`;
                       const isoYear = getISOWeekYear(weekStart);
                       const isoWeek = getISOWeek(weekStart);
                       const isLaneBlocked = tourLane.tourId != null
@@ -1297,7 +1319,7 @@ export function CalendarWeekView({
                                       <StickyNote className="h-3.5 w-3.5 shrink-0" />
                                       {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
                                     </DropdownMenuItem>
-                                    {tourLane.tourId != null ? (
+                                    {!isReaderCalendarReadOnly && tourLane.tourId != null ? (
                                       isLaneBlocked ? (
                                         <DropdownMenuItem
                                           onClick={() => {
@@ -1431,7 +1453,7 @@ export function CalendarWeekView({
                                     ) : (
                                       <span className="ml-auto" />
                                     )}
-                                    {dayBucket.dateKey >= berlinToday ? (
+                                    {!isReaderCalendarReadOnly && dayBucket.dateKey >= berlinToday ? (
                                       <button
                                         onClick={(event) => {
                                           event.stopPropagation();
@@ -1475,7 +1497,7 @@ export function CalendarWeekView({
                             className="relative grid divide-x divide-border/30 rounded-md border border-border/30 overflow-hidden"
                             style={{
                               gridTemplateColumns: weekDayGridTemplate,
-                              minHeight: `${MIN_WEEK_CARD_HEIGHT_PX}px`,
+                              minHeight: `${laneRowMinHeightPx}px`,
                               gridTemplateRows: laneGridTemplateRows,
                             }}
                           >
@@ -1500,7 +1522,7 @@ export function CalendarWeekView({
                                 aria-hidden
                               />
                             ) : null}
-                            {hasLaneContent && draggedAppointmentId !== null ? (
+                            {hasLaneContent && draggedAppointmentId !== null && !isReaderCalendarReadOnly ? (
                               <div
                                 className="absolute inset-0 grid z-20"
                                 style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -1538,47 +1560,62 @@ export function CalendarWeekView({
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked
+                              const canDragSegment = !isReaderCalendarReadOnly
+                                && !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                              const heightRowKey = `grid-row-${rowIndex}`;
 
                               return (
-                                <CalendarWeekSpanningTile
+                                <div
                                   key={`week-spanning-tile-${appointment.id}`}
-                                  appointment={appointment}
-                                  spanColumns={columnSpan}
-                                  displayMode={weekAppointmentDisplayMode ?? "standard"}
-                                  weekTileBodyMode={weekTileBodyMode}
-                                  visibleStartDate={visibleStartDate}
-                                  visibleDayNumberStart={visibleDayNumberStart}
-                                  uniformHeightPx={laneUniformHeightPx}
-                                  projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                  showTagActions
-                                  canEditTags={canEditAppointmentTags}
                                   style={{
                                     gridColumn: `${startColumn} / span ${columnSpan}`,
                                     gridRow: rowIndex + 1,
-                                    margin: "0.5rem",
+                                    padding: "0.5rem",
                                     zIndex: 10,
+                                    minWidth: 0,
+                                    width: "100%",
+                                    boxSizing: "border-box",
+                                    alignSelf: isCompactWeekMode ? "start" : undefined,
                                   }}
-                                  isDragging={draggedAppointmentId === appointment.id}
-                                  isLocked={isSegmentLocked}
-                                  highlighted={isHighlighted}
-                                  isConflict={isConflict}
-                                  isBlocked={isLaneBlocked}
-                                  conflictColor={conflictMeta?.color}
-                                  onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                  onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                  onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                  onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
-                                  onMouseLeave={() =>
-                                    setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
-                                  }
-                                  projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                  containerRef={(node) =>
-                                    measureLaneCardHeight(tourLane.laneKey, node, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX)}
-                                  testId={`week-spanning-tile-${appointment.id}`}
-                                />
+                                >
+                                  <CalendarWeekSpanningTile
+                                    appointment={appointment}
+                                    spanColumns={columnSpan}
+                                    weekTileBodyMode={weekTileBodyMode}
+                                    visibleStartDate={visibleStartDate}
+                                    visibleDayNumberStart={visibleDayNumberStart}
+                                    uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
+                                    projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                    showTagActions
+                                    canEditTags={canEditAppointmentTags}
+                                    style={{ width: "100%" }}
+                                    isDragging={draggedAppointmentId === appointment.id}
+                                    isLocked={isSegmentLocked}
+                                    highlighted={isHighlighted}
+                                    isConflict={isConflict}
+                                    isBlocked={isLaneBlocked}
+                                    conflictColor={conflictMeta?.color}
+                                    onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                    onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                    onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                    onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                    onMouseLeave={() =>
+                                      setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
+                                    }
+                                    projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
+                                    containerRef={isCompactWeekMode
+                                      ? undefined
+                                      : (node) =>
+                                          measureLaneCardHeight(
+                                            getLaneHeightKey(heightRowKey),
+                                            node,
+                                            WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX,
+                                          )}
+                                    testId={`week-spanning-tile-${appointment.id}`}
+                                  />
+                                </div>
                               );
                             }) : null}
                             {hasLaneContent ? laneRenderData.singleDayGridItems.map(({ appointmentId, gridColumn, gridRow }) => {
@@ -1591,14 +1628,25 @@ export function CalendarWeekView({
                               const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                               const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
-                              const canDragSegment = !isSegmentLocked
+                              const canDragSegment = !isReaderCalendarReadOnly
+                                && !isSegmentLocked
                                 && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                              const heightRowKey = `grid-row-${gridRow - 1}`;
 
                               return (
                                 <div
                                   key={`week-single-grid-item-${appointment.id}`}
-                                  style={{ gridColumn, gridRow, padding: "0.5rem", zIndex: 10 }}
+                                  style={{
+                                    gridColumn,
+                                    gridRow,
+                                    padding: "0.5rem",
+                                    zIndex: 10,
+                                    minWidth: 0,
+                                    width: "100%",
+                                    boxSizing: "border-box",
+                                    alignSelf: isCompactWeekMode ? "start" : undefined,
+                                  }}
                                 >
                                   <CalendarWeekAppointmentPanel
                                     appointment={appointment}
@@ -1606,13 +1654,19 @@ export function CalendarWeekView({
                                     context="week-calendar"
                                     segment="start"
                                     continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
-                                    uniformHeightPx={laneUniformHeightPx}
+                                    uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                    containerRef={(node) =>
-                                      measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
+                                    containerRef={isCompactWeekMode
+                                      ? undefined
+                                      : (node) =>
+                                          measureLaneCardHeight(
+                                            getLaneHeightKey(heightRowKey),
+                                            node,
+                                            WEEK_CARD_FOOTER_SAFE_SPACE_PX,
+                                          )}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
@@ -1636,8 +1690,14 @@ export function CalendarWeekView({
                               return (
                                 <div
                                   key={`${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  className="h-full p-2 space-y-2"
-                                  style={{ gridColumn: dayIdx + 1, gridRow: tileRowCount + 1, zIndex: 10 }}
+                                  className="h-full min-w-0 p-2 space-y-2"
+                                  style={{
+                                    gridColumn: dayIdx + 1,
+                                    gridRow: tileRowCount + 1,
+                                    zIndex: 10,
+                                    width: "100%",
+                                    boxSizing: "border-box",
+                                  }}
                                   onDragOver={(event) => event.preventDefault()}
                                   onDrop={(event) => {
                                     void handleDrop(event, day);
@@ -1654,39 +1714,55 @@ export function CalendarWeekView({
                                     const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
                                     const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
-                                    const canDragSegment = !isSegmentLocked
+                                    const canDragSegment = !isReaderCalendarReadOnly
+                                      && !isSegmentLocked
                                       && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
                                     const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                                    const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
 
                                     return (
-                                      <CalendarWeekAppointmentPanel
+                                      <div
                                         key={`${appointment.id}-${tourLane.laneKey}-${dayIdx}-${stackIndex}`}
-                                        appointment={appointment}
-                                        weekTileBodyMode={weekTileBodyMode}
-                                        context="week-calendar"
-                                        segment="start"
-                                        continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
-                                        uniformHeightPx={laneUniformHeightPx}
-                                        projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                        showTagActions
-                                        canEditTags={canEditAppointmentTags}
-                                        projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
-                                        containerRef={(node) =>
-                                          measureLaneCardHeight(tourLane.laneKey, node, WEEK_CARD_FOOTER_SAFE_SPACE_PX)}
-                                        isDragging={draggedAppointmentId === appointment.id}
-                                        isLocked={isSegmentLocked}
-                                        highlighted={isHighlighted}
-                                        isConflict={isConflict}
-                                        isBlocked={isLaneBlocked}
-                                        conflictColor={conflictMeta?.color}
-                                        onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                        onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                        onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                        onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
-                                        onMouseLeave={() =>
-                                          setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
-                                        }
-                                      />
+                                        style={{
+                                          width: "100%",
+                                          minWidth: 0,
+                                          boxSizing: "border-box",
+                                        }}
+                                      >
+                                        <CalendarWeekAppointmentPanel
+                                          appointment={appointment}
+                                          weekTileBodyMode={weekTileBodyMode}
+                                          context="week-calendar"
+                                          segment="start"
+                                          continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
+                                          uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
+                                          projectStatusAreaHeightPx={projectStatusAreaHeightPx}
+                                          showTagActions
+                                          canEditTags={canEditAppointmentTags}
+                                          projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
+                                          containerRef={isCompactWeekMode
+                                            ? undefined
+                                            : (node) =>
+                                                measureLaneCardHeight(
+                                                  getLaneHeightKey(heightRowKey),
+                                                  node,
+                                                  WEEK_CARD_FOOTER_SAFE_SPACE_PX,
+                                                )}
+                                          isDragging={draggedAppointmentId === appointment.id}
+                                          isLocked={isSegmentLocked}
+                                          highlighted={isHighlighted}
+                                          isConflict={isConflict}
+                                          isBlocked={isLaneBlocked}
+                                          conflictColor={conflictMeta?.color}
+                                          onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                          onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                          onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                          onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
+                                          onMouseLeave={() =>
+                                            setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
+                                          }
+                                        />
+                                      </div>
                                     );
                                   })}
                                 </div>

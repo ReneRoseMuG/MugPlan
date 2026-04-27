@@ -1,4 +1,4 @@
-﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
+import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import {
   MANAGED_MESSE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -31,12 +31,20 @@ import {
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
+import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
+import {
+  getAppointmentParkingDefaults,
+  getParkplatzTourId,
+  parkAppointmentTx,
+} from "./appointmentParkingService";
 import * as tagRelationsService from "./tagRelationsService";
 import * as tourWeekEmployeesService from "./tourWeekEmployeesService";
 import * as tourWeeksService from "./tourWeeksService";
 
 const logPrefix = "[appointments-service]";
-const overlapConflictMessage = "Termin ueberschneidet sich mit bestehenden Mitarbeiter-Terminen";
+const overlapConflictMessage = "Termin überschneidet sich mit bestehenden Mitarbeiter-Terminen";
+type AppointmentTagsByAppointmentId = Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>>;
+type AppointmentTagRelations = AppointmentTagsByAppointmentId extends Map<number, infer TValue> ? TValue : never;
 
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
@@ -98,7 +106,7 @@ function getBerlinTodayDateString(): string {
 function parseDateOnly(input: string): Date {
   const parsed = new Date(`${input}T00:00:00`);
   if (Number.isNaN(parsed.getTime())) {
-    throw new AppointmentError("Ungueltiges Datum", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültiges Datum", 422, "VALIDATION_ERROR");
   }
   return parsed;
 }
@@ -129,6 +137,24 @@ async function shouldTreatTourAsMesse(tourId: number | null | undefined): Promis
   const allTours = await toursRepository.getTours();
   const tour = allTours.find((entry) => entry.id === tourId) ?? null;
   return isMesseTourName(tour?.name);
+}
+
+function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWeek: number): string {
+  const label = tourName?.trim() ? tourName.trim() : "Tour";
+  return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
+}
+
+async function assertTargetTourWeekWritable(tourId: number | null | undefined, startDateText: string): Promise<void> {
+  if (tourId == null) return;
+  const startDate = parseDateOnly(startDateText);
+  const isoYear = getISOWeekYear(startDate);
+  const isoWeek = getISOWeek(startDate);
+  if (!(await tourWeeksService.isTourWeekBlocked(tourId, isoYear, isoWeek))) {
+    return;
+  }
+
+  const tour = await toursRepository.getTour(tourId);
+  throw new AppointmentError(formatBlockedTourWeekMessage(tour?.name, isoWeek), 409, "BUSINESS_CONFLICT");
 }
 
 function allowsHistoricalParkplatzMutation(
@@ -168,12 +194,12 @@ function resolveOverlapStartTimeHour(startTime?: string | null): number | null {
   if (!startTime) return null;
   const seconds = parseTimeToSeconds(startTime);
   if (seconds == null) {
-    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Startzeit", 422, "VALIDATION_ERROR");
   }
   return Math.floor(seconds / 3600);
 }
 
-function resolveVisibleAppointmentTags(tags: Awaited<ReturnType<typeof appointmentsRepository.getAppointmentTagsByAppointmentIds>> extends Map<number, infer TValue> ? TValue : never) {
+function resolveVisibleAppointmentTags(tags: AppointmentTagRelations) {
   const appointmentTags = tags ?? [];
   return {
     isCancelled: hasAppointmentCancellationTag(appointmentTags),
@@ -201,7 +227,7 @@ async function assertAppointmentWriteAllowed(
 ): Promise<void> {
   if (!options.allowHistorical && isHistoricalAppointmentMutationLocked(appointment, options.parkplatzTourId)) {
     throw new AppointmentError(
-      options.historicalMessage ?? "Historische Termine koennen nicht geaendert werden",
+      options.historicalMessage ?? "Historische Termine können nicht geändert werden",
       409,
       "PAST_APPOINTMENT_READONLY",
     );
@@ -210,14 +236,14 @@ async function assertAppointmentWriteAllowed(
   const appointmentTags = await getAppointmentTagsForGuard(appointmentId);
   if (!options.allowCancelled && hasAppointmentCancellationTag(appointmentTags)) {
     throw new AppointmentError(
-      options.cancelledMessage ?? "Stornierte Termine koennen nicht geaendert werden",
+      options.cancelledMessage ?? "Stornierte Termine können nicht geändert werden",
       409,
       "CANCELLED_APPOINTMENT_READONLY",
     );
   }
   if (!options.allowPlanningBlocked && hasReservedPlanningBlockedTag(appointmentTags)) {
     throw new AppointmentError(
-      options.planningBlockedMessage ?? "Planung blockierte Termine koennen nicht geaendert werden",
+      options.planningBlockedMessage ?? "Planung blockierte Termine können nicht geändert werden",
       409,
       "PLANNING_BLOCKED_APPOINTMENT_READONLY",
     );
@@ -237,7 +263,7 @@ function assertNotHistoricalInput(
 
   const inputTimeSeconds = parseTimeToSeconds(data.startTime);
   if (inputTimeSeconds == null) {
-    throw new AppointmentError("Ungueltige Startzeit", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Startzeit", 422, "VALIDATION_ERROR");
   }
   if (inputTimeSeconds < getBerlinCurrentTimeSeconds()) {
     throw new AppointmentError("Startzeit liegt in der Vergangenheit", 409, "VALIDATION_ERROR");
@@ -250,7 +276,7 @@ function normalizeEmployeeIds(employeeIds?: number[]) {
 
 function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
-    throw new AppointmentError("Keine Berechtigung fuer Tag-Aenderungen", 403, "FORBIDDEN");
+    throw new AppointmentError("Keine Berechtigung für Tag-Änderungen", 403, "FORBIDDEN");
   }
 }
 
@@ -262,7 +288,7 @@ async function assertNoInactiveEmployeesTx(
   const inactiveEmployees = await appointmentsRepository.getInactiveEmployeesByIdsTx(tx, employeeIds);
   if (inactiveEmployees.length > 0) {
     throw new AppointmentError(
-      "Inaktive Mitarbeiter koennen keinem Termin zugewiesen werden",
+      "Inaktive Mitarbeiter können keinem Termin zugewiesen werden",
       409,
       "INACTIVE_ENTITY_ASSIGNMENT",
       { conflictEmployees: inactiveEmployees },
@@ -473,7 +499,7 @@ async function ensureActiveCustomer(customerId: number) {
     throw new AppointmentError("Kunde wurde nicht gefunden", 422, "VALIDATION_ERROR");
   }
   if (!customer.isActive) {
-    throw new AppointmentError("Inaktive Kunden koennen nicht zugewiesen werden", 409, "INACTIVE_ENTITY_ASSIGNMENT");
+    throw new AppointmentError("Inaktive Kunden können nicht zugewiesen werden", 409, "INACTIVE_ENTITY_ASSIGNMENT");
   }
   return customer;
 }
@@ -491,7 +517,7 @@ async function resolveAppointmentRelationTx(
   if (nextProjectId != null) {
     const project = await ensureProjectExistsTx(tx, nextProjectId);
     if (typeof data.customerId === "number" && data.customerId !== project.customerId) {
-      throw new AppointmentError("Projekt-Kunde muss mit Termin-Kunde uebereinstimmen", 422, "VALIDATION_ERROR");
+      throw new AppointmentError("Projekt-Kunde muss mit Termin-Kunde übereinstimmen", 422, "VALIDATION_ERROR");
     }
     const customer = await ensureActiveCustomer(project.customerId);
     return {
@@ -569,6 +595,7 @@ export async function createAppointment(
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+  await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
@@ -678,9 +705,13 @@ export async function updateAppointment(
       parkplatzTourId,
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
-        : "Historische Termine koennen nicht geaendert werden",
+        : "Historische Termine können nicht geändert werden",
     });
     const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
+    const existingStartDate = toDateOnlyString(existing.startDate);
+    if (nextTourId !== existing.tourId || existingStartDate !== data.startDate) {
+      await assertTargetTourWeekWritable(nextTourId, data.startDate);
+    }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
       { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },
@@ -709,7 +740,7 @@ export async function updateAppointment(
     let nextTourName: string | null = null;
     if (tourChanged && existing.tourId != null) {
       const allTours = await toursRepository.getTours();
-      const parkplatzTour = findParkplatzTour(allTours);
+      const parkplatzTour = allTours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
       if (parkplatzTour && existing.tourId === parkplatzTour.id) {
         const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
         if (geparktTag) {
@@ -762,7 +793,7 @@ export async function updateAppointment(
       data: appointmentData,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
@@ -842,7 +873,7 @@ export async function setAppointmentDisplayMode(
       parkplatzTourId,
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
-        : "Historische Termine koennen nicht geaendert werden",
+        : "Historische Termine können nicht geändert werden",
     });
 
     const updateResult = await appointmentsRepository.updateAppointmentDisplayModeWithVersionTx(tx, {
@@ -851,7 +882,7 @@ export async function setAppointmentDisplayMode(
       displayMode: data.displayMode,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     const refreshed = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
@@ -1182,6 +1213,246 @@ export async function listCalendarAppointments({
   });
 }
 
+export async function listCalendarTourPostalPlan({
+  postalCode,
+  fromDate,
+  toDate,
+  hasFreeAppointments,
+  roleKey,
+}: {
+  postalCode: string;
+  fromDate: string;
+  toDate: string;
+  hasFreeAppointments?: boolean;
+  roleKey: CanonicalRoleKey;
+}) {
+  const minimumFromDate = startOfWeek(addWeeks(parseDateOnly(getBerlinTodayDateString()), 1), { weekStartsOn: 1 });
+  const requestedFromDate = parseDateOnly(fromDate) < minimumFromDate
+    ? minimumFromDate
+    : parseDateOnly(fromDate);
+  const requestedToDate = parseDateOnly(toDate);
+  if (requestedToDate < requestedFromDate) {
+    throw new AppointmentError("toDate darf nicht vor fromDate liegen", 422, "VALIDATION_ERROR");
+  }
+
+  const rows = await appointmentsRepository.listAppointmentsForCalendarRange({
+    fromDate: requestedFromDate,
+    toDate: requestedToDate,
+  });
+  const minimumFromDateString = toDateOnlyString(requestedFromDate) ?? "";
+  const clampedRows = rows.filter((row) => {
+    const appointmentStartDate = toDateOnlyString(row.appointment.startDate) ?? "";
+    return appointmentStartDate >= minimumFromDateString;
+  });
+  const projectOrderNumberByProjectId = new Map<number, string | null>();
+  for (const row of clampedRows) {
+    const projectId = row.project?.id;
+    if (!projectId || projectOrderNumberByProjectId.has(projectId)) {
+      continue;
+    }
+    projectOrderNumberByProjectId.set(projectId, row.projectOrder?.orderNumber ?? null);
+  }
+  const matches = buildTourPostalPlanMatches({ postalCode, rows: clampedRows });
+  const appointmentIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.appointment.id))));
+  const projectIds = Array.from(new Set(
+    matches.flatMap((match) => match.matches.map((item) => item.project?.id).filter((id): id is number => Number.isFinite(id))),
+  ));
+  const customerIds = Array.from(new Set(matches.flatMap((match) => match.matches.map((item) => item.customer.id))));
+  const employeesByAppointment = await buildEmployeesByAppointment(appointmentIds);
+  const projectArticleItemsByProject = await buildProjectArticleItemsByProject(projectIds);
+  const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
+  const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
+  const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
+  const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
+  const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
+  const appointmentTagsByAppointmentId = appointmentIds.length > 0
+    ? await appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds)
+    : new Map<number, AppointmentTagRelations>();
+  const customerTagsByCustomerId = await appointmentsRepository.getCustomerTagsByCustomerIds(customerIds);
+  const projectTagsByProjectId = await appointmentsRepository.getProjectTagsByProjectIds(projectIds);
+  const parkplatzTourId = await getParkplatzTourId();
+
+  const weeks = new Map<string, {
+    isoYear: number;
+    isoWeek: number;
+    weekStartDate: string;
+    weekEndDate: string;
+    suggestions: Array<{
+      tourId: number;
+      tourName: string;
+      tourColor: string | null;
+      score: 1 | 2 | 3 | 4 | 5;
+      scoreLabel: "exakt" | "sehr nah" | "nah" | "grob passend" | "schwach passend";
+      matchedPostalCodes: string[];
+      matchedAppointmentCount: number;
+      appointments: ReturnType<typeof listCalendarAppointments> extends Promise<(infer T)[]> ? T[] : never;
+      days: Array<{
+        date: string;
+        appointments: Array<{
+          id: number;
+          startDate: string;
+          endDate: string | null;
+          startTime: string | null;
+          projectName: string | null;
+          customerName: string | null;
+          postalCode: string | null;
+          displayMode: AppointmentDisplayMode;
+          isCancelled: boolean;
+        }>;
+      }>;
+    }>;
+  }>();
+
+  const hasFreeWeekdayInMatchGroup = (matchGroup: (typeof matches)[number]) => {
+    const weekStart = parseDateOnly(matchGroup.weekStartDate);
+    return Array.from({ length: 5 }, (_, index) => toDateOnlyString(addDays(weekStart, index)) ?? "")
+      .some((date) => !matchGroup.matches.some((item) => {
+        const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+        const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+        return date >= appointmentStartDate && date <= appointmentEndDate;
+      }));
+  };
+
+  for (const matchGroup of matches) {
+    if (hasFreeAppointments && !hasFreeWeekdayInMatchGroup(matchGroup)) {
+      continue;
+    }
+    const weekKey = `${matchGroup.isoYear}-${String(matchGroup.isoWeek).padStart(2, "0")}`;
+    const week = weeks.get(weekKey) ?? {
+      isoYear: matchGroup.isoYear,
+      isoWeek: matchGroup.isoWeek,
+      weekStartDate: matchGroup.weekStartDate,
+      weekEndDate: matchGroup.weekEndDate,
+      suggestions: [],
+    };
+
+    const previewAppointments = matchGroup.matches
+      .map((item) => {
+        const row = item;
+        const projectId = row.project?.id ?? null;
+        const { isCancelled, visibleTags } = resolveVisibleAppointmentTags(
+          appointmentTagsByAppointmentId.get(row.appointment.id) ?? [],
+        );
+        const customerAttachmentsCount = customerAttachmentCounts.get(row.customer.id) ?? 0;
+        const projectAttachmentsCount = projectId ? (projectAttachmentCounts.get(projectId) ?? 0) : 0;
+        const appointmentAttachmentsCount = appointmentAttachmentCounts.get(row.appointment.id) ?? 0;
+
+        return {
+          id: row.appointment.id,
+          version: row.appointment.version,
+          projectId,
+          projectName: row.project?.name ?? "Ohne Projekt",
+          projectVersion: row.project?.version ?? null,
+          projectOrderNumber: projectId ? (projectOrderNumberByProjectId.get(projectId) ?? null) : null,
+          projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
+          projectDescription: row.project?.descriptionMd ?? null,
+          startDate: toDateOnlyString(row.appointment.startDate) ?? "",
+          endDate: toDateOnlyString(row.appointment.endDate),
+          startTime: row.appointment.startTime ?? null,
+          tourId: row.appointment.tourId ?? null,
+          tourName: row.tour?.name ?? null,
+          tourColor: row.tour?.color ?? null,
+          customer: {
+            id: row.customer.id,
+            customerNumber: row.customer.customerNumber,
+            fullName: row.customer.fullName,
+            phone: row.customer.phone ?? null,
+            email: row.customer.email ?? null,
+            company: row.customer.company ?? null,
+            addressLine1: row.customer.addressLine1 ?? null,
+            addressLine2: row.customer.addressLine2 ?? null,
+            postalCode: row.customer.postalCode ?? null,
+            city: row.customer.city ?? null,
+            country: row.customer.country ?? null,
+          },
+          customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
+          projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
+          appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+          customerAttachmentsCount,
+          projectAttachmentsCount,
+          appointmentAttachmentsCount,
+          totalAttachmentsCount: customerAttachmentsCount + projectAttachmentsCount + appointmentAttachmentsCount,
+          appointmentTags: visibleTags,
+          customerTags: customerTagsByCustomerId.get(row.customer.id) ?? [],
+          projectTags: projectId ? (projectTagsByProjectId.get(projectId) ?? []) : [],
+          displayMode: row.appointment.displayMode,
+          employees: employeesByAppointment.get(row.appointment.id) ?? [],
+          isLocked: isAppointmentLockedForRole(row.appointment, roleKey, parkplatzTourId),
+          isCancelled,
+        };
+      })
+      .sort((left, right) => {
+        if (left.startDate !== right.startDate) return left.startDate.localeCompare(right.startDate);
+        const leftTime = left.startTime ?? "99:99:99";
+        const rightTime = right.startTime ?? "99:99:99";
+        if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+        return left.id - right.id;
+      })
+      .filter((appointment, index, appointments) => appointments.findIndex((entry) => entry.id === appointment.id) === index);
+
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = toDateOnlyString(addDays(parseDateOnly(matchGroup.weekStartDate), index)) ?? matchGroup.weekStartDate;
+      const appointments = matchGroup.matches
+        .filter((item) => {
+          const appointmentStartDate = toDateOnlyString(item.appointment.startDate) ?? "";
+          const appointmentEndDate = toDateOnlyString(item.appointment.endDate) ?? appointmentStartDate;
+          return date >= appointmentStartDate && date <= appointmentEndDate;
+        })
+        .sort((left, right) => {
+          const leftStart = toDateOnlyString(left.appointment.startDate) ?? "";
+          const rightStart = toDateOnlyString(right.appointment.startDate) ?? "";
+          if (leftStart !== rightStart) return leftStart.localeCompare(rightStart);
+          const leftTime = left.appointment.startTime ?? "99:99:99";
+          const rightTime = right.appointment.startTime ?? "99:99:99";
+          if (leftTime !== rightTime) return leftTime.localeCompare(rightTime);
+          return left.appointment.id - right.appointment.id;
+        })
+        .map((item) => {
+          const { isCancelled } = resolveVisibleAppointmentTags(
+            appointmentTagsByAppointmentId.get(item.appointment.id) ?? [],
+          );
+          return {
+            id: item.appointment.id,
+            startDate: toDateOnlyString(item.appointment.startDate) ?? "",
+            endDate: toDateOnlyString(item.appointment.endDate),
+            startTime: item.appointment.startTime ?? null,
+            projectName: item.project?.name ?? null,
+            customerName: item.customer.fullName ?? null,
+            postalCode: item.customer.postalCode ?? null,
+            displayMode: item.appointment.displayMode as AppointmentDisplayMode,
+            isCancelled,
+          };
+        });
+      return { date, appointments };
+    });
+
+    week.suggestions.push({
+      tourId: matchGroup.tourId,
+      tourName: matchGroup.tourName,
+      tourColor: matchGroup.tourColor,
+      score: matchGroup.score,
+      scoreLabel: matchGroup.scoreLabel,
+      matchedPostalCodes: matchGroup.matchedPostalCodes,
+      matchedAppointmentCount: matchGroup.matchedAppointmentCount,
+      appointments: previewAppointments,
+      days,
+    });
+    weeks.set(weekKey, week);
+  }
+
+  return Array.from(weeks.values())
+    .sort((a, b) => a.weekStartDate.localeCompare(b.weekStartDate))
+    .map((week) => ({
+      ...week,
+      suggestions: week.suggestions.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        if (b.matchedAppointmentCount !== a.matchedAppointmentCount) return b.matchedAppointmentCount - a.matchedAppointmentCount;
+        return a.tourName.localeCompare(b.tourName, "de");
+      }),
+    }));
+}
+
 export async function listCalendarWeekLaneEmployeePreviews({
   fromDate,
   toDate,
@@ -1372,7 +1643,7 @@ export async function listAppointmentsList(params: {
   const normalizedCustomerLastName = params.customerLastName?.trim();
   const normalizedCustomerNumber = params.customerNumber?.trim();
 
-  const { rows, total, availableRange } = await appointmentsRepository.listAppointmentsForList(
+  const { rows, total, availableRange, focusAppointment } = await appointmentsRepository.listAppointmentsForList(
     {
       employeeId: params.employeeId,
       projectId: params.projectId,
@@ -1390,6 +1661,7 @@ export async function listAppointmentsList(params: {
       singleEmployeeOnly: params.singleEmployeeOnly,
       lockedOnly: params.lockedOnly,
       lockedBeforeDate: berlinToday,
+      focusStartDate: berlinToday,
     },
     {
       page: params.page,
@@ -1476,6 +1748,7 @@ export async function listAppointmentsList(params: {
     pageSize: params.pageSize,
     total,
     totalPages,
+    focusAppointment,
     availableRange,
     items,
   };
@@ -1488,9 +1761,9 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      historicalMessage: "Historische Termine koennen nicht geloescht werden",
-      cancelledMessage: "Stornierte Termine koennen nicht geloescht werden",
-      planningBlockedMessage: "Planung blockierte Termine koennen nicht geloescht werden",
+      historicalMessage: "Historische Termine können nicht gelöscht werden",
+      cancelledMessage: "Stornierte Termine können nicht gelöscht werden",
+      planningBlockedMessage: "Planung blockierte Termine können nicht gelöscht werden",
     });
 
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
@@ -1498,7 +1771,7 @@ export async function deleteAppointment(appointmentId: number, expectedVersion: 
       expectedVersion,
     });
     if (result.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     return existing;
@@ -1529,20 +1802,20 @@ export async function addAppointmentTag(
     return null;
   }
   if (isAppointmentCancellationTag(tag)) {
-    throw new AppointmentError("Der Storno-Tag kann nur ueber die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Storno-Tag kann nur über die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nur ueber die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Geparkt-Tag kann nur über die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geaendert werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+    historicalMessage: "Historische Termine können nicht geändert werden",
+    cancelledMessage: "Stornierte Termine können nicht geändert werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
@@ -1555,7 +1828,7 @@ export async function removeAppointmentTag(
 ) {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
@@ -1567,21 +1840,21 @@ export async function removeAppointmentTag(
     throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Geparkt-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht manuell entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geaendert werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geaendert werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geaendert werden",
+    historicalMessage: "Historische Termine können nicht geändert werden",
+    cancelledMessage: "Stornierte Termine können nicht geändert werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
-    throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+    throw new AppointmentError("Termin-Tag wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
   }
   if (result.kind === "not_found") {
     return null;
@@ -1597,7 +1870,7 @@ export async function removeEmployeeFromAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
@@ -1607,16 +1880,16 @@ export async function removeEmployeeFromAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      historicalMessage: "Historische Termine koennen nicht geaendert werden",
-      cancelledMessage: "Stornierte Termine koennen nicht bearbeitet werden",
-      planningBlockedMessage: "Planung blockierte Termine koennen nicht bearbeitet werden",
+      historicalMessage: "Historische Termine können nicht geändert werden",
+      cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
+      planningBlockedMessage: "Planung blockierte Termine können nicht bearbeitet werden",
     });
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
       expectedVersion,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
     await appointmentsRepository.deleteAppointmentEmployeeTx(tx, appointmentId, employeeId);
     return { found: true } as const;
@@ -1630,7 +1903,7 @@ export async function cancelAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
@@ -1638,7 +1911,7 @@ export async function cancelAppointment(
   const cancellationTag = await tagRelationsService.getTagByName(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
   if (!cancellationTag) {
     throw new AppointmentError(
-      "System-Tag 'Storniert' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      "System-Tag 'Storniert' fehlt. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
@@ -1651,7 +1924,7 @@ export async function cancelAppointment(
       parkplatzTourId,
       allowCancelled: true,
       allowPlanningBlocked: true,
-      historicalMessage: "Historische Termine koennen nicht geaendert werden",
+      historicalMessage: "Historische Termine können nicht geändert werden",
     });
 
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
@@ -1659,7 +1932,7 @@ export async function cancelAppointment(
       expectedVersion,
     });
     if (updateResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
 
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
@@ -1671,19 +1944,6 @@ export async function cancelAppointment(
   });
 
   return result;
-}
-
-function findParkplatzTour(tours: Awaited<ReturnType<typeof toursRepository.getTours>>) {
-  return tours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
-}
-
-async function getParkplatzTour(): Promise<Awaited<ReturnType<typeof findParkplatzTour>>> {
-  const allTours = await toursRepository.getTours();
-  return findParkplatzTour(allTours);
-}
-
-async function getParkplatzTourId(): Promise<number | null> {
-  return (await getParkplatzTour())?.id ?? null;
 }
 
 function isHistoricalAppointmentMutationLocked(
@@ -1709,7 +1969,7 @@ export async function parkAppointment(
 ): Promise<{ found: boolean }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
-    throw new AppointmentError("Ungueltige Versionsangabe", 422, "VALIDATION_ERROR");
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
   }
 
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
@@ -1718,48 +1978,44 @@ export async function parkAppointment(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
-    historicalMessage: "Historische Termine koennen nicht geparkt werden",
-    cancelledMessage: "Stornierte Termine koennen nicht geparkt werden",
-    planningBlockedMessage: "Planung blockierte Termine koennen nicht geparkt werden",
+    historicalMessage: "Historische Termine können nicht geparkt werden",
+    cancelledMessage: "Stornierte Termine können nicht geparkt werden",
+    planningBlockedMessage: "Planung blockierte Termine können nicht geparkt werden",
   });
 
-  const parkplatzTour = await getParkplatzTour();
-  if (!parkplatzTour) {
+  const parkingDefaults = await getAppointmentParkingDefaults();
+  if (parkingDefaults.kind === "missing_parkplatz_tour") {
     throw new AppointmentError(
-      "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausfuehren.",
+      "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
   }
 
-  const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
-  if (!geparktTag) {
+  if (parkingDefaults.kind === "missing_geparkt_tag") {
     throw new AppointmentError(
-      "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausfuehren.",
+      "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausführen.",
       409,
       "BUSINESS_CONFLICT",
     );
   }
 
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
-    if (!existing) return { found: false } as const;
-
-    if (existing.tourId === parkplatzTour.id) {
+    const parkResult = await parkAppointmentTx(tx, {
+      appointmentId,
+      expectedVersion,
+      parkplatzTourId: parkingDefaults.parkplatzTourId,
+      geparktTagId: parkingDefaults.geparktTagId,
+      alreadyParkedMode: "error",
+    });
+    if (parkResult.kind === "not_found") return { found: false } as const;
+    if (parkResult.kind === "already_parked") {
       throw new AppointmentError("Termin ist bereits geparkt", 409, "ALREADY_PARKED");
     }
 
-    const parkResult = await appointmentsRepository.setAppointmentParkTx(tx, {
-      appointmentId,
-      expectedVersion,
-      tourId: parkplatzTour.id,
-    });
     if (parkResult.kind === "version_conflict") {
-      throw new AppointmentError("Termin wurde zwischenzeitlich geaendert", 409, "VERSION_CONFLICT");
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
     }
-
-    await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, []);
-    await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, geparktTag.id);
 
     return { found: true } as const;
   });

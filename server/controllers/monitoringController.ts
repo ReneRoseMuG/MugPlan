@@ -7,7 +7,7 @@ export async function listMonitoring(req: Request, res: Response, next: NextFunc
   try {
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -25,13 +25,13 @@ export async function listMonitoring(req: Request, res: Response, next: NextFunc
 export async function getMonitoringConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.userId) {
-      res.status(400).json({ message: "Ungueltiger User-Kontext" });
+      res.status(400).json({ message: "Ungültiger User-Kontext" });
       return;
     }
 
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 
@@ -49,13 +49,13 @@ export async function getMonitoringConfig(req: Request, res: Response, next: Nex
 export async function setMonitoringConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.userId) {
-      res.status(400).json({ message: "Ungueltiger User-Kontext" });
+      res.status(400).json({ message: "Ungültiger User-Kontext" });
       return;
     }
 
     const roleKey = req.userContext?.roleKey;
     if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfuegbar" });
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
       return;
     }
 

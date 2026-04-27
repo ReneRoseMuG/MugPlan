@@ -49,8 +49,6 @@ const listViewModeOptions = ["board", "table"] as const;
 type ListViewMode = (typeof listViewModeOptions)[number];
 const employeePickerViewModeOptions = ["board", "list"] as const;
 type EmployeePickerViewMode = (typeof employeePickerViewModeOptions)[number];
-const weekAppointmentDisplayModeOptions = ["standard", "compact", "detail", "split"] as const;
-type WeekAppointmentDisplayMode = (typeof weekAppointmentDisplayModeOptions)[number];
 const weekTileBodyModeOptions = ["collapsed", "semiexpanded", "expanded"] as const;
 type WeekTileBodyMode = (typeof weekTileBodyModeOptions)[number];
 const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
@@ -67,6 +65,8 @@ type ProduktionsplanungSelection = {
 type AuftragslisteSelection = {
   productCategoryIds?: number[];
   componentCategoryIds?: number[];
+  tagIds?: number[];
+  saunaModels?: string[];
   useShortCodes?: boolean;
 };
 type TourenplanPrintMode = (typeof tourenplanPrintModeOptions)[number];
@@ -220,6 +220,8 @@ function isValidAuftragslisteSelection(value: unknown): value is AuftragslisteSe
   const parsed = value as Record<string, unknown>;
   if (parsed.productCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.productCategoryIds)) return false;
   if (parsed.componentCategoryIds !== undefined && !isValidPositiveIntegerArray(parsed.componentCategoryIds)) return false;
+  if (parsed.tagIds !== undefined && !isValidPositiveIntegerArray(parsed.tagIds)) return false;
+  if (parsed.saunaModels !== undefined && !isValidStringArray(parsed.saunaModels)) return false;
   if (parsed.useShortCodes !== undefined && typeof parsed.useShortCodes !== "boolean") return false;
   return true;
 }
@@ -372,8 +374,8 @@ function isValidCategoryLayoutConfig(value: unknown): value is CategoryLayoutCon
 export const userSettingsRegistry = {
   attachmentPreviewSize: {
     key: "attachmentPreviewSize",
-    label: "Datei Vorschau Groesse",
-    description: "Steuert die Groesse der Dateivorschau im Attachment-Badge.",
+    label: "Datei Vorschau Größe",
+    description: "Steuert die Größe der Dateivorschau im Attachment-Badge.",
     type: "enum",
     options: attachmentPreviewSizeOptions,
     defaultValue: "large",
@@ -383,8 +385,8 @@ export const userSettingsRegistry = {
   },
   helpTextPreviewSize: {
     key: "helpTextPreviewSize",
-    label: "Hilfetext Vorschau Groesse",
-    description: "Steuert die Groesse von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
+    label: "Hilfetext Vorschau Größe",
+    description: "Steuert die Größe von Hilfetext-Previews (Help-Icon und Hilfetext-Tabelle).",
     type: "enum",
     options: helpTextPreviewSizeOptions,
     defaultValue: "large",
@@ -533,8 +535,8 @@ export const userSettingsRegistry = {
   },
   hoverPreviewOpenDelayMs: {
     key: "hoverPreviewOpenDelayMs",
-    label: "Hover Vorschau Verzoegerung (ms)",
-    description: "Verzoegerung bis Hover-Previews geoeffnet werden.",
+    label: "Hover Vorschau Verzögerung (ms)",
+    description: "Verzögerung bis Hover-Previews geöffnet werden.",
     type: "number",
     defaultValue: 380,
     min: 0,
@@ -576,17 +578,6 @@ export const userSettingsRegistry = {
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string",
   },
-  calendarWeekAppointmentDisplayMode: {
-    key: "calendar.weekAppointmentDisplayMode",
-    label: "Wochenansicht Termindarstellung",
-    description: "Speichert den globalen Darstellungsmodus der Terminkarten in der Wochenansicht.",
-    type: "enum",
-    options: weekAppointmentDisplayModeOptions,
-    defaultValue: "standard",
-    allowedScopes: ["USER"],
-    validate: (value: unknown): value is WeekAppointmentDisplayMode =>
-      typeof value === "string" && weekAppointmentDisplayModeOptions.includes(value as WeekAppointmentDisplayMode),
-  },
   calendarWeekTileBodyMode: {
     key: "calendar.weekTileBodyMode",
     label: "Wochenansicht Body-Modus",
@@ -626,6 +617,8 @@ export const userSettingsRegistry = {
     defaultValue: {
       productCategoryIds: [],
       componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
       useShortCodes: false,
     },
     allowedScopes: ["USER"],
