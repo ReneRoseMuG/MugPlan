@@ -70,9 +70,14 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   const projectTitleFilter = page.locator("#appointments-filter-project-title");
   const orderNumberFilter = page.locator("#appointments-filter-order-number");
   const ensurePeriodPickerOpen = async () => {
+    const pickerButton = page.getByTestId("button-appointment-period-picker");
     const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
-    if (await allScopeToggle.isVisible()) return;
-    await page.getByTestId("button-appointment-period-picker").click();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (await allScopeToggle.isVisible().catch(() => false)) {
+        break;
+      }
+      await pickerButton.click();
+    }
     await expect(allScopeToggle).toBeVisible();
   };
 
@@ -104,7 +109,11 @@ test("appointment scopes keep the new all/default semantics and apply valid or i
   await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
 
   await projectTitleFilter.fill(scopeToken);
+  await expect(rows).toHaveCount(1);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
   await ensurePeriodPickerOpen();
+  await expect(page.getByTestId("toggle-appointments-scope-planned")).toHaveAttribute("data-state", "on");
   await page.getByTestId("toggle-appointments-scope-all").click();
   await expect(tokenRows).toHaveCount(2);
   await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);

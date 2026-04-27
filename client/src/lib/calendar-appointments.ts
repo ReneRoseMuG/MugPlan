@@ -169,6 +169,8 @@ export function useCalendarAppointments({
   return useQuery<CalendarAppointment[]>({
     queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail],
     enabled,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
       const params = new URLSearchParams({ fromDate, toDate, detail: resolvedDetail });
       if (employeeId) params.set("employeeId", String(employeeId));
@@ -265,6 +267,8 @@ export function useCalendarBlockedTourWeeks({
   return useQuery<CalendarBlockedTourWeek[]>({
     queryKey: getCalendarBlockedTourWeeksQueryKey({ fromDate, toDate }),
     enabled,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async () => {
       const params = new URLSearchParams({ fromDate, toDate });
       const response = await fetch(`/api/calendar/blocked-tour-weeks?${params.toString()}`, {

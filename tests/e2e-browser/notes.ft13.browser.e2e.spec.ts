@@ -15,7 +15,7 @@
  * Browser-E2E fuer die neuen Notizfelder und deren Sichtbarkeit in Entity-Cards und Terminpreviews absichern.
  */
 import { Buffer } from "node:buffer";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   createAppointmentFixture,
   createCustomerFixture,
@@ -44,8 +44,7 @@ async function createLinkedFixture(prefix: string) {
   return { customer, project, appointment };
 }
 
-async function setNoteCardColor(page: Page, hex: string) {
-  const dialog = page.getByRole("dialog");
+async function setNoteCardColor(dialog: Locator, hex: string) {
   await expect(dialog.getByTestId("button-note-card-color-picker")).toBeVisible();
   await dialog.getByTestId("button-note-card-color-picker-input").evaluate((element, value) => {
     const input = element as HTMLInputElement;
@@ -58,33 +57,28 @@ async function setNoteCardColor(page: Page, hex: string) {
 
 async function createNoteViaDialog(page: Page, input: { title: string; body: string; cardColor: string }) {
   await page.getByTestId("button-new-note").click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog").filter({ has: page.getByTestId("button-save-note") }).last();
+  const dialogHandle = await dialog.elementHandle();
+  if (!dialogHandle) {
+    throw new Error("Notizdialog konnte nach dem Oeffnen nicht gefunden werden.");
+  }
   await dialog.getByTestId("input-note-title").fill(input.title);
   await dialog.getByTestId("richtext-editor").fill(input.body);
-  await setNoteCardColor(page, input.cardColor);
+  await setNoteCardColor(dialog, input.cardColor);
   const printSwitch = dialog.getByTestId("switch-note-print");
   if ((await printSwitch.getAttribute("data-state")) !== "checked") {
     await printSwitch.click();
   }
   await expect(printSwitch).toHaveAttribute("data-state", "checked");
   await dialog.getByTestId("button-save-note").click();
-  const templateEditorCancelButton = page.getByTestId("button-cancel-note");
+  const cancelButton = dialog.getByTestId("button-cancel-note");
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const count = await templateEditorCancelButton.count();
-    if (count === 0) break;
-    await expect(templateEditorCancelButton.last()).toBeVisible();
-    await templateEditorCancelButton.last().click({ force: true });
-  }
-  await expect.poll(async () => {
-    const count = await templateEditorCancelButton.count();
-    let visibleCount = 0;
-    for (let index = 0; index < count; index += 1) {
-      if (await templateEditorCancelButton.nth(index).isVisible().catch(() => false)) {
-        visibleCount += 1;
-      }
+    if (!(await cancelButton.isVisible().catch(() => false))) {
+      break;
     }
-    return visibleCount;
-  }).toBe(0);
+    await cancelButton.click({ force: true });
+  }
+  await dialogHandle.waitForElementState("hidden");
 }
 
 async function verifyNoteEditDialog(page: Page, input: { title: string; cardColorRgb: string }) {
