@@ -88,6 +88,19 @@ async function isGlobalTwoFactorEnabled(): Promise<boolean> {
   return value === true;
 }
 
+function hasUsableTwoFactorSecret(secretPayload: string | null): boolean {
+  if (!secretPayload) {
+    return false;
+  }
+
+  try {
+    const decryptedSecret = decryptTwoFactorSecret(secretPayload);
+    return decryptedSecret.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
 function toAuthenticatedPayload(input: { userId: number; username: string; roleCode: DbRoleCode }): AuthenticatedPayload {
   return {
     status: "authenticated",
@@ -194,7 +207,7 @@ export async function login(input: { username: string; password: string }): Prom
     };
   }
 
-  if (!user.twoFactorSecretEncrypted) {
+  if (!hasUsableTwoFactorSecret(user.twoFactorSecretEncrypted)) {
     const setup = await buildTwoFactorSetup(user.username);
     return {
       payload: {
@@ -263,7 +276,12 @@ export async function verifyTwoFactorLogin(input: {
     throw new AuthError("Two-factor challenge missing", 409, "TWO_FACTOR_CHALLENGE_MISSING");
   }
 
-  const decryptedSecret = decryptTwoFactorSecret(user.twoFactorSecretEncrypted);
+  let decryptedSecret: string;
+  try {
+    decryptedSecret = decryptTwoFactorSecret(user.twoFactorSecretEncrypted);
+  } catch {
+    throw new AuthError("Two-factor challenge missing", 409, "TWO_FACTOR_CHALLENGE_MISSING");
+  }
   if (!(await verifyTwoFactorCode(decryptedSecret, input.code))) {
     throw new AuthError("Invalid two-factor code", 401, "INVALID_TWO_FACTOR_CODE");
   }

@@ -97,6 +97,35 @@ describe("authService two-factor flow", () => {
     });
   });
 
+  it("falls back to setup when the stored secret payload is unreadable", async () => {
+    usersRepoMock.getAuthUserByIdentifier.mockResolvedValue({
+      userId: 8,
+      username: "reader-b",
+      passwordHash: "hash",
+      isActive: true,
+      roleCode: "READER",
+      twoFactorSecretEncrypted: "broken-payload",
+    });
+    twoFactorServiceMock.decryptTwoFactorSecret.mockImplementation(() => {
+      throw new Error("Invalid two-factor secret payload");
+    });
+    twoFactorServiceMock.buildTwoFactorSetup.mockResolvedValue({
+      secret: "SECRET456",
+      manualEntryKey: "SECRET456",
+      otpAuthUri: "otpauth://totp/test-b",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+    });
+
+    const result = await login({ username: "reader-b", password: "secret-password" });
+
+    expect(result.payload).toEqual({
+      status: "2fa_setup_required",
+      username: "reader-b",
+      manualEntryKey: "SECRET456",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+    });
+  });
+
   it("stores encrypted secret after successful setup verification", async () => {
     twoFactorServiceMock.verifyTwoFactorCode.mockResolvedValue(true);
     twoFactorServiceMock.encryptTwoFactorSecret.mockReturnValue("encrypted-secret");

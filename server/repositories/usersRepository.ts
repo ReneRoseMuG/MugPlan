@@ -25,14 +25,21 @@ export type UserRoleListRow = {
   version: number;
   username: string;
   email: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   isActive: boolean;
+  hasTwoFactorSecret: boolean;
   roleCode: DbRoleCode | null;
   roleName: string | null;
 };
 
 export type UserRoleRecord = {
   userId: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
   version: number;
   isActive: boolean;
   roleCode: DbRoleCode | null;
@@ -144,8 +151,11 @@ export async function listUsersWithRoles(): Promise<UserRoleListRow[]> {
       version: users.version,
       username: users.username,
       email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
       fullName: users.fullName,
       isActive: users.isActive,
+      hasTwoFactorSecret: users.twoFactorSecretEncrypted,
       roleCode: roles.code,
       roleName: roles.name,
     })
@@ -158,8 +168,11 @@ export async function listUsersWithRoles(): Promise<UserRoleListRow[]> {
     version: row.version,
     username: row.username,
     email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
     isActive: row.isActive,
+    hasTwoFactorSecret: Boolean(row.hasTwoFactorSecret),
     roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
     roleName: row.roleName ?? null,
   }));
@@ -169,6 +182,10 @@ export async function getUserRoleRecordById(userId: number): Promise<UserRoleRec
   const [row] = await db
     .select({
       userId: users.id,
+      username: users.username,
+      email: users.email,
+      firstName: users.firstName,
+      lastName: users.lastName,
       version: users.version,
       isActive: users.isActive,
       roleCode: roles.code,
@@ -181,6 +198,10 @@ export async function getUserRoleRecordById(userId: number): Promise<UserRoleRec
 
   return {
     userId: row.userId,
+    username: row.username,
+    email: row.email,
+    firstName: row.firstName,
+    lastName: row.lastName,
     version: row.version,
     isActive: row.isActive,
     roleCode: row.roleCode ? assertDbRoleCode(row.roleCode.toUpperCase()) : null,
@@ -208,6 +229,46 @@ export async function updateUserRoleByIdWithVersion(
   `);
   const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
   return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
+export async function updateUserByIdWithVersion(
+  userId: number,
+  expectedVersion: number,
+  input: {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    fullName: string;
+    roleId: number;
+    isActive: boolean;
+  },
+): Promise<{ kind: "updated" } | { kind: "version_conflict" }> {
+  try {
+    const result = await db.execute(sql`
+      update users
+      set
+        username = ${input.username},
+        email = ${input.email},
+        first_name = ${input.firstName},
+        last_name = ${input.lastName},
+        full_name = ${input.fullName},
+        role_id = ${input.roleId},
+        is_active = ${input.isActive},
+        updated_at = now(),
+        version = version + 1
+      where id = ${userId}
+        and version = ${expectedVersion}
+    `);
+    const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+    return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+  } catch (error) {
+    const duplicateError = toDuplicateError(error);
+    if (duplicateError) {
+      throw duplicateError;
+    }
+    throw error;
+  }
 }
 
 export async function countActiveAdmins(excludeUserId?: number): Promise<number> {
@@ -317,6 +378,24 @@ export async function storeUserTwoFactorSecret(userId: number, encryptedSecret: 
       version = version + 1
     where id = ${userId}
   `);
+}
+
+export async function resetUserTwoFactorByIdWithVersion(
+  userId: number,
+  expectedVersion: number,
+): Promise<{ kind: "updated" } | { kind: "version_conflict" }> {
+  const result = await db.execute(sql`
+    update users
+    set
+      two_factor_secret_encrypted = null,
+      two_factor_backup_codes_reserved = null,
+      updated_at = now(),
+      version = version + 1
+    where id = ${userId}
+      and version = ${expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "updated" };
 }
 
 export async function createAdminUser(params: {

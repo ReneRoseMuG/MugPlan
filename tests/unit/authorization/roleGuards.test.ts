@@ -19,18 +19,27 @@ vi.mock("../../../server/repositories/usersRepository", () => ({
   countActiveAdmins: vi.fn(),
   getRoleIdByCode: vi.fn(),
   updateUserRoleByIdWithVersion: vi.fn(),
+  updateUserByIdWithVersion: vi.fn(),
+  resetUserTwoFactorByIdWithVersion: vi.fn(),
   getUserWithRole: vi.fn(),
 }));
 
+vi.mock("../../../server/services/userSettingsService", () => ({
+  getGlobalSettingValue: vi.fn(),
+}));
+
 import * as usersRepository from "../../../server/repositories/usersRepository";
+import * as userSettingsService from "../../../server/services/userSettingsService";
 import { resolveUserRole } from "../../../server/middleware/resolveUserRole";
-import { changeUserRole, listUsers } from "../../../server/services/usersService";
+import { changeUserRole, listUsers, resetUserTwoFactor, updateUser } from "../../../server/services/usersService";
 
 const usersRepoMock = vi.mocked(usersRepository);
+const userSettingsServiceMock = vi.mocked(userSettingsService);
 
 describe("PKG-03 Authorization & Roles: usersService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    userSettingsServiceMock.getGlobalSettingValue.mockResolvedValue(false);
   });
 
   it("rejects listUsers for non-admin context with 403", async () => {
@@ -65,6 +74,10 @@ describe("PKG-03 Authorization & Roles: usersService", () => {
   it("prevents demotion when no other active admin remains", async () => {
     usersRepoMock.getUserRoleRecordById.mockResolvedValue({
       userId: 11,
+      username: "admin-11",
+      email: "admin-11@example.test",
+      firstName: "Admin",
+      lastName: "Elf",
       roleCode: "ADMIN",
       version: 3,
       isActive: true,
@@ -77,6 +90,77 @@ describe("PKG-03 Authorization & Roles: usersService", () => {
 
     expect(usersRepoMock.getRoleIdByCode).not.toHaveBeenCalled();
     expect(usersRepoMock.updateUserRoleByIdWithVersion).not.toHaveBeenCalled();
+  });
+
+  it("rejects updateUser for non-admin context with 403", async () => {
+    await expect(
+      updateUser(
+        { userId: 10, roleKey: "LESER" },
+        11,
+        {
+          username: "reader-11",
+          email: "reader-11@example.test",
+          firstName: "Reader",
+          lastName: "Elf",
+          roleCode: "READER",
+          isActive: true,
+          version: 2,
+        },
+      ),
+    ).rejects.toMatchObject({ status: 403, code: "LOCK_VIOLATION" });
+  });
+
+  it("prevents deactivation of the last active admin", async () => {
+    usersRepoMock.getUserRoleRecordById.mockResolvedValue({
+      userId: 11,
+      username: "admin-11",
+      email: "admin-11@example.test",
+      firstName: "Admin",
+      lastName: "Elf",
+      roleCode: "ADMIN",
+      version: 3,
+      isActive: true,
+    } as any);
+    usersRepoMock.countActiveAdmins.mockResolvedValue(0);
+
+    await expect(
+      updateUser(
+        { userId: 99, roleKey: "ADMIN" },
+        11,
+        {
+          username: "admin-11",
+          email: "admin-11@example.test",
+          firstName: "Admin",
+          lastName: "Elf",
+          roleCode: "ADMIN",
+          isActive: false,
+          version: 3,
+        },
+      ),
+    ).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+
+    expect(usersRepoMock.updateUserByIdWithVersion).not.toHaveBeenCalled();
+  });
+
+  it("prevents self reset of 2FA for the last active admin when global 2FA is enabled", async () => {
+    userSettingsServiceMock.getGlobalSettingValue.mockResolvedValue(true);
+    usersRepoMock.getUserRoleRecordById.mockResolvedValue({
+      userId: 11,
+      username: "admin-11",
+      email: "admin-11@example.test",
+      firstName: "Admin",
+      lastName: "Elf",
+      roleCode: "ADMIN",
+      version: 4,
+      isActive: true,
+    } as any);
+    usersRepoMock.countActiveAdmins.mockResolvedValue(0);
+
+    await expect(
+      resetUserTwoFactor({ userId: 11, roleKey: "ADMIN" }, 11, 4),
+    ).rejects.toMatchObject({ status: 409, code: "BUSINESS_CONFLICT" });
+
+    expect(usersRepoMock.resetUserTwoFactorByIdWithVersion).not.toHaveBeenCalled();
   });
 });
 
