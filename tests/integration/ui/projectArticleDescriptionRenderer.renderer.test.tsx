@@ -11,7 +11,8 @@
  * - Anmerkungsblock wird vor der Artikelliste ausgegeben oder verwendet weiter die alte Ueberschrift.
  *
  * Ziel:
- * Das wiederverwendbare Rendern von Projekt-Artikelliste und Projektanmerkungen in mehreren Szenarien integrativ absichern.
+ * Das wiederverwendbare Rendern von Projekt-Artikelliste und Projektanmerkungen
+ * als reinen Renderer-Test absichern, nicht als Systemintegration.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -23,7 +24,7 @@ import {
   renderProjectNotesSection,
 } from "../../../client/src/components/ui/project-article-description-renderer";
 
-describe("project article description renderer integration", () => {
+describe("project article description renderer", () => {
   it("renders article list before the notes section and highlights category labels", () => {
     const html = renderToStaticMarkup(
       React.createElement(ProjectArticleDescriptionRenderer, {

@@ -17,7 +17,8 @@
  * - Number-Input-Grenzen stimmen nicht.
  *
  * Ziel:
- * Struktur der Steuerelemente im Oberflaeche-Pane absichern.
+ * Einen statischen Smoke-Test fuer Struktur und TestIDs der Steuerelemente
+ * im Oberflaeche-Pane absichern, nicht echte Persistenz oder Nutzerwirkung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -86,7 +87,7 @@ function makeSettingsMock() {
   };
 }
 
-describe("Settings Redesign UI: Steuerelement-Wiring (Oberflaeche-Pane)", () => {
+describe("Settings Redesign UI: Steuerelemente Smoke (Oberflaeche-Pane)", () => {
   beforeEach(() => {
     Object.assign(globalThis, {
       React,

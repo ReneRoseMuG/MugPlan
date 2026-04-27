@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, like, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, like, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   appointments,
@@ -97,6 +97,13 @@ export type AppointmentHierarchyRow = {
   appointmentId: number;
   projectId: number | null;
   customerId: number | null;
+};
+
+export type JournalChangeNotificationRow = {
+  id: number;
+  actorUserId: number | null;
+  triggerKey: string | null;
+  createdAt: string;
 };
 
 function normalizeTimestamp(value: Date | string): string {
@@ -261,6 +268,30 @@ export async function listJournalEntries(params: JournalListParams): Promise<Jou
   };
 }
 
+export async function listJournalChangeNotificationsAfterId(afterId: number): Promise<JournalChangeNotificationRow[]> {
+  if (!Number.isInteger(afterId) || afterId < 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      id: journalEntries.id,
+      actorUserId: journalEntries.actorUserId,
+      triggerKey: journalEntries.triggerKey,
+      createdAt: journalEntries.createdAt,
+    })
+    .from(journalEntries)
+    .where(gt(journalEntries.id, afterId))
+    .orderBy(asc(journalEntries.id));
+
+  return rows.map((row) => ({
+    id: row.id,
+    actorUserId: row.actorUserId ?? null,
+    triggerKey: row.triggerKey ?? null,
+    createdAt: normalizeTimestamp(row.createdAt),
+  }));
+}
+
 export async function listNoteOwners(noteId: number): Promise<JournalContextRow[]> {
   const [customerOwnerRows, projectOwnerRows, appointmentOwnerRows, employeeOwnerRows, calendarWeekOwnerRows] = await Promise.all([
     db
@@ -328,6 +359,14 @@ export async function listNoteOwners(noteId: number): Promise<JournalContextRow[
       contextKey: `${row.yearNumber}-${String(row.weekNumber).padStart(2, "0")}-${row.tourId ?? 0}`,
       relationRole: "owner",
     })),
+    ...calendarWeekOwnerRows
+      .filter((row) => row.tourId != null)
+      .map((row) => ({
+        contextTable: "tour",
+        contextId: row.tourId,
+        contextKey: null,
+        relationRole: "tour",
+      })),
   ];
 }
 

@@ -4,6 +4,7 @@ import * as systemSeedController from "../controllers/systemSeedController";
 
 const router = Router();
 
-router.post(api.admin.systemSeed.path, systemSeedController.applySystemSeed);
+router.get(api.admin.systemSeedPreview.path, systemSeedController.getSystemSeedPreview);
+router.post(api.admin.systemSeedApply.path, systemSeedController.applySystemSeed);
 
 export default router;

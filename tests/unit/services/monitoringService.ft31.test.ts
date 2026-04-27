@@ -11,7 +11,7 @@
  * Fehlerfaelle:
  * - Geparkt-Termine fehlen trotz System-Tag im Monitoring.
  * - Stornierte oder historische Termine tauchen trotzdem als Treffer auf.
- * - Reader erhalten Monitoring-Zugriff.
+ * - Leser verlieren den freigegebenen Monitoring-Lesezugriff wieder.
  *
  * Ziel:
  * Die FT31-Kernlogik des Monitoring-Service fuer beide Trigger isoliert absichern.
@@ -35,7 +35,7 @@ vi.mock("../../../server/services/userSettingsService", () => ({
   getGlobalSettingValue: hoisted.getGlobalSettingValueMock,
 }));
 
-import { MonitoringError, getMonitoringSummaryForRole, listMonitoringItems } from "../../../server/services/monitoringService";
+import { getMonitoringSummaryForRole, listMonitoringItems } from "../../../server/services/monitoringService";
 
 describe("FT31 unit: monitoringService", () => {
   beforeEach(() => {
@@ -254,11 +254,32 @@ describe("FT31 unit: monitoringService", () => {
     await expect(listMonitoringItems("ADMIN")).resolves.toEqual([]);
   });
 
-  it("rejects readers", async () => {
-    await expect(listMonitoringItems("LESER")).rejects.toMatchObject<MonitoringError>({
-      status: 403,
-      code: "FORBIDDEN",
-    });
+  it("allows readers to list monitoring items", async () => {
+    hoisted.listAppointmentsForMonitoringMock.mockResolvedValue([
+      {
+        appointmentId: 71,
+        startDate: "2099-01-02",
+        startTime: null,
+        tourId: 6,
+        tourName: "Reader",
+        orderNumber: null,
+        projectTitle: null,
+        projectName: null,
+        customerNumber: "1071",
+        customerFirstName: null,
+        customerLastName: "Reader Kunde",
+        customerName: "Reader Kunde",
+        employeeCount: 0,
+      },
+    ]);
+
+    await expect(listMonitoringItems("LESER")).resolves.toEqual([
+      expect.objectContaining({
+        appointmentId: 71,
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01"],
+      }),
+    ]);
   });
 
   it("builds a summary only for dispatcher or admin and groups by trigger", async () => {

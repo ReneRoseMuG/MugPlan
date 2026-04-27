@@ -74,49 +74,85 @@ test("filters with a fixed 2024 reference date and rejects impossible kw values 
   await freezeBrowserNow(page, "2024-06-12T10:00:00.000Z");
 
   const customer = await createCustomerFixture("FT04-PERIOD-2024-CUST");
-  const project = await createProjectFixtureWithOverrides({
-    prefix: "FT04-PERIOD-2024-PROJ",
+  const projectToken = "FT04 Period 2024";
+  const pastProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-PERIOD-2024-PAST",
     customerId: customer.id,
-    name: "FT04 Period 2024",
+    name: `${projectToken} Past`,
     orderNumber: "52401",
   });
-
+  const todayProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-PERIOD-2024-TODAY",
+    customerId: customer.id,
+    name: `${projectToken} Today`,
+    orderNumber: "52402",
+  });
+  const futureProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-PERIOD-2024-FUTURE",
+    customerId: customer.id,
+    name: `${projectToken} Future`,
+    orderNumber: "52403",
+  });
+  const distractorProject = await createProjectFixtureWithOverrides({
+    prefix: "FT04-PERIOD-2024-OTHER",
+    customerId: customer.id,
+    name: "FT04 Other 2024 Control",
+    orderNumber: "52499",
+  });
   await createRawAppointmentFixture({
-    projectId: project.id,
+    projectId: pastProject.id,
     startDate: "2024-06-10",
     title: "FT04 Period 2024 Past",
   });
   await createRawAppointmentFixture({
-    projectId: project.id,
+    projectId: todayProject.id,
     startDate: "2024-06-12",
     title: "FT04 Period 2024 Today",
   });
   await createRawAppointmentFixture({
-    projectId: project.id,
+    projectId: futureProject.id,
     startDate: "2024-06-17",
     title: "FT04 Period 2024 Future",
+  });
+  await createRawAppointmentFixture({
+    projectId: distractorProject.id,
+    startDate: "2024-06-12",
+    title: "FT04 Period 2024 Distractor",
   });
 
   await loginAsAdmin(page);
   await page.getByTestId("nav-termine").click();
 
   const rows = page.getByTestId("table-appointments-list").locator("tbody tr");
-  await page.locator("#appointments-filter-project-title").fill("FT04 Period 2024");
+  await page.locator("#appointments-filter-project-title").fill(projectToken);
   await expect(rows).toHaveCount(3);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: todayProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: distractorProject.name })).toHaveCount(0);
 
   await ensurePeriodPickerOpen(page);
   await page.getByTestId("toggle-appointments-scope-planned").click();
   await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
+  await expect(rows.filter({ hasText: todayProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
 
   await page.getByTestId("input-appointment-period-from").fill("2024-06-12");
   await page.getByTestId("input-appointment-period-from").blur();
   await page.getByTestId("input-appointment-period-to").fill("2024-06-12");
   await page.getByTestId("input-appointment-period-to").blur();
   await expect(rows).toHaveCount(1);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
+  await expect(rows.filter({ hasText: todayProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(0);
 
   await page.getByTestId("input-appointment-period-to").fill("2024-06-17");
   await page.getByTestId("input-appointment-period-to").blur();
   await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: pastProject.name })).toHaveCount(0);
+  await expect(rows.filter({ hasText: todayProject.name })).toHaveCount(1);
+  await expect(rows.filter({ hasText: futureProject.name })).toHaveCount(1);
 
   await page.getByTestId("toggle-appointment-period-calendarWeek").click();
   const kwStartInput = page.getByTestId("input-appointment-period-kw-start");

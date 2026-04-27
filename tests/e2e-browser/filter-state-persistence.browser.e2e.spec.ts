@@ -19,6 +19,7 @@ import {
   createCustomerFixtureWithOverrides,
   createEmployeeFixtureWithOverrides,
   createProjectFixture,
+  createRawAppointmentFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -214,4 +215,55 @@ test("employees keep filters after closing the employee form", async ({ page }) 
   await expect(page.locator("#employee-filter-last-name")).toHaveValue("Persist Mitarbeiter Treffer");
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Mitarbeiter Treffer" })).toHaveCount(1);
   await expect(table.locator("tbody tr").filter({ hasText: "Persist Mitarbeiter Andere" })).toHaveCount(0);
+});
+
+test("appointments keep the focused target page in all-scope after returning from the overlay", async ({ page }) => {
+  const focusToken = "Persist Fokus";
+  const focusCustomer = await createCustomerFixtureWithOverrides({
+    prefix: "FSP-FOCUS-CUST",
+    firstName: "Fiona",
+    lastName: focusToken,
+    fullName: `Fiona ${focusToken}`,
+  });
+  const historicProject = await createProjectFixture({
+    prefix: "FSP-FOCUS-HIST",
+    customerId: focusCustomer.id,
+    name: `${focusToken} Historie`,
+  });
+  const futureProject = await createProjectFixture({
+    prefix: "FSP-FOCUS-FUT",
+    customerId: focusCustomer.id,
+    name: `${focusToken} Zukunft`,
+  });
+
+  for (let index = 0; index < 25; index += 1) {
+    await createRawAppointmentFixture({
+      projectId: historicProject.id,
+      startDate: `2000-05-${String(index + 1).padStart(2, "0")}`,
+      title: `${focusToken} Historie ${index + 1}`,
+    });
+  }
+  await createAppointmentFixture({
+    projectId: futureProject.id,
+    customerId: focusCustomer.id,
+    startDate: getRelativeBerlinDate(1),
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-termine").click();
+  await page.locator("#appointments-filter-project-title").fill(focusToken);
+
+  const table = page.getByTestId("table-appointments-list");
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  const focusedRow = table.locator("tbody tr").filter({ hasText: `${focusToken} Zukunft` }).first();
+  await expect(focusedRow).toBeVisible();
+
+  await focusedRow.dblclick();
+  await expect(page.getByTestId("button-close-appointment")).toBeVisible();
+  await page.getByTestId("button-close-appointment").click();
+
+  await expect(page.locator("#appointments-filter-project-title")).toHaveValue(focusToken);
+  await expect(page.getByTestId("text-appointments-page-state")).toContainText("Seite 2 von 2");
+  await expect(focusedRow).toBeVisible();
+  await expect(focusedRow).toHaveClass(/bg-sky-100\/80/);
 });

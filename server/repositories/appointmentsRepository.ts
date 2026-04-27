@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import {
@@ -68,12 +68,41 @@ export type AppointmentListFilters = {
   singleEmployeeOnly?: boolean;
   lockedOnly?: boolean;
   lockedBeforeDate?: Date;
+  focusStartDate?: Date;
 };
 
 export type AppointmentListPaging = {
   page: number;
   pageSize: number;
 };
+
+export type AppointmentListFocusAppointment = {
+  appointmentId: number;
+  page: number;
+  indexOnPage: number;
+  startDate: string;
+  startTime: string | null;
+};
+
+function buildBeforeAppointmentSortCondition(target: {
+  appointmentId: number;
+  startDate: Date;
+  startTime: string | null;
+}) {
+  const resolvedStartTime = target.startTime ?? "";
+  return or(
+    lt(appointments.startDate, target.startDate),
+    and(
+      eq(appointments.startDate, target.startDate),
+      sql`coalesce(${appointments.startTime}, '') < ${resolvedStartTime}`,
+    ),
+    and(
+      eq(appointments.startDate, target.startDate),
+      sql`coalesce(${appointments.startTime}, '') = ${resolvedStartTime}`,
+      lt(appointments.id, target.appointmentId),
+    ),
+  );
+}
 
 async function getAppointmentEmployees(appointmentId: number) {
   const rows = await db
@@ -1018,6 +1047,11 @@ export async function listAppointmentsForList(
   });
   const rangeWhereClause = rangeConditions.length > 0 ? and(...(rangeConditions as Parameters<typeof and>)) : undefined;
   const offset = (paging.page - 1) * paging.pageSize;
+  const focusConditions = [...conditions];
+  if (filters.focusStartDate) {
+    focusConditions.push(gte(appointments.startDate, filters.focusStartDate));
+  }
+  const focusWhereClause = focusConditions.length > 0 ? and(...(focusConditions as Parameters<typeof and>)) : undefined;
 
   const [totalResult] = await db
     .select({ total: sql<number>`count(*)` })
@@ -1040,6 +1074,51 @@ export async function listAppointmentsForList(
     .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(rangeWhereClause);
 
+  const [focusAppointmentRow] = await db
+    .select({
+      appointmentId: appointments.id,
+      startDate: appointments.startDate,
+      startTime: appointments.startTime,
+      startDateIso: sql<string>`date_format(${appointments.startDate}, '%Y-%m-%d')`,
+    })
+    .from(appointments)
+    .leftJoin(projects, eq(appointments.projectId, projects.id))
+    .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+    .innerJoin(customers, eq(appointments.customerId, customers.id))
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
+    .where(focusWhereClause)
+    .orderBy(asc(appointments.startDate), asc(appointments.startTime), asc(appointments.id))
+    .limit(1);
+
+  let focusAppointment: AppointmentListFocusAppointment | null = null;
+  if (focusAppointmentRow) {
+    const beforeCondition = buildBeforeAppointmentSortCondition({
+      appointmentId: focusAppointmentRow.appointmentId,
+      startDate: focusAppointmentRow.startDate,
+      startTime: focusAppointmentRow.startTime,
+    });
+    const focusOffsetWhereClause = whereClause
+      ? and(whereClause, beforeCondition)
+      : beforeCondition;
+    const [focusOffsetResult] = await db
+      .select({ total: sql<number>`count(*)` })
+      .from(appointments)
+      .leftJoin(projects, eq(appointments.projectId, projects.id))
+      .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
+      .innerJoin(customers, eq(appointments.customerId, customers.id))
+      .leftJoin(tours, eq(appointments.tourId, tours.id))
+      .where(focusOffsetWhereClause);
+
+    const focusOffset = Number(focusOffsetResult?.total ?? 0);
+    focusAppointment = {
+      appointmentId: focusAppointmentRow.appointmentId,
+      page: Math.floor(focusOffset / paging.pageSize) + 1,
+      indexOnPage: (focusOffset % paging.pageSize) + 1,
+      startDate: focusAppointmentRow.startDateIso,
+      startTime: focusAppointmentRow.startTime,
+    };
+  }
+
   const rows = await db
     .select({
       appointment: appointments,
@@ -1061,6 +1140,7 @@ export async function listAppointmentsForList(
   return {
     rows,
     total: Number(totalResult?.total ?? 0),
+    focusAppointment,
     availableRange: {
       dateFrom: availableRangeResult?.dateFrom ?? null,
       dateTo: availableRangeResult?.dateTo ?? null,

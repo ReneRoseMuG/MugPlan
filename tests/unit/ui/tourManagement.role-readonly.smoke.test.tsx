@@ -11,7 +11,8 @@
  * - Berechtigte Rollen verlieren den Tour-Anlageeinstieg.
  *
  * Ziel:
- * Das rollenabhaengige Sichtbarkeitsverhalten in TourManagement ueber gerendertes Markup absichern.
+ * Einen Markup-Smoke-Test fuer rollenabhaengige Sichtbarkeit in TourManagement absichern,
+ * nicht serverseitige Berechtigungsdurchsetzung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -105,7 +106,7 @@ vi.mock("@/components/TourEmployeeCascadeDialog", () => ({
 
 import { TourManagement } from "../../../client/src/components/TourManagement";
 
-describe("FT04 TourManagement readonly behavior", () => {
+describe("FT04 TourManagement readonly smoke", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
     useQueryMock.mockReset();

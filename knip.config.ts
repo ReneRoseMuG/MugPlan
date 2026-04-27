@@ -12,6 +12,7 @@ const config: KnipConfig = {
     "eslint.config.mjs",
     "script/**/*.ts",
     "scripts/**/*.mjs",
+    "tests/helpers/**/*.ts",
   ],
   project: [
     "client/src/**/*.{ts,tsx}",
@@ -33,6 +34,9 @@ const config: KnipConfig = {
     "@types/leaflet",
     "@types/ws",
     "bufferutil",
+  ],
+  ignoreBinaries: [
+    "powershell",
   ],
 };
 

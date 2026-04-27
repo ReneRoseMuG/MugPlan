@@ -15,7 +15,6 @@ import {
   type MonitoringFilters,
 } from "@/lib/monitoring-filters";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
-import { getMonitoringTriggerColor, toAlphaColor } from "@/lib/monitoring-ui";
 import {
   AppointmentWeeklyPanelPreview,
   appointmentWeeklyPanelPreviewOptions,
@@ -101,6 +100,10 @@ function createMonitoringAppointmentRowPreview(appointmentId: number, startDate:
       maxWidth: previewWidthPx,
     },
   };
+}
+
+function resolveMonitoringRowSortValue(row: Pick<MonitoringListResponse[number], "startDate" | "startTime" | "appointmentId">): string {
+  return `${row.startDate}|${row.startTime ?? ""}|${String(row.appointmentId).padStart(12, "0")}`;
 }
 
 export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false, onOpenAppointment }: MonitoringPageProps) {
@@ -203,6 +206,15 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
     () => applyMonitoringFilters(monitoringQuery.data, filters),
     [filters, monitoringQuery.data],
   );
+  const focusedAppointmentId = useMemo(() => {
+    if (filteredRows.length === 0) return null;
+    return filteredRows.reduce((best, current) => {
+      if (!best) return current;
+      return resolveMonitoringRowSortValue(current).localeCompare(resolveMonitoringRowSortValue(best), "de") < 0
+        ? current
+        : best;
+    }, filteredRows[0] ?? null)?.appointmentId ?? null;
+  }, [filteredRows]);
 
   const filterPanel = (
     <MonitoringFilterPanel
@@ -248,7 +260,7 @@ export function MonitoringPage({ isAdmin, initialItems, isInitialLoading = false
         onRowDoubleClick={(row) => onOpenAppointment?.(row.appointmentId)}
         rowPreviewRenderer={(row) => createMonitoringAppointmentRowPreview(row.appointmentId, row.startDate)}
         rowStyle={(row) => ({
-          backgroundColor: toAlphaColor(getMonitoringTriggerColor(row.triggerCode), 0.14),
+          boxShadow: row.appointmentId === focusedAppointmentId ? "inset 0 0 0 2px rgba(15, 23, 42, 0.45)" : undefined,
         })}
         testId="table-monitoring"
         stickyHeader

@@ -49,17 +49,35 @@ test("dispatches a week-view drop with appointment data and persists the new tar
   await loginAsAdmin(page);
   await page.getByTestId("nav-wochenuebersicht").click();
 
-  const targetWeekDay = page.getByTestId(`week-day-${targetDate}-lane-tour-${tour.id}`).first();
-  await expect(targetWeekDay).toBeVisible();
-
   const patchResponsePromise = page.waitForResponse((response) => (
     response.url().includes(`/api/appointments/${appointment.id}`)
     && response.request().method() === "PATCH"
   ), { timeout: 15_000 });
 
-  const dropObserved = await page.evaluate(({ appointmentId, dayTestId }) => {
+  const dropObserved = await page.evaluate(async ({ appointmentId, sourceTestId, dayTestId }) => {
+    const source = document.querySelector(`[data-testid="${sourceTestId}"]`);
+    if (!(source instanceof HTMLElement)) {
+      return false;
+    }
+
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData("text/plain", String(appointmentId));
+
+    source.dispatchEvent(new DragEvent("dragstart", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
     const element = document.querySelector(`[data-testid="${dayTestId}"]`);
     if (!(element instanceof HTMLElement)) {
+      source.dispatchEvent(new DragEvent("dragend", {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+      }));
       return false;
     }
 
@@ -68,10 +86,12 @@ test("dispatches a week-view drop with appointment data and persists the new tar
       observed = true;
     }, { once: true });
 
-    const dataTransfer = new DataTransfer();
-    dataTransfer.setData("text/plain", String(appointmentId));
-
     element.dispatchEvent(new DragEvent("drop", {
+      bubbles: true,
+      cancelable: true,
+      dataTransfer,
+    }));
+    source.dispatchEvent(new DragEvent("dragend", {
       bubbles: true,
       cancelable: true,
       dataTransfer,
@@ -80,7 +100,8 @@ test("dispatches a week-view drop with appointment data and persists the new tar
     return observed;
   }, {
     appointmentId: appointment.id,
-    dayTestId: `week-day-${targetDate}-lane-tour-${tour.id}`,
+    sourceTestId: `week-appointment-panel-${appointment.id}`,
+    dayTestId: `week-day-drop-overlay-${targetDate}-lane-tour-${tour.id}`,
   });
 
   expect(dropObserved).toBe(true);

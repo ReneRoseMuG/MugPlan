@@ -214,4 +214,26 @@ describe("FT05+/FT13 employee form notes sidebar wiring", () => {
       readOnly: false,
     });
   });
+
+  it("renders employee notes readonly for reader roles", () => {
+    Object.defineProperty(globalThis, "window", {
+      value: {
+        localStorage: {
+          getItem: vi.fn(() => "READER"),
+        },
+        confirm: vi.fn(() => true),
+      },
+      configurable: true,
+    });
+
+    const markup = renderToStaticMarkup(<EmployeeForm employeeId={17} />);
+
+    expect(markup).toContain("employee-notes-marker");
+    expect(notesSectionCalls).toHaveLength(1);
+    expect(notesSectionCalls[0]).toMatchObject({
+      notes: [{ id: 41, title: "Bestehende Notiz" }],
+      isLoading: false,
+      readOnly: true,
+    });
+  });
 });

@@ -115,4 +115,45 @@ test.describe("Settings Redesign: Steuerelement-Persistenz", () => {
     await page.getByTestId("button-save-calendarWeekendColumnPercent").click();
     await expect(page.locator("[data-testid='setting-row-calendarWeekendColumnPercent']")).toContainText("Gespeichert.");
   });
+
+  test("Sicherheit: System-Seed laesst ungecheckte Vorschau-Eintraege unangetastet", async ({ page }) => {
+    await openSettings(page);
+
+    const templatesResponse = await page.request.get("/api/note-templates");
+    expect(templatesResponse.ok()).toBeTruthy();
+    const existingTemplates = await templatesResponse.json() as Array<{ id: number; title: string; version: number }>;
+
+    const complaintTemplate = existingTemplates.find((template) => template.title === "Reklamation");
+    const infoTemplate = existingTemplates.find((template) => template.title === "Info zum Termin");
+    expect(complaintTemplate).toBeTruthy();
+    expect(infoTemplate).toBeTruthy();
+
+    const deleteComplaintResponse = await page.request.delete(`/api/note-templates/${complaintTemplate?.id}`, {
+      data: { version: complaintTemplate?.version },
+    });
+    expect(deleteComplaintResponse.ok()).toBeTruthy();
+    const deleteInfoResponse = await page.request.delete(`/api/note-templates/${infoTemplate?.id}`, {
+      data: { version: infoTemplate?.version },
+    });
+    expect(deleteInfoResponse.ok()).toBeTruthy();
+
+    await page.getByTestId("nav-item-sicherheit").click();
+    await expect(page.getByTestId("settings-pane-sicherheit")).toBeVisible();
+
+    await page.getByTestId("button-preview-system-seed").click();
+    await expect(page.getByTestId("system-seed-preview-items")).toBeVisible();
+    await expect(page.getByTestId("system-seed-preview-item-noteTemplate:reklamation")).toBeVisible();
+    await expect(page.getByTestId("system-seed-preview-item-noteTemplate:info zum termin")).toBeVisible();
+
+    const uncheckedInfoTemplate = page.getByTestId("checkbox-system-seed-noteTemplate:info zum termin");
+    await uncheckedInfoTemplate.click();
+    await page.getByTestId("button-apply-system-seed").click();
+    await expect(page.getByTestId("system-seed-log-lines")).toContainText("Notizvorlage angelegt: Reklamation");
+
+    const afterApplyResponse = await page.request.get("/api/note-templates");
+    expect(afterApplyResponse.ok()).toBeTruthy();
+    const templatesAfterApply = await afterApplyResponse.json() as Array<{ title: string }>;
+    expect(templatesAfterApply.some((template) => template.title === "Reklamation")).toBe(true);
+    expect(templatesAfterApply.some((template) => template.title === "Info zum Termin")).toBe(false);
+  });
 });

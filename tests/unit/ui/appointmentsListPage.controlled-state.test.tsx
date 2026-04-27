@@ -89,6 +89,13 @@ describe("FT04 appointments list page controlled state", () => {
             pageSize: 25,
             total: 2,
             totalPages: 2,
+            focusAppointment: {
+              appointmentId: 6,
+              page: 2,
+              indexOnPage: 1,
+              startDate: "2099-04-09",
+              startTime: "08:00",
+            },
             availableRange: {
               dateFrom: "2099-04-01",
               dateTo: "2099-04-30",
@@ -278,5 +285,13 @@ describe("FT04 appointments list page controlled state", () => {
         tourId: 4,
       },
     });
+  });
+
+  it("marks the focused appointment row when the focus metadata points to the current page", () => {
+    renderToStaticMarkup(<AppointmentsListPage context={{ type: "standalone" }} page={2} onPageChange={vi.fn()} />);
+
+    const rowClassName = tableViewCalls[0].rowClassName as ((row: { id: number; isCancelled: boolean }) => string | undefined);
+    expect(rowClassName({ id: 6, isCancelled: false })).toContain("bg-sky-100/80");
+    expect(rowClassName({ id: 7, isCancelled: false })).toBeUndefined();
   });
 });

@@ -10,7 +10,8 @@
  * - Die Vorschau uebergibt unterschiedliche Orientierungen an Dialog und Druckseite.
  *
  * Ziel:
- * Die sichtbare Verdrahtung des neuen Tourenplan-Reportpanels in der Node-Testumgebung regressionssicher absichern.
+ * Einen Smoke-Test fuer sichtbare Panel-Optionen und Vorschau-Prop-Weitergabe
+ * in der Node-Testumgebung absichern, nicht die fachliche Reportwirkung.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -92,7 +93,7 @@ vi.mock("@/components/reports/TourenplanPrintPage", () => ({
 
 import { TourenplanReportPanel } from "../../../client/src/components/reports/TourenplanReportPanel";
 
-describe("UI: TourenplanReportPanel wiring", () => {
+describe("UI: TourenplanReportPanel smoke", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     useQueryMock.mockReset();

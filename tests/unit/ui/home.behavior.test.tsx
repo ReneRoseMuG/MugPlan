@@ -25,6 +25,7 @@ const sidebarCalls: Array<Record<string, unknown>> = [];
 const appointmentsListCalls: Array<Record<string, unknown>> = [];
 const projectFormCalls: Array<Record<string, unknown>> = [];
 const calendarWorkspaceCalls: Array<Record<string, unknown>> = [];
+const calendarYearViewCalls: Array<Record<string, unknown>> = [];
 const appointmentFormCalls: Array<Record<string, unknown>> = [];
 const employeesPageCalls: Array<Record<string, unknown>> = [];
 const journalPageCalls: Array<Record<string, unknown>> = [];
@@ -45,7 +46,10 @@ vi.mock("@/components/CalendarWorkspace", () => ({
 }));
 
 vi.mock("@/components/calendar/CalendarYearView", () => ({
-  CalendarYearView: () => <div>calendar-year</div>,
+  CalendarYearView: (props: Record<string, unknown>) => {
+    calendarYearViewCalls.push(props);
+    return <div>calendar-year</div>;
+  },
 }));
 
 vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
@@ -202,6 +206,7 @@ describe("PKG-08 home behavior wiring", () => {
     appointmentsListCalls.length = 0;
     projectFormCalls.length = 0;
     calendarWorkspaceCalls.length = 0;
+    calendarYearViewCalls.length = 0;
     appointmentFormCalls.length = 0;
     employeesPageCalls.length = 0;
     journalPageCalls.length = 0;
@@ -391,6 +396,62 @@ describe("PKG-08 home behavior wiring", () => {
       returnContext: { targetView: "tourPostalPlan" },
     });
     expect(setters.get(2)).toHaveBeenCalledWith("appointment");
+  });
+
+  it("renders monitoring for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "monitoring",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("monitoring-page");
+  });
+
+  it("blocks the tour postal plan view for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "tourPostalPlan",
+    });
+
+    const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(html).toContain("tour-postal-plan-unavailable");
+    expect(html).not.toContain("tour-postal-plan-view");
+  });
+
+  it("passes the year calendar into readonly mode for reader roles", async () => {
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: () => "READER",
+      },
+    });
+
+    const { Home } = await loadHome({
+      1: fixedDate,
+      2: "year",
+    });
+
+    renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    expect(calendarYearViewCalls[0]).toMatchObject({
+      readOnly: true,
+      onOpenAppointment: expect.any(Function),
+    });
+    expect(calendarYearViewCalls[0].onNewAppointment).toBeUndefined();
   });
 
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
@@ -34,6 +34,13 @@ type AppointmentListResponse = {
   pageSize: number;
   total: number;
   totalPages: number;
+  focusAppointment: {
+    appointmentId: number;
+    page: number;
+    indexOnPage: number;
+    startDate: string;
+    startTime: string | null;
+  } | null;
   availableRange: AppointmentListAvailableRange;
   items: AppointmentListItem[];
 };
@@ -165,6 +172,7 @@ export function AppointmentsListPage({
     resolvedEnforceFromToday ? "planned" : "all",
   );
   const [hasLoadedAtLeastOnce, setHasLoadedAtLeastOnce] = useState(false);
+  const appliedFocusSignatureRef = useRef<string | null>(null);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [internalFilters, setInternalFilters] = useState<AppointmentListFilters>({
@@ -237,6 +245,8 @@ export function AppointmentsListPage({
     applyFiltersPatch({ dateFrom: todayBerlin });
   }, [appointmentScope, applyFiltersPatch, filters.dateFrom, todayBerlin]);
 
+  const shouldApplyDateFocus = appointmentScope === "all" && !hasFixedDateRange;
+
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
@@ -280,7 +290,71 @@ export function AppointmentsListPage({
     }
   }, [data]);
 
+  const focusSignature = useMemo(() => JSON.stringify({
+    appointmentScope,
+    employeeId: filters.employeeId ?? null,
+    projectTitle: filters.projectTitle,
+    customerLastName: filters.customerLastName,
+    customerNumber: filters.customerNumber,
+    orderNumber: filters.orderNumber,
+    tagIds: filters.tagIds,
+    tourId: filters.tourId ?? null,
+    dateFrom: filters.dateFrom ?? null,
+    dateTo: filters.dateTo ?? null,
+    focusAppointmentId: data?.focusAppointment?.appointmentId ?? null,
+    focusPage: data?.focusAppointment?.page ?? null,
+  }), [
+    appointmentScope,
+    data?.focusAppointment?.appointmentId,
+    data?.focusAppointment?.page,
+    filters.customerLastName,
+    filters.customerNumber,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.employeeId,
+    filters.orderNumber,
+    filters.projectTitle,
+    filters.tagIds,
+    filters.tourId,
+  ]);
+
+  useEffect(() => {
+    appliedFocusSignatureRef.current = null;
+  }, [
+    appointmentScope,
+    filters.customerLastName,
+    filters.customerNumber,
+    filters.dateFrom,
+    filters.dateTo,
+    filters.employeeId,
+    filters.orderNumber,
+    filters.projectTitle,
+    filters.tagIds,
+    filters.tourId,
+  ]);
+
+  useEffect(() => {
+    if (!shouldApplyDateFocus) {
+      appliedFocusSignatureRef.current = null;
+      return;
+    }
+    if (!data?.focusAppointment) {
+      appliedFocusSignatureRef.current = focusSignature;
+      return;
+    }
+    if (appliedFocusSignatureRef.current === focusSignature) {
+      return;
+    }
+    if (page === data.focusAppointment.page) {
+      appliedFocusSignatureRef.current = focusSignature;
+      return;
+    }
+    appliedFocusSignatureRef.current = focusSignature;
+    setPage(data.focusAppointment.page);
+  }, [data?.focusAppointment, focusSignature, page, setPage, shouldApplyDateFocus]);
+
   const availableRange = data?.availableRange ?? { dateFrom: null, dateTo: null };
+  const focusedAppointmentId = shouldApplyDateFocus ? data?.focusAppointment?.appointmentId ?? null : null;
 
   const rows = useMemo(() => {
     if (resolvedTourId === null) return [];
@@ -527,7 +601,19 @@ export function AppointmentsListPage({
           rowKey={(row) => row.id}
           onRowDoubleClick={(row) => onOpenAppointment?.(row.id, context ?? { type: "standalone" })}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
-          rowClassName={(row) => row.isCancelled ? "bg-amber-50/70 text-muted-foreground" : undefined}
+          rowClassName={(row) => {
+            const classNames: string[] = [];
+            if (row.id === focusedAppointmentId) {
+              classNames.push("bg-sky-100/80 font-medium");
+            }
+            if (row.isCancelled) {
+              classNames.push("text-muted-foreground");
+              if (row.id !== focusedAppointmentId) {
+                classNames.push("bg-amber-50/70");
+              }
+            }
+            return classNames.length > 0 ? classNames.join(" ") : undefined;
+          }}
           emptyState={emptyStateOverride ?? emptyState}
           stickyHeader
         />

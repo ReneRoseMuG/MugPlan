@@ -141,6 +141,29 @@ async function openWeekNotesEditor(page: Page, title: string, body: string) {
   await dialog.getByTestId("button-save-note").click();
 }
 
+async function navigateToMonthContaining(page: Page, dateString: string) {
+  await page.getByTestId("nav-monatsuebersicht").click();
+  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
+
+  for (let step = 0; step < 20; step += 1) {
+    const targetDay = page.locator(`[data-testid="month-sheet-day-${dateString}"][data-month-scope="current"]`);
+    if (await targetDay.count()) {
+      await expect(targetDay).toBeVisible();
+      return;
+    }
+
+    const visibleMonth = await page.locator('[data-testid^="month-sheet-title-"]').first().evaluate((element) => {
+      const value = element.getAttribute("data-testid");
+      if (!value) throw new Error("Expected visible month key.");
+      return value.replace("month-sheet-title-", "").slice(0, 7);
+    });
+    const targetMonth = dateString.slice(0, 7);
+    await page.getByTestId(targetMonth < visibleMonth ? "button-prev" : "button-next").click();
+  }
+
+  throw new Error(`Month containing ${dateString} was not reachable within 20 steps.`);
+}
+
 test.beforeEach(async () => {
   await resetBrowserSuiteState();
 });
@@ -198,7 +221,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
 
   await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
 
   const parkedLaneWithAppointment = page.locator("section")
     .filter({ has: page.getByTestId(`week-tour-lane-header-tour-${scenario.parkplatzTourId}`) })
@@ -229,14 +252,30 @@ test("blocked tour weeks remain visible in the month sheet after appointments ar
   );
   expect(blockResponse.ok()).toBeTruthy();
 
-  await page.getByTestId("nav-monatsuebersicht").click();
-  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
-  const monthTitle = page.getByTestId(`month-sheet-title-${scenario.targetWeek.monthKey}`);
-  if (await monthTitle.count() === 0) {
-    await page.getByTestId("button-next").click();
-  }
+  await navigateToMonthContaining(page, scenario.targetWeek.weekStartDate);
+  const blockedSlot = page.getByTestId(`month-sheet-slot-${scenario.targetWeek.weekStartDate}-${scenario.tour.id}`);
+  await expect(blockedSlot).toHaveAttribute("data-blocked", "true");
+  await expect(page.getByTestId(`month-sheet-slot-overlay-${scenario.targetWeek.weekStartDate}-${scenario.tour.id}`)).toBeVisible();
+  await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
+});
+
+test("month sheet reloads blocked weeks after the month was already cached before blocking", async ({ page }) => {
+  const scenario = await createBlockWeekScenario("TWF-BLOCK-CACHE");
+
+  await loginAsAdmin(page);
+  await navigateToMonthContaining(page, scenario.targetWeek.weekStartDate);
 
   const blockedSlot = page.getByTestId(`month-sheet-slot-${scenario.targetWeek.weekStartDate}-${scenario.tour.id}`);
+  await expect(blockedSlot).toHaveAttribute("data-blocked", "false");
+
+  await page.getByTestId("nav-touren").click();
+  const blockResponse = await page.request.post(
+    `/api/tours/${scenario.tour.id}/weeks/${scenario.targetWeek.isoYear}/${scenario.targetWeek.isoWeek}/block`,
+    { data: {} },
+  );
+  expect(blockResponse.ok()).toBeTruthy();
+
+  await navigateToMonthContaining(page, scenario.targetWeek.weekStartDate);
   await expect(blockedSlot).toHaveAttribute("data-blocked", "true");
   await expect(page.getByTestId(`month-sheet-slot-overlay-${scenario.targetWeek.weekStartDate}-${scenario.tour.id}`)).toBeVisible();
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);

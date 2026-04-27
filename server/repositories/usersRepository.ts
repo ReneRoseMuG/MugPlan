@@ -89,7 +89,7 @@ export async function getUserWithRole(userId: number): Promise<UserWithRoleResul
       fullName: row.fullName,
     };
   } catch {
-    // Rollen-/User-Modell ist in dieser Phase optional; fehlende Tabellen duerfen Settings nicht blockieren.
+    // Rollen-/User-Modell ist in dieser Phase optional; fehlende Tabellen dürfen Settings nicht blockieren.
     return null;
   }
 }
