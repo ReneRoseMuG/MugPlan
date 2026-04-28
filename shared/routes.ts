@@ -294,6 +294,31 @@ const employeeWeekPlanningItemSchema = z.object({
   employees: z.array(tourWeekEmployeeMemberSchema),
 });
 
+const employeeRevenueOverviewAppointmentSchema = z.object({
+  appointmentId: z.number().int().positive(),
+  startDate: z.string(),
+  projectName: z.string(),
+  orderNumber: z.string().nullable(),
+  amount: z.string(),
+});
+
+const employeeRevenueOverviewWeekSchema = z.object({
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
+  weekLabel: z.string(),
+  orderCount: z.number().int().min(0),
+  revenueAmount: z.string(),
+  appointments: z.array(employeeRevenueOverviewAppointmentSchema),
+});
+
+const employeeRevenueOverviewResponseSchema = z.object({
+  employeeId: z.number().int().positive(),
+  employeeFullName: z.string(),
+  weeks: z.array(employeeRevenueOverviewWeekSchema),
+});
+
 const tourWeekAppointmentPreviewStatusSchema = z.enum([
   "will_add",
   "conflict",
@@ -2130,6 +2155,14 @@ export const api = {
       path: '/api/employees/:id/week-plans',
       responses: {
         200: z.array(employeeWeekPlanningItemSchema),
+        404: errorSchemas.notFound,
+      },
+    },
+    revenueOverview: {
+      method: "GET" as const,
+      path: "/api/employees/:id/revenue-overview",
+      responses: {
+        200: employeeRevenueOverviewResponseSchema,
         404: errorSchemas.notFound,
       },
     },
@@ -4411,6 +4444,7 @@ export type EmployeeInput = z.infer<typeof api.employees.create.input>;
 export type EmployeeUpdateInput = z.infer<typeof api.employees.update.input>;
 export type EmployeeResponse = z.infer<typeof api.employees.create.responses[201]>;
 export type EmployeeWithRelations = z.infer<typeof api.employees.get.responses[200]>;
+export type EmployeeRevenueOverviewResponse = z.infer<typeof api.employees.revenueOverview.responses[200]>;
 export type EmployeeAbsenceInput = z.infer<typeof api.employees.absences.create.input>;
 export type EmployeeAbsenceUpdateInput = z.infer<typeof api.employees.absences.update.input>;
 export type EmployeeAbsenceResponse = z.infer<typeof api.employees.absences.create.responses[201]>;
