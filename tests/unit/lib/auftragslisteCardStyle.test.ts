@@ -3,11 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Die Auftragsliste priorisiert Highlight-Tags als Sondermaß > Gespiegelt > Messe Aufbau/Abbau > Anmerkungen.
- * - Die dominante Tag-Farbe steuert Kartenrand und Hintergrundtönung.
+ * - Die dominante Tag-Farbe steuert Kartenrand und Header, nicht die Inhaltsflächen.
  *
  * Fehlerfaelle:
  * - Messe bleibt hinter Anmerkungen.
  * - Die Kartenhervorhebung verliert die Farbverdrahtung des Gewinner-Tags.
+ * - Inhaltsflächen werden trotz Stilvorgabe eingefärbt.
  *
  * Ziel:
  * Die reine clientseitige Highlight-Logik der Auftragsliste ohne Render-Kontext regressionssicher absichern.
@@ -35,20 +36,19 @@ describe("auftragslisteCardStyle", () => {
     expect(resolveAuftragslisteHighlightStyles([remarks, mirrored, messe]).dominantTag).toEqual(mirrored);
   });
 
-  it("uses the dominant tag color for card border and tinted surfaces", () => {
+  it("uses the dominant tag color only for card border and header while content areas stay neutral", () => {
     const result = resolveAuftragslisteHighlightStyles([
       { id: 7, name: "Messe Aufbau/Abbau", color: "#3465A4", isDefault: false, version: 1 },
     ]);
 
     expect(result.articleStyle).toMatchObject({
       borderColor: "#3465A4",
-      backgroundColor: "rgba(52, 101, 164, 0.05)",
     });
     expect(result.headerStyle).toMatchObject({
       backgroundColor: "rgba(52, 101, 164, 0.14)",
     });
-    expect(result.footerStyle).toMatchObject({
-      backgroundColor: "rgba(52, 101, 164, 0.1)",
-    });
+    expect(result.bodyStyle).toBeUndefined();
+    expect(result.footerStyle).toBeUndefined();
+    expect(result.descriptionStyle).toBeUndefined();
   });
 });

@@ -74,26 +74,11 @@ export function resolveAuftragslisteHighlightStyles(tags: Tag[]): AuftragslisteH
     articleStyle: {
       ...EXACT_PRINT_COLOR_STYLE,
       borderColor: dominantTag.color,
-      backgroundColor: toTransparentColor(dominantTag.color, 0.05),
     },
     headerStyle: {
       ...EXACT_PRINT_COLOR_STYLE,
       backgroundColor: toTransparentColor(dominantTag.color, 0.14),
       borderColor: dominantTag.color,
-    },
-    bodyStyle: {
-      ...EXACT_PRINT_COLOR_STYLE,
-      backgroundColor: toTransparentColor(dominantTag.color, 0.04),
-    },
-    footerStyle: {
-      ...EXACT_PRINT_COLOR_STYLE,
-      backgroundColor: toTransparentColor(dominantTag.color, 0.1),
-      borderColor: toTransparentColor(dominantTag.color, 0.32),
-    },
-    descriptionStyle: {
-      ...EXACT_PRINT_COLOR_STYLE,
-      backgroundColor: toTransparentColor(dominantTag.color, 0.08),
-      borderColor: toTransparentColor(dominantTag.color, 0.3),
     },
   };
 }

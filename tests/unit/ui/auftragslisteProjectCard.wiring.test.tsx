@@ -3,12 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Auftragslisten-Karte nutzt die gemeinsame Report-Karte samt Header, Artikelliste und Footer-Hovern.
- * - Highlight-Tags färben die Karte sichtbar ein und nutzen die stärkere Kontur.
+ * - Highlight-Tags färben Header und Kartenkontur sichtbar ein, nicht die Inhaltsflächen.
  * - Leere Artikellisten oder Beschreibungen erzeugen keinen leeren Body-Wrapper.
  *
  * Fehlerfaelle:
  * - Die wiederverwendete Kachel verliert Footer-Trigger oder Artikellabels.
  * - Die farbliche Hervorhebung oder die stärkere Kartenkontur fehlt trotz passendem Tag.
+ * - Body oder Beschreibung erhalten unerwünschte dunkle Hintergrundtönungen.
  * - Leere Inhalte rendern trotzdem einen sichtbaren Body-Bereich.
  *
  * Ziel:
@@ -105,6 +106,8 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("border-[1.5px]");
     expect(html).toContain("border-color:#BA7517");
     expect(html).toContain("background-color:rgba(186, 117, 23, 0.14)");
+    expect(html).not.toContain("background-color:rgba(186, 117, 23, 0.04)");
+    expect(html).not.toContain("background-color:rgba(186, 117, 23, 0.08)");
   });
 
   it("omits the body wrapper when article values and description are empty", () => {

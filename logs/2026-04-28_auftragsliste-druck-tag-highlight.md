@@ -19,6 +19,7 @@ Die Auftragsliste sollte im tatsächlichen Druck dieselbe Kartenstruktur verwend
 - Für stabile Browser- und Wiring-Tests wurde der Gewinner-Tag als internes Attribut `data-report-dominant-tag` an der Kartenkomponente verfügbar gemacht.
 - Die Print-Farben werden mit `printColorAdjust` und `WebkitPrintColorAdjust` explizit auf exakte Ausgabe vorbereitet, damit farbige Hervorhebungen im Browserdruck nicht zu schwach ausfallen.
 - Die Druckhöhenabschätzung wurde angehoben, weil die Druckkarte jetzt Footer und dieselbe dichtere Struktur wie die geöffnete Karte enthält.
+- Nach dem ersten Stilstand wurde die Hervorhebung noch einmal verengt: Farbe liegt jetzt nur auf Kartenrahmen und Header. Body, Footer und Beschreibungsfläche bleiben bewusst neutral hell, damit keine dunklen oder uneinheitlichen Inhaltsflächen entstehen.
 
 ## Betroffene Dateien
 
@@ -41,6 +42,8 @@ Erfolgreich ausgeführt:
 - `npm run test:integration -- --reporter=verbose tests/integration/server/reports.auftragsliste.integration.test.ts`
 - `npm run test:e2e:browser -- tests/e2e-browser/reports.ft26.browser.e2e.spec.ts --grep "Auftragsliste"`
 - `npm run check`
+- Nach der Stilkorrektur zusätzlich erneut:
+  - `npm run test:unit -- tests/unit/lib/auftragslisteCardStyle.test.ts tests/unit/ui/auftragslisteProjectCard.wiring.test.tsx tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx`
 
 ## Bekannte Einschränkungen
 

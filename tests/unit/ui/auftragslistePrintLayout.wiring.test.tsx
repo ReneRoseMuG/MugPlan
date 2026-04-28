@@ -4,11 +4,12 @@
  * Abgedeckte Regeln:
  * - Die Auftragslisten-Druckkarte nutzt dieselbe Kartenstruktur wie die geöffnete Report-Ansicht.
  * - Footer-Tags und Info-Badges bleiben deshalb auch in der Druckansicht sichtbar.
- * - Highlight-Tags färben die Druckkarte sichtbar ein.
+ * - Highlight-Tags färben Header und Kartenkontur der Druckkarte sichtbar ein.
  *
  * Fehlerfaelle:
  * - Die Druckansicht weicht strukturell weiter von der Öffnen-Karte ab.
  * - Das Highlight-Tag fehlt trotz Datenlage oder verliert seine sichtbare Farbverdrahtung.
+ * - Die Inhaltsbereiche werden trotz Vorgabe dunkel getönt.
  *
  * Ziel:
  * Die Druckkarte der Auftragsliste auf dieselbe sichtbare Kartenbasis wie die Öffnen-Ansicht regressionssicher absichern.
@@ -104,6 +105,8 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
     expect(html).toContain("attachments-hover");
     expect(html).toContain("background-color:rgba(52, 101, 164, 0.14)");
     expect(html).toContain("border-color:#3465A4");
+    expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.04)");
+    expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.08)");
     expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Fenster");
