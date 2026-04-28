@@ -3,10 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Die Auftragslisten-Karte nutzt die gemeinsame Report-Karte samt Header, Artikelliste und Footer-Hovern.
+ * - Highlight-Tags färben die Karte sichtbar ein und nutzen die stärkere Kontur.
  * - Leere Artikellisten oder Beschreibungen erzeugen keinen leeren Body-Wrapper.
  *
  * Fehlerfaelle:
  * - Die wiederverwendete Kachel verliert Footer-Trigger oder Artikellabels.
+ * - Die farbliche Hervorhebung oder die stärkere Kartenkontur fehlt trotz passendem Tag.
  * - Leere Inhalte rendern trotzdem einen sichtbaren Body-Bereich.
  *
  * Ziel:
@@ -47,7 +49,7 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     vi.stubGlobal("React", React);
   });
 
-  it("renders description, article labels and generalized footer", () => {
+  it("renders description, article labels, generalized footer and dominant highlight styling", () => {
     const html = renderToStaticMarkup(
       <AuftragslisteProjectCard
         row={{
@@ -71,7 +73,7 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
           projectAttachmentsCount: 1,
           appointmentAttachmentsCount: 1,
           attachmentsCount: 3,
-          tags: [{ id: 6, name: "Info", color: "#2563eb", isDefault: false, version: 1 }],
+          tags: [{ id: 6, name: "Sondermaß", color: "#BA7517", isDefault: false, version: 1 }],
           articleValues: [
             { categoryId: 10, value: "WIN-A" },
             { categoryId: 20, value: "DOOR-B" },
@@ -100,6 +102,9 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("notes-hover");
     expect(html).toContain("attachments-hover");
     expect(html).toContain("tag-row");
+    expect(html).toContain("border-[1.5px]");
+    expect(html).toContain("border-color:#BA7517");
+    expect(html).toContain("background-color:rgba(186, 117, 23, 0.14)");
   });
 
   it("omits the body wrapper when article values and description are empty", () => {
@@ -136,5 +141,44 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
 
     expect(html).not.toContain("reports-auftragsliste-project-card-9-description");
     expect(html).not.toContain("reports-auftragsliste-project-card-9-articles");
+  });
+
+  it("marks the winning dominant tag on the rendered card for competing tag combinations", () => {
+    const html = renderToStaticMarkup(
+      <AuftragslisteProjectCard
+        row={{
+          projectId: 10,
+          customerId: 2,
+          appointmentId: 3,
+          projectName: "Projekt Prioritaet",
+          orderNumber: "ORD-010",
+          customerNumber: "C-010",
+          customerFullName: "Kunde Prioritaet",
+          tourName: "Tour Sued",
+          actualDate: "2099-11-05",
+          durationDays: 1,
+          employees: [],
+          tourColor: null,
+          customerNotesCount: 0,
+          projectNotesCount: 0,
+          appointmentNotesCount: 0,
+          notesCount: 0,
+          customerAttachmentsCount: 0,
+          projectAttachmentsCount: 0,
+          appointmentAttachmentsCount: 0,
+          attachmentsCount: 0,
+          tags: [
+            { id: 11, name: "Anmerkungen", color: "#888780", isDefault: false, version: 1 },
+            { id: 12, name: "Messe Aufbau/Abbau", color: "#3465A4", isDefault: false, version: 1 },
+          ],
+          articleValues: [],
+          projectDescription: null,
+        }}
+        categories={[{ id: 10, name: "Fenster" }]}
+      />,
+    );
+
+    expect(html).toContain('data-report-dominant-tag="Messe Aufbau/Abbau"');
+    expect(html).toContain("border-color:#3465A4");
   });
 });

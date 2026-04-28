@@ -21,6 +21,8 @@ import { eq } from "drizzle-orm";
 import { db } from "../../server/db";
 import * as projectsService from "../../server/services/projectsService";
 import {
+  MANAGED_MESSE_TAG_NAME,
+  MANAGED_MIRRORED_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
 } from "../../shared/appointmentCancellation";
@@ -662,6 +664,7 @@ test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay
   await expect(activePrintShell).toContainText(tourOneEarlier.customer.fullName ?? "");
   await expect(activePrintShell).toContainText(tourOneLater.customer.fullName ?? "");
   await expect(activePrintShell).toContainText(tourTwoEarlier.customer.fullName ?? "");
+  await expect(activePrintShell).toContainText("Sond.");
   await expect(activePrintShell).not.toContainText(remarksOnlyProject.customer.fullName ?? "");
   await expect(activePrintShell).not.toContainText(betaProject.customer.fullName ?? "");
 
@@ -669,9 +672,67 @@ test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay
   await expect(printRoot).toContainText(tourOneEarlier.customer.fullName ?? "");
   await expect(printRoot).toContainText(tourOneLater.customer.fullName ?? "");
   await expect(printRoot).toContainText(tourTwoEarlier.customer.fullName ?? "");
+  await expect(printRoot).toContainText("Sond.");
   await expect(printRoot).not.toContainText(remarksOnlyProject.customer.fullName ?? "");
   await expect(printRoot).not.toContainText(betaProject.customer.fullName ?? "");
 
   await page.getByTestId("button-reports-auftragsliste-print").click();
   await expect.poll(async () => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls ?? 0)).toBe(1);
+});
+
+test("resolves competing Auftragsliste highlight tags consistently in overlay and print preview", async ({ page }) => {
+  const inRangeDate = getRelativeBerlinDate(30);
+  const laterInRangeDate = getRelativeBerlinDate(31);
+  const messeTag = await ensureExactReportTag(MANAGED_MESSE_TAG_NAME, "#3465A4");
+  const remarksTag = await ensureExactReportTag(MANAGED_REMARKS_TAG_NAME, "#888780");
+  const mirroredTag = await ensureExactReportTag(MANAGED_MIRRORED_TAG_NAME, "#0891b2");
+  const tour = await createTourFixture("#0f766e");
+  const modelGamma = await createProductFixture({ categoryName: "Fass Saunen", name: "Browser Modell Gamma Highlight" });
+
+  await markReportCategoriesAsDefault({
+    productCategoryIds: [modelGamma.categoryId],
+    componentCategoryIds: [],
+  });
+
+  const messeWinsProject = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-HL-MESSE",
+    appointmentDate: inRangeDate,
+    tourId: tour.id,
+    modelProductId: modelGamma.id,
+    projectTags: [remarksTag, messeTag],
+  });
+  const mirroredWinsProject = await createAuftragslisteFilterBrowserProject({
+    prefix: "AL-BROWSER-HL-MIRROR",
+    appointmentDate: laterInRangeDate,
+    tourId: tour.id,
+    modelProductId: modelGamma.id,
+    projectTags: [messeTag, mirroredTag],
+  });
+
+  await openReports(page);
+  await page.getByTestId("reports-auftragsliste-from-date").fill(getRelativeBerlinDate(29));
+  await page.getByTestId("reports-auftragsliste-to-date").fill(getRelativeBerlinDate(32));
+  await clearSelectedAuftragslisteTagFilters(page);
+  await clearSelectedAuftragslisteSaunaModels(page);
+  await page.getByTestId("button-reports-auftragsliste-generate").click();
+
+  const messeCard = page.getByTestId(`reports-auftragsliste-project-card-${messeWinsProject.project.id}`);
+  const mirroredCard = page.getByTestId(`reports-auftragsliste-project-card-${mirroredWinsProject.project.id}`);
+
+  await expect(messeCard).toContainText(messeWinsProject.customer.fullName ?? "");
+  await expect(mirroredCard).toContainText(mirroredWinsProject.customer.fullName ?? "");
+  await expect(messeCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MESSE_TAG_NAME);
+  await expect(mirroredCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MIRRORED_TAG_NAME);
+  await expect.poll(async () => messeCard.evaluate((element) => getComputedStyle(element).borderColor)).toBe("rgb(52, 101, 164)");
+  await expect.poll(async () => mirroredCard.evaluate((element) => getComputedStyle(element).borderColor)).toBe("rgb(8, 145, 178)");
+
+  await page.getByTestId("button-reports-auftragsliste-print-preview").click();
+  await expect(page.getByTestId("dialog-auftragsliste-print-preview")).toBeVisible();
+
+  const activePrintShell = page.getByTestId("auftragsliste-print-preview-active-page-shell");
+  const printedMesseCard = activePrintShell.getByTestId(`reports-auftragsliste-project-card-${messeWinsProject.project.id}`);
+  const printedMirroredCard = activePrintShell.getByTestId(`reports-auftragsliste-project-card-${mirroredWinsProject.project.id}`);
+
+  await expect(printedMesseCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MESSE_TAG_NAME);
+  await expect(printedMirroredCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MIRRORED_TAG_NAME);
 });

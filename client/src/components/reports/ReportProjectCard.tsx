@@ -86,24 +86,34 @@ export function ReportProjectCard({
   testIdPrefix,
   bodyContent,
   className,
+  style,
+  dominantTagName,
   headerClassName,
   headerStyle,
   bodyClassName,
+  bodyStyle,
   footerClassName,
+  footerStyle,
 }: {
   row: ReportProjectCardRow;
   testIdPrefix: string;
   bodyContent?: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
+  dominantTagName?: string | null;
   headerClassName?: string;
   headerStyle?: React.CSSProperties;
   bodyClassName?: string;
+  bodyStyle?: React.CSSProperties;
   footerClassName?: string;
+  footerStyle?: React.CSSProperties;
 }) {
   return (
     <article
       className={cn("rounded-lg border border-border bg-white shadow-sm", className)}
       data-testid={testIdPrefix}
+      data-report-dominant-tag={dominantTagName ?? undefined}
+      style={style}
     >
       <div
         className={cn("grid gap-2 border-b border-border px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] md:items-center md:gap-4", headerClassName)}
@@ -129,8 +139,8 @@ export function ReportProjectCard({
           </div>
         </div>
       </div>
-      {bodyContent ? <div className={cn("grid gap-6 px-4 py-4 md:grid-cols-2", bodyClassName)}>{bodyContent}</div> : null}
-      <div className={cn("border-t border-border bg-slate-50 px-4 py-3", footerClassName)}>
+      {bodyContent ? <div className={cn("grid gap-6 px-4 py-4 md:grid-cols-2", bodyClassName)} style={bodyStyle}>{bodyContent}</div> : null}
+      <div className={cn("border-t border-border bg-slate-50 px-4 py-3", footerClassName)} style={footerStyle}>
         <ReportProjectCardFooter row={row} testIdPrefix={testIdPrefix} />
       </div>
     </article>
