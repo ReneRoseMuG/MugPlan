@@ -16,17 +16,17 @@ Vor jeder weiteren Aktion klassifiziert Codex den Auftrag in genau eine der folg
 4. **Kleiner lokaler Fix in bestehender Struktur**
 5. **Mehrschichtige Änderung oder neues Feature**
 
-Von dieser Klassifikation hängen Branch-Frage, Dokumentenlektüre, Analyseumfang und Planungstiefe ab.
+Von dieser Klassifikation hängen Branch-Nutzung, Dokumentenlektüre, Analyseumfang und Planungstiefe ab.
 
 ### Folgen der Klassifikation
 
-| Klasse | Branch-Frage | Dokumentenlektüre | Analyseumfang | Planung |
+| Klasse | Branch-Nutzung | Dokumentenlektüre | Analyseumfang | Planung |
 |---|---|---|---|---|
 | 1. Reine Frage oder Leseauftrag | Nein | Nur wenn fachlich nötig | Minimal, nur auftragsnah | Keine formale Planung |
 | 2. Analyse-, Audit- oder Test-Report | Nein | Nur relevante Indizes / gezielte Abschnitte | Nur für den Report nötige Bereiche | Nur kurzer Analyseplan bei Bedarf |
 | 3. Git-Operation ohne Codeänderung | Nein | Nein, außer bei fachlicher Rückfrage | Nur Git-Zustand prüfen | Keine normale Planpflicht |
-| 4. Kleiner lokaler Fix | Nur wenn Änderungen tatsächlich durchgeführt werden sollen | Minimal und gezielt | Start klein und dateinah | Kleiner Plan |
-| 5. Mehrschichtige Änderung oder neues Feature | Ja, sofern Änderungen durchgeführt werden sollen | Gestuft und gezielt erweitern | Breiter, aber begründet | Voller Plan |
+| 4. Kleiner lokaler Fix | Nur bei explizitem Nutzerwunsch oder Kurzkommando | Minimal und gezielt | Start klein und dateinah | Kleiner Plan |
+| 5. Mehrschichtige Änderung oder neues Feature | Nur bei explizitem Nutzerwunsch oder Kurzkommando | Gestuft und gezielt erweitern | Breiter, aber begründet | Voller Plan |
 
 Codex dokumentiert zu Beginn kurz:
 - welche Klasse gewählt wurde,
@@ -149,23 +149,13 @@ Wenn eine Änderung Rollen berührt, muss der Plan und der Abschlussbericht dies
 
 ## 3. Planung
 
-### 3.1 Branch-Frage (nur wenn tatsächlich Änderungen durchgeführt werden sollen)
+### 3.1 Branch-Nutzung (nur bei explizitem Nutzerwunsch)
 
-Codex fragt nur dann nach einem lokalen Branch von `work`, wenn der Auftrag voraussichtlich Änderungen an Produktivcode, Tests, Konfiguration oder Dokumentation erfordert.
+Codex fragt nicht aktiv nach einem lokalen Branch von `work`.
 
-**Keine Branch-Frage bei:**
+Ein lokaler Branch wird nur dann angelegt, wenn der Nutzer dies ausdrücklich verlangt oder das Kurzkommando `branch <name>` verwendet.
 
-- reinen Leseaufträgen,
-- Analyse-, Audit- oder Test-Reports,
-- Git-Operationen ohne inhaltliche Änderung,
-- reinen Rückfragen oder Erklärungen.
-
-Wenn eine Branch-Frage erforderlich ist und der Nutzer kein passendes Kurzkommando verwendet hat, fragt Codex:
-
-> „Soll für diesen Auftrag ein lokaler Branch von `work` abgezweigt werden?"
-
-- Bei **ja**: Branch-Namen erfragen. Delegiert der Nutzer die Namenswahl ausdrücklich an Codex, wählt Codex selbst einen kurzen, auftragsbezogenen und beschreibenden Branchnamen. Diese Delegation gilt als Standardfreigabe für die Namenswahl; eine zusätzliche Rückfrage zum Branchnamen erfolgt dann nicht mehr. Danach Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
-- Bei **nein**: direkt mit der Planung fortfahren.
+Delegiert der Nutzer die Namenswahl ausdrücklich an Codex, wählt Codex selbst einen kurzen, auftragsbezogenen und beschreibenden Branchnamen. Diese Delegation gilt als Standardfreigabe für die Namenswahl; eine zusätzliche Rückfrage zum Branchnamen erfolgt dann nicht mehr. Danach Branch anlegen, Remote-Tracking einrichten und den Branch sofort pushen (`git push -u origin <branch>`).
 
 Git-Aktionen dabei ausschließlich **seriell** ausführen (siehe Abschnitt 4.1).
 
@@ -234,7 +224,7 @@ Zur Reduktion von Dialog- und Kontextverbrauch darf der Nutzer kurze Kommandos v
 Codex legt vor der weiteren Arbeit einen lokalen Branch von `work` mit dem angegebenen Namen an, richtet das Remote-Tracking ein und pusht den Branch sofort mit `git push -u origin <name>`. Alle Git-Schritte werden seriell ausgeführt.
 
 `plan`  
-Codex klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne die Branch-Frage erneut zu stellen.
+Codex klassifiziert den Auftrag gemäß Abschnitt 0, führt die Analyse gemäß Abschnitt 2 aus und erstellt danach direkt den Plan im Format aus Abschnitt 3.2 und 3.3, ohne zusätzliche Branch-Rückfrage.
 
 `audit`  
 Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus. Wenn im Repository ein lokaler Audit-Runner vorhanden ist, der die in Abschnitt 12 definierten Kommandos seriell ausführt, nutzt Codex diesen bevorzugt. Anschließend berichtet Codex die Ergebnisse vollständig nach den dort definierten Regeln und zusätzlich in einem kurzen zusammenfassenden Report.
