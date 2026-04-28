@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { LayoutList, Mail, Phone, ScrollText, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
+import { EmployeeRevenueOverviewTab } from "@/components/EmployeeRevenueOverviewTab";
 import { EmployeeUtilizationView } from "@/components/EmployeeUtilizationView";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
 import { NotesSection } from "@/components/NotesSection";
@@ -25,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { resolveEmployeeEditLabel } from "@/lib/edit-form-context";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
+import type { EmployeeRevenueOverviewResponse } from "@shared/routes";
 import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
 
 interface EmployeeWithRelations {
@@ -180,6 +182,20 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
     },
     enabled: isEditing && Boolean(employeeId),
   });
+  const {
+    data: employeeRevenueOverview,
+    isLoading: employeeRevenueOverviewLoading,
+  } = useQuery<EmployeeRevenueOverviewResponse>({
+    queryKey: ["/api/employees", employeeId, "revenue-overview"],
+    queryFn: async () => {
+      const response = await fetch(`/api/employees/${employeeId}/revenue-overview`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error("Umsatzübersicht konnte nicht geladen werden");
+      }
+      return response.json();
+    },
+    enabled: isEditing && Boolean(employeeId),
+  });
   const visibleEmployeeTags = isEditing ? employeeTagRelations : draftEmployeeTags;
   const visibleEmployeeNotes = isEditing ? employeeNotes : draftEmployeeNotes;
 
@@ -303,6 +319,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       if (employeeId) {
         void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
         void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "week-plans"] });
+        void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "revenue-overview"] });
         const relevantWeeks = employeeWeekPlans.filter((weekPlan) => weekPlan.appointmentsCount > 0);
         for (const weekPlan of relevantWeeks) {
           void invalidateTourWeekQueries(queryClient, {
@@ -759,7 +776,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "auslastung") ? 99999 : undefined}
+        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht") ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
@@ -904,6 +921,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                 <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
               ) : null}
               {isEditing ? (
+                <TabsTrigger value="umsatz-uebersicht" data-testid="tab-employee-umsatz-uebersicht">Umsatz Übersicht</TabsTrigger>
+              ) : null}
+              {isEditing ? (
                 <TabsTrigger value="auslastung" data-testid="tab-employee-auslastung">Auslastung</TabsTrigger>
               ) : null}
             </TabsList>
@@ -1015,6 +1035,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               </p>
             )}
           </TabsContent>
+
+          {isEditing && employeeId ? (
+            <TabsContent value="umsatz-uebersicht" className="flex min-h-0 flex-1 flex-col">
+              <EmployeeRevenueOverviewTab
+                overview={employeeRevenueOverview}
+                isLoading={employeeRevenueOverviewLoading}
+              />
+            </TabsContent>
+          ) : null}
 
           {isEditing && employeeId ? (
             <TabsContent value="auslastung" className="flex min-h-0 flex-1 flex-col">

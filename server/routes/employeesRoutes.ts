@@ -7,6 +7,7 @@ const router = Router();
 router.get(api.employees.list.path, employeesController.listEmployees);
 router.get(api.employees.get.path, employeesController.getEmployee);
 router.get(api.employees.weekPlans.path, employeesController.listEmployeeWeekPlans);
+router.get(api.employees.revenueOverview.path, employeesController.listEmployeeRevenueOverview);
 router.get(api.employeeTags.list.path, employeesController.listEmployeeTags);
 router.post(api.employees.create.path, employeesController.createEmployee);
 router.post(api.employees.importCsv.path, employeesController.importEmployeesCsv);

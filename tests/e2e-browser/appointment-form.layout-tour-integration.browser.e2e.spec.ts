@@ -194,18 +194,22 @@ async function readAppointmentNotes(page: Page, appointmentId: number): Promise<
 
 async function createAppointmentNoteViaDialog(page: Page, input: { title: string; body: string }) {
   await page.getByTestId("button-new-note").click();
-  const dialog = page.getByRole("dialog");
+  const dialog = page.getByRole("dialog").filter({ has: page.getByTestId("button-save-note") }).last();
+  const dialogHandle = await dialog.elementHandle();
+  if (!dialogHandle) {
+    throw new Error("Notizdialog konnte nach dem Oeffnen nicht gefunden werden.");
+  }
   await dialog.getByTestId("input-note-title").fill(input.title);
   await dialog.getByTestId("richtext-editor").fill(input.body);
   await dialog.getByTestId("button-save-note").click();
-  const templateEditorCancelButton = page.getByTestId("button-cancel-note");
+  const templateEditorCancelButton = dialog.getByTestId("button-cancel-note");
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const count = await templateEditorCancelButton.count();
-    if (count === 0) break;
-    await expect(templateEditorCancelButton.last()).toBeVisible();
-    await templateEditorCancelButton.last().click({ force: true });
+    if (!(await templateEditorCancelButton.isVisible().catch(() => false))) {
+      break;
+    }
+    await templateEditorCancelButton.click({ force: true });
   }
-  await expect.poll(async () => templateEditorCancelButton.count()).toBe(0);
+  await dialogHandle.waitForElementState("hidden");
 }
 
 async function readSystemTagIdByName(name: string): Promise<number> {

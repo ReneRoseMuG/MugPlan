@@ -88,6 +88,25 @@ export async function listEmployeeWeekPlans(req: Request, res: Response, next: N
   }
 }
 
+export async function listEmployeeRevenueOverview(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const id = Number(req.params.id);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const result = await employeesService.listEmployeeRevenueOverview(id, roleKey);
+    if (!result) {
+      res.status(404).json({ message: "Mitarbeiter nicht gefunden" });
+      return;
+    }
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function listEmployeeTags(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const roleKey = getRoleKeyFromRequest(req);

@@ -1,13 +1,16 @@
 import type { Employee, InsertEmployee, Tag, Team, Tour, UpdateEmployee } from "@shared/schema";
+import type { EmployeeRevenueOverviewResponse } from "@shared/routes";
 import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
 import * as tourWeeksRepository from "../repositories/tourWeeksRepository";
 import * as employeesRepository from "../repositories/employeesRepository";
+import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import * as tagRelationsService from "./tagRelationsService";
 import * as teamsRepository from "../repositories/teamsRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import { enrichTourWeekCards, isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
 import { isParkplatzTourName } from "../lib/systemTours";
+import { buildEmployeeRevenueOverview } from "./employeeRevenueOverviewAggregation";
 
 export class EmployeesError extends Error {
   status: number;
@@ -225,6 +228,34 @@ export async function listEmployeeWeekPlans(
     members: item.members,
     employees: item.employees,
   }));
+}
+
+export async function listEmployeeRevenueOverview(
+  id: number,
+  roleKey: CanonicalRoleKey,
+): Promise<EmployeeRevenueOverviewResponse | null> {
+  const employee = await employeesRepository.getEmployee(id);
+  if (!employee) return null;
+  if (roleKey !== "ADMIN" && !employee.isActive) return null;
+
+  const rows = await appointmentsRepository.listSidebarAppointmentsByEmployeeScope(id);
+  const appointmentIds = rows.map((row) => row.appointment.id);
+  const projectIds = rows
+    .map((row) => row.project?.id)
+    .filter((projectId): projectId is number => Number.isInteger(projectId));
+
+  const [appointmentTagsByAppointmentId, projectTagsByProjectId] = await Promise.all([
+    appointmentsRepository.getAppointmentTagsByAppointmentIds(appointmentIds),
+    appointmentsRepository.getProjectTagsByProjectIds(projectIds),
+  ]);
+
+  return buildEmployeeRevenueOverview({
+    employeeId: employee.id,
+    employeeFullName: employee.fullName,
+    rows,
+    appointmentTagsByAppointmentId,
+    projectTagsByProjectId,
+  });
 }
 
 export async function listEmployeeTagRelations(id: number, roleKey: CanonicalRoleKey) {

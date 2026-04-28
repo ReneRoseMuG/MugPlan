@@ -135,6 +135,10 @@ vi.mock("@/components/EmployeeUtilizationView", () => ({
   EmployeeUtilizationView: () => <section data-testid="employee-utilization-view-marker">utilization</section>,
 }));
 
+vi.mock("@/components/EmployeeRevenueOverviewTab", () => ({
+  EmployeeRevenueOverviewTab: () => <section data-testid="employee-revenue-overview-marker">revenue-overview</section>,
+}));
+
 vi.mock("@/components/EmployeeAppointmentsUtilizationBoard", () => ({
   EmployeeAppointmentsUtilizationBoard: (props: Record<string, unknown>) => {
     utilizationBoardCalls.push(props);
@@ -355,8 +359,10 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).toContain("tab-employee-journal");
     expect(markup).toContain("tab-employee-wochenplanung");
     expect(markup).toContain("tab-employee-termine");
+    expect(markup).toContain("tab-employee-umsatz-uebersicht");
     expect(markup).toContain("tab-employee-auslastung");
     expect(markup).toContain("employee-appointments-list-marker");
+    expect(markup).toContain("employee-revenue-overview-marker");
     expect(markup).toContain("employee-utilization-view-marker");
     expect(markup).toContain("KW 18 / 2026");
     expect(markup).toContain("Tour Nord");
@@ -395,6 +401,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     expect(markup).not.toContain("tab-employee-journal");
     expect(markup).not.toContain("tab-employee-wochenplanung");
     expect(markup).toContain("tab-employee-termine");
+    expect(markup).not.toContain("tab-employee-umsatz-uebersicht");
     expect(markup).not.toContain("tab-employee-auslastung");
 
     expect(getIndex(markup, "employee-attachments-panel-marker")).toBeLessThan(getIndex(markup, "employee-tag-picker-marker"));
