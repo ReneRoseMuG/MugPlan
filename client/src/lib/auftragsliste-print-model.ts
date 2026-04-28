@@ -5,7 +5,7 @@ export type AuftragslistePrintPage = {
   items: ReportAuftragslisteProjectRow[];
 };
 
-const BASE_CARD_HEIGHT_PX = 96;
+const BASE_CARD_HEIGHT_PX = 160;
 const ARTICLE_LINE_HEIGHT_PX = 12;
 const DESCRIPTION_LINE_HEIGHT_PX = 12;
 const ROW_GAP_PX = 16;

@@ -1,4 +1,5 @@
 import React from "react";
+import { StickyNote } from "lucide-react";
 import { renderSelectiveProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
 import type { TourenplanFontSize, TourenplanPrintMode, TourenplanResolvedAppointment } from "@/components/reports/tourenplan-model";
 import {
@@ -234,9 +235,14 @@ export function TourenplanAppointmentCard({
               >
                 {note.title ? (
                   <div
-                    className="mb-0.5 font-semibold"
+                    className="mb-0.5 flex items-center gap-1 font-semibold"
                     style={{ color, fontSize: `${preset.noteFontSizePx}px` }}
                   >
+                    <StickyNote
+                      className="shrink-0"
+                      size={preset.noteFontSizePx + 1}
+                      aria-hidden="true"
+                    />
                     {note.title}
                   </div>
                 ) : null}

@@ -36,6 +36,8 @@ import {
 import * as projectsService from "../../../server/services/projectsService";
 import {
   MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_MESSE_TAG_NAME,
+  MANAGED_MIRRORED_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
@@ -326,5 +328,35 @@ describe("integration: report auftragsliste", () => {
     await reader
       .get("/api/reports/auftragsliste?fromDate=2099-11-01&toDate=2099-11-30")
       .expect(403);
+  });
+
+  it("returns project and appointment highlight tags so the client can resolve the dominant card style", async () => {
+    const admin = await loginAdminAgent(app);
+    const mirroredTag = await ensureExactTag(MANAGED_MIRRORED_TAG_NAME, "#0891b2");
+    const messeTag = await ensureExactTag(MANAGED_MESSE_TAG_NAME, "#3465A4");
+    const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#888780");
+
+    const fixture = await createAuftragslisteProjectFixture({
+      prefix: "AL-HIGHLIGHT-TAGS",
+      appointmentDates: [{ startDate: "2100-01-07" }],
+      productItems: [{ categoryName: "Fass Saunen", name: "Highlight Sauna" }],
+      projectTags: [mirroredTag, remarksTag],
+      appointmentTagsByIndex: [[messeTag]],
+    });
+
+    const response = await admin
+      .get("/api/reports/auftragsliste?fromDate=2100-01-01&toDate=2100-01-31")
+      .expect(200);
+
+    expect(response.body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        projectId: fixture.project.id,
+        tags: expect.arrayContaining([
+          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
+          expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
+          expect.objectContaining({ id: messeTag.id, name: MANAGED_MESSE_TAG_NAME }),
+        ]),
+      }),
+    ]));
   });
 });
