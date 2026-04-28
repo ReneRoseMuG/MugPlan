@@ -242,9 +242,13 @@ export async function updateUserByIdWithVersion(
     fullName: string;
     roleId: number;
     isActive: boolean;
+    passwordHash?: string;
   },
 ): Promise<{ kind: "updated" } | { kind: "version_conflict" }> {
   try {
+    const passwordHashSql = input.passwordHash
+      ? sql`password_hash = ${input.passwordHash},`
+      : sql``;
     const result = await db.execute(sql`
       update users
       set
@@ -255,6 +259,7 @@ export async function updateUserByIdWithVersion(
         full_name = ${input.fullName},
         role_id = ${input.roleId},
         is_active = ${input.isActive},
+        ${passwordHashSql}
         updated_at = now(),
         version = version + 1
       where id = ${userId}

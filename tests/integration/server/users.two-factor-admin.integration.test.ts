@@ -137,6 +137,40 @@ describe("FT31 integration: admin user management and 2FA recovery", () => {
     expect(relogin.body.status).toBe("authenticated");
   });
 
+  it("allows admin to change an existing user's password", async () => {
+    const admin = await createRoleAgent("ADMIN");
+    const dispatcher = await createRoleAgent("DISPATCHER");
+    const usersBefore = await listUsers(admin.agent);
+    const target = usersBefore.find((entry) => entry.username === dispatcher.username);
+    expect(target).toBeTruthy();
+
+    const newPassword = "ft31-dispatcher-password-new";
+    await admin.agent
+      .patch(`/api/users/${target!.id}`)
+      .send({
+        username: dispatcher.username,
+        email: `${dispatcher.username}@local.test`,
+        firstName: "FT31",
+        lastName: "DISPATCHER",
+        roleCode: "DISPATCHER",
+        isActive: true,
+        password: newPassword,
+        version: target!.version,
+      })
+      .expect(200);
+
+    await request.agent(app)
+      .post("/api/auth/login")
+      .send({ username: dispatcher.username, password: dispatcher.password })
+      .expect(401);
+
+    const relogin = await request.agent(app)
+      .post("/api/auth/login")
+      .send({ username: dispatcher.username, password: newPassword })
+      .expect(200);
+    expect(relogin.body.status).toBe("authenticated");
+  });
+
   it("rejects non-admin edits and 2FA resets", async () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");

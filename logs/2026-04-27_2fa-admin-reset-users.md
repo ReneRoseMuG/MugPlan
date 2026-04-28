@@ -23,6 +23,7 @@ Erst nach erfolgreicher TOTP-Bestätigung wird es dauerhaft gespeichert.
 
 - `users.two_factor_secret_encrypted`
 - `users.two_factor_backup_codes_reserved`
+- `users.password_hash`
 - `users.username`
 - `users.email`
 - `users.first_name`
@@ -54,6 +55,21 @@ Der Reset:
 
 Folge:
 - der betroffene Benutzer muss 2FA beim nächsten Login neu einrichten
+
+## Admin-Bearbeitung bestehender Benutzer
+
+Admins können bestehende Benutzer vollständig bearbeiten:
+- `username`
+- `email`
+- `first_name`
+- `last_name`
+- `role_id`
+- `is_active`
+- optional `password_hash` über ein neu gesetztes Passwort
+
+Für das Passwort gilt:
+- leer im Bearbeitungsdialog: bestehendes Passwort bleibt unverändert
+- gesetzt: neues Passwort wird serverseitig gehasht und ersetzt das alte Passwort
 
 ## Schutzregeln gegen Aussperren
 

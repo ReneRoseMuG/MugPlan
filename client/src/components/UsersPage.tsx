@@ -41,6 +41,7 @@ type EditUserForm = {
   lastName: string;
   roleCode: DbRoleCode;
   isActive: boolean;
+  password: string;
 };
 
 const ROLE_OPTIONS: Array<{ value: DbRoleCode; label: string }> = [
@@ -72,6 +73,7 @@ function toEditUserForm(user: UserRow): EditUserForm {
     lastName: user.lastName,
     roleCode: user.roleCode ?? "READER",
     isActive: user.isActive,
+    password: "",
   };
 }
 
@@ -192,6 +194,7 @@ export function UsersPage() {
           lastName: editUser.lastName.trim(),
           roleCode: editUser.roleCode,
           isActive: editUser.isActive,
+          password: editUser.password.trim() ? editUser.password : undefined,
           version: editUser.version,
         }),
       });
@@ -205,7 +208,7 @@ export function UsersPage() {
           throw new Error(resolveBusinessConflictMessage());
         }
         if (payload.code === "VALIDATION_ERROR") {
-          throw new Error("Ungültige Eingaben. Prüfe Benutzername, E-Mail und Pflichtfelder.");
+          throw new Error("Ungültige Eingaben. Prüfe Benutzername, E-Mail, Pflichtfelder und Passwortlänge.");
         }
         throw new Error("Benutzer konnte nicht gespeichert werden.");
       }
@@ -563,6 +566,17 @@ export function UsersPage() {
                   <option value="inactive">Inaktiv</option>
                 </select>
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-user-password">Neues Passwort</Label>
+              <Input
+                id="edit-user-password"
+                type="password"
+                minLength={10}
+                value={editUser?.password ?? ""}
+                onChange={(event) => setEditUser((current) => current ? { ...current, password: event.target.value } : current)}
+              />
+              <p className="text-xs text-slate-500">Optional. Leer lassen, um das bestehende Passwort unverändert zu lassen. Mindestens 10 Zeichen.</p>
             </div>
           </div>
           <DialogFooter className="gap-2">

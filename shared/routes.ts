@@ -2459,6 +2459,7 @@ export const api = {
         lastName: z.string().min(1).max(100),
         roleCode: z.enum(["READER", "DISPATCHER", "ADMIN"]),
         isActive: z.boolean(),
+        password: z.string().min(10).max(255).optional(),
         version: z.number().int().min(1),
       }).strict(),
       responses: {

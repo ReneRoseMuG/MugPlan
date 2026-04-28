@@ -149,6 +149,7 @@ function normalizeEditableUserInput(input: {
   lastName: string;
   roleCode: DbRoleCode;
   isActive: boolean;
+  password?: string;
   version: number;
 }) {
   const username = input.username.trim();
@@ -161,6 +162,9 @@ function normalizeEditableUserInput(input: {
   if (!Number.isInteger(input.version) || input.version < 1) {
     throw new UsersError("Ungültige Version", 422, "VALIDATION_ERROR");
   }
+  if (input.password !== undefined && input.password.length < 10) {
+    throw new UsersError("Ungültiges Passwort", 422, "VALIDATION_ERROR");
+  }
 
   return {
     username,
@@ -170,6 +174,7 @@ function normalizeEditableUserInput(input: {
     fullName: `${firstName} ${lastName}`.trim(),
     roleCode: input.roleCode,
     isActive: input.isActive,
+    password: input.password,
     version: input.version,
   };
 }
@@ -215,6 +220,7 @@ export async function updateUser(
     lastName: string;
     roleCode: DbRoleCode;
     isActive: boolean;
+    password?: string;
     version: number;
   },
 ) {
@@ -240,6 +246,7 @@ export async function updateUser(
   }
 
   try {
+    const passwordHash = normalized.password ? await hashPassword(normalized.password) : undefined;
     const updated = await usersRepository.updateUserByIdWithVersion(targetUserId, normalized.version, {
       username: normalized.username,
       email: normalized.email,
@@ -248,6 +255,7 @@ export async function updateUser(
       fullName: normalized.fullName,
       roleId,
       isActive: normalized.isActive,
+      passwordHash,
     });
     if (updated.kind === "version_conflict") {
       const exists = await usersRepository.getUserRoleRecordById(targetUserId);

@@ -9,13 +9,12 @@ Absicherung des 2FA-Loginflusses gegen inkonsistente Benutzerzustände, Ergänzu
 Im Scope:
 - Authentifizierung und 2FA-Loginentscheidungen
 - Admin-Reset für benutzerspezifischen 2FA-Zustand
-- Admin-Bearbeitung bestehender Benutzer
+- Admin-Bearbeitung bestehender Benutzer inklusive Passwortänderung
 - zugehörige Unit- und Integrationstests
 - technische Kurznotiz zur 2FA-Logik
 
 Nicht im Scope:
 - neue Rollenmodelle
-- Passwort-Reset
 - Einführung fertiger Backup-Codes
 - allgemeines UI-Redesign
 - Schemaänderungen oder Migrationen
@@ -32,6 +31,7 @@ Nicht im Scope:
   - Deaktivierung
   - Self-2FA-Reset bei global aktivierter 2FA ohne weiteren aktiven Admin
 - Die bestehende Benutzerbearbeitung wurde nicht als neue Parallelfunktion ergänzt, sondern der vorhandene Update-Pfad wurde auf vollständige Admin-Bearbeitung erweitert.
+- Bestehende Benutzer können jetzt optional auch ein neues Passwort erhalten; leer bedeutet unverändert, gesetzt bedeutet serverseitiges Re-Hashing über den bestehenden Passwort-Hashing-Pfad.
 
 ## Betroffene Dateien
 
@@ -59,7 +59,7 @@ Die neuen fachlichen Nachweise decken insbesondere ab:
 - Login ohne 2FA bei global deaktivierter 2FA
 - Setup-Fallback bei fehlendem oder defektem Secret
 - Admin-Reset ohne Passwort- oder Rollenänderung
-- Admin-Bearbeitung bestehender Benutzer
+- Admin-Bearbeitung bestehender Benutzer inklusive Passwortänderung
 - keine neuen Verwaltungsrechte für Nicht-Admins
 
 ## Bekannte Einschränkungen
