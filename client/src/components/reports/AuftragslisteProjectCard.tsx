@@ -14,9 +14,11 @@ function hasTextContent(value: string | null): value is string {
 export function AuftragslisteProjectCard({
   row,
   categories,
+  hideFooterBadges = false,
 }: {
   row: ReportAuftragslisteProjectRow;
   categories: ProduktionsplanungArticleCategory[];
+  hideFooterBadges?: boolean;
 }) {
   const testIdPrefix = `reports-auftragsliste-project-card-${row.projectId}`;
   const highlightStyles = resolveAuftragslisteHighlightStyles(row.tags);
@@ -40,6 +42,7 @@ export function AuftragslisteProjectCard({
       headerStyle={highlightStyles.headerStyle ?? (row.tourColor ? { borderColor: row.tourColor } : undefined)}
       bodyStyle={highlightStyles.bodyStyle}
       footerStyle={highlightStyles.footerStyle}
+      hideFooterBadges={hideFooterBadges}
       bodyContent={hasBodyContent ? (
         <>
           {articleSection}

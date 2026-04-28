@@ -49,10 +49,22 @@ function formatDurationDays(value: number): string {
 function ReportProjectCardFooter({
   row,
   testIdPrefix,
+  hideBadges,
 }: {
   row: ReportProjectCardRow;
   testIdPrefix: string;
+  hideBadges?: boolean;
 }) {
+  if (hideBadges) {
+    return (
+      <div className="w-full">
+        <div className="min-w-0 w-full" data-testid={`${testIdPrefix}-footer-tags-column`}>
+          <EntityTagFooterRow tags={row.tags} testId={`${testIdPrefix}-tags`} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid w-full gap-3 md:grid-cols-2">
       <div className="min-w-0 md:w-1/2" data-testid={`${testIdPrefix}-footer-tags-column`}>
@@ -94,6 +106,7 @@ export function ReportProjectCard({
   bodyStyle,
   footerClassName,
   footerStyle,
+  hideFooterBadges,
 }: {
   row: ReportProjectCardRow;
   testIdPrefix: string;
@@ -107,6 +120,7 @@ export function ReportProjectCard({
   bodyStyle?: React.CSSProperties;
   footerClassName?: string;
   footerStyle?: React.CSSProperties;
+  hideFooterBadges?: boolean;
 }) {
   return (
     <article
@@ -141,7 +155,7 @@ export function ReportProjectCard({
       </div>
       {bodyContent ? <div className={cn("grid gap-6 px-4 py-4 md:grid-cols-2", bodyClassName)} style={bodyStyle}>{bodyContent}</div> : null}
       <div className={cn("border-t border-border bg-slate-50 px-4 py-3", footerClassName)} style={footerStyle}>
-        <ReportProjectCardFooter row={row} testIdPrefix={testIdPrefix} />
+        <ReportProjectCardFooter row={row} testIdPrefix={testIdPrefix} hideBadges={hideFooterBadges} />
       </div>
     </article>
   );

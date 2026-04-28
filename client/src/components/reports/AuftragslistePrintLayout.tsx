@@ -12,7 +12,7 @@ export function AuftragslistePrintLayout({
   return (
     <div className="grid grid-cols-1 gap-4">
       {items.map((row) => (
-        <AuftragslisteProjectCard key={row.projectId} row={row} categories={categories} />
+        <AuftragslisteProjectCard key={row.projectId} row={row} categories={categories} hideFooterBadges />
       ))}
     </div>
   );

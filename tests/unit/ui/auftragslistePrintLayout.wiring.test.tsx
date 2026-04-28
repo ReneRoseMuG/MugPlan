@@ -3,11 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Die Auftragslisten-Druckkarte nutzt dieselbe Kartenstruktur wie die geöffnete Report-Ansicht.
- * - Footer-Tags und Info-Badges bleiben deshalb auch in der Druckansicht sichtbar.
+ * - In der Druckansicht nutzt die Tag-Zeile die volle Footer-Breite; die rechte Badge-Spalte bleibt ausgeblendet.
  * - Highlight-Tags färben Header und Kartenkontur der Druckkarte sichtbar ein.
  *
  * Fehlerfaelle:
  * - Die Druckansicht weicht strukturell weiter von der Öffnen-Karte ab.
+ * - Die Badge-Spalte bleibt in der Druckvorschau sichtbar und verdrängt die Tags unnötig.
  * - Das Highlight-Tag fehlt trotz Datenlage oder verliert seine sichtbare Farbverdrahtung.
  * - Die Inhaltsbereiche werden trotz Vorgabe dunkel getönt.
  *
@@ -100,13 +101,14 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
     expect(html).toContain("05.11.2099");
     expect(html).toContain("2 Tage");
     expect(html).toContain("Anmerkungen,Messe Aufbau/Abbau");
-    expect(html).toContain("employees-hover");
-    expect(html).toContain("notes-hover");
-    expect(html).toContain("attachments-hover");
+    expect(html).not.toContain("employees-hover");
+    expect(html).not.toContain("notes-hover");
+    expect(html).not.toContain("attachments-hover");
     expect(html).toContain("background-color:rgba(52, 101, 164, 0.14)");
     expect(html).toContain("border-color:#3465A4");
     expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.04)");
     expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.08)");
+    expect(html).not.toContain("footer-badges-column");
     expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Fenster");
