@@ -2,7 +2,7 @@ import type { ElementType, ReactNode } from "react";
 import { getISOWeek, getISOWeekYear } from "date-fns";
 import { Calendar, CalendarDays, ExternalLink, LogOut, RefreshCw } from "lucide-react";
 
-import { canAccessMonitoring, canAccessReports, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
+import { canAccessJournal, canAccessMonitoring, canAccessReports, canAccessTourPostalPlan } from "@/lib/auth";
 import { domainIcons } from "@/lib/domain-icons";
 import type { ViewType } from "@/pages/Home";
 import type { MonitoringTriggerSummaryItemResponse } from "@shared/routes";
@@ -113,9 +113,10 @@ export function Sidebar({
   } = useChangeNotificationsContext();
   const isAdmin = userRole?.toUpperCase() === "ADMIN";
   const canOpenReports = canAccessReports(userRole);
+  const canOpenJournal = canAccessJournal(userRole);
   const canOpenMonitoring = canAccessMonitoring(userRole);
   const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
-  const canOpenEmployees = !isReaderRole(userRole);
+  const canOpenEmployees = true;
   const CustomersIcon = domainIcons.customers;
   const ProjectsIcon = domainIcons.projects;
   const AppointmentsIcon = domainIcons.appointmentsList;
@@ -233,7 +234,7 @@ export function Sidebar({
                 standaloneUrl="/standalone/reports"
               />
             ) : null}
-            {canOpenReports ? (
+            {canOpenJournal ? (
               <NavButton
                 icon={JournalIcon}
                 label="Journal"

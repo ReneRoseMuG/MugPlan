@@ -418,15 +418,17 @@ describe("FT26 integration: report vorlaufliste", () => {
     ]));
   });
 
-  it("rejects reader access with forbidden", async () => {
+  it("allows reader access", async () => {
     const reader = await createRoleAgent("READER");
 
-    await reader
+    const response = await reader
       .get("/api/reports/vorlaufliste?fromDate=2099-07-01&page=1&pageSize=100")
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe("FORBIDDEN");
-      });
+      .expect(200);
+
+    expect(response.body).toEqual(expect.objectContaining({
+      items: expect.any(Array),
+      total: expect.any(Number),
+    }));
   });
 
   it("pages server-side in chunks of 100 projects", async () => {

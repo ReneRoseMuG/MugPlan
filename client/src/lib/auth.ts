@@ -97,6 +97,11 @@ export function isReaderRole(value: string | null | undefined): boolean {
 
 export function canAccessReports(value: string | null | undefined): boolean {
   const role = resolveClientRole(value);
+  return role === "ADMIN" || role === "DISPATCHER" || role === "READER";
+}
+
+export function canAccessJournal(value: string | null | undefined): boolean {
+  const role = resolveClientRole(value);
   return role === "ADMIN" || role === "DISPATCHER";
 }
 

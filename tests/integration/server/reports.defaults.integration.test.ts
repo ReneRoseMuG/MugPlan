@@ -79,11 +79,11 @@ describe("integration: report config defaults endpoint", () => {
     });
   });
 
-  it("allows DISPONENT and rejects READER", async () => {
+  it("allows DISPONENT and READER", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
 
     await dispatcher.get("/api/reports/defaults").expect(200);
-    await reader.get("/api/reports/defaults").expect(403);
+    await reader.get("/api/reports/defaults").expect(200);
   });
 });

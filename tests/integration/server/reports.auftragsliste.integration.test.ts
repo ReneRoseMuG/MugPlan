@@ -322,12 +322,12 @@ describe("integration: report auftragsliste", () => {
     expect(remarksResponse.body.items.map((item: { projectId: number }) => item.projectId)).toEqual([remarksOnlyProject.project.id]);
   });
 
-  it("rejects readers", async () => {
+  it("allows readers", async () => {
     const reader = await createRoleAgent("READER");
 
     await reader
       .get("/api/reports/auftragsliste?fromDate=2099-11-01&toDate=2099-11-30")
-      .expect(403);
+      .expect(200);
   });
 
   it("returns project and appointment highlight tags so the client can resolve the dominant card style", async () => {

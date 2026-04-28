@@ -257,7 +257,7 @@ describe("FT26 integration: report vorlaufliste print preview", () => {
     expect(printResponse.body.componentCategories).toEqual(listResponse.body.componentCategories);
   });
 
-  it("allows dispatcher access and rejects readers", async () => {
+  it("allows dispatcher and reader access", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
 
@@ -272,9 +272,6 @@ describe("FT26 integration: report vorlaufliste print preview", () => {
 
     await reader
       .get("/api/reports/vorlaufliste/print-preview?fromDate=2100-02-01")
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe("FORBIDDEN");
-      });
+      .expect(200);
   });
 });

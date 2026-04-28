@@ -442,17 +442,14 @@ describe("FT26 integration: report produktionsplanung", () => {
     ]);
   });
 
-  it("allows dispatcher access and rejects reader access", async () => {
+  it("allows dispatcher and reader access", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
 
     await dispatcher.get("/api/reports/produktionsplanung?fromDate=2099-12-01").expect(200);
     await reader
       .get("/api/reports/produktionsplanung?fromDate=2099-12-01")
-      .expect(403)
-      .expect(({ body }) => {
-        expect(body.code).toBe("FORBIDDEN");
-      });
+      .expect(200);
   });
 
   it("fuegt Artikel mit identischem Shortcode bei useShortCodes=true zusammen und trennt sie bei false", async () => {

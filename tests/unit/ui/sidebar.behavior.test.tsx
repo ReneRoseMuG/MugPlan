@@ -69,7 +69,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("Meine Einstellungen");
   });
 
-  it("shows monitoring but hides reports, journal and tour postal planning for reader roles", () => {
+  it("shows reports, monitoring and employees but hides journal and tour postal planning for reader roles", () => {
     const html = renderToStaticMarkup(
       <Sidebar
         onViewChange={vi.fn()}
@@ -84,18 +84,19 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
 
     expect(html).toContain("Wochen");
     expect(html).toContain("Monats");
-    expect(html).not.toContain("Reports");
+    expect(html).toContain("Reports");
     expect(html).not.toContain("Journal");
     expect(html).toContain("Monitoring");
     expect(html).toContain("nav-monitoring");
     expect(html).toContain("nav-monitoring-open-tab");
+    expect(html).toContain("nav-reports");
+    expect(html).toContain("nav-reports-open-tab");
     expect(html).toContain("monitoring-trigger-pills");
     expect(html).toContain("TR-01: 2");
     expect(html).not.toContain("nav-tour-plz-plan");
     expect(html).not.toContain("nav-tour-plz-plan-open-tab");
-    expect(html).not.toContain("nav-mitarbeiter");
-    expect(html).not.toContain("nav-mitarbeiter-open-tab");
-    expect(html).not.toContain("nav-reports-open-tab");
+    expect(html).toContain("nav-mitarbeiter");
+    expect(html).toContain("nav-mitarbeiter-open-tab");
     expect(html).toContain("Meine Einstellungen");
   });
 });

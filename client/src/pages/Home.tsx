@@ -36,7 +36,7 @@ import { addMonths, subMonths } from "date-fns";
 import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
+import { canAccessJournal as canAccessJournalRole, canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
 
 export type ViewType =
@@ -242,6 +242,7 @@ export default function Home({ onLogout }: HomeProps) {
   const isAdmin = userRole === "ADMIN";
   const isReader = isReaderRole(userRole);
   const canAccessReports = canAccessReportsRole(userRole);
+  const canAccessJournal = canAccessJournalRole(userRole);
   const canAccessMonitoring = canAccessMonitoringRole(userRole);
   const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
   const backupEnabled = useSetting("backup_enabled");
@@ -591,7 +592,7 @@ export default function Home({ onLogout }: HomeProps) {
             <UsersPage />
           ) : view === "reports" && canAccessReports ? (
             <ReportsPage />
-          ) : view === "journal" && canAccessReports ? (
+          ) : view === "journal" && canAccessJournal ? (
             <JournalPage />
           ) : view === "monitoring" && canAccessMonitoring ? (
             <MonitoringPage

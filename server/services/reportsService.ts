@@ -13,7 +13,7 @@ export class ReportsError extends Error {
 }
 
 function assertReportReadRole(roleKey: CanonicalRoleKey) {
-  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT" && roleKey !== "LESER") {
     throw new ReportsError(403, "FORBIDDEN");
   }
 }
