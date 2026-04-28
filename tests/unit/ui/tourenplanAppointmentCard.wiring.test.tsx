@@ -7,12 +7,14 @@
  * - Der Shortcode-Modus ersetzt Artikelnamen nur bei vorhandenen Shortcodes.
  * - Reklamation erscheint nicht mehr als Headertext, bleibt aber als Kartenmarkierung sichtbar.
  * - Farbdruck markiert farbige Flächen explizit für den Browser-Print und Mitarbeiterbadges bleiben fett.
+ * - Notizkarten zeigen im Kopfbereich zusätzlich das Notiz-Icon.
  *
  * Fehlerfaelle:
  * - Der Kartenmodus rendert denselben Header fuer beide Druckvarianten.
  * - Sauna-Eintraege aus der Produktkategorie erscheinen in der Tourenplan-Artikelliste.
  * - Shortcodes werden ignoriert oder ersetzen leere Codes.
  * - Reklamation wird im Datumsheader statt nur im Karteninhalt dargestellt.
+ * - Notiztitel verlieren das erwartete Icon im Notizkopf.
  *
  * Ziel:
  * Die neue Tourenplan-Karte in Isolation regressionssicher absichern.
@@ -92,6 +94,7 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).toContain("Dirk W.");
     expect(html).toContain("Bitte Einfahrt freihalten.");
     expect(html).toContain("Kran erforderlich.");
+    expect(html).toContain("lucide-sticky-note");
     expect(html).not.toContain("<strong>");
     expect(html).not.toContain("&nbsp;");
     expect(html).not.toContain("tourenplan-card-header-separator");

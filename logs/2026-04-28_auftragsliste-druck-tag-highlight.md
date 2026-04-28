@@ -20,6 +20,7 @@ Die Auftragsliste sollte im tatsächlichen Druck dieselbe Kartenstruktur verwend
 - Die Print-Farben werden mit `printColorAdjust` und `WebkitPrintColorAdjust` explizit auf exakte Ausgabe vorbereitet, damit farbige Hervorhebungen im Browserdruck nicht zu schwach ausfallen.
 - Die Druckhöhenabschätzung wurde angehoben, weil die Druckkarte jetzt Footer und dieselbe dichtere Struktur wie die geöffnete Karte enthält.
 - Nach dem ersten Stilstand wurde die Hervorhebung noch einmal verengt: Farbe liegt jetzt nur auf Kartenrahmen und Header. Body, Footer und Beschreibungsfläche bleiben bewusst neutral hell, damit keine dunklen oder uneinheitlichen Inhaltsflächen entstehen.
+- Als kleiner Folgefix im Tourenplan-Report wurde der Kopfbereich der unterhalb der Terminkarten gerenderten Notizkarten um das Notiz-Icon ergänzt. Die bestehende Kartenstruktur blieb dabei unverändert.
 
 ## Betroffene Dateien
 
@@ -44,6 +45,8 @@ Erfolgreich ausgeführt:
 - `npm run check`
 - Nach der Stilkorrektur zusätzlich erneut:
   - `npm run test:unit -- tests/unit/lib/auftragslisteCardStyle.test.ts tests/unit/ui/auftragslisteProjectCard.wiring.test.tsx tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx`
+- Für den Tourenplan-Folgefix zusätzlich:
+  - `npm run test:unit -- tests/unit/ui/tourenplanAppointmentCard.wiring.test.tsx`
 
 ## Bekannte Einschränkungen
 
