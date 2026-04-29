@@ -16,8 +16,14 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+const useTagContainerWidthMock = vi.fn(() => 0 as 0 | 1 | 2 | 3);
+
+vi.mock("@/hooks/useTagContainerWidth", () => ({
+  useTagContainerWidth: (...args: unknown[]) => useTagContainerWidthMock(...args),
+}));
+
 vi.mock("@/components/ui/tag-badge", () => ({
-  TagBadge: ({ tag }: { tag: { name: string } }) => <span>{tag.name}</span>,
+  TagBadge: ({ tag, level }: { tag: { name: string }; level?: 0 | 1 | 2 | 3 }) => <span>{`${tag.name}:${level ?? "none"}`}</span>,
 }));
 
 import { EntityTagFooterRow } from "../../../client/src/components/ui/entity-tag-footer-row";
@@ -31,9 +37,14 @@ describe("EntityTagFooterRow render", () => {
     expect(markup).toContain("empty-tags-row");
     expect(markup).toContain("Keine Tags");
     expect(markup).toContain("text-slate-400");
+    expect(markup).toContain("text-[9px]");
+    expect(markup).toContain("flex-nowrap");
+    expect(markup).toContain("overflow-hidden");
   });
 
   it("rendert vorhandene Tags weiter als sichtbare Footer-Badges", () => {
+    useTagContainerWidthMock.mockReturnValue(2);
+
     const markup = renderToStaticMarkup(
       <EntityTagFooterRow
         tags={[
@@ -44,7 +55,7 @@ describe("EntityTagFooterRow render", () => {
     );
 
     expect(markup).toContain("filled-tags-row");
-    expect(markup).toContain("Montage");
+    expect(markup).toContain("Montage:2");
     expect(markup).not.toContain("Keine Tags");
   });
 });

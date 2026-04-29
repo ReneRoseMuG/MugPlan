@@ -161,7 +161,7 @@ test("creates a multi-day appointment from a tour lane and keeps start and end d
   await expect(spanningTile.getByTestId("week-project-header")).toContainText(fixture.project.name);
   await expect(spanningTile).toContainText(`K: ${fixture.customer.customerNumber}`);
   await expect(spanningTile).toContainText(`PLZ: ${fixture.customer.postalCode}`);
-  await expect(spanningTile.getByTestId("week-appointment-employees-hover-trigger")).toContainText("0");
+  await expect(spanningTile.getByText("Keine MA")).toBeVisible();
 
   await openWeekAppointment(page, appointmentId, "spanning");
   await assertAppointmentFormLoaded(page, fixture, {

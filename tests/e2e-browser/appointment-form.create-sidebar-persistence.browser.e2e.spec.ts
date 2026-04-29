@@ -303,7 +303,7 @@ test("creates a relation-complete single-day appointment from a tour lane and re
   await expect(appointmentPanel).toContainText(fixture.customer.fullName ?? "");
   await expect(appointmentPanel).toContainText(`K: ${fixture.customer.customerNumber}`);
   await expect(appointmentPanel).toContainText(`PLZ: ${fixture.customer.postalCode}`);
-  await expect(appointmentPanel.getByTestId("week-appointment-employees-hover-trigger")).toContainText("0");
+  await expect(appointmentPanel.getByText("Keine MA")).toBeVisible();
 
   await appointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
@@ -460,7 +460,7 @@ test("shows an extracted document only as project attachment after successful pr
     });
   });
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
-  expect(await dialogPromise).toBe("Sauna-Modell ge?ndert, soll ich den Namen des Projekts anpassen?");
+  expect(await dialogPromise).toBe("Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?");
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"

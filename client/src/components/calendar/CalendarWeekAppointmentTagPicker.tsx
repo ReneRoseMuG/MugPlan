@@ -258,7 +258,7 @@ export function CalendarWeekAppointmentTagPicker({
 
   return (
     <>
-      <div className={`flex h-7 w-full items-center gap-2 overflow-hidden ${className ?? ""}`.trim()} data-testid={testId}>
+      <div className={`flex h-6 w-full items-center gap-2 overflow-hidden ${className ?? ""}`.trim()} data-testid={testId}>
         <div className="min-w-0 flex-1">
           <EntityTagFooterRow tags={tags} testId={`${testId}-badges`} />
         </div>
@@ -266,7 +266,7 @@ export function CalendarWeekAppointmentTagPicker({
           <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
             <PopoverTrigger asChild>
               <PlusActionButton
-                className="mt-0.5 shrink-0"
+                className="shrink-0"
                 onClick={stopPropagation}
                 onMouseDown={stopPropagation}
                 onPointerDown={stopPropagation}

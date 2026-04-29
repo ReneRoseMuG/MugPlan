@@ -21,6 +21,8 @@ export type TourWeekEmployeeAssignmentRow = {
   isoYear: number;
   isoWeek: number;
   employeeId: number;
+  firstName: string;
+  lastName: string;
   fullName: string;
 };
 
@@ -49,6 +51,8 @@ export async function listAssignmentsByTour(tourId: number): Promise<TourWeekEmp
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -71,6 +75,8 @@ export async function listAssignmentsByTour(tourId: number): Promise<TourWeekEmp
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   }));
 }
@@ -88,6 +94,8 @@ export async function listAssignmentsByTourIds(tourIds: number[]): Promise<TourW
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -111,6 +119,8 @@ export async function listAssignmentsByTourIds(tourIds: number[]): Promise<TourW
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   }));
 }
@@ -129,6 +139,8 @@ export async function listAssignmentsByTourAndWeek(
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -149,6 +161,8 @@ export async function listAssignmentsByTourAndWeek(
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   }));
 }
@@ -183,6 +197,8 @@ export async function getAssignmentById(
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -200,6 +216,8 @@ export async function getAssignmentById(
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   };
 }
@@ -218,6 +236,8 @@ export async function getAssignmentForEmployeeWeek(
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -239,6 +259,8 @@ export async function getAssignmentForEmployeeWeek(
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   };
 }
@@ -266,6 +288,8 @@ export async function listAssignmentsByEmployee(employeeId: number): Promise<Tou
       isoYear: tourWeekEmployees.isoYear,
       isoWeek: tourWeekEmployees.isoWeek,
       employeeId: tourWeekEmployees.employeeId,
+      firstName: employees.firstName,
+      lastName: employees.lastName,
       fullName: employees.fullName,
     })
     .from(tourWeekEmployees)
@@ -287,6 +311,8 @@ export async function listAssignmentsByEmployee(employeeId: number): Promise<Tou
     isoYear: Number(row.isoYear),
     isoWeek: Number(row.isoWeek),
     employeeId: Number(row.employeeId),
+    firstName: row.firstName,
+    lastName: row.lastName,
     fullName: row.fullName,
   }));
 }

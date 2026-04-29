@@ -2,6 +2,7 @@ import { Tag as TagIcon } from "lucide-react";
 import { ColoredInfoBadge } from "@/components/ui/colored-info-badge";
 import { createTagBadgePreview } from "@/components/ui/badge-previews/tag-badge-preview";
 import { trimTagLabel } from "@/lib/tag-utils";
+import type { TagWidthLevel } from "@/lib/tag-utils";
 import type { Tag } from "@shared/schema";
 
 interface TagBadgeProps {
@@ -13,6 +14,7 @@ interface TagBadgeProps {
   fullWidth?: boolean;
   testId?: string;
   displayMode?: "default" | "pickerVerbose";
+  level?: TagWidthLevel;
 }
 
 export function TagBadge({
@@ -24,10 +26,11 @@ export function TagBadge({
   fullWidth = false,
   testId,
   displayMode = "default",
+  level = 0,
 }: TagBadgeProps) {
   const iconClassName = size === "sm" ? "h-3 w-3" : "h-4 w-4";
   const visualStyle = size === "sm" ? "footer" : "default";
-  const trimmedLabel = trimTagLabel(tag.name);
+  const trimmedLabel = trimTagLabel(tag.name, level);
   const fullName = tag.name.trim();
   const label = displayMode === "pickerVerbose"
     ? (

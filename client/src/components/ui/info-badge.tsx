@@ -71,7 +71,7 @@ export function InfoBadge({
   visualStyle = "default",
 }: InfoBadgeProps) {
   const sizeClasses = visualStyle === "footer"
-    ? "h-7 px-2 text-[10px] gap-1 font-semibold"
+    ? "h-6 px-1 text-[9px] gap-0.5 font-semibold"
     : size === "sm"
       ? "px-2 py-0.5 text-xs gap-1"
       : "px-3 py-2 gap-2";
@@ -102,7 +102,7 @@ export function InfoBadge({
   
   const badgeBody = (
     <div 
-      className={`info-badge group flex items-center ${isFooterStyle ? "justify-start" : "justify-between"} border ${isFooterStyle ? "rounded-md" : "rounded"} ${usesSolidSurface ? "" : "border-border bg-muted/50"} ${sizeClasses} ${widthClass}`}
+      className={`info-badge group flex items-center ${isFooterStyle ? "justify-start shrink-0 whitespace-nowrap" : "justify-between"} border ${isFooterStyle ? "rounded-md" : "rounded"} ${usesSolidSurface ? "" : "border-border bg-muted/50"} ${sizeClasses} ${widthClass}`}
       style={
         usesSolidSurface
           ? {
@@ -117,9 +117,9 @@ export function InfoBadge({
       data-testid={testId}
       onDoubleClick={onDoubleClick}
     >
-      <div className={`flex items-center min-w-0 ${isFooterStyle ? "gap-1" : size === "sm" ? "gap-1 flex-1" : "gap-2 flex-1"}`}>
+      <div className={`flex items-center min-w-0 ${isFooterStyle ? "gap-1 shrink-0" : size === "sm" ? "gap-1 flex-1" : "gap-2 flex-1"}`}>
         <span className={usesSolidSurface ? "text-current" : "text-muted-foreground"}>{icon}</span>
-        <div className={`min-w-0 ${isFooterStyle ? "shrink-0" : "flex-1"} ${usesSolidSurface ? "font-semibold text-current" : `font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}`}>{label}</div>
+        <div className={`min-w-0 ${isFooterStyle ? "shrink-0 whitespace-nowrap" : "flex-1"} ${usesSolidSurface ? "font-semibold text-current" : `font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}`}>{label}</div>
       </div>
       <div className={`flex items-center justify-end shrink-0 ${customAction ? "overflow-visible" : "overflow-hidden"} ${actionColumnClass}`}>
         {customAction ?? null}

@@ -19,9 +19,19 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
-  CalendarWeekAppointmentEmployeesHover: ({ employees }: { employees: Array<{ id: number; fullName: string }> }) => (
-    <div data-testid="employees-hover">{employees.map((employee) => employee.fullName).join(", ") || "leer"}</div>
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+  }) => (
+    <div data-testid={testId ?? "employee-badge"}>
+      {[fullName ?? "leer", renderMode ?? ""].join("|")}
+    </div>
   ),
 }));
 
@@ -99,7 +109,8 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("Tür");
     expect(html).toContain("DOOR-B");
     expect(html).toContain("Beschreibung Alpha");
-    expect(html).toContain("employees-hover");
+    expect(html).toContain("reports-auftragsliste-project-card-1-employee-8");
+    expect(html).toContain("Max Muster|compact");
     expect(html).toContain("notes-hover");
     expect(html).toContain("attachments-hover");
     expect(html).toContain("tag-row");

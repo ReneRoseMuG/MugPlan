@@ -163,9 +163,19 @@ vi.mock("@/components/ui/entity-tag-footer-row", () => ({
   EntityTagFooterRow: () => <div>tag-row</div>,
 }));
 
-vi.mock("@/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
-  CalendarWeekAppointmentEmployeesHover: ({ employees }: { employees: Array<{ id: number; fullName: string }> }) => (
-    <div data-testid="employees-hover">{employees.map((employee) => employee.fullName).join(", ") || "leer"}</div>
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+  }) => (
+    <div data-testid={testId ?? "employee-badge"}>
+      {[fullName ?? "leer", renderMode ?? ""].join("|")}
+    </div>
   ),
 }));
 

@@ -2,6 +2,8 @@ import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 
 type AppointmentEmployee = {
   id: number | string;
+  firstName?: string | null;
+  lastName?: string | null;
   fullName: string;
 };
 
@@ -24,7 +26,10 @@ export function CalendarWeekAppointmentPanelEmployee({
           <EmployeeInfoBadge
             key={employee.id}
             id={employee.id}
+            firstName={employee.firstName}
+            lastName={employee.lastName}
             fullName={employee.fullName}
+            renderMode="standard"
             size="sm"
             fullWidth
             showPreview={false}

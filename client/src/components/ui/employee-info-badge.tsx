@@ -15,6 +15,7 @@ interface EmployeeInfoBadgeProps {
   onAdd?: () => void;
   onRemove?: () => void;
   showPreview?: boolean;
+  renderMode?: "compact" | "standard" | "detail";
 }
 
 const employeeBackgroundColors = [
@@ -47,6 +48,27 @@ const getSessionColor = (key: string) => {
   return color;
 };
 
+function parseFallbackFullName(fullName: string | null | undefined): { firstName: string; lastName: string } {
+  const trimmed = fullName?.trim() ?? "";
+  if (!trimmed) {
+    return { firstName: "", lastName: "" };
+  }
+
+  const commaIndex = trimmed.indexOf(",");
+  if (commaIndex > 0) {
+    return {
+      firstName: trimmed.slice(commaIndex + 1).trim(),
+      lastName: trimmed.slice(0, commaIndex).trim(),
+    };
+  }
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  return {
+    firstName: parts[0] ?? "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
 export function EmployeeInfoBadge({
   id,
   firstName,
@@ -61,13 +83,17 @@ export function EmployeeInfoBadge({
   onAdd,
   onRemove,
   showPreview = true,
+  renderMode = "standard",
 }: EmployeeInfoBadgeProps) {
-  const resolvedFullName =
+  const parsedFallbackName = parseFallbackFullName(fullName);
+  const resolvedFirstName = firstName?.trim() || parsedFallbackName.firstName;
+  const resolvedLastName = lastName?.trim() || parsedFallbackName.lastName;
+  const resolvedDetailName =
+    [resolvedFirstName, resolvedLastName].filter(Boolean).join(" ") ||
     fullName?.trim() ||
-    [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ") ||
     "Unbekannter Mitarbeiter";
 
-  const sessionKey = resolvedFullName || "employee-unknown";
+  const sessionKey = resolvedDetailName || "employee-unknown";
   const backgroundColor = id != null
     ? getDeterministicColor(String(id))
     : getSessionColor(sessionKey);
@@ -79,9 +105,9 @@ export function EmployeeInfoBadge({
 
   return (
     <PersonInfoBadge
-      firstName={firstName}
-      lastName={lastName}
-      title={resolvedFullName}
+      firstName={resolvedFirstName}
+      lastName={resolvedLastName}
+      title={resolvedDetailName}
       lines={lines}
       testId={testId}
       size={size}
@@ -91,8 +117,9 @@ export function EmployeeInfoBadge({
       onRemove={onRemove}
       avatarClassName="text-white border-transparent"
       avatarStyle={{ backgroundColor }}
+      renderMode={renderMode}
       preview={showPreview ? createEmployeeInfoBadgePreview({
-        fullName: resolvedFullName,
+        fullName: resolvedDetailName,
         teamName: teamName ?? null,
         tourName: tourName ?? null,
       }) : undefined}

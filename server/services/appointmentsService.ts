@@ -302,11 +302,13 @@ type SidebarAppointmentRow = Awaited<
 
 const buildEmployeesByAppointment = async (appointmentIds: number[]) => {
   const employeeRows = await appointmentsRepository.getAppointmentEmployeesByAppointmentIds(appointmentIds);
-  const employeesByAppointment = new Map<number, { id: number; fullName: string }[]>();
+  const employeesByAppointment = new Map<number, { id: number; firstName: string; lastName: string; fullName: string }[]>();
   for (const row of employeeRows) {
     const list = employeesByAppointment.get(row.appointmentId) ?? [];
     list.push({
       id: row.employee.id,
+      firstName: row.employee.firstName,
+      lastName: row.employee.lastName,
       fullName: row.employee.fullName,
     });
     employeesByAppointment.set(row.appointmentId, list);
@@ -1486,17 +1488,22 @@ export async function listCalendarWeekLaneEmployeePreviews({
     date: string;
     weekStartDate: string;
     tourId: number;
-    weekEmployees: Map<number, string>;
-    additionalDayEmployees: Map<number, string>;
+    weekEmployees: Map<number, { firstName: string; lastName: string; fullName: string }>;
+    additionalDayEmployees: Map<number, { firstName: string; lastName: string; fullName: string }>;
   };
 
   const previewByKey = new Map<string, PreviewAccumulator>();
-  const assignmentsByTourWeek = new Map<string, Array<{ id: number; fullName: string }>>();
+  const assignmentsByTourWeek = new Map<string, Array<{ id: number; firstName: string; lastName: string; fullName: string }>>();
 
   for (const assignment of assignmentRows) {
     const key = `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`;
     const existing = assignmentsByTourWeek.get(key) ?? [];
-    existing.push({ id: assignment.employeeId, fullName: assignment.fullName });
+    existing.push({
+      id: assignment.employeeId,
+      firstName: assignment.firstName,
+      lastName: assignment.lastName,
+      fullName: assignment.fullName,
+    });
     assignmentsByTourWeek.set(key, existing);
   }
 
@@ -1514,8 +1521,8 @@ export async function listCalendarWeekLaneEmployeePreviews({
       date,
       weekStartDate,
       tourId,
-      weekEmployees: new Map<number, string>(),
-      additionalDayEmployees: new Map<number, string>(),
+      weekEmployees: new Map<number, { firstName: string; lastName: string; fullName: string }>(),
+      additionalDayEmployees: new Map<number, { firstName: string; lastName: string; fullName: string }>(),
     };
     previewByKey.set(key, created);
     return created;
@@ -1526,7 +1533,11 @@ export async function listCalendarWeekLaneEmployeePreviews({
     const dateValue = parseDateOnly(date);
     const assignmentKey = `${tourId}-${getISOWeekYear(dateValue)}-${getISOWeek(dateValue)}`;
     for (const employee of assignmentsByTourWeek.get(assignmentKey) ?? []) {
-      preview.weekEmployees.set(employee.id, employee.fullName);
+      preview.weekEmployees.set(employee.id, {
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        fullName: employee.fullName,
+      });
     }
     return preview;
   };
@@ -1550,7 +1561,11 @@ export async function listCalendarWeekLaneEmployeePreviews({
       if (date) {
         const preview = getOrCreatePreview(tourId, date);
         for (const employee of employees) {
-          preview.weekEmployees.set(employee.id, employee.fullName);
+          preview.weekEmployees.set(employee.id, {
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            fullName: employee.fullName,
+          });
         }
       }
       cursor = addDays(cursor, 1);
@@ -1579,7 +1594,11 @@ export async function listCalendarWeekLaneEmployeePreviews({
         const preview = seedWeekEmployeesForDate(resolvedTourId, date);
         for (const employee of appointmentEmployees) {
           if (preview.weekEmployees.has(employee.id)) continue;
-          preview.additionalDayEmployees.set(employee.id, employee.fullName);
+          preview.additionalDayEmployees.set(employee.id, {
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            fullName: employee.fullName,
+          });
         }
       }
       cursor = addDays(cursor, 1);
@@ -1592,10 +1611,20 @@ export async function listCalendarWeekLaneEmployeePreviews({
       weekStartDate: preview.weekStartDate,
       tourId: preview.tourId,
       weekEmployees: sortEmployeesByName(
-        Array.from(preview.weekEmployees.entries()).map(([id, fullName]) => ({ id, fullName })),
+        Array.from(preview.weekEmployees.entries()).map(([id, employee]) => ({
+          id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          fullName: employee.fullName,
+        })),
       ),
       additionalDayEmployees: sortEmployeesByName(
-        Array.from(preview.additionalDayEmployees.entries()).map(([id, fullName]) => ({ id, fullName })),
+        Array.from(preview.additionalDayEmployees.entries()).map(([id, employee]) => ({
+          id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          fullName: employee.fullName,
+        })),
       ),
     }))
     .sort((left, right) => {

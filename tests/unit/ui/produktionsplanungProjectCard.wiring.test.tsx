@@ -18,9 +18,19 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
-  CalendarWeekAppointmentEmployeesHover: ({ employees }: { employees: Array<{ id: number; fullName: string }> }) => (
-    <div data-testid="employees-hover">{employees.map((employee) => employee.fullName).join(", ") || "leer"}</div>
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+  }) => (
+    <div data-testid={testId ?? "employee-badge"}>
+      {[fullName ?? "leer", renderMode ?? ""].join("|")}
+    </div>
   ),
 }));
 
@@ -102,7 +112,8 @@ describe("FT26 UI: ProduktionsplanungProjectCard wiring", () => {
     expect(html).toContain("Beschreibung Alpha");
     expect(html).toContain("reports-produktionsplanung-project-card-1-footer-tags-column");
     expect(html).toContain("reports-produktionsplanung-project-card-1-footer-badges-column");
-    expect(html).toContain("employees-hover");
+    expect(html).toContain("reports-produktionsplanung-project-card-1-employee-8");
+    expect(html).toContain("Max Muster|compact");
     expect(html).toContain("notes-hover");
     expect(html).toContain("attachments-hover");
     expect(html).toContain("tag-row");

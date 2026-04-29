@@ -232,6 +232,8 @@ const tourEmployeeCascadeConflictResponseSchema = z.object({
 const tourWeekEmployeeMemberSchema = z.object({
   assignmentId: z.number().int().positive(),
   employeeId: z.number().int().positive(),
+  firstName: z.string(),
+  lastName: z.string(),
   fullName: z.string(),
 });
 
@@ -464,6 +466,8 @@ const entityAppointmentItemSchema = z.object({
   employees: z.array(
     z.object({
       id: z.number(),
+      firstName: z.string(),
+      lastName: z.string(),
       fullName: z.string(),
     }),
   ),
@@ -590,6 +594,8 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
 
 const calendarWeekLaneEmployeePreviewMemberSchema = z.object({
   id: z.number().int().positive(),
+  firstName: z.string(),
+  lastName: z.string(),
   fullName: z.string(),
 });
 

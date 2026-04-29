@@ -9,6 +9,8 @@ import { TourWeekNotesHoverPreview } from "@/components/TourWeekNotesHoverPrevie
 export type TourWeekCardMember = {
   assignmentId: number;
   employeeId: number;
+  firstName?: string | null;
+  lastName?: string | null;
   fullName: string;
 };
 
@@ -130,6 +132,8 @@ export function TourWeekCard({
             <EmployeeInfoBadge
               key={employee.assignmentId}
               id={employee.employeeId}
+              firstName={employee.firstName}
+              lastName={employee.lastName}
               fullName={employee.fullName}
               tourName={scope === "employee" ? week.tourName : undefined}
               action={isTourScope && !week.isLocked && !week.isBlocked && onRemoveEmployee ? "remove" : "none"}
@@ -137,6 +141,7 @@ export function TourWeekCard({
               size="sm"
               fullWidth
               showPreview={scope !== "employee"}
+              renderMode="standard"
               testId={`${memberTestIdPrefix}-${employee.assignmentId}`}
             />
           ))}

@@ -29,8 +29,8 @@ import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { mergeUniqueTags } from "@/lib/tag-utils";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
-import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointmentAttachmentsHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelProject } from "./CalendarWeekAppointmentPanelProject";
@@ -431,7 +431,7 @@ export function CalendarWeekSpanningTile({
     appointment.customerTags,
     appointment.projectTags,
   );
-  const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor, isCompactPanelMode ? "compact" : "standard");
   const footerClassName = isCompactPanelMode
     ? "relative shrink-0 border-t px-1 py-1"
     : "relative mt-auto shrink-0 border-t px-1 py-1";
@@ -440,6 +440,40 @@ export function CalendarWeekSpanningTile({
         backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
       }
     : undefined;
+  const compactEmployeeBadges = appointment.employees.length > 0 ? (
+    appointment.employees.slice(0, 6).map((employee) => (
+      <EmployeeInfoBadge
+        key={employee.id}
+        id={employee.id}
+        firstName={employee.firstName}
+        lastName={employee.lastName}
+        fullName={employee.fullName}
+        renderMode="compact"
+        size="sm"
+        showPreview
+        testId={`week-spanning-tile-employee-compact-${appointment.id}-${employee.id}`}
+      />
+    ))
+  ) : (
+    <span className="text-[9px] italic text-slate-400">Keine MA</span>
+  );
+  const standardEmployeeBadges = appointment.employees.length > 0 ? (
+    appointment.employees.map((employee) => (
+      <EmployeeInfoBadge
+        key={employee.id}
+        id={employee.id}
+        firstName={employee.firstName}
+        lastName={employee.lastName}
+        fullName={employee.fullName}
+        renderMode="standard"
+        size="sm"
+        showPreview
+        testId={`week-spanning-tile-employee-std-${appointment.id}-${employee.id}`}
+      />
+    ))
+  ) : (
+    <span className="text-[9px] italic text-slate-400">Keine MA</span>
+  );
 
   const mainContentPanels = (
     <div className={mainContentPanelsClassName} style={{ gridTemplateRows: contentGridTemplateRows }}>
@@ -471,32 +505,70 @@ export function CalendarWeekSpanningTile({
   );
 
   const footerContentPanels = (
-    <div className="grid h-full grid-rows-[1.75rem_1.75rem] gap-1">
-      <div className="flex h-7 w-full flex-nowrap items-center gap-1 overflow-hidden">
-        <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
-        <CalendarWeekAppointmentNotesHover
-          appointmentId={appointment.id}
-          customerId={appointment.customer.id}
-          projectId={appointment.projectId}
-          customerNotesCount={appointment.customerNotesCount ?? 0}
-          projectNotesCount={appointment.projectNotesCount ?? 0}
-          appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
-        />
-        <CalendarWeekAppointmentAttachmentsHover
-          appointmentId={appointment.id}
-          totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
-        />
-      </div>
-      <div className="h-7 overflow-hidden">
-        <CalendarWeekAppointmentTagPicker
-          appointmentId={appointment.id}
-          tags={mergedTags}
-          appointmentTags={appointment.appointmentTags}
-          projectTags={appointment.projectTags}
-          canEdit={showTagActions && canEditTags}
-          testId={`week-spanning-tile-tags-${appointment.id}`}
-        />
-      </div>
+    <div className="flex h-full flex-col gap-1">
+      {isCompactPanelMode ? (
+        <>
+          <div className="flex min-h-6 w-full items-center gap-1 overflow-hidden">
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
+              {compactEmployeeBadges}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <CalendarWeekAppointmentNotesHover
+                appointmentId={appointment.id}
+                customerId={appointment.customer.id}
+                projectId={appointment.projectId}
+                customerNotesCount={appointment.customerNotesCount ?? 0}
+                projectNotesCount={appointment.projectNotesCount ?? 0}
+                appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+              />
+              <CalendarWeekAppointmentAttachmentsHover
+                appointmentId={appointment.id}
+                totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+              />
+            </div>
+          </div>
+          <div className="flex min-h-6 w-full items-center">
+            <CalendarWeekAppointmentTagPicker
+              appointmentId={appointment.id}
+              tags={mergedTags}
+              appointmentTags={appointment.appointmentTags}
+              projectTags={appointment.projectTags}
+              canEdit={showTagActions && canEditTags}
+              testId={`week-spanning-tile-tags-${appointment.id}`}
+            />
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex min-h-7 w-full items-center gap-0.5 overflow-x-auto overflow-y-visible">
+            {standardEmployeeBadges}
+          </div>
+          <div className="flex min-h-6 w-full items-center gap-1">
+            <CalendarWeekAppointmentNotesHover
+              appointmentId={appointment.id}
+              customerId={appointment.customer.id}
+              projectId={appointment.projectId}
+              customerNotesCount={appointment.customerNotesCount ?? 0}
+              projectNotesCount={appointment.projectNotesCount ?? 0}
+              appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+            />
+            <CalendarWeekAppointmentAttachmentsHover
+              appointmentId={appointment.id}
+              totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+            />
+          </div>
+          <div className="flex min-h-6 w-full items-center">
+            <CalendarWeekAppointmentTagPicker
+              appointmentId={appointment.id}
+              tags={mergedTags}
+              appointmentTags={appointment.appointmentTags}
+              projectTags={appointment.projectTags}
+              canEdit={showTagActions && canEditTags}
+              testId={`week-spanning-tile-tags-${appointment.id}`}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 

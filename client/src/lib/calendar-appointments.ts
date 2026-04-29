@@ -49,7 +49,7 @@ export type CalendarAppointment = {
   customerTags: Tag[];
   projectTags: Tag[];
   displayMode: "standard" | "compact" | "detail";
-  employees: { id: number; fullName: string }[];
+  employees: { id: number; firstName: string; lastName: string; fullName: string }[];
   isLocked: boolean;
   isCancelled: boolean;
 };
@@ -58,8 +58,8 @@ export type CalendarWeekLaneEmployeePreview = {
   date: string;
   weekStartDate: string;
   tourId: number;
-  weekEmployees: { id: number; fullName: string }[];
-  additionalDayEmployees: { id: number; fullName: string }[];
+  weekEmployees: { id: number; firstName: string; lastName: string; fullName: string }[];
+  additionalDayEmployees: { id: number; firstName: string; lastName: string; fullName: string }[];
 };
 
 export type CalendarBlockedTourWeek = {

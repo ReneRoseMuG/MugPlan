@@ -3,7 +3,8 @@ import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
 
 export const WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX = 20;
 export const WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX = 48;
-export const WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX = 68;
+export const WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX = 92;
+export const WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX = 60;
 
 function toTransparentTourColor(color: string | null | undefined, alpha: number): string {
   if (typeof color !== "string") {
@@ -22,12 +23,15 @@ function toTransparentTourColor(color: string | null | undefined, alpha: number)
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
-export function getWeekAppointmentFooterStyle(tourColor: string | null | undefined): CSSProperties {
+export function getWeekAppointmentFooterStyle(
+  tourColor: string | null | undefined,
+  mode: "compact" | "standard" = "standard",
+): CSSProperties {
   const resolvedTourColor = tourColor?.trim() ? tourColor : CALENDAR_NEUTRAL_COLOR;
 
   return {
     backgroundColor: toTransparentTourColor(resolvedTourColor, 0.1),
     borderTopColor: toTransparentTourColor(resolvedTourColor, 0.22),
-    minHeight: `${WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX}px`,
+    minHeight: `${mode === "compact" ? WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX : WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX}px`,
   };
 }

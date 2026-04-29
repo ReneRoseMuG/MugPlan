@@ -124,8 +124,8 @@ export async function listEmployeeWeekPlans(
   isBlocked: boolean;
   appointmentsCount: number;
   notesCount: number;
-  members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
-  employees: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
+  members: Array<{ assignmentId: number; employeeId: number; firstName: string; lastName: string; fullName: string }>;
+  employees: Array<{ assignmentId: number; employeeId: number; firstName: string; lastName: string; fullName: string }>;
 }> | null> {
   const employee = await employeesRepository.getEmployee(id);
   if (!employee) return null;
@@ -159,7 +159,7 @@ export async function listEmployeeWeekPlans(
     weekEndDate: string;
     isLocked: boolean;
     isBlocked: boolean;
-    members: Array<{ assignmentId: number; employeeId: number; fullName: string }>;
+    members: Array<{ assignmentId: number; employeeId: number; firstName: string; lastName: string; fullName: string }>;
   }>();
 
   for (const assignment of allAssignments) {
@@ -193,6 +193,8 @@ export async function listEmployeeWeekPlans(
     existing.members.push({
       assignmentId: assignment.assignmentId,
       employeeId: assignment.employeeId,
+      firstName: assignment.firstName,
+      lastName: assignment.lastName,
       fullName: assignment.fullName,
     });
     grouped.set(numericKey, existing);

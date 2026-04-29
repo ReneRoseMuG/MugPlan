@@ -18,6 +18,7 @@ interface PersonInfoBadgeProps {
   avatarTextClassName?: string;
   avatarStyle?: CSSProperties;
   preview?: InfoBadgePreview;
+  renderMode?: "compact" | "standard" | "detail";
 }
 
 const buildNameParts = (value: string | null | undefined) =>
@@ -57,17 +58,43 @@ export function PersonInfoBadge({
   avatarTextClassName,
   avatarStyle,
   preview,
+  renderMode = "detail",
 }: PersonInfoBadgeProps) {
   const resolvedFirstName = firstName?.trim() ?? "";
   const resolvedLastName = lastName?.trim() ?? "";
-  const resolvedTitle =
+  const fallbackTitle =
     title?.trim() ||
     [resolvedFirstName, resolvedLastName].filter(Boolean).join(" ") ||
     "Unbekannt";
+  const resolvedTitle = renderMode === "standard"
+    ? (
+        resolvedFirstName && resolvedLastName
+          ? `${resolvedFirstName} ${resolvedLastName[0]?.toUpperCase()}.`
+          : resolvedFirstName || resolvedLastName || fallbackTitle
+      )
+    : renderMode === "compact"
+      ? fallbackTitle
+      : [resolvedFirstName, resolvedLastName].filter(Boolean).join(" ") || fallbackTitle;
   const resolvedLines = (lines ?? []).filter((line) => line && line.trim().length > 0);
-  const initials = getInitials(resolvedFirstName, resolvedLastName, resolvedTitle);
-  const avatarSizeClass = size === "sm" ? "h-6 w-6 text-[10px]" : "h-8 w-8 text-sm";
+  const initials = getInitials(resolvedFirstName, resolvedLastName, fallbackTitle);
+  const avatarSizeClass = renderMode === "compact" && size === "sm"
+    ? "h-5 w-5 text-[9px]"
+    : size === "sm"
+      ? "h-6 w-6 text-[10px]"
+      : "h-8 w-8 text-sm";
   const titleTextClass = size === "sm" ? "text-xs" : "text-sm";
+  const label = renderMode === "compact"
+    ? null
+    : (
+      <div className="flex flex-col leading-tight">
+        <span className={titleTextClass}>{resolvedTitle}</span>
+        {resolvedLines.map((line, index) => (
+          <span key={`${line}-${index}`} className="text-xs text-muted-foreground">
+            {line}
+          </span>
+        ))}
+      </div>
+    );
 
   return (
     <InfoBadge
@@ -80,16 +107,7 @@ export function PersonInfoBadge({
           <span className={`font-semibold ${avatarTextClassName ?? ""}`}>{initials}</span>
         </div>
       )}
-      label={(
-        <div className="flex flex-col leading-tight">
-          <span className={titleTextClass}>{resolvedTitle}</span>
-          {resolvedLines.map((line, index) => (
-            <span key={`${line}-${index}`} className="text-xs text-muted-foreground">
-              {line}
-            </span>
-          ))}
-        </div>
-      )}
+      label={label}
       borderColor={borderColor}
       action={action}
       onAdd={onAdd}

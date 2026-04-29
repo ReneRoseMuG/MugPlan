@@ -2,8 +2,8 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import type { Tag } from "@shared/schema";
 import { CalendarWeekAppointmentAttachmentsHover } from "@/components/calendar/CalendarWeekAppointmentAttachmentsHover";
-import { CalendarWeekAppointmentEmployeesHover } from "@/components/calendar/CalendarWeekAppointmentEmployeesHover";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,7 @@ type ReportProjectCardRow = {
   tourName?: string | null;
   actualDate: string | null;
   durationDays: number;
-  employees: Array<{ id: number; fullName: string }>;
+  employees: Array<{ id: number; firstName?: string | null; lastName?: string | null; fullName: string }>;
   tourColor?: string | null;
   customerNotesCount: number;
   projectNotesCount: number;
@@ -72,7 +72,21 @@ function ReportProjectCardFooter({
       </div>
       <div className="min-w-0 md:w-1/2" data-testid={`${testIdPrefix}-footer-badges-column`}>
         <div className="flex flex-nowrap items-center justify-end gap-1 overflow-x-auto text-xs text-muted-foreground">
-          <CalendarWeekAppointmentEmployeesHover employees={row.employees} />
+          {row.employees.length > 0 ? row.employees.map((employee) => (
+            <EmployeeInfoBadge
+              key={employee.id}
+              id={employee.id}
+              firstName={employee.firstName}
+              lastName={employee.lastName}
+              fullName={employee.fullName}
+              renderMode="compact"
+              size="sm"
+              showPreview={false}
+              testId={`${testIdPrefix}-employee-${employee.id}`}
+            />
+          )) : (
+            <span className="text-[9px] italic text-slate-400">Keine MA</span>
+          )}
           <EntityNotesHoverPreview
             sourceMode="cumulative"
             sources={{

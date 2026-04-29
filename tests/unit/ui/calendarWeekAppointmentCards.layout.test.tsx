@@ -21,6 +21,7 @@ import { CalendarWeekAppointmentPanel, WEEK_CARD_FOOTER_SAFE_SPACE_PX } from "..
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "../../../client/src/components/calendar/CalendarWeekSpanningTile";
 import { CalendarWeekAppointmentPanelHeader } from "../../../client/src/components/calendar/CalendarWeekAppointmentPanelHeader";
 import {
+  WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
 } from "../../../client/src/components/calendar/weekAppointmentCardStyles";
@@ -43,8 +44,26 @@ vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentPanelPro
   },
 }));
 
-vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentEmployeesHover", () => ({
-  CalendarWeekAppointmentEmployeesHover: () => <div data-testid="mock-week-employees-hover" />,
+vi.mock("../../../client/src/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+    showPreview,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+    showPreview?: boolean;
+  }) => (
+    <div
+      data-testid={testId ?? "mock-employee-badge"}
+      data-render-mode={renderMode ?? ""}
+      data-show-preview={showPreview ? "true" : "false"}
+    >
+      {fullName ?? "Unbekannt"}
+    </div>
+  ),
 }));
 
 vi.mock("../../../client/src/components/calendar/CalendarWeekAppointmentNotesHover", () => ({
@@ -112,7 +131,7 @@ function createAppointment(overrides: Partial<CalendarAppointment> = {}): Calend
     customerTags: [],
     projectTags: [],
     displayMode: "standard",
-    employees: [{ id: 3, fullName: "Mitarbeiter Eins" }],
+    employees: [{ id: 3, firstName: "Mitarbeiter", lastName: "Eins", fullName: "Mitarbeiter Eins" }],
     isLocked: false,
     isCancelled: false,
     ...overrides,
@@ -260,13 +279,17 @@ describe("calendar week appointment card layout", () => {
       </>,
     );
 
-    expect(html.match(/class="grid h-full grid-rows-\[1\.75rem_1\.75rem\] gap-1"/g)).toHaveLength(2);
-    expect(html.match(/class="h-7 overflow-hidden"/g)).toHaveLength(2);
+    expect(html.match(/class="flex h-full flex-col gap-1"/g)).toHaveLength(2);
+    expect(html.match(/class="flex min-h-6 w-full items-center"/g)).toHaveLength(2);
+    expect(html.match(/data-show-preview="true"/g)).toHaveLength(2);
     expect(html).toContain('data-testid="week-spanning-tile-body-filled-42"');
     expect(html).toContain('class="flex min-h-0 h-full flex-col bg-white/90"');
     expect(html).toContain('class="flex min-h-0 flex-1 flex-col"');
     expect(html).toContain('data-testid="week-appointment-tags-42"');
     expect(html).toContain('data-testid="week-spanning-tile-tags-42"');
+    expect(html).toContain('data-testid="week-appointment-employee-std-42-3"');
+    expect(html).toContain('data-testid="week-spanning-tile-employee-std-42-3"');
+    expect(html).not.toContain("mock-week-employees-hover");
   });
 
   it("renders the schraffierte conflict overlay on both week card variants", () => {
@@ -348,6 +371,7 @@ describe("calendar week appointment card layout", () => {
     expect(projectPanelCalls.every((call) => call.collapsed === true)).toBe(true);
     expect(projectPanelCalls.every((call) => call.className === "h-8 w-full overflow-hidden")).toBe(true);
     expect(html).not.toContain("height:260px");
+    expect(html.match(new RegExp(`min-height:${WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX}px`, "g"))).toHaveLength(2);
     expect(html).toContain('class="flex shrink-0 flex-col"');
     expect(html).toContain('class="relative shrink-0 flex flex-col bg-white/90 px-1 pt-1 pb-0"');
     expect(html).toContain('class="grid w-full shrink-0 content-start gap-1 overflow-hidden"');

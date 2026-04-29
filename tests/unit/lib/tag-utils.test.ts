@@ -44,10 +44,24 @@ describe("FT28 tag utils", () => {
     expect(trimTagLabel("x")).toBe("X");
   });
 
-  it("builds uppercase initials for multi-word tags", () => {
+  it("supports narrower single-word trimming levels while keeping the default backward compatible", () => {
+    expect(trimTagLabel("Reklamation", 0)).toBe("Rekl.");
+    expect(trimTagLabel("Reklamation", 1)).toBe("Rek.");
+    expect(trimTagLabel("Reklamation", 2)).toBe("Re");
+    expect(trimTagLabel("Reklamation", 3)).toBe("R");
+    expect(trimTagLabel("IT", 2)).toBe("It");
+    expect(trimTagLabel("IT", 3)).toBe("I");
+    expect(trimTagLabel("A", 2)).toBe("A");
+    expect(trimTagLabel("Re")).toBe("Re");
+  });
+
+  it("builds uppercase initials for multi-word tags and narrows them further on small levels", () => {
     expect(trimTagLabel("demo montage")).toBe("DM");
     expect(trimTagLabel("nacharbeit kunde projekt")).toBe("NKP");
     expect(trimTagLabel("eins zwei drei vier")).toBe("EZD");
+    expect(trimTagLabel("messe aufbau/abbau", 2)).toBe("MA");
+    expect(trimTagLabel("nacharbeit kunde projekt", 2)).toBe("NK");
+    expect(trimTagLabel("nacharbeit kunde projekt", 3)).toBe("N");
   });
 
   it("deduplicates merged tag collections by tag id while preserving first occurrence order", () => {

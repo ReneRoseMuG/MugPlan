@@ -2,6 +2,8 @@ import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentP
 
 type PreviewEmployee = {
   id: number;
+  firstName?: string | null;
+  lastName?: string | null;
   fullName: string;
 };
 

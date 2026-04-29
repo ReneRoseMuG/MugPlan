@@ -29,8 +29,8 @@ import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR, CALENDAR_UNASSIGNED_TOUR_COLOR } from "@/lib/calendar-utils";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { mergeUniqueTags } from "@/lib/tag-utils";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { CalendarWeekAppointmentPanelCustomer } from "./CalendarWeekAppointmentPanelCustomer";
-import { CalendarWeekAppointmentEmployeesHover } from "./CalendarWeekAppointmentEmployeesHover";
 import { CalendarWeekAppointmentAttachmentsHover } from "./CalendarWeekAppointmentAttachmentsHover";
 import { CalendarWeekAppointmentNotesHover } from "./CalendarWeekAppointmentNotesHover";
 import { CalendarWeekAppointmentPanelEmployee } from "./CalendarWeekAppointmentPanelEmployee";
@@ -432,18 +432,52 @@ export function CalendarWeekAppointmentPanel({
     appointment.customerTags,
     appointment.projectTags,
   );
-  const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor);
+  const footerStyle = getWeekAppointmentFooterStyle(appointment.tourColor, isCompact ? "compact" : "standard");
   const footerClassName = isCompact
     ? "relative shrink-0 border-t px-1 py-1"
     : "relative mt-auto shrink-0 border-t px-1 py-1";
+  const showEmployeeHoverPreview = context === "week-calendar";
   const conflictOverlayStyle = conflictColor
     ? {
         backgroundImage: `repeating-linear-gradient(135deg, ${toAlphaColor(conflictColor, 0.26)} 0 10px, ${toAlphaColor(conflictColor, 0.08)} 10px 20px)`,
       }
     : undefined;
-  const footerTopRow = context === "week-calendar" ? (
-    <div className="flex h-7 w-full flex-nowrap items-center gap-1 overflow-hidden">
-      <CalendarWeekAppointmentEmployeesHover employees={appointment.employees} />
+  const compactEmployeeBadges = appointment.employees.length > 0 ? (
+    appointment.employees.slice(0, 6).map((employee) => (
+      <EmployeeInfoBadge
+        key={employee.id}
+        id={employee.id}
+        firstName={employee.firstName}
+        lastName={employee.lastName}
+        fullName={employee.fullName}
+        renderMode="compact"
+        size="sm"
+        showPreview={showEmployeeHoverPreview}
+        testId={`week-appointment-employee-compact-${appointment.id}-${employee.id}`}
+      />
+    ))
+  ) : (
+    <span className="text-[9px] italic text-slate-400">Keine MA</span>
+  );
+  const standardEmployeeBadges = appointment.employees.length > 0 ? (
+    appointment.employees.map((employee) => (
+      <EmployeeInfoBadge
+        key={employee.id}
+        id={employee.id}
+        firstName={employee.firstName}
+        lastName={employee.lastName}
+        fullName={employee.fullName}
+        renderMode="standard"
+        size="sm"
+        showPreview={showEmployeeHoverPreview}
+        testId={`week-appointment-employee-std-${appointment.id}-${employee.id}`}
+      />
+    ))
+  ) : (
+    <span className="text-[9px] italic text-slate-400">Keine MA</span>
+  );
+  const footerAccessoryRow = (
+    <div className="flex min-h-6 w-full items-center gap-1">
       <CalendarWeekAppointmentNotesHover
         appointmentId={appointment.id}
         customerId={appointment.customer.id}
@@ -457,11 +491,9 @@ export function CalendarWeekAppointmentPanel({
         totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
       />
     </div>
-  ) : (
-    <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
   );
   const footerTagRow = (
-    <div className="h-7 overflow-hidden">
+    <div className="flex min-h-6 w-full items-center">
       <CalendarWeekAppointmentTagPicker
         appointmentId={appointment.id}
         tags={mergedTags}
@@ -472,6 +504,49 @@ export function CalendarWeekAppointmentPanel({
       />
     </div>
   );
+  const footerContent = context === "week-calendar"
+    ? (
+      isCompact ? (
+        <>
+          <div className="flex min-h-6 w-full items-center gap-1 overflow-hidden">
+            <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
+              {compactEmployeeBadges}
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <CalendarWeekAppointmentNotesHover
+                appointmentId={appointment.id}
+                customerId={appointment.customer.id}
+                projectId={appointment.projectId}
+                customerNotesCount={appointment.customerNotesCount ?? 0}
+                projectNotesCount={appointment.projectNotesCount ?? 0}
+                appointmentNotesCount={appointment.appointmentNotesCount ?? 0}
+              />
+              <CalendarWeekAppointmentAttachmentsHover
+                appointmentId={appointment.id}
+                totalAttachmentsCount={appointment.totalAttachmentsCount ?? 0}
+              />
+            </div>
+          </div>
+          {footerTagRow}
+        </>
+      ) : (
+        <>
+          <div className="flex min-h-7 w-full items-center gap-0.5 overflow-x-auto overflow-y-visible">
+            {standardEmployeeBadges}
+          </div>
+          {footerAccessoryRow}
+          {footerTagRow}
+        </>
+      )
+    ) : (
+      <>
+        <CalendarWeekAppointmentPanelEmployee employees={appointment.employees} />
+        {footerTagRow}
+      </>
+    );
+  const footerGridRowsClassName = context === "week-calendar"
+    ? "flex h-full flex-col gap-1"
+    : "grid h-full grid-rows-[auto_1.5rem] gap-1";
 
   const resolvedPanelStyle = isContinuation
     ? { height: `${resolvedContinuationHeightPx}px` }
@@ -577,9 +652,8 @@ export function CalendarWeekAppointmentPanel({
                 data-testid={`week-appointment-conflict-overlay-${appointment.id}`}
               />
             ) : null}
-            <div className="grid h-full grid-rows-[1.75rem_1.75rem] gap-1">
-              {footerTopRow}
-              {footerTagRow}
+            <div className={footerGridRowsClassName}>
+              {footerContent}
             </div>
           </div>
         </div>

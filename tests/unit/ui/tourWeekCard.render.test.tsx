@@ -36,8 +36,18 @@ vi.mock("@/components/ui/colored-entity-card", () => ({
 }));
 
 vi.mock("@/components/ui/employee-info-badge", () => ({
-  EmployeeInfoBadge: ({ fullName, testId }: { fullName?: string; testId?: string }) => (
-    <div data-testid={testId}>{fullName}</div>
+  EmployeeInfoBadge: ({
+    firstName,
+    lastName,
+    renderMode,
+    testId,
+  }: {
+    firstName?: string;
+    lastName?: string;
+    renderMode?: string;
+    testId?: string;
+  }) => (
+    <div data-testid={testId}>{`${firstName ?? ""} ${lastName?.[0] ? `${lastName[0]}.` : ""}|${renderMode ?? "default"}`.trim()}</div>
   ),
 }));
 
@@ -72,7 +82,7 @@ describe("tourWeekCard render", () => {
           appointmentsCount: 3,
           notesCount: 2,
           employees: [
-            { assignmentId: 91, employeeId: 17, fullName: "Mitarbeiter, Mia" },
+            { assignmentId: 91, employeeId: 17, firstName: "Mia", lastName: "Mitarbeiter", fullName: "Mitarbeiter, Mia" },
           ],
         }}
         scope="employee"
@@ -86,7 +96,7 @@ describe("tourWeekCard render", () => {
     expect(markup).toContain("Tour Nord");
     expect(markup).toContain("appointments-3");
     expect(markup).toContain("notes-2");
-    expect(markup).toContain("Mitarbeiter, Mia");
+    expect(markup).toContain("Mia M.|standard");
   });
 
   it("keeps blocked warning and badge wired in tour scope", () => {
