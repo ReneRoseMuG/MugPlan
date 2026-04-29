@@ -696,3 +696,16 @@ Codex nennt konkret, welche Stellen geprüft wurden und ob es bekannte Abweichun
 Eine Aufgabe gilt als abgeschlossen, wenn das fachliche Ziel umgesetzt, alle Verbote eingehalten und die geforderte Dokumentation vollständig vorliegt. Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
 
 Für Schemaänderungen reicht eine reine Code-Implementierung dafür nicht aus. Fehlt die erfolgreiche Migration mindestens auf Dev und Test oder liegt ein erkennbarer Schema-Mismatch in Test-/E2E-Umgebungen vor, darf Codex den Auftrag nicht als fachlich umgesetzt melden, sondern nur als blockiert oder teilweise umgesetzt mit eindeutig benanntem Migrationsblocker.
+
+## Plan-Aktualisierung im Plan-Modus
+
+Wenn nach der Formulierung eines Plans weitere Informationen, Korrekturen oder Ergänzungen
+gegeben werden, muss **immer ein vollständig neuer Plan** gepostet werden.
+
+- Der neue Plan ersetzt den vorherigen vollständig.
+- Kein komprimierter, gekürzter oder diff-artiger Plan.
+- Kein bloßes Hinzufügen von Stichpunkten oder Ergänzungen zum bestehenden Plan.
+- Der aktualisierte Plan muss alle Schritte enthalten – auch die unveränderten.
+
+**Begründung:** Ein vollständiger Plan stellt sicher, dass der Arbeitsauftrag in sich
+geschlossen und ohne Rückgriff auf frühere Nachrichten ausführbar ist.

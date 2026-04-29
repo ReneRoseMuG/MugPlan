@@ -18,6 +18,11 @@
  *
  * Ziel:
  * Die reine Entscheidungslogik des useTagRuleEngine-Hooks ohne Browser-Abhaengigkeit absichern.
+ *
+ * Hinweis Testabdeckung:
+ * Diese Datei prueft nur die Entscheidungslogik.
+ * Das nachgelagerte AppointmentForm-UI-Verhalten fuer Vorschlag- und Template-Editor-Flows
+ * wird in tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx abgedeckt.
  */
 import { describe, expect, it } from "vitest";
 import {

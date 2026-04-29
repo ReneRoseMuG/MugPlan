@@ -55,7 +55,11 @@ async function setNoteCardColor(dialog: Locator, hex: string) {
   await expect(dialog.getByTestId("button-note-card-color-picker-preview")).toHaveCSS("background-color", hexToRgb(hex));
 }
 
-async function createNoteViaDialog(page: Page, input: { title: string; body: string; cardColor: string }) {
+async function createNoteViaDialog(
+  page: Page,
+  input: { title: string; body: string; cardColor: string },
+  options: { expectDialogToStayClosed?: boolean } = {},
+) {
   await page.getByTestId("button-new-note").click();
   const dialog = page.getByRole("dialog").filter({ has: page.getByTestId("button-save-note") }).last();
   const dialogHandle = await dialog.elementHandle();
@@ -71,6 +75,11 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   }
   await expect(printSwitch).toHaveAttribute("data-state", "checked");
   await dialog.getByTestId("button-save-note").click();
+  if (options.expectDialogToStayClosed) {
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+    return;
+  }
   const cancelButton = dialog.getByTestId("button-cancel-note");
   for (let attempt = 0; attempt < 3; attempt += 1) {
     if (!(await cancelButton.isVisible().catch(() => false))) {
@@ -211,7 +220,7 @@ test("creates, counts and edits an appointment note with cardColor and print fla
   await appointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
 
-  await createNoteViaDialog(page, note);
+  await createNoteViaDialog(page, note, { expectDialogToStayClosed: true });
   const appointmentNoteCard = page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: note.title }).first();
   await expect(appointmentNoteCard.getByTestId(/badge-note-print-/)).toContainText("Drucken");
   await expect(appointmentNoteCard).toHaveCSS("background-color", note.cardColorRgb);

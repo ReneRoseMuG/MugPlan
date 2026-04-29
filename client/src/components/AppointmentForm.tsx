@@ -183,6 +183,16 @@ type DraftAppointmentNote = Note & {
   templateId?: number;
 };
 
+type CreateAppointmentNoteMutationVariables = {
+  appointmentId: number;
+  title: string;
+  body: string;
+  cardColor?: string | null;
+  print: boolean;
+  templateId?: number;
+  openEditorOnSuccess?: boolean;
+};
+
 type AppointmentWeekEmployeePreviewItem = {
   employeeId: number;
   employeeName: string;
@@ -1580,28 +1590,23 @@ export function AppointmentForm({
   };
 
   const createAppointmentNoteMutation = useMutation({
-    mutationFn: async ({ appointmentId: targetAppointmentId, title, body, cardColor, print, templateId }: {
-      appointmentId: number;
-      title: string;
-      body: string;
-      cardColor?: string | null;
-      print: boolean;
-      templateId?: number;
-    }) => {
+    mutationFn: async ({ appointmentId: targetAppointmentId, title, body, cardColor, print, templateId }: CreateAppointmentNoteMutationVariables) => {
       const res = await apiRequest("POST", `/api/appointments/${targetAppointmentId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
     onSuccess: (createdNote: Note, variables) => {
       void invalidateAppointmentNotesQueries(variables.appointmentId);
       void invalidateRelatedAppointmentQueries(selectedProjectId);
-      setTemplateNoteEditorId(createdNote.id);
-      setTemplateNoteEditorVersion(createdNote.version);
-      setTemplateNoteTitle(createdNote.title);
-      setTemplateNoteBody(createdNote.body ?? "");
-      setTemplateNoteCardColor(createdNote.cardColor ?? "#f8fafc");
-      setTemplateNotePrint(createdNote.print);
-      setTemplateNoteCardColorLocked(createdNote.cardColorLocked);
-      setTemplateNoteEditorOpen(true);
+      if (variables.openEditorOnSuccess) {
+        setTemplateNoteEditorId(createdNote.id);
+        setTemplateNoteEditorVersion(createdNote.version);
+        setTemplateNoteTitle(createdNote.title);
+        setTemplateNoteBody(createdNote.body ?? "");
+        setTemplateNoteCardColor(createdNote.cardColor ?? "#f8fafc");
+        setTemplateNotePrint(createdNote.print);
+        setTemplateNoteCardColorLocked(createdNote.cardColorLocked);
+        setTemplateNoteEditorOpen(true);
+      }
     },
     onError: (error: Error) => {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
@@ -2081,6 +2086,7 @@ export function AppointmentForm({
         cardColor: template.cardColor,
         print: template.print,
         templateId: template.id,
+        openEditorOnSuccess: true,
       });
       setNoteSuggestionDialog(null);
     } catch {

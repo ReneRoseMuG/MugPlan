@@ -287,6 +287,35 @@ test("adds Reklamation-Tag from the project form picker and creates a project no
   });
 });
 
+test("project note suggestion dialog stays closed after the prefilled note dialog is canceled", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT-CANCEL",
+    name: "FT06 Rule Engine Projekt Cancel",
+  });
+
+  await loginAsAdmin(page);
+  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
+  const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
+
+  await openProjectForm(page, project.id);
+  await page.getByTestId("project-tag-picker-button-add").click();
+  await expect(page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`)).toBeVisible();
+  await page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`).click();
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(reklamationTemplate.title);
+
+  await page.getByTestId("button-cancel-note").click();
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+  await page.waitForTimeout(300);
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+
+  const notes = await readProjectNotes(page, project.id);
+  expect(notes.map((note) => note.title)).not.toContain(reklamationTemplate.title);
+});
+
 test("adds Messe-Tag from the week calendar card and suggestion dialog is dismissed with skip so no note is created", async ({ page }) => {
   const customer = await createCustomerFixture("FT06-RULE-MESSE-CUST");
   const project = await createProjectFixture({
