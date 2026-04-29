@@ -78,6 +78,26 @@ async function openCustomerPickerAndSelect(page: Page, customerNumber: string) {
   await page.getByTestId("table-customers").locator("tr").filter({ hasText: customerNumber }).first().dblclick();
 }
 
+async function selectSaunaModelAndAnswerProjectNamePrompt(
+  page: Page,
+  productId: number,
+  answer: "accept" | "dismiss",
+) {
+  const dialogPromise = new Promise<string>((resolve) => {
+    page.once("dialog", async (dialog) => {
+      const message = dialog.message();
+      if (answer === "accept") {
+        await dialog.accept();
+      } else {
+        await dialog.dismiss();
+      }
+      resolve(message);
+    });
+  });
+  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productId));
+  expect(await dialogPromise).toBe("Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?");
+}
+
 test("wählt Produkt im Create-Modus – kein DB-Eintrag vor dem Speichern", async ({ page }) => {
   const customer = await createCustomerFixture("ALS-CREATE-NODB");
   const product = await createProductFixture({
@@ -98,7 +118,7 @@ test("wählt Produkt im Create-Modus – kein DB-Eintrag vor dem Speichern", asy
   await page.getByTestId("input-project-order-number").fill(uniqueOrderNumber);
 
   await openArticleListTab(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(product.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, product.id, "dismiss");
 
   // Kein Projekt darf in der DB existieren – also kein Order-Item
   const projectsResponse = await page.request.get("/api/projects?scope=all");
@@ -133,7 +153,7 @@ test("speichert Produkt und Komponente beim Create-Save", async ({ page }) => {
   await page.getByTestId("input-project-order-number").fill("ALS-SAVE-001");
 
   await openArticleListTab(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(product.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, product.id, "dismiss");
   await page.getByTestId("select-project-product-oven").selectOption(String(component.id));
 
   const createdProjectResponsePromise = page.waitForResponse((response) =>
@@ -158,6 +178,52 @@ test("speichert Produkt und Komponente beim Create-Save", async ({ page }) => {
   const items = await fetchOrderItems(page, projectId);
   expect(items.some((i) => i.productId === product.id)).toBe(true);
   expect(items.some((i) => i.componentId === component.id)).toBe(true);
+});
+
+test("übernimmt den Projektnamen nach Bestätigung beim Sauna-Wechsel", async ({ page }) => {
+  const customer = await createCustomerFixture("ALS-SAUNA-NAME-YES");
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "ALS Sauna Name Ja",
+    description: "Produkt für die Namensübernahme nach Bestätigung.",
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-projekte").click();
+  await page.getByTestId("button-new-project").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await page.getByTestId("input-project-name").fill("Manueller Projektname");
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+  await page.getByTestId("input-project-order-number").fill("ALS-NAME-YES-001");
+
+  await openArticleListTab(page);
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, product.id, "accept");
+
+  await expect(page.getByTestId("input-project-name")).toHaveValue(product.name);
+});
+
+test("belässt den Projektnamen unverändert, wenn die Rückfrage abgelehnt wird", async ({ page }) => {
+  const customer = await createCustomerFixture("ALS-SAUNA-NAME-NO");
+  const product = await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: "ALS Sauna Name Nein",
+    description: "Produkt für die abgelehnte Namensübernahme.",
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-projekte").click();
+  await page.getByTestId("button-new-project").click();
+  await expect(page.getByTestId("button-save-project")).toBeVisible();
+
+  await page.getByTestId("input-project-name").fill("Manueller Projektname");
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+  await page.getByTestId("input-project-order-number").fill("ALS-NAME-NO-001");
+
+  await openArticleListTab(page);
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, product.id, "dismiss");
+
+  await expect(page.getByTestId("input-project-name")).toHaveValue("Manueller Projektname");
 });
 
 test("wechselt Produkt dreimal im Create-Modus – nach Save nur ein Item", async ({ page }) => {
@@ -188,9 +254,9 @@ test("wechselt Produkt dreimal im Create-Modus – nach Save nur ein Item", asyn
   await page.getByTestId("input-project-order-number").fill("ALS-MULTI-001");
 
   await openArticleListTab(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productA.id));
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productC.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productA.id, "dismiss");
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productB.id, "dismiss");
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productC.id, "dismiss");
 
   const createdProjectResponsePromise = page.waitForResponse((response) =>
     response.request().method() === "POST"
@@ -238,7 +304,7 @@ test("ändert Produkt im Edit-Modus – kein PUT vor dem Speichern", async ({ pa
 
   await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productB.id, "dismiss");
 
   // DB muss noch das ursprüngliche Produkt A enthalten
   const items = await fetchOrderItems(page, project.id);
@@ -267,7 +333,7 @@ test("ersetzt Produkt im Edit-Modus nach Save – kein Leichen-Eintrag in DB", a
 
   await openProjectEditForm(page, project.id, "noAppointments");
   await openArticleListTab(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productB.id, "dismiss");
   await page.getByTestId("button-save-project").click();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
 
@@ -379,7 +445,7 @@ test("Dirty-Check erscheint nach Artikellisten-Änderung ohne Save", async ({ pa
   // Warten bis der initiale Snapshot gesetzt ist – Dropdown zeigt Produkt A
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(productA.id));
 
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(productB.id));
+  await selectSaunaModelAndAnswerProjectNamePrompt(page, productB.id, "dismiss");
 
   await page.getByTestId("button-close-project").click();
   await expect(page.getByRole("alertdialog").getByText(/[Ää]nderungen verwerfen/)).toBeVisible();

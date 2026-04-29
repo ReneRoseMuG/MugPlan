@@ -608,6 +608,22 @@ export function ProjectForm({
     if (field.source === "product" && !product) return;
     if (field.source === "component" && !component) return;
 
+    if (fieldKey === "saunaModel" && product) {
+      const previousProductId = productSelections.saunaModel.productId;
+      const nextSaunaModelName = product.name.trim();
+      const projectName = name.trim();
+      const isChangedSelection = previousProductId !== product.id;
+
+      if (isChangedSelection && nextSaunaModelName.length > 0 && projectName !== nextSaunaModelName) {
+        const shouldAdoptProjectName = window.confirm(
+          "Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?",
+        );
+        if (shouldAdoptProjectName) {
+          setName(nextSaunaModelName);
+        }
+      }
+    }
+
     setProductSelections((current) => ({
       ...current,
       [fieldKey]: {

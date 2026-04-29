@@ -452,7 +452,15 @@ test("shows an extracted document only as project attachment after successful pr
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByTestId("project-description-editor-panel").getByTestId("richtext-editor").fill("Extrahierte Projektbeschreibung fuer den Overlay-Save");
   await page.getByRole("tab", { name: "Artikelliste" }).click();
+  const dialogPromise = new Promise<string>((resolve) => {
+    page.once("dialog", async (dialog) => {
+      const message = dialog.message();
+      await dialog.dismiss();
+      resolve(message);
+    });
+  });
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
+  expect(await dialogPromise).toBe("Sauna-Modell ge?ndert, soll ich den Namen des Projekts anpassen?");
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"

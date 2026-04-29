@@ -140,6 +140,18 @@ async function expectProjectSidebarPanels(page: Page, isEditing: boolean) {
 }
 
 async function selectProjectArticle(page: Page, fieldKey: string, itemId: number) {
+  if (fieldKey === "saunaModel") {
+    const dialogPromise = new Promise<string>((resolve) => {
+      page.once("dialog", async (dialog) => {
+        const message = dialog.message();
+        await dialog.dismiss();
+        resolve(message);
+      });
+    });
+    await page.getByTestId(`select-project-product-${fieldKey}`).selectOption(String(itemId));
+    expect(await dialogPromise).toBe("Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?");
+    return;
+  }
   await page.getByTestId(`select-project-product-${fieldKey}`).selectOption(String(itemId));
 }
 
@@ -162,7 +174,10 @@ async function createProductViaProjectDialog(page: Page, params: {
   description: string;
 }): Promise<number> {
   await openProjectArticleList(page);
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(params.baseProductId));
+  const saunaSelect = page.getByTestId("select-project-product-saunaModel");
+  if ((await saunaSelect.inputValue()) !== String(params.baseProductId)) {
+    await selectProjectArticle(page, "saunaModel", params.baseProductId);
+  }
   await page.getByTestId("button-create-project-product-saunaModel").click();
 
   const dialog = page.getByRole("dialog").filter({ hasText: "Neues Produkt" });
