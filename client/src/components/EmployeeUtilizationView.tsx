@@ -116,6 +116,7 @@ export function EmployeeUtilizationView({
             currentDate={currentDate}
             employeeFilterId={employeeId}
             readOnly={true}
+            absenceVisibility="include"
             visibleWeekCount={4}
             onOpenAppointment={
               onOpenAppointment

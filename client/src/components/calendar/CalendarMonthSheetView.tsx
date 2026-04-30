@@ -53,6 +53,7 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
+import { isAbsenceTourName } from "@shared/absenceAppointments";
 import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
@@ -64,6 +65,7 @@ type CalendarMonthSheetViewProps = {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   readOnly?: boolean;
   visibleWeekCount?: number;
+  absenceVisibility?: "planning" | "absences" | "include";
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
@@ -130,6 +132,7 @@ export function CalendarMonthSheetView({
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   readOnly = false,
   visibleWeekCount,
+  absenceVisibility = "planning",
   onNewAppointment,
   onOpenAppointment,
 }: CalendarMonthSheetViewProps) {
@@ -171,9 +174,23 @@ export function CalendarMonthSheetView({
     queryKey: ["/api/tours"],
   });
 
+  const visibleAppointments = useMemo(() => {
+    if (absenceVisibility === "include") return appointments;
+    return appointments.filter((appointment) => {
+      const isAbsence = isAbsenceTourName(appointment.tourName);
+      return absenceVisibility === "absences" ? isAbsence : !isAbsence;
+    });
+  }, [absenceVisibility, appointments]);
+  const visibleTours = useMemo(() => {
+    if (absenceVisibility === "include") return tours;
+    return tours.filter((tour) => {
+      const isAbsence = isAbsenceTourName(tour.name);
+      return absenceVisibility === "absences" ? isAbsence : !isAbsence;
+    });
+  }, [absenceVisibility, tours]);
   const appointmentsById = useMemo(
-    () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
-    [appointments],
+    () => new Map(visibleAppointments.map((appointment) => [appointment.id, appointment] as const)),
+    [visibleAppointments],
   );
   const blockedTourWeekKeys = useMemo(
     () => new Set(blockedTourWeeks
@@ -181,7 +198,7 @@ export function CalendarMonthSheetView({
       .map((week) => buildBlockedTourWeekKey(week.tourId, week.isoYear, week.isoWeek))),
     [blockedTourWeeks],
   );
-  const tourSlots = useMemo(() => buildMonthTourSlots(tours), [tours]);
+  const tourSlots = useMemo(() => buildMonthTourSlots(visibleTours), [visibleTours]);
 
   const getCurrentScrollLeft = () => null;
 
@@ -198,7 +215,7 @@ export function CalendarMonthSheetView({
     const nextWeekData = new Map<string, MonthSheetRenderWeek>();
 
     month.weeks.forEach((week) => {
-      const weekAppointments = appointments
+      const weekAppointments = visibleAppointments
         .filter((appointment) => {
           const start = parseISO(appointment.startDate);
           const end = parseISO(getAppointmentEndDate(appointment));
@@ -228,7 +245,7 @@ export function CalendarMonthSheetView({
     });
 
     return nextWeekData;
-  }, [appointments, month, tourSlots]);
+  }, [visibleAppointments, month, tourSlots]);
 
   const handleAppointmentClick = (appointmentId: number) => {
     const appointment = appointmentsById.get(appointmentId);
@@ -312,7 +329,7 @@ export function CalendarMonthSheetView({
   };
 
   const handleDrop = async (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => {
-    if (isReaderCalendarReadOnly) {
+    if (isReaderCalendarReadOnly || absenceVisibility === "absences") {
       event.preventDefault();
       setDraggedAppointmentId(null);
       return;
@@ -430,12 +447,16 @@ export function CalendarMonthSheetView({
           blockedTourWeekKeys={blockedTourWeekKeys}
           berlinToday={berlinToday}
           isAdmin={isAdmin}
-          readOnly={isReaderCalendarReadOnly}
+          readOnly={isReaderCalendarReadOnly || absenceVisibility === "absences"}
           showMonthHeader={visibleWeekCount === undefined}
           draggedAppointmentId={draggedAppointmentId}
           getSlotBarPosition={getSlotBarPosition}
           onDrop={handleDrop}
-          onNewAppointment={(dateKey) => onNewAppointment?.(dateKey, { scrollLeft: getCurrentScrollLeft() })}
+          onNewAppointment={(dateKey) => {
+            if (absenceVisibility !== "absences") {
+              onNewAppointment?.(dateKey, { scrollLeft: getCurrentScrollLeft() });
+            }
+          }}
           onAppointmentClick={handleAppointmentClick}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}

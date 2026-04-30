@@ -13,6 +13,7 @@ import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
 import type { WeekViewRestoreRequest } from "@/pages/Home";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
+type CalendarAbsenceMode = "planning" | "absences";
 
 type OpenAppointmentContext = {
   initialDate?: string;
@@ -75,6 +76,7 @@ export function CalendarWorkspace({
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
   const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
+  const [calendarAbsenceMode, setCalendarAbsenceMode] = useState<CalendarAbsenceMode>("planning");
   const [kwInputValue, setKwInputValue] = useState(() =>
     activeView === "week" ? String(getISOWeek(currentDate)) : "",
   );
@@ -225,26 +227,51 @@ export function CalendarWorkspace({
     }
 
     return (
-      <MonthSheetGrid
-        currentDate={currentDate}
-        employeeFilterId={employeeFilterId}
-        readOnly={isReaderCalendarReadOnly}
-        conflictHighlightActive={conflictHighlightActive}
-        conflictAppointmentMap={conflictAppointmentMap}
-        onNewAppointment={isReaderCalendarReadOnly ? undefined : (date) => {
-          onOpenAppointmentForm({
-            initialDate: date,
-            projectId,
-            returnView: activeView,
-          });
-        }}
-        onOpenAppointment={(appointmentId) => {
-          onOpenAppointmentForm({
-            appointmentId,
-            returnView: activeView,
-          });
-        }}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="flex items-center justify-end border-b border-border/40 bg-card px-3 py-2">
+          <div className="inline-flex rounded-md border border-border bg-background p-0.5" data-testid="calendar-absence-mode-toggle">
+            <button
+              type="button"
+              onClick={() => setCalendarAbsenceMode("planning")}
+              className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "planning" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-calendar-planning-mode"
+            >
+              Terminplanung
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalendarAbsenceMode("absences")}
+              className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "absences" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid="button-calendar-absence-mode"
+            >
+              Abwesenheiten
+            </button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1">
+          <MonthSheetGrid
+            currentDate={currentDate}
+            employeeFilterId={employeeFilterId}
+            readOnly={isReaderCalendarReadOnly || calendarAbsenceMode === "absences"}
+            absenceVisibility={calendarAbsenceMode}
+            conflictHighlightActive={conflictHighlightActive}
+            conflictAppointmentMap={conflictAppointmentMap}
+            onNewAppointment={isReaderCalendarReadOnly || calendarAbsenceMode === "absences" ? undefined : (date) => {
+              onOpenAppointmentForm({
+                initialDate: date,
+                projectId,
+                returnView: activeView,
+              });
+            }}
+            onOpenAppointment={(appointmentId) => {
+              onOpenAppointmentForm({
+                appointmentId,
+                returnView: activeView,
+              });
+            }}
+          />
+        </div>
+      </div>
     );
   };
 

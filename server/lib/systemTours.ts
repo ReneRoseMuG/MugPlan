@@ -1,3 +1,5 @@
+export { ABSENCE_TOUR_NAME, isAbsenceTourName } from "@shared/absenceAppointments";
+
 export function normalizeSystemTourName(value: string | null | undefined): string {
   return (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 }

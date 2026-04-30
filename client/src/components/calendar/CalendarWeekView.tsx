@@ -13,6 +13,7 @@ import {
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
+import { isAbsenceTourName } from "@shared/absenceAppointments";
 import { Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
@@ -498,7 +499,9 @@ export function CalendarWeekView({
         })),
       };
 
-      const lanes = [...initialLanes, unassignedLane];
+      const regularLanes = initialLanes.filter((lane) => !isAbsenceTourName(lane.label));
+      const absenceLanes = initialLanes.filter((lane) => isAbsenceTourName(lane.label));
+      const lanes = [...regularLanes, unassignedLane, ...absenceLanes];
       const laneByKey = new Map(lanes.map((lane) => [lane.laneKey, lane] as const));
 
       for (const appointment of weekAppointments) {
@@ -1334,6 +1337,7 @@ export function CalendarWeekView({
                       const isLaneBlocked = tourLane.tourId != null
                         && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
                       const isLaneWeekLocked = weekKey <= format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+                      const isAbsenceLane = isAbsenceTourName(tourLane.label);
 
                       return (
                       <CalendarWeekNotesButton
@@ -1342,7 +1346,7 @@ export function CalendarWeekView({
                         weekNumber={isoWeek}
                         tourId={tourLane.tourId ?? null}
                         tourLabel={tourLane.label}
-                        readOnly={!canWriteNotes}
+                            readOnly={!canWriteNotes || isAbsenceLane}
                       >
                         {({ iconSlot, countSlot, dialog, openDialog }) => (
                         <div className="rounded-lg border border-border/40 bg-muted/10">
@@ -1393,7 +1397,7 @@ export function CalendarWeekView({
                                       <StickyNote className="h-3.5 w-3.5 shrink-0" />
                                       {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
                                     </DropdownMenuItem>
-                                    {!isReaderCalendarReadOnly && tourLane.tourId != null ? (
+                                    {!isReaderCalendarReadOnly && tourLane.tourId != null && !isAbsenceLane ? (
                                       isLaneBlocked ? (
                                         <DropdownMenuItem
                                           onClick={() => {
@@ -1527,7 +1531,7 @@ export function CalendarWeekView({
                                     ) : (
                                       <span className="ml-auto" />
                                     )}
-                                    {!isReaderCalendarReadOnly && dayBucket.dateKey >= berlinToday ? (
+                                    {!isReaderCalendarReadOnly && !isAbsenceLane && dayBucket.dateKey >= berlinToday ? (
                                       <button
                                         onClick={(event) => {
                                           event.stopPropagation();
@@ -1596,7 +1600,7 @@ export function CalendarWeekView({
                                 aria-hidden
                               />
                             ) : null}
-                            {hasLaneContent && draggedAppointmentId !== null && !isReaderCalendarReadOnly ? (
+                            {hasLaneContent && draggedAppointmentId !== null && !isReaderCalendarReadOnly && !isAbsenceLane ? (
                               <div
                                 className="absolute inset-0 grid z-20"
                                 style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -1634,9 +1638,11 @@ export function CalendarWeekView({
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
+                                && !isAbsenceLane
                                 && !isSegmentLocked
                                 && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags
+                                && !isAbsenceLane
                                 && !appointment.isCancelled
                                 && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${rowIndex}`;
@@ -1663,7 +1669,7 @@ export function CalendarWeekView({
                                     visibleDayNumberStart={visibleDayNumberStart}
                                     uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                    showTagActions
+                                    showTagActions={!isAbsenceLane}
                                     canEditTags={canEditAppointmentTags}
                                     allowHistoricalActions={isAdmin}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
@@ -1705,9 +1711,11 @@ export function CalendarWeekView({
                               const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
+                                && !isAbsenceLane
                                 && !isSegmentLocked
                                 && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
                               const canEditAppointmentTags = canManageAppointmentTags
+                                && !isAbsenceLane
                                 && !appointment.isCancelled
                                 && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${gridRow - 1}`;
@@ -1734,7 +1742,7 @@ export function CalendarWeekView({
                                     continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                     uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                    showTagActions
+                                    showTagActions={!isAbsenceLane}
                                     canEditTags={canEditAppointmentTags}
                                     allowHistoricalActions={isAdmin}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
@@ -1778,8 +1786,8 @@ export function CalendarWeekView({
                                     width: "100%",
                                     boxSizing: "border-box",
                                   }}
-                                  onDragOver={(event) => event.preventDefault()}
-                                  onDrop={(event) => {
+                                  onDragOver={isAbsenceLane ? undefined : (event) => event.preventDefault()}
+                                  onDrop={isAbsenceLane ? undefined : (event) => {
                                     void handleDrop(event, day);
                                   }}
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
@@ -1794,9 +1802,11 @@ export function CalendarWeekView({
                                     const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isReaderCalendarReadOnly
+                                      && !isAbsenceLane
                                       && !isSegmentLocked
                                       && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
                                     const canEditAppointmentTags = canManageAppointmentTags
+                                      && !isAbsenceLane
                                       && !appointment.isCancelled
                                       && (!isHistoricalSource || isAdmin);
                                     const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
@@ -1818,7 +1828,7 @@ export function CalendarWeekView({
                                           continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                           uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                           projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                          showTagActions
+                                          showTagActions={!isAbsenceLane}
                                           canEditTags={canEditAppointmentTags}
                                           allowHistoricalActions={isAdmin}
                                           onTagMutationEvents={handleAppointmentTagMutationEvents}

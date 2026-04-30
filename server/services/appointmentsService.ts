@@ -27,7 +27,7 @@ import {
   hasAppointmentCancellationTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
-import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
+import { isAbsenceTourName, isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
 import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
 import {
   getAppointmentParkingDefaults,
@@ -430,6 +430,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
+      description: row.appointment.description ?? null,
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -581,6 +582,7 @@ export async function createAppointment(
     startDate: string;
     endDate?: string | null;
     startTime?: string | null;
+    description?: string | null;
     employeeIds?: number[];
   },
   roleKey?: CanonicalRoleKey,
@@ -602,12 +604,15 @@ export async function createAppointment(
     const relation = await resolveAppointmentRelationTx(tx, data, "create");
     await assertNoInactiveEmployeesTx(tx, employeeIds);
     const collectedEvents: AppointmentMutationEvent[] = [];
+    const allTours = await toursRepository.getTours();
+    const targetTour = data.tourId != null ? (allTours.find((entry) => entry.id === data.tourId) ?? null) : null;
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
       endDate,
       startTimeHour,
+      forceAllDayOverlap: isAbsenceTourName(targetTour?.name),
     });
     if (conflictEmployees.length > 0) {
       throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
@@ -619,7 +624,7 @@ export async function createAppointment(
       tourId: data.tourId ?? null,
       displayMode: defaultAppointmentDisplayMode,
       title: resolveTitle(relation.project?.name ?? null, relation.customer.fullName ?? null, relation.customer.customerNumber),
-      description: null,
+      description: data.description ?? null,
       startDate,
       endDate,
       startTime: data.startTime ?? null,
@@ -630,7 +635,6 @@ export async function createAppointment(
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     let nextTourName: string | null = null;
     if (appointmentData.tourId != null) {
-      const allTours = await toursRepository.getTours();
       nextTourName = allTours.find((entry) => entry.id === appointmentData.tourId)?.name ?? null;
       collectedEvents.push({
         kind: "tour_changed",
@@ -683,6 +687,7 @@ export async function updateAppointment(
     startDate: string;
     endDate?: string | null;
     startTime?: string | null;
+    description?: string | null;
     employeeIds?: number[];
   },
   roleKey: CanonicalRoleKey,
@@ -728,6 +733,8 @@ export async function updateAppointment(
     await assertNoInactiveEmployeesTx(tx, employeeIds);
 
     const newTourId = nextTourId;
+    const allTours = await toursRepository.getTours();
+    const targetTour = newTourId != null ? (allTours.find((entry) => entry.id === newTourId) ?? null) : null;
     const tourChanged = existing.tourId !== newTourId;
     if (tourChanged) {
       logInfo(`${logPrefix} tour change detected appointmentId=${appointmentId}`);
@@ -740,7 +747,6 @@ export async function updateAppointment(
     let previousTourName: string | null = null;
     let nextTourName: string | null = null;
     if (tourChanged && existing.tourId != null) {
-      const allTours = await toursRepository.getTours();
       const parkplatzTour = allTours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
       if (parkplatzTour && existing.tourId === parkplatzTour.id) {
         const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
@@ -759,7 +765,6 @@ export async function updateAppointment(
       shouldAddMesseTag = !wasMesseTour && isNowMesseTour;
       shouldRemoveMesseTag = wasMesseTour && !isNowMesseTour;
     } else if (tourChanged && newTourId != null) {
-      const allTours = await toursRepository.getTours();
       const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
       nextTourName = nextTour?.name ?? null;
       shouldAddMesseTag = isMesseTourName(nextTour?.name);
@@ -771,6 +776,7 @@ export async function updateAppointment(
       endDate,
       startTimeHour,
       excludeAppointmentId: appointmentId,
+      forceAllDayOverlap: isAbsenceTourName(targetTour?.name),
     });
     if (conflictEmployees.length > 0) {
       throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
@@ -781,7 +787,7 @@ export async function updateAppointment(
       customerId: relation.customerId,
       tourId: data.tourId ?? null,
       title: resolveTitle(relation.project?.name ?? null, relation.customer.fullName ?? null, relation.customer.customerNumber),
-      description: null,
+      description: data.description ?? null,
       startDate,
       endDate,
       startTime: data.startTime ?? null,

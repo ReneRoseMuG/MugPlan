@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { api } from "@shared/routes";
 import * as employeesController from "../controllers/employeesController";
+import * as employeeAppointmentAbsencesController from "../controllers/employeeAppointmentAbsencesController";
 
 const router = Router();
 
@@ -18,5 +19,9 @@ router.patch(api.employees.toggleActive.path, employeesController.toggleEmployee
 router.delete(api.employees.delete.path, employeesController.deleteEmployee);
 router.get(api.employees.currentAppointments.path, employeesController.listCurrentAppointments);
 router.get(api.employees.appointments.list.path, employeesController.listAppointments);
+router.get(api.employees.absenceAppointments.list.path, employeeAppointmentAbsencesController.listEmployeeAppointmentAbsences);
+router.post(api.employees.absenceAppointments.create.path, employeeAppointmentAbsencesController.createEmployeeAppointmentAbsence);
+router.put(api.employees.absenceAppointments.update.path, employeeAppointmentAbsencesController.updateEmployeeAppointmentAbsence);
+router.delete(api.employees.absenceAppointments.delete.path, employeeAppointmentAbsencesController.deleteEmployeeAppointmentAbsence);
 
 export default router;

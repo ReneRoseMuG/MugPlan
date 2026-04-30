@@ -1,5 +1,11 @@
 import type { InsertNoteTemplate, Tour } from "@shared/schema";
 import {
+  ABSENCE_TAG_DEFINITIONS,
+  ABSENCE_TOUR_COLOR,
+  ABSENCE_TOUR_NAME,
+  absenceTypeValues,
+} from "@shared/absenceAppointments";
+import {
   MANAGED_COMPLAINT_TAG_COLOR,
   MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_MESSE_TAG_COLOR,
@@ -72,10 +78,16 @@ const SYSTEM_TAGS: SeedTagDefinition[] = [
   { name: MANAGED_MESSE_TAG_NAME, color: MANAGED_MESSE_TAG_COLOR, isDefault: true },
   { name: MANAGED_REMARKS_TAG_NAME, color: MANAGED_REMARKS_TAG_COLOR, isDefault: true },
   { name: RESERVED_VACANT_TAG_NAME, color: RESERVED_VACANT_TAG_COLOR, isDefault: true, legacyName: "Vakant" },
+  ...absenceTypeValues.map((absenceType) => ({
+    name: ABSENCE_TAG_DEFINITIONS[absenceType].name,
+    color: ABSENCE_TAG_DEFINITIONS[absenceType].color,
+    isDefault: true,
+  })),
 ];
 
 const SYSTEM_TOURS: SeedTourDefinition[] = [
   { name: "Parkplatz", color: "#D4537E", legacyName: "Vakant" },
+  { name: ABSENCE_TOUR_NAME, color: ABSENCE_TOUR_COLOR },
   { name: "Schröder Halle", color: "#5C3317" },
   { name: "Tour 1", color: "#006B6F" },
   { name: "Tour 2", color: "#00ACB1" },
