@@ -25,7 +25,6 @@ import {
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
-  RESERVED_PLANNING_BLOCKED_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
   isManagedComplaintTagName,
   isManagedMirroredTagName,
@@ -33,7 +32,6 @@ import {
   isManagedSpecialMeasureTagName,
   isPickerVisibleForDomain,
   isProtectedSystemTagName,
-  isReservedPlanningBlockedTagName,
   isReservedAppointmentCancellationTagName,
   isReservedVacantTagName,
 } from "../../../shared/appointmentCancellation";
@@ -44,11 +42,9 @@ import {
   hasAppointmentCancellationTag,
   hasManagedComplaintTag,
   hasManagedRemarksTag,
-  hasReservedPlanningBlockedTag,
   isAppointmentCancellationTag,
   isManagedComplaintTag,
   isManagedRemarksTag,
-  isReservedPlanningBlockedTag,
 } from "../../../server/lib/appointmentCancellation";
 
 describe("appointment cancellation helpers", () => {
@@ -80,7 +76,6 @@ describe("appointment cancellation helpers", () => {
     expect(isProtectedSystemTagName("Reklamation")).toBe(true);
     expect(isProtectedSystemTagName("Sondermaß")).toBe(true);
     expect(isProtectedSystemTagName(RESERVED_VACANT_TAG_NAME)).toBe(true);
-    expect(isProtectedSystemTagName(RESERVED_PLANNING_BLOCKED_TAG_NAME)).toBe(true);
     expect(isProtectedSystemTagName("Anmerkungen")).toBe(false);
     expect(isProtectedSystemTagName("Gespiegelt")).toBe(false);
 
@@ -90,11 +85,6 @@ describe("appointment cancellation helpers", () => {
     expect(isReservedVacantTagName("GEPARKT")).toBe(true);
     expect(isReservedVacantTagName("Vakant")).toBe(false);
 
-    expect(RESERVED_PLANNING_BLOCKED_TAG_NAME).toBe("Planung blockiert");
-    expect(isReservedPlanningBlockedTagName("Planung blockiert")).toBe(true);
-    expect(isReservedPlanningBlockedTagName(" planung blockiert ")).toBe(true);
-    expect(isReservedPlanningBlockedTagName("PLANUNG BLOCKIERT")).toBe(true);
-    expect(isReservedPlanningBlockedTagName("Planung offen")).toBe(false);
   });
 
   it("detects managed tags across server-side helpers", () => {
@@ -108,8 +98,6 @@ describe("appointment cancellation helpers", () => {
     expect(hasManagedRemarksTag([{ name: "Normal" }, { name: "Anmerkungen" }])).toBe(true);
     expect(hasManagedRemarksTag([{ name: "Normal" }])).toBe(false);
 
-    expect(isReservedPlanningBlockedTag({ name: "Planung blockiert" })).toBe(true);
-    expect(hasReservedPlanningBlockedTag([{ name: "Normal" }, { name: "Planung blockiert" }])).toBe(true);
   });
 
   it("filters only the reserved cancellation tag from visible picker collections", () => {
@@ -130,35 +118,26 @@ describe("appointment cancellation helpers", () => {
     expect(isPickerVisibleForDomain("Geparkt", "customer")).toBe(false);
     expect(isPickerVisibleForDomain("Geparkt", "employee")).toBe(false);
 
-    expect(isPickerVisibleForDomain("Planung blockiert", "appointment")).toBe(false);
-    expect(isPickerVisibleForDomain("Planung blockiert", "project")).toBe(false);
-    expect(isPickerVisibleForDomain("Planung blockiert", "customer")).toBe(false);
-    expect(isPickerVisibleForDomain("Planung blockiert", "employee")).toBe(false);
-
     expect(filterPickerTagsForDomain([
-      { name: "Info" },
-      { name: "Storniert" },
-      { name: "Reklamation" },
-      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
-      { name: MANAGED_REMARKS_TAG_NAME },
+      { name: "Info", isDefault: false },
+      { name: "Storniert", isDefault: true },
+      { name: "Reklamation", isDefault: true },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: false },
+      { name: MANAGED_REMARKS_TAG_NAME, isDefault: true },
     ], "project")).toEqual([
-      { name: "Info" },
-      { name: "Reklamation" },
-      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
-      { name: MANAGED_REMARKS_TAG_NAME },
+      { name: "Info", isDefault: false },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: false },
     ]);
 
     expect(filterPickerTagsForDomain([
-      { name: "Info" },
-      { name: "Storniert" },
-      { name: "Reklamation" },
-      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
-      { name: MANAGED_REMARKS_TAG_NAME },
+      { name: "Info", isDefault: false },
+      { name: "Storniert", isDefault: true },
+      { name: "Reklamation", isDefault: true },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: false },
+      { name: MANAGED_REMARKS_TAG_NAME, isDefault: true },
     ], "customer")).toEqual([
-      { name: "Info" },
-      { name: "Reklamation" },
-      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME },
-      { name: MANAGED_REMARKS_TAG_NAME },
+      { name: "Info", isDefault: false },
+      { name: MANAGED_SPECIAL_MEASURE_TAG_NAME, isDefault: false },
     ]);
 
     expect(filterVisibleAppointmentTags([

@@ -41,6 +41,7 @@ import {
 import { AppointmentEmployeeSlot } from "@/components/AppointmentEmployeeSlot";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { NotesSection } from "@/components/NotesSection";
+import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
@@ -74,11 +75,16 @@ import {
 import type { Note } from "@shared/schema";
 import type { NoteTemplate } from "@shared/schema";
 import {
+  MANAGED_COMPLAINT_TAG_COLOR,
+  isManagedComplaintTagName,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
-  isReservedPlanningBlockedTagName,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
+import {
+  findWorkflowNoteTemplate,
+  normalizeWorkflowNoteTitle,
+} from "@/lib/workflow-note-templates";
 import { Switch } from "@/components/ui/switch";
 
 interface AppointmentFormProps {
@@ -762,9 +768,6 @@ export function AppointmentForm({
       if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
         throw buildApiError("Stornierte Termine können nicht geparkt werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
       }
-      if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        throw buildApiError("Planung blockierte Termine können nicht geparkt werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
-      }
       throw buildApiError(parsed?.message ?? (response.statusText || "Parken fehlgeschlagen"), response.status, parsed?.code);
     },
     onSuccess: async () => {
@@ -794,11 +797,46 @@ export function AppointmentForm({
         toast({ title: "Parken nicht möglich", description: "Stornierte Termine können nicht geparkt werden.", variant: "destructive" });
         return;
       }
-      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        toast({ title: "Parken nicht möglich", description: "Planung blockierte Termine können nicht geparkt werden.", variant: "destructive" });
-        return;
-      }
       toast({ title: "Parken nicht möglich", description: err.message || "Termin konnte nicht geparkt werden.", variant: "destructive" });
+    },
+  });
+
+  const reklamationAppointmentMutation = useMutation({
+    mutationFn: async ({ action, version }: { action: "set" | "remove"; version: number }) => {
+      const response = await apiRequest(
+        action === "set" ? "POST" : "DELETE",
+        `/api/appointments/${appointmentId}/reklamation`,
+        { version },
+      );
+      return response.json() as Promise<{ kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }>;
+    },
+    onSuccess: async (result) => {
+      if (!appointmentId) return;
+      const openedDialog = applyAppointmentMutationEvents({
+        mutationEvents: result.mutationEvents,
+        targetAppointmentId: appointmentId,
+        notes: visibleAppointmentNotes.map((note) => ({
+          id: note.id,
+          version: note.version,
+          title: note.title,
+        })),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
+      await invalidateRelatedAppointmentQueries(selectedProjectId);
+      await invalidateTagProjectionQueries();
+      toast({ title: hasReklamationTag ? "Reklamation aufgehoben" : "Reklamation gemeldet" });
+      if (!openedDialog) {
+        onSaved?.();
+      }
+    },
+    onError: (error) => {
+      const err = error as AppointmentApiError;
+      toast({
+        title: "Reklamation konnte nicht geändert werden",
+        description: err.message || "Bitte neu laden und erneut versuchen.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -920,6 +958,7 @@ export function AppointmentForm({
   );
   const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
   const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
+  const hasReklamationTag = visibleAppointmentTags.some((item) => isManagedComplaintTagName(item.tag.name));
 
   const assignedEmployeesById = useMemo(() => {
     const map = new Map<number, Employee>();
@@ -968,16 +1007,13 @@ export function AppointmentForm({
   const isParked = isEditing && isParkplatzTour(lockedTourId, parkplatzTourId);
   const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
-  const isPlanningBlocked = (appointmentDetail?.appointmentTags ?? []).some((tag) => isReservedPlanningBlockedTagName(tag.name));
   const readOnlyReason = isReader
     ? "reader"
     : isHistoricalReadOnly
       ? "historical"
       : isCancelled
         ? "cancelled"
-        : isPlanningBlocked
-          ? "planningBlocked"
-          : null;
+        : null;
   const isReadOnlyView = readOnlyReason !== null;
   const isMutationLocked = isReadOnlyView;
   const isProjectReadOnly = isMutationLocked || readOnlyFields?.includes("project") === true;
@@ -1737,11 +1773,6 @@ export function AppointmentForm({
         console.info(`${logPrefix} save blocked: cancelled appointment`);
         return;
       }
-      if (readOnlyReason === "planningBlocked") {
-        toast({ title: "Planung blockiert", description: "Planung blockierte Termine können nicht bearbeitet werden.", variant: "destructive" });
-        console.info(`${logPrefix} save blocked: planning blocked appointment`);
-        return;
-      }
       toast({ title: "Termin ist gesperrt", description: "Historische Termine können nicht geändert werden.", variant: "destructive" });
       console.info(`${logPrefix} save blocked: locked appointment`);
       return;
@@ -1855,9 +1886,6 @@ export function AppointmentForm({
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
           throw buildApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
         }
-        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-          throw buildApiError("Planung blockierte Termine können nicht gelöscht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
-        }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
         }
@@ -1921,14 +1949,6 @@ export function AppointmentForm({
         });
         return;
       }
-      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Planung blockierte Termine können nicht gelöscht werden.",
-          variant: "destructive",
-        });
-        return;
-      }
       if (err.code === "VERSION_CONFLICT") {
         toast({
           title: "Löschen nicht möglich",
@@ -1984,13 +2004,11 @@ export function AppointmentForm({
     }
   };
 
-  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
-
   const openNoteRemovalDialogForTemplate = (
     templateTitle: string,
     notes: Array<{ id: number; version: number; title: string }>,
   ) => {
-    const matchingNote = notes.find((note) => normalizeTemplateTitle(note.title) === normalizeTemplateTitle(templateTitle));
+    const matchingNote = notes.find((note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(templateTitle));
     if (!matchingNote) {
       return;
     }
@@ -2067,9 +2085,7 @@ export function AppointmentForm({
 
   const handleCreateTemplateNoteFromSuggestion = async () => {
     if (!noteSuggestionDialog) return;
-    const template = noteTemplates.find(
-      (entry) => entry.title.trim().toLocaleLowerCase("de") === noteSuggestionDialog.templateTitle.trim().toLocaleLowerCase("de"),
-    );
+    const template = findWorkflowNoteTemplate(noteTemplates, noteSuggestionDialog.templateTitle);
     if (!template) {
       toast({
         title: "Notizvorlage fehlt",
@@ -2224,14 +2240,6 @@ export function AppointmentForm({
           toast({
             title: "Speichern nicht möglich",
             description: "Stornierte Termine koennen nicht mehr bearbeitet werden.",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-          toast({
-            title: "Speichern nicht möglich",
-            description: "Planung blockierte Termine koennen nicht bearbeitet werden.",
             variant: "destructive",
           });
           return;
@@ -2475,6 +2483,36 @@ export function AppointmentForm({
                       {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
                     </Button>
                   ) : null}
+                  {isEditing && !isCancelled && canManageAppointmentTags ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": MANAGED_COMPLAINT_TAG_COLOR + "22",
+                        "--action-bg-hover": MANAGED_COMPLAINT_TAG_COLOR + "33",
+                        "--action-border": MANAGED_COMPLAINT_TAG_COLOR + "66",
+                        "--action-border-hover": MANAGED_COMPLAINT_TAG_COLOR + "99",
+                        "--action-fg": MANAGED_COMPLAINT_TAG_COLOR,
+                      } as React.CSSProperties}
+                      onClick={() => {
+                        const version = appointmentDetail?.version;
+                        if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+                          toast({ title: "Reklamation nicht möglich", description: "Terminversion fehlt. Bitte neu laden.", variant: "destructive" });
+                          return;
+                        }
+                        reklamationAppointmentMutation.mutate({ action: hasReklamationTag ? "remove" : "set", version });
+                      }}
+                      disabled={isMutationLocked || reklamationAppointmentMutation.isPending}
+                      data-testid={hasReklamationTag ? "button-remove-appointment-reklamation" : "button-set-appointment-reklamation"}
+                    >
+                      <ScrollText className="w-4 h-4" />
+                      {reklamationAppointmentMutation.isPending
+                        ? "Reklamation..."
+                        : hasReklamationTag
+                          ? "Reklamation aufheben"
+                          : "Reklamation melden"}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -2613,14 +2651,6 @@ export function AppointmentForm({
               <AlertTitle>Termin gesperrt</AlertTitle>
               <AlertDescription>
                 Historische Termine können nicht verändert werden.
-              </AlertDescription>
-            </Alert>
-          )}
-          {readOnlyReason === "planningBlocked" && (
-            <Alert variant="destructive">
-              <AlertTitle>Planung blockiert</AlertTitle>
-              <AlertDescription>
-                Dieser Termin ist für Schreibzugriffe blockiert und kann auf der Terminseite nicht bearbeitet werden.
               </AlertDescription>
             </Alert>
           )}
@@ -3040,45 +3070,22 @@ export function AppointmentForm({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-suggestion">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für diesen Termin angelegt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={handleSkipTemplateNoteSuggestion}>Überspringen</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-suggestion-confirm"
-              onClick={() => { void handleCreateTemplateNoteFromSuggestion(); }}
-            >
-              Jetzt anlegen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <WorkflowNoteSuggestionDialog
+        open={noteSuggestionDialog !== null}
+        templateTitle={noteSuggestionDialog?.templateTitle}
+        targetLabel="diesen Termin"
+        onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
+        onSkip={handleSkipTemplateNoteSuggestion}
+        onConfirm={handleCreateTemplateNoteFromSuggestion}
+      />
 
-      <AlertDialog open={noteRemovalDialog !== null} onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-removal">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz entfernen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}" ebenfalls entfernt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-removal-keep" onClick={handleKeepTemplateNote}>Behalten</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-removal-confirm"
-              onClick={() => { void handleRemoveTemplateNote(); }}
-            >
-              Entfernen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <WorkflowNoteRemovalDialog
+        open={noteRemovalDialog !== null}
+        description={`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}“ ebenfalls entfernt werden?`}
+        onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}
+        onKeep={handleKeepTemplateNote}
+        onConfirm={handleRemoveTemplateNote}
+      />
 
       <Dialog open={templateNoteEditorOpen} onOpenChange={closeTemplateNoteEditor}>
         <DialogContent className="max-w-lg">

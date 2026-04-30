@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Das direkte Hinzufügen des Reklamation-Tags an der Wochenkalender-Karte löst den Notiz-Vorschlag-Dialog aus.
+ * - Die Reklamation-Aktion an der Wochenkalender-Karte löst den Notiz-Vorschlag-Dialog aus.
  * - Der Notiz-Vorschlag-Dialog erstellt nach Bestätigung eine Notiz mit dem Template-Titel.
  * - Das Entfernen des Reklamation-Tags im Terminformular löst den Notiz-Entfernen-Dialog aus.
  * - Der Notiz-Entfernen-Dialog löscht nach Bestätigung die zugehörige Notiz.
@@ -21,10 +21,7 @@
  * beim direkten Tag-Setzen im Wochenkalender sowie beim Entfernen im Terminformular.
  */
 import { expect, test, type Page } from "@playwright/test";
-import {
-  MANAGED_COMPLAINT_TAG_NAME,
-  MANAGED_MESSE_TAG_NAME,
-} from "../../shared/appointmentCancellation";
+import { MANAGED_COMPLAINT_TAG_NAME } from "../../shared/appointmentCancellation";
 import {
   createAppointmentFixture,
   createCustomerFixture,
@@ -39,15 +36,6 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
-
-async function readSystemTagByName(page: Page, name: string): Promise<{ id: number; name: string }> {
-  const response = await page.request.get("/api/admin/master-data/tags");
-  expect(response.ok()).toBeTruthy();
-  const allTags = await response.json() as Array<{ id: number; name: string }>;
-  const tag = allTags.find((t) => t.name === name);
-  expect(tag?.id).toBeTruthy();
-  return tag!;
-}
 
 async function readNoteTemplateByTitle(page: Page, title: string): Promise<{
   id: number;
@@ -88,16 +76,15 @@ async function addTagViaWeekCardPicker(page: Page, appointmentId: number, tagId:
   await page.getByTestId(`week-appointment-tags-${appointmentId}-add-${tagId}-add`).click();
 }
 
-async function addTagViaAppointmentFormPicker(page: Page, tagId: number): Promise<void> {
-  await page.getByTestId("appointment-tag-picker-button-add").click();
-  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
-  await page.getByTestId(`appointment-tag-picker-add-tag-${tagId}-add`).click();
+async function setReklamationViaWeekCardAction(page: Page, appointmentId: number): Promise<void> {
+  await page.getByTestId(`week-appointment-menu-trigger-${appointmentId}`).click();
+  await page.getByTestId(`week-appointment-set-reklamation-${appointmentId}`).click();
 }
 
-async function removeTagViaBadge(page: Page, tagId: number): Promise<void> {
-  const removeButton = page.getByTestId(`appointment-tag-picker-tag-${tagId}`).getByRole("button");
-  await expect(removeButton).toBeVisible();
-  await removeButton.click();
+async function removeReklamationViaWeekCardAction(page: Page, appointmentId: number): Promise<void> {
+  await page.getByTestId(`week-appointment-menu-trigger-${appointmentId}`).click();
+  await expect(page.getByTestId(`week-appointment-remove-reklamation-${appointmentId}`)).toBeVisible();
+  await page.getByTestId(`week-appointment-remove-reklamation-${appointmentId}`).click();
 }
 
 async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>> {
@@ -106,10 +93,24 @@ async function readAppointmentNotes(page: Page, appointmentId: number): Promise<
   return response.json() as Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>>;
 }
 
+async function readAppointmentTagNames(page: Page, appointmentId: number): Promise<string[]> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/tags`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as Array<{ tag: { name: string } }>;
+  return body.map((item) => item.tag.name);
+}
+
 async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>> {
   const response = await page.request.get(`/api/projects/${projectId}/notes`);
   expect(response.ok()).toBeTruthy();
   return response.json() as Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>>;
+}
+
+async function readProjectTagNames(page: Page, projectId: number): Promise<string[]> {
+  const response = await page.request.get(`/api/projects/${projectId}/tags`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as Array<{ tag: { name: string } }>;
+  return body.map((item) => item.tag.name);
 }
 
 async function openProjectForm(page: Page, projectId: number): Promise<void> {
@@ -140,7 +141,7 @@ function hexToRgb(hex: string): string {
   return `rgb(${red}, ${green}, ${blue})`;
 }
 
-test("adds Reklamation-Tag from the week calendar card and suggestion dialog creates note on confirm", async ({ page }) => {
+test("sets Reklamation from the week calendar action and suggestion dialog opens the note editor", async ({ page }) => {
   const customer = await createCustomerFixture("FT06-RULE-REKL-CUST");
   const project = await createProjectFixture({
     prefix: "FT06-RULE-REKL",
@@ -154,14 +155,14 @@ test("adds Reklamation-Tag from the week calendar card and suggestion dialog cre
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
   const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
 
   await openAppointmentInCalendar(page, appointment.id);
-  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  await setReklamationViaWeekCardAction(page, appointment.id);
 
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
+  await expect(page.getByTestId("button-note-suggestion-skip")).toHaveText("Überspringen");
 
   await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
@@ -190,7 +191,7 @@ test("adds Reklamation-Tag from the week calendar card and suggestion dialog cre
   });
 });
 
-test("adds Reklamation-Tag from the appointment form picker and opens the template-backed editor", async ({ page }) => {
+test("sets Reklamation from the appointment form action and opens the template-backed editor", async ({ page }) => {
   const customer = await createCustomerFixture("FT06-RULE-FORM-CUST");
   const project = await createProjectFixture({
     prefix: "FT06-RULE-FORM",
@@ -204,11 +205,10 @@ test("adds Reklamation-Tag from the appointment form picker and opens the templa
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
   const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
 
   await openAppointmentFormFromCalendar(page, appointment.id);
-  await addTagViaAppointmentFormPicker(page, reklamationTag.id);
+  await page.getByTestId("button-set-appointment-reklamation").click();
 
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await page.getByTestId("button-note-suggestion-confirm").click();
@@ -238,22 +238,17 @@ test("adds Reklamation-Tag from the appointment form picker and opens the templa
   });
 });
 
-test("adds Reklamation-Tag from the project form picker and creates a project note from the suggestion", async ({ page }) => {
+test("sets Reklamation from the project form action and creates a project note from the suggestion", async ({ page }) => {
   const project = await createProjectFixture({
     prefix: "FT06-RULE-PROJECT",
     name: "FT06 Rule Engine Projekt",
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
   const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
 
   await openProjectForm(page, project.id);
-  await page.getByTestId("project-tag-picker-button-add").click();
-  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toBeVisible();
-  await page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`).click();
-
-  await expect(page.getByRole("heading", { name: "Tag hinzufügen" })).toHaveCount(0);
+  await page.getByTestId("button-set-project-reklamation").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
 
@@ -294,13 +289,10 @@ test("project note suggestion dialog stays closed after the prefilled note dialo
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
   const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
 
   await openProjectForm(page, project.id);
-  await page.getByTestId("project-tag-picker-button-add").click();
-  await expect(page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`)).toBeVisible();
-  await page.getByTestId(`project-tag-picker-add-tag-${reklamationTag.id}-add`).click();
+  await page.getByTestId("button-set-project-reklamation").click();
 
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await page.getByTestId("button-note-suggestion-confirm").click();
@@ -316,12 +308,12 @@ test("project note suggestion dialog stays closed after the prefilled note dialo
   expect(notes.map((note) => note.title)).not.toContain(reklamationTemplate.title);
 });
 
-test("adds Messe-Tag from the week calendar card and suggestion dialog is dismissed with skip so no note is created", async ({ page }) => {
-  const customer = await createCustomerFixture("FT06-RULE-MESSE-CUST");
+test("sets Reklamation from the appointment action and skips the note suggestion without creating a note", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-REKL-SKIP-CUST");
   const project = await createProjectFixture({
-    prefix: "FT06-RULE-MESSE",
+    prefix: "FT06-RULE-REKL-SKIP",
     customerId: customer.id,
-    name: "FT06 Rule Engine Messe",
+    name: "FT06 Rule Engine Reklamation Skip",
   });
   const appointment = await createAppointmentFixture({
     projectId: project.id,
@@ -330,24 +322,29 @@ test("adds Messe-Tag from the week calendar card and suggestion dialog is dismis
   });
 
   await loginAsAdmin(page);
-  const messeTag = await readSystemTagByName(page, MANAGED_MESSE_TAG_NAME);
-  const messeTemplate = await readNoteTemplateByTitle(page, MANAGED_MESSE_TAG_NAME);
 
-  await openAppointmentInCalendar(page, appointment.id);
-  await addTagViaWeekCardPicker(page, appointment.id, messeTag.id);
+  await openAppointmentFormFromCalendar(page, appointment.id);
+  await page.getByTestId("button-set-appointment-reklamation").click();
 
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
-  await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_MESSE_TAG_NAME);
+  await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
 
   await page.getByTestId("button-note-suggestion-skip").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 
-  const notes = await readAppointmentNotes(page, appointment.id);
-  const messeNote = notes.find((n) => n.title === messeTemplate.title);
-  expect(messeNote).toBeUndefined();
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
 });
 
-test("week card tag picker closes after successful add while calendar refetch is slow", async ({ page }) => {
+test("week card tag picker closes after successful custom tag add while calendar refetch is slow", async ({ page }) => {
+  const customTag = await createExactTagFixture("FT06 Slow Custom Tag");
   const customer = await createCustomerFixture("FT06-RULE-SLOW-TAG-CUST");
   const project = await createProjectFixture({
     prefix: "FT06-RULE-SLOW-TAG",
@@ -361,20 +358,18 @@ test("week card tag picker closes after successful add while calendar refetch is
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
-
   await openAppointmentInCalendar(page, appointment.id);
   await delayNextGet(page, "**/api/calendar/appointments?**", 1_500);
   const tagResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === `/api/appointments/${appointment.id}/tags`
   ));
-  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  await addTagViaWeekCardPicker(page, appointment.id, customTag.id);
   const tagResponse = await tagResponsePromise;
   expect(tagResponse.ok(), await tagResponse.text()).toBeTruthy();
 
   await expect(page.getByTestId(`week-appointment-tags-${appointment.id}-dialog`)).toHaveCount(0, { timeout: 750 });
-  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 });
 
 test("week card template note editor closes after successful save while notes refetch is slow", async ({ page }) => {
@@ -391,10 +386,8 @@ test("week card template note editor closes after successful save while notes re
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
-
   await openAppointmentInCalendar(page, appointment.id);
-  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  await setReklamationViaWeekCardAction(page, appointment.id);
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
@@ -426,11 +419,9 @@ test("removes Reklamation-Tag when note exists and removal dialog deletes note o
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
-
   await openAppointmentFormFromCalendar(page, appointment.id);
 
-  await addTagViaAppointmentFormPicker(page, reklamationTag.id);
+  await page.getByTestId("button-set-appointment-reklamation").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
   await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
@@ -441,7 +432,7 @@ test("removes Reklamation-Tag when note exists and removal dialog deletes note o
     return notes.map((n) => n.title);
   }).toEqual(expect.arrayContaining([MANAGED_COMPLAINT_TAG_NAME]));
 
-  await removeTagViaBadge(page, reklamationTag.id);
+  await page.getByTestId("button-remove-appointment-reklamation").click();
 
   await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
   await expect(page.getByTestId("dialog-note-removal")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
@@ -450,9 +441,127 @@ test("removes Reklamation-Tag when note exists and removal dialog deletes note o
   await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
 
   await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+
+  await expect.poll(async () => {
     const notes = await readAppointmentNotes(page, appointment.id);
     return notes.map((n) => n.title);
   }).not.toEqual(expect.arrayContaining([MANAGED_COMPLAINT_TAG_NAME]));
+});
+
+test("removes Reklamation from the week calendar action and keeps the existing note when requested", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-WEEK-KEEP-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-WEEK-KEEP",
+    customerId: customer.id,
+    name: "FT06 Rule Engine Woche Behalten",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(5),
+  });
+
+  await loginAsAdmin(page);
+  await openAppointmentInCalendar(page, appointment.id);
+  await setReklamationViaWeekCardAction(page, appointment.id);
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-cancel-note").click();
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+
+  await removeReklamationViaWeekCardAction(page, appointment.id);
+
+  await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-removal")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-note-removal-keep").click();
+  await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+});
+
+test("removes project Reklamation and deletes the matching project note on confirm", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT-REMOVE",
+    name: "FT06 Rule Engine Projekt Entfernen",
+  });
+
+  await loginAsAdmin(page);
+  await openProjectForm(page, project.id);
+  await page.getByTestId("button-set-project-reklamation").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-save-note").click();
+
+  await expect.poll(async () => {
+    const tagNames = await readProjectTagNames(page, project.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+
+  await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
+  await page.getByTestId("button-remove-project-reklamation").click();
+  await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
+  await page.getByTestId("button-note-removal-confirm").click();
+  await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readProjectTagNames(page, project.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+});
+
+test("removes project Reklamation and keeps the matching project note when requested", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT-KEEP",
+    name: "FT06 Rule Engine Projekt Behalten",
+  });
+
+  await loginAsAdmin(page);
+  await openProjectForm(page, project.id);
+  await page.getByTestId("button-set-project-reklamation").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-save-note").click();
+
+  await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
+  await page.getByTestId("button-remove-project-reklamation").click();
+  await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
+  await page.getByTestId("button-note-removal-keep").click();
+  await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readProjectTagNames(page, project.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
 });
 
 test("adding a regular custom tag from the week calendar card creates no dialog", async ({ page }) => {
@@ -492,15 +601,13 @@ test("adding Reklamation from the week calendar card when a matching note alread
   });
 
   await loginAsAdmin(page);
-  const reklamationTag = await readSystemTagByName(page, MANAGED_COMPLAINT_TAG_NAME);
-
   const noteCreateResponse = await page.request.post(`/api/appointments/${appointment.id}/notes`, {
     data: { title: MANAGED_COMPLAINT_TAG_NAME, body: "", print: false },
   });
   expect(noteCreateResponse.ok()).toBeTruthy();
 
   await openAppointmentInCalendar(page, appointment.id);
-  await addTagViaWeekCardPicker(page, appointment.id, reklamationTag.id);
+  await setReklamationViaWeekCardAction(page, appointment.id);
 
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 });

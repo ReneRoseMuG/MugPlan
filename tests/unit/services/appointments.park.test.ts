@@ -8,7 +8,6 @@
  * - parkAppointment bumpt die Version atomar ueber setAppointmentParkTx.
  * - parkAppointment blockiert historische Termine.
  * - parkAppointment blockiert stornierte Termine.
- * - parkAppointment blockiert planung blockierte Termine.
  * - createAppointment setzt Tag Messe Aufbau/Abbau still wenn direkt auf Tour Messe angelegt wird.
  * - createAppointment liefert fuer Tour- und Tag-Folgen zentrale mutationEvents zurueck.
  * - updateAppointment entfernt Tag Geparkt still wenn Tour von Parkplatz auf andere wechselt.
@@ -164,18 +163,6 @@ describe("FT06 unit: parkAppointment", () => {
     await expect(parkAppointment(5, 1, "DISPONENT")).rejects.toMatchObject({
       status: 409,
       code: "CANCELLED_APPOINTMENT_READONLY",
-    });
-  });
-
-  it("blockiert planung blockierte Termine mit PLANNING_BLOCKED_APPOINTMENT_READONLY", async () => {
-    repoMock.getAppointment.mockResolvedValue({ id: 15, startDate: FUTURE_DATE, tourId: null } as any);
-    repoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(
-      new Map([[15, [{ name: "Planung blockiert" }]]]),
-    );
-
-    await expect(parkAppointment(15, 1, "DISPONENT")).rejects.toMatchObject({
-      status: 409,
-      code: "PLANNING_BLOCKED_APPOINTMENT_READONLY",
     });
   });
 

@@ -5,7 +5,6 @@
  * - Mitarbeiter-Entfernen aus Terminen erwartet eine gueltige Appointment-Version.
  * - Der Pfad bump't die Appointment-Version vor dem eigentlichen Join-Delete atomar.
  * - Stornierte Termine bleiben fuer den Remove-Pfad gesperrt.
- * - Planung blockierte Termine bleiben fuer den Remove-Pfad gesperrt.
  * - Historische Nicht-Parkplatz-Termine bleiben fuer den Remove-Pfad gesperrt.
  * - Historische Parkplatz-Termine duerfen weiterhin bearbeitet werden.
  *
@@ -106,18 +105,4 @@ describe("FT01 unit: appointment employee removal versioning", () => {
     expect(appointmentsRepoMock.deleteAppointmentEmployeeTx).toHaveBeenCalledWith(expect.anything(), 55, 9);
   });
 
-  it("blocks employee removal for planning blocked appointments", async () => {
-    appointmentsRepoMock.getAppointment.mockResolvedValue({ id: 56, startDate: "2099-01-01", tourId: 12 } as any);
-    appointmentsRepoMock.getAppointmentTx.mockResolvedValue({ id: 56, startDate: "2099-01-01", tourId: 12 } as any);
-    appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(
-      new Map([[56, [{ name: "Planung blockiert" }]]]),
-    );
-
-    await expect(removeEmployeeFromAppointment(56, 9, 3, "ADMIN")).rejects.toMatchObject({
-      status: 409,
-      code: "PLANNING_BLOCKED_APPOINTMENT_READONLY",
-    });
-
-    expect(appointmentsRepoMock.deleteAppointmentEmployeeTx).not.toHaveBeenCalled();
-  });
 });

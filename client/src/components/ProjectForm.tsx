@@ -21,6 +21,7 @@ import {
 } from "@/components/ProjectDuplicateResolutionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
@@ -71,8 +72,17 @@ import {
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
 import { useToast } from "@/hooks/use-toast";
-import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
-import { isManagedRemarksTagName } from "@shared/appointmentCancellation";
+import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
+import {
+  buildWorkflowNoteDraft,
+  findWorkflowNoteTemplate,
+  normalizeWorkflowNoteTitle,
+} from "@/lib/workflow-note-templates";
+import {
+  isManagedComplaintTagName,
+  isManagedRemarksTagName,
+  MANAGED_COMPLAINT_TAG_COLOR,
+} from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { Project, Customer, Note, NoteTemplate, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
@@ -189,6 +199,7 @@ export function ProjectForm({
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
+  const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
   const [suggestedProjectNoteDraft, setSuggestedProjectNoteDraft] = useState<ProjectNoteDraft | null>(null);
   const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
@@ -299,6 +310,7 @@ export function ProjectForm({
   );
   const visibleProjectTags = isEditing ? assignedTags : draftProjectTags;
   const visibleProjectNotes = isEditing ? projectNotes : draftProjectNotes;
+  const hasReklamationTag = visibleProjectTags.some((item) => isManagedComplaintTagName(item.tag.name));
 
   const masterDataScope = isAdmin ? "all" : "active";
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${masterDataScope}`;
@@ -948,8 +960,6 @@ export function ProjectForm({
     setDraftProjectNotes((current) => current.filter((note) => note.id !== noteId));
   };
 
-  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
-
   const openProjectNoteSuggestionForTag = (tagName: string) => {
     const action = computeTagAddedAction(
       tagName,
@@ -961,6 +971,26 @@ export function ProjectForm({
     }
   };
 
+  const openProjectNoteRemovalForTag = (tagName: string) => {
+    const action = computeTagRemovedAction(
+      tagName,
+      visibleProjectNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind !== "show_note_removal_dialog") {
+      return;
+    }
+
+    const matchingNote = visibleProjectNotes.find((note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(action.templateTitle));
+    if (!matchingNote || !Number.isInteger(matchingNote.version) || matchingNote.version < 1) {
+      return;
+    }
+    setNoteRemovalDialog({
+      templateTitle: action.templateTitle,
+      noteId: matchingNote.id,
+      noteVersion: matchingNote.version,
+    });
+  };
+
   const handleCreateProjectNoteFromSuggestion = async () => {
     if (!noteSuggestionDialog) return;
     const templates = noteTemplates.length > 0
@@ -969,7 +999,7 @@ export function ProjectForm({
         queryKey: ["/api/note-templates"],
         queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
       });
-    const template = templates.find((entry) => normalizeTemplateTitle(entry.title) === normalizeTemplateTitle(noteSuggestionDialog.templateTitle));
+    const template = findWorkflowNoteTemplate(templates, noteSuggestionDialog.templateTitle);
     if (!template) {
       toast({
         title: "Notizvorlage fehlt",
@@ -979,13 +1009,7 @@ export function ProjectForm({
       return;
     }
 
-    setSuggestedProjectNoteDraft({
-      title: template.title,
-      body: template.body,
-      cardColor: template.cardColor,
-      print: template.print,
-      templateId: template.id,
-    });
+    setSuggestedProjectNoteDraft(buildWorkflowNoteDraft(template));
     setNoteSuggestionDialog(null);
   };
 
@@ -1113,6 +1137,36 @@ export function ProjectForm({
     onError: (error) => {
       toast({
         title: "Tag konnte nicht entfernt werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const reklamationProjectMutation = useMutation({
+    mutationFn: async (action: "set" | "remove") => {
+      if (!projectVersion) throw new Error("Projektversion fehlt");
+      const response = await apiRequest(
+        action === "set" ? "POST" : "DELETE",
+        `/api/projects/${effectiveProjectId}/reklamation`,
+        { version: projectVersion },
+      );
+      return response.json() as Promise<{ kind: "updated" | "noop" }>;
+    },
+    onSuccess: (_result, action) => {
+      if (action === "set") {
+        openProjectNoteSuggestionForTag("Reklamation");
+      } else {
+        openProjectNoteRemovalForTag("Reklamation");
+      }
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
+      void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
+      void invalidateProjectQueries();
+      toast({ title: action === "set" ? "Reklamation gemeldet" : "Reklamation aufgehoben" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Reklamation nicht möglich",
         description: error instanceof Error ? error.message : "Unbekannter Fehler",
         variant: "destructive",
       });
@@ -1620,6 +1674,29 @@ export function ProjectForm({
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
+                  {canManageProjectTags ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": `${MANAGED_COMPLAINT_TAG_COLOR}24`,
+                        "--action-bg-hover": `${MANAGED_COMPLAINT_TAG_COLOR}33`,
+                        "--action-border": `${MANAGED_COMPLAINT_TAG_COLOR}59`,
+                        "--action-border-hover": `${MANAGED_COMPLAINT_TAG_COLOR}80`,
+                        "--action-fg": MANAGED_COMPLAINT_TAG_COLOR,
+                      } as CSSProperties}
+                      onClick={() => reklamationProjectMutation.mutate(hasReklamationTag ? "remove" : "set")}
+                      disabled={reklamationProjectMutation.isPending}
+                      data-testid={hasReklamationTag ? "button-remove-project-reklamation" : "button-set-project-reklamation"}
+                    >
+                      <ScrollText className="w-4 h-4" />
+                      {reklamationProjectMutation.isPending
+                        ? "Reklamation..."
+                        : hasReklamationTag
+                          ? "Reklamation aufheben"
+                          : "Reklamation melden"}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -1925,25 +2002,29 @@ export function ProjectForm({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-suggestion">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für dieses Projekt angelegt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={() => setNoteSuggestionDialog(null)}>Überspringen</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-suggestion-confirm"
-              onClick={() => { void handleCreateProjectNoteFromSuggestion(); }}
-            >
-              Jetzt anlegen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <WorkflowNoteSuggestionDialog
+        open={noteSuggestionDialog !== null}
+        templateTitle={noteSuggestionDialog?.templateTitle}
+        targetLabel="dieses Projekt"
+        onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
+        onSkip={() => setNoteSuggestionDialog(null)}
+        onConfirm={handleCreateProjectNoteFromSuggestion}
+      />
+
+      <WorkflowNoteRemovalDialog
+        open={noteRemovalDialog !== null}
+        description={`Soll die zugehörige Notiz „${noteRemovalDialog?.templateTitle ?? ""}“ aus diesem Projekt entfernt werden?`}
+        onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}
+        onKeep={() => setNoteRemovalDialog(null)}
+        onConfirm={() => {
+          if (!noteRemovalDialog) return;
+          deleteNoteMutation.mutate({
+            noteId: noteRemovalDialog.noteId,
+            version: noteRemovalDialog.noteVersion,
+          });
+          setNoteRemovalDialog(null);
+        }}
+      />
 
       <AlertDialog open={closeConfirmOpen} onOpenChange={setCloseConfirmOpen}>
         <AlertDialogContent>

@@ -36,6 +36,10 @@ import { getProjectTagsByProjectIds } from "./tagRelationsRepository";
 export type ProjectWithTags = Project & { tags: Tag[] };
 export type ProjectWithArticleItemsAndTags = ProjectWithTags & { projectArticleItems: ProjectArticleItem[] };
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function withProjectTransaction<T>(callback: (tx: DbTx) => Promise<T>): Promise<T> {
+  return db.transaction(callback);
+}
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
@@ -744,6 +748,46 @@ export async function updateProjectWithVersion(
     const [order] = await tx.select().from(projectOrder).where(eq(projectOrder.projectId, id));
     return { kind: "updated" as const, project: mergeProjectWithOrder(project, order ?? null) };
   });
+}
+
+export async function bumpProjectVersionTx(
+  tx: DbTx,
+  params: { projectId: number; expectedVersion: number },
+): Promise<{ kind: "updated" | "version_conflict" }> {
+  const result = await tx.execute(sql`
+    update project
+    set
+      updated_at = now(),
+      version = version + 1
+    where id = ${params.projectId}
+      and version = ${params.expectedVersion}
+  `);
+  const affectedRows = Number((result as any)?.[0]?.affectedRows ?? (result as any)?.affectedRows ?? 0);
+  return affectedRows === 0 ? { kind: "version_conflict" } : { kind: "updated" };
+}
+
+export async function addProjectTagTx(
+  tx: DbTx,
+  projectId: number,
+  tagId: number,
+): Promise<void> {
+  await tx.execute(sql`
+    insert into project_tags (project_id, tag_id, version)
+    values (${projectId}, ${tagId}, 1)
+    on duplicate key update version = version
+  `);
+}
+
+export async function removeProjectTagByTagIdTx(
+  tx: DbTx,
+  projectId: number,
+  tagId: number,
+): Promise<void> {
+  await tx.execute(sql`
+    delete from project_tags
+    where project_id = ${projectId}
+      and tag_id = ${tagId}
+  `);
 }
 
 export async function setProjectOrderAmountTx(

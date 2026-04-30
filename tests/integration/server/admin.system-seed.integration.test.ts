@@ -5,6 +5,7 @@
  * - GET/POST /api/admin/system-seed sind ADMIN-only.
  * - Der Preview-Endpoint meldet fehlende Soll-Eintraege strukturiert vor der Ausfuehrung.
  * - Der Apply-Endpoint seeded ausgewaehlte System-Tags, Soll-Touren und Notizvorlagen mit stabilem Vertrag.
+ * - Der Apply-Endpoint kann Sondermaß gezielt auf isDefault=false reparieren.
  * - Ein zweiter Lauf bleibt idempotent und liefert unveraenderte Eintraege statt Duplikaten.
  * - Bestehende Notizvorlagen-Bodies werden beim Endpoint-Seed nicht ueberschrieben.
  *
@@ -108,7 +109,6 @@ describe("integration: admin system seed", () => {
           "tag:storniert",
           "tag:reklamation",
           "tag:geparkt",
-          "tag:planung blockiert",
           "tour:parkplatz",
           "noteTemplate:reklamation",
         ],
@@ -117,20 +117,17 @@ describe("integration: admin system seed", () => {
 
     expect(response.body.logLines).toEqual(expect.arrayContaining([
       "Tag angelegt: Storniert",
-      "Tag angelegt: Planung blockiert",
       "Tour angelegt: Parkplatz",
       "Notizvorlage angelegt: Reklamation",
     ]));
 
     const complaintTag = await masterDataRepository.getTagByNormalizedName("Reklamation");
     const vacantTag = await masterDataRepository.getTagByNormalizedName("Geparkt");
-    const planningBlockedTag = await masterDataRepository.getTagByNormalizedName("Planung blockiert");
     const tours = await toursRepository.getTours();
     const templates = await noteTemplatesRepository.getNoteTemplates(false);
 
     expect(complaintTag).toMatchObject({ color: "#FF011B", isDefault: true });
     expect(vacantTag).toMatchObject({ color: "#D4537E", isDefault: true });
-    expect(planningBlockedTag).toMatchObject({ color: "#3B2025", isDefault: true });
     expect(tours).toEqual(expect.arrayContaining([
       expect.objectContaining({ name: "Parkplatz", color: "#D4537E" }),
     ]));
@@ -139,6 +136,50 @@ describe("integration: admin system seed", () => {
       expect.objectContaining({ title: "Reklamation", cardColor: "#FF011B", print: true }),
     ]));
     expect(templates.find((template) => template.title === "Info zum Termin")).toBeUndefined();
+  });
+
+  it("repairs only Sondermaß to isDefault=false when selected explicitly", async () => {
+    const admin = await loginAdminAgent(app);
+
+    await masterDataRepository.createTag({
+      name: "Sondermaß",
+      color: "#BA7517",
+      isDefault: true,
+    });
+
+    const preview = await admin
+      .get("/api/admin/system-seed")
+      .expect(200);
+
+    expect(preview.body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: "tag:sondermass",
+        kind: "tag",
+        label: "Sondermaß",
+        status: "update",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+    ]));
+
+    const response = await admin
+      .post("/api/admin/system-seed")
+      .send({ selectedKeys: ["tag:sondermass"] })
+      .expect(200);
+
+    expect(response.body.logLines).toEqual(["Tag aktualisiert: Sondermaß"]);
+
+    const specialMeasureTag = await masterDataRepository.getTagByNormalizedName("Sondermaß");
+    const tours = await toursRepository.getTours();
+    const templates = await noteTemplatesRepository.getNoteTemplates(false);
+
+    expect(specialMeasureTag).toMatchObject({
+      name: "Sondermaß",
+      color: "#BA7517",
+      isDefault: false,
+    });
+    expect(tours.find((tour) => tour.name === "Parkplatz")).toBeUndefined();
+    expect(templates.find((template) => template.title === "Reklamation")).toBeUndefined();
   });
 
   it("is idempotent on repeated runs and keeps existing template bodies", async () => {
@@ -164,7 +205,6 @@ describe("integration: admin system seed", () => {
 
     expect(secondRun.body.logLines).toEqual(expect.arrayContaining([
       "Tag unverändert: Reklamation",
-      "Tag unverändert: Planung blockiert",
       "Tour unverändert: Parkplatz",
       "Notizvorlage unverändert: Reklamation",
     ]));

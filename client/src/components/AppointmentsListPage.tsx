@@ -16,7 +16,6 @@ import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previ
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import type { Tag, Tour } from "@shared/schema";
-import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -47,11 +46,6 @@ type AppointmentListResponse = {
 
 export type AppointmentListSortDirection = "asc" | "desc";
 export type AppointmentListSortKey = "date" | "customer" | "customerNumber" | "orderNumber";
-
-function isPlanningBlockedListItem(row: Pick<AppointmentListItem, "appointmentTags"> | Record<string, unknown>): boolean {
-  const appointmentTags = Array.isArray(row.appointmentTags) ? row.appointmentTags as Tag[] : [];
-  return appointmentTags.some((tag) => isReservedPlanningBlockedTagName(tag.name));
-}
 
 export type AppointmentsListContext =
   | { type: "standalone" }
@@ -430,11 +424,6 @@ export function AppointmentsListPage({
                 Storniert
               </span>
             ) : null}
-            {!row.isCancelled && isPlanningBlockedListItem(row) ? (
-              <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
-                Planung blockiert
-              </span>
-            ) : null}
           </div>
         ),
       },
@@ -474,7 +463,7 @@ export function AppointmentsListPage({
             variant="ghost"
             size="sm"
             data-testid={`button-remove-employee-from-appointment-${row.id}`}
-            disabled={row.isCancelled || isPlanningBlockedListItem(row)}
+            disabled={row.isCancelled}
             onClick={(e) => { e.stopPropagation(); onRemoveEmployee(row.id, row.version); }}
             title="Mitarbeiter von Termin entfernen"
           >

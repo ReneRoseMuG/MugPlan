@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Test Scope:
  *
  * Abgedeckte Regeln:
@@ -29,6 +29,7 @@ import { db } from "../../../server/db";
 import { appointmentTags, appointments, tags, tours } from "../../../shared/schema";
 import { and, eq } from "drizzle-orm";
 import {
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_MESSE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
@@ -454,7 +455,7 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       .send({ tagId: geparktTagId })
       .expect(409)
       .expect(({ body }) => {
-        expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
+        expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
       });
   });
 
@@ -500,7 +501,7 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       .send({ version: 1 })
       .expect(409)
       .expect(({ body }) => {
-        expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
+        expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
       });
 
     expect(await hasGeparktTag(appointment.id)).toBe(true);
@@ -526,8 +527,123 @@ describe("FT06 integration: Geparkt-Tag Picker-Schutz", () => {
       .send({ version: 1 })
       .expect(409)
       .expect(({ body }) => {
-        expect(body.code).toBe("CANCELLATION_TAG_PROTECTED");
+        expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
       });
+  });
+});
+
+describe("FT28 integration: Reklamation action routes", () => {
+  it("sets and removes Reklamation through dedicated routes and blocks the generic tag route", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+    const project = await createProjectFixture({ prefix: "FT28-REKLAMATION-ACTION" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(6),
+      employeeIds: [],
+    });
+    const reklamationTagId = await getTagIdByName(MANAGED_COMPLAINT_TAG_NAME);
+    expect(reklamationTagId).toBeTruthy();
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tags`)
+      .send({ tagId: reklamationTagId })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
+      });
+
+    const setResponse = await admin
+      .post(`/api/appointments/${appointment.id}/reklamation`)
+      .send({ version: appointment.version })
+      .expect(200);
+    expect(setResponse.body).toMatchObject({
+      kind: "updated",
+      mutationEvents: [
+        {
+          kind: "tag_mutated",
+          appointmentId: appointment.id,
+          tagName: MANAGED_COMPLAINT_TAG_NAME,
+          action: "added",
+        },
+      ],
+    });
+
+    await admin.get(`/api/appointments/${appointment.id}`).expect(200).expect(({ body }) => {
+      expect((body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+    });
+
+    const reader = await loginReaderAgent();
+    await reader
+      .delete(`/api/appointments/${appointment.id}/reklamation`)
+      .send({ version: appointment.version + 1 })
+      .expect(403);
+
+    const removeResponse = await admin
+      .delete(`/api/appointments/${appointment.id}/reklamation`)
+      .send({ version: appointment.version + 1 })
+      .expect(200);
+    expect(removeResponse.body).toMatchObject({
+      kind: "updated",
+      mutationEvents: [
+        {
+          kind: "tag_mutated",
+          appointmentId: appointment.id,
+          tagName: MANAGED_COMPLAINT_TAG_NAME,
+          action: "removed",
+        },
+      ],
+    });
+
+    await admin.get(`/api/appointments/${appointment.id}`).expect(200).expect(({ body }) => {
+      expect((body.appointmentTags as Array<{ name: string }>).map((tag) => tag.name)).not.toContain(MANAGED_COMPLAINT_TAG_NAME);
+    });
+  });
+
+  it("sets and removes project Reklamation through dedicated routes", async () => {
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+    const project = await createProjectFixture({ prefix: "FT28-PROJECT-REKLAMATION" });
+    const reklamationTagId = await getTagIdByName(MANAGED_COMPLAINT_TAG_NAME);
+    expect(reklamationTagId).toBeTruthy();
+
+    await admin
+      .post(`/api/projects/${project.id}/tags`)
+      .send({ tagId: reklamationTagId })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
+      });
+
+    await admin
+      .post(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.kind).toBe("updated");
+      });
+
+    await admin.get(`/api/projects/${project.id}/tags`).expect(200).expect(({ body }) => {
+      expect((body as Array<{ tag: { name: string } }>).map((item) => item.tag.name)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+    });
+
+    const reader = await loginReaderAgent();
+    await reader
+      .delete(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version + 1 })
+      .expect(403);
+
+    await admin
+      .delete(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version + 1 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.kind).toBe("updated");
+      });
+
+    await admin.get(`/api/projects/${project.id}/tags`).expect(200).expect(({ body }) => {
+      expect((body as Array<{ tag: { name: string } }>).map((item) => item.tag.name)).not.toContain(MANAGED_COMPLAINT_TAG_NAME);
+    });
   });
 });
 
@@ -711,3 +827,4 @@ describe("FT06 integration: historische Parkplatz-Termine bleiben editierbar", (
     await admin.get(`/api/appointments/${deletableAppointment.id}`).expect(404);
   });
 });
+

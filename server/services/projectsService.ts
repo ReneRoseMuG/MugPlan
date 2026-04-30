@@ -1,5 +1,7 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import type { InsertProjectOrderItem, ProjectOrderItem, UpdateProjectOrderItem } from "@shared/schema";
+import { MANAGED_COMPLAINT_TAG_NAME } from "@shared/appointmentCancellation";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -13,7 +15,8 @@ export class ProjectsError extends Error {
     | "NOT_FOUND"
     | "FORBIDDEN"
     | "VALIDATION_ERROR"
-    | "INACTIVE_ENTITY_ASSIGNMENT";
+    | "INACTIVE_ENTITY_ASSIGNMENT"
+    | "WORKFLOW_TAG_PROTECTED";
 
   constructor(
     status: number,
@@ -23,7 +26,8 @@ export class ProjectsError extends Error {
       | "NOT_FOUND"
       | "FORBIDDEN"
       | "VALIDATION_ERROR"
-      | "INACTIVE_ENTITY_ASSIGNMENT",
+      | "INACTIVE_ENTITY_ASSIGNMENT"
+      | "WORKFLOW_TAG_PROTECTED",
   ) {
     super(code);
     this.status = status;
@@ -215,6 +219,9 @@ export async function addProjectTag(
   if (!tag) {
     throw new ProjectsError(404, "NOT_FOUND");
   }
+  if (tag.isDefault) {
+    throw new ProjectsError(409, "WORKFLOW_TAG_PROTECTED");
+  }
   return tagRelationsService.addTagRelation("project", projectId, tagId);
 }
 
@@ -230,6 +237,13 @@ export async function removeProjectTag(
   }
   const project = await projectsRepository.getProject(projectId);
   if (!project) return null;
+  const tag = await tagRelationsService.getTagById(tagId);
+  if (!tag) {
+    throw new ProjectsError(404, "NOT_FOUND");
+  }
+  if (tag.isDefault) {
+    throw new ProjectsError(409, "WORKFLOW_TAG_PROTECTED");
+  }
   const result = await tagRelationsService.removeTagRelation("project", projectId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
     throw new ProjectsError(409, "VERSION_CONFLICT");
@@ -238,6 +252,84 @@ export async function removeProjectTag(
     throw new ProjectsError(404, "NOT_FOUND");
   }
   return;
+}
+
+export async function setProjectReklamation(
+  projectId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) return { found: false, kind: "noop" };
+  const complaintTag = await tagRelationsService.getTagByName(MANAGED_COMPLAINT_TAG_NAME);
+  if (!complaintTag) {
+    throw new ProjectsError(409, "BUSINESS_CONFLICT");
+  }
+  const existingRelations = await tagRelationsService.listTagRelations("project", projectId);
+  if (existingRelations.some((relation) => relation.tag.id === complaintTag.id)) {
+    return { found: true, kind: "noop" };
+  }
+
+  return projectsRepository.withProjectTransaction(async (tx) => {
+    const versionResult = await projectsRepository.bumpProjectVersionTx(tx, { projectId, expectedVersion });
+    if (versionResult.kind === "version_conflict") {
+      throw new ProjectsError(409, "VERSION_CONFLICT");
+    }
+    await projectsRepository.addProjectTagTx(tx, projectId, complaintTag.id);
+    return {
+      found: true,
+      kind: "updated",
+      mutationEvents: [{
+        kind: "tag_mutated",
+        appointmentId: projectId,
+        tagName: MANAGED_COMPLAINT_TAG_NAME,
+        action: "added",
+      }],
+    } as const;
+  });
+}
+
+export async function removeProjectReklamation(
+  projectId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new ProjectsError(422, "VALIDATION_ERROR");
+  }
+  const project = await projectsRepository.getProject(projectId);
+  if (!project) return { found: false, kind: "noop" };
+  const complaintTag = await tagRelationsService.getTagByName(MANAGED_COMPLAINT_TAG_NAME);
+  if (!complaintTag) {
+    throw new ProjectsError(409, "BUSINESS_CONFLICT");
+  }
+  const existingRelations = await tagRelationsService.listTagRelations("project", projectId);
+  if (!existingRelations.some((relation) => relation.tag.id === complaintTag.id)) {
+    return { found: true, kind: "noop" };
+  }
+
+  return projectsRepository.withProjectTransaction(async (tx) => {
+    const versionResult = await projectsRepository.bumpProjectVersionTx(tx, { projectId, expectedVersion });
+    if (versionResult.kind === "version_conflict") {
+      throw new ProjectsError(409, "VERSION_CONFLICT");
+    }
+    await projectsRepository.removeProjectTagByTagIdTx(tx, projectId, complaintTag.id);
+    return {
+      found: true,
+      kind: "updated",
+      mutationEvents: [{
+        kind: "tag_mutated",
+        appointmentId: projectId,
+        tagName: MANAGED_COMPLAINT_TAG_NAME,
+        action: "removed",
+      }],
+    } as const;
+  });
 }
 
 export async function listProjectOrderItems(projectId: number): Promise<ProjectOrderItem[]> {
