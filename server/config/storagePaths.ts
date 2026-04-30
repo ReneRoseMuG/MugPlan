@@ -4,10 +4,12 @@ import path from "path";
 
 const ATTACHMENT_STORAGE_PATH_KEY = "ATTACHMENT_STORAGE_PATH";
 const BACKUP_BASE_PATH_KEY = "BACKUP_BASE_PATH";
+const SERVER_FILE_STORE_DIRECTORY = "ServerFS";
 
 type StoragePaths = {
   attachmentStoragePath: string;
   backupBasePath: string;
+  serverFileStoreBasePath: string;
 };
 
 let cachedStoragePaths: StoragePaths | null = null;
@@ -52,13 +54,16 @@ export async function initStoragePathsFromEnv(): Promise<StoragePaths> {
 
   const attachmentStoragePath = resolveConfiguredPath(attachmentRaw, ATTACHMENT_STORAGE_PATH_KEY);
   const backupBasePath = resolveConfiguredPath(backupRaw, BACKUP_BASE_PATH_KEY);
+  const serverFileStoreBasePath = path.resolve(backupBasePath, SERVER_FILE_STORE_DIRECTORY);
 
   await ensureWritableDirectory(attachmentStoragePath, ATTACHMENT_STORAGE_PATH_KEY);
   await ensureWritableDirectory(backupBasePath, BACKUP_BASE_PATH_KEY);
+  await ensureWritableDirectory(serverFileStoreBasePath, `${BACKUP_BASE_PATH_KEY}/${SERVER_FILE_STORE_DIRECTORY}`);
 
   cachedStoragePaths = {
     attachmentStoragePath,
     backupBasePath,
+    serverFileStoreBasePath,
   };
   return cachedStoragePaths;
 }
@@ -71,4 +76,9 @@ export async function getAttachmentStoragePath(): Promise<string> {
 export async function getBackupBasePath(): Promise<string> {
   const paths = await initStoragePathsFromEnv();
   return paths.backupBasePath;
+}
+
+export async function getServerFileStoreBasePath(): Promise<string> {
+  const paths = await initStoragePathsFromEnv();
+  return paths.serverFileStoreBasePath;
 }

@@ -9,6 +9,7 @@
  * - Relative Pfade werden gegen process.cwd() aufgeloest.
  * - Absolute Pfade bleiben unveraendert.
  * - Zielverzeichnisse werden erstellt und aufloesbar zurueckgegeben.
+ * - Der generische Server-Dateistore liegt als ServerFS-Unterordner im Backup-Pfad.
  * - Fehlende oder leere Env-Werte werden mit klaren Fehlern abgelehnt.
  *
  * Fehlerfaelle:
@@ -57,8 +58,10 @@ describe("FT07 unit: storage paths resolution", () => {
 
     expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "uploads"));
     expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "backups"));
+    expect(resolved.serverFileStoreBasePath).toBe(path.resolve(tempRoot, "backups", "ServerFS"));
     await expect(fs.access(resolved.attachmentStoragePath)).resolves.toBeUndefined();
     await expect(fs.access(resolved.backupBasePath)).resolves.toBeUndefined();
+    await expect(fs.access(resolved.serverFileStoreBasePath)).resolves.toBeUndefined();
   });
 
   it("resolves relative paths in test and production against process.cwd()", async () => {
@@ -75,6 +78,7 @@ describe("FT07 unit: storage paths resolution", () => {
       const resolved = await initStoragePathsFromEnv();
       expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "uploads"));
       expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "backups"));
+      expect(resolved.serverFileStoreBasePath).toBe(path.resolve(tempRoot, "backups", "ServerFS"));
     }
   });
 
@@ -90,6 +94,21 @@ describe("FT07 unit: storage paths resolution", () => {
 
     expect(resolved.attachmentStoragePath).toBe(path.resolve(tempRoot, "absolute/uploads"));
     expect(resolved.backupBasePath).toBe(path.resolve(tempRoot, "absolute/backups"));
+    expect(resolved.serverFileStoreBasePath).toBe(path.resolve(tempRoot, "absolute/backups", "ServerFS"));
+  });
+
+  it("returns the ServerFS base path under the configured backup base path", async () => {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "mugplan-storage-serverfs-"));
+    process.chdir(tempRoot);
+    process.env.NODE_ENV = "test";
+    process.env.ATTACHMENT_STORAGE_PATH = "./uploads";
+    process.env.BACKUP_BASE_PATH = "./backups";
+
+    const { getServerFileStoreBasePath } = await loadStoragePathsModule();
+    const serverFsPath = await getServerFileStoreBasePath();
+
+    expect(serverFsPath).toBe(path.resolve(tempRoot, "backups", "ServerFS"));
+    await expect(fs.access(serverFsPath)).resolves.toBeUndefined();
   });
 
   it("fails on missing env variables", async () => {
