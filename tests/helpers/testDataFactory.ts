@@ -6,7 +6,6 @@ import type { InsertCustomer } from "@shared/schema";
 import { appointmentTags, componentCategories, components, productCategories, products, projectTags, projects, tags } from "@shared/schema";
 import { db } from "../../server/db";
 import * as appointmentsService from "../../server/services/appointmentsService";
-import * as employeeAbsencesService from "../../server/services/employeeAbsencesService";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
 import * as customersService from "../../server/services/customersService";
 import * as employeesService from "../../server/services/employeesService";
@@ -343,24 +342,6 @@ export async function createEmployeeFixtureWithOverrides(params?: {
     phone: params?.phone ?? null,
     email: params?.email ?? null,
   });
-}
-
-export async function createEmployeeAbsenceFixture(params: {
-  employeeId: number;
-  type?: "vacation" | "sick";
-  from?: string;
-  until?: string;
-  roleKey?: "ADMIN" | "DISPONENT";
-}) {
-  return employeeAbsencesService.createEmployeeAbsence(
-    params.employeeId,
-    {
-      type: params.type ?? "vacation",
-      from: params.from ?? getRelativeBerlinDate(1),
-      until: params.until ?? getRelativeBerlinDate(2),
-    },
-    params.roleKey ?? "ADMIN",
-  );
 }
 
 export async function createTeamFixture(color = "#0088cc") {

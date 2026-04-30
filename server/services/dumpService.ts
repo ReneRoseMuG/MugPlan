@@ -129,7 +129,6 @@ export const DUMP_TABLE_KEYS = DUMP_TABLE_ENTRIES.map((entry) => entry.key);
 export const EXCLUDED_DUMP_TABLE_KEYS = [
   "users",
   "roles",
-  "employeeAbsences",
 ] as const;
 
 type DumpTableKey = (typeof DUMP_TABLE_KEYS)[number];

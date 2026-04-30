@@ -8,7 +8,6 @@ import {
   UserRound,
   UsersRound,
   Layers,
-  CalendarRange,
   ShieldAlert,
   History,
 } from "lucide-react";
@@ -20,7 +19,6 @@ export const domainIcons = {
   appointmentsList: Table2,
   tours: MapPin,
   teams: Layers,
-  employeeAbsences: CalendarRange,
   monitoring: ShieldAlert,
   journal: History,
   reports: FileText,

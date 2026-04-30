@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Add-Vorschau mappt konfliktfreie, bereits belegte und availability-geblockte Termine stabil auf Checkbox-Zustaende.
+ * - Die Add-Vorschau mappt konfliktfreie, bereits belegte und overlap-geblockte Termine stabil auf Checkbox-Zustaende.
  * - Remove-Preview zeigt nur zukuenftige Tour-Termine, auf denen der Mitarbeiter tatsaechlich eingetragen ist.
  *
  * Fehlerfaelle:
@@ -21,7 +21,6 @@ const hoisted = vi.hoisted(() => ({
   getAppointmentEmployeesByAppointmentIdsMock: vi.fn(),
   withAppointmentTransactionMock: vi.fn(),
   getConflictingEmployeesTxMock: vi.fn(),
-  previewEmployeeAvailabilityForDateRangeMock: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
@@ -37,10 +36,6 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
   getAppointmentEmployeesByAppointmentIds: hoisted.getAppointmentEmployeesByAppointmentIdsMock,
   withAppointmentTransaction: hoisted.withAppointmentTransactionMock,
   getConflictingEmployeesTx: hoisted.getConflictingEmployeesTxMock,
-}));
-
-vi.mock("../../../server/services/employeeAvailabilityService", () => ({
-  previewEmployeeAvailabilityForDateRange: hoisted.previewEmployeeAvailabilityForDateRangeMock,
 }));
 
 import {
