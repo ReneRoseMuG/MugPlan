@@ -26,9 +26,13 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import { registerRoutes } from "../../../server/routes";
 import {
   createAppointmentFixture,
+  attachAppointmentTagFixture,
+  attachCustomerTagFixture,
+  attachProjectTagFixture,
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
+  createTagFixture,
   resetTestDataFactoryState,
 } from "../../helpers/testDataFactory";
 
@@ -104,6 +108,55 @@ describe("FT01 integration: direct appointment projections", () => {
       projectId: null,
       customer: { id: customer.id },
     });
+  });
+
+  it("returns appointment, customer and project tags consistently in appointment details and calendar card payload", async () => {
+    const agent = await loginAdminAgent();
+    const customer = await createCustomerFixture("TAG-PROJECTION-CUST");
+    const project = await createProjectFixture({
+      prefix: "TAG-PROJECTION-PROJ",
+      customerId: customer.id,
+    });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-07-04",
+    });
+    const appointmentTag = await createTagFixture("TAG-PROJECTION-APPOINTMENT");
+    const customerTag = await createTagFixture("TAG-PROJECTION-CUSTOMER");
+    const projectTag = await createTagFixture("TAG-PROJECTION-PROJECT");
+
+    await attachAppointmentTagFixture(appointment.id, appointmentTag.id);
+    await attachCustomerTagFixture(customer.id, customerTag.id);
+    await attachProjectTagFixture(project.id, projectTag.id);
+
+    const detailResponse = await agent.get(`/api/appointments/${appointment.id}`).expect(200);
+    const calendarResponse = await agent
+      .get("/api/calendar/appointments?fromDate=2099-07-01&toDate=2099-07-31&detail=full")
+      .expect(200);
+    const calendarItem = (calendarResponse.body as Array<{
+      id: number;
+      appointmentTags: Array<{ id: number; name: string }>;
+      customerTags: Array<{ id: number; name: string }>;
+      projectTags: Array<{ id: number; name: string }>;
+    }>).find((item) => item.id === appointment.id);
+
+    if (!calendarItem) {
+      throw new Error(`Missing calendar item ${appointment.id}`);
+    }
+
+    for (const payload of [detailResponse.body, calendarItem]) {
+      expect(payload.appointmentTags).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: appointmentTag.id, name: appointmentTag.name }),
+      ]));
+      expect(payload.customerTags).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: customerTag.id, name: customerTag.name }),
+      ]));
+      expect(payload.projectTags).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: projectTag.id, name: projectTag.name }),
+      ]));
+      expect(payload.appointmentTags.map((tag: { id: number }) => tag.id)).not.toContain(projectTag.id);
+      expect(payload.projectTags.map((tag: { id: number }) => tag.id)).not.toContain(appointmentTag.id);
+    }
   });
 
   it("includes direct appointments in /api/appointments/list filtered by customerId", async () => {

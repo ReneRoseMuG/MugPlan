@@ -28,6 +28,7 @@ import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
@@ -114,6 +115,8 @@ interface AppointmentDetail {
   endTime: string | null;
   employees: Employee[];
   appointmentTags: Tag[];
+  customerTags: Tag[];
+  projectTags: Tag[];
   isCancelled: boolean;
 }
 
@@ -142,6 +145,7 @@ export function shouldOfferFollowAfterAppointmentSave(params: {
 
 type AppointmentFormProject = Project & {
   projectArticleItems?: ProjectArticleItem[];
+  tags?: Tag[];
 };
 
 type AppointmentFormProjectDetailResponse = {
@@ -160,6 +164,12 @@ type ApiSuccessPayload = {
   message?: string;
   employees?: Array<{ id: number }>;
   mutationEvents?: AppointmentMutationEvent[];
+};
+
+type AppointmentCardTagGroup = {
+  source: "project" | "customer";
+  title: string;
+  tags: Tag[];
 };
 type ExtractedProjectDraft =
   | {
@@ -227,6 +237,72 @@ type AppointmentWeekPreviewDialogState = {
 };
 
 const logPrefix = "[AppointmentForm]";
+
+export function buildAppointmentCardTagGroups({
+  appointmentTags,
+  projectTags,
+  customerTags,
+}: {
+  appointmentTags: readonly Tag[];
+  projectTags: readonly Tag[];
+  customerTags: readonly Tag[];
+}): AppointmentCardTagGroup[] {
+  const emittedTagIds = new Set(appointmentTags.map((tag) => tag.id));
+  const sources: Array<Omit<AppointmentCardTagGroup, "tags"> & { sourceTags: readonly Tag[] }> = [
+    { source: "project", title: "Vom Projekt", sourceTags: projectTags },
+    { source: "customer", title: "Vom Kunden", sourceTags: customerTags },
+  ];
+
+  return sources
+    .map((source) => {
+      const tags = source.sourceTags.filter((tag) => {
+        if (emittedTagIds.has(tag.id)) return false;
+        emittedTagIds.add(tag.id);
+        return true;
+      });
+
+      return {
+        source: source.source,
+        title: source.title,
+        tags,
+      };
+    })
+    .filter((group) => group.tags.length > 0);
+}
+
+function AppointmentCardTagsPanel({ groups }: { groups: AppointmentCardTagGroup[] }) {
+  if (groups.length === 0) return null;
+
+  return (
+    <section
+      className="rounded-md border border-slate-200 bg-slate-50/70 p-3"
+      data-testid="appointment-card-tags-panel"
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-800">Tags auf Terminkarte</h3>
+        <span className="text-xs font-medium text-slate-500">übernommen</span>
+      </div>
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <div key={group.source} className="space-y-2" data-testid={`appointment-card-tags-${group.source}`}>
+            <p className="text-xs font-medium text-slate-500">{group.title}</p>
+            <div className="space-y-2">
+              {group.tags.map((tag) => (
+                <TagBadge
+                  key={tag.id}
+                  tag={tag}
+                  action="none"
+                  fullWidth
+                  testId={`appointment-card-tags-${group.source}-tag-${tag.id}`}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 const normalizeTimeInput = (value: string) => {
   const trimmed = value.trim();
@@ -959,6 +1035,23 @@ export function AppointmentForm({
   const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
   const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
   const hasReklamationTag = visibleAppointmentTags.some((item) => isManagedComplaintTagName(item.tag.name));
+  const appointmentCardTagGroups = useMemo(
+    () => buildAppointmentCardTagGroups({
+      appointmentTags: visibleAppointmentTags.map((item) => item.tag),
+      projectTags: isEditing ? (appointmentDetail?.projectTags ?? []) : (selectedProject?.tags ?? []),
+      customerTags: isEditing
+        ? (appointmentDetail?.customerTags ?? [])
+        : (((selectedCustomer as (Customer & { tags?: Tag[] }) | null)?.tags) ?? []),
+    }),
+    [
+      appointmentDetail?.customerTags,
+      appointmentDetail?.projectTags,
+      isEditing,
+      selectedCustomer,
+      selectedProject?.tags,
+      visibleAppointmentTags,
+    ],
+  );
 
   const assignedEmployeesById = useMemo(() => {
     const map = new Map<number, Employee>();
@@ -2568,6 +2661,7 @@ export function AppointmentForm({
                 removeDraftAppointmentTag(item);
               }}
             />
+            <AppointmentCardTagsPanel groups={appointmentCardTagGroups} />
 
             <NotesSection
               notes={visibleAppointmentNotes}
