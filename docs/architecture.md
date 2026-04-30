@@ -156,9 +156,9 @@ Evidenz: `server/services/appointmentsService.ts`, Integrationstests `tests/inte
 
 ### 7.3 Historische Termine (Lock)
 
-Historische Termine werden serverseitig blockiert (`PAST_APPOINTMENT_READONLY`).
+Historische Termine werden serverseitig rollenabhängig blockiert (`PAST_APPOINTMENT_READONLY`).
 
-Ist-Stand: sowohl `DISPONENT` als auch `ADMIN` können historische Termine nicht mutieren (`updateAppointment`/`deleteAppointment`), obwohl im Kalender weiterhin `isLocked` rolebasiert als Anzeige-Flag berechnet wird (`roleKey !== ADMIN`).
+Ist-Stand: `DISPONENT` kann historische Termine nicht mutieren. `ADMIN` ist von dieser historischen Sperre ausgenommen und darf historische Termin-Mutationen ausführen, während die übrigen Terminregeln weiterhin greifen, insbesondere Relationspflicht, Versionsschutz, Mitarbeiter-Overlap, Storno-Sperre und blockierte Tourwochen.
 
 Ausnahme: Termine der Tour „Parkplatz“ können auch bei historischem Startdatum über die Wochenplanungs-Preview umgestellt werden (`tourWeekEmployeesService`, `previewAppointmentTourChange`).
 
@@ -242,7 +242,7 @@ Neue Funktionalität folgt den bestehenden Pfaden:
 ## 11. Bekannte Risiken / Architekturhinweise
 
 - In einzelnen Dateien sind Mojibake-Spuren sichtbar (z. B. `Ungültig`, `Nächster`), also ein bestehendes Encoding-/Textkonsistenz-Risiko.
-- Historische Terminregeln sind strenger als reine Admin-Ausnahmeannahmen; maßgeblich ist der aktuelle Service-Code.
+- Historische Terminregeln enthalten eine Admin-Ausnahme; maßgeblich ist der aktuelle Service-Code.
 
 ## 12. Nicht-Ziele dieses Dokuments
 

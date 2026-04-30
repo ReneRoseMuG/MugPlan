@@ -698,7 +698,7 @@ function MonthSheetSection({
                         const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
                         const canDrag = !readOnly && !isLocked
-                          && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
+                          && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
                         const isSlotBlocked = isBlockedTourWeekSlot({
                           tourId: slot.tourId,
@@ -741,6 +741,7 @@ function MonthSheetSection({
                                 isLocked={isLocked}
                                 isDragging={draggedAppointmentId === appointment.id}
                                 isBlocked={isSlotBlocked}
+                                allowHistoricalActions={isAdmin}
                                 onDoubleClick={() => onAppointmentClick(appointment.id)}
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
@@ -799,6 +800,7 @@ function MonthCompactBarWithMenu({
   isLocked,
   isDragging,
   isBlocked = false,
+  allowHistoricalActions = false,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -812,6 +814,7 @@ function MonthCompactBarWithMenu({
   isLocked?: boolean;
   isDragging?: boolean;
   isBlocked?: boolean;
+  allowHistoricalActions?: boolean;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -824,6 +827,7 @@ function MonthCompactBarWithMenu({
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
 
   const cancelMutation = useMutation({

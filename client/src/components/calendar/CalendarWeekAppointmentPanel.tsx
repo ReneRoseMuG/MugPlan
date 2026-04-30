@@ -121,6 +121,7 @@ export function CalendarWeekAppointmentPanel({
   showPreviewTourNameLine = false,
   showTagActions = false,
   canEditTags = false,
+  allowHistoricalActions = false,
   containerRef,
   testId,
 }: {
@@ -148,6 +149,7 @@ export function CalendarWeekAppointmentPanel({
   showPreviewTourNameLine?: boolean;
   showTagActions?: boolean;
   canEditTags?: boolean;
+  allowHistoricalActions?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
@@ -160,6 +162,7 @@ export function CalendarWeekAppointmentPanel({
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
   const hasReklamationTag = appointment.appointmentTags.some((t) => isManagedComplaintTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
   const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
 

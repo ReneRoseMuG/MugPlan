@@ -102,7 +102,12 @@ export async function getAppointment(req: Request, res: Response, next: NextFunc
 export async function createAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.create.input.parse(req.body);
-    const appointment = await appointmentsService.createAppointment(input);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const appointment = await appointmentsService.createAppointment(input, roleKey);
     if (appointment?.id) {
       const detail = await appointmentsService.getAppointmentDetails(appointment.id);
       await journalService.recordJournalEntry({

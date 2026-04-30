@@ -8,6 +8,7 @@
  * - Die Add-Liste enthaelt nur noch nicht zugewiesene Tags.
  * - Picker-Optionen rendern den ausfuehrlichen Labelmodus mit dominantem Shortcode und Vollnamen in Klammern.
  * - Add/Remove-Aktionen loesen die beobachtbaren Callback-Effekte aus.
+ * - Uebernommene Projekt-/Kunden-Tags bleiben im selben Panel und werden nur read-only dargestellt.
  *
  * Fehlerfaelle:
  * - Bereits zugewiesene Tags tauchen wieder in der Add-Liste auf.
@@ -128,5 +129,47 @@ describe("FT28 UI: TagPickerPanel behavior", () => {
     (addCall?.onAdd as (() => void) | undefined)?.();
     expect(onAdd).not.toHaveBeenCalled();
     expect(html).not.toContain("readonly-button-add");
+  });
+
+  it("renders inherited card tags as read-only groups inside the same tag panel", () => {
+    const html = renderToStaticMarkup(
+      <TagPickerPanel
+        assignedTags={[]}
+        availableTags={[]}
+        inheritedTagGroups={[
+          {
+            source: "project",
+            title: "Tags vom Projekt",
+            tags: [{ id: 10, name: "Reklamation", color: "#ff011b" }],
+          },
+          {
+            source: "customer",
+            title: "Tags vom Kunden",
+            tags: [{ id: 11, name: "VIP", color: "#2255aa" }],
+          },
+        ] as any}
+        canEdit
+        emptyText="Keine Termin-Tags zugewiesen"
+        testIdPrefix="appointment-tag-picker"
+      />,
+    );
+
+    expect(html).toContain("appointment-tag-picker-inherited-project");
+    expect(html).toContain("appointment-tag-picker-inherited-customer");
+    expect(html).toContain("Tags vom Projekt");
+    expect(html).toContain("Tags vom Kunden");
+    expect(html).toContain("Keine Termin-Tags zugewiesen");
+    expect(tagBadgeCalls).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        action: "none",
+        testId: "appointment-tag-picker-inherited-project-tag-10",
+        tag: expect.objectContaining({ name: "Reklamation" }),
+      }),
+      expect.objectContaining({
+        action: "none",
+        testId: "appointment-tag-picker-inherited-customer-tag-11",
+        tag: expect.objectContaining({ name: "VIP" }),
+      }),
+    ]));
   });
 });

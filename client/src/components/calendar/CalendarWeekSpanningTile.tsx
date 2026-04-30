@@ -105,6 +105,7 @@ type CalendarWeekSpanningTileProps = {
   projectStatusAreaRef?: React.Ref<HTMLDivElement>;
   showTagActions?: boolean;
   canEditTags?: boolean;
+  allowHistoricalActions?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
@@ -133,6 +134,7 @@ export function CalendarWeekSpanningTile({
   projectStatusAreaRef: _projectStatusAreaRef,
   showTagActions = false,
   canEditTags = false,
+  allowHistoricalActions = false,
   containerRef,
   style,
   isDragging,
@@ -158,6 +160,7 @@ export function CalendarWeekSpanningTile({
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
   const hasReklamationTag = appointment.appointmentTags.some((t) => isManagedComplaintTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
 
   const cancelMutation = useMutation({

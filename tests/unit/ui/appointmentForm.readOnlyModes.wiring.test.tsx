@@ -305,7 +305,6 @@ describe("FT01 UI: appointment form readonly modes", () => {
 
   it.each([
     ["DISPATCHER", "historical"],
-    ["ADMIN", "historical"],
     ["DISPATCHER", "cancelled"],
     ["ADMIN", "cancelled"],
   ] as const)(
@@ -351,6 +350,36 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(latestTagPickerCall?.canEdit).toBe(false);
     },
   );
+
+  it("keeps historical appointments editable for admins", () => {
+    currentRole = "ADMIN";
+    currentMode = "historical";
+
+    const markup = renderToStaticMarkup(
+      <AppointmentForm
+        appointmentId={77}
+        showBackButton
+        onBack={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Speichern");
+    expect(markup).toContain("Stornieren");
+    expect(markup).toContain("Löschen");
+    expect(markup).not.toContain("Termin gesperrt");
+
+    const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
+    const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
+    const latestNotesSectionCall = notesSectionCalls[notesSectionCalls.length - 1];
+    const latestTagPickerCall = tagPickerCalls[tagPickerCalls.length - 1];
+
+    expect(latestAttachmentPanelCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.isLocked).toBe(false);
+    expect(latestNotesSectionCall?.readOnly).toBe(false);
+    expect(latestTagPickerCall?.canEdit).toBe(true);
+  });
 
   it.each([
     "DISPATCHER",

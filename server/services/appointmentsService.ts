@@ -266,6 +266,10 @@ function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   }
 }
 
+function allowsHistoricalAppointmentMutation(roleKey: CanonicalRoleKey): boolean {
+  return roleKey === "ADMIN";
+}
+
 async function assertNoInactiveEmployeesTx(
   tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
   employeeIds: number[],
@@ -579,10 +583,14 @@ export async function createAppointment(
     startTime?: string | null;
     employeeIds?: number[];
   },
+  roleKey?: CanonicalRoleKey,
 ) {
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
-  assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+  assertNotHistoricalInput(
+    { startDate: data.startDate, startTime: data.startTime ?? null },
+    { allowHistorical: roleKey === "ADMIN" },
+  );
   await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
@@ -691,6 +699,7 @@ export async function updateAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
@@ -702,7 +711,11 @@ export async function updateAppointment(
     }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
-      { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },
+      {
+        allowHistorical:
+          allowsHistoricalAppointmentMutation(roleKey)
+          || allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId),
+      },
     );
 
     const relation = await resolveAppointmentRelationTx(
@@ -859,6 +872,7 @@ export async function setAppointmentDisplayMode(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
@@ -1769,13 +1783,14 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, expectedVersion: number, _roleKey: CanonicalRoleKey) {
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht gelöscht werden",
       cancelledMessage: "Stornierte Termine können nicht gelöscht werden",
     });
@@ -1825,6 +1840,7 @@ export async function addAppointmentTag(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geändert werden",
     cancelledMessage: "Stornierte Termine können nicht geändert werden",
   });
@@ -1857,6 +1873,7 @@ export async function removeAppointmentTag(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geändert werden",
     cancelledMessage: "Stornierte Termine können nicht geändert werden",
   });
@@ -1888,6 +1905,7 @@ export async function removeEmployeeFromAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht geändert werden",
       cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
     });
@@ -1929,6 +1947,7 @@ export async function cancelAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       allowCancelled: true,
       historicalMessage: "Historische Termine können nicht geändert werden",
     });
@@ -1979,6 +1998,7 @@ export async function setAppointmentReklamation(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht geändert werden",
       cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
     });
@@ -2023,6 +2043,7 @@ export async function removeAppointmentReklamation(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht geändert werden",
       cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
     });
@@ -2072,6 +2093,7 @@ export async function parkAppointment(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geparkt werden",
     cancelledMessage: "Stornierte Termine können nicht geparkt werden",
   });

@@ -13,9 +13,16 @@ export type TagRelationItem = {
   relationVersion: number;
 };
 
+export type InheritedTagGroup = {
+  source: string;
+  title: string;
+  tags: Tag[];
+};
+
 interface TagPickerPanelProps {
   assignedTags: TagRelationItem[];
   availableTags: Tag[];
+  inheritedTagGroups?: InheritedTagGroup[];
   isLoading?: boolean;
   loadErrorMessage?: string | null;
   onAdd?: (tagId: number) => void;
@@ -30,6 +37,7 @@ interface TagPickerPanelProps {
 export function TagPickerPanel({
   assignedTags,
   availableTags,
+  inheritedTagGroups = [],
   isLoading = false,
   loadErrorMessage = null,
   onAdd,
@@ -117,6 +125,26 @@ export function TagPickerPanel({
             {assignedTags.length === 0 ? (
               <p className="py-2 text-center text-sm text-slate-400">{emptyText}</p>
             ) : null}
+            {inheritedTagGroups.map((group) => (
+              <div
+                key={group.source}
+                className="border-t border-slate-200 pt-2"
+                data-testid={`${testIdPrefix}-inherited-${group.source}`}
+              >
+                <p className="mb-2 text-xs font-medium text-slate-500">{group.title}</p>
+                <div className="space-y-2">
+                  {group.tags.map((tag) => (
+                    <TagBadge
+                      key={tag.id}
+                      tag={tag}
+                      action="none"
+                      fullWidth
+                      testId={`${testIdPrefix}-inherited-${group.source}-tag-${tag.id}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </>
         )}
       </div>

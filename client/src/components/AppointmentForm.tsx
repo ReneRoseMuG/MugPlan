@@ -28,8 +28,7 @@ import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { ProjectDetailCard } from "@/components/ui/project-detail-card";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import { TourInfoBadge } from "@/components/ui/tour-info-badge";
-import { TagBadge } from "@/components/ui/tag-badge";
-import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
+import { TagPickerPanel, type InheritedTagGroup, type TagRelationItem } from "@/components/TagPickerPanel";
 import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
@@ -166,11 +165,6 @@ type ApiSuccessPayload = {
   mutationEvents?: AppointmentMutationEvent[];
 };
 
-type AppointmentCardTagGroup = {
-  source: "project" | "customer";
-  title: string;
-  tags: Tag[];
-};
 type ExtractedProjectDraft =
   | {
       mode: "create";
@@ -246,11 +240,11 @@ export function buildAppointmentCardTagGroups({
   appointmentTags: readonly Tag[];
   projectTags: readonly Tag[];
   customerTags: readonly Tag[];
-}): AppointmentCardTagGroup[] {
+}): InheritedTagGroup[] {
   const emittedTagIds = new Set(appointmentTags.map((tag) => tag.id));
-  const sources: Array<Omit<AppointmentCardTagGroup, "tags"> & { sourceTags: readonly Tag[] }> = [
-    { source: "project", title: "Vom Projekt", sourceTags: projectTags },
-    { source: "customer", title: "Vom Kunden", sourceTags: customerTags },
+  const sources: Array<Omit<InheritedTagGroup, "tags"> & { sourceTags: readonly Tag[] }> = [
+    { source: "project", title: "Tags vom Projekt", sourceTags: projectTags },
+    { source: "customer", title: "Tags vom Kunden", sourceTags: customerTags },
   ];
 
   return sources
@@ -268,40 +262,6 @@ export function buildAppointmentCardTagGroups({
       };
     })
     .filter((group) => group.tags.length > 0);
-}
-
-function AppointmentCardTagsPanel({ groups }: { groups: AppointmentCardTagGroup[] }) {
-  if (groups.length === 0) return null;
-
-  return (
-    <section
-      className="rounded-md border border-slate-200 bg-slate-50/70 p-3"
-      data-testid="appointment-card-tags-panel"
-    >
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-800">Tags auf Terminkarte</h3>
-        <span className="text-xs font-medium text-slate-500">übernommen</span>
-      </div>
-      <div className="space-y-3">
-        {groups.map((group) => (
-          <div key={group.source} className="space-y-2" data-testid={`appointment-card-tags-${group.source}`}>
-            <p className="text-xs font-medium text-slate-500">{group.title}</p>
-            <div className="space-y-2">
-              {group.tags.map((tag) => (
-                <TagBadge
-                  key={tag.id}
-                  tag={tag}
-                  action="none"
-                  fullWidth
-                  testId={`appointment-card-tags-${group.source}-tag-${tag.id}`}
-                />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 }
 
 const normalizeTimeInput = (value: string) => {
@@ -1098,7 +1058,7 @@ export function AppointmentForm({
     [tours],
   );
   const isParked = isEditing && isParkplatzTour(lockedTourId, parkplatzTourId);
-  const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isParked;
+  const isHistoricalReadOnly = isEditing && isPastStartDate(lockedStartDate) && !isAdmin && !isParked;
   const isCancelled = appointmentDetail?.isCancelled === true;
   const readOnlyReason = isReader
     ? "reader"
@@ -1821,7 +1781,7 @@ export function AppointmentForm({
   });
 
   const validateForm = () => {
-    const allowHistoricalInput = isParked;
+    const allowHistoricalInput = isAdmin || isParked;
     if (!selectedProjectId && !selectedCustomerId) {
       console.info(`${logPrefix} validation blocked: relation missing`);
       toast({ title: "Kunde oder Projekt ist erforderlich", variant: "destructive" });
@@ -1871,7 +1831,7 @@ export function AppointmentForm({
       return;
     }
     if (!validateForm()) return;
-    const allowHistoricalInput = isParked;
+    const allowHistoricalInput = isAdmin || isParked;
     const berlinToday = getBerlinTodayDateString();
     const isPastDateInput = startDate < berlinToday;
     const currentBerlinTime = getBerlinCurrentTimeString();
@@ -2642,8 +2602,10 @@ export function AppointmentForm({
               availableTags={availableTags}
               isLoading={isEditing ? appointmentTagsLoading : false}
               loadErrorMessage={isEditing && appointmentTagsError instanceof Error ? appointmentTagsError.message : null}
+              inheritedTagGroups={appointmentCardTagGroups}
               canEdit={canManageAppointmentTags && !isMutationLocked}
               title="Tags"
+              emptyText={appointmentCardTagGroups.length > 0 ? "Keine Termin-Tags zugewiesen" : undefined}
               testIdPrefix="appointment-tag-picker"
               onAdd={(tagId) => {
                 if (isEditing) {
@@ -2661,7 +2623,6 @@ export function AppointmentForm({
                 removeDraftAppointmentTag(item);
               }}
             />
-            <AppointmentCardTagsPanel groups={appointmentCardTagGroups} />
 
             <NotesSection
               notes={visibleAppointmentNotes}

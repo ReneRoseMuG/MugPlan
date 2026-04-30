@@ -247,7 +247,7 @@ describe("FT01 UC coverage integration", () => {
     expect(otherHourAllowed.status).toBe(201);
   });
 
-  it("UC 01/03 happy+negative: move keeps time and blocks historical move", async () => {
+  it("UC 01/03 happy: move keeps time and admin may move historically", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("UC01-03");
     const appt = await createAppointmentFixture({
@@ -281,10 +281,11 @@ describe("FT01 UC coverage integration", () => {
         startDate: "2000-01-01",
         startTime: "09:30:00",
         employeeIds: [],
-      });
-    expect([403, 409]).toContain(historical.status);
-    const unchanged = await agent.get(`/api/appointments/${appt.id}`).expect(200);
-    expect(unchanged.body.startDate).toBe("2099-10-08");
+      })
+      .expect(200);
+    expect(historical.body.startTime).toBe("09:30:00");
+    const changed = await agent.get(`/api/appointments/${appt.id}`).expect(200);
+    expect(changed.body.startDate).toBe("2000-01-01");
   });
 
   it("UC 01/04 happy+negative: delete clears join and stale version keeps state", async () => {
@@ -607,7 +608,7 @@ describe("FT01 UC coverage integration", () => {
     expect(withDefaultTour?.tourColor).toBe("#2563eb");
   });
 
-  it("UC 01/14 happy+negative: historical create and historical time are blocked", async () => {
+  it("UC 01/14 happy: admin may create historical appointment and historical time", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("UC01-14");
 
@@ -615,9 +616,8 @@ describe("FT01 UC coverage integration", () => {
       projectId: project.id,
       startDate: "2000-01-01",
       employeeIds: [],
-    });
-    expect(historicalCreate.status).toBe(409);
-    expect(historicalCreate.body.code).toBe("PAST_APPOINTMENT_READONLY");
+    }).expect(201);
+    expect(historicalCreate.body.startDate).toContain("2000-01-01");
 
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Europe/Berlin",
@@ -631,12 +631,11 @@ describe("FT01 UC coverage integration", () => {
       startDate: today,
       startTime: "00:00:00",
       employeeIds: [],
-    });
-    expect(historicalTime.status).toBe(409);
-    expect(historicalTime.body.code).toBe("VALIDATION_ERROR");
+    }).expect(201);
+    expect(historicalTime.body.startTime).toBe("00:00:00");
   });
 
-  it("UC 01/14 rule: historical delete is blocked for ADMIN", async () => {
+  it("UC 01/14 rule: historical delete is allowed for ADMIN", async () => {
     const agent = await loginAdminAgent(app);
     const { project } = await createProjectFixture("UC01-14-DEL");
 
@@ -653,13 +652,12 @@ describe("FT01 UC coverage integration", () => {
       .where(eq(appointments.id, created!.id));
 
     const version = await getVersionFromApi(created!.id);
-    const blocked = await agent
+    await agent
       .delete(`/api/appointments/${created!.id}`)
-      .send({ version });
-    expect(blocked.status).toBe(409);
-    expect(blocked.body.code).toBe("PAST_APPOINTMENT_READONLY");
+      .send({ version })
+      .expect(204);
 
-    await agent.get(`/api/appointments/${created!.id}`).expect(200);
+    await agent.get(`/api/appointments/${created!.id}`).expect(404);
   });
 
   it("UC 01/15 happy+negative: optimistic locking success and stale conflict", async () => {

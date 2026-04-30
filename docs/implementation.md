@@ -106,7 +106,7 @@ JSON-Validation erfolgt schema-basiert über Contract-Schemas; Multipart über d
 `server/services/appointmentsService.ts` implementiert:
 
 - Validierung Datum/Zeiten
-- Historische Termin-Blockade
+- Historische Termin-Blockade mit Admin-Ausnahme
 - Überlappungsprüfung von Mitarbeiterzuweisungen
 - Fehlercodes: `EMPLOYEE_OVERLAP_CONFLICT`, `VERSION_CONFLICT`, `PAST_APPOINTMENT_READONLY`, `INACTIVE_ENTITY_ASSIGNMENT`, `VALIDATION_ERROR`
 
@@ -324,7 +324,7 @@ Ein Migrationslauf gilt erst dann als abgeschlossen, wenn anschliessend der jewe
 ## 11. Bekannte technische Hinweise
 
 - In mehreren Dateien sind Mojibake-Spuren sichtbar; Encoding-Konsistenz muss bei Änderungen aktiv beachtet werden.
-- Historische Terminmutationen sind im aktuellen Service-Code unabhängig von Rolle gesperrt; API- und UI-Verhalten müssen daran ausgerichtet bleiben.
+- Historische Terminmutationen sind im aktuellen Service-Code für `DISPONENT` gesperrt; `ADMIN` darf historische Termin-Mutationen ausführen. API- und UI-Verhalten müssen daran ausgerichtet bleiben.
 
 ## 12. Abgrenzung zu `architecture.md`
 
@@ -347,6 +347,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
 - erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
+- darf historische Termine nicht mutieren; die historische Sperre wird serverseitig durchgesetzt
 - erhält keine aktive FT30-Abwesenheitsdomäne; frühere FT30-Reste sind im aktuellen Routing nicht registriert
 
 ### Admin
@@ -354,6 +355,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält aktive und inaktive Einträge
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
+- darf historische Termine mutieren; die übrigen Terminregeln wie Relationspflicht, Versionsschutz, Overlap-Prüfung, Storno-Sperre und blockierte Tourwochen bleiben serverseitig aktiv
 - erhält Lese- und Schreibzugriff auf die FT31-Monitoring-Konfiguration sowie Lesezugriff auf `/api/monitoring`
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
 - erhält ebenfalls keine aktiv verdrahtete FT30-Abwesenheitsdomäne; vorhandene Restartefakte in Contracts, Schema oder UI sind derzeit nicht Teil des aktiven Routing

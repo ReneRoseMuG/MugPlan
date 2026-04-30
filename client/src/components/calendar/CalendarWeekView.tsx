@@ -1635,8 +1635,10 @@ export function CalendarWeekView({
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
                                 && !isSegmentLocked
-                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                                && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canEditAppointmentTags = canManageAppointmentTags
+                                && !appointment.isCancelled
+                                && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${rowIndex}`;
 
                               return (
@@ -1663,6 +1665,7 @@ export function CalendarWeekView({
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
+                                    allowHistoricalActions={isAdmin}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
@@ -1703,8 +1706,10 @@ export function CalendarWeekView({
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
                                 && !isSegmentLocked
-                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                                && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canEditAppointmentTags = canManageAppointmentTags
+                                && !appointment.isCancelled
+                                && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${gridRow - 1}`;
 
                               return (
@@ -1731,6 +1736,7 @@ export function CalendarWeekView({
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
+                                    allowHistoricalActions={isAdmin}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
@@ -1789,8 +1795,10 @@ export function CalendarWeekView({
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isReaderCalendarReadOnly
                                       && !isSegmentLocked
-                                      && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                                    const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isHistoricalSource;
+                                      && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                                    const canEditAppointmentTags = canManageAppointmentTags
+                                      && !appointment.isCancelled
+                                      && (!isHistoricalSource || isAdmin);
                                     const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
 
                                     return (
@@ -1812,6 +1820,7 @@ export function CalendarWeekView({
                                           projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                           showTagActions
                                           canEditTags={canEditAppointmentTags}
+                                          allowHistoricalActions={isAdmin}
                                           onTagMutationEvents={handleAppointmentTagMutationEvents}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode

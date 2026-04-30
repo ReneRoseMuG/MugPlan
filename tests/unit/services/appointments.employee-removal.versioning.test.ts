@@ -83,11 +83,11 @@ describe("FT01 unit: appointment employee removal versioning", () => {
     });
   });
 
-  it("blocks employee removal for historical non-Parkplatz appointments", async () => {
+  it("blocks employee removal for historical non-Parkplatz appointments for dispatchers", async () => {
     appointmentsRepoMock.getAppointment.mockResolvedValue({ id: 54, startDate: "2000-01-01", tourId: 12 } as any);
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({ id: 54, startDate: "2000-01-01", tourId: 12 } as any);
 
-    await expect(removeEmployeeFromAppointment(54, 9, 3, "ADMIN")).rejects.toMatchObject({
+    await expect(removeEmployeeFromAppointment(54, 9, 3, "DISPONENT")).rejects.toMatchObject({
       status: 409,
       code: "PAST_APPOINTMENT_READONLY",
     });

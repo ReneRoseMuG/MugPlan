@@ -113,11 +113,12 @@ describe("PKG-02 Invariant: locking rules", () => {
     expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
   });
 
-  it("blocks admin update on locked appointment with PAST_APPOINTMENT_READONLY", async () => {
+  it("allows admin update on locked appointment while keeping relation validation", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 203,
       version: 5,
       projectId: 302,
+      customerId: 11,
       tourId: null,
       title: "Existing",
       description: null,
@@ -128,22 +129,45 @@ describe("PKG-02 Invariant: locking rules", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
+
+    appointmentsRepoMock.getConflictingEmployeesTx.mockResolvedValue([]);
+    appointmentsRepoMock.updateAppointmentWithVersionTx.mockResolvedValue({ kind: "updated" });
+    appointmentsRepoMock.getAppointmentWithEmployeesTx.mockResolvedValue({ id: 203, employees: [] } as any);
+    await import("../../../server/repositories/customersRepository").then((m) => {
+      vi.spyOn(m, "getCustomer").mockResolvedValue({
+        id: 11,
+        customerNumber: "C011",
+        fullName: "Test Kunde",
+        isActive: true,
+      } as any);
+    });
+
     await expect(
       updateAppointment(
         203,
         {
           version: 5,
-          projectId: 302,
+          projectId: null,
+          customerId: 11,
           startDate: "2000-01-03",
           employeeIds: [],
         },
         "ADMIN",
       ),
-    ).rejects.toMatchObject({ status: 409, code: "PAST_APPOINTMENT_READONLY" });
-    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).not.toHaveBeenCalled();
+    ).resolves.toBeTruthy();
+    expect(appointmentsRepoMock.updateAppointmentWithVersionTx).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        appointmentId: 203,
+        data: expect.objectContaining({
+          projectId: null,
+          customerId: 11,
+        }),
+      }),
+    );
   });
 
-  it("blocks admin delete on locked appointment", async () => {
+  it("allows admin delete on locked appointment", async () => {
     appointmentsRepoMock.getAppointmentTx.mockResolvedValue({
       id: 204,
       version: 6,
@@ -158,11 +182,10 @@ describe("PKG-02 Invariant: locking rules", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     } as any);
-    await expect(deleteAppointment(204, 6, "ADMIN")).rejects.toMatchObject({
-      status: 409,
-      code: "PAST_APPOINTMENT_READONLY",
-    });
-    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).not.toHaveBeenCalled();
+    appointmentsRepoMock.deleteAppointmentWithVersionTx.mockResolvedValue({ kind: "deleted" });
+
+    await expect(deleteAppointment(204, 6, "ADMIN")).resolves.toBeTruthy();
+    expect(appointmentsRepoMock.deleteAppointmentWithVersionTx).toHaveBeenCalled();
   });
 
   it("allows admin update for historical Parkplatz appointments", async () => {
