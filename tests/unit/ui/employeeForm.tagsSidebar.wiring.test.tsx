@@ -110,6 +110,10 @@ import { EmployeeForm } from "../../../client/src/components/EmployeeForm";
 function buildQueryResult(queryKey: unknown) {
   const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
 
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "absence-appointments") {
+    return { data: [], isLoading: false, error: null };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "tags") {
     return {
       data: [

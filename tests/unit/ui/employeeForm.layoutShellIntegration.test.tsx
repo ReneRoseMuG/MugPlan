@@ -194,6 +194,10 @@ vi.mock("@/lib/tags", () => ({
 import { EmployeeForm } from "../../../client/src/components/EmployeeForm";
 
 function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolean; error?: unknown } {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "absence-appointments") {
+    return { data: [], isLoading: false, error: null };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[1] === 17 && queryKey.length === 2) {
     return {
       data: {

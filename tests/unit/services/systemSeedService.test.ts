@@ -22,6 +22,11 @@
  * Die Orchestrierungslogik des System-Seed-Service isoliert ohne echte DB-Zugriffe absichern.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ABSENCE_TAG_NAMES,
+  ABSENCE_TOUR_COLOR,
+  ABSENCE_TOUR_NAME,
+} from "../../../shared/absenceAppointments";
 
 const ensureTagDefinitionMock = vi.fn();
 const getTagByNormalizedNameMock = vi.fn();
@@ -32,6 +37,18 @@ const updateTourWithVersionMock = vi.fn();
 const getNoteTemplatesMock = vi.fn();
 const createNoteTemplateMock = vi.fn();
 const updateNoteTemplateWithVersionMock = vi.fn();
+
+function buildSeededTours(overrides: Record<string, { color?: string; version?: number }> = {}) {
+  return [
+    { id: 1, name: "Parkplatz", color: overrides.Parkplatz?.color ?? "#D4537E", version: overrides.Parkplatz?.version ?? 1 },
+    { id: 2, name: ABSENCE_TOUR_NAME, color: overrides[ABSENCE_TOUR_NAME]?.color ?? ABSENCE_TOUR_COLOR, version: overrides[ABSENCE_TOUR_NAME]?.version ?? 1 },
+    { id: 3, name: "Schröder Halle", color: overrides["Schröder Halle"]?.color ?? "#5C3317", version: overrides["Schröder Halle"]?.version ?? 1 },
+    { id: 7, name: "Tour 1", color: overrides["Tour 1"]?.color ?? "#006B6F", version: overrides["Tour 1"]?.version ?? 5 },
+    { id: 8, name: "Tour 2", color: overrides["Tour 2"]?.color ?? "#00ACB1", version: overrides["Tour 2"]?.version ?? 1 },
+    { id: 9, name: "Tour 3", color: overrides["Tour 3"]?.color ?? "#00CFD5", version: overrides["Tour 3"]?.version ?? 1 },
+    { id: 10, name: "Tour 4", color: overrides["Tour 4"]?.color ?? "#5B4B8A", version: overrides["Tour 4"]?.version ?? 1 },
+  ];
+}
 
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   getTagByNormalizedName: (...args: unknown[]) => getTagByNormalizedNameMock(...args),
@@ -114,6 +131,13 @@ describe("systemSeedService", () => {
     }));
     expect(result.logLines).toContain("Tag angelegt: Reklamation");
     expect(result.logLines).toContain("Tag angelegt: Geparkt");
+    for (const absenceTagName of ABSENCE_TAG_NAMES) {
+      expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
+        name: absenceTagName,
+        isDefault: true,
+      }));
+      expect(result.logLines).toContain(`Tag angelegt: ${absenceTagName}`);
+    }
     expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
       name: "Sondermaß",
       color: "#BA7517",
@@ -135,6 +159,20 @@ describe("systemSeedService", () => {
       expect.objectContaining({
         key: "tour:parkplatz",
         kind: "tour",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "tour:abwesenheiten",
+        kind: "tour",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "tag:urlaub",
+        kind: "tag",
         status: "missing",
         canApply: true,
         checkedByDefault: true,
@@ -239,6 +277,7 @@ describe("systemSeedService", () => {
     const result = await applySystemSeed();
 
     expect(createTourMock).toHaveBeenCalledWith("Parkplatz", "#D4537E");
+    expect(createTourMock).toHaveBeenCalledWith(ABSENCE_TOUR_NAME, ABSENCE_TOUR_COLOR);
     expect(createTourMock).toHaveBeenCalledWith("Schröder Halle", "#5C3317");
     expect(result.logLines).toContain("Tour angelegt: Parkplatz");
   });
@@ -254,38 +293,11 @@ describe("systemSeedService", () => {
 
   it("aktualisiert bestehende Tour-Farben auf den Sollzustand", async () => {
     getToursMock
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#999999", version: 4 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValue([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ]);
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours({ "Tour 1": { color: "#999999", version: 4 } }))
+      .mockResolvedValue(buildSeededTours());
 
     const result = await applySystemSeed();
 

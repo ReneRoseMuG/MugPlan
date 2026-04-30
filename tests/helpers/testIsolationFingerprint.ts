@@ -11,6 +11,10 @@ import {
   RESERVED_VACANT_TAG_NAME,
 } from "../../shared/appointmentCancellation";
 import {
+  ABSENCE_TAG_NAMES,
+  ABSENCE_TOUR_NAME,
+} from "../../shared/absenceAppointments";
+import {
   appointmentAttachments,
   appointmentEmployees,
   appointmentNotes,
@@ -52,6 +56,7 @@ type FingerprintResult = {
 const CORE_ROLE_CODES = ["ADMIN", "DISPATCHER", "READER"] as const;
 const SEEDED_TOUR_NAMES = [
   "Parkplatz",
+  ABSENCE_TOUR_NAME,
   "Schröder Halle",
   "Tour 1",
   "Tour 2",
@@ -65,6 +70,7 @@ const SEEDED_TAG_NAMES = [
   MANAGED_MESSE_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
+  ...ABSENCE_TAG_NAMES,
 ] as const;
 const SEEDED_NOTE_TEMPLATE_TITLES = [
   "Reklamation",

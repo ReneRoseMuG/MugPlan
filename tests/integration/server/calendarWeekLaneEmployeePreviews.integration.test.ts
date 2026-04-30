@@ -84,6 +84,19 @@ describe("calendar week lane employee previews integration", () => {
       employeeIds: [weekEmployee.id, additionalEmployee.id],
     });
 
+    const expectedWeekEmployee = {
+      id: weekEmployee.id,
+      firstName: weekEmployee.firstName,
+      lastName: weekEmployee.lastName,
+      fullName: weekEmployee.fullName,
+    };
+    const expectedAdditionalEmployee = {
+      id: additionalEmployee.id,
+      firstName: additionalEmployee.firstName,
+      lastName: additionalEmployee.lastName,
+      fullName: additionalEmployee.fullName,
+    };
+
     const response = await admin
       .get(`/api/calendar/week-lane-employee-previews?fromDate=${week.monday}&toDate=${week.tuesday}`)
       .expect(200);
@@ -92,13 +105,13 @@ describe("calendar week lane employee previews integration", () => {
       expect.objectContaining({
         date: week.monday,
         tourId: tour.id,
-        weekEmployees: [{ id: weekEmployee.id, fullName: weekEmployee.fullName }],
-        additionalDayEmployees: [{ id: additionalEmployee.id, fullName: additionalEmployee.fullName }],
+        weekEmployees: [expectedWeekEmployee],
+        additionalDayEmployees: [expectedAdditionalEmployee],
       }),
       expect.objectContaining({
         date: week.tuesday,
         tourId: tour.id,
-        weekEmployees: [{ id: weekEmployee.id, fullName: weekEmployee.fullName }],
+        weekEmployees: [expectedWeekEmployee],
         additionalDayEmployees: [],
       }),
     ]));
