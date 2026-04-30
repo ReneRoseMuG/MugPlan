@@ -13,7 +13,6 @@ import {
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
-import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
@@ -51,21 +50,25 @@ import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { ColorSelectButton } from "@/components/ui/color-select-button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EditFormContextText } from "@/components/ui/edit-form-context-text";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
-import type { NoteTemplate, Tour } from "@shared/schema";
+import type { Note, NoteTemplate, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
+import {
+  buildWorkflowNoteDraft,
+  findWorkflowNoteTemplate,
+  normalizeWorkflowNoteTitle,
+} from "@/lib/workflow-note-templates";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -104,10 +107,6 @@ const normalizeTourName = (value: string | null | undefined) => (value ?? "").tr
 function isHistoricalParkplatzAppointment(appointment: CalendarAppointment): boolean {
   return appointment.startDate < getBerlinTodayDateString()
     && normalizeTourName(appointment.tourName) === normalizeTourName("Parkplatz");
-}
-
-function isPlanningBlockedAppointment(appointment: CalendarAppointment): boolean {
-  return appointment.appointmentTags.some((tag) => isReservedPlanningBlockedTagName(tag.name));
 }
 
 type WeekLaneRenderData = {
@@ -274,6 +273,15 @@ export function CalendarWeekView({
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; appointmentId: number; noteId: number; noteVersion: number } | null>(null);
+  const [workflowNoteEditorOpen, setWorkflowNoteEditorOpen] = useState(false);
+  const [workflowNoteEditorAppointmentId, setWorkflowNoteEditorAppointmentId] = useState<number | null>(null);
+  const [workflowNoteEditorId, setWorkflowNoteEditorId] = useState<number | null>(null);
+  const [workflowNoteEditorVersion, setWorkflowNoteEditorVersion] = useState<number>(1);
+  const [workflowNoteTitle, setWorkflowNoteTitle] = useState("");
+  const [workflowNoteBody, setWorkflowNoteBody] = useState("");
+  const [workflowNoteCardColor, setWorkflowNoteCardColor] = useState<string>("#f8fafc");
+  const [workflowNotePrint, setWorkflowNotePrint] = useState(false);
+  const [workflowNoteCardColorLocked, setWorkflowNoteCardColorLocked] = useState(false);
   const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
   const cardHeightByLaneRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
@@ -720,8 +728,6 @@ export function CalendarWeekView({
     setDraggedAppointmentId(null);
   };
 
-  const normalizeTemplateTitle = (value: string) => value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
-
   const loadAppointmentNotes = async (appointmentId: number) => {
     const response = await fetch(`/api/appointments/${appointmentId}/notes`, { credentials: "include" });
     if (!response.ok) {
@@ -738,6 +744,7 @@ export function CalendarWeekView({
       cardColor?: string | null;
       print: boolean;
       templateId?: number;
+      openEditorOnSuccess?: boolean;
     }) => {
       const response = await apiRequest("POST", `/api/appointments/${appointmentId}/notes`, {
         title,
@@ -746,15 +753,59 @@ export function CalendarWeekView({
         print,
         templateId,
       });
-      return response.json();
+      return response.json() as Promise<Note>;
     },
-    onSuccess: async (_createdNote, variables) => {
+    onSuccess: async (createdNote, variables) => {
+      if (variables.openEditorOnSuccess) {
+        setWorkflowNoteEditorAppointmentId(variables.appointmentId);
+        setWorkflowNoteEditorId(createdNote.id);
+        setWorkflowNoteEditorVersion(createdNote.version);
+        setWorkflowNoteTitle(createdNote.title);
+        setWorkflowNoteBody(createdNote.body ?? "");
+        setWorkflowNoteCardColor(createdNote.cardColor ?? "#f8fafc");
+        setWorkflowNotePrint(createdNote.print);
+        setWorkflowNoteCardColorLocked(createdNote.cardColorLocked);
+        setWorkflowNoteEditorOpen(true);
+      }
       await queryClient.invalidateQueries({ queryKey: ["/api/appointments", variables.appointmentId, "notes"] });
       await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       await refreshMonitoringWithNotification(toast);
     },
     onError: (error: Error) => {
       toast({ title: "Notiz konnte nicht erstellt werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateWorkflowAppointmentNoteMutation = useMutation({
+    mutationFn: async ({
+      noteId,
+      version,
+      title,
+      body,
+      cardColor,
+      print,
+    }: {
+      noteId: number;
+      version: number;
+      title: string;
+      body: string;
+      cardColor?: string | null;
+      print: boolean;
+    }) => {
+      const response = await apiRequest("PUT", `/api/notes/${noteId}`, { title, body, cardColor, print, version });
+      return response.json() as Promise<Note>;
+    },
+    onSuccess: async (updatedNote) => {
+      setWorkflowNoteEditorVersion(updatedNote.version);
+      setWorkflowNoteEditorOpen(false);
+      if (workflowNoteEditorAppointmentId) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", workflowNoteEditorAppointmentId, "notes"] });
+      }
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await refreshMonitoringWithNotification(toast);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Notiz konnte nicht aktualisiert werden", description: error.message, variant: "destructive" });
     },
   });
 
@@ -809,7 +860,7 @@ export function CalendarWeekView({
         continue;
       }
 
-      const matchingNote = params.notes.find((note) => normalizeTemplateTitle(note.title) === normalizeTemplateTitle(action.templateTitle));
+      const matchingNote = params.notes.find((note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(action.templateTitle));
       if (!matchingNote) {
         continue;
       }
@@ -820,6 +871,40 @@ export function CalendarWeekView({
         noteVersion: matchingNote.version,
       });
     }
+  };
+
+  const handleAppointmentTagMutationEvents = async (
+    appointmentId: number,
+    mutationEvents: AppointmentMutationEvent[] | undefined,
+  ) => {
+    if (!mutationEvents || mutationEvents.length === 0) {
+      return;
+    }
+    const existingNotes = await loadAppointmentNotes(appointmentId);
+    applyDropMutationEvents({
+      appointmentId,
+      mutationEvents,
+      notes: existingNotes,
+    });
+  };
+
+  const handleCreateAppointmentNoteFromSuggestion = () => {
+    if (!noteSuggestionDialog) return;
+    const template = findWorkflowNoteTemplate(noteTemplates, noteSuggestionDialog.templateTitle);
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    createAppointmentNoteMutation.mutate({
+      appointmentId: noteSuggestionDialog.appointmentId,
+      ...buildWorkflowNoteDraft(template),
+      openEditorOnSuccess: true,
+    });
+    setNoteSuggestionDialog(null);
   };
 
   const persistDropMutation = async ({
@@ -932,17 +1017,6 @@ export function CalendarWeekView({
       toast({
         title: "Termin ist storniert",
         description: "Stornierte Termine koennen nicht verschoben werden.",
-        variant: "destructive",
-      });
-      setDraggedAppointmentId(null);
-      return;
-    }
-
-    if (isPlanningBlockedAppointment(appointment)) {
-      console.info(`${logPrefix} drop blocked: planning blocked appointment`, { appointmentId });
-      toast({
-        title: "Planung blockiert",
-        description: "Planung blockierte Termine koennen nicht verschoben werden.",
         variant: "destructive",
       });
       setDraggedAppointmentId(null);
@@ -1557,13 +1631,14 @@ export function CalendarWeekView({
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
-                              const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
-                              const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
+                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
                                 && !isSegmentLocked
-                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                                && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canEditAppointmentTags = canManageAppointmentTags
+                                && !appointment.isCancelled
+                                && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${rowIndex}`;
 
                               return (
@@ -1590,6 +1665,8 @@ export function CalendarWeekView({
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
+                                    allowHistoricalActions={isAdmin}
+                                    onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
@@ -1625,13 +1702,14 @@ export function CalendarWeekView({
                               const isHighlighted = hoveredAppointmentId === appointment.id;
                               const conflictMeta = conflictAppointmentMap.get(appointment.id);
                               const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
-                              const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
-                              const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
+                              const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                               const isHistoricalSource = appointment.startDate < berlinToday;
                               const canDragSegment = !isReaderCalendarReadOnly
                                 && !isSegmentLocked
-                                && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                              const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                                && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canEditAppointmentTags = canManageAppointmentTags
+                                && !appointment.isCancelled
+                                && (!isHistoricalSource || isAdmin);
                               const heightRowKey = `grid-row-${gridRow - 1}`;
 
                               return (
@@ -1658,6 +1736,8 @@ export function CalendarWeekView({
                                     projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                     showTagActions
                                     canEditTags={canEditAppointmentTags}
+                                    allowHistoricalActions={isAdmin}
+                                    onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
                                       ? undefined
@@ -1711,13 +1791,14 @@ export function CalendarWeekView({
                                     const isHighlighted = hoveredAppointmentId === appointment.id;
                                     const conflictMeta = conflictAppointmentMap.get(appointment.id);
                                     const isConflict = conflictHighlightActive && Boolean(conflictMeta) && !isLaneBlocked;
-                                    const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
-                                    const isSegmentLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
+                                    const isSegmentLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                                     const isHistoricalSource = appointment.startDate < berlinToday;
                                     const canDragSegment = !isReaderCalendarReadOnly
                                       && !isSegmentLocked
-                                      && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
-                                    const canEditAppointmentTags = canManageAppointmentTags && !appointment.isCancelled && !isPlanningBlocked && !isHistoricalSource;
+                                      && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                                    const canEditAppointmentTags = canManageAppointmentTags
+                                      && !appointment.isCancelled
+                                      && (!isHistoricalSource || isAdmin);
                                     const heightRowKey = `overflow-day-${dayBucket.dateKey}-row-${stackIndex}`;
 
                                     return (
@@ -1739,6 +1820,8 @@ export function CalendarWeekView({
                                           projectStatusAreaHeightPx={projectStatusAreaHeightPx}
                                           showTagActions
                                           canEditTags={canEditAppointmentTags}
+                                          allowHistoricalActions={isAdmin}
+                                          onTagMutationEvents={handleAppointmentTagMutationEvents}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode
                                             ? undefined
@@ -1783,72 +1866,110 @@ export function CalendarWeekView({
           })}
         </div>
       </div>
-      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-suggestion">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für diesen Termin angelegt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-suggestion-skip">Nicht folgen</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-suggestion-confirm"
+      <WorkflowNoteSuggestionDialog
+        open={noteSuggestionDialog !== null}
+        templateTitle={noteSuggestionDialog?.templateTitle}
+        targetLabel="diesen Termin"
+        onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
+        onSkip={() => setNoteSuggestionDialog(null)}
+        onConfirm={handleCreateAppointmentNoteFromSuggestion}
+      />
+      <WorkflowNoteRemovalDialog
+        open={noteRemovalDialog !== null}
+        description={`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}“ ebenfalls entfernt werden?`}
+        onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}
+        onKeep={() => setNoteRemovalDialog(null)}
+        onConfirm={() => {
+          if (!noteRemovalDialog) return;
+          deleteAppointmentNoteMutation.mutate({
+            appointmentId: noteRemovalDialog.appointmentId,
+            noteId: noteRemovalDialog.noteId,
+            version: noteRemovalDialog.noteVersion,
+          });
+          setNoteRemovalDialog(null);
+        }}
+      />
+      <Dialog open={workflowNoteEditorOpen} onOpenChange={setWorkflowNoteEditorOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Notiz bearbeiten</DialogTitle>
+            <EditFormContextText>{workflowNoteTitle.trim() || null}</EditFormContextText>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="week-workflow-note-title">Titel *</Label>
+              <Input
+                id="week-workflow-note-title"
+                value={workflowNoteTitle}
+                onChange={(event) => setWorkflowNoteTitle(event.target.value)}
+                placeholder="Titel der Notiz..."
+                data-testid="input-note-title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Inhalt</Label>
+              <RichTextEditor
+                key={`week-workflow-note-editor-${workflowNoteEditorId ?? "new"}`}
+                value={workflowNoteBody}
+                onChange={setWorkflowNoteBody}
+                placeholder="Notizinhalt eingeben..."
+                className="min-h-[150px]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Kartenfarbe</Label>
+              <ColorSelectButton
+                color={workflowNoteCardColor}
+                onChange={setWorkflowNoteCardColor}
+                testId="button-note-card-color-picker"
+                disabled={workflowNoteCardColorLocked}
+                label="Kartenfarbe"
+              />
+              {workflowNoteCardColorLocked ? (
+                <p className="text-xs text-slate-500" data-testid="text-note-card-color-locked">
+                  Die Kartenfarbe stammt aus der Vorlage und kann für diese Notiz nicht geändert werden.
+                </p>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-between rounded-md border border-slate-200 px-3 py-2">
+              <div>
+                <Label htmlFor="week-workflow-note-print" className="text-sm font-medium">Drucken</Label>
+                <p className="text-xs text-slate-500">Bestimmt, ob die Notiz in Druckausgaben berücksichtigt wird.</p>
+              </div>
+              <Switch
+                id="week-workflow-note-print"
+                checked={workflowNotePrint}
+                onCheckedChange={setWorkflowNotePrint}
+                data-testid="switch-note-print"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setWorkflowNoteEditorOpen(false)} data-testid="button-cancel-note">
+              Abbrechen
+            </Button>
+            <Button
               onClick={() => {
-                if (!noteSuggestionDialog) return;
-                const template = noteTemplates.find((entry) => normalizeTemplateTitle(entry.title) === normalizeTemplateTitle(noteSuggestionDialog.templateTitle));
-                if (!template) {
-                  toast({
-                    title: "Notizvorlage fehlt",
-                    description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                createAppointmentNoteMutation.mutate({
-                  appointmentId: noteSuggestionDialog.appointmentId,
-                  title: template.title,
-                  body: template.body,
-                  cardColor: template.cardColor,
-                  print: template.print,
-                  templateId: template.id,
+                if (!workflowNoteEditorId || !workflowNoteTitle.trim()) return;
+                updateWorkflowAppointmentNoteMutation.mutate({
+                  noteId: workflowNoteEditorId,
+                  version: workflowNoteEditorVersion,
+                  title: workflowNoteTitle,
+                  body: workflowNoteBody,
+                  cardColor: workflowNoteCardColor,
+                  print: workflowNotePrint,
                 });
-                setNoteSuggestionDialog(null);
               }}
+              disabled={!workflowNoteTitle.trim()}
+              data-testid="button-save-note"
             >
-              Notiz anlegen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <AlertDialog open={noteRemovalDialog !== null} onOpenChange={(open) => { if (!open) setNoteRemovalDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-removal">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz mit entfernen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll die Notiz „${noteRemovalDialog?.templateTitle ?? ""}" ebenfalls entfernt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-removal-keep">Notiz behalten</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-removal-confirm"
-              onClick={() => {
-                if (!noteRemovalDialog) return;
-                deleteAppointmentNoteMutation.mutate({
-                  appointmentId: noteRemovalDialog.appointmentId,
-                  noteId: noteRemovalDialog.noteId,
-                  version: noteRemovalDialog.noteVersion,
-                });
-                setNoteRemovalDialog(null);
-              }}
-            >
-              Notiz entfernen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

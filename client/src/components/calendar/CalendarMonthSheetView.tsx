@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { isReservedPlanningBlockedTagName } from "@shared/appointmentCancellation";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting } from "@/hooks/useSettings";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
@@ -68,10 +67,6 @@ type CalendarMonthSheetViewProps = {
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
 };
-
-function isPlanningBlockedAppointment(appointment: CalendarAppointment): boolean {
-  return appointment.appointmentTags.some((tag) => isReservedPlanningBlockedTagName(tag.name));
-}
 
 type MonthSheetRenderWeek = {
   rowLayout: MonthWeekRowLayout;
@@ -700,11 +695,10 @@ function MonthSheetSection({
                           MONTH_SLOT_SEPARATOR_HEIGHT_PX +
                           bar.subRowIndex * (MONTH_SLOT_BAR_HEIGHT_PX + MONTH_SLOT_BAR_GAP_PX);
                         const position = getSlotBarPosition(bar.startDayIndex, bar.endDayIndex);
-                        const isPlanningBlocked = isPlanningBlockedAppointment(appointment);
-                        const isLocked = appointment.isCancelled || isPlanningBlocked || (appointment.isLocked && !isAdmin);
+                        const isLocked = appointment.isCancelled || (appointment.isLocked && !isAdmin);
                         const isHistoricalSource = appointment.startDate < berlinToday;
                         const canDrag = !readOnly && !isLocked
-                          && (!isHistoricalSource || isHistoricalParkplatzAppointment(appointment));
+                          && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
                         const conflictMeta = conflictAppointmentMap.get(appointment.id);
                         const isSlotBlocked = isBlockedTourWeekSlot({
                           tourId: slot.tourId,
@@ -747,6 +741,7 @@ function MonthSheetSection({
                                 isLocked={isLocked}
                                 isDragging={draggedAppointmentId === appointment.id}
                                 isBlocked={isSlotBlocked}
+                                allowHistoricalActions={isAdmin}
                                 onDoubleClick={() => onAppointmentClick(appointment.id)}
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
@@ -805,6 +800,7 @@ function MonthCompactBarWithMenu({
   isLocked,
   isDragging,
   isBlocked = false,
+  allowHistoricalActions = false,
   onDoubleClick,
   onDragStart,
   onDragEnd,
@@ -818,6 +814,7 @@ function MonthCompactBarWithMenu({
   isLocked?: boolean;
   isDragging?: boolean;
   isBlocked?: boolean;
+  allowHistoricalActions?: boolean;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
@@ -830,6 +827,7 @@ function MonthCompactBarWithMenu({
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
 
   const cancelMutation = useMutation({

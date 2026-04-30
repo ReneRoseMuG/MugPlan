@@ -1,5 +1,6 @@
-import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
+﻿import { defaultAppointmentDisplayMode, type AppointmentDisplayMode } from "@shared/appointmentDisplayMode";
 import {
+  MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_MESSE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
@@ -24,10 +25,6 @@ import { dispatchCalDavDelete, dispatchCalDavUpsert } from "./caldavSyncDispatch
 import {
   filterVisibleAppointmentTagRelations,
   hasAppointmentCancellationTag,
-  hasReservedPlanningBlockedTag,
-  isAppointmentCancellationTag,
-  isReservedPlanningBlockedTag,
-  isReservedVacantTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
 import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
@@ -65,9 +62,8 @@ class AppointmentError extends Error {
     | "INACTIVE_ENTITY_ASSIGNMENT"
     | "PAST_APPOINTMENT_READONLY"
     | "CANCELLATION_TAG_NOT_CONFIGURED"
-    | "CANCELLATION_TAG_PROTECTED"
+    | "WORKFLOW_TAG_PROTECTED"
     | "CANCELLED_APPOINTMENT_READONLY"
-    | "PLANNING_BLOCKED_APPOINTMENT_READONLY"
     | "ALREADY_PARKED";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
@@ -84,9 +80,8 @@ class AppointmentError extends Error {
       | "INACTIVE_ENTITY_ASSIGNMENT"
       | "PAST_APPOINTMENT_READONLY"
       | "CANCELLATION_TAG_NOT_CONFIGURED"
-      | "CANCELLATION_TAG_PROTECTED"
+      | "WORKFLOW_TAG_PROTECTED"
       | "CANCELLED_APPOINTMENT_READONLY"
-      | "PLANNING_BLOCKED_APPOINTMENT_READONLY"
       | "ALREADY_PARKED",
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
@@ -219,10 +214,8 @@ async function assertAppointmentWriteAllowed(
     parkplatzTourId: number | null;
     allowHistorical?: boolean;
     allowCancelled?: boolean;
-    allowPlanningBlocked?: boolean;
     historicalMessage?: string;
     cancelledMessage?: string;
-    planningBlockedMessage?: string;
   },
 ): Promise<void> {
   if (!options.allowHistorical && isHistoricalAppointmentMutationLocked(appointment, options.parkplatzTourId)) {
@@ -239,13 +232,6 @@ async function assertAppointmentWriteAllowed(
       options.cancelledMessage ?? "Stornierte Termine können nicht geändert werden",
       409,
       "CANCELLED_APPOINTMENT_READONLY",
-    );
-  }
-  if (!options.allowPlanningBlocked && hasReservedPlanningBlockedTag(appointmentTags)) {
-    throw new AppointmentError(
-      options.planningBlockedMessage ?? "Planung blockierte Termine können nicht geändert werden",
-      409,
-      "PLANNING_BLOCKED_APPOINTMENT_READONLY",
     );
   }
 }
@@ -278,6 +264,10 @@ function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
     throw new AppointmentError("Keine Berechtigung für Tag-Änderungen", 403, "FORBIDDEN");
   }
+}
+
+function allowsHistoricalAppointmentMutation(roleKey: CanonicalRoleKey): boolean {
+  return roleKey === "ADMIN";
 }
 
 async function assertNoInactiveEmployeesTx(
@@ -593,10 +583,14 @@ export async function createAppointment(
     startTime?: string | null;
     employeeIds?: number[];
   },
+  roleKey?: CanonicalRoleKey,
 ) {
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
-  assertNotHistoricalInput({ startDate: data.startDate, startTime: data.startTime ?? null });
+  assertNotHistoricalInput(
+    { startDate: data.startDate, startTime: data.startTime ?? null },
+    { allowHistorical: roleKey === "ADMIN" },
+  );
   await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
@@ -705,6 +699,7 @@ export async function updateAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
@@ -716,7 +711,11 @@ export async function updateAppointment(
     }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
-      { allowHistorical: allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId) },
+      {
+        allowHistorical:
+          allowsHistoricalAppointmentMutation(roleKey)
+          || allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId),
+      },
     );
 
     const relation = await resolveAppointmentRelationTx(
@@ -873,6 +872,7 @@ export async function setAppointmentDisplayMode(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
@@ -1783,16 +1783,16 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, expectedVersion: number, _roleKey: CanonicalRoleKey) {
+export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht gelöscht werden",
       cancelledMessage: "Stornierte Termine können nicht gelöscht werden",
-      planningBlockedMessage: "Planung blockierte Termine können nicht gelöscht werden",
     });
 
     const result = await appointmentsRepository.deleteAppointmentWithVersionTx(tx, {
@@ -1830,21 +1830,19 @@ export async function addAppointmentTag(
   if (!tag) {
     return null;
   }
-  if (isAppointmentCancellationTag(tag)) {
-    throw new AppointmentError("Der Storno-Tag kann nur über die Storno-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
-  }
-  if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nur über die Parken-Aktion gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
-  }
-  if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch gesetzt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  if (tag.isDefault) {
+    throw new AppointmentError(
+      "Dieser Tag wird ausschließlich über eine dedizierte Aktion gesetzt und kann nicht manuell geändert werden.",
+      409,
+      "WORKFLOW_TAG_PROTECTED",
+    );
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geändert werden",
     cancelledMessage: "Stornierte Termine können nicht geändert werden",
-    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   return tagRelationsService.addTagRelation("appointment", appointmentId, tagId);
 }
@@ -1865,21 +1863,19 @@ export async function removeAppointmentTag(
   if (!tag) {
     return null;
   }
-  if (isAppointmentCancellationTag(tag)) {
-    throw new AppointmentError("Der Storno-Tag kann nicht entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
-  }
-  if (isReservedVacantTag(tag)) {
-    throw new AppointmentError("Der Geparkt-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
-  }
-  if (isReservedPlanningBlockedTag(tag)) {
-    throw new AppointmentError("Der Planung-blockiert-Tag kann nicht händisch entfernt werden", 409, "CANCELLATION_TAG_PROTECTED");
+  if (tag.isDefault) {
+    throw new AppointmentError(
+      "Dieser Tag wird ausschließlich über eine dedizierte Aktion gesetzt und kann nicht manuell geändert werden.",
+      409,
+      "WORKFLOW_TAG_PROTECTED",
+    );
   }
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geändert werden",
     cancelledMessage: "Stornierte Termine können nicht geändert werden",
-    planningBlockedMessage: "Planung blockierte Termine können nicht geändert werden",
   });
   const result = await tagRelationsService.removeTagRelation("appointment", appointmentId, tagId, expectedVersion);
   if (result.kind === "version_conflict") {
@@ -1909,9 +1905,9 @@ export async function removeEmployeeFromAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       historicalMessage: "Historische Termine können nicht geändert werden",
       cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
-      planningBlockedMessage: "Planung blockierte Termine können nicht bearbeitet werden",
     });
     const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
       appointmentId,
@@ -1951,8 +1947,8 @@ export async function cancelAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
       allowCancelled: true,
-      allowPlanningBlocked: true,
       historicalMessage: "Historische Termine können nicht geändert werden",
     });
 
@@ -1973,6 +1969,96 @@ export async function cancelAppointment(
   });
 
   return result;
+}
+
+export async function setAppointmentReklamation(
+  appointmentId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean; kind?: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return { found: false };
+
+  const tag = await tagRelationsService.getTagByName(MANAGED_COMPLAINT_TAG_NAME);
+  if (!tag) {
+    throw new AppointmentError("System-Tag 'Reklamation' fehlt. Bitte den Admin-System-Seed ausführen.", 409, "BUSINESS_CONFLICT");
+  }
+  const assignedTags = await getAppointmentTagsForGuard(appointmentId);
+  if (assignedTags.some((entry) => entry.name === MANAGED_COMPLAINT_TAG_NAME)) {
+    return { found: true, kind: "noop" };
+  }
+
+  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return;
+    const parkplatzTourId = await getParkplatzTourId();
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
+      historicalMessage: "Historische Termine können nicht geändert werden",
+      cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
+    });
+    const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, { appointmentId, expectedVersion });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
+    }
+    await appointmentsRepository.addAppointmentTagTx(tx, appointmentId, tag.id);
+  });
+
+  return {
+    found: true,
+    kind: "updated",
+    mutationEvents: [{ kind: "tag_mutated", appointmentId, tagName: MANAGED_COMPLAINT_TAG_NAME, action: "added" }],
+  };
+}
+
+export async function removeAppointmentReklamation(
+  appointmentId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+): Promise<{ found: boolean; kind?: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+  requireDispatcherOrAdmin(roleKey);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new AppointmentError("Ungültige Versionsangabe", 422, "VALIDATION_ERROR");
+  }
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) return { found: false };
+
+  const tag = await tagRelationsService.getTagByName(MANAGED_COMPLAINT_TAG_NAME);
+  if (!tag) {
+    return { found: true, kind: "noop" };
+  }
+  const assignedTags = await getAppointmentTagsForGuard(appointmentId);
+  if (!assignedTags.some((entry) => entry.name === MANAGED_COMPLAINT_TAG_NAME)) {
+    return { found: true, kind: "noop" };
+  }
+
+  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
+    if (!existing) return;
+    const parkplatzTourId = await getParkplatzTourId();
+    await assertAppointmentWriteAllowed(appointmentId, existing, {
+      parkplatzTourId,
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
+      historicalMessage: "Historische Termine können nicht geändert werden",
+      cancelledMessage: "Stornierte Termine können nicht bearbeitet werden",
+    });
+    const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, { appointmentId, expectedVersion });
+    if (updateResult.kind === "version_conflict") {
+      throw new AppointmentError("Termin wurde zwischenzeitlich geändert", 409, "VERSION_CONFLICT");
+    }
+    await appointmentsRepository.removeAppointmentTagByTagIdTx(tx, appointmentId, tag.id);
+  });
+
+  return {
+    found: true,
+    kind: "updated",
+    mutationEvents: [{ kind: "tag_mutated", appointmentId, tagName: MANAGED_COMPLAINT_TAG_NAME, action: "removed" }],
+  };
 }
 
 function isHistoricalAppointmentMutationLocked(
@@ -2007,9 +2093,9 @@ export async function parkAppointment(
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {
     parkplatzTourId,
+    allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
     historicalMessage: "Historische Termine können nicht geparkt werden",
     cancelledMessage: "Stornierte Termine können nicht geparkt werden",
-    planningBlockedMessage: "Planung blockierte Termine können nicht geparkt werden",
   });
 
   const parkingDefaults = await getAppointmentParkingDefaults();

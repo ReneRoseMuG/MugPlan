@@ -1,6 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2 } from "lucide-react";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText } from "lucide-react";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,8 +20,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  isReservedPlanningBlockedTagName,
+  isManagedComplaintTagName,
   isReservedVacantTagName,
+  MANAGED_COMPLAINT_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
@@ -42,6 +44,7 @@ import {
 } from "./weekAppointmentCardStyles";
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 import { toAlphaColor } from "@/lib/monitoring-ui";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
@@ -108,6 +111,7 @@ export function CalendarWeekAppointmentPanel({
   conflictColor,
   onMouseEnter,
   onMouseLeave,
+  onTagMutationEvents,
   segment = "start",
   context = "default",
   continuationHeightPx,
@@ -117,6 +121,7 @@ export function CalendarWeekAppointmentPanel({
   showPreviewTourNameLine = false,
   showTagActions = false,
   canEditTags = false,
+  allowHistoricalActions = false,
   containerRef,
   testId,
 }: {
@@ -134,6 +139,7 @@ export function CalendarWeekAppointmentPanel({
   conflictColor?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
   continuationHeightPx?: number | null;
@@ -143,6 +149,7 @@ export function CalendarWeekAppointmentPanel({
   showPreviewTourNameLine?: boolean;
   showTagActions?: boolean;
   canEditTags?: boolean;
+  allowHistoricalActions?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
 }) {
@@ -153,10 +160,11 @@ export function CalendarWeekAppointmentPanel({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
-  const isPlanningBlocked = appointment.appointmentTags.some((t) => isReservedPlanningBlockedTagName(t.name));
+  const hasReklamationTag = appointment.appointmentTags.some((t) => isManagedComplaintTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
-  const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isPlanningBlocked || isLocked === true;
+  const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -194,6 +202,38 @@ export function CalendarWeekAppointmentPanel({
     },
     onError: () => {
       toast({ title: "Parken nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const reklamationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/appointments/${appointment.id}/reklamation`, {
+        method: hasReklamationTag ? "DELETE" : "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      const responseBody = await response.json().catch(() => null) as {
+        message?: string;
+        mutationEvents?: AppointmentMutationEvent[];
+      } | null;
+      if (!response.ok) {
+        throw new Error(responseBody?.message ?? "Reklamation konnte nicht geändert werden");
+      }
+      return responseBody;
+    },
+    onSuccess: async (data) => {
+      await onTagMutationEvents?.(appointment.id, data?.mutationEvents);
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id, "tags"] });
+      await invalidateTagProjectionQueries();
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: hasReklamationTag ? "Reklamation aufgehoben" : "Reklamation gemeldet" });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Reklamation konnte nicht geändert werden";
+      toast({ title: "Reklamation nicht möglich", description: message, variant: "destructive" });
     },
   });
 
@@ -238,9 +278,6 @@ export function CalendarWeekAppointmentPanel({
         }
         if (parsed?.code === "CANCELLED_APPOINTMENT_READONLY") {
           throw buildApiError("Stornierte Termine können nicht gelöscht werden.", response.status, "CANCELLED_APPOINTMENT_READONLY");
-        }
-        if (parsed?.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-          throw buildApiError("Planung blockierte Termine können nicht gelöscht werden.", response.status, "PLANNING_BLOCKED_APPOINTMENT_READONLY");
         }
         if (parsed?.code === "VERSION_CONFLICT") {
           throw buildApiError("Termin wurde parallel geändert.", response.status, "VERSION_CONFLICT");
@@ -294,14 +331,6 @@ export function CalendarWeekAppointmentPanel({
         toast({
           title: "Löschen nicht möglich",
           description: "Stornierte Termine können nicht gelöscht werden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (err.code === "PLANNING_BLOCKED_APPOINTMENT_READONLY") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Planung blockierte Termine können nicht gelöscht werden.",
           variant: "destructive",
         });
         return;
@@ -371,6 +400,22 @@ export function CalendarWeekAppointmentPanel({
             >
               <ParkingCircle className="h-3.5 w-3.5 shrink-0" />
               Parken
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && showTagActions && canEditTags && (
+            <DropdownMenuItem
+              onClick={() => reklamationMutation.mutate()}
+              disabled={reklamationMutation.isPending}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: MANAGED_COMPLAINT_TAG_COLOR }}
+              data-testid={hasReklamationTag ? `week-appointment-remove-reklamation-${appointment.id}` : `week-appointment-set-reklamation-${appointment.id}`}
+            >
+              <ScrollText className="h-3.5 w-3.5 shrink-0" />
+              {reklamationMutation.isPending
+                ? "Reklamation..."
+                : hasReklamationTag
+                  ? "Reklamation aufheben"
+                  : "Reklamation melden"}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem

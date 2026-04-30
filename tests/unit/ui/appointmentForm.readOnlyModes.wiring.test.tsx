@@ -19,7 +19,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let currentRole = "DISPATCHER";
-let currentMode: "future" | "historical" | "historicalParked" | "cancelled" | "planningBlocked" = "historical";
+let currentMode: "future" | "historical" | "historicalParked" | "cancelled" = "historical";
 const attachmentPanelCalls: Array<Record<string, unknown>> = [];
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
@@ -191,7 +191,7 @@ vi.mock("@/components/DocumentExtractionDialog", () => ({
 
 import { AppointmentForm } from "../../../client/src/components/AppointmentForm";
 
-function buildAppointmentDetail(mode: "future" | "historical" | "historicalParked" | "cancelled" | "planningBlocked") {
+function buildAppointmentDetail(mode: "future" | "historical" | "historicalParked" | "cancelled") {
   return {
     id: 77,
     version: 3,
@@ -201,12 +201,12 @@ function buildAppointmentDetail(mode: "future" | "historical" | "historicalParke
     tourId: mode === "historicalParked" ? 88 : null,
     title: "Termin A",
     description: null,
-    startDate: mode === "future" || mode === "cancelled" || mode === "planningBlocked" ? "2099-01-02" : "2000-01-01",
+    startDate: mode === "future" || mode === "cancelled" ? "2099-01-02" : "2000-01-01",
     startTime: "08:00:00",
     endDate: "2099-01-02",
     endTime: "09:00:00",
     employees: [{ id: 41, firstName: "Mia", lastName: "Muster" }],
-    appointmentTags: mode === "planningBlocked" ? [{ id: 81, name: "Planung blockiert", color: "#3B2025", version: 1 }] : [],
+    appointmentTags: [],
     isCancelled: mode === "cancelled",
   };
 }
@@ -305,11 +305,8 @@ describe("FT01 UI: appointment form readonly modes", () => {
 
   it.each([
     ["DISPATCHER", "historical"],
-    ["ADMIN", "historical"],
     ["DISPATCHER", "cancelled"],
     ["ADMIN", "cancelled"],
-    ["DISPATCHER", "planningBlocked"],
-    ["ADMIN", "planningBlocked"],
   ] as const)(
     "renders only a close action for %s appointments in %s mode",
     (role, mode) => {
@@ -337,9 +334,6 @@ describe("FT01 UI: appointment form readonly modes", () => {
         expect(markup).toContain("Termin gesperrt");
         expect(markup).not.toContain("Termin storniert");
         expect(markup).not.toContain("Planung blockiert");
-      } else if (mode === "planningBlocked") {
-        expect(markup).toContain("Planung blockiert");
-        expect(markup).not.toContain("Termin storniert");
       } else {
         expect(markup).toContain("Termin storniert");
       }
@@ -356,6 +350,36 @@ describe("FT01 UI: appointment form readonly modes", () => {
       expect(latestTagPickerCall?.canEdit).toBe(false);
     },
   );
+
+  it("keeps historical appointments editable for admins", () => {
+    currentRole = "ADMIN";
+    currentMode = "historical";
+
+    const markup = renderToStaticMarkup(
+      <AppointmentForm
+        appointmentId={77}
+        showBackButton
+        onBack={() => undefined}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Speichern");
+    expect(markup).toContain("Stornieren");
+    expect(markup).toContain("Löschen");
+    expect(markup).not.toContain("Termin gesperrt");
+
+    const latestAttachmentPanelCall = attachmentPanelCalls[attachmentPanelCalls.length - 1];
+    const latestEmployeeSlotCall = employeeSlotCalls[employeeSlotCalls.length - 1];
+    const latestNotesSectionCall = notesSectionCalls[notesSectionCalls.length - 1];
+    const latestTagPickerCall = tagPickerCalls[tagPickerCalls.length - 1];
+
+    expect(latestAttachmentPanelCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.readOnly).toBe(false);
+    expect(latestEmployeeSlotCall?.isLocked).toBe(false);
+    expect(latestNotesSectionCall?.readOnly).toBe(false);
+    expect(latestTagPickerCall?.canEdit).toBe(true);
+  });
 
   it.each([
     "DISPATCHER",

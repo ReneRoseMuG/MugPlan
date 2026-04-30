@@ -215,35 +215,6 @@ describe("calendar drag and drop conflict feedback", () => {
     expect(typeof regular?.onDragStart).toBe("function");
   });
 
-  it("blocks planning blocked appointments from being dragged in month sheet and week view", async () => {
-    configureDefaults([
-      createAppointment({ id: 51, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#3B2025", isDefault: true, version: 1 }] }),
-      createAppointment({ id: 52, startDate: "2099-07-02" }),
-      createAppointment({ id: 61, startDate: "2099-07-01", appointmentTags: [{ id: 91, name: "Planung blockiert", color: "#3B2025", isDefault: true, version: 1 }] }),
-      createAppointment({ id: 62, startDate: "2099-07-02" }),
-    ]);
-
-    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
-    renderToStaticMarkup(<CalendarMonthSheetView currentDate={new Date("2099-07-01T00:00:00Z")} />);
-
-    const blockedMonth = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 51);
-    const regularMonth = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 52);
-
-    expect(blockedMonth?.isLocked).toBe(true);
-    expect(blockedMonth?.onDragStart).toBeUndefined();
-    expect(typeof regularMonth?.onDragStart).toBe("function");
-
-    const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
-    renderToStaticMarkup(<CalendarWeekView currentDate={new Date("2099-07-01T00:00:00Z")} />);
-
-    const blockedWeek = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 61);
-    const regularWeek = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 62);
-
-    expect(blockedWeek?.isLocked).toBe(true);
-    expect(blockedWeek?.onDragStart).toBeUndefined();
-    expect(typeof regularWeek?.onDragStart).toBe("function");
-  });
-
   it("keeps historical Parkplatz appointments draggable while other historical appointments stay blocked", async () => {
     configureDefaults([
       createAppointment({ id: 31, startDate: "2000-01-01", tourId: 7, tourName: "Parkplatz" }),

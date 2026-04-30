@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { CSSProperties, DragEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2 } from "lucide-react";
+import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText } from "lucide-react";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +21,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  isManagedComplaintTagName,
   isReservedVacantTagName,
+  MANAGED_COMPLAINT_TAG_COLOR,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
@@ -41,6 +44,7 @@ import {
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./weekAppointmentCardStyles";
 import { toAlphaColor } from "@/lib/monitoring-ui";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -101,6 +105,7 @@ type CalendarWeekSpanningTileProps = {
   projectStatusAreaRef?: React.Ref<HTMLDivElement>;
   showTagActions?: boolean;
   canEditTags?: boolean;
+  allowHistoricalActions?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
@@ -114,6 +119,7 @@ type CalendarWeekSpanningTileProps = {
   onDragEnd?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   testId?: string;
 };
 
@@ -128,6 +134,7 @@ export function CalendarWeekSpanningTile({
   projectStatusAreaRef: _projectStatusAreaRef,
   showTagActions = false,
   canEditTags = false,
+  allowHistoricalActions = false,
   containerRef,
   style,
   isDragging,
@@ -141,6 +148,7 @@ export function CalendarWeekSpanningTile({
   onDragEnd,
   onMouseEnter,
   onMouseLeave,
+  onTagMutationEvents,
   testId,
 }: CalendarWeekSpanningTileProps) {
   const { toast } = useToast();
@@ -150,7 +158,9 @@ export function CalendarWeekSpanningTile({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const isParked = appointment.appointmentTags.some((t) => isReservedVacantTagName(t.name));
+  const hasReklamationTag = appointment.appointmentTags.some((t) => isManagedComplaintTagName(t.name));
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
+    && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
 
   const cancelMutation = useMutation({
@@ -189,6 +199,38 @@ export function CalendarWeekSpanningTile({
     },
     onError: () => {
       toast({ title: "Parken nicht möglich", variant: "destructive" });
+    },
+  });
+
+  const reklamationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/appointments/${appointment.id}/reklamation`, {
+        method: hasReklamationTag ? "DELETE" : "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version: appointment.version }),
+      });
+      const responseBody = await response.json().catch(() => null) as {
+        message?: string;
+        mutationEvents?: AppointmentMutationEvent[];
+      } | null;
+      if (!response.ok) {
+        throw new Error(responseBody?.message ?? "Reklamation konnte nicht geändert werden");
+      }
+      return responseBody;
+    },
+    onSuccess: async (data) => {
+      await onTagMutationEvents?.(appointment.id, data?.mutationEvents);
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointment.id, "tags"] });
+      await invalidateTagProjectionQueries();
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: hasReklamationTag ? "Reklamation aufgehoben" : "Reklamation gemeldet" });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Reklamation konnte nicht geändert werden";
+      toast({ title: "Reklamation nicht möglich", description: message, variant: "destructive" });
     },
   });
 
@@ -355,6 +397,22 @@ export function CalendarWeekSpanningTile({
             >
               <ParkingCircle className="h-3.5 w-3.5 shrink-0" />
               Parken
+            </DropdownMenuItem>
+          )}
+          {!appointment.isCancelled && showTagActions && canEditTags && (
+            <DropdownMenuItem
+              onClick={() => reklamationMutation.mutate()}
+              disabled={reklamationMutation.isPending}
+              className="gap-2 text-xs cursor-pointer"
+              style={{ color: MANAGED_COMPLAINT_TAG_COLOR }}
+              data-testid={hasReklamationTag ? `week-spanning-tile-remove-reklamation-${appointment.id}` : `week-spanning-tile-set-reklamation-${appointment.id}`}
+            >
+              <ScrollText className="h-3.5 w-3.5 shrink-0" />
+              {reklamationMutation.isPending
+                ? "Reklamation..."
+                : hasReklamationTag
+                  ? "Reklamation aufheben"
+                  : "Reklamation melden"}
             </DropdownMenuItem>
           )}
           <DropdownMenuItem

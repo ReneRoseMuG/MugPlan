@@ -9,7 +9,7 @@
  * - applySystemSeed ueberschreibt bestehende Notizvorlagen-Bodies nicht.
  * - applySystemSeed arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen.
  * - applySystemSeed migriert einen Tag mit Namen "Vakant" zu "Geparkt" vor dem normalen Seed-Lauf.
- * - applySystemSeed seeded den geschuetzten Termin-Tag "Planung blockiert" mit.
+ * - applySystemSeed korrigiert Sondermaß gezielt auf isDefault=false, damit es in Pickern nutzbar bleibt.
  * - applySystemSeed migriert eine Tour mit Namen "Vakant" zu "Parkplatz" vor dem normalen Seed-Lauf.
  * - Migration ist idempotent: kein Fehler wenn weder Tag noch Tour "Vakant" existieren.
  *
@@ -114,7 +114,11 @@ describe("systemSeedService", () => {
     }));
     expect(result.logLines).toContain("Tag angelegt: Reklamation");
     expect(result.logLines).toContain("Tag angelegt: Geparkt");
-    expect(result.logLines).toContain("Tag angelegt: Planung blockiert");
+    expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Sondermaß",
+      color: "#BA7517",
+      isDefault: false,
+    }));
   });
 
   it("meldet fehlende Soll-Einträge in der Preview als anlegbar", async () => {
@@ -167,6 +171,66 @@ describe("systemSeedService", () => {
     const result = await applySystemSeed();
 
     expect(result.logLines).toContain("Tag unverändert: Reklamation");
+  });
+
+  it("meldet Sondermaß mit isDefault=true in der Preview als korrigierbare Abweichung", async () => {
+    getTagByNormalizedNameMock.mockImplementation(async (name: string) => {
+      if (name === "Sondermaß") {
+        return {
+          id: 31,
+          name: "Sondermaß",
+          color: "#BA7517",
+          isDefault: true,
+          version: 7,
+        };
+      }
+      return null;
+    });
+
+    const preview = await getSystemSeedPreview();
+
+    expect(preview.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        key: "tag:sondermass",
+        kind: "tag",
+        label: "Sondermaß",
+        status: "update",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+    ]));
+  });
+
+  it("korrigiert Sondermaß bei gezieltem Seed-Lauf auf isDefault=false", async () => {
+    getTagByNormalizedNameMock.mockImplementation(async (name: string) => {
+      if (name === "Sondermaß") {
+        return {
+          id: 31,
+          name: "Sondermaß",
+          color: "#BA7517",
+          isDefault: true,
+          version: 7,
+        };
+      }
+      return null;
+    });
+    ensureTagDefinitionMock.mockImplementation(async (input: { name: string; color: string; isDefault: boolean }) => ({
+      id: 31,
+      version: 8,
+      ...input,
+    }));
+
+    const result = await applySystemSeed(["tag:sondermass"]);
+
+    expect(ensureTagDefinitionMock).toHaveBeenCalledTimes(1);
+    expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
+      name: "Sondermaß",
+      color: "#BA7517",
+      isDefault: false,
+    }));
+    expect(result.logLines).toEqual(["Tag aktualisiert: Sondermaß"]);
+    expect(createTourMock).not.toHaveBeenCalled();
+    expect(createNoteTemplateMock).not.toHaveBeenCalled();
   });
 
   it("legt fehlende Touren an", async () => {

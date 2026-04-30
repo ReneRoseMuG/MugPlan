@@ -436,6 +436,90 @@ export async function removeProjectTag(req: Request, res: Response, next: NextFu
   }
 }
 
+export async function setProjectReklamation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const projectId = Number(req.params.id);
+    const input = api.projects.reklamation.set.input.parse(req.body);
+    const before = await projectsService.getProject(projectId);
+    const result = await projectsService.setProjectReklamation(projectId, input.version, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    if (result.kind === "updated") {
+      const after = await projectsService.getProject(projectId);
+      await journalService.recordJournalEntry({
+        tableName: "project",
+        recordId: projectId,
+        op: "tag_add",
+        newValue: { tagName: "Reklamation" },
+        snapshot: after ?? before,
+        actor: getRequestActor(req),
+        triggerKey: "project.reklamation.set",
+        messageText: buildTagMessage("hinzugefügt", "project", after ?? before, "Reklamation", projectId),
+      });
+    }
+    res.status(200).json({ kind: result.kind, mutationEvents: result.mutationEvents });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeProjectReklamation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = req.userContext?.roleKey;
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const projectId = Number(req.params.id);
+    const input = api.projects.reklamation.remove.input.parse(req.body);
+    const before = await projectsService.getProject(projectId);
+    const result = await projectsService.removeProjectReklamation(projectId, input.version, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    if (result.kind === "updated") {
+      const after = await projectsService.getProject(projectId);
+      await journalService.recordJournalEntry({
+        tableName: "project",
+        recordId: projectId,
+        op: "tag_remove",
+        oldValue: { tagName: "Reklamation" },
+        snapshot: after ?? before,
+        actor: getRequestActor(req),
+        triggerKey: "project.reklamation.remove",
+        messageText: buildTagMessage("entfernt", "project", after ?? before, "Reklamation", projectId),
+      });
+    }
+    res.status(200).json({ kind: result.kind, mutationEvents: result.mutationEvents });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof projectsService.ProjectsError) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function replaceProjectOrderItems(
   req: Request,
   res: Response,

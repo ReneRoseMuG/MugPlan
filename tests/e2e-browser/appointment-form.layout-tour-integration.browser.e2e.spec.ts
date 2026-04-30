@@ -416,6 +416,38 @@ test("adds the managed Messe tag when an appointment is switched to Tour Messe",
   await expect(page.getByTestId(`appointment-tag-picker-tag-${await readSystemTagIdByName(MANAGED_MESSE_TAG_NAME)}`)).toBeVisible();
 });
 
+test("keeps the managed Messe tag but creates no note when the note suggestion is skipped", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT06-MESSE-SKIP-CUST");
+  const messeTour = await ensureMesseTour("#3465A4");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+  });
+  await seedAppointmentFormNoise("FT06-MESSE-SKIP", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId(`badge-tour-select-${messeTour.id}-add`).click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toContainText(MANAGED_MESSE_TAG_NAME);
+  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
+  }).toBe(false);
+});
+
 test("removes the managed Messe tag when an appointment leaves Tour Messe", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const customer = await createCustomerFixture("FT06-MESSE-REMOVE-CUST");
@@ -459,6 +491,45 @@ test("removes the managed Messe tag when an appointment leaves Tour Messe", asyn
   await page.getByTestId(`week-appointment-panel-${appointment.id}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId(`appointment-tag-picker-tag-${messeTagId}`)).toHaveCount(0);
+});
+
+test("removes the managed Messe tag but keeps the matching note when requested", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT06-MESSE-KEEP-CUST");
+  const messeTour = await ensureMesseTour("#3465A4");
+  const regularTour = await createTourFixture("#0f766e");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: messeTour.id,
+  });
+  await seedAppointmentFormNoise("FT06-MESSE-KEEP", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await createAppointmentNoteViaDialog(page, {
+    title: MANAGED_MESSE_TAG_NAME,
+    body: "",
+  });
+  await page.getByTestId("badge-tour-remove").click();
+  await page.getByTestId(`badge-tour-select-${regularTour.id}-add`).click();
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect(page.getByTestId("dialog-note-removal")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-removal")).toContainText(MANAGED_MESSE_TAG_NAME);
+  await page.getByTestId("button-note-removal-keep").click();
+  await expect(page.getByTestId("dialog-note-removal")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_MESSE_TAG_NAME);
+  }).toBe(false);
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME);
+  }).toBe(true);
 });
 
 test("opens the week preview for a new next-week appointment and applies the planned employee", async ({ page }) => {

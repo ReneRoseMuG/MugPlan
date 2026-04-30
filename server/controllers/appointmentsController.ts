@@ -102,7 +102,12 @@ export async function getAppointment(req: Request, res: Response, next: NextFunc
 export async function createAppointment(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.appointments.create.input.parse(req.body);
-    const appointment = await appointmentsService.createAppointment(input);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const appointment = await appointmentsService.createAppointment(input, roleKey);
     if (appointment?.id) {
       const detail = await appointmentsService.getAppointmentDetails(appointment.id);
       await journalService.recordJournalEntry({
@@ -568,6 +573,90 @@ export async function parkAppointment(req: Request, res: Response, next: NextFun
       });
     }
     res.status(204).send();
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function setAppointmentReklamation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const input = api.appointments.reklamation.set.input.parse(req.body);
+    const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
+    const result = await appointmentsService.setAppointmentReklamation(appointmentId, input.version, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    if (result.kind === "updated") {
+      const after = await appointmentsService.getAppointmentDetails(appointmentId);
+      await journalService.recordJournalEntry({
+        tableName: "appointment",
+        recordId: appointmentId,
+        op: "tag_add",
+        newValue: { tagName: "Reklamation" },
+        snapshot: after ?? before,
+        actor: getRequestActor(req),
+        triggerKey: "appointment.reklamation.set",
+        messageText: buildTagMessage("hinzugefügt", "appointment", after ?? before, "Reklamation", appointmentId),
+      });
+    }
+    res.status(200).json({ kind: result.kind, mutationEvents: result.mutationEvents });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (appointmentsService.isAppointmentError(err)) {
+      res.status(err.status).json({ code: err.code, message: err.message });
+      return;
+    }
+    next(err);
+  }
+}
+
+export async function removeAppointmentReklamation(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const input = api.appointments.reklamation.remove.input.parse(req.body);
+    const appointmentId = Number(req.params.id);
+    const before = await appointmentsService.getAppointmentDetails(appointmentId);
+    const result = await appointmentsService.removeAppointmentReklamation(appointmentId, input.version, roleKey);
+    if (!result.found) {
+      res.status(404).json({ code: "NOT_FOUND" });
+      return;
+    }
+    if (result.kind === "updated") {
+      const after = await appointmentsService.getAppointmentDetails(appointmentId);
+      await journalService.recordJournalEntry({
+        tableName: "appointment",
+        recordId: appointmentId,
+        op: "tag_remove",
+        oldValue: { tagName: "Reklamation" },
+        snapshot: after ?? before,
+        actor: getRequestActor(req),
+        triggerKey: "appointment.reklamation.remove",
+        messageText: buildTagMessage("entfernt", "appointment", after ?? before, "Reklamation", appointmentId),
+      });
+    }
+    res.status(200).json({ kind: result.kind, mutationEvents: result.mutationEvents });
   } catch (err) {
     if (err instanceof ZodError) {
       res.status(422).json({ code: "VALIDATION_ERROR" });

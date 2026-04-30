@@ -30,7 +30,7 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { loginAsAdmin, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -137,7 +137,7 @@ test("Hard-Delete - Projekt: Anhang aus Liste und Counter entfernen", async ({ p
     ...attachmentPayload,
   });
 
-  await loginAsAdmin(page);
+  await loginAsRole(page, "DISPATCHER");
   await openProjectForm(page, project.id);
 
   const attachmentBadge = page.getByTestId(`attachment-badge-project-${attachment.id}`);

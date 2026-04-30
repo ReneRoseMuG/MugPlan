@@ -3,21 +3,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Note, NoteTemplate, Tag } from "@shared/schema";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
@@ -28,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
+import { buildWorkflowNoteDraft, findWorkflowNoteTemplate } from "@/lib/workflow-note-templates";
 
 type CalendarWeekAppointmentTagPickerProps = {
   appointmentId: number;
@@ -237,7 +229,7 @@ export function CalendarWeekAppointmentTagPicker({
         queryKey: noteTemplatesQueryKey,
         queryFn: fetchNoteTemplates,
       });
-    const template = templates.find((entry) => entry.title.trim().toLocaleLowerCase("de") === noteSuggestionDialog.templateTitle.trim().toLocaleLowerCase("de"));
+    const template = findWorkflowNoteTemplate(templates, noteSuggestionDialog.templateTitle);
     if (!template) {
       toast({
         title: "Notizvorlage fehlt",
@@ -246,13 +238,7 @@ export function CalendarWeekAppointmentTagPicker({
       });
       return;
     }
-    createAppointmentNoteMutation.mutate({
-      title: template.title,
-      body: template.body,
-      cardColor: template.cardColor,
-      print: template.print,
-      templateId: template.id,
-    });
+    createAppointmentNoteMutation.mutate(buildWorkflowNoteDraft(template));
     setNoteSuggestionDialog(null);
   };
 
@@ -297,25 +283,14 @@ export function CalendarWeekAppointmentTagPicker({
         ) : null}
       </div>
 
-      <AlertDialog open={noteSuggestionDialog !== null} onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}>
-        <AlertDialogContent data-testid="dialog-note-suggestion">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`Soll eine Notiz „${noteSuggestionDialog?.templateTitle ?? ""}" für diesen Termin angelegt werden?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-note-suggestion-skip">Überspringen</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-note-suggestion-confirm"
-              onClick={() => { void handleCreateFromTemplate(); }}
-            >
-              Jetzt anlegen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <WorkflowNoteSuggestionDialog
+        open={noteSuggestionDialog !== null}
+        templateTitle={noteSuggestionDialog?.templateTitle}
+        targetLabel="diesen Termin"
+        onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
+        onSkip={() => setNoteSuggestionDialog(null)}
+        onConfirm={handleCreateFromTemplate}
+      />
 
       <Dialog
         open={editorOpen}

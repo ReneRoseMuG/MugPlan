@@ -21,6 +21,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const employeeSlotCalls: Array<Record<string, unknown>> = [];
+const tagPickerCalls: Array<Record<string, unknown>> = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 let appointmentDetailOverride:
@@ -38,9 +39,12 @@ let appointmentDetailOverride:
       endDate: string | null;
       endTime: string | null;
       employees: Array<Record<string, unknown>>;
+      customerTags?: Array<Record<string, unknown>>;
+      projectTags?: Array<Record<string, unknown>>;
       isCancelled: boolean;
     }
   | null = null;
+let appointmentTagRelationsOverride: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -181,7 +185,30 @@ vi.mock("@/components/AppointmentEmployeeSlot", () => ({
 }));
 
 vi.mock("@/components/TagPickerPanel", () => ({
-  TagPickerPanel: () => <section data-testid="appointment-tag-picker-marker">tags</section>,
+  TagPickerPanel: (props: Record<string, unknown>) => {
+    tagPickerCalls.push(props);
+    const inheritedGroups = (props.inheritedTagGroups ?? []) as Array<{
+      source: string;
+      title: string;
+      tags: Array<{ id: number; name: string }>;
+    }>;
+
+    return (
+      <section data-testid="appointment-tag-picker-marker">
+        tags
+        {inheritedGroups.map((group) => (
+          <div key={group.source} data-testid={`appointment-tag-picker-inherited-${group.source}`}>
+            <span>{group.title}</span>
+            {group.tags.map((tag) => (
+              <span key={tag.id} data-testid={`appointment-tag-picker-inherited-${group.source}-tag-${tag.id}`}>
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        ))}
+      </section>
+    );
+  },
 }));
 
 vi.mock("@/components/NotesSection", () => ({
@@ -196,7 +223,7 @@ vi.mock("@/components/DocumentExtractionDialog", () => ({
   DocumentExtractionDialog: () => <div>dialog</div>,
 }));
 
-import { AppointmentForm } from "../../../client/src/components/AppointmentForm";
+import { AppointmentForm, buildAppointmentCardTagGroups } from "../../../client/src/components/AppointmentForm";
 
 function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolean } {
   const key = Array.isArray(queryKey) ? queryKey[0] : queryKey;
@@ -259,7 +286,11 @@ function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolea
     return { data: appointmentDetailOverride, isLoading: false };
   }
 
-  if (Array.isArray(queryKey) && queryKey[0] === "/api/appointments" && (queryKey[2] === "tags" || queryKey[2] === "notes")) {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/appointments" && queryKey[2] === "tags") {
+    return { data: appointmentTagRelationsOverride, isLoading: false };
+  }
+
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/appointments" && queryKey[2] === "notes") {
     return { data: [], isLoading: false };
   }
 
@@ -281,7 +312,9 @@ function getIndex(markup: string, marker: string) {
 describe("FT01 appointment form layout tour integration", () => {
   beforeEach(() => {
     employeeSlotCalls.length = 0;
+    tagPickerCalls.length = 0;
     appointmentDetailOverride = null;
+    appointmentTagRelationsOverride = [];
     useQueryMock.mockReset();
     useMutationMock.mockReset();
     useMutationMock.mockReturnValue({
@@ -356,6 +389,83 @@ describe("FT01 appointment form layout tour integration", () => {
     expect(getIndex(markup, "appointment-form-sidebar")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
     expect(getIndex(markup, "appointment-attachments-panel")).toBeLessThan(getIndex(markup, "appointment-tag-picker-marker"));
     expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
+  });
+
+  it("shows project and customer tags from the appointment card in the form sidebar as read-only inherited tags", () => {
+    appointmentDetailOverride = {
+      id: 77,
+      version: 4,
+      projectId: 11,
+      customerId: 21,
+      displayMode: "standard",
+      tourId: null,
+      title: "Termin A",
+      description: null,
+      startDate: "2099-01-02",
+      startTime: "08:00:00",
+      endDate: "2099-01-02",
+      endTime: "09:00:00",
+      employees: [],
+      projectTags: [{ id: 201, name: "Reklamation", color: "#ff011b" }],
+      customerTags: [{ id: 202, name: "VIP", color: "#2255aa" }],
+      isCancelled: false,
+    };
+    appointmentTagRelationsOverride = [
+      { tag: { id: 203, name: "Montage", color: "#22aa55" }, relationVersion: 1 },
+    ];
+
+    const markup = renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
+
+    expect(markup).not.toContain("appointment-card-tags-panel");
+    expect(markup).toContain("appointment-tag-picker-inherited-project");
+    expect(markup).toContain("appointment-tag-picker-inherited-project-tag-201");
+    expect(markup).toContain("appointment-tag-picker-inherited-customer");
+    expect(markup).toContain("appointment-tag-picker-inherited-customer-tag-202");
+    expect(markup).toContain("Tags vom Projekt");
+    expect(markup).toContain("Tags vom Kunden");
+    expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
+    expect(tagPickerCalls.at(-1)).toMatchObject({
+      emptyText: "Keine Termin-Tags zugewiesen",
+      inheritedTagGroups: [
+        {
+          source: "project",
+          title: "Tags vom Projekt",
+          tags: [expect.objectContaining({ name: "Reklamation" })],
+        },
+        {
+          source: "customer",
+          title: "Tags vom Kunden",
+          tags: [expect.objectContaining({ name: "VIP" })],
+        },
+      ],
+    });
+  });
+
+  it("keeps card tag groups aligned with the calendar card union and does not duplicate direct appointment tags", () => {
+    const groups = buildAppointmentCardTagGroups({
+      appointmentTags: [{ id: 301, name: "Montage", color: "#22aa55" }] as any,
+      projectTags: [
+        { id: 201, name: "Reklamation", color: "#ff011b" },
+        { id: 301, name: "Montage", color: "#22aa55" },
+      ] as any,
+      customerTags: [
+        { id: 202, name: "VIP", color: "#2255aa" },
+        { id: 201, name: "Reklamation", color: "#ff011b" },
+      ] as any,
+    });
+
+    expect(groups).toEqual([
+      {
+        source: "project",
+        title: "Tags vom Projekt",
+        tags: [expect.objectContaining({ id: 201, name: "Reklamation" })],
+      },
+      {
+        source: "customer",
+        title: "Tags vom Kunden",
+        tags: [expect.objectContaining({ id: 202, name: "VIP" })],
+      },
+    ]);
   });
 
   it("keeps cancel and park actions in edit mode without rendering the former tooltip texts", () => {

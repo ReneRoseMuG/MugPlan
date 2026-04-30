@@ -1,11 +1,9 @@
 import type { Tag } from "@shared/schema";
 import {
-  isPickerVisibleForDomain,
   isManagedComplaintTagName,
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
-  isReservedPlanningBlockedTagName,
   isReservedVacantTagName,
   type TagPickerDomain,
 } from "@shared/appointmentCancellation";
@@ -56,20 +54,12 @@ export function hasReservedVacantTag(tags: Array<Pick<Tag, "name">>): boolean {
   return tags.some((tag) => isReservedVacantTag(tag));
 }
 
-export function isReservedPlanningBlockedTag(tag: Pick<Tag, "name"> | null | undefined): boolean {
-  if (!tag) return false;
-  return isReservedPlanningBlockedTagName(tag.name);
-}
-
-export function hasReservedPlanningBlockedTag(tags: Array<Pick<Tag, "name">>): boolean {
-  return tags.some((tag) => isReservedPlanningBlockedTag(tag));
-}
-
-export function filterPickerTagsForDomain<TTag extends Pick<Tag, "name">>(
+export function filterPickerTagsForDomain<TTag extends Pick<Tag, "isDefault">>(
   tags: TTag[],
   domain: TagPickerDomain,
 ): TTag[] {
-  return tags.filter((tag) => isPickerVisibleForDomain(tag.name, domain));
+  void domain;
+  return tags.filter((tag) => !tag.isDefault);
 }
 
 export function filterVisibleAppointmentTags<TTag extends Pick<Tag, "name">>(tags: TTag[]): TTag[] {

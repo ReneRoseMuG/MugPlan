@@ -10,6 +10,8 @@ router.get(api.projects.get.path, projectsController.getProject);
 router.post(api.projects.create.path, projectsController.createProject);
 router.patch(api.projects.update.path, projectsController.updateProject);
 router.delete(api.projects.delete.path, projectsController.deleteProject);
+router.post(api.projects.reklamation.set.path, projectsController.setProjectReklamation);
+router.delete(api.projects.reklamation.remove.path, projectsController.removeProjectReklamation);
 router.get(api.projects.orderItems.list.path, projectsController.listProjectOrderItems);
 router.post(api.projects.orderItems.create.path, projectsController.createProjectOrderItem);
 router.put(api.projects.orderItems.update.path, projectsController.updateProjectOrderItem);
