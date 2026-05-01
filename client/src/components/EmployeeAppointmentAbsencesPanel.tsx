@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
@@ -35,6 +36,31 @@ const defaultFormState: AbsenceFormState = {
   endDate: "",
   note: "",
 };
+
+export function shiftEndDateByStartDateChange(
+  currentStartDate: string,
+  currentEndDate: string,
+  nextStartDate: string,
+): string {
+  if (!currentEndDate.trim()) {
+    return nextStartDate;
+  }
+
+  const parsedCurrentStartDate = parseISO(currentStartDate);
+  const parsedCurrentEndDate = parseISO(currentEndDate);
+  const parsedNextStartDate = parseISO(nextStartDate);
+
+  if (
+    Number.isNaN(parsedCurrentStartDate.getTime())
+    || Number.isNaN(parsedCurrentEndDate.getTime())
+    || Number.isNaN(parsedNextStartDate.getTime())
+  ) {
+    return nextStartDate;
+  }
+
+  const durationDays = differenceInCalendarDays(parsedCurrentEndDate, parsedCurrentStartDate);
+  return format(addDays(parsedNextStartDate, Math.max(0, durationDays)), "yyyy-MM-dd");
+}
 
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
@@ -184,6 +210,22 @@ export function EmployeeAppointmentAbsencesPanel({
   const canSubmitNew = !readOnly && newForm.startDate.trim().length > 0;
   const currentEditItem = absences.find((item) => item.id === editingId) ?? null;
 
+  const handleNewStartDateChange = (nextStartDate: string) => {
+    setNewForm((prev) => ({
+      ...prev,
+      startDate: nextStartDate,
+      endDate: shiftEndDateByStartDateChange(prev.startDate, prev.endDate, nextStartDate),
+    }));
+  };
+
+  const handleEditStartDateChange = (nextStartDate: string) => {
+    setEditForm((prev) => ({
+      ...prev,
+      startDate: nextStartDate,
+      endDate: shiftEndDateByStartDateChange(prev.startDate, prev.endDate, nextStartDate),
+    }));
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4" data-testid="employee-absence-appointments-panel">
       {!readOnly ? (
@@ -208,7 +250,7 @@ export function EmployeeAppointmentAbsencesPanel({
               id="absence-start-date"
               type="date"
               value={newForm.startDate}
-              onChange={(event) => setNewForm((prev) => ({ ...prev, startDate: event.target.value }))}
+              onChange={(event) => handleNewStartDateChange(event.target.value)}
               data-testid="input-employee-absence-start-date"
             />
           </div>
@@ -297,7 +339,7 @@ export function EmployeeAppointmentAbsencesPanel({
                         <Input
                           type="date"
                           value={editForm.startDate}
-                          onChange={(event) => setEditForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                          onChange={(event) => handleEditStartDateChange(event.target.value)}
                           data-testid={`input-employee-absence-edit-start-${item.id}`}
                         />
                         <Input

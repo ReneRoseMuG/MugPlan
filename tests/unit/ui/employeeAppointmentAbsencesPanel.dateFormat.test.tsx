@@ -4,13 +4,15 @@
  * Abgedeckte Regeln:
  * - Die Abwesenheitsliste im Mitarbeiterformular zeigt den Zeitraum im Kurzformat `dd.MM.yy`.
  * - Mehrtägige Abwesenheiten rendern beide Datumswerte formatiert statt der rohen ISO-Werte.
+ * - Beim Ändern des Startdatums im Neuanlage-Formular wird das Enddatum automatisch mitgezogen.
  *
  * Fehlerfälle:
  * - Die Liste fällt auf `yyyy-mm-dd` zurück.
  * - Nur eines der beiden Datumsfelder wird formatiert.
+ * - Das Enddatum bleibt beim Verschieben des Startdatums auf dem alten Monat stehen.
  *
  * Ziel:
- * Die sichtbare Datumsdarstellung der FT-33-Abwesenheitsliste regressionssicher absichern.
+ * Die sichtbare Datumsdarstellung und das Datums-Mitschieben der FT-33-Abwesenheitsmaske regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -60,7 +62,10 @@ vi.mock("@/lib/queryClient", () => ({
   queryClient: { invalidateQueries: vi.fn(async () => undefined) },
 }));
 
-import { EmployeeAppointmentAbsencesPanel } from "../../../client/src/components/EmployeeAppointmentAbsencesPanel";
+import {
+  EmployeeAppointmentAbsencesPanel,
+  shiftEndDateByStartDateChange,
+} from "../../../client/src/components/EmployeeAppointmentAbsencesPanel";
 
 describe("EmployeeAppointmentAbsencesPanel date format", () => {
   beforeEach(() => {
@@ -94,5 +99,10 @@ describe("EmployeeAppointmentAbsencesPanel date format", () => {
     expect(markup).toContain("02.05.26 - 05.05.26");
     expect(markup).not.toContain("2026-05-02 - 2026-05-05");
     expect(markup).not.toContain("Termin öffnen");
+  });
+
+  it("pulls the end date along when the start date changes", () => {
+    expect(shiftEndDateByStartDateChange("", "", "2026-07-15")).toBe("2026-07-15");
+    expect(shiftEndDateByStartDateChange("2026-07-15", "2026-07-18", "2026-09-15")).toBe("2026-09-18");
   });
 });
