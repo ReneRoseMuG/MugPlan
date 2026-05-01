@@ -10,6 +10,7 @@ import { sanitizeIsoWeekInput, stepIsoWeekValue } from "@/lib/isoWeekInput";
 interface CalendarFilterPanelProps {
   employeeId: number | null;
   onEmployeeIdChange: (employeeId: number | null) => void;
+  showEmployeeFilter?: boolean;
   showWeekDisplayMode?: boolean;
   conflictHighlightActive?: boolean;
   conflictAppointmentCount?: number;
@@ -120,111 +121,16 @@ function KwJumpSpinner({
   );
 }
 
-export function CalendarFilterPanel({
-  employeeId,
-  onEmployeeIdChange,
-  showWeekDisplayMode = false,
-  conflictHighlightActive = false,
+function renderConflictControls({
+  conflictHighlightActive,
   conflictAppointmentCount,
   onConflictHighlightChange,
-  showKwJump = false,
-  kwJumpValue = "",
-  kwJumpError = false,
-  onKwJumpChange,
-  onKwJumpSubmit,
-  onKwJumpValueCommit,
-  showKwJumpBack = false,
-  onKwJumpBack,
-}: CalendarFilterPanelProps) {
-  const showConflictHighlightControls =
-    typeof conflictAppointmentCount === "number" &&
-    conflictAppointmentCount > 0 &&
-    typeof onConflictHighlightChange === "function";
-  const showKwJumpControls =
-    showKwJump &&
-    typeof onKwJumpChange === "function" &&
-    typeof onKwJumpSubmit === "function";
-
-  if (showWeekDisplayMode) {
-    return (
-      <FilterPanel title="Kalenderfilter" layout="stack">
-        <div
-          className="grid min-h-[56px] items-start gap-x-4 gap-y-0.5 px-4 py-1"
-          style={{
-            gridTemplateColumns: "180px max-content max-content",
-          }}
-          data-testid="calendar-week-footer-grid"
-        >
-          <FooterSectionLabel>Mitarbeiter</FooterSectionLabel>
-          <FooterSectionLabel>KW</FooterSectionLabel>
-          {showConflictHighlightControls ? (
-            <FooterSectionLabel>Konflikte</FooterSectionLabel>
-          ) : (
-            <div />
-          )}
-          <div className="w-full">
-            <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} triggerClassName="w-full" />
-          </div>
-          <div>
-            {showKwJumpControls ? (
-              <div className="flex items-center gap-2">
-                <KwJumpSpinner
-                  value={kwJumpValue}
-                  min={1}
-                  max={53}
-                  error={kwJumpError}
-                  onChange={onKwJumpChange}
-                  onSubmit={onKwJumpSubmit}
-                  onCommitValue={onKwJumpValueCommit}
-                />
-                {showKwJumpBack && typeof onKwJumpBack === "function" ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                    onClick={onKwJumpBack}
-                    data-testid="button-calendar-kw-jump-back"
-                  >
-                    ← Zurück
-                  </Button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          {showConflictHighlightControls ? (
-            <button
-              type="button"
-              className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
-                conflictHighlightActive
-                  ? "border-amber-300 bg-amber-50 text-amber-800"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700"
-              }`}
-              onClick={() => onConflictHighlightChange?.(!conflictHighlightActive)}
-              data-testid="button-conflict-highlight"
-            >
-              <span className="inline-flex items-center gap-2">
-                <AlertTriangle className={`h-3.5 w-3.5 ${conflictHighlightActive ? "text-amber-500" : "text-slate-400"}`} />
-                Hervorheben
-              </span>
-              <span
-                className={`inline-flex min-w-[2.25rem] items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
-                  conflictHighlightActive ? "bg-amber-500 text-white" : "invisible"
-                }`}
-                data-testid="badge-conflict-appointment-count"
-                aria-hidden={conflictHighlightActive ? undefined : "true"}
-              >
-                {conflictAppointmentCount}
-              </span>
-            </button>
-          ) : (
-            <div />
-          )}
-        </div>
-      </FilterPanel>
-    );
-  }
-
-  const conflictControls = showConflictHighlightControls ? (
+}: {
+  conflictHighlightActive: boolean;
+  conflictAppointmentCount?: number;
+  onConflictHighlightChange?: (active: boolean) => void;
+}) {
+  return (
     <button
       type="button"
       className={`inline-flex min-h-9 min-w-[172px] items-center justify-between gap-3 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-colors ${
@@ -249,15 +155,99 @@ export function CalendarFilterPanel({
         {conflictAppointmentCount}
       </span>
     </button>
-  ) : null;
+  );
+}
 
-  const monthGridColumnCount =
-    1 +
-    (showKwJumpControls ? 1 : 0) +
-    (showConflictHighlightControls ? 1 : 0);
-  const monthGridTemplateColumns = Array.from({ length: monthGridColumnCount }, (_, index) => (
-    index === 0 ? "220px" : "max-content"
-  )).join(" ");
+export function CalendarFilterPanel({
+  employeeId,
+  onEmployeeIdChange,
+  showEmployeeFilter = true,
+  showWeekDisplayMode = false,
+  conflictHighlightActive = false,
+  conflictAppointmentCount,
+  onConflictHighlightChange,
+  showKwJump = false,
+  kwJumpValue = "",
+  kwJumpError = false,
+  onKwJumpChange,
+  onKwJumpSubmit,
+  onKwJumpValueCommit,
+  showKwJumpBack = false,
+  onKwJumpBack,
+}: CalendarFilterPanelProps) {
+  const showConflictHighlightControls =
+    typeof conflictAppointmentCount === "number" &&
+    conflictAppointmentCount > 0 &&
+    typeof onConflictHighlightChange === "function";
+  const showKwJumpControls =
+    showKwJump &&
+    typeof onKwJumpChange === "function" &&
+    typeof onKwJumpSubmit === "function";
+
+  if (showWeekDisplayMode) {
+    const weekGridTemplateColumns = [
+      ...(showEmployeeFilter ? ["180px"] : []),
+      ...(showKwJumpControls ? ["max-content"] : []),
+      ...(showConflictHighlightControls ? ["max-content"] : []),
+    ].join(" ");
+
+    return (
+      <FilterPanel title="Kalenderfilter" layout="stack">
+        <div
+          className="grid min-h-[56px] items-start gap-x-4 gap-y-0.5 px-4 py-1"
+          style={{ gridTemplateColumns: weekGridTemplateColumns }}
+          data-testid="calendar-week-footer-grid"
+        >
+          {showEmployeeFilter ? <FooterSectionLabel>Mitarbeiter</FooterSectionLabel> : null}
+          {showKwJumpControls ? <FooterSectionLabel>KW</FooterSectionLabel> : null}
+          {showConflictHighlightControls ? <FooterSectionLabel>Konflikte</FooterSectionLabel> : null}
+
+          {showEmployeeFilter ? (
+            <div className="w-full">
+              <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} triggerClassName="w-full" />
+            </div>
+          ) : null}
+          {showKwJumpControls ? (
+            <div>
+              <div className="flex items-center gap-2">
+                <KwJumpSpinner
+                  value={kwJumpValue}
+                  min={1}
+                  max={53}
+                  error={kwJumpError}
+                  onChange={onKwJumpChange}
+                  onSubmit={onKwJumpSubmit}
+                  onCommitValue={onKwJumpValueCommit}
+                />
+                {showKwJumpBack && typeof onKwJumpBack === "function" ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                    onClick={onKwJumpBack}
+                    data-testid="button-calendar-kw-jump-back"
+                  >
+                    ← Zurück
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+          {showConflictHighlightControls ? renderConflictControls({
+            conflictHighlightActive,
+            conflictAppointmentCount,
+            onConflictHighlightChange,
+          }) : null}
+        </div>
+      </FilterPanel>
+    );
+  }
+
+  const monthGridTemplateColumns = [
+    ...(showEmployeeFilter ? ["220px"] : []),
+    ...(showKwJumpControls ? ["max-content"] : []),
+    ...(showConflictHighlightControls ? ["max-content"] : []),
+  ].join(" ");
 
   return (
     <FilterPanel title="Kalenderfilter" layout="row">
@@ -265,11 +255,11 @@ export function CalendarFilterPanel({
         className="grid w-full items-start gap-x-4 gap-y-1"
         style={{ gridTemplateColumns: monthGridTemplateColumns }}
       >
-        <Label className="text-xs">Mitarbeiter</Label>
+        {showEmployeeFilter ? <Label className="text-xs">Mitarbeiter</Label> : null}
         {showKwJumpControls ? <Label className="text-xs">KW</Label> : null}
         {showConflictHighlightControls ? <Label className="text-xs">Konflikte</Label> : null}
 
-        <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} />
+        {showEmployeeFilter ? <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} /> : null}
         {showKwJumpControls ? (
           <div className="flex items-end gap-2">
             <KwJumpSpinner
@@ -294,7 +284,11 @@ export function CalendarFilterPanel({
             ) : null}
           </div>
         ) : null}
-        {showConflictHighlightControls ? conflictControls : null}
+        {showConflictHighlightControls ? renderConflictControls({
+          conflictHighlightActive,
+          conflictAppointmentCount,
+          onConflictHighlightChange,
+        }) : null}
       </div>
     </FilterPanel>
   );

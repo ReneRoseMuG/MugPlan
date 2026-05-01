@@ -2,17 +2,16 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die KW-Eingabe im CalendarWorkspace ist im Wochenmodus mit der sichtbaren ISO-KW vorbelegt.
+ * - Die KW-Eingabe im CalendarWorkspace ist in Kalenderansichten mit der sichtbaren ISO-KW vorbelegt.
  * - Aenderungen des sichtbaren Datums aktualisieren die KW-Eingabe.
- * - Monatsansichten reichen keine KW-Sprungsteuerung weiter.
+ * - Monatsansichten reichen denselben KW-Sprung wie die Wochenansicht weiter.
  *
  * Fehlerfaelle:
  * - Die KW-Anzeige bleibt auf einem alten Wert stehen.
- * - Die Wochenansicht verliert die KW-Vorbelegung.
- * - Monatsansichten erhalten versehentlich KW-Steuerung.
+ * - Der Monatskalender verliert die KW-Vorbelegung oder den KW-Sprung.
  *
  * Ziel:
- * Die sichtbare KW-Synchronisation zwischen CalendarWorkspace und Filter-Panel absichern.
+ * Die sichtbare KW-Synchronisation zwischen CalendarWorkspace und Filter-Panel fuer Woche und Monat absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -81,8 +80,8 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     );
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
+    expect(filterPanelCalls.at(-1)?.showKwJump).toBe(true);
     expect(filterPanelCalls.at(-1)?.weekLanesCollapsed).toBe(false);
-    expect(filterPanelCalls.at(-1)?.selectedPrintTourId).toBeUndefined();
   });
 
   it("updates the kw input when the visible week changes", () => {
@@ -115,7 +114,7 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("15");
   });
 
-  it("does not pass kw jump controls in month mode", () => {
+  it("passes kw jump controls in month mode with the visible iso week", () => {
     renderToStaticMarkup(
       <CalendarWorkspace
         mode="global"
@@ -129,8 +128,7 @@ describe("CalendarWorkspace - kw sync wiring", () => {
       />,
     );
 
-    expect(filterPanelCalls.at(-1)?.showKwJump).toBe(false);
-    expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("");
+    expect(filterPanelCalls.at(-1)?.showKwJump).toBe(true);
+    expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
   });
-
 });

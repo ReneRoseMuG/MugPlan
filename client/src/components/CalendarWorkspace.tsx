@@ -73,12 +73,13 @@ export function CalendarWorkspace({
 }: CalendarWorkspaceProps) {
   const { toast } = useToast();
   const { setSetting } = useSettings();
+  const isKwJumpEnabled = activeView === "week" || activeView === "month" || activeView === "monthSheet";
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
   const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
   const [calendarAbsenceMode, setCalendarAbsenceMode] = useState<CalendarAbsenceMode>("planning");
   const [kwInputValue, setKwInputValue] = useState(() =>
-    activeView === "week" ? String(getISOWeek(currentDate)) : "",
+    isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
   );
   const [kwJumpError, setKwJumpError] = useState(false);
   const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
@@ -99,15 +100,21 @@ export function CalendarWorkspace({
   }, [conflictAppointmentCount, conflictHighlightActive]);
 
   useEffect(() => {
-    if (activeView !== "week") {
-      setJumpBackDate(null);
-      setLocalWeekRestoreRequest(null);
+    setJumpBackDate(null);
+    setLocalWeekRestoreRequest(null);
+    setKwJumpError(false);
+    if (!isKwJumpEnabled) {
       setKwInputValue("");
-      setKwJumpError(false);
+    }
+  }, [activeView, isKwJumpEnabled]);
+
+  useEffect(() => {
+    if (!isKwJumpEnabled) {
+      setKwInputValue("");
       return;
     }
     setKwInputValue(String(getISOWeek(currentDate)));
-  }, [activeView, currentDate]);
+  }, [currentDate, isKwJumpEnabled]);
 
   const rememberWeekViewportForNextNavigation = () => {
     const nextRestoreRequest = buildWeekNavigationRestoreRequest(activeView, latestWeekViewportRef.current);
@@ -349,7 +356,7 @@ export function CalendarWorkspace({
             conflictHighlightActive={conflictHighlightActive}
             conflictAppointmentCount={conflictAppointmentCount}
             onConflictHighlightChange={setConflictHighlightActive}
-            showKwJump={activeView === "week"}
+            showKwJump={isKwJumpEnabled}
             kwJumpValue={kwInputValue}
             kwJumpError={kwJumpError}
             onKwJumpChange={(value) => {
