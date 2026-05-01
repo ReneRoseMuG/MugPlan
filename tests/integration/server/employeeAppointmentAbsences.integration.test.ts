@@ -6,15 +6,23 @@
  * - Abwesenheiten blockieren Mitarbeiter ganztägig gegen reguläre Terminzuweisungen.
  * - Reguläre Terminzuweisungen blockieren nachträgliche Abwesenheiten im selben Zeitraum.
  * - Leser dürfen Abwesenheiten sehen, aber nicht anlegen.
+ *
+ * Ziel:
+ * Die FT-33-Abwesenheitslogik gegen echte Service- und DB-Pfade absichern.
  */
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import {
+  ABSENCE_CUSTOMER_ADDRESS_LINE1,
+  ABSENCE_CUSTOMER_CITY,
+  ABSENCE_CUSTOMER_COUNTRY,
   ABSENCE_CUSTOMER_NAME,
+  ABSENCE_CUSTOMER_NUMBER,
+  ABSENCE_CUSTOMER_POSTAL_CODE,
   ABSENCE_TOUR_NAME,
 } from "../../../shared/absenceAppointments";
 import * as appointmentsService from "../../../server/services/appointmentsService";
-import * as customersService from "../../../server/services/customersService";
+import { applySystemSeed } from "../../../server/services/systemSeedService";
 import {
   EmployeeAppointmentAbsencesError,
   createEmployeeAppointmentAbsence,
@@ -26,23 +34,13 @@ import {
 } from "../../helpers/testDataFactory";
 
 describe("FT33 integration: Employee absence appointments", () => {
+  beforeEach(async () => {
+    await applySystemSeed(["customer:001"]);
+  });
+
   it("creates a vacation absence as appointment with system tour, system customer, tag and note", async () => {
     const employee = await createEmployeeFixture("ABS-CREATE-EMP");
     const noteToken = `ABS-NOTE-${employee.id}`;
-    await customersService.createCustomer({
-      customerNumber: "001",
-      firstName: "MUG",
-      lastName: "Messebau",
-      fullName: "Messebau, MUG",
-      company: "Meisel&Gerken",
-      email: null,
-      phone: null,
-      addressLine1: null,
-      addressLine2: null,
-      postalCode: null,
-      city: null,
-      country: null,
-    });
 
     const created = await createEmployeeAppointmentAbsence(employee.id, {
       absenceType: "vacation",
@@ -57,8 +55,13 @@ describe("FT33 integration: Employee absence appointments", () => {
     expect(created.startTime).toBeNull();
     expect(created.description).toBe(noteToken);
     expect(created.tourName).toBe(ABSENCE_TOUR_NAME);
-    expect(created.customer.customerNumber).toBe("002");
+    expect(created.customer.customerNumber).toBe(ABSENCE_CUSTOMER_NUMBER);
     expect(created.customer.fullName).toBe(ABSENCE_CUSTOMER_NAME);
+    expect(created.customer.company).toBe(ABSENCE_CUSTOMER_NAME);
+    expect(created.customer.addressLine1).toBe(ABSENCE_CUSTOMER_ADDRESS_LINE1);
+    expect(created.customer.postalCode).toBe(ABSENCE_CUSTOMER_POSTAL_CODE);
+    expect(created.customer.city).toBe(ABSENCE_CUSTOMER_CITY);
+    expect(created.customer.country).toBe(ABSENCE_CUSTOMER_COUNTRY);
     expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
     expect(created.appointmentTags.map((tag) => tag.name)).toContain("Urlaub");
 

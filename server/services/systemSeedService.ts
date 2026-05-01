@@ -1,5 +1,11 @@
 import type { InsertNoteTemplate, Tour } from "@shared/schema";
 import {
+  ABSENCE_CUSTOMER_ADDRESS_LINE1,
+  ABSENCE_CUSTOMER_CITY,
+  ABSENCE_CUSTOMER_COUNTRY,
+  ABSENCE_CUSTOMER_NAME,
+  ABSENCE_CUSTOMER_NUMBER,
+  ABSENCE_CUSTOMER_POSTAL_CODE,
   ABSENCE_TAG_DEFINITIONS,
   ABSENCE_TOUR_COLOR,
   ABSENCE_TOUR_NAME,
@@ -19,11 +25,12 @@ import {
   RESERVED_VACANT_TAG_COLOR,
   RESERVED_VACANT_TAG_NAME,
 } from "@shared/appointmentCancellation";
+import * as customersRepository from "../repositories/customersRepository";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import * as toursRepository from "../repositories/toursRepository";
 
-export type SystemSeedEntityKind = "tag" | "tour" | "noteTemplate";
+export type SystemSeedEntityKind = "tag" | "tour" | "customer" | "noteTemplate";
 export type SystemSeedPreviewStatus = "missing" | "unchanged" | "update" | "migrate";
 
 export type SystemSeedPreviewItem = {
@@ -55,6 +62,22 @@ type SeedTourDefinition = {
   name: string;
   color: string;
   legacyName?: string;
+};
+
+type SeedCustomerDefinition = {
+  customerNumber: string;
+  firstName: string | null;
+  lastName: string | null;
+  fullName: string;
+  company: string;
+  email: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string | null;
+  isActive: boolean;
 };
 
 type SeedNoteTemplateDefinition = {
@@ -95,6 +118,24 @@ const SYSTEM_TOURS: SeedTourDefinition[] = [
   { name: "Tour 4", color: "#5B4B8A" },
 ];
 
+const SYSTEM_CUSTOMERS: SeedCustomerDefinition[] = [
+  {
+    customerNumber: ABSENCE_CUSTOMER_NUMBER,
+    firstName: null,
+    lastName: null,
+    fullName: ABSENCE_CUSTOMER_NAME,
+    company: ABSENCE_CUSTOMER_NAME,
+    email: null,
+    phone: null,
+    addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+    addressLine2: null,
+    postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+    city: ABSENCE_CUSTOMER_CITY,
+    country: ABSENCE_CUSTOMER_COUNTRY,
+    isActive: true,
+  },
+];
+
 const SYSTEM_NOTE_TEMPLATES: SeedNoteTemplateDefinition[] = [
   { title: "Reklamation", body: "", cardColor: "#FF011B", print: true, sortOrder: 10 },
   { title: "Messe Aufbau/Abbau", body: "", cardColor: "#3465A4", print: true, sortOrder: 20 },
@@ -103,6 +144,11 @@ const SYSTEM_NOTE_TEMPLATES: SeedNoteTemplateDefinition[] = [
 
 function normalizeName(value: string): string {
   return value.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+}
+
+function normalizeOptionalText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function equalColor(left: string | null | undefined, right: string): boolean {
@@ -129,13 +175,40 @@ function buildTourKey(name: string): string {
   return `tour:${normalizeName(name)}`;
 }
 
+function buildCustomerKey(customerNumber: string): string {
+  return `customer:${customerNumber.trim()}`;
+}
+
 function buildNoteTemplateKey(title: string): string {
   return `noteTemplate:${normalizeName(title)}`;
+}
+
+function customerDefinitionLabel(definition: SeedCustomerDefinition): string {
+  return `${definition.customerNumber} · ${definition.fullName}`;
 }
 
 function findTourByName(tours: Tour[], name: string): Tour | undefined {
   const normalizedName = normalizeName(name);
   return tours.find((tour) => normalizeName(tour.name) === normalizedName);
+}
+
+function customerNeedsUpdate(
+  customer: Awaited<ReturnType<typeof customersRepository.getCustomersByCustomerNumber>>[number],
+  definition: SeedCustomerDefinition,
+): boolean {
+  return customer.customerNumber.trim() !== definition.customerNumber
+    || normalizeOptionalText(customer.firstName) !== normalizeOptionalText(definition.firstName)
+    || normalizeOptionalText(customer.lastName) !== normalizeOptionalText(definition.lastName)
+    || normalizeOptionalText(customer.fullName) !== normalizeOptionalText(definition.fullName)
+    || normalizeOptionalText(customer.company) !== normalizeOptionalText(definition.company)
+    || normalizeOptionalText(customer.email) !== normalizeOptionalText(definition.email)
+    || normalizeOptionalText(customer.phone) !== normalizeOptionalText(definition.phone)
+    || normalizeOptionalText(customer.addressLine1) !== normalizeOptionalText(definition.addressLine1)
+    || normalizeOptionalText(customer.addressLine2) !== normalizeOptionalText(definition.addressLine2)
+    || normalizeOptionalText(customer.postalCode) !== normalizeOptionalText(definition.postalCode)
+    || normalizeOptionalText(customer.city) !== normalizeOptionalText(definition.city)
+    || normalizeOptionalText(customer.country) !== normalizeOptionalText(definition.country)
+    || customer.isActive !== definition.isActive;
 }
 
 async function buildTagPreviewItems(): Promise<Array<SeedPreviewMeta<"tag", SeedTagDefinition>>> {
@@ -222,6 +295,45 @@ async function buildTourPreviewItems(): Promise<Array<SeedPreviewMeta<"tour", Se
   });
 }
 
+async function buildCustomerPreviewItems(): Promise<Array<SeedPreviewMeta<"customer", SeedCustomerDefinition>>> {
+  const items: Array<SeedPreviewMeta<"customer", SeedCustomerDefinition>> = [];
+
+  for (const definition of SYSTEM_CUSTOMERS) {
+    const matches = await customersRepository.getCustomersByCustomerNumber(definition.customerNumber);
+    const existing = matches[0] ?? null;
+
+    let status: SystemSeedPreviewStatus;
+    let message: string;
+
+    if (!existing) {
+      status = "missing";
+      message = "Fehlt und kann angelegt werden";
+    } else if (customerNeedsUpdate(existing, definition)) {
+      status = "update";
+      message = "Vorhanden, aber Stammdaten weichen vom Sollzustand ab";
+    } else {
+      status = "unchanged";
+      message = "Bereits im Sollzustand vorhanden";
+    }
+
+    items.push({
+      kind: "customer",
+      definition,
+      item: {
+        key: buildCustomerKey(definition.customerNumber),
+        kind: "customer",
+        label: customerDefinitionLabel(definition),
+        status,
+        message,
+        canApply: status !== "unchanged",
+        checkedByDefault: status !== "unchanged",
+      },
+    });
+  }
+
+  return items;
+}
+
 async function buildNoteTemplatePreviewItems(): Promise<Array<SeedPreviewMeta<"noteTemplate", SeedNoteTemplateDefinition>>> {
   const currentTemplates = await noteTemplatesRepository.getNoteTemplates(false);
 
@@ -266,8 +378,9 @@ async function buildNoteTemplatePreviewItems(): Promise<Array<SeedPreviewMeta<"n
 async function buildSeedPreviewMeta() {
   const tagItems = await buildTagPreviewItems();
   const tourItems = await buildTourPreviewItems();
+  const customerItems = await buildCustomerPreviewItems();
   const noteTemplateItems = await buildNoteTemplatePreviewItems();
-  return [...tagItems, ...tourItems, ...noteTemplateItems];
+  return [...tagItems, ...tourItems, ...customerItems, ...noteTemplateItems];
 }
 
 async function applyTagDefinition(definition: SeedTagDefinition, logLines: string[]): Promise<void> {
@@ -337,6 +450,56 @@ async function applyTourDefinition(definition: SeedTourDefinition, logLines: str
   logLines.push(`Tour aktualisiert: ${refreshed.name}`);
 }
 
+async function applyCustomerDefinition(definition: SeedCustomerDefinition, logLines: string[]): Promise<void> {
+  const matches = await customersRepository.getCustomersByCustomerNumber(definition.customerNumber);
+  const existing = matches[0] ?? null;
+
+  if (!existing) {
+    await customersRepository.createCustomer({
+      customerNumber: definition.customerNumber,
+      firstName: definition.firstName,
+      lastName: definition.lastName,
+      fullName: definition.fullName,
+      company: definition.company,
+      email: definition.email,
+      phone: definition.phone,
+      addressLine1: definition.addressLine1,
+      addressLine2: definition.addressLine2,
+      postalCode: definition.postalCode,
+      city: definition.city,
+      country: definition.country,
+    });
+    logLines.push(`Kunde angelegt: ${customerDefinitionLabel(definition)}`);
+    return;
+  }
+
+  if (!customerNeedsUpdate(existing, definition)) {
+    logLines.push(`Kunde unverändert: ${customerDefinitionLabel(definition)}`);
+    return;
+  }
+
+  const updateResult = await customersRepository.updateCustomerWithVersion(existing.id, existing.version, {
+    customerNumber: definition.customerNumber,
+    firstName: definition.firstName,
+    lastName: definition.lastName,
+    fullName: definition.fullName,
+    company: definition.company,
+    email: definition.email,
+    phone: definition.phone,
+    addressLine1: definition.addressLine1,
+    addressLine2: definition.addressLine2,
+    postalCode: definition.postalCode,
+    city: definition.city,
+    country: definition.country,
+    isActive: definition.isActive,
+  });
+  if (updateResult.kind !== "updated") {
+    throw new Error(`Kunde konnte nicht aktualisiert werden: ${customerDefinitionLabel(definition)}`);
+  }
+
+  logLines.push(`Kunde aktualisiert: ${customerDefinitionLabel(definition)}`);
+}
+
 async function applyNoteTemplateDefinition(definition: SeedNoteTemplateDefinition, logLines: string[]): Promise<void> {
   const currentTemplates = await noteTemplatesRepository.getNoteTemplates(false);
   const existing = currentTemplates.find((template) => normalizeName(template.title) === normalizeName(definition.title));
@@ -384,6 +547,9 @@ export async function applySystemSeed(selectedKeys?: string[]): Promise<SystemSe
     for (const definition of SYSTEM_TOURS) {
       await applyTourDefinition(definition, logLines);
     }
+    for (const definition of SYSTEM_CUSTOMERS) {
+      await applyCustomerDefinition(definition, logLines);
+    }
     for (const definition of SYSTEM_NOTE_TEMPLATES) {
       await applyNoteTemplateDefinition(definition, logLines);
     }
@@ -402,6 +568,12 @@ export async function applySystemSeed(selectedKeys?: string[]): Promise<SystemSe
   for (const definition of SYSTEM_TOURS) {
     if (effectiveKeys.has(buildTourKey(definition.name))) {
       await applyTourDefinition(definition, logLines);
+    }
+  }
+
+  for (const definition of SYSTEM_CUSTOMERS) {
+    if (effectiveKeys.has(buildCustomerKey(definition.customerNumber))) {
+      await applyCustomerDefinition(definition, logLines);
     }
   }
 

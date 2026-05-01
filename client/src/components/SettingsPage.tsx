@@ -98,7 +98,7 @@ type DumpImportApplyRow = {
 
 type SystemSeedPreviewItem = {
   key: string;
-  kind: "tag" | "tour" | "noteTemplate";
+  kind: "tag" | "tour" | "customer" | "noteTemplate";
   label: string;
   status: "missing" | "unchanged" | "update" | "migrate";
   message: string;
@@ -133,6 +133,9 @@ function formatBackupScope(value: number): string {
 async function invalidateSystemSeedQueries(): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["/api/tours"] }),
+    queryClient.invalidateQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/customers",
+    }),
     queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] }),
     queryClient.invalidateQueries({
       predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/tags",
@@ -1221,7 +1224,7 @@ export function SettingsPage() {
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="settings-system-seed-section">
                     <p className="font-semibold text-slate-900 text-sm">System-Stammdaten</p>
                     <p className="mb-3 text-xs text-slate-500">
-                      Prüft definierte System-Tags, Soll-Touren und Notizvorlagen, zeigt Abweichungen mit Checkboxen und führt nur die bestätigten Schritte aus.
+                      Prüft definierte System-Tags, Soll-Touren, Systemkunden und Notizvorlagen, zeigt Abweichungen mit Checkboxen und führt nur die bestätigten Schritte aus.
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
@@ -1286,7 +1289,13 @@ export function SettingsPage() {
                                     <div className="flex flex-wrap items-center gap-2">
                                       <span className="text-sm font-medium text-slate-900">{item.label}</span>
                                       <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
-                                        {item.kind === "noteTemplate" ? "Notizvorlage" : item.kind === "tour" ? "Tour" : "Tag"}
+                                        {item.kind === "noteTemplate"
+                                          ? "Notizvorlage"
+                                          : item.kind === "tour"
+                                            ? "Tour"
+                                            : item.kind === "customer"
+                                              ? "Kunde"
+                                              : "Tag"}
                                       </span>
                                       <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
                                         {statusLabel}

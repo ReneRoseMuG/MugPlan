@@ -1,6 +1,11 @@
 export const ABSENCE_TOUR_NAME = "Abwesenheiten";
 export const ABSENCE_TOUR_COLOR = "#64748B";
-export const ABSENCE_CUSTOMER_NAME = "MuG Personalplanung";
+export const ABSENCE_CUSTOMER_NUMBER = "001";
+export const ABSENCE_CUSTOMER_NAME = "Meisel & Gerken";
+export const ABSENCE_CUSTOMER_ADDRESS_LINE1 = "Handwerkerhof 20";
+export const ABSENCE_CUSTOMER_POSTAL_CODE = "28857";
+export const ABSENCE_CUSTOMER_CITY = "Syke";
+export const ABSENCE_CUSTOMER_COUNTRY = "Deutschland";
 
 export const absenceTypeValues = ["vacation", "sick", "absent"] as const;
 export type AbsenceType = (typeof absenceTypeValues)[number];

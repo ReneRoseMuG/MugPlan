@@ -156,6 +156,9 @@ describe("SettingsPage system seed section", () => {
     await applyMutation.onSuccess?.({ logLines: ["Tour angelegt: Tour 4"] });
 
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ["/api/tours"] });
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      predicate: expect.any(Function),
+    });
     expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ["/api/note-templates"] });
     expect(invalidateQueriesMock).toHaveBeenCalledWith({
       predicate: expect.any(Function),

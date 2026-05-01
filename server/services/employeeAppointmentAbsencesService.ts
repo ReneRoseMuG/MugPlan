@@ -1,5 +1,10 @@
 import {
+  ABSENCE_CUSTOMER_ADDRESS_LINE1,
+  ABSENCE_CUSTOMER_CITY,
+  ABSENCE_CUSTOMER_COUNTRY,
   ABSENCE_CUSTOMER_NAME,
+  ABSENCE_CUSTOMER_NUMBER,
+  ABSENCE_CUSTOMER_POSTAL_CODE,
   ABSENCE_TAG_DEFINITIONS,
   ABSENCE_TOUR_COLOR,
   ABSENCE_TOUR_NAME,
@@ -17,10 +22,6 @@ import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as appointmentsService from "./appointmentsService";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
-
-const INTERNAL_REFERENCE_CUSTOMER_NAME = "MuG Messebau";
-const INTERNAL_REFERENCE_CUSTOMER_FIRST_NAME = "MUG";
-const INTERNAL_REFERENCE_CUSTOMER_LAST_NAME = "Messebau";
 
 export class EmployeeAppointmentAbsencesError extends Error {
   status: number;
@@ -44,6 +45,11 @@ function normalizeOptionalNote(value: string | null | undefined): string | null 
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function normalizeOptionalCustomerField(value: string | null | undefined): string | null {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 async function assertEmployeeVisible(employeeId: number, roleKey: CanonicalRoleKey) {
   const employee = await employeesRepository.getEmployee(employeeId);
   if (!employee) {
@@ -62,33 +68,24 @@ async function ensureAbsenceTour() {
   return toursRepository.createTour(ABSENCE_TOUR_NAME, ABSENCE_TOUR_COLOR);
 }
 
-async function getExistingAbsenceCustomer() {
-  const matches = await customersRepository.getCustomersByExactDisplayName(ABSENCE_CUSTOMER_NAME);
-  return matches[0] ?? null;
+function customerMatchesAbsenceSeedCustomer(
+  customer: Awaited<ReturnType<typeof customersRepository.getCustomersByCustomerNumber>>[number],
+): boolean {
+  return customer.customerNumber.trim() === ABSENCE_CUSTOMER_NUMBER
+    && normalizeOptionalCustomerField(customer.firstName) === null
+    && normalizeOptionalCustomerField(customer.lastName) === null
+    && normalizeOptionalCustomerField(customer.fullName) === ABSENCE_CUSTOMER_NAME
+    && normalizeOptionalCustomerField(customer.company) === ABSENCE_CUSTOMER_NAME
+    && normalizeOptionalCustomerField(customer.addressLine1) === ABSENCE_CUSTOMER_ADDRESS_LINE1
+    && normalizeOptionalCustomerField(customer.addressLine2) === null
+    && normalizeOptionalCustomerField(customer.postalCode) === ABSENCE_CUSTOMER_POSTAL_CODE
+    && normalizeOptionalCustomerField(customer.city) === ABSENCE_CUSTOMER_CITY
+    && normalizeOptionalCustomerField(customer.country) === ABSENCE_CUSTOMER_COUNTRY;
 }
 
-async function resolveAbsenceCustomerNumber(): Promise<string> {
-  const referenceMatches = await customersRepository.getCustomersByExactNameParts(
-    INTERNAL_REFERENCE_CUSTOMER_FIRST_NAME,
-    INTERNAL_REFERENCE_CUSTOMER_LAST_NAME,
-  );
-  const referenceCustomer = referenceMatches[0] ?? null;
-  if (!referenceCustomer) {
-    return "1";
-  }
-
-  const trimmedCustomerNumber = referenceCustomer.customerNumber.trim();
-  const parsed = Number.parseInt(trimmedCustomerNumber, 10);
-  if (!Number.isInteger(parsed) || parsed < 0) {
-    throw new EmployeeAppointmentAbsencesError(
-      409,
-      "BUSINESS_CONFLICT",
-      `Kundennummer von '${INTERNAL_REFERENCE_CUSTOMER_NAME}' ist nicht numerisch und kann nicht für '${ABSENCE_CUSTOMER_NAME}' fortgeschrieben werden.`,
-    );
-  }
-
-  const incremented = String(parsed + 1);
-  return incremented.padStart(trimmedCustomerNumber.length, "0");
+async function getExistingAbsenceCustomer() {
+  const matches = await customersRepository.getCustomersByCustomerNumber(ABSENCE_CUSTOMER_NUMBER);
+  return matches[0] ?? null;
 }
 
 async function ensureAbsenceCustomer() {
@@ -98,35 +95,32 @@ async function ensureAbsenceCustomer() {
       throw new EmployeeAppointmentAbsencesError(
         409,
         "BUSINESS_CONFLICT",
-        "Systemkunde 'MuG Personalplanung' ist inaktiv.",
+        `Systemkunde '${ABSENCE_CUSTOMER_NAME}' ist inaktiv.`,
+      );
+    }
+    if (!customerMatchesAbsenceSeedCustomer(existing)) {
+      throw new EmployeeAppointmentAbsencesError(
+        409,
+        "BUSINESS_CONFLICT",
+        `Systemkunde '${ABSENCE_CUSTOMER_NUMBER} · ${ABSENCE_CUSTOMER_NAME}' weicht vom erwarteten Sollzustand ab. Bitte System-Seed ausführen.`,
       );
     }
     return existing;
   }
 
-  const nextCustomerNumber = await resolveAbsenceCustomerNumber();
-  const conflictingCustomerNumberMatches = await customersRepository.getCustomersByCustomerNumber(nextCustomerNumber);
-  if (conflictingCustomerNumberMatches.length > 0) {
-    throw new EmployeeAppointmentAbsencesError(
-      409,
-      "BUSINESS_CONFLICT",
-      `Kundennummer '${nextCustomerNumber}' ist bereits vergeben und kann nicht für '${ABSENCE_CUSTOMER_NAME}' verwendet werden.`,
-    );
-  }
-
   return customersRepository.createCustomer({
-    customerNumber: nextCustomerNumber,
+    customerNumber: ABSENCE_CUSTOMER_NUMBER,
     firstName: null,
     lastName: null,
     company: ABSENCE_CUSTOMER_NAME,
     fullName: ABSENCE_CUSTOMER_NAME,
     email: null,
     phone: null,
-    addressLine1: null,
+    addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
     addressLine2: null,
-    postalCode: null,
-    city: null,
-    country: null,
+    postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+    city: ABSENCE_CUSTOMER_CITY,
+    country: ABSENCE_CUSTOMER_COUNTRY,
   });
 }
 
