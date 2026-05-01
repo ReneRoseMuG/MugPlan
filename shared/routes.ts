@@ -88,6 +88,65 @@ const extractedFieldReportSchema = z.object({
   missing: z.array(extractedFieldMissingSchema),
 });
 
+const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export const germanStateCodeSchema = z.enum([
+  "BW",
+  "BY",
+  "BE",
+  "BB",
+  "HB",
+  "HH",
+  "HE",
+  "MV",
+  "NI",
+  "NW",
+  "RP",
+  "SL",
+  "SN",
+  "ST",
+  "SH",
+  "TH",
+]);
+
+export const calendarMarkerTypeSchema = z.enum([
+  "public_holiday",
+  "company_holiday",
+  "company_vacation",
+]);
+export const calendarMarkerSourceSchema = z.enum(["automatic", "admin"]);
+export const calendarMarkerScopeSchema = z.enum(["national", "regional", "company"]);
+
+export const calendarMarkerSchema = z.object({
+  id: z.string().min(1),
+  date: dateOnlySchema,
+  endDate: dateOnlySchema.nullable(),
+  name: z.string().min(1),
+  type: calendarMarkerTypeSchema,
+  source: calendarMarkerSourceSchema,
+  scope: calendarMarkerScopeSchema,
+  states: z.array(germanStateCodeSchema),
+  active: z.boolean(),
+  note: z.string().nullable(),
+  version: z.number().int().min(1),
+});
+
+export const calendarMarkerWriteSchema = z.object({
+  date: dateOnlySchema,
+  endDate: dateOnlySchema.nullable().optional(),
+  name: z.string().min(1),
+  type: calendarMarkerTypeSchema,
+  source: calendarMarkerSourceSchema.default("admin"),
+  scope: calendarMarkerScopeSchema.default("company"),
+  states: z.array(germanStateCodeSchema).default([]),
+  active: z.boolean().default(true),
+  note: z.string().nullable().optional(),
+}).strict();
+
+export const calendarMarkerUpdateSchema = calendarMarkerWriteSchema.extend({
+  version: z.number().int().min(1),
+});
+
 const documentExtractionLatestProjectAppointmentSchema = z.object({
   id: z.number().int().positive(),
   startDate: z.string().min(1),
@@ -1815,6 +1874,68 @@ export const api = {
       }).strict(),
       responses: {
         200: z.array(calendarTourPostalPlanWeekSchema),
+      },
+    },
+  },
+  calendarMarkers: {
+    list: {
+      method: "GET" as const,
+      path: "/api/calendar/markers",
+      input: z.object({
+        fromDate: dateOnlySchema,
+        toDate: dateOnlySchema,
+      }).strict(),
+      responses: {
+        200: z.array(calendarMarkerSchema),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    adminList: {
+      method: "GET" as const,
+      path: "/api/admin/calendar-markers",
+      responses: {
+        200: z.array(calendarMarkerSchema),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+      },
+    },
+    create: {
+      method: "POST" as const,
+      path: "/api/admin/calendar-markers",
+      input: calendarMarkerWriteSchema,
+      responses: {
+        201: calendarMarkerSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        503: z.object({ code: z.literal("STORAGE_NOT_WRITABLE") }),
+      },
+    },
+    update: {
+      method: "PATCH" as const,
+      path: "/api/admin/calendar-markers/:id",
+      input: calendarMarkerUpdateSchema,
+      responses: {
+        200: calendarMarkerSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: z.object({ code: z.literal("NOT_FOUND") }),
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        503: z.object({ code: z.literal("STORAGE_NOT_WRITABLE") }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/admin/calendar-markers/:id",
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
+      responses: {
+        204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        404: z.object({ code: z.literal("NOT_FOUND") }),
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        503: z.object({ code: z.literal("STORAGE_NOT_WRITABLE") }),
       },
     },
   },
@@ -4468,6 +4589,13 @@ export type ChangeNotificationEvent = z.infer<typeof _changeNotificationEventSch
 export type UserSettingsResolvedResponse = z.infer<typeof api.userSettings.getResolved.responses[200]>;
 export type MonitoringListResponse = z.infer<typeof api.monitoring.list.responses[200]>;
 export type MonitoringConfigResponse = z.infer<typeof api.monitoring.adminConfigGet.responses[200]>;
+export type GermanStateCode = z.infer<typeof germanStateCodeSchema>;
+export type CalendarMarkerType = z.infer<typeof calendarMarkerTypeSchema>;
+export type CalendarMarkerSource = z.infer<typeof calendarMarkerSourceSchema>;
+export type CalendarMarkerScope = z.infer<typeof calendarMarkerScopeSchema>;
+export type CalendarMarker = z.infer<typeof calendarMarkerSchema>;
+export type CalendarMarkerWriteInput = z.infer<typeof calendarMarkerWriteSchema>;
+export type CalendarMarkerUpdateInput = z.infer<typeof calendarMarkerUpdateSchema>;
 export type MonitoringTriggerSummaryItemResponse = {
   triggerCode: (typeof MONITORING_TRIGGER_CODES)[number];
   triggerName: string;

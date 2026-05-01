@@ -24,6 +24,7 @@ import {
   useCalendarWeekLaneEmployeePreviews,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
+import { useCalendarMarkers } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { apiRequest } from "@/lib/queryClient";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
@@ -70,6 +71,7 @@ import {
   findWorkflowNoteTemplate,
   normalizeWorkflowNoteTitle,
 } from "@/lib/workflow-note-templates";
+import { CalendarMarkerBadges } from "./CalendarMarkerBadges";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -429,6 +431,29 @@ export function CalendarWeekView({
     fromDate: stripFromDate,
     toDate: stripToDate,
   });
+  const { data: calendarMarkers = [] } = useCalendarMarkers({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+    userRole,
+  });
+  const calendarMarkersByDate = useMemo(() => {
+    const result = new Map<string, typeof calendarMarkers>();
+    for (const marker of calendarMarkers) {
+      const markerEndDate = marker.endDate ?? marker.date;
+      for (
+        let cursor = parseISO(marker.date);
+        format(cursor, "yyyy-MM-dd") <= markerEndDate;
+        cursor = addDays(cursor, 1)
+      ) {
+        const dateKey = format(cursor, "yyyy-MM-dd");
+        if (dateKey < stripFromDate || dateKey > stripToDate) {
+          continue;
+        }
+        result.set(dateKey, [...(result.get(dateKey) ?? []), marker]);
+      }
+    }
+    return result;
+  }, [calendarMarkers, stripFromDate, stripToDate]);
 
   useEffect(() => {
     cardHeightByLaneRef.current.clear();
@@ -1298,6 +1323,7 @@ export function CalendarWeekView({
                                 </span>
                               ))}
                             </div>
+                            <CalendarMarkerBadges markers={calendarMarkersByDate.get(dayKey) ?? []} />
                           </div>
                         </div>
                       );

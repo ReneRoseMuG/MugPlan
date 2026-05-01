@@ -11,6 +11,7 @@ import {
   useCalendarBlockedTourWeeks,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
+import { useCalendarMarkers, type CalendarMarker } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import {
@@ -38,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
+import { CalendarMarkerBadges } from "./CalendarMarkerBadges";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,6 +172,29 @@ export function CalendarMonthSheetView({
     fromDate: stripFromDate,
     toDate: stripToDate,
   });
+  const { data: calendarMarkers = [] } = useCalendarMarkers({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+    userRole,
+  });
+  const calendarMarkersByDate = useMemo(() => {
+    const result = new Map<string, typeof calendarMarkers>();
+    for (const marker of calendarMarkers) {
+      const markerEndDate = marker.endDate ?? marker.date;
+      for (
+        let cursor = parseISO(marker.date);
+        format(cursor, "yyyy-MM-dd") <= markerEndDate;
+        cursor = addDays(cursor, 1)
+      ) {
+        const dateKey = format(cursor, "yyyy-MM-dd");
+        if (dateKey < stripFromDate || dateKey > stripToDate) {
+          continue;
+        }
+        result.set(dateKey, [...(result.get(dateKey) ?? []), marker]);
+      }
+    }
+    return result;
+  }, [calendarMarkers, stripFromDate, stripToDate]);
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
@@ -442,6 +467,7 @@ export function CalendarMonthSheetView({
           monthRowTemplate={monthRowTemplate}
           dayGridTemplate={dayGridTemplate}
           appointmentsById={appointmentsById}
+          calendarMarkersByDate={calendarMarkersByDate}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentMap={conflictAppointmentMap}
           blockedTourWeekKeys={blockedTourWeekKeys}
@@ -473,6 +499,7 @@ function MonthSheetSection({
   monthRowTemplate,
   dayGridTemplate,
   appointmentsById,
+  calendarMarkersByDate,
   conflictHighlightActive,
   conflictAppointmentMap,
   blockedTourWeekKeys,
@@ -494,6 +521,7 @@ function MonthSheetSection({
   monthRowTemplate: string;
   dayGridTemplate: string;
   appointmentsById: Map<number, CalendarAppointment>;
+  calendarMarkersByDate: Map<string, CalendarMarker[]>;
   conflictHighlightActive: boolean;
   conflictAppointmentMap: Map<number, MonitoringConflictMeta>;
   blockedTourWeekKeys: Set<string>;
@@ -634,6 +662,7 @@ function MonthSheetSection({
                             <span className="h-5 w-5" aria-hidden="true" />
                           )}
                         </div>
+                        <CalendarMarkerBadges markers={calendarMarkersByDate.get(day.dateKey) ?? []} compact />
 
                         <div className="flex w-full flex-col">
                           {renderData.rowLayout.slots.map((slot) => {
