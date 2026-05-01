@@ -27,7 +27,7 @@ import mysql from "mysql2/promise";
 import request, { type SuperAgentTest } from "supertest";
 import fs from "fs/promises";
 import path from "path";
-import ExcelJS from "exceljs";
+import XlsxPopulate from "xlsx-populate";
 import selfsigned from "selfsigned";
 import { sql } from "drizzle-orm";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
@@ -221,14 +221,13 @@ describe("FT07 integration: backup scheduler + caldav outbound", () => {
     await expect(fs.stat(fileInfo.pdfPath!)).resolves.toBeTruthy();
     await expect(fs.stat(fileInfo.zipPath!)).resolves.toBeTruthy();
 
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(fileInfo.excelPath!);
-    expect(workbook.getWorksheet("Kalender")).toBeTruthy();
-    expect(workbook.getWorksheet("Termine")).toBeTruthy();
-    expect(workbook.getWorksheet("Projekte")).toBeTruthy();
-    expect(workbook.getWorksheet("Kunden")).toBeTruthy();
-    expect(workbook.getWorksheet("Mitarbeiter")).toBeTruthy();
-    expect((workbook.getWorksheet("Termine")?.actualRowCount ?? 0)).toBeGreaterThan(1);
+    const workbook = await XlsxPopulate.fromFileAsync(fileInfo.excelPath!);
+    expect(workbook.sheet("Kalender")).toBeTruthy();
+    expect(workbook.sheet("Termine")).toBeTruthy();
+    expect(workbook.sheet("Projekte")).toBeTruthy();
+    expect(workbook.sheet("Kunden")).toBeTruthy();
+    expect(workbook.sheet("Mitarbeiter")).toBeTruthy();
+    expect((workbook.sheet("Termine")?.usedRange()?.value()?.length ?? 0)).toBeGreaterThan(1);
 
     const pdfBuffer = await fs.readFile(fileInfo.pdfPath!);
     expect(pdfBuffer.byteLength).toBeGreaterThan(100);

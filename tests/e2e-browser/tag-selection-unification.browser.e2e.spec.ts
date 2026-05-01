@@ -97,7 +97,7 @@ test("shows the unified picker catalog and shortcode-first labels in a project e
   await expect(customOption).toContainText(trimTagLabel(customTag.name));
   await expect(customOption).toContainText(`(${customTag.name})`);
 
-  await expect(page.getByTestId(`project-tag-picker-add-tag-${reportExclusionTag.id}`)).toBeVisible();
+  await expect(page.getByTestId(`project-tag-picker-add-tag-${reportExclusionTag.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`project-tag-picker-add-tag-${specialMeasureTag.id}`)).toBeVisible();
   await expect(page.getByTestId(`project-tag-picker-add-tag-${cancellationTag.id}`)).toHaveCount(0);
 });
@@ -108,20 +108,18 @@ test("uses the same picker shell and unified catalog in the customer list view",
 
   await loginAsAdmin(page);
   const { reportExclusionTag, specialMeasureTag, cancellationTag } = await readSystemTags(page);
-  await attachCustomerTagFixture(taggedCustomer.id, reportExclusionTag.id);
+  await attachCustomerTagFixture(taggedCustomer.id, specialMeasureTag.id);
 
   await openCustomers(page);
 
   await page.getByTestId("button-add-customer-tag-filter").click();
   await expect(page.getByText("Tag hinzufügen", { exact: true })).toBeVisible();
-  await expect(page.getByTestId(`customer-filter-tag-add-${reportExclusionTag.id}`)).toBeVisible();
+  await expect(page.getByTestId(`customer-filter-tag-add-${reportExclusionTag.id}`)).toHaveCount(0);
   await expect(page.getByTestId(`customer-filter-tag-add-${specialMeasureTag.id}`)).toBeVisible();
   await expect(page.getByTestId(`customer-filter-tag-add-${cancellationTag.id}`)).toHaveCount(0);
-  await expect(page.getByTestId(`customer-filter-tag-add-${reportExclusionTag.id}`)).toContainText(trimTagLabel(reportExclusionTag.name));
-  await expect(page.getByTestId(`customer-filter-tag-add-${reportExclusionTag.id}`)).toContainText(`(${reportExclusionTag.name})`);
 
-  await page.getByTestId(`customer-filter-tag-add-${reportExclusionTag.id}-add`).click();
-  await expect(page.getByTestId(`customer-filter-tag-${reportExclusionTag.id}`)).toBeVisible();
+  await page.getByTestId(`customer-filter-tag-add-${specialMeasureTag.id}-add`).click();
+  await expect(page.getByTestId(`customer-filter-tag-${specialMeasureTag.id}`)).toBeVisible();
   await expect(page.getByTestId(`customer-card-${taggedCustomer.id}`)).toBeVisible();
   await expect(page.getByTestId(`customer-card-${otherCustomer.id}`)).toHaveCount(0);
 });

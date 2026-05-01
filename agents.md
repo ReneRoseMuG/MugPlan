@@ -244,6 +244,9 @@ Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<
 `journal`  
 Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag direkt als normalen Block auf der Notion-Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` gemäß Abschnitt 14.2a. Unterseiten sind dabei unzulässig. Für den Journaleintrag gilt dabei zwingend das sichtbare Datumsformat `dd.MM.yy`.
 
+`account`  
+Codex prüft ausschließlich lokal die aktuell gespeicherte Codex-ChatGPT-Anmeldung in `$env:USERPROFILE\.codex\auth.json`, dekodiert nur die nicht-geheimen Claims aus dem vorhandenen Token und gibt E-Mail-Adresse, Plan-Typ, Organisationen und den Änderungszeitpunkt der Auth-Datei aus. Token-, Secret-, Session- und Refresh-Werte dürfen dabei nicht ausgegeben werden. Fehlt die Datei oder sind die Claims nicht lesbar, dokumentiert Codex den Blocker kurz und nimmt keine weiteren Änderungen vor.
+
 `docs-sync`  
 Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
 

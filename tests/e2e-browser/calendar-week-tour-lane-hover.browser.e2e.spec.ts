@@ -33,6 +33,12 @@ function getNextWeekDate(offsetFromMonday: number) {
   return format(addDays(monday, offsetFromMonday), "yyyy-MM-dd");
 }
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
+}
+
 test("shows week employees and additional day employees in the lane header hover", async ({ page }) => {
   const fixture = await createAppointmentBrowserFixture({ prefix: "WEEK-LANE-HOVER", employeeCount: 2 });
   const monday = getNextWeekDate(0);
@@ -68,9 +74,9 @@ test("shows week employees and additional day employees in the lane header hover
   const preview = page.getByTestId("week-tour-lane-day-hover-preview").last();
   await expect(preview).toBeVisible();
   await expect(preview).toContainText("Aus Wochenplanung");
-  await expect(preview).toContainText(fixture.employees[0].fullName);
+  await expect(preview).toContainText(getCompactEmployeeLabel(fixture.employees[0]));
   await expect(preview).toContainText("Zusätzliche Tageszuweisungen");
-  await expect(preview).toContainText(fixture.employees[1].fullName);
+  await expect(preview).toContainText(getCompactEmployeeLabel(fixture.employees[1]));
 
   const tuesdayTrigger = page.getByTestId(`week-tour-lane-day-hover-trigger-tour-${fixture.tour.id}-${tuesday}`);
   await expect(tuesdayTrigger).toBeVisible();
@@ -81,6 +87,6 @@ test("shows week employees and additional day employees in the lane header hover
 
   const tuesdayPreview = page.getByTestId("week-tour-lane-day-hover-preview").last();
   await expect(tuesdayPreview).toBeVisible();
-  await expect(tuesdayPreview).toContainText(fixture.employees[0].fullName);
+  await expect(tuesdayPreview).toContainText(getCompactEmployeeLabel(fixture.employees[0]));
   await expect(tuesdayPreview.getByTestId("week-tour-lane-day-hover-additional-employees")).toContainText("Keine zusätzlichen Tageszuweisungen.");
 });

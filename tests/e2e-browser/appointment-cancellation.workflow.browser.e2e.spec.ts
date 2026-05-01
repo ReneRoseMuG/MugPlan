@@ -78,15 +78,36 @@ async function selectEmployeeForAppointment(page: Page, employeeId: number) {
   await expect(page.getByTestId(`badge-employee-${employeeId}`)).toBeVisible();
 }
 
-async function openProjectById(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
+async function openProjectById(
+  page: Page,
+  project: { id: number; name: string; orderNumber?: string | null },
+  scope: "all" | "noAppointments" = "all",
+) {
   await openProjects(page);
   if (scope === "noAppointments") {
     await page.getByTestId("toggle-project-scope-no-appointments").click();
   } else {
     await page.getByTestId("toggle-project-scope-all").click();
   }
-  await expect(page.getByTestId(`project-card-${projectId}`)).toBeVisible();
-  await page.getByTestId(`project-card-${projectId}`).dblclick();
+
+  if (project.orderNumber) {
+    await page.locator("#project-filter-order-number").fill(project.orderNumber);
+  }
+  await page.locator("#project-filter-title").fill(project.name);
+
+  const tableRow = page.getByTestId("table-projects").locator("tbody tr")
+    .filter({ hasText: project.name })
+    .filter({ hasText: project.orderNumber ?? "" })
+    .first();
+
+  if (await tableRow.isVisible().catch(() => false)) {
+    await tableRow.dblclick();
+  } else {
+    const boardCard = page.getByTestId(`project-card-${project.id}`).first();
+    await expect(boardCard).toBeVisible();
+    await boardCard.dblclick();
+  }
+
   await expect(page.getByTestId("button-save-project")).toBeVisible();
 }
 
@@ -145,7 +166,11 @@ test("runs the browser cancellation flow from regular future appointment to canc
     quantity: 2,
   });
 
-  await openProjectById(page, projectId, "noAppointments");
+  await openProjectById(page, {
+    id: projectId,
+    name: projectName,
+    orderNumber: persistedOrderNumber,
+  }, "noAppointments");
   await openNewAppointmentFromProjectContext(page);
   await page.getByTestId("input-start-date").fill(appointmentDate);
   await expect(page.getByTestId("badge-project")).toContainText(projectName);
@@ -222,7 +247,11 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(page.getByTestId("button-save-project")).toBeVisible();
   await page.getByTestId("button-close-project").click();
 
-  await openProjectById(page, projectId);
+  await openProjectById(page, {
+    id: projectId,
+    name: projectName,
+    orderNumber: persistedOrderNumber,
+  });
   await expect(page.getByTestId("input-project-order-number")).toHaveValue(persistedOrderNumber);
   await expect(page.getByTestId("input-project-amount")).toHaveValue("0.00");
   await page.getByTestId("button-close-project").click();
@@ -283,4 +312,3 @@ test("Geparkt-Tag erscheint nicht im Termin-Tag-Picker", async ({ page }) => {
 
   await expect(page.getByTestId(`appointment-tag-picker-add-tag-${geparktTag!.id}`)).toHaveCount(0);
 });
-

@@ -157,6 +157,14 @@ vi.mock("@/hooks/useSettings", () => ({
   useSetting: () => true,
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+    dismiss: vi.fn(),
+    toasts: [],
+  }),
+}));
+
 vi.mock("@tanstack/react-query", () => ({
   useQuery: () => ({
     data: [],

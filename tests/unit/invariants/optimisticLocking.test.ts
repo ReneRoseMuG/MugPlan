@@ -33,9 +33,15 @@ vi.mock("../../../server/repositories/projectsRepository", () => ({
 }));
 
 vi.mock("../../../server/repositories/notesRepository", () => ({
+  getAppointmentIdByNoteId: vi.fn(),
   updateNoteWithVersion: vi.fn(),
   deleteNoteWithVersion: vi.fn(),
   getNote: vi.fn(),
+}));
+
+vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTour: vi.fn(),
+  getTours: vi.fn(),
 }));
 
 vi.mock("../../../server/repositories/customersRepository", () => ({
@@ -46,6 +52,7 @@ import * as appointmentsRepository from "../../../server/repositories/appointmen
 import * as customersRepository from "../../../server/repositories/customersRepository";
 import * as notesRepository from "../../../server/repositories/notesRepository";
 import * as projectsRepository from "../../../server/repositories/projectsRepository";
+import * as toursRepository from "../../../server/repositories/toursRepository";
 import {
   deleteAppointment,
   isAppointmentError,
@@ -58,6 +65,7 @@ const appointmentsRepoMock = vi.mocked(appointmentsRepository);
 const customersRepoMock = vi.mocked(customersRepository);
 const projectsRepoMock = vi.mocked(projectsRepository);
 const notesRepoMock = vi.mocked(notesRepository);
+const toursRepoMock = vi.mocked(toursRepository);
 
 describe("PKG-01 Invariant: optimistic locking", () => {
   beforeEach(() => {
@@ -68,6 +76,8 @@ describe("PKG-01 Invariant: optimistic locking", () => {
       return handler(fakeTx);
     });
     appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
+    toursRepoMock.getTour.mockResolvedValue({ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 } as any);
+    toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
   });
 
   it("appointment update succeeds with matching version", async () => {
@@ -208,6 +218,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
   it("note update returns 409 VERSION_CONFLICT when repository reports version_conflict", async () => {
     notesRepoMock.updateNoteWithVersion.mockResolvedValue({ kind: "version_conflict" });
     notesRepoMock.getNote.mockResolvedValue({ id: 40 } as any);
+    notesRepoMock.getAppointmentIdByNoteId.mockResolvedValue(null);
 
     await expect(
       updateNote(40, { version: 3, title: "New", content: "X" } as any),
@@ -217,6 +228,7 @@ describe("PKG-01 Invariant: optimistic locking", () => {
   it("note delete returns 409 VERSION_CONFLICT when repository reports version_conflict", async () => {
     notesRepoMock.deleteNoteWithVersion.mockResolvedValue({ kind: "version_conflict" });
     notesRepoMock.getNote.mockResolvedValue({ id: 40 } as any);
+    notesRepoMock.getAppointmentIdByNoteId.mockResolvedValue(null);
 
     await expect(deleteNote(40, 3)).rejects.toMatchObject({ status: 409, code: "VERSION_CONFLICT" });
   });

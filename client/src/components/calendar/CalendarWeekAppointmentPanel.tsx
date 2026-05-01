@@ -124,6 +124,7 @@ export function CalendarWeekAppointmentPanel({
   allowHistoricalActions = false,
   containerRef,
   testId,
+  maxHeightPx,
 }: {
   appointment: CalendarAppointment;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
@@ -152,6 +153,7 @@ export function CalendarWeekAppointmentPanel({
   allowHistoricalActions?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
+  maxHeightPx?: number | null;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -602,7 +604,7 @@ export function CalendarWeekAppointmentPanel({
   return (
   <>
     <div
-      className={`group/calendar-card relative w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative w-full min-w-0 ${maxHeightPx != null ? "overflow-x-hidden overflow-y-auto" : "overflow-hidden"} rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
@@ -615,6 +617,7 @@ export function CalendarWeekAppointmentPanel({
       style={{
         borderColor: highlighted ? undefined : borderColor,
         ...resolvedPanelStyle,
+        ...(maxHeightPx != null ? { maxHeight: `${maxHeightPx}px` } : {}),
       }}
     >
       {!isContinuation && (

@@ -310,7 +310,7 @@ function rowByText(table: Locator, text: string): Locator {
 
 function formatIsoDateForUi(value: string): string {
   const [year, month, day] = value.split("-");
-  return `${day}.${month}.${year}`;
+  return `${day}.${month}.${year.slice(-2)}`;
 }
 
 async function getHeaderTexts(table: Locator) {

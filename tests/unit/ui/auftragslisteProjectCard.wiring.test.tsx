@@ -102,7 +102,7 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("ORD-001");
     expect(html).toContain("Projekt Alpha");
     expect(html).toContain("Tour Nord");
-    expect(html).toContain("05.11.2099");
+    expect(html).toContain("05.11.99");
     expect(html).toContain("2 Tage");
     expect(html).toContain("Fenster");
     expect(html).toContain("WIN-A");

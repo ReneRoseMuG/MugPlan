@@ -27,6 +27,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
 }));
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTour: vi.fn(),
   getTours: vi.fn(),
 }));
 
@@ -50,6 +51,7 @@ describe("PKG-02 Invariant: locking rules", () => {
       return handler(fakeTx);
     });
     appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
+    toursRepoMock.getTour.mockResolvedValue({ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 } as any);
     toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
   });
 

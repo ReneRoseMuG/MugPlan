@@ -17,6 +17,24 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsReader, resetBrowserSuiteState } from "../helpers/browserE2e";
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const fullName = (employee as { fullName?: string | null }).fullName?.trim() ?? "";
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  if (firstName && lastNameInitial) {
+    return `${firstName} ${lastNameInitial}.`;
+  }
+  if (fullName.includes(",")) {
+    const [lastNamePart, firstNamePart] = fullName.split(",", 2);
+    const compactFirstName = firstNamePart?.trim() ?? "";
+    const compactLastInitial = lastNamePart?.trim()?.[0]?.toUpperCase() ?? "";
+    return compactFirstName && compactLastInitial
+      ? `${compactFirstName} ${compactLastInitial}.`
+      : compactFirstName || compactLastInitial;
+  }
+  return firstName || lastNameInitial || fullName;
+}
+
 function resolveNextReadableWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
   const weekStart = startOfISOWeek(addWeeks(today, 3));
@@ -158,8 +176,14 @@ test.describe("Reader employees readonly", () => {
     const weekCard = page.getByTestId(`card-employee-week-plan-${weekAssignmentId}`);
     await expect(weekCard).toBeVisible();
     await expect(weekCard).toContainText(tourName);
-    await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${weekAssignmentId}`)).toContainText(employee.fullName);
-    await expect(weekCard).toContainText(colleagueFullName);
+    await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${weekAssignmentId}`)).toContainText(
+      getCompactEmployeeLabel(employee),
+    );
+    await expect(weekCard).toContainText(getCompactEmployeeLabel({ fullName: colleagueFullName } as {
+      fullName?: string | null;
+      firstName?: string | null;
+      lastName?: string | null;
+    }));
     await weekCard.dblclick();
     await expect(page.getByTestId("tour-week-form-overlay")).toHaveCount(0);
   });
