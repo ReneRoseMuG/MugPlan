@@ -325,6 +325,9 @@ UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftr
 
 - Alle Quelltexte und Doku-Dateien werden in UTF-8 gespeichert
 - Keine UTF-16-Dateien in `client/`, `server/`, `shared/`, `tests/`, `docs/`, `script/`
+- Wenn nicht ausdrücklich anders angegeben, ist für Datumsangaben in Antworten, Logs, Dokumentation, Journaleinträgen, Notion-Einträgen, UI-Texten und fachlichen Beschreibungen zwingend das Format `dd.mm.yy` zu verwenden
+- Andere Datumsformate wie `yyyy-mm-dd`, `dd.mm.yyyy`, `yyyy/mm/dd`, englische Monatsnamen oder Langformen sind nur zulässig, wenn der Nutzer, ein externer Standard oder ein technischer Kontext dies ausdrücklich verlangt
+- Diese Datumsregel gilt nicht für technisch fest vorgegebene Formate wie Dateinamen, API-Contracts, ISO-Datumsfelder, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token oder andere maschinengebundene Bezeichner
 - In Antworten, Plänen, Logs und Dokumentation sind deutsche Umlaute und `ß` als echte Zeichen zu schreiben (`ä`, `ö`, `ü`, `Ä`, `Ö`, `Ü`, `ß`). Umschreibungen wie `ae`, `oe`, `ue` oder `ss` sind in normaler Sprache unzulässig, sofern sie nicht technisch zwingend durch bestehende Dateinamen, APIs, Fremdsysteme oder Code-Bezeichner vorgegeben sind.
 - Bei falsch dargestellten Umlauten oder Sonderzeichen: `npm run check` ausführen, gemeldete Datei in UTF-8 korrigieren, erneut `npm run check`, dann Commit
 

@@ -22,6 +22,7 @@ import {
   ABSENCE_TOUR_NAME,
 } from "../../../shared/absenceAppointments";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import * as appointmentNotesService from "../../../server/services/appointmentNotesService";
 import { applySystemSeed } from "../../../server/services/systemSeedService";
 import {
   EmployeeAppointmentAbsencesError,
@@ -31,11 +32,13 @@ import {
 import {
   createCustomerFixture,
   createEmployeeFixture,
+  createProjectFixtureWithOverrides,
 } from "../../helpers/testDataFactory";
+import { listTours } from "../../../server/services/toursService";
 
 describe("FT33 integration: Employee absence appointments", () => {
   beforeEach(async () => {
-    await applySystemSeed(["customer:001"]);
+    await applySystemSeed();
   });
 
   it("creates a vacation absence as appointment with system tour, system customer, tag and note", async () => {
@@ -121,5 +124,164 @@ describe("FT33 integration: Employee absence appointments", () => {
       endDate: null,
       note: `ABS-ROLE-${employee.id}`,
     }, "LESER")).rejects.toBeInstanceOf(EmployeeAppointmentAbsencesError);
+  });
+
+  it("keeps generic mutation services available for a regular project appointment on Tour 1", async () => {
+    const [tourOne] = (await listTours()).filter((tour) => tour.name === "Tour 1");
+    expect(tourOne?.id).toBeGreaterThan(0);
+
+    const customer = await createCustomerFixture("REG-MUTATE-CUST");
+    const project = await createProjectFixtureWithOverrides({
+      prefix: "REG-MUTATE-PROJ",
+      customerId: customer.id,
+      name: "Regulärer Mutationspfad",
+    });
+    const employee = await createEmployeeFixture("REG-MUTATE-EMP");
+
+    const editable = await appointmentsService.createAppointment({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-10",
+      startTime: "08:00:00",
+    }, "ADMIN");
+    const removableEmployee = await appointmentsService.createAppointment({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-11",
+      startTime: "08:30:00",
+      employeeIds: [employee.id],
+    }, "ADMIN");
+    const cancellable = await appointmentsService.createAppointment({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-12",
+      startTime: "09:00:00",
+      employeeIds: [employee.id],
+    }, "ADMIN");
+    const parkable = await appointmentsService.createAppointment({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-13",
+      startTime: "09:30:00",
+      employeeIds: [employee.id],
+    }, "ADMIN");
+    const deletable = await appointmentsService.createAppointment({
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-14",
+      startTime: "10:00:00",
+    }, "ADMIN");
+
+    expect(editable?.id).toBeGreaterThan(0);
+    expect(removableEmployee?.id).toBeGreaterThan(0);
+    expect(cancellable?.id).toBeGreaterThan(0);
+    expect(parkable?.id).toBeGreaterThan(0);
+    expect(deletable?.id).toBeGreaterThan(0);
+
+    const updated = await appointmentsService.updateAppointment(editable!.id, {
+      version: editable!.version,
+      projectId: project.id,
+      customerId: customer.id,
+      tourId: tourOne!.id,
+      startDate: "2099-10-15",
+      endDate: null,
+      startTime: "11:00:00",
+      description: "Regulärer Update-Pfad",
+      employeeIds: [],
+    }, "ADMIN");
+    const updatedStartDate = updated?.startDate instanceof Date
+      ? updated.startDate.toISOString().slice(0, 10)
+      : String(updated?.startDate).slice(0, 10);
+    expect(updatedStartDate).toBe("2099-10-15");
+    expect(updated?.description).toBe("Regulärer Update-Pfad");
+
+    const createdNote = await appointmentNotesService.createAppointmentNote(editable!.id, {
+      title: "Reguläre Terminnotiz",
+      body: "<p>Mutationspfad aktiv.</p>",
+      print: false,
+    });
+    expect(createdNote.id).toBeGreaterThan(0);
+
+    await expect(
+      appointmentsService.removeEmployeeFromAppointment(removableEmployee!.id, employee.id, removableEmployee!.version, "ADMIN"),
+    ).resolves.toEqual({ found: true });
+    const removableEmployeeAfter = await appointmentsService.getAppointmentDetails(removableEmployee!.id);
+    expect(removableEmployeeAfter?.employees).toEqual([]);
+
+    await expect(
+      appointmentsService.cancelAppointment(cancellable!.id, cancellable!.version, "ADMIN"),
+    ).resolves.toEqual({ found: true });
+    const cancelledAfter = await appointmentsService.getAppointmentDetails(cancellable!.id);
+    expect(cancelledAfter?.isCancelled).toBe(true);
+    expect(cancelledAfter?.appointmentTags.map((tag) => tag.name)).toContain("Storniert");
+
+    await expect(
+      appointmentsService.parkAppointment(parkable!.id, parkable!.version, "ADMIN"),
+    ).resolves.toEqual({ found: true });
+    const parkedAfter = await appointmentsService.getAppointmentDetails(parkable!.id);
+    expect(parkedAfter?.tourId).not.toBe(tourOne!.id);
+    expect(parkedAfter?.appointmentTags.map((tag) => tag.name)).toContain("Geparkt");
+
+    const deleted = await appointmentsService.deleteAppointment(deletable!.id, deletable!.version, "ADMIN");
+    expect(deleted?.id).toBe(deletable!.id);
+    await expect(appointmentsService.getAppointmentDetails(deletable!.id)).resolves.toBeNull();
+  });
+
+  it("blocks generic appointment and appointment-note mutations for absence appointments outside the FT-33 employee flow", async () => {
+    const employee = await createEmployeeFixture("ABS-READONLY-EMP");
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: "2099-09-10",
+      endDate: "2099-09-12",
+      note: `ABS-READONLY-${employee.id}`,
+    }, "ADMIN");
+
+    await expect(appointmentsService.updateAppointment(created.id, {
+      version: created.version,
+      customerId: created.customer.id,
+      tourId: created.tourId,
+      startDate: "2099-09-11",
+      endDate: "2099-09-13",
+      startTime: null,
+      description: "Generischer Update-Versuch",
+      employeeIds: [employee.id],
+    }, "ADMIN")).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
+
+    await expect(appointmentsService.deleteAppointment(created.id, created.version, "ADMIN")).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
+
+    await expect(appointmentNotesService.createAppointmentNote(created.id, {
+      title: `ABS-NOTE-${employee.id}`,
+      body: "<p>Readonly</p>",
+      print: false,
+    })).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
+
+    await expect(
+      appointmentsService.removeEmployeeFromAppointment(created.id, employee.id, created.version, "ADMIN"),
+    ).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
+
+    await expect(
+      appointmentsService.cancelAppointment(created.id, created.version, "ADMIN"),
+    ).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
+
+    await expect(
+      appointmentsService.parkAppointment(created.id, created.version, "ADMIN"),
+    ).rejects.toMatchObject({
+      code: "ABSENCE_APPOINTMENT_READONLY",
+    });
   });
 });

@@ -198,7 +198,7 @@ export async function createEmployeeAppointmentAbsence(
     startTime: null,
     description: normalizeOptionalNote(input.note),
     employeeIds: [employeeId],
-  }, roleKey);
+  }, roleKey, { allowAbsenceWorkflow: true });
   if (!appointment?.id) {
     throw new EmployeeAppointmentAbsencesError(409, "BUSINESS_CONFLICT", "Abwesenheit konnte nicht angelegt werden");
   }
@@ -228,7 +228,7 @@ export async function updateEmployeeAppointmentAbsence(
     startTime: null,
     description: normalizeOptionalNote(input.note),
     employeeIds: [employeeId],
-  }, roleKey);
+  }, roleKey, { allowAbsenceWorkflow: true });
   await setAbsenceTag(appointmentId, input.absenceType);
   return getCreatedOrUpdatedAbsenceAppointment(employeeId, appointmentId, roleKey);
 }
@@ -245,7 +245,7 @@ export async function deleteEmployeeAppointmentAbsence(
   if (!existing) {
     throw new EmployeeAppointmentAbsencesError(404, "NOT_FOUND", "Abwesenheit nicht gefunden");
   }
-  await appointmentsService.deleteAppointment(appointmentId, version, roleKey);
+  await appointmentsService.deleteAppointment(appointmentId, version, roleKey, { allowAbsenceWorkflow: true });
 }
 
 export function getAbsenceTypeLabel(absenceType: AbsenceType): string {

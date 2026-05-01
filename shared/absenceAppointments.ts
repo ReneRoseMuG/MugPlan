@@ -27,6 +27,12 @@ export function isAbsenceTagName(value: string | null | undefined): boolean {
   return ABSENCE_TAG_NAMES.some((name) => normalizeAbsenceValue(name) === normalized);
 }
 
+export function hasAbsenceTagRelation(
+  tags: Array<{ name?: string | null | undefined } | null | undefined> | null | undefined,
+): boolean {
+  return (tags ?? []).some((tag) => isAbsenceTagName(tag?.name));
+}
+
 export function getAbsenceTagName(absenceType: AbsenceType): string {
   return ABSENCE_TAG_DEFINITIONS[absenceType].name;
 }
@@ -43,4 +49,11 @@ export function resolveAbsenceTypeFromTagName(value: string | null | undefined):
 
 export function isAbsenceTourName(value: string | null | undefined): boolean {
   return normalizeAbsenceValue(value) === normalizeAbsenceValue(ABSENCE_TOUR_NAME);
+}
+
+export function isAbsenceAppointmentSummary(params: {
+  tourName?: string | null | undefined;
+  appointmentTags?: Array<{ name?: string | null | undefined } | null | undefined> | null | undefined;
+}): boolean {
+  return isAbsenceTourName(params.tourName) || hasAbsenceTagRelation(params.appointmentTags);
 }

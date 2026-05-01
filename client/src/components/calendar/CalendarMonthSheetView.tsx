@@ -53,7 +53,7 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
-import { isAbsenceTourName } from "@shared/absenceAppointments";
+import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
 import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
@@ -750,7 +750,14 @@ function MonthSheetSection({
                                 isLocked={isLocked}
                                 isDragging={false}
                                 isBlocked={isSlotBlocked}
-                                onDoubleClick={() => onAppointmentClick(appointment.id)}
+                                onDoubleClick={
+                                  isAbsenceAppointmentSummary({
+                                    tourName: appointment.tourName,
+                                    appointmentTags: appointment.appointmentTags,
+                                  })
+                                    ? undefined
+                                    : () => onAppointmentClick(appointment.id)
+                                }
                               />
                             ) : (
                               <MonthCompactBarWithMenu
@@ -763,7 +770,14 @@ function MonthSheetSection({
                                 isDragging={draggedAppointmentId === appointment.id}
                                 isBlocked={isSlotBlocked}
                                 allowHistoricalActions={isAdmin}
-                                onDoubleClick={() => onAppointmentClick(appointment.id)}
+                                onDoubleClick={
+                                  isAbsenceAppointmentSummary({
+                                    tourName: appointment.tourName,
+                                    appointmentTags: appointment.appointmentTags,
+                                  })
+                                    ? undefined
+                                    : () => onAppointmentClick(appointment.id)
+                                }
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
                               />

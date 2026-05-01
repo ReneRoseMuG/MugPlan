@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CalendarX, Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   ABSENCE_TAG_DEFINITIONS,
   absenceTypeValues,
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatListDateRange } from "@/lib/list-display-format";
 import { useToast } from "@/hooks/use-toast";
 
 type AbsenceFormState = {
@@ -26,7 +27,6 @@ type AbsenceFormState = {
 type EmployeeAppointmentAbsencesPanelProps = {
   employeeId: number;
   readOnly: boolean;
-  onOpenAppointment?: (appointmentId: number) => void;
 };
 
 const defaultFormState: AbsenceFormState = {
@@ -80,15 +80,9 @@ function getAbsenceTypeLabel(absenceType: AbsenceType): string {
   return ABSENCE_TAG_DEFINITIONS[absenceType].name;
 }
 
-function formatDateRange(startDate: string, endDate: string | null): string {
-  if (!endDate || endDate === startDate) return startDate;
-  return `${startDate} - ${endDate}`;
-}
-
 export function EmployeeAppointmentAbsencesPanel({
   employeeId,
   readOnly,
-  onOpenAppointment,
 }: EmployeeAppointmentAbsencesPanelProps) {
   const { toast } = useToast();
   const [newForm, setNewForm] = useState<AbsenceFormState>(defaultFormState);
@@ -314,7 +308,7 @@ export function EmployeeAppointmentAbsencesPanel({
                         />
                       </div>
                     ) : (
-                      formatDateRange(item.startDate, item.endDate)
+                      formatListDateRange(item.startDate, item.endDate)
                     )}
                   </TableCell>
                   <TableCell>
@@ -357,18 +351,6 @@ export function EmployeeAppointmentAbsencesPanel({
                         </>
                       ) : (
                         <>
-                          {onOpenAppointment ? (
-                            <Button
-                              type="button"
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => onOpenAppointment(item.id)}
-                              title="Termin öffnen"
-                              data-testid={`button-open-employee-absence-${item.id}`}
-                            >
-                              <CalendarX className="h-4 w-4" aria-hidden />
-                            </Button>
-                          ) : null}
                           {!readOnly ? (
                             <>
                               <Button

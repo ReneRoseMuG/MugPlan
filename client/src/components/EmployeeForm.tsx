@@ -1045,9 +1045,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               <EmployeeAppointmentAbsencesPanel
                 employeeId={employeeId}
                 readOnly={isReadOnlyView}
-                onOpenAppointment={onOpenAppointment
-                  ? (appointmentId) => onOpenAppointment(appointmentId, { type: "employee", employeeId })
-                  : undefined}
               />
             </TabsContent>
           ) : null}

@@ -11,6 +11,8 @@ import { ProjectsPage } from "@/components/ProjectsPage";
 import { ReportsPage, type StandaloneReportLaunch } from "@/components/ReportsPage";
 import { TeamManagement } from "@/components/TeamManagement";
 import { canAccessMonitoring, canAccessTourPostalPlan, getStoredUserRole } from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 import { TourPostalPlanView } from "../components/TourPostalPlanView";
 import { TourManagement } from "@/components/TourManagement";
 import StandaloneLayout from "@/components/StandaloneLayout";
@@ -129,8 +131,36 @@ export function StandaloneAppointments() {
 export function StandaloneMonitoring() {
   const [appointmentOverlay, setAppointmentOverlay] = useState<{ appointmentId: number } | null>(null);
   const [userRole] = useState(() => getStoredUserRole());
+  const { toast } = useToast();
   const isAdmin = userRole === "ADMIN";
   const canOpenMonitoring = canAccessMonitoring(userRole);
+
+  const openAppointmentIfAllowed = async (appointmentId: number) => {
+    try {
+      const response = await fetch(`/api/appointments/${appointmentId}`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error("Termindetails konnten nicht geladen werden.");
+      }
+      const detail = await response.json() as {
+        appointmentTags?: Array<{ name?: string | null | undefined }>;
+      };
+      if (isAbsenceAppointmentSummary({ appointmentTags: detail.appointmentTags })) {
+        toast({
+          title: "Abwesenheit ist schreibgeschützt",
+          description: "Abwesenheiten können nur im Mitarbeiterformular bearbeitet werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setAppointmentOverlay({ appointmentId });
+    } catch (error) {
+      toast({
+        title: "Termin konnte nicht geöffnet werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (!canOpenMonitoring) {
     return (
@@ -147,7 +177,7 @@ export function StandaloneMonitoring() {
       <StandaloneLayout title="Monitoring">
         <MonitoringPage
           isAdmin={isAdmin}
-          onOpenAppointment={(appointmentId) => setAppointmentOverlay({ appointmentId })}
+          onOpenAppointment={(appointmentId) => { void openAppointmentIfAllowed(appointmentId); }}
         />
       </StandaloneLayout>
 

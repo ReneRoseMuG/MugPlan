@@ -17,6 +17,7 @@ import { de } from "date-fns/locale";
 import { useCalendarAppointments } from "@/lib/calendar-appointments";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 import {
   getAppointmentEndDate,
   getAppointmentSortValue,
@@ -148,7 +149,14 @@ export function CalendarYearView({
                           isFirstDay={true}
                           isLastDay={true}
                           isLocked={appointment.isCancelled || (appointment.isLocked && !isAdmin)}
-                          onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                          onDoubleClick={
+                            isAbsenceAppointmentSummary({
+                              tourName: appointment.tourName,
+                              appointmentTags: appointment.appointmentTags,
+                            })
+                              ? undefined
+                              : () => handleAppointmentClick(appointment.id)
+                          }
                         />
                       ))}
                       {hiddenCount > 0 && (

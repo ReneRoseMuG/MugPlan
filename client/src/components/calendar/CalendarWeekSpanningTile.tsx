@@ -106,6 +106,7 @@ type CalendarWeekSpanningTileProps = {
   showTagActions?: boolean;
   canEditTags?: boolean;
   allowHistoricalActions?: boolean;
+  interactive?: boolean;
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
@@ -135,6 +136,7 @@ export function CalendarWeekSpanningTile({
   showTagActions = false,
   canEditTags = false,
   allowHistoricalActions = false,
+  interactive = true,
   containerRef,
   style,
   isDragging,
@@ -353,7 +355,7 @@ export function CalendarWeekSpanningTile({
     },
   });
 
-  const menuSlot = !isHistoricalReadOnly ? (
+  const menuSlot = interactive && !isHistoricalReadOnly ? (
     <span
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
@@ -428,7 +430,9 @@ export function CalendarWeekSpanningTile({
   ) : undefined;
 
   const canDrag = Boolean(onDragStart);
-  const interactiveClass = isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md";
+  const interactiveClass = !interactive
+    ? ""
+    : (isLocked ? "cursor-not-allowed opacity-80" : "hover:shadow-md");
   const borderColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
   const highlightClass = highlighted ? "shadow-md ring-1 ring-primary/30" : "";
   const uniformBorderShadow = highlighted ? undefined : `inset 0 0 0 1px ${borderColor}`;

@@ -53,6 +53,10 @@ export async function createAppointmentNote(req: Request, res: Response, next: N
       res.status(422).json({ code: "VALIDATION_ERROR" });
       return;
     }
+    if (err instanceof appointmentNotesService.AppointmentNotesError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
     if (err instanceof Error && err.message === "Note template not found") {
       res.status(404).json({ message: "Notizvorlage nicht gefunden" });
       return;

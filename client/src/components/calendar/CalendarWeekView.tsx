@@ -13,7 +13,7 @@ import {
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
-import { isAbsenceTourName } from "@shared/absenceAppointments";
+import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
 import { Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
@@ -1672,6 +1672,7 @@ export function CalendarWeekView({
                                     showTagActions={!isAbsenceLane}
                                     canEditTags={canEditAppointmentTags}
                                     allowHistoricalActions={isAdmin}
+                                    interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
@@ -1680,7 +1681,14 @@ export function CalendarWeekView({
                                     isConflict={isConflict}
                                     isBlocked={isLaneBlocked}
                                     conflictColor={conflictMeta?.color}
-                                    onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                    onDoubleClick={
+                                      isAbsenceAppointmentSummary({
+                                        tourName: appointment.tourName,
+                                        appointmentTags: appointment.appointmentTags,
+                                      })
+                                        ? undefined
+                                        : () => handleAppointmentClick(appointment.id)
+                                    }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
@@ -1745,6 +1753,7 @@ export function CalendarWeekView({
                                     showTagActions={!isAbsenceLane}
                                     canEditTags={canEditAppointmentTags}
                                     allowHistoricalActions={isAdmin}
+                                    interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
@@ -1761,7 +1770,14 @@ export function CalendarWeekView({
                                     isConflict={isConflict}
                                     isBlocked={isLaneBlocked}
                                     conflictColor={conflictMeta?.color}
-                                    onDoubleClick={() => handleAppointmentClick(appointment.id)}
+                                    onDoubleClick={
+                                      isAbsenceAppointmentSummary({
+                                        tourName: appointment.tourName,
+                                        appointmentTags: appointment.appointmentTags,
+                                      })
+                                        ? undefined
+                                        : () => handleAppointmentClick(appointment.id)
+                                    }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
@@ -1828,10 +1844,11 @@ export function CalendarWeekView({
                                           continuationHeightPx={DEFAULT_CONTINUATION_HEIGHT_PX}
                                           uniformHeightPx={getLaneUniformHeightPx(heightRowKey)}
                                           projectStatusAreaHeightPx={projectStatusAreaHeightPx}
-                                          showTagActions={!isAbsenceLane}
-                                          canEditTags={canEditAppointmentTags}
-                                          allowHistoricalActions={isAdmin}
-                                          onTagMutationEvents={handleAppointmentTagMutationEvents}
+                                        showTagActions={!isAbsenceLane}
+                                        canEditTags={canEditAppointmentTags}
+                                        allowHistoricalActions={isAdmin}
+                                        interactive={!isAbsenceLane}
+                                        onTagMutationEvents={handleAppointmentTagMutationEvents}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode
                                             ? undefined
@@ -1844,12 +1861,19 @@ export function CalendarWeekView({
                                           isDragging={draggedAppointmentId === appointment.id}
                                           isLocked={isSegmentLocked}
                                           highlighted={isHighlighted}
-                                          isConflict={isConflict}
-                                          isBlocked={isLaneBlocked}
-                                          conflictColor={conflictMeta?.color}
-                                          onDoubleClick={() => handleAppointmentClick(appointment.id)}
-                                          onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
-                                          onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                        isConflict={isConflict}
+                                        isBlocked={isLaneBlocked}
+                                        conflictColor={conflictMeta?.color}
+                                        onDoubleClick={
+                                          isAbsenceAppointmentSummary({
+                                            tourName: appointment.tourName,
+                                            appointmentTags: appointment.appointmentTags,
+                                          })
+                                            ? undefined
+                                            : () => handleAppointmentClick(appointment.id)
+                                        }
+                                        onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
+                                        onDragEnd={canDragSegment ? handleDragEnd : undefined}
                                           onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                           onMouseLeave={() =>
                                             setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
