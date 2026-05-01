@@ -1,10 +1,9 @@
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import type { Tag } from "@shared/schema";
 import { CalendarWeekAppointmentAttachmentsHover } from "@/components/calendar/CalendarWeekAppointmentAttachmentsHover";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
+import { formatDisplayDate } from "@/lib/date-display-format";
 import { cn } from "@/lib/utils";
 
 type ReportProjectCardRow = {
@@ -31,10 +30,7 @@ type ReportProjectCardRow = {
 };
 
 function formatDateLabel(value: string | null): string {
-  if (!value) return "-";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+  return formatDisplayDate(value, "-");
 }
 
 function resolveValue(value: string | null): string {

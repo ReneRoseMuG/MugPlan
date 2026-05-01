@@ -5,10 +5,12 @@
  * - Der Sicherheit-Pane rendert einen eigenen Abschnitt fuer System-Stammdaten.
  * - Die System-Seed-Aktion ist im Sicherheit-Pane fuer ADMIN sichtbar.
  * - Der Button wechselt im Pending-Zustand auf den Lauftext.
+ * - Ein erfolgreicher Apply invalidiert die betroffenen Stammdaten-Queries.
  *
  * Fehlerfaelle:
  * - Der Abschnitt fuer den System-Seed fehlt im Sicherheit-Pane.
  * - Der Buttontext spiegelt den laufenden Request nicht wider.
+ * - Seed-Aenderungen bleiben im Client-Cache haengen und werden in Folgeansichten nicht sichtbar.
  *
  * Ziel:
  * Die statische Verdrahtung des neuen System-Seed-Abschnitts in den Admin-Einstellungen absichern.
@@ -21,6 +23,8 @@ let useStateCall = 0;
 const useSettingsMock = vi.fn();
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
+const invalidateQueriesMock = vi.fn();
+const invalidateTagProjectionQueriesMock = vi.fn();
 
 vi.mock("react", async () => {
   const actual = await vi.importActual<typeof import("react")>("react");
@@ -43,6 +47,16 @@ vi.mock("@/hooks/useSettings", () => ({
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
   useMutation: (options: unknown) => useMutationMock(options),
+}));
+
+vi.mock("@/lib/queryClient", () => ({
+  queryClient: {
+    invalidateQueries: (...args: unknown[]) => invalidateQueriesMock(...args),
+  },
+}));
+
+vi.mock("@/lib/tag-invalidation", () => ({
+  invalidateTagProjectionQueries: () => invalidateTagProjectionQueriesMock(),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -84,6 +98,8 @@ describe("SettingsPage system seed section", () => {
     useSettingsMock.mockReset();
     useQueryMock.mockReset();
     useMutationMock.mockReset();
+    invalidateQueriesMock.mockReset();
+    invalidateTagProjectionQueriesMock.mockReset();
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map([
         ["backup_enabled", { resolvedValue: true, resolvedScope: "GLOBAL" }],
@@ -123,5 +139,30 @@ describe("SettingsPage system seed section", () => {
 
     expect(html).toContain("System-Seed wird geprüft...");
     expect(html).toMatch(/button-preview-system-seed[^>]*disabled/);
+  });
+
+  it("invalidates affected master-data queries after a successful system-seed apply", async () => {
+    const mutationOptions: Array<{ onSuccess?: (payload: { logLines: string[] }) => unknown }> = [];
+    useMutationMock.mockImplementation((options: { onSuccess?: (payload: { logLines: string[] }) => unknown }) => {
+      mutationOptions.push(options);
+      return { mutate: vi.fn(), isPending: false };
+    });
+
+    renderToStaticMarkup(<SettingsPage />);
+
+    const applyMutation = mutationOptions[1];
+    expect(applyMutation).toBeDefined();
+
+    await applyMutation.onSuccess?.({ logLines: ["Tour angelegt: Tour 4"] });
+
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ["/api/tours"] });
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      predicate: expect.any(Function),
+    });
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({ queryKey: ["/api/note-templates"] });
+    expect(invalidateQueriesMock).toHaveBeenCalledWith({
+      predicate: expect.any(Function),
+    });
+    expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
   });
 });

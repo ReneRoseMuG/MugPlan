@@ -5,6 +5,7 @@ interface MonthSheetGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
   readOnly?: boolean;
+  absenceVisibility?: "planning" | "absences" | "include";
   conflictHighlightActive?: boolean;
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
@@ -15,6 +16,7 @@ export function MonthSheetGrid({
   currentDate,
   employeeFilterId,
   readOnly = false,
+  absenceVisibility = "planning",
   conflictHighlightActive = false,
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
@@ -25,6 +27,7 @@ export function MonthSheetGrid({
       currentDate={currentDate}
       employeeFilterId={employeeFilterId}
       readOnly={readOnly}
+      absenceVisibility={absenceVisibility}
       conflictHighlightActive={conflictHighlightActive}
       conflictAppointmentMap={conflictAppointmentMap}
       onNewAppointment={onNewAppointment}

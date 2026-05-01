@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { addWeeks, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { addMonths, getISOWeek, parseISO, startOfISOWeek, subMonths } from "date-fns";
 import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheetView";
+import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
+import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
+import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 
 type EmployeeUtilizationViewProps = {
@@ -11,111 +12,95 @@ type EmployeeUtilizationViewProps = {
   onOpenAppointment?: (appointmentId: number) => void;
 };
 
-type UtilizationNavBarProps = {
-  weekOffset: number;
-  currentDate: Date;
-  onEarlier: () => void;
-  onLater: () => void;
-  onToday: () => void;
-  testIdNavBar: string;
-};
-
-function UtilizationNavBar({
-  weekOffset,
-  currentDate,
-  onEarlier,
-  onLater,
-  onToday,
-  testIdNavBar,
-}: UtilizationNavBarProps) {
-  const firstKw = getISOWeek(currentDate);
-  const lastKw = getISOWeek(addWeeks(currentDate, 3));
-  const year = getISOWeekYear(currentDate);
-
-  return (
-    <div
-      className="flex items-center justify-between gap-2 border-b border-border/40 bg-muted/20 px-4 py-2"
-      data-testid={testIdNavBar}
-    >
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onEarlier}
-        className="gap-1"
-        data-testid="button-utilization-earlier"
-      >
-        <ChevronUp className="h-4 w-4" aria-hidden />
-        Früher
-      </Button>
-
-      <span
-        className="text-sm font-semibold text-primary"
-        data-testid="employee-utilization-kw-label"
-      >
-        KW {firstKw} – KW {lastKw} · {year}
-      </span>
-
-      <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={weekOffset === 0}
-          onClick={onToday}
-          data-testid="button-utilization-today"
-        >
-          Heute
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onLater}
-          className="gap-1"
-          data-testid="button-utilization-later"
-        >
-          Später
-          <ChevronDown className="h-4 w-4" aria-hidden />
-        </Button>
-      </div>
-    </div>
-  );
+function getTodayUtilizationDate(): Date {
+  return startOfISOWeek(parseISO(getBerlinTodayDateString()));
 }
 
 export function EmployeeUtilizationView({
   employeeId,
   onOpenAppointment,
 }: EmployeeUtilizationViewProps) {
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [currentDate, setCurrentDate] = useState<Date>(() => getTodayUtilizationDate());
+  const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
+  const [kwInputValue, setKwInputValue] = useState(() => String(getISOWeek(getTodayUtilizationDate())));
+  const [kwJumpError, setKwJumpError] = useState(false);
 
   useEffect(() => {
-    setWeekOffset(0);
+    const nextToday = getTodayUtilizationDate();
+    setCurrentDate(nextToday);
+    setJumpBackDate(null);
+    setKwInputValue(String(getISOWeek(nextToday)));
+    setKwJumpError(false);
   }, [employeeId]);
 
-  const currentDate = addWeeks(startOfISOWeek(parseISO(getBerlinTodayDateString())), weekOffset);
+  useEffect(() => {
+    setKwInputValue(String(getISOWeek(currentDate)));
+  }, [currentDate]);
 
-  const navBarProps = {
-    weekOffset,
-    currentDate,
-    onEarlier: () => setWeekOffset((prev) => prev - 1),
-    onLater: () => setWeekOffset((prev) => prev + 1),
-    onToday: () => setWeekOffset(0),
+  const submitKwJump = (valueOverride?: string) => {
+    const trimmedValue = sanitizeIsoWeekInput(valueOverride ?? kwInputValue);
+    if (trimmedValue.length === 0) {
+      setKwJumpError(false);
+      return;
+    }
+
+    const parsedKw = parseIsoWeekInput(trimmedValue);
+    if (!parsedKw) {
+      setKwJumpError(true);
+      return;
+    }
+
+    const targetDate = resolveKwJumpTarget(parsedKw, currentDate);
+    if (!targetDate) {
+      setKwJumpError(true);
+      return;
+    }
+
+    if (targetDate.getTime() === startOfISOWeek(currentDate).getTime()) {
+      setKwInputValue(String(parsedKw));
+      setKwJumpError(false);
+      return;
+    }
+
+    setJumpBackDate(currentDate);
+    setCurrentDate(targetDate);
+    setKwInputValue(String(parsedKw));
+    setKwJumpError(false);
+  };
+
+  const prev = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    setCurrentDate((value) => subMonths(value, 1));
+  };
+
+  const next = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    setCurrentDate((value) => addMonths(value, 1));
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" data-testid="employee-utilization-view">
-      <UtilizationNavBar
-        {...navBarProps}
-        testIdNavBar="employee-utilization-nav-top"
-      />
-
-      <div className="relative min-h-0 flex-1">
-        <div className="absolute inset-0 overflow-hidden">
+    <div
+      className="h-full rounded-lg border-2 border-foreground bg-white overflow-hidden flex flex-col"
+      data-testid="employee-utilization-view"
+    >
+      <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
+        <button
+          type="button"
+          onClick={prev}
+          className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+          data-testid="button-prev"
+          aria-label="Zurück"
+        >
+          {"<"}
+        </button>
+        <div className="min-w-0 h-full overflow-hidden">
           <CalendarMonthSheetView
             currentDate={currentDate}
             employeeFilterId={employeeId}
             readOnly={true}
+            absenceVisibility="include"
             visibleWeekCount={4}
             onOpenAppointment={
               onOpenAppointment
@@ -124,12 +109,45 @@ export function EmployeeUtilizationView({
             }
           />
         </div>
+        <button
+          type="button"
+          onClick={next}
+          className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+          data-testid="button-next"
+          aria-label="Vor"
+        >
+          {">"}
+        </button>
       </div>
 
-      <UtilizationNavBar
-        {...navBarProps}
-        testIdNavBar="employee-utilization-nav-bottom"
-      />
+      <div className="flex-shrink-0 border-t border-border bg-card px-6 py-2">
+        <CalendarFilterPanel
+          employeeId={employeeId}
+          onEmployeeIdChange={() => undefined}
+          showEmployeeFilter={false}
+          showKwJump
+          kwJumpValue={kwInputValue}
+          kwJumpError={kwJumpError}
+          onKwJumpChange={(value) => {
+            setKwInputValue(sanitizeIsoWeekInput(value));
+            setKwJumpError(false);
+          }}
+          onKwJumpSubmit={() => submitKwJump()}
+          onKwJumpValueCommit={(value) => {
+            setKwInputValue(value);
+            setKwJumpError(false);
+            submitKwJump(value);
+          }}
+          showKwJumpBack={jumpBackDate !== null}
+          onKwJumpBack={() => {
+            if (!jumpBackDate) return;
+            setKwInputValue(String(getISOWeek(jumpBackDate)));
+            setCurrentDate(jumpBackDate);
+            setJumpBackDate(null);
+            setKwJumpError(false);
+          }}
+        />
+      </div>
     </div>
   );
 }

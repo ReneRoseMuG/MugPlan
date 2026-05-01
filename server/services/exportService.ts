@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+import XlsxPopulate from "xlsx-populate";
 import PDFDocument from "pdfkit";
 import {
   getAllExportAppointmentRows,
@@ -43,8 +43,12 @@ function formatDateIso(input: Date): string {
 function formatDateGerman(input: Date): string {
   const d = String(input.getDate()).padStart(2, "0");
   const m = String(input.getMonth() + 1).padStart(2, "0");
-  const y = input.getFullYear();
+  const y = String(input.getFullYear()).slice(-2);
   return `${d}.${m}.${y}`;
+}
+
+function formatTimestampGerman(input: Date): string {
+  return `${formatDateGerman(input)} ${String(input.getHours()).padStart(2, "0")}:${String(input.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatDateForDisplay(value: string | null): string {
@@ -68,6 +72,29 @@ function colorToArgb(hex: string | null): string {
   const normalized = hex.replace("#", "").trim();
   if (normalized.length === 6) return `FF${normalized.toUpperCase()}`;
   return "FFE5E7EB";
+}
+
+function colorToRgb(hex: string | null): string {
+  return colorToArgb(hex).slice(2);
+}
+
+function columnNumberToName(input: number): string {
+  let value = input;
+  let result = "";
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    result = String.fromCharCode(65 + remainder) + result;
+    value = Math.floor((value - 1) / 26);
+  }
+  return result;
+}
+
+function cellAddress(row: number, column: number): string {
+  return `${columnNumberToName(column)}${row}`;
+}
+
+function rangeAddress(startRow: number, startColumn: number, endRow: number, endColumn: number): string {
+  return `${cellAddress(startRow, startColumn)}:${cellAddress(endRow, endColumn)}`;
 }
 
 function sanitizeText(value: string | null | undefined): string {
@@ -106,12 +133,12 @@ async function buildExcelBuffer(input: {
   allAppointments: ExportAppointmentRow[];
   laneTourIds: number[];
 }): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook();
-  const calendarSheet = workbook.addWorksheet("Kalender");
-  const detailSheet = workbook.addWorksheet("Termine");
-  const projectsSheet = workbook.addWorksheet("Projekte");
-  const customersSheet = workbook.addWorksheet("Kunden");
-  const employeesSheet = workbook.addWorksheet("Mitarbeiter");
+  const workbook = await XlsxPopulate.fromBlankAsync();
+  const calendarSheet = workbook.sheet(0).name("Kalender");
+  const detailSheet = workbook.addSheet("Termine");
+  const projectsSheet = workbook.addSheet("Projekte");
+  const customersSheet = workbook.addSheet("Kunden");
+  const employeesSheet = workbook.addSheet("Mitarbeiter");
 
   const allTours = await listAllTours();
   const selectedTours = input.laneTourIds.length > 0
@@ -123,7 +150,7 @@ async function buildExcelBuffer(input: {
   const totalColumns = weeks * 7;
 
   for (let c = 1; c <= totalColumns; c += 1) {
-    calendarSheet.getColumn(c).width = 18;
+    calendarSheet.column(c).width(18);
   }
 
   let currentRow = 1;
@@ -133,20 +160,19 @@ async function buildExcelBuffer(input: {
     const startCol = weekIndex * 7 + 1;
     const endCol = startCol + 6;
 
-    calendarSheet.mergeCells(currentRow, startCol, currentRow, endCol);
-    const weekTitleCell = calendarSheet.getCell(currentRow, startCol);
-    weekTitleCell.value = `Woche ${formatDateGerman(weekStart)} bis ${formatDateGerman(weekEnd)}`;
-    weekTitleCell.font = { bold: true };
-    weekTitleCell.alignment = { horizontal: "center" };
+    calendarSheet.range(rangeAddress(currentRow, startCol, currentRow, endCol)).merged(true);
+    calendarSheet.cell(currentRow, startCol)
+      .value(`Woche ${formatDateGerman(weekStart)} bis ${formatDateGerman(weekEnd)}`)
+      .style({ bold: true, horizontalAlignment: "center" });
   }
   currentRow += 1;
 
   for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
     for (let day = 0; day < 7; day += 1) {
       const date = addDays(addDays(calendarStart, weekIndex * 7), day);
-      const cell = calendarSheet.getCell(currentRow, weekIndex * 7 + day + 1);
-      cell.value = formatDateGerman(date);
-      cell.font = { bold: true };
+      calendarSheet.cell(currentRow, weekIndex * 7 + day + 1)
+        .value(formatDateGerman(date))
+        .style({ bold: true });
     }
   }
   currentRow += 1;
@@ -179,12 +205,14 @@ async function buildExcelBuffer(input: {
     for (let weekIndex = 0; weekIndex < weeks; weekIndex += 1) {
       const startCol = weekIndex * 7 + 1;
       const endCol = startCol + 6;
-      calendarSheet.mergeCells(currentRow, startCol, currentRow, endCol);
-      const cell = calendarSheet.getCell(currentRow, startCol);
-      cell.value = lane.title;
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: colorToArgb(lane.color) } };
-      cell.font = { bold: true };
-      cell.alignment = { horizontal: "center" };
+      calendarSheet.range(rangeAddress(currentRow, startCol, currentRow, endCol)).merged(true);
+      calendarSheet.cell(currentRow, startCol)
+        .value(lane.title)
+        .style({
+          fill: colorToRgb(lane.color),
+          bold: true,
+          horizontalAlignment: "center",
+        });
     }
     currentRow += 1;
 
@@ -202,22 +230,23 @@ async function buildExcelBuffer(input: {
           const detailRowRef = findDetailRowRef(appointment.appointmentId);
           const firstLine = `${appointment.customerNumber} - ${appointment.customerName ?? "-"} - ${appointment.postalCode ?? "-"}`;
           const secondLine = `${appointment.orderNumber ?? "-"} - ${appointment.projectName}`;
-          calendarSheet.getCell(line1Row, weekIndex * 7 + day + 1).value = {
-            text: firstLine,
-            hyperlink: `#'Termine'!${detailRowRef}`,
-          };
-          calendarSheet.getCell(line2Row, weekIndex * 7 + day + 1).value = {
-            text: secondLine,
-            hyperlink: `#'Termine'!${detailRowRef}`,
-          };
+          const detailCell = detailSheet.cell(detailRowRef);
+          const detailAddress = detailCell.address({ includeSheetName: true });
+          const line1Cell = calendarSheet.cell(line1Row, weekIndex * 7 + day + 1)
+            .value(firstLine)
+            .style({ fontColor: "0563C1", underline: true });
+          const line2Cell = calendarSheet.cell(line2Row, weekIndex * 7 + day + 1)
+            .value(secondLine)
+            .style({ fontColor: "0563C1", underline: true });
+          calendarSheet.hyperlink(line1Cell.address(), detailAddress, true);
+          calendarSheet.hyperlink(line2Cell.address(), detailAddress, true);
         }
 
         if (dayAppointments.length > 2) {
           const overflowCount = dayAppointments.length - 2;
-          const overflowCell = calendarSheet.getCell(currentRow + 4, weekIndex * 7 + day + 1);
-          overflowCell.value = `+${overflowCount}`;
-          overflowCell.font = { bold: true };
-          overflowCell.alignment = { horizontal: "center" };
+          calendarSheet.cell(currentRow + 4, weekIndex * 7 + day + 1)
+            .value(`+${overflowCount}`)
+            .style({ bold: true, horizontalAlignment: "center" });
         }
       }
     }
@@ -228,7 +257,7 @@ async function buildExcelBuffer(input: {
   const appointmentIds = input.allAppointments.map((row) => row.appointmentId);
   const employeesByAppointment = groupBy(await getAppointmentEmployeesByIds(appointmentIds), (row) => row.appointmentId);
 
-  detailSheet.columns = [
+  const detailColumns = [
     { header: "Termin-ID", key: "appointmentId", width: 14 },
     { header: "Startdatum", key: "startDate", width: 14 },
     { header: "Enddatum", key: "endDate", width: 14 },
@@ -243,50 +272,64 @@ async function buildExcelBuffer(input: {
     { header: "Adresse", key: "address", width: 28 },
     { header: "Tour", key: "tour", width: 14 },
     { header: "Mitarbeiter", key: "employees", width: 28 },
-  ];
+  ] as const;
+  detailColumns.forEach((column, index) => {
+    detailSheet.cell(1, index + 1).value(column.header).style({ bold: true });
+    detailSheet.column(index + 1).width(column.width);
+  });
 
-  for (const row of input.allAppointments) {
+  input.allAppointments.forEach((row, index) => {
     const employeeList = (employeesByAppointment.get(row.appointmentId) ?? []).map((e) => e.employeeName).join(", ");
-    detailSheet.addRow({
-      appointmentId: row.appointmentId,
-      startDate: formatDateForDisplay(row.startDate),
-      endDate: formatDateForDisplay(row.endDate),
-      time: row.startTime ? `${row.startTime.slice(0, 5)}${row.endTime ? `-${row.endTime.slice(0, 5)}` : ""}` : "Ganztag",
-      projectId: row.projectId,
-      projectName: row.projectName,
-      orderNumber: row.orderNumber ?? "-",
-      customerId: row.customerId,
-      customerNumber: row.customerNumber,
-      customerName: row.customerName ?? "-",
-      postalCode: row.postalCode ?? "-",
-      address: [row.addressLine1, row.addressLine2].filter(Boolean).join(" "),
-      tour: row.tourName ?? "-",
-      employees: employeeList || "-",
+    const values = [
+      row.appointmentId,
+      formatDateForDisplay(row.startDate),
+      formatDateForDisplay(row.endDate),
+      row.startTime ? `${row.startTime.slice(0, 5)}${row.endTime ? `-${row.endTime.slice(0, 5)}` : ""}` : "Ganztag",
+      row.projectId,
+      row.projectName,
+      row.orderNumber ?? "-",
+      row.customerId,
+      row.customerNumber,
+      row.customerName ?? "-",
+      row.postalCode ?? "-",
+      [row.addressLine1, row.addressLine2].filter(Boolean).join(" "),
+      row.tourName ?? "-",
+      employeeList || "-",
+    ];
+    values.forEach((value, valueIndex) => {
+      detailSheet.cell(index + 2, valueIndex + 1).value(value);
     });
-  }
+  });
 
   const allProjects = await listAllProjects();
-  projectsSheet.columns = [
+  const projectsColumns = [
     { header: "ID", key: "id", width: 10 },
     { header: "Name", key: "name", width: 26 },
     { header: "Auftragsnummer", key: "orderNumber", width: 20 },
     { header: "Kunde-ID", key: "customerId", width: 12 },
     { header: "Aktiv", key: "isActive", width: 10 },
     { header: "Updated", key: "updatedAt", width: 24 },
-  ];
-  for (const project of allProjects) {
-    projectsSheet.addRow({
-      id: project.id,
-      name: project.name,
-      orderNumber: project.orderNumber ?? "-",
-      customerId: project.customerId,
-      isActive: project.isActive ? "ja" : "nein",
-      updatedAt: String(project.updatedAt ?? ""),
+  ] as const;
+  projectsColumns.forEach((column, index) => {
+    projectsSheet.cell(1, index + 1).value(column.header).style({ bold: true });
+    projectsSheet.column(index + 1).width(column.width);
+  });
+  allProjects.forEach((project, index) => {
+    const values = [
+      project.id,
+      project.name,
+      project.orderNumber ?? "-",
+      project.customerId,
+      project.isActive ? "ja" : "nein",
+      String(project.updatedAt ?? ""),
+    ];
+    values.forEach((value, valueIndex) => {
+      projectsSheet.cell(index + 2, valueIndex + 1).value(value);
     });
-  }
+  });
 
   const allCustomers = await listAllCustomers();
-  customersSheet.columns = [
+  const customersColumns = [
     { header: "ID", key: "id", width: 10 },
     { header: "Kundennummer", key: "customerNumber", width: 16 },
     { header: "Name", key: "fullName", width: 24 },
@@ -294,41 +337,55 @@ async function buildExcelBuffer(input: {
     { header: "Adresse", key: "address", width: 28 },
     { header: "Aktiv", key: "isActive", width: 10 },
     { header: "Updated", key: "updatedAt", width: 24 },
-  ];
-  for (const customer of allCustomers) {
-    customersSheet.addRow({
-      id: customer.id,
-      customerNumber: customer.customerNumber,
-      fullName: customer.fullName ?? "-",
-      postalCode: customer.postalCode ?? "-",
-      address: [customer.addressLine1, customer.addressLine2].filter(Boolean).join(" "),
-      isActive: customer.isActive ? "ja" : "nein",
-      updatedAt: String(customer.updatedAt ?? ""),
+  ] as const;
+  customersColumns.forEach((column, index) => {
+    customersSheet.cell(1, index + 1).value(column.header).style({ bold: true });
+    customersSheet.column(index + 1).width(column.width);
+  });
+  allCustomers.forEach((customer, index) => {
+    const values = [
+      customer.id,
+      customer.customerNumber,
+      customer.fullName ?? "-",
+      customer.postalCode ?? "-",
+      [customer.addressLine1, customer.addressLine2].filter(Boolean).join(" "),
+      customer.isActive ? "ja" : "nein",
+      String(customer.updatedAt ?? ""),
+    ];
+    values.forEach((value, valueIndex) => {
+      customersSheet.cell(index + 2, valueIndex + 1).value(value);
     });
-  }
+  });
 
   const allEmployees = await listAllEmployees();
-  employeesSheet.columns = [
+  const employeesColumns = [
     { header: "ID", key: "id", width: 10 },
     { header: "Name", key: "fullName", width: 24 },
     { header: "Telefon", key: "phone", width: 16 },
     { header: "E-Mail", key: "email", width: 24 },
     { header: "Aktiv", key: "isActive", width: 10 },
     { header: "Updated", key: "updatedAt", width: 24 },
-  ];
-  for (const employee of allEmployees) {
-    employeesSheet.addRow({
-      id: employee.id,
-      fullName: employee.fullName,
-      phone: employee.phone ?? "-",
-      email: employee.email ?? "-",
-      isActive: employee.isActive ? "ja" : "nein",
-      updatedAt: String(employee.updatedAt ?? ""),
+  ] as const;
+  employeesColumns.forEach((column, index) => {
+    employeesSheet.cell(1, index + 1).value(column.header).style({ bold: true });
+    employeesSheet.column(index + 1).width(column.width);
+  });
+  allEmployees.forEach((employee, index) => {
+    const values = [
+      employee.id,
+      employee.fullName,
+      employee.phone ?? "-",
+      employee.email ?? "-",
+      employee.isActive ? "ja" : "nein",
+      String(employee.updatedAt ?? ""),
+    ];
+    values.forEach((value, valueIndex) => {
+      employeesSheet.cell(index + 2, valueIndex + 1).value(value);
     });
-  }
+  });
 
-  const out = await workbook.xlsx.writeBuffer();
-  return Buffer.from(out as ArrayBuffer);
+  const out = await workbook.outputAsync("nodebuffer");
+  return Buffer.isBuffer(out) ? out : Buffer.from(out);
 }
 
 async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buffer> {
@@ -341,7 +398,7 @@ async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buf
 
   doc.fontSize(16).text("Anstehende Termine");
   doc.moveDown(0.5);
-  doc.fontSize(10).text(`Erzeugt am: ${new Date().toISOString()}`);
+  doc.fontSize(10).text(`Erzeugt am: ${formatTimestampGerman(new Date())}`);
   doc.moveDown(1);
 
   const byDate = groupBy(appointments, (row) => row.startDate ?? "");

@@ -30,6 +30,12 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
+}
+
 function resolveNextEditableWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
   const weekStart = startOfISOWeek(addWeeks(today, 3));
@@ -82,15 +88,17 @@ test("employee form shows week-planning cards with visible assigned members", as
   await expect(weekCard).toContainText(tour.name);
   await expect(weekCard).toContainText(" - ");
 
-  await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${ownAssignmentId}`)).toContainText(employee.fullName);
+  await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${ownAssignmentId}`)).toContainText(
+    getCompactEmployeeLabel(employee),
+  );
   await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${colleagueAssignmentId}`)).toContainText(
-    colleague.fullName,
+    getCompactEmployeeLabel(colleague),
   );
 
   await weekCard.dblclick();
   await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
   await expect(page.getByTestId("tab-tour-week-stammdaten")).toBeVisible();
   await expect(page.getByTestId("button-open-tour-week-employee-picker")).toHaveCount(0);
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(employee.fullName);
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(colleague.fullName);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(employee));
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(colleague));
 });

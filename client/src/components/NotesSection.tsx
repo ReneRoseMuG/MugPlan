@@ -181,7 +181,6 @@ export function NotesSection({
     setDialogOpen(true);
     onPrefillDraftConsumed?.();
     // dialogOpen must not retrigger the prefill when the user closes the dialog manually.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onPrefillDraftConsumed, prefillDraft, readOnly]);
 
   const handleOpenEdit = (note: Note) => {

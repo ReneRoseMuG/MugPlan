@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { LayoutList, Mail, Phone, ScrollText, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
+import { EmployeeAppointmentAbsencesPanel } from "@/components/EmployeeAppointmentAbsencesPanel";
 import { EmployeeRevenueOverviewTab } from "@/components/EmployeeRevenueOverviewTab";
 import { EmployeeUtilizationView } from "@/components/EmployeeUtilizationView";
 import { EmployeeAttachmentsPanel, type PendingEmployeeAttachmentItem } from "@/components/EmployeeAttachmentsPanel";
@@ -776,7 +777,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht") ? 99999 : undefined}
+        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "abwesenheiten" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht") ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
@@ -918,6 +919,9 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
               <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
               {isEditing ? (
+                <TabsTrigger value="abwesenheiten" data-testid="tab-employee-abwesenheiten">Abwesenheiten</TabsTrigger>
+              ) : null}
+              {isEditing ? (
                 <TabsTrigger value="wochenplanung" data-testid="tab-employee-wochenplanung">Wochenplanung</TabsTrigger>
               ) : null}
               {isEditing ? (
@@ -1035,6 +1039,15 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               </p>
             )}
           </TabsContent>
+
+          {isEditing && employeeId ? (
+            <TabsContent value="abwesenheiten" className="flex min-h-0 flex-1 flex-col">
+              <EmployeeAppointmentAbsencesPanel
+                employeeId={employeeId}
+                readOnly={isReadOnlyView}
+              />
+            </TabsContent>
+          ) : null}
 
           {isEditing && employeeId ? (
             <TabsContent value="umsatz-uebersicht" className="flex min-h-0 flex-1 flex-col">

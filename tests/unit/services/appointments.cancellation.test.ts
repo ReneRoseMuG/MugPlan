@@ -39,6 +39,7 @@ vi.mock("../../../server/services/tagRelationsService", () => ({
 }));
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTour: vi.fn(),
   getTours: vi.fn(),
 }));
 
@@ -63,6 +64,7 @@ describe("FT01/FT28 unit: appointment cancellation service", () => {
     });
     appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
     appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
+    toursRepoMock.getTour.mockResolvedValue({ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 } as any);
     toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
 
     tagRelationsServiceMock.getTagByName.mockResolvedValue({

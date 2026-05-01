@@ -232,11 +232,20 @@ Codex führt den vollen Audit gemäß Abschnitt 12 als reinen Report-Auftrag aus
 `test`  
 Codex führt den vollen Testlauf gemäß Abschnitt 12 als reinen Report-Auftrag aus und beachtet dabei zusätzlich alle Regeln aus Abschnitt 11. Während dieses Auftrags nimmt Codex keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor.
 
+`testsuite`  
+Codex erstellt für die aktuell bearbeitete Aufgabe bzw. die letzte Session eine vollständige, fachlich belastbare Testsuite gemäß Abschnitt 11.1a. Dazu gehören Pflichtanalyse des aktuellen Arbeitskontexts, Ergänzung realistisch belastbarer Tests über mehrere Testebenen, serielle Ausführung der relevanten Testbefehle und ein Abschlussbericht mit Abdeckung, verwendeten Daten, verbleibenden Lücken sowie erfolgreichen und fehlgeschlagenen Kommandos.
+
 `save`  
 Codex führt ausschließlich seriell `git add`, `git commit` und `git push` für alle offenen Änderungen des aktuellen Arbeitsstands aus. Falls Commit oder Push durch Konflikte, fehlende Inhalte oder andere Git-Blocker nicht sauber möglich sind, bricht Codex kontrolliert ab und dokumentiert den Grund.
 
 `log <kurztitel>`  
 Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
+
+`journal`  
+Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag direkt als normalen Block auf der Notion-Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` gemäß Abschnitt 14.2a. Unterseiten sind dabei unzulässig. Für den Journaleintrag gilt dabei zwingend das sichtbare Datumsformat `dd.MM.yy`.
+
+`account`  
+Codex prüft ausschließlich lokal die aktuell gespeicherte Codex-ChatGPT-Anmeldung in `$env:USERPROFILE\.codex\auth.json`, dekodiert nur die nicht-geheimen Claims aus dem vorhandenen Token und gibt E-Mail-Adresse, Plan-Typ, Organisationen und den Änderungszeitpunkt der Auth-Datei aus. Token-, Secret-, Session- und Refresh-Werte dürfen dabei nicht ausgegeben werden. Fehlt die Datei oder sind die Claims nicht lesbar, dokumentiert Codex den Blocker kurz und nimmt keine weiteren Änderungen vor.
 
 `docs-sync`  
 Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
@@ -325,6 +334,12 @@ UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftr
 
 - Alle Quelltexte und Doku-Dateien werden in UTF-8 gespeichert
 - Keine UTF-16-Dateien in `client/`, `server/`, `shared/`, `tests/`, `docs/`, `script/`
+- Für alle sichtbaren und menschenlesbaren Datumsangaben ist projektweit zwingend das Kurzformat `dd.MM.yy` zu verwenden
+- Das gilt ausdrücklich auch für UI-Texte, Labels, Hinweise, Tooltips, Fehlermeldungen, Kommentare im Code, Testbeschreibungen, Testkommentare, Logs, Journaltexte, Notion-Einträge, Dokumentation und sonstige menschenlesbare Ausgaben
+- ISO `yyyy-MM-dd` ist ausschließlich für interne Speicherung, Datenbankwerte, API-Payloads, Query-Parameter, maschinenlesbare Werte, technische IDs, Dateinamen, Contracts, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token und andere technisch fest vorgegebene Kontexte zulässig
+- Sichtbare Datumsangaben in `yyyy-MM-dd`, `MM/DD/YYYY`, `dd/MM/yyyy`, `dd.MM.yyyy`, englischen Monatsnamen oder anderen davon abweichenden Menschenformaten gelten ausdrücklich als Fehler
+- Für Frontend-Anzeigeformate sind zentrale Helfer verpflichtend zu verwenden; direkte Ad-hoc-Formatierungen sichtbarer Datumswerte sind nur zulässig, wenn der bestehende zentrale Helfer nachweislich nicht passt
+- Verifikationspflicht nach Änderungen an sichtbaren Datumsangaben: gezielt nach verbotenen Formaten und unscharfen Datumsformatierern suchen, insbesondere mit `rg -n "dd\\.MM\\.yyyy|yyyy-MM-dd|MM/DD/YYYY|dd/MM/yyyy|toLocaleDateString\\(|toLocaleString\\(\"de-DE\"\\)" client server tests docs agents.md CLAUDE.md`, und verbleibende Treffer technisch gegen menschenlesbar abgrenzen
 - In Antworten, Plänen, Logs und Dokumentation sind deutsche Umlaute und `ß` als echte Zeichen zu schreiben (`ä`, `ö`, `ü`, `Ä`, `Ö`, `Ü`, `ß`). Umschreibungen wie `ae`, `oe`, `ue` oder `ss` sind in normaler Sprache unzulässig, sofern sie nicht technisch zwingend durch bestehende Dateinamen, APIs, Fremdsysteme oder Code-Bezeichner vorgegeben sind.
 - Bei falsch dargestellten Umlauten oder Sonderzeichen: `npm run check` ausführen, gemeldete Datei in UTF-8 korrigieren, erneut `npm run check`, dann Commit
 
@@ -393,6 +408,32 @@ Zusätzliche Abschlussregel bei Schemaänderungen:
 4. DB-Connections laufen ausschließlich über zentrale Guard-APIs: `assertTestMode()`, `assertSafeWriteTargetForTestMode()`, `assertSafeDestructiveOperationTarget()`, `assertSqlDatabaseIdentity()`
 
 Ohne bestandenes Safety Gate gilt jeder Testlauf als ungültig.
+
+### 11.1a Kurzkommando `testsuite`
+
+Das Kurzkommando `testsuite` ist kein reiner Report-Auftrag, sondern ein Umsetzungsauftrag zur gezielten Erstellung oder Ergänzung einer vollständigen Testsuite für die aktuell bearbeitete Aufgabe bzw. die letzte Session.
+
+Pflichtablauf:
+
+1. Zuerst den aktuellen Arbeitskontext lesen:
+   - letzte reale Änderungen im Code und in Tests
+   - betroffene Features und, falls fachlich nötig, relevante Notion-Feature-Seiten
+   - bestehende Tests im betroffenen Bereich
+   - betroffene Services, Hooks, Komponenten, Controller, Repositories und Datenmodelle
+2. Danach die Testsuite so entwerfen, dass sie nicht nur Happy Paths, sondern auch Fachlogik, Edge Cases, Regressionen, Integrationspfade und Browser-/E2E-Flows abdeckt, soweit diese für den betroffenen Auftrag fachlich relevant und technisch sinnvoll prüfbar sind.
+3. Für neue oder erweiterte Tests sind echte Seed-/Dev-Daten nur zu verwenden, wenn der Test dadurch kontrollierbar und aussagekräftig bleibt. Andernfalls sind realistische Testdaten mit eindeutigen Tokens explizit anzulegen.
+4. Unzulässig sind Tests gegen leere Collections, unrealistische Minimalobjekte, bloß symbolische Mocks oder künstliche Datenpfade, die die eigentliche Fachlogik umgehen.
+5. Codex muss ausdrücklich prüfen, ob die Tests tatsächlich über reale Datenpfade, echte Persistenzpfade, echte API-Flows oder echte UI-Flows laufen, statt nur lokale Struktur oder oberflächliche Sichtbarkeit zu bestätigen.
+6. Fehlende Test-Fixtures dürfen nur ergänzt oder erweitert werden, wenn sie fachlich realistisch sind und bestehende Testmuster nicht unnötig aufweichen.
+7. Nach der Implementierung führt Codex die relevanten Testbefehle seriell aus. Welche Befehle relevant sind, ergibt sich aus den tatsächlich berührten Ebenen; unnötige Testläufe sind zu vermeiden, aber die geänderten Pfade müssen belastbar verifiziert werden.
+8. Im Abschlussbericht dokumentiert Codex zwingend:
+   - welche Aspekte abgedeckt sind
+   - welche Daten verwendet wurden
+   - welche Lücken bleiben
+   - welche Befehle erfolgreich waren
+   - welche Befehle fehlgeschlagen sind
+
+Wenn die letzte Aufgabe oder Session fachlich nicht eindeutig identifizierbar ist, bricht Codex kontrolliert ab und dokumentiert diesen Blocker, statt eine Testsuite auf Vermutung zu bauen.
 
 ### Testebenen
 
@@ -675,6 +716,25 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 
 - Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen.
 - Bei **nein**: keine Dokumentationsdatei.
+
+### 14.2a Journal in Notion schreiben
+
+> „Soll ich einen Journaleintrag für diese Session schreiben?"
+
+- Bei **ja**: Codex erstellt direkt auf der Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` einen neuen normalen Block. Unterseiten oder Subpages dürfen dabei niemals erstellt werden.
+- Der neue Eintrag steht immer ganz oben im Journal.
+- Bestehende Struktur, Reihenfolge und Formatierung der Seite sind strikt einzuhalten.
+- Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Notion-Feature-Seiten tatsächlich belegt sind.
+- Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJ | [Typ] | [Feature]: [Kurztitel]`.
+- Für den Journaltitel ist hier bewusst das projektweite Kurzformat `TT.MM.JJ` zu verwenden, zum Beispiel `01.05.26`.
+- Der Eintrag muss mindestens diese Inhalte enthalten, sofern für den Auftrag jeweils real belegbar:
+  - Zusammenfassung
+  - Art der Änderung
+  - Betroffene Features mit Notion-Links, soweit bekannt
+  - Konkrete Änderungen
+  - Tests / Verifikation
+  - Offene Punkte
+- Wenn für einzelne Pflichtpunkte keine belastbaren Informationen vorliegen, benennt Codex dies ausdrücklich knapp statt Inhalte zu ergänzen oder zu vermuten.
 
 ### 14.3 Architekturdokumentation aktualisieren
 

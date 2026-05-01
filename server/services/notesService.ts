@@ -1,11 +1,12 @@
 import type { Note, UpdateNote } from "@shared/schema";
 import * as notesRepository from "../repositories/notesRepository";
+import * as appointmentsService from "./appointmentsService";
 
 export class NotesError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR";
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR") {
+  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY") {
     super(code);
     this.status = status;
     this.code = code;
@@ -16,10 +17,21 @@ export async function getNote(noteId: number): Promise<Note | null> {
   return notesRepository.getNote(noteId);
 }
 
+async function assertNoteMutationAllowed(noteId: number): Promise<void> {
+  const appointmentId = await notesRepository.getAppointmentIdByNoteId(noteId);
+  if (appointmentId == null) {
+    return;
+  }
+  if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
+    throw new NotesError(409, "ABSENCE_APPOINTMENT_READONLY");
+  }
+}
+
 export async function updateNote(noteId: number, data: UpdateNote & { version: number }): Promise<Note | null> {
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
   }
+  await assertNoteMutationAllowed(noteId);
   const result = await notesRepository.updateNoteWithVersion(noteId, data.version, data);
   if (result.kind === "version_conflict") {
     const exists = await notesRepository.getNote(noteId);
@@ -37,6 +49,7 @@ export async function toggleNotePin(
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
   }
+  await assertNoteMutationAllowed(noteId);
   const result = await notesRepository.toggleNotePinWithVersion(noteId, version, isPinned);
   if (result.kind === "version_conflict") {
     const exists = await notesRepository.getNote(noteId);
@@ -50,6 +63,7 @@ export async function deleteNote(noteId: number, version: number): Promise<void>
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
   }
+  await assertNoteMutationAllowed(noteId);
   const result = await notesRepository.deleteNoteWithVersion(noteId, version);
   if (result.kind === "version_conflict") {
     const exists = await notesRepository.getNote(noteId);
@@ -114,6 +128,9 @@ export async function deleteCalendarWeekScopedNote(yearNumber: number, weekNumbe
 export async function deleteAppointmentScopedNote(appointmentId: number, noteId: number, version: number): Promise<void> {
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
+  }
+  if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
+    throw new NotesError(409, "ABSENCE_APPOINTMENT_READONLY");
   }
   const result = await notesRepository.deleteAppointmentScopedNoteWithVersion(appointmentId, noteId, version);
   if (result.kind === "not_found") {

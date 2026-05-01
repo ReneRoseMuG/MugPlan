@@ -30,6 +30,12 @@ import {
 } from "../helpers/testDataFactory";
 import { loginAsReader, resetBrowserSuiteState } from "../helpers/browserE2e";
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
+}
+
 function buildAttachmentPayload(prefix: string, label: string) {
   const token = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return {
@@ -356,8 +362,10 @@ test.describe("Reader form data visibility", () => {
     const weekCard = page.getByTestId(`card-employee-week-plan-${ownAssignmentId}`);
     await expect(weekCard).toBeVisible();
     await expect(weekCard).toContainText(tour.name);
-    await expect(weekCard).toContainText(employee.fullName);
-    await expect(weekCard).toContainText(colleague.fullName);
+    await expect(weekCard.getByTestId(`badge-employee-week-plan-member-${ownAssignmentId}`)).toContainText(
+      getCompactEmployeeLabel(employee),
+    );
+    await expect(weekCard).toContainText(getCompactEmployeeLabel(colleague));
   });
 
   test("shows tour and week data for readers while keeping week actions hidden", async ({ page }) => {
@@ -413,7 +421,9 @@ test.describe("Reader form data visibility", () => {
     await page.getByTestId("tab-tour-wochenplanung").click();
     const weekCard = page.getByTestId(`card-tour-week-${week.isoYear}-${week.isoWeek}`);
     await expect(weekCard).toBeVisible();
-    await expect(page.getByTestId(`badge-tour-week-member-${assignmentId}`)).toContainText(employee.fullName);
+    await expect(page.getByTestId(`badge-tour-week-member-${assignmentId}`)).toContainText(
+      getCompactEmployeeLabel(employee),
+    );
     await weekCard.dblclick();
 
     await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();

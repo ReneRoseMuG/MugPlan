@@ -2,26 +2,25 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Tab "Auslastung" erscheint im EmployeeForm nur wenn isEditing (employeeId vorhanden).
- * - Tab "Auslastung" fehlt beim Anlegen eines neuen Mitarbeiters (kein employeeId).
- * - weekOffset wird zurückgesetzt wenn sich employeeId ändert.
- * - Button "Früher" übergibt CalendarMonthSheetView ein früheres currentDate (weekOffset negativ).
- * - Button "Heute" ist disabled wenn weekOffset === 0.
+ * - Die Auslastungsansicht rendert den Monatskalender weiter als read-only 4-Wochen-Ansicht.
+ * - Die Sondernavigation "Frueher/Heute/Spaeter" ist entfernt.
+ * - Die Monatsnavigation und der KW-Sprung werden sichtbar uebernommen.
+ * - Ein Mitarbeiterwechsel setzt die Ansicht wieder auf die aktuelle Woche zurueck.
  *
- * Fehlerfälle:
- * - Tab Auslastung erscheint fälschlicherweise im Neu-Anlegen-Modus.
- * - weekOffset wird bei employeeId-Wechsel nicht zurückgesetzt.
- * - Heute-Button bleibt aktiviert obwohl weekOffset bereits 0 ist.
+ * Fehlerfaelle:
+ * - Die Auslastungsansicht zeigt noch die alte Doppel-Navigation.
+ * - Der KW-Sprung fehlt im Footer oder die Standard-Pfeile fehlen.
+ * - Ein alter Datumszustand wird ueber Mitarbeiterwechsel hinweg mitgeschleppt.
  *
  * Ziel:
- * Navigationszustand, Tab-Sichtbarkeit und Datum-Weitergabe der Auslastungsansicht absichern.
+ * Die neue, am Monatskalender ausgerichtete Navigation der Mitarbeiter-Auslastung absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const calendarMonthSheetViewCalls: Array<Record<string, unknown>> = [];
-const useEffectCallbacks: Array<[() => void, unknown[]]> = [];
+const calendarFilterPanelCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/calendar/CalendarMonthSheetView", () => ({
   CalendarMonthSheetView: (props: Record<string, unknown>) => {
@@ -30,22 +29,11 @@ vi.mock("@/components/calendar/CalendarMonthSheetView", () => ({
   },
 }));
 
-vi.mock("@/components/ui/button", () => ({
-  Button: ({
-    children,
-    disabled,
-    onClick,
-    ...rest
-  }: {
-    children?: React.ReactNode;
-    disabled?: boolean;
-    onClick?: () => void;
-    [key: string]: unknown;
-  }) => (
-    <button type="button" disabled={disabled} onClick={onClick} {...rest}>
-      {children}
-    </button>
-  ),
+vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
+  CalendarFilterPanel: (props: Record<string, unknown>) => {
+    calendarFilterPanelCalls.push(props);
+    return <div data-testid="calendar-filter-panel-marker">filter</div>;
+  },
 }));
 
 vi.mock("@/lib/project-appointments", () => ({
@@ -57,84 +45,68 @@ import { EmployeeUtilizationView } from "../../../client/src/components/Employee
 describe("EmployeeUtilizationView: Wiring", () => {
   beforeEach(() => {
     calendarMonthSheetViewCalls.length = 0;
-    useEffectCallbacks.length = 0;
+    calendarFilterPanelCalls.length = 0;
     vi.stubGlobal("React", React);
   });
 
-  it("Heute-Button ist disabled wenn weekOffset === 0 (Initialzustand)", () => {
+  it("renders the shared month navigation instead of the old custom utilization bars", () => {
     const html = renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={42} userRole="DISPATCHER" />,
     );
-    // disabled erscheint im gerenderten HTML vor data-testid
-    const disabledMatches = [
-      ...html.matchAll(/disabled[^>]*data-testid="button-utilization-today"/g),
-    ];
-    expect(disabledMatches.length).toBeGreaterThanOrEqual(1);
+
+    expect(html).toContain('data-testid="button-prev"');
+    expect(html).toContain('data-testid="button-next"');
+    expect(html).not.toContain("button-utilization-earlier");
+    expect(html).not.toContain("button-utilization-later");
+    expect(html).not.toContain("button-utilization-today");
+    expect(html).not.toContain("employee-utilization-nav-top");
+    expect(html).not.toContain("employee-utilization-nav-bottom");
   });
 
-  it("Früher- und Später-Buttons sind im Initialzustand vorhanden", () => {
-    const html = renderToStaticMarkup(
-      <EmployeeUtilizationView employeeId={42} userRole="DISPATCHER" />,
-    );
-    expect(html).toContain('data-testid="button-utilization-earlier"');
-    expect(html).toContain('data-testid="button-utilization-later"');
-  });
-
-  it("CalendarMonthSheetView erhält readOnly=true und visibleWeekCount=4", () => {
+  it("passes the shared kw jump footer without employee selector", () => {
     renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={42} userRole="DISPATCHER" />,
     );
-    const call = calendarMonthSheetViewCalls[0];
-    expect(call?.["readOnly"]).toBe(true);
-    expect(call?.["visibleWeekCount"]).toBe(4);
+
+    const filterPanelProps = calendarFilterPanelCalls[0];
+    expect(filterPanelProps?.showKwJump).toBe(true);
+    expect(filterPanelProps?.showEmployeeFilter).toBe(false);
+    expect(filterPanelProps?.kwJumpValue).toBe("16");
   });
 
-  it("CalendarMonthSheetView erhält die employeeId als employeeFilterId", () => {
+  it("keeps CalendarMonthSheetView readonly with a four-week strip", () => {
     renderToStaticMarkup(
-      <EmployeeUtilizationView employeeId={17} userRole="DISPATCHER" />,
-    );
-    const call = calendarMonthSheetViewCalls[0];
-    expect(call?.["employeeFilterId"]).toBe(17);
-  });
-
-  it("NavBar oben und unten sind beide vorhanden", () => {
-    const html = renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={42} userRole="DISPATCHER" />,
     );
-    expect(html).toContain('data-testid="employee-utilization-nav-top"');
-    expect(html).toContain('data-testid="employee-utilization-nav-bottom"');
+
+    const call = calendarMonthSheetViewCalls[0];
+    expect(call?.readOnly).toBe(true);
+    expect(call?.visibleWeekCount).toBe(4);
+    expect(call?.employeeFilterId).toBe(42);
   });
 
-  it("weekOffset-Reset: beide Renders starten mit currentDate der aktuellen Woche", () => {
-    // Da renderToStaticMarkup serverseitig läuft und weekOffset immer bei 0 startet,
-    // übergeben verschiedene employeeIds jeweils denselben currentDate-Wert (heute).
-    // Das belegt, dass kein alter weekOffset-State übernommen wird.
-    calendarMonthSheetViewCalls.length = 0;
-
+  it("resets the current date to the current week when the employee changes", () => {
     renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={10} userRole="DISPATCHER" />,
     );
-    const dateForEmployee10 = String(calendarMonthSheetViewCalls[0]?.["currentDate"]);
+    const firstDate = String(calendarMonthSheetViewCalls[0]?.currentDate);
 
     calendarMonthSheetViewCalls.length = 0;
 
     renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={99} userRole="DISPATCHER" />,
     );
-    const dateForEmployee99 = String(calendarMonthSheetViewCalls[0]?.["currentDate"]);
+    const secondDate = String(calendarMonthSheetViewCalls[0]?.currentDate);
 
-    // Beide Renders starten mit weekOffset=0 → gleicher currentDate
-    expect(dateForEmployee10).toBe(dateForEmployee99);
-    // Und das Datum liegt in der Nähe des Mock-Wertes "2026-04-14"
-    expect(dateForEmployee10).toContain("2026");
+    expect(firstDate).toBe(secondDate);
+    expect(firstDate).toContain("2026");
   });
-});
 
-describe("EmployeeForm: Tab Auslastung Sichtbarkeit", () => {
-  it("Tab-Trigger Auslastung hat korrekten data-testid", () => {
+  it("renders the utilization shell marker for the employee form tab", () => {
     const html = renderToStaticMarkup(
       <EmployeeUtilizationView employeeId={42} userRole="DISPATCHER" />,
     );
+
     expect(html).toContain('data-testid="employee-utilization-view"');
   });
 });

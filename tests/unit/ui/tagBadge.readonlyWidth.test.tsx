@@ -37,8 +37,8 @@ describe("FT28 UI: TagBadge readonly width", () => {
     );
 
     expect(markup).toContain("readonly-tag-badge");
-    expect(markup).toContain("h-7");
-    expect(markup).toContain("text-[10px]");
+    expect(markup).toContain("h-6");
+    expect(markup).toContain("text-[9px]");
     expect(markup).toContain("justify-start");
     expect(markup).not.toContain("justify-between");
     expect(markup).toContain("w-0");

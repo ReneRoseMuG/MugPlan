@@ -1,11 +1,12 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import type { InsertProjectOrderItem, ProjectOrderItem, UpdateProjectOrderItem } from "@shared/schema";
-import { MANAGED_COMPLAINT_TAG_NAME } from "@shared/appointmentCancellation";
+import { MANAGED_COMPLAINT_TAG_NAME, MANAGED_REMARKS_TAG_NAME } from "@shared/appointmentCancellation";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as tagRelationsService from "./tagRelationsService";
+import { stripReportHtmlToText } from "../lib/reportVorlaufliste";
 
 export class ProjectsError extends Error {
   status: number;
@@ -43,6 +44,30 @@ function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
     throw new ProjectsError(403, "FORBIDDEN");
   }
+}
+
+function hasVisibleProjectDescriptionContent(value: string | null | undefined): boolean {
+  return Boolean(stripReportHtmlToText(value ?? null));
+}
+
+async function syncManagedRemarksTagForProject(projectId: number, descriptionMd: string | null | undefined): Promise<void> {
+  if (!hasVisibleProjectDescriptionContent(descriptionMd)) {
+    return;
+  }
+
+  const remarksTag = await tagRelationsService.getTagByName(MANAGED_REMARKS_TAG_NAME);
+  if (!remarksTag) {
+    return;
+  }
+
+  const existingRelations = await tagRelationsService.listTagRelations("project", projectId);
+  if (existingRelations.some((relation) => relation.tag.id === remarksTag.id)) {
+    return;
+  }
+
+  await projectsRepository.withProjectTransaction(async (tx) => {
+    await projectsRepository.addProjectTagTx(tx, projectId, remarksTag.id);
+  });
 }
 
 export async function listProjects(
@@ -109,7 +134,7 @@ export async function createProject(data: InsertProject): Promise<Project> {
   if (normalizedOrderNumber.length === 0) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
   }
-  return projectsRepository.createProject({
+  const project = await projectsRepository.createProject({
     ...data,
     name: normalizedProjectName,
     type: data.type ?? 1,
@@ -120,6 +145,9 @@ export async function createProject(data: InsertProject): Promise<Project> {
       amount: data.projectOrder?.amount ?? data.amount ?? null,
     },
   });
+
+  await syncManagedRemarksTagForProject(project.id, project.descriptionMd);
+  return project;
 }
 
 export async function updateProject(
@@ -181,6 +209,7 @@ export async function updateProject(
     if (!exists) return null;
     throw new ProjectsError(409, "VERSION_CONFLICT");
   }
+  await syncManagedRemarksTagForProject(result.project.id, result.project.descriptionMd);
   return result.project;
 }
 

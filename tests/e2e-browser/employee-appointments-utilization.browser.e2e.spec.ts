@@ -3,16 +3,16 @@
  *
  * Abgedeckte Regeln:
  * - Der Termine-Tab im Mitarbeiterformular startet weiterhin in der Listenansicht.
- * - Die Auslastungsansicht ist ueber den eigenen Tab erreichbar und zeigt den aktuellen Wochenbereich.
+ * - Die Auslastungsansicht ist ueber den eigenen Tab erreichbar und zeigt die Monatsnavigation mit KW-Sprung.
  * - Ein Termin in der Auslastungsansicht zeigt seine verdichteten Vorschauinformationen sichtbar an.
  *
  * Fehlerfaelle:
  * - Der Auslastungs-Tab fehlt oder die Listenansicht ist nicht mehr der Standard.
- * - Die Auslastungsansicht baut keine sichtbare Monatsansicht fuer den Mitarbeiter auf.
+ * - Die Auslastungsansicht baut keine sichtbare Monatsansicht fuer den Mitarbeiter auf oder zeigt noch die Alt-Navigation.
  * - Ein Termin in der Auslastungsansicht zeigt die erwarteten Vorschauinformationen nicht mehr an.
  *
  * Ziel:
- * Den sichtbaren Nutzerfluss fuer die aktuelle Mitarbeiter-Auslastungsansicht browserseitig absichern.
+ * Den sichtbaren Nutzerfluss fuer die an den Monatskalender angeglichene Mitarbeiter-Auslastungsansicht browserseitig absichern.
  */
 import { expect, test } from "@playwright/test";
 
@@ -54,7 +54,10 @@ test("employee form switches from appointments list to utilization view and show
 
   const utilizationView = page.getByTestId("employee-utilization-view");
   await expect(utilizationView).toBeVisible();
-  await expect(page.getByTestId("employee-utilization-nav-top")).toBeVisible();
+  await expect(page.getByTestId("button-prev")).toBeVisible();
+  await expect(page.getByTestId("button-next")).toBeVisible();
+  await expect(page.getByTestId("input-calendar-kw-jump")).toBeVisible();
+  await expect(page.getByTestId("button-utilization-earlier")).toHaveCount(0);
   await expect(page.getByTestId("month-sheet-container")).toBeVisible();
   const appointmentCard = page.getByTestId(`month-compact-bar-${appointment.id}`);
   await expect(appointmentCard).toBeVisible();

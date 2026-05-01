@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
+import { ABSENCE_TOUR_NAME } from "@shared/absenceAppointments";
 import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import {
   appointmentAttachments,
@@ -48,6 +49,15 @@ function buildExcludeCancelledAppointmentCondition() {
     inner join ${tags} on ${appointmentTags.tagId} = ${tags.id}
     where ${appointmentTags.appointmentId} = ${appointments.id}
       and lower(trim(${tags.name})) = lower(trim(${RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME}))
+  )`;
+}
+
+function buildAbsenceTourCondition() {
+  return sql`exists (
+    select 1
+    from ${tours}
+    where ${tours.id} = ${appointments.tourId}
+      and lower(trim(${tours.name})) = lower(trim(${ABSENCE_TOUR_NAME}))
   )`;
 }
 
@@ -411,6 +421,7 @@ export async function hasEmployeeDateOverlapTx(
     endDate: Date | null;
     startTimeHour: number | null;
     excludeAppointmentId?: number;
+    forceAllDayOverlap?: boolean;
   },
 ): Promise<boolean> {
   const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
@@ -423,11 +434,18 @@ export async function hasEmployeeDateOverlapTx(
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
     buildExcludeCancelledAppointmentCondition(),
   ];
-  if (params.startTimeHour == null) {
+  if (params.forceAllDayOverlap) {
+    // Abwesenheiten blockieren den kompletten Zeitraum unabhängig von Uhrzeiten.
+  } else if (params.startTimeHour == null) {
     conditions.push(isNull(appointments.startTime));
   } else {
-    conditions.push(isNotNull(appointments.startTime));
-    conditions.push(sql`hour(${appointments.startTime}) = ${params.startTimeHour}`);
+    const startTimeCondition = or(
+      and(isNotNull(appointments.startTime), sql`hour(${appointments.startTime}) = ${params.startTimeHour}`),
+      and(isNull(appointments.startTime), buildAbsenceTourCondition()),
+    );
+    if (startTimeCondition) {
+      conditions.push(startTimeCondition);
+    }
   }
 
   if (typeof params.excludeAppointmentId === "number") {
@@ -451,6 +469,7 @@ export async function getConflictingEmployeesTx(
     endDate: Date | null;
     startTimeHour: number | null;
     excludeAppointmentId?: number;
+    forceAllDayOverlap?: boolean;
   },
 ): Promise<Array<{ id: number; fullName: string }>> {
   const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
@@ -463,11 +482,18 @@ export async function getConflictingEmployeesTx(
     gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
     buildExcludeCancelledAppointmentCondition(),
   ];
-  if (params.startTimeHour == null) {
+  if (params.forceAllDayOverlap) {
+    // Abwesenheiten blockieren den kompletten Zeitraum unabhängig von Uhrzeiten.
+  } else if (params.startTimeHour == null) {
     conditions.push(isNull(appointments.startTime));
   } else {
-    conditions.push(isNotNull(appointments.startTime));
-    conditions.push(sql`hour(${appointments.startTime}) = ${params.startTimeHour}`);
+    const startTimeCondition = or(
+      and(isNotNull(appointments.startTime), sql`hour(${appointments.startTime}) = ${params.startTimeHour}`),
+      and(isNull(appointments.startTime), buildAbsenceTourCondition()),
+    );
+    if (startTimeCondition) {
+      conditions.push(startTimeCondition);
+    }
   }
 
   if (typeof params.excludeAppointmentId === "number") {

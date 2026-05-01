@@ -5,6 +5,7 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
 } from "@shared/appointmentCancellation";
+import { hasAbsenceTagRelation } from "@shared/absenceAppointments";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import type { InsertAppointment } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
@@ -27,7 +28,7 @@ import {
   hasAppointmentCancellationTag,
 } from "../lib/appointmentCancellation";
 import { logDebug, logInfo } from "../lib/logger";
-import { isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
+import { isAbsenceTourName, isMesseTourName, isParkplatzTourName } from "../lib/systemTours";
 import { buildTourPostalPlanMatches } from "../lib/tourPostalPlan";
 import {
   getAppointmentParkingDefaults,
@@ -64,7 +65,8 @@ class AppointmentError extends Error {
     | "CANCELLATION_TAG_NOT_CONFIGURED"
     | "WORKFLOW_TAG_PROTECTED"
     | "CANCELLED_APPOINTMENT_READONLY"
-    | "ALREADY_PARKED";
+    | "ALREADY_PARKED"
+    | "ABSENCE_APPOINTMENT_READONLY";
   conflictEmployees?: Array<{ id: number; fullName: string }>;
 
   constructor(
@@ -82,7 +84,8 @@ class AppointmentError extends Error {
       | "CANCELLATION_TAG_NOT_CONFIGURED"
       | "WORKFLOW_TAG_PROTECTED"
       | "CANCELLED_APPOINTMENT_READONLY"
-      | "ALREADY_PARKED",
+      | "ALREADY_PARKED"
+      | "ABSENCE_APPOINTMENT_READONLY",
     options?: {
       conflictEmployees?: Array<{ id: number; fullName: string }>;
     },
@@ -205,6 +208,50 @@ function resolveVisibleAppointmentTags(tags: AppointmentTagRelations) {
 async function getAppointmentTagsForGuard(appointmentId: number): Promise<Array<{ name: string }>> {
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds([appointmentId]);
   return (appointmentTagsByAppointmentId.get(appointmentId) ?? []) as Array<{ name: string }>;
+}
+
+function buildAbsenceReadonlyAppointmentError() {
+  return new AppointmentError(
+    "Abwesenheiten können nur im Mitarbeiterformular bearbeitet werden",
+    409,
+    "ABSENCE_APPOINTMENT_READONLY",
+  );
+}
+
+async function isAbsenceAppointmentByContext(params: {
+  appointmentId: number;
+  appointment: { tourId: number | null | undefined };
+  knownTourName?: string | null | undefined;
+}): Promise<boolean> {
+  const tourName = params.knownTourName ?? (
+    params.appointment.tourId != null
+      ? (await toursRepository.getTour(params.appointment.tourId))?.name ?? null
+      : null
+  );
+  if (isAbsenceTourName(tourName)) {
+    return true;
+  }
+  return hasAbsenceTagRelation(await getAppointmentTagsForGuard(params.appointmentId));
+}
+
+async function assertAbsenceAppointmentMutationAllowed(params: {
+  appointmentId: number;
+  appointment: { tourId: number | null | undefined };
+  knownTourName?: string | null | undefined;
+  nextTourName?: string | null | undefined;
+  allowAbsenceWorkflow?: boolean;
+}): Promise<void> {
+  if (params.allowAbsenceWorkflow) {
+    return;
+  }
+  const isExistingAbsence = await isAbsenceAppointmentByContext({
+    appointmentId: params.appointmentId,
+    appointment: params.appointment,
+    knownTourName: params.knownTourName,
+  });
+  if (isExistingAbsence || isAbsenceTourName(params.nextTourName)) {
+    throw buildAbsenceReadonlyAppointmentError();
+  }
 }
 
 async function assertAppointmentWriteAllowed(
@@ -430,6 +477,7 @@ const mapSidebarAppointments = async (rows: SidebarAppointmentRow[], roleKey: Ca
       projectOrderNumber: row.projectOrder?.orderNumber ?? null,
       projectArticleItems: projectId ? (projectArticleItemsByProject.get(projectId) ?? []) : [],
       projectDescription: row.project?.descriptionMd ?? null,
+      description: row.appointment.description ?? null,
       startDate: toDateOnlyString(row.appointment.startDate) ?? "",
       endDate: toDateOnlyString(row.appointment.endDate),
       startTime: row.appointment.startTime ?? null,
@@ -573,6 +621,14 @@ export async function getAppointmentDetails(id: number) {
   };
 }
 
+export async function isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId: number): Promise<boolean> {
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) {
+    return false;
+  }
+  return isAbsenceAppointmentByContext({ appointmentId, appointment });
+}
+
 export async function createAppointment(
   data: {
     projectId?: number | null;
@@ -581,9 +637,11 @@ export async function createAppointment(
     startDate: string;
     endDate?: string | null;
     startTime?: string | null;
+    description?: string | null;
     employeeIds?: number[];
   },
   roleKey?: CanonicalRoleKey,
+  options?: { allowAbsenceWorkflow?: boolean },
 ) {
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
@@ -602,12 +660,18 @@ export async function createAppointment(
     const relation = await resolveAppointmentRelationTx(tx, data, "create");
     await assertNoInactiveEmployeesTx(tx, employeeIds);
     const collectedEvents: AppointmentMutationEvent[] = [];
+    const allTours = await toursRepository.getTours();
+    const targetTour = data.tourId != null ? (allTours.find((entry) => entry.id === data.tourId) ?? null) : null;
+    if (!options?.allowAbsenceWorkflow && isAbsenceTourName(targetTour?.name)) {
+      throw buildAbsenceReadonlyAppointmentError();
+    }
 
     const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
       employeeIds,
       startDate,
       endDate,
       startTimeHour,
+      forceAllDayOverlap: isAbsenceTourName(targetTour?.name),
     });
     if (conflictEmployees.length > 0) {
       throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
@@ -619,7 +683,7 @@ export async function createAppointment(
       tourId: data.tourId ?? null,
       displayMode: defaultAppointmentDisplayMode,
       title: resolveTitle(relation.project?.name ?? null, relation.customer.fullName ?? null, relation.customer.customerNumber),
-      description: null,
+      description: data.description ?? null,
       startDate,
       endDate,
       startTime: data.startTime ?? null,
@@ -630,7 +694,6 @@ export async function createAppointment(
     await appointmentsRepository.replaceAppointmentEmployeesTx(tx, appointmentId, employeeIds);
     let nextTourName: string | null = null;
     if (appointmentData.tourId != null) {
-      const allTours = await toursRepository.getTours();
       nextTourName = allTours.find((entry) => entry.id === appointmentData.tourId)?.name ?? null;
       collectedEvents.push({
         kind: "tour_changed",
@@ -683,9 +746,11 @@ export async function updateAppointment(
     startDate: string;
     endDate?: string | null;
     startTime?: string | null;
+    description?: string | null;
     employeeIds?: number[];
   },
   roleKey: CanonicalRoleKey,
+  options?: { allowAbsenceWorkflow?: boolean },
 ) {
   validateDateRange(data.startDate, data.endDate ?? null);
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
@@ -696,6 +761,17 @@ export async function updateAppointment(
   const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
+    const allTours = await toursRepository.getTours();
+    const existingTour = existing.tourId != null ? (allTours.find((entry) => entry.id === existing.tourId) ?? null) : null;
+    const targetTour = nextTourId != null ? (allTours.find((entry) => entry.id === nextTourId) ?? null) : null;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+      knownTourName: existingTour?.name,
+      nextTourName: targetTour?.name,
+      allowAbsenceWorkflow: options?.allowAbsenceWorkflow,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -704,7 +780,6 @@ export async function updateAppointment(
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
     });
-    const nextTourId = data.tourId !== undefined ? (data.tourId ?? null) : (existing.tourId ?? null);
     const existingStartDate = toDateOnlyString(existing.startDate);
     if (nextTourId !== existing.tourId || existingStartDate !== data.startDate) {
       await assertTargetTourWeekWritable(nextTourId, data.startDate);
@@ -740,7 +815,6 @@ export async function updateAppointment(
     let previousTourName: string | null = null;
     let nextTourName: string | null = null;
     if (tourChanged && existing.tourId != null) {
-      const allTours = await toursRepository.getTours();
       const parkplatzTour = allTours.find((tour) => isParkplatzTourName(tour.name)) ?? null;
       if (parkplatzTour && existing.tourId === parkplatzTour.id) {
         const geparktTag = await tagRelationsService.getTagByName(RESERVED_VACANT_TAG_NAME);
@@ -759,7 +833,6 @@ export async function updateAppointment(
       shouldAddMesseTag = !wasMesseTour && isNowMesseTour;
       shouldRemoveMesseTag = wasMesseTour && !isNowMesseTour;
     } else if (tourChanged && newTourId != null) {
-      const allTours = await toursRepository.getTours();
       const nextTour = allTours.find((tour) => tour.id === newTourId) ?? null;
       nextTourName = nextTour?.name ?? null;
       shouldAddMesseTag = isMesseTourName(nextTour?.name);
@@ -771,6 +844,7 @@ export async function updateAppointment(
       endDate,
       startTimeHour,
       excludeAppointmentId: appointmentId,
+      forceAllDayOverlap: isAbsenceTourName(targetTour?.name),
     });
     if (conflictEmployees.length > 0) {
       throw new AppointmentError(overlapConflictMessage, 409, "EMPLOYEE_OVERLAP_CONFLICT", { conflictEmployees });
@@ -781,7 +855,7 @@ export async function updateAppointment(
       customerId: relation.customerId,
       tourId: data.tourId ?? null,
       title: resolveTitle(relation.project?.name ?? null, relation.customer.fullName ?? null, relation.customer.customerNumber),
-      description: null,
+      description: data.description ?? null,
       startDate,
       endDate,
       startTime: data.startTime ?? null,
@@ -869,6 +943,10 @@ export async function setAppointmentDisplayMode(
   const updated = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -1783,10 +1861,20 @@ export async function listAppointmentsList(params: {
   };
 }
 
-export async function deleteAppointment(appointmentId: number, expectedVersion: number, roleKey: CanonicalRoleKey) {
+export async function deleteAppointment(
+  appointmentId: number,
+  expectedVersion: number,
+  roleKey: CanonicalRoleKey,
+  options?: { allowAbsenceWorkflow?: boolean },
+) {
   const deleted = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return null;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+      allowAbsenceWorkflow: options?.allowAbsenceWorkflow,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -1826,6 +1914,10 @@ export async function addAppointmentTag(
   requireDispatcherOrAdmin(roleKey);
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
+  await assertAbsenceAppointmentMutationAllowed({
+    appointmentId,
+    appointment,
+  });
   const tag = await tagRelationsService.getTagById(tagId);
   if (!tag) {
     return null;
@@ -1859,6 +1951,10 @@ export async function removeAppointmentTag(
   }
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
+  await assertAbsenceAppointmentMutationAllowed({
+    appointmentId,
+    appointment,
+  });
   const tag = await tagRelationsService.getTagById(tagId);
   if (!tag) {
     return null;
@@ -1902,6 +1998,10 @@ export async function removeEmployeeFromAppointment(
   return appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -1944,6 +2044,10 @@ export async function cancelAppointment(
   const result = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return { found: false } as const;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -1995,6 +2099,10 @@ export async function setAppointmentReklamation(
   await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -2040,6 +2148,10 @@ export async function removeAppointmentReklamation(
   await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const existing = await appointmentsRepository.getAppointmentTx(tx, appointmentId);
     if (!existing) return;
+    await assertAbsenceAppointmentMutationAllowed({
+      appointmentId,
+      appointment: existing,
+    });
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
@@ -2089,6 +2201,10 @@ export async function parkAppointment(
 
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return { found: false };
+  await assertAbsenceAppointmentMutationAllowed({
+    appointmentId,
+    appointment,
+  });
 
   const parkplatzTourId = await getParkplatzTourId();
   await assertAppointmentWriteAllowed(appointmentId, appointment, {

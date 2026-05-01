@@ -6,11 +6,13 @@ import { resolveWeeklyPreviewWidthPx } from "@/lib/preview-width";
 type AppointmentWeeklyPanelPreviewProps = {
   appointment: CalendarAppointment;
   widthPx: number;
+  maxHeightPx?: number | null;
 };
 
 export type AppointmentWeeklyPanelPreviewSizeProfile = "default" | "sidebarTable";
 
 const SIDEBAR_TABLE_MIN_PREVIEW_WIDTH_PX = 320;
+const SIDEBAR_TABLE_MAX_PREVIEW_HEIGHT_PX = 360;
 
 export const appointmentWeeklyPanelPreviewOptions = {
   openDelayMs: 380,
@@ -25,6 +27,25 @@ export const appointmentWeeklyPanelPreviewOptions = {
   viewportPadding: 12,
 };
 
+function resolveAppointmentWeeklyPanelPreviewOptions(
+  sizeProfile: AppointmentWeeklyPanelPreviewSizeProfile,
+  previewWidthPx: number,
+) {
+  if (sizeProfile === "sidebarTable") {
+    return {
+      ...appointmentWeeklyPanelPreviewOptions,
+      maxWidth: previewWidthPx,
+      maxHeight: SIDEBAR_TABLE_MAX_PREVIEW_HEIGHT_PX,
+      scrollY: "auto" as const,
+    };
+  }
+
+  return {
+    ...appointmentWeeklyPanelPreviewOptions,
+    maxWidth: previewWidthPx,
+  };
+}
+
 export function resolveAppointmentWeeklyPanelPreviewWidthPx(
   sizeProfile: AppointmentWeeklyPanelPreviewSizeProfile,
 ): number {
@@ -35,7 +56,11 @@ export function resolveAppointmentWeeklyPanelPreviewWidthPx(
   return measuredWidthPx;
 }
 
-export function AppointmentWeeklyPanelPreview({ appointment, widthPx }: AppointmentWeeklyPanelPreviewProps) {
+export function AppointmentWeeklyPanelPreview({
+  appointment,
+  widthPx,
+  maxHeightPx = null,
+}: AppointmentWeeklyPanelPreviewProps) {
   return (
     <div className="rounded-lg bg-white" style={{ width: widthPx }}>
       <CalendarWeekAppointmentPanel
@@ -43,6 +68,7 @@ export function AppointmentWeeklyPanelPreview({ appointment, widthPx }: Appointm
         weekTileBodyMode="expanded"
         interactive={false}
         context="week-calendar"
+        maxHeightPx={maxHeightPx}
       />
     </div>
   );
@@ -54,12 +80,16 @@ export function createAppointmentWeeklyPanelPreview(
 ): InfoBadgePreview {
   const sizeProfile = options?.sizeProfile ?? "default";
   const previewWidthPx = resolveAppointmentWeeklyPanelPreviewWidthPx(sizeProfile);
+  const previewMaxHeightPx = sizeProfile === "sidebarTable" ? SIDEBAR_TABLE_MAX_PREVIEW_HEIGHT_PX : null;
 
   return {
-    content: <AppointmentWeeklyPanelPreview appointment={appointment} widthPx={previewWidthPx} />,
-    options: {
-      ...appointmentWeeklyPanelPreviewOptions,
-      maxWidth: previewWidthPx,
-    },
+    content: (
+      <AppointmentWeeklyPanelPreview
+        appointment={appointment}
+        widthPx={previewWidthPx}
+        maxHeightPx={previewMaxHeightPx}
+      />
+    ),
+    options: resolveAppointmentWeeklyPanelPreviewOptions(sizeProfile, previewWidthPx),
   };
 }

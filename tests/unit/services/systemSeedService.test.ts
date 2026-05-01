@@ -2,26 +2,36 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - applySystemSeed legt fehlende System-Tags idempotent ueber ensureTagDefinition an.
- * - applySystemSeed legt fehlende Soll-Touren direkt ueber das Repository an.
- * - applySystemSeed aktualisiert abweichende Tour-Farben ueber updateTourWithVersion.
+ * - applySystemSeed legt fehlende System-Tags idempotent über ensureTagDefinition an.
+ * - applySystemSeed legt fehlende Soll-Touren direkt über das Repository an.
+ * - applySystemSeed legt den FT-33-Systemkunden 001 · Meisel & Gerken an oder aktualisiert ihn.
  * - applySystemSeed legt fehlende Notizvorlagen an.
- * - applySystemSeed ueberschreibt bestehende Notizvorlagen-Bodies nicht.
- * - applySystemSeed arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen.
+ * - applySystemSeed überschreibt bestehende Notizvorlagen-Bodies nicht.
+ * - applySystemSeed arbeitet in fester Reihenfolge: Tags, Touren, Kunden, Notizvorlagen.
  * - applySystemSeed migriert einen Tag mit Namen "Vakant" zu "Geparkt" vor dem normalen Seed-Lauf.
  * - applySystemSeed korrigiert Sondermaß gezielt auf isDefault=false, damit es in Pickern nutzbar bleibt.
  * - applySystemSeed migriert eine Tour mit Namen "Vakant" zu "Parkplatz" vor dem normalen Seed-Lauf.
- * - Migration ist idempotent: kein Fehler wenn weder Tag noch Tour "Vakant" existieren.
  *
- * Fehlerfaelle:
- * - Tour-Farben bleiben bei bestehender Tour trotz Sollabweichung unveraendert.
+ * Fehlerfälle:
+ * - Der Systemkunde wird nicht angelegt oder nicht auf den Sollzustand korrigiert.
  * - Bestehende Notizvorlagen verlieren ihren Body durch den Seed.
- * - Die Orchestrierung springt zwischen den Bereichen oder laeuft in falscher Reihenfolge.
+ * - Die Orchestrierung springt zwischen den Bereichen oder läuft in falscher Reihenfolge.
  *
  * Ziel:
  * Die Orchestrierungslogik des System-Seed-Service isoliert ohne echte DB-Zugriffe absichern.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ABSENCE_CUSTOMER_ADDRESS_LINE1,
+  ABSENCE_CUSTOMER_CITY,
+  ABSENCE_CUSTOMER_COUNTRY,
+  ABSENCE_CUSTOMER_NAME,
+  ABSENCE_CUSTOMER_NUMBER,
+  ABSENCE_CUSTOMER_POSTAL_CODE,
+  ABSENCE_TAG_NAMES,
+  ABSENCE_TOUR_COLOR,
+  ABSENCE_TOUR_NAME,
+} from "../../../shared/absenceAppointments";
 
 const ensureTagDefinitionMock = vi.fn();
 const getTagByNormalizedNameMock = vi.fn();
@@ -29,9 +39,24 @@ const updateTagWithVersionMock = vi.fn();
 const getToursMock = vi.fn();
 const createTourMock = vi.fn();
 const updateTourWithVersionMock = vi.fn();
+const getCustomersByCustomerNumberMock = vi.fn();
+const createCustomerMock = vi.fn();
+const updateCustomerWithVersionMock = vi.fn();
 const getNoteTemplatesMock = vi.fn();
 const createNoteTemplateMock = vi.fn();
 const updateNoteTemplateWithVersionMock = vi.fn();
+
+function buildSeededTours(overrides: Record<string, { color?: string; version?: number }> = {}) {
+  return [
+    { id: 1, name: "Parkplatz", color: overrides.Parkplatz?.color ?? "#D4537E", version: overrides.Parkplatz?.version ?? 1 },
+    { id: 2, name: ABSENCE_TOUR_NAME, color: overrides[ABSENCE_TOUR_NAME]?.color ?? ABSENCE_TOUR_COLOR, version: overrides[ABSENCE_TOUR_NAME]?.version ?? 1 },
+    { id: 3, name: "Schröder Halle", color: overrides["Schröder Halle"]?.color ?? "#5C3317", version: overrides["Schröder Halle"]?.version ?? 1 },
+    { id: 7, name: "Tour 1", color: overrides["Tour 1"]?.color ?? "#006B6F", version: overrides["Tour 1"]?.version ?? 5 },
+    { id: 8, name: "Tour 2", color: overrides["Tour 2"]?.color ?? "#00ACB1", version: overrides["Tour 2"]?.version ?? 1 },
+    { id: 9, name: "Tour 3", color: overrides["Tour 3"]?.color ?? "#00CFD5", version: overrides["Tour 3"]?.version ?? 1 },
+    { id: 10, name: "Tour 4", color: overrides["Tour 4"]?.color ?? "#5B4B8A", version: overrides["Tour 4"]?.version ?? 1 },
+  ];
+}
 
 vi.mock("../../../server/repositories/masterDataRepository", () => ({
   getTagByNormalizedName: (...args: unknown[]) => getTagByNormalizedNameMock(...args),
@@ -43,6 +68,12 @@ vi.mock("../../../server/repositories/toursRepository", () => ({
   getTours: (...args: unknown[]) => getToursMock(...args),
   createTour: (...args: unknown[]) => createTourMock(...args),
   updateTourWithVersion: (...args: unknown[]) => updateTourWithVersionMock(...args),
+}));
+
+vi.mock("../../../server/repositories/customersRepository", () => ({
+  getCustomersByCustomerNumber: (...args: unknown[]) => getCustomersByCustomerNumberMock(...args),
+  createCustomer: (...args: unknown[]) => createCustomerMock(...args),
+  updateCustomerWithVersion: (...args: unknown[]) => updateCustomerWithVersionMock(...args),
 }));
 
 vi.mock("../../../server/repositories/noteTemplatesRepository", () => ({
@@ -61,6 +92,9 @@ describe("systemSeedService", () => {
     getToursMock.mockReset();
     createTourMock.mockReset();
     updateTourWithVersionMock.mockReset();
+    getCustomersByCustomerNumberMock.mockReset();
+    createCustomerMock.mockReset();
+    updateCustomerWithVersionMock.mockReset();
     getNoteTemplatesMock.mockReset();
     createNoteTemplateMock.mockReset();
     updateNoteTemplateWithVersionMock.mockReset();
@@ -73,10 +107,36 @@ describe("systemSeedService", () => {
     getTagByNormalizedNameMock.mockResolvedValue(null);
     updateTagWithVersionMock.mockResolvedValue({ kind: "updated", row: { id: 1, name: "Geparkt", color: "#D4537E", version: 2 } });
     getToursMock.mockResolvedValue([]);
-    createTourMock.mockResolvedValue({ id: 1, name: "Parkplatz", color: "#D4537E", version: 1 });
+    createTourMock.mockImplementation(async (name: string, color: string) => ({ id: 1, name, color, version: 1 }));
     updateTourWithVersionMock.mockResolvedValue({
       kind: "updated",
       tour: { id: 1, name: "Parkplatz", color: "#D4537E", version: 2 },
+    });
+    getCustomersByCustomerNumberMock.mockResolvedValue([]);
+    createCustomerMock.mockImplementation(async (input: Record<string, unknown>) => ({
+      id: 1776,
+      version: 1,
+      ...input,
+    }));
+    updateCustomerWithVersionMock.mockResolvedValue({
+      kind: "updated",
+      customer: {
+        id: 1776,
+        customerNumber: ABSENCE_CUSTOMER_NUMBER,
+        firstName: null,
+        lastName: null,
+        fullName: ABSENCE_CUSTOMER_NAME,
+        company: ABSENCE_CUSTOMER_NAME,
+        email: null,
+        phone: null,
+        addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+        addressLine2: null,
+        postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+        city: ABSENCE_CUSTOMER_CITY,
+        country: ABSENCE_CUSTOMER_COUNTRY,
+        isActive: true,
+        version: 2,
+      },
     });
     getNoteTemplatesMock.mockResolvedValue([]);
     createNoteTemplateMock.mockResolvedValue({
@@ -114,6 +174,13 @@ describe("systemSeedService", () => {
     }));
     expect(result.logLines).toContain("Tag angelegt: Reklamation");
     expect(result.logLines).toContain("Tag angelegt: Geparkt");
+    for (const absenceTagName of ABSENCE_TAG_NAMES) {
+      expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
+        name: absenceTagName,
+        isDefault: true,
+      }));
+      expect(result.logLines).toContain(`Tag angelegt: ${absenceTagName}`);
+    }
     expect(ensureTagDefinitionMock).toHaveBeenCalledWith(expect.objectContaining({
       name: "Sondermaß",
       color: "#BA7517",
@@ -135,6 +202,21 @@ describe("systemSeedService", () => {
       expect.objectContaining({
         key: "tour:parkplatz",
         kind: "tour",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "customer:001",
+        kind: "customer",
+        label: "001 · Meisel & Gerken",
+        status: "missing",
+        canApply: true,
+        checkedByDefault: true,
+      }),
+      expect.objectContaining({
+        key: "tag:urlaub",
+        kind: "tag",
         status: "missing",
         canApply: true,
         checkedByDefault: true,
@@ -230,6 +312,7 @@ describe("systemSeedService", () => {
     }));
     expect(result.logLines).toEqual(["Tag aktualisiert: Sondermaß"]);
     expect(createTourMock).not.toHaveBeenCalled();
+    expect(createCustomerMock).not.toHaveBeenCalled();
     expect(createNoteTemplateMock).not.toHaveBeenCalled();
   });
 
@@ -239,8 +322,32 @@ describe("systemSeedService", () => {
     const result = await applySystemSeed();
 
     expect(createTourMock).toHaveBeenCalledWith("Parkplatz", "#D4537E");
+    expect(createTourMock).toHaveBeenCalledWith(ABSENCE_TOUR_NAME, ABSENCE_TOUR_COLOR);
     expect(createTourMock).toHaveBeenCalledWith("Schröder Halle", "#5C3317");
     expect(result.logLines).toContain("Tour angelegt: Parkplatz");
+  });
+
+  it("legt den FT-33-Systemkunden mit dem Sollzustand an", async () => {
+    const result = await applySystemSeed(["customer:001"]);
+
+    expect(createCustomerMock).toHaveBeenCalledWith({
+      customerNumber: ABSENCE_CUSTOMER_NUMBER,
+      firstName: null,
+      lastName: null,
+      fullName: ABSENCE_CUSTOMER_NAME,
+      company: ABSENCE_CUSTOMER_NAME,
+      email: null,
+      phone: null,
+      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+      addressLine2: null,
+      postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+      city: ABSENCE_CUSTOMER_CITY,
+      country: ABSENCE_CUSTOMER_COUNTRY,
+    });
+    expect(result.logLines).toEqual(["Kunde angelegt: 001 · Meisel & Gerken"]);
+    expect(ensureTagDefinitionMock).not.toHaveBeenCalled();
+    expect(createTourMock).not.toHaveBeenCalled();
+    expect(createNoteTemplateMock).not.toHaveBeenCalled();
   });
 
   it("führt nur explizit ausgewählte Seed-Schritte aus", async () => {
@@ -248,49 +355,54 @@ describe("systemSeedService", () => {
 
     expect(createTourMock).toHaveBeenCalledWith("Parkplatz", "#D4537E");
     expect(ensureTagDefinitionMock).not.toHaveBeenCalled();
+    expect(createCustomerMock).not.toHaveBeenCalled();
     expect(createNoteTemplateMock).not.toHaveBeenCalled();
     expect(result.logLines).toEqual(["Tour angelegt: Parkplatz"]);
   });
 
   it("aktualisiert bestehende Tour-Farben auf den Sollzustand", async () => {
     getToursMock
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValueOnce([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#999999", version: 4 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ])
-      .mockResolvedValue([
-        { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
-        { id: 2, name: "Schröder Halle", color: "#5C3317", version: 1 },
-        { id: 7, name: "Tour 1", color: "#006B6F", version: 5 },
-        { id: 8, name: "Tour 2", color: "#00ACB1", version: 1 },
-        { id: 9, name: "Tour 3", color: "#00CFD5", version: 1 },
-        { id: 10, name: "Tour 4", color: "#5B4B8A", version: 1 },
-      ]);
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours())
+      .mockResolvedValueOnce(buildSeededTours({ "Tour 1": { color: "#999999", version: 4 } }))
+      .mockResolvedValue(buildSeededTours());
 
     const result = await applySystemSeed();
 
     expect(updateTourWithVersionMock).toHaveBeenCalledWith(7, 4, "Tour 1", "#006B6F");
     expect(result.logLines).toContain("Tour aktualisiert: Tour 1");
+  });
+
+  it("aktualisiert den FT-33-Systemkunden bei Sollabweichungen", async () => {
+    getCustomersByCustomerNumberMock.mockResolvedValue([{
+      id: 1776,
+      customerNumber: ABSENCE_CUSTOMER_NUMBER,
+      firstName: null,
+      lastName: null,
+      fullName: ABSENCE_CUSTOMER_NAME,
+      company: "Altname",
+      email: null,
+      phone: null,
+      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+      addressLine2: null,
+      postalCode: ABSENCE_CUSTOMER_POSTAL_CODE,
+      city: ABSENCE_CUSTOMER_CITY,
+      country: ABSENCE_CUSTOMER_COUNTRY,
+      isActive: true,
+      version: 4,
+      tags: [],
+    }]);
+
+    const result = await applySystemSeed(["customer:001"]);
+
+    expect(updateCustomerWithVersionMock).toHaveBeenCalledWith(1776, 4, expect.objectContaining({
+      customerNumber: ABSENCE_CUSTOMER_NUMBER,
+      company: ABSENCE_CUSTOMER_NAME,
+      fullName: ABSENCE_CUSTOMER_NAME,
+      addressLine1: ABSENCE_CUSTOMER_ADDRESS_LINE1,
+    }));
+    expect(result.logLines).toEqual(["Kunde aktualisiert: 001 · Meisel & Gerken"]);
   });
 
   it("legt fehlende Notizvorlagen an", async () => {
@@ -306,7 +418,7 @@ describe("systemSeedService", () => {
     expect(result.logLines).toContain("Notizvorlage angelegt: Reklamation");
   });
 
-  it("ueberschreibt bestehende Notizvorlagen-Bodies beim Update nicht", async () => {
+  it("überschreibt bestehende Notizvorlagen-Bodies beim Update nicht", async () => {
     getNoteTemplatesMock.mockResolvedValue([{
       id: 21,
       title: "Reklamation",
@@ -355,14 +467,14 @@ describe("systemSeedService", () => {
     expect(result.logLines).toContain("Tour migriert: Vakant → Parkplatz");
   });
 
-  it("laeuft fehlerfrei wenn kein Vakant-Tag existiert (idempotent)", async () => {
+  it("läuft fehlerfrei wenn kein Vakant-Tag existiert (idempotent)", async () => {
     getTagByNormalizedNameMock.mockResolvedValue(null);
 
     await expect(applySystemSeed()).resolves.not.toThrow();
     expect(updateTagWithVersionMock).not.toHaveBeenCalled();
   });
 
-  it("laeuft fehlerfrei wenn keine Vakant-Tour existiert (idempotent)", async () => {
+  it("läuft fehlerfrei wenn keine Vakant-Tour existiert (idempotent)", async () => {
     getToursMock.mockResolvedValue([
       { id: 1, name: "Parkplatz", color: "#D4537E", version: 1 },
     ]);
@@ -373,7 +485,7 @@ describe("systemSeedService", () => {
     expect(migrateCall).toBeUndefined();
   });
 
-  it("legt Parkplatz-Tour nach Migration als regulaere Soll-Tour an wenn nicht vorhanden", async () => {
+  it("legt Parkplatz-Tour nach Migration als reguläre Soll-Tour an wenn nicht vorhanden", async () => {
     getToursMock.mockResolvedValueOnce([
       { id: 42, name: "Vakant", color: "#D4537E", version: 1 },
     ]).mockResolvedValue([
@@ -388,7 +500,7 @@ describe("systemSeedService", () => {
     expect(createTourMock).not.toHaveBeenCalledWith("Parkplatz", expect.anything());
   });
 
-  it("arbeitet in fester Reihenfolge: Tags, Touren, Notizvorlagen", async () => {
+  it("arbeitet in fester Reihenfolge: Tags, Touren, Kunden, Notizvorlagen", async () => {
     const order: string[] = [];
 
     ensureTagDefinitionMock.mockImplementation(async (input: { name: string; color: string; isDefault: boolean }) => {
@@ -399,6 +511,10 @@ describe("systemSeedService", () => {
       order.push(`tour:${name}`);
       return { id: 1, name, color, version: 1 };
     });
+    createCustomerMock.mockImplementation(async (input: { customerNumber: string }) => {
+      order.push(`customer:${input.customerNumber}`);
+      return { id: 1776, version: 1, ...input };
+    });
     createNoteTemplateMock.mockImplementation(async (input: { title: string }) => {
       order.push(`template:${input.title}`);
       return { id: 1, title: input.title, body: "", cardColor: "#000000", print: true, sortOrder: 0, isActive: true, version: 1 };
@@ -407,6 +523,7 @@ describe("systemSeedService", () => {
     await applySystemSeed();
 
     const firstTourIndex = order.findIndex((entry) => entry.startsWith("tour:"));
+    const firstCustomerIndex = order.findIndex((entry) => entry.startsWith("customer:"));
     const firstTemplateIndex = order.findIndex((entry) => entry.startsWith("template:"));
     const lastTagIndex = order.map((entry, index) => ({ entry, index }))
       .filter((item) => item.entry.startsWith("tag:"))
@@ -414,6 +531,7 @@ describe("systemSeedService", () => {
 
     expect(lastTagIndex).toBeGreaterThanOrEqual(0);
     expect(firstTourIndex).toBeGreaterThan(lastTagIndex);
-    expect(firstTemplateIndex).toBeGreaterThan(firstTourIndex);
+    expect(firstCustomerIndex).toBeGreaterThan(firstTourIndex);
+    expect(firstTemplateIndex).toBeGreaterThan(firstCustomerIndex);
   });
 });

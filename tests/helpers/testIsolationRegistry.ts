@@ -365,6 +365,17 @@ const isolationRegistry: TestIsolationRegistryEntry[] = [
     notes: "Park-Workflow braucht reservierte System-Tags plus Parkplatz-Tour und bleibt vorerst pilot-only.",
   },
   {
+    suitePath: "tests/e2e-browser/ft33-absence-readonly.browser.e2e.spec.ts",
+    isolationClass: "A",
+    baseline: "core",
+    storageProfile: "none",
+    resetScope: "per-suite",
+    canaryProfile: "project-list-confusion",
+    pilotStatus: "validated",
+    rolloutMode: "pilot-only",
+    notes: "FT33 Readonly-Schnitt startet vom Core-Reset und zieht den benoetigten System-Seed explizit nach, um regulaere sowie dedizierte Abwesenheits-Mutationspfade ueber mehrere Oberflaechen zu pruefen.",
+  },
+  {
     suitePath: "tests/e2e-browser/calendar-month-sheet.navigation.browser.e2e.spec.ts",
     isolationClass: "B",
     baseline: "seeded",

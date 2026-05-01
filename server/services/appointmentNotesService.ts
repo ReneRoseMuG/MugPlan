@@ -2,6 +2,18 @@ import type { CreateNoteInput, InsertNote, Note } from "@shared/schema";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import * as notesRepository from "../repositories/notesRepository";
+import * as appointmentsService from "./appointmentsService";
+
+export class AppointmentNotesError extends Error {
+  status: number;
+  code: "ABSENCE_APPOINTMENT_READONLY";
+
+  constructor(status: number, code: "ABSENCE_APPOINTMENT_READONLY") {
+    super(code);
+    this.status = status;
+    this.code = code;
+  }
+}
 
 export async function listAppointmentNotes(appointmentId: number): Promise<Note[] | null> {
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
@@ -15,6 +27,9 @@ export async function createAppointmentNote(
 ): Promise<Note | null> {
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
+  if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
+    throw new AppointmentNotesError(409, "ABSENCE_APPOINTMENT_READONLY");
+  }
 
   const noteData: InsertNote = {
     title: data.title,

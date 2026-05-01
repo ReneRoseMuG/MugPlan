@@ -99,7 +99,7 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("C-001");
     expect(html).toContain("ORD-001");
     expect(html).toContain("Projekt Alpha");
-    expect(html).toContain("05.11.2099");
+    expect(html).toContain("05.11.99");
     expect(html).toContain("2 Tage");
     expect(html).toContain("Tour Nord");
     expect(html).toContain("Sondermaß");

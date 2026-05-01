@@ -27,6 +27,7 @@ vi.mock("../../../server/repositories/appointmentsRepository", () => ({
 }));
 
 vi.mock("../../../server/repositories/toursRepository", () => ({
+  getTour: vi.fn(),
   getTours: vi.fn(),
 }));
 
@@ -46,6 +47,7 @@ describe("FT01 unit: appointment employee removal versioning", () => {
     });
     appointmentsRepoMock.bumpAppointmentVersionTx.mockResolvedValue({ kind: "updated" });
     appointmentsRepoMock.getAppointmentTagsByAppointmentIds.mockResolvedValue(new Map());
+    toursRepoMock.getTour.mockResolvedValue({ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 } as any);
     toursRepoMock.getTours.mockResolvedValue([{ id: 88, name: "Parkplatz", color: "#D4537E", version: 1 }] as any);
   });
 

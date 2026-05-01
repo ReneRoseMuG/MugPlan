@@ -38,6 +38,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { canAccessJournal as canAccessJournalRole, canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
+import { useToast } from "@/hooks/use-toast";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 
 export type ViewType =
   | "month"
@@ -159,6 +161,7 @@ function resolveViewTitle(view: ViewType): string {
 }
 
 export default function Home({ onLogout }: HomeProps) {
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>("week");
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
@@ -285,6 +288,37 @@ export default function Home({ onLogout }: HomeProps) {
     }
     return new Date(year, month - 1, day, 12, 0, 0, 0);
   }, []);
+
+  const openAppointmentOverlayIfAllowed = useCallback(async (params: AppointmentOverlayState) => {
+    if (typeof params.appointmentId !== "number") {
+      setAppointmentOverlayContext(params);
+      return;
+    }
+    try {
+      const response = await fetch(`/api/appointments/${params.appointmentId}`, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error("Termindetails konnten nicht geladen werden.");
+      }
+      const detail = await response.json() as {
+        appointmentTags?: Array<{ name?: string | null | undefined }>;
+      };
+      if (isAbsenceAppointmentSummary({ appointmentTags: detail.appointmentTags })) {
+        toast({
+          title: "Abwesenheit ist schreibgeschützt",
+          description: "Abwesenheiten können nur im Mitarbeiterformular bearbeitet werden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setAppointmentOverlayContext(params);
+    } catch (error) {
+      toast({
+        title: "Termin konnte nicht geöffnet werden",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   const followAppointmentToNewPosition = useCallback((params: {
     appointmentId: number;
@@ -600,7 +634,7 @@ export default function Home({ onLogout }: HomeProps) {
               initialItems={monitoringItems}
               isInitialLoading={isMonitoringLoading}
               onOpenAppointment={(appointmentId) => {
-                setAppointmentOverlayContext({
+                void openAppointmentOverlayIfAllowed({
                   origin: "monitoring",
                   appointmentId,
                   returnContext: { targetView: "monitoring" },

@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import type { Note } from "@shared/schema";
+import { formatDisplayDate } from "@/lib/date-display-format";
 
 function htmlToExcerpt(value: string, maxLength = 140): string {
   const plainText = value
@@ -15,10 +14,7 @@ function htmlToExcerpt(value: string, maxLength = 140): string {
 }
 
 function formatNoteDate(value: Date | string | null): string {
-  if (!value) return "-";
-  const parsed = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(parsed.getTime())) return "-";
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+  return formatDisplayDate(value, "-");
 }
 
 function NotesSection({

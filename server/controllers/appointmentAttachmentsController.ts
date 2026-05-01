@@ -52,6 +52,10 @@ export async function createAppointmentAttachment(req: Request, res: Response, n
       res.status(404).json({ message: "Termin nicht gefunden" });
       return;
     }
+    if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
+      res.status(409).json({ code: "ABSENCE_APPOINTMENT_READONLY" });
+      return;
+    }
 
     const parsed = await parseMultipartFile(req, {
       fieldName: "file",
@@ -151,6 +155,10 @@ export async function deleteAppointmentAttachment(req: Request, res: Response, n
     const attachment = await appointmentAttachmentsService.getAppointmentAttachmentById(attachmentId);
     if (!attachment) {
       res.status(404).json({ message: "Anhang nicht gefunden" });
+      return;
+    }
+    if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(attachment.appointmentId)) {
+      res.status(409).json({ code: "ABSENCE_APPOINTMENT_READONLY" });
       return;
     }
 

@@ -32,6 +32,12 @@ import {
 import { loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 import { applyTestSystemSeed } from "../helpers/resetDatabase";
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
+}
+
 function buildAttachmentPayload(prefix: string, label: string) {
   const token = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return {
@@ -429,7 +435,7 @@ test.describe("Dispatcher form data and actions", () => {
 
     const weekCard = page.getByTestId(`card-tour-week-${week.isoYear}-${week.isoWeek}`);
     await expect(weekCard).toBeVisible();
-    await expect(page.getByTestId(`badge-tour-week-member-${assignmentId}`)).toContainText(employee.fullName);
+    await expect(page.getByTestId(`badge-tour-week-member-${assignmentId}`)).toContainText(getCompactEmployeeLabel(employee));
     await expect(page.getByTestId(`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`)).toBeVisible();
     await expect(page.getByTestId(`button-tour-week-menu-${week.isoYear}-${week.isoWeek}`)).toBeVisible();
     await weekCard.dblclick();

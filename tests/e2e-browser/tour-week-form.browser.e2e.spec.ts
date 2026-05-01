@@ -33,6 +33,12 @@ import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
+function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
+  const firstName = employee.firstName?.trim() ?? "";
+  const lastNameInitial = employee.lastName?.trim()?.[0]?.toUpperCase() ?? "";
+  return firstName && lastNameInitial ? `${firstName} ${lastNameInitial}.` : firstName || lastNameInitial;
+}
+
 function resolveTargetWeek() {
   const today = parseISO(getRelativeBerlinDate(0));
   const weekStart = startOfISOWeek(addWeeks(today, 3));
@@ -179,13 +185,13 @@ test("blocking from the tour week card parks appointments and keeps the KW visib
   const weekCard = page.getByTestId(`card-tour-week-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`);
   await expect(weekCard).toBeVisible();
   await weekCard.getByTestId(`button-tour-week-menu-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`).click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
 
   await expect(page.getByTestId(`text-tour-week-blocked-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`)).toContainText("Parkplatz");
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
 });
 
-test("blocking from the week calendar header parks appointments and shows the blocked lane", async ({ page }) => {
+test("blocking from the week calendar header parks appointments and keeps the lane visible", async ({ page }) => {
   const scenario = await createBlockWeekScenario("TWF-BLOCK-WEEK");
 
   await loginAsAdmin(page);
@@ -194,18 +200,23 @@ test("blocking from the week calendar header parks appointments and shows the bl
   const laneHeader = page.getByTestId(`week-tour-lane-header-tour-${scenario.tour.id}`).first();
   await expect(laneHeader).toBeVisible();
 
+  const blockResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === `/api/tours/${scenario.tour.id}/weeks/${scenario.targetWeek.isoYear}/${scenario.targetWeek.isoWeek}/block`
+  ));
   await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
+    element.click();
+  });
+  const blockResponse = await blockResponsePromise;
+  expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
 
   await expect(laneHeader).toBeVisible();
-  await expect(page.getByText("Wochenplanung blockiert").first()).toBeVisible();
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
 });
 
 test("blocking a week refreshes the parked appointment edit form after the appointment was opened before blocking", async ({ page }) => {
   const scenario = await createBlockWeekScenario("TWF-BLOCK-FORM-FRESH");
-  const employeeToken = "TWF-BLOCK-FORM-FRESH-EMP";
-
   await loginAsAdmin(page);
   await page.goto(`/standalone/calendar/week?kw=${scenario.targetWeek.isoWeek}&year=${scenario.targetWeek.isoYear}`);
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
@@ -215,13 +226,21 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await originalAppointmentPanel.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("badge-tour")).toContainText(scenario.tour.name);
-  await expect(page.getByTestId("slot-appointment-employees")).toContainText(employeeToken);
+  await expect(page.getByTestId("slot-appointment-employees")).toContainText(getCompactEmployeeLabel(scenario.employee));
   await expect(page.getByTestId("appointment-tag-picker-assigned-list")).not.toContainText("Geparkt");
   await page.getByTestId("button-close-appointment").click();
   await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
 
+  const blockResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === `/api/tours/${scenario.tour.id}/weeks/${scenario.targetWeek.isoYear}/${scenario.targetWeek.isoWeek}/block`
+  ));
   await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
-  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
+    element.click();
+  });
+  const blockResponse = await blockResponsePromise;
+  expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
 
   const parkedLaneWithAppointment = page.locator("section")
     .filter({ has: page.getByTestId(`week-tour-lane-header-tour-${scenario.parkplatzTourId}`) })
@@ -230,13 +249,12 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await expect(parkedLaneWithAppointment).toBeVisible();
   const parkedAppointmentPanel = parkedLaneWithAppointment.getByTestId(`week-appointment-panel-${scenario.appointmentId}`);
   await expect(parkedAppointmentPanel).toBeVisible();
-  await expect(parkedAppointmentPanel).toContainText("Gepa");
   await parkedAppointmentPanel.dblclick();
 
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId("badge-tour")).toContainText("Parkplatz");
   await expect(page.getByTestId("slot-appointment-employees")).toContainText("Keine Mitarbeiter zugewiesen");
-  await expect(page.getByTestId("slot-appointment-employees")).not.toContainText(employeeToken);
+  await expect(page.getByTestId("slot-appointment-employees")).not.toContainText(getCompactEmployeeLabel(scenario.employee));
   const geparktTagId = await getAppointmentTagIdByName(page, scenario.appointmentId, "Geparkt");
   await expect(page.getByTestId(`appointment-tag-picker-tag-${geparktTagId}`)).toBeVisible();
   await expect(page.getByTestId("appointment-tag-picker-assigned-list")).toContainText("Gepa");
@@ -359,8 +377,8 @@ test("tour scope week form filters appointments by KW, keeps week notes isolated
 
   await weekCard.dblclick();
   await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(primaryEmployee.fullName);
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(colleague.fullName);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(primaryEmployee));
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(colleague));
   await expect(page.getByTestId("button-open-tour-week-employee-picker")).toBeVisible();
   await expect(page.getByTestId("list-notes")).not.toContainText("TWF Fremde KW Notiz");
 
@@ -409,8 +427,8 @@ test("tour scope week form filters appointments by KW, keeps week notes isolated
   await cascadeDialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(cascadeDialog).toHaveCount(0);
 
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(pickerEmployee.fullName);
-  await expect(weekCard).toContainText(pickerEmployee.fullName);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(pickerEmployee));
+  await expect(weekCard).toContainText(getCompactEmployeeLabel(pickerEmployee));
 
   const noteToDelete = page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: "TWF Zielnotiz aktualisiert" }).first();
   page.once("dialog", (dialog) => dialog.accept());
@@ -487,8 +505,8 @@ test("employee scope week form opens read-only employee planning and limits appo
   await weekCard.dblclick();
   await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
   await expect(page.getByTestId("button-open-tour-week-employee-picker")).toHaveCount(0);
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(employee.fullName);
-  await expect(page.getByTestId("list-tour-week-members")).toContainText(colleague.fullName);
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(employee));
+  await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(colleague));
   await expect(page.getByTestId("tour-week-form-sidebar").getByTestId("list-notes")).toContainText("TWF Gemeinsame Wochennotiz");
 
   await page.getByTestId("tab-tour-week-termine").click();

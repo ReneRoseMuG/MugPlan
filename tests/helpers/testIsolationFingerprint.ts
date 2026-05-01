@@ -11,6 +11,12 @@ import {
   RESERVED_VACANT_TAG_NAME,
 } from "../../shared/appointmentCancellation";
 import {
+  ABSENCE_TAG_NAMES,
+  ABSENCE_CUSTOMER_NAME,
+  ABSENCE_CUSTOMER_NUMBER,
+  ABSENCE_TOUR_NAME,
+} from "../../shared/absenceAppointments";
+import {
   appointmentAttachments,
   appointmentEmployees,
   appointmentNotes,
@@ -52,6 +58,7 @@ type FingerprintResult = {
 const CORE_ROLE_CODES = ["ADMIN", "DISPATCHER", "READER"] as const;
 const SEEDED_TOUR_NAMES = [
   "Parkplatz",
+  ABSENCE_TOUR_NAME,
   "Schröder Halle",
   "Tour 1",
   "Tour 2",
@@ -65,11 +72,18 @@ const SEEDED_TAG_NAMES = [
   MANAGED_MESSE_TAG_NAME,
   MANAGED_REMARKS_TAG_NAME,
   RESERVED_VACANT_TAG_NAME,
+  ...ABSENCE_TAG_NAMES,
 ] as const;
 const SEEDED_NOTE_TEMPLATE_TITLES = [
   "Reklamation",
   "Messe Aufbau/Abbau",
   "Info zum Termin",
+] as const;
+const SEEDED_CUSTOMERS = [
+  {
+    customerNumber: ABSENCE_CUSTOMER_NUMBER,
+    fullName: ABSENCE_CUSTOMER_NAME,
+  },
 ] as const;
 
 async function listFilesRecursive(directoryPath: string): Promise<string[]> {
@@ -166,6 +180,9 @@ export async function checkDatabaseFingerprint(profile: DatabaseBaselineProfile)
 
   const coreCounts = await collectCoreCounts();
   for (const row of coreCounts) {
+    if (profile === "seeded" && row.label === "customers") {
+      continue;
+    }
     if (row.value !== 0) {
       issues.push({
         scope: "database",
@@ -189,6 +206,9 @@ export async function checkDatabaseFingerprint(profile: DatabaseBaselineProfile)
     .select({ title: noteTemplates.title })
     .from(noteTemplates);
   const templateTitles = templateRows.map((row) => row.title).sort();
+  const seededCustomerRows = await db
+    .select({ customerNumber: customers.customerNumber, fullName: customers.fullName })
+    .from(customers);
 
   if (profile === "core") {
     if (tagNames.length > 0) {
@@ -215,6 +235,19 @@ export async function checkDatabaseFingerprint(profile: DatabaseBaselineProfile)
   }
 
   if (profile === "seeded") {
+    const normalizedSeededCustomers = seededCustomerRows
+      .map((row) => ({
+        customerNumber: row.customerNumber,
+        fullName: row.fullName,
+      }))
+      .sort((left, right) => left.customerNumber.localeCompare(right.customerNumber));
+    if (JSON.stringify(normalizedSeededCustomers) !== JSON.stringify([...SEEDED_CUSTOMERS])) {
+      issues.push({
+        scope: "database",
+        subject: "customers",
+        message: `expected seeded customers ${SEEDED_CUSTOMERS.map((customer) => `${customer.customerNumber} ${customer.fullName}`).join(", ")}, got ${normalizedSeededCustomers.map((customer) => `${customer.customerNumber} ${customer.fullName}`).join(", ") || "<empty>"}`,
+      });
+    }
     if (JSON.stringify(tagNames) !== JSON.stringify([...SEEDED_TAG_NAMES].sort())) {
       issues.push({
         scope: "database",

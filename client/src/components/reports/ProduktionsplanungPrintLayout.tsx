@@ -1,5 +1,3 @@
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
 import type { ReportProduktionsplanungResponse, ReportProduktionsplanungProjectRow } from "@shared/routes";
 import type { Tag } from "@shared/schema";
 
@@ -14,6 +12,7 @@ import {
   type ProduktionsplanungArticleCategory,
 } from "@/components/reports/produktionsplanungProjectCard.shared";
 import { renderProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
+import { formatDisplayDate } from "@/lib/date-display-format";
 import { cn } from "@/lib/utils";
 
 type ProduktionsplanungItemTotal = {
@@ -30,10 +29,7 @@ type ProduktionsplanungCategoryGroup = {
 export type ProduktionsplanungPrintCategory = ProduktionsplanungArticleCategory;
 
 function formatDate(value: string | null): string {
-  if (!value) return "-";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+  return formatDisplayDate(value, "-");
 }
 
 function resolveValue(value: string | null): string {

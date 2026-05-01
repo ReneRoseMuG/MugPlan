@@ -196,7 +196,20 @@ vi.mock("@/components/CustomerAttachmentsPanel", () => ({
 }));
 
 function buildQueryResult(queryKey: unknown) {
-  if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[1] === 7) {
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[1] === 7 && queryKey[2] === "tags") {
+    return {
+      data: [
+        {
+          tag: { id: 31, name: "Projekt-Info", color: "#225588", isDefault: false, version: 1 },
+          relationVersion: 2,
+        },
+      ],
+      isLoading: false,
+      error: null,
+    };
+  }
+
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/projects" && queryKey[1] === 7 && queryKey.length === 2) {
     return {
       data: {
         project: {

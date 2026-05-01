@@ -8,7 +8,8 @@
  * - Soft-Delete entfernt Anhang aus der Liste und dekrementiert den Counter ohne Seitenreload.
  * - Hard-Delete entfernt Anhang aus der Liste und dekrementiert den Counter.
  * - Abbrechen im Dialog laesst Anhang und Counter unveraendert.
- * - Historischer Termin: Anhaenge bleiben sichtbar, Mutationsaktionen bleiben unsichtbar.
+ * - Historischer Termin: fuer Nicht-Admins bleiben Anhaenge sichtbar, Mutationsaktionen bleiben unsichtbar.
+ * - Historischer Termin: fuer Admins bleiben Bearbeitung und Attachment-Aktionen verfuegbar.
  * - Die Hover-Preview auf der Wochenkarte enthaelt das geloeschte Attachment nicht mehr.
  *
  * Fehlerfaelle:
@@ -18,7 +19,7 @@
  *
  * Ziel:
  * Browser-seitige Ende-zu-Ende-Absicherung des Loesch-Workflows fuer Projekt
- * sowie der Readonly-Sonderregel fuer historische Termine.
+ * sowie der rollenabhaengigen Sonderregel fuer historische Termine.
  */
 import { expect, test, type Page } from "@playwright/test";
 import * as projectAttachmentsService from "../../server/services/projectAttachmentsService";
@@ -183,7 +184,7 @@ test("Abbruch - Dialog schliessen ohne Loeschung", async ({ page }) => {
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
 });
 
-test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anhaenge sichtbar", async ({ page }) => {
+test("Historischer Termin: Dispatcher sieht Readonly-Ansicht und keine Attachment-Aktionen", async ({ page }) => {
   const customer = await createCustomerFixture("FT19-DEL-HIST-CUST");
   const project = await createProjectFixture({
     prefix: "FT19-DEL-HIST-PROJ",
@@ -201,7 +202,7 @@ test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anha
     ...attachmentPayload,
   });
 
-  await loginAsAdmin(page);
+  await loginAsRole(page, "DISPATCHER");
 
   await page.getByTestId("nav-termine").click();
   const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
@@ -219,4 +220,41 @@ test("Historischer Termin: nur Readonly-Ansicht und kein Action-Button fuer Anha
   await expect(page.getByText(attachmentPayload.originalName)).toBeVisible({ timeout: 5_000 });
   await expect(page.getByTestId(/^attachment-delete-trigger-/)).toHaveCount(0);
   await expect(page.getByTestId("button-add-appointment-attachment")).toHaveCount(0);
+});
+
+test("Historischer Termin: Admin darf Bearbeitungs- und Attachment-Aktionen sehen", async ({ page }) => {
+  const customer = await createCustomerFixture("FT19-DEL-HIST-ADMIN-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT19-DEL-HIST-ADMIN-PROJ",
+    customerId: customer.id,
+    name: "FT19 Historischer Termin Admin",
+  });
+  const appointmentId = await createRawAppointmentFixture({
+    projectId: project.id,
+    startDate: "2020-03-16",
+    title: "FT19 Historischer Termin Admin",
+  });
+  const attachmentPayload = buildAttachmentPayload("hist-appt-admin", "historisch-admin-test");
+  const attachment = await appointmentAttachmentsService.createAppointmentAttachment({
+    appointmentId,
+    ...attachmentPayload,
+  });
+
+  await loginAsAdmin(page);
+
+  await page.getByTestId("nav-termine").click();
+  const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
+  if (!(await allScopeToggle.isVisible())) {
+    await page.getByTestId("button-appointment-period-picker").click();
+  }
+  await expect(page.getByTestId("toggle-appointments-scope-all")).toHaveAttribute("data-state", "on");
+  const appointmentRow = page.getByRole("row").filter({ hasText: "FT19 Historischer Termin Admin" }).first();
+  await expect(appointmentRow).toBeVisible({ timeout: 10_000 });
+  await appointmentRow.dblclick();
+
+  await expect(page.getByTestId("button-save-appointment")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Historische Termine können nicht verändert werden.")).toHaveCount(0);
+  await expect(page.getByText(attachmentPayload.originalName)).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByTestId(`attachment-delete-trigger-${attachment.id}`)).toBeVisible();
+  await expect(page.getByTestId("button-add-document-header")).toBeVisible();
 });

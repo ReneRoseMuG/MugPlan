@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { addWeeks, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
+import { addWeeks, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
 import { CalendarPlus2, LayoutList, Lock, LockOpen, MoreVertical, Route, ScrollText, Trash2, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
@@ -35,6 +35,7 @@ import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList"
 import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { useSetting } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
+import { formatDisplayDate } from "@/lib/date-display-format";
 import type { Tour, Employee } from "@shared/schema";
 
 type TourWeekEmployeeMember = {
@@ -603,7 +604,7 @@ export function TourEditForm({
                       </>
                     )}
                     legacyLabel=
-                          {week.isLocked ? "Schreibgeschützt ab Wochenstart" : `${format(new Date(`${week.weekStartDate}T00:00:00`), "dd.MM.yyyy")} - ${format(new Date(`${week.weekEndDate}T00:00:00`), "dd.MM.yyyy")}`}
+                          {week.isLocked ? "Schreibgeschützt ab Wochenstart" : `${formatDisplayDate(week.weekStartDate, week.weekStartDate)} - ${formatDisplayDate(week.weekEndDate, week.weekEndDate)}`}
                   >
                     <div className="space-y-2">
                       {week.isBlocked ? (

@@ -5,8 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { api } from "@shared/routes";
 import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
+import { formatDisplayDate, formatDisplayTimestamp } from "@/lib/date-display-format";
 
 const previewOptions = ["small", "medium", "large"] as const;
 type PreviewSize = (typeof previewOptions)[number];
@@ -96,7 +99,7 @@ type DumpImportApplyRow = {
 
 type SystemSeedPreviewItem = {
   key: string;
-  kind: "tag" | "tour" | "noteTemplate";
+  kind: "tag" | "tour" | "customer" | "noteTemplate";
   label: string;
   status: "missing" | "unchanged" | "update" | "migrate";
   message: string;
@@ -121,11 +124,25 @@ function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; 
 }
 
 function formatBackupDate(value: string): string {
-  return new Date(value).toLocaleDateString("de-DE");
+  return formatDisplayDate(value, value);
 }
 
 function formatBackupScope(value: number): string {
   return `${value} DS`;
+}
+
+async function invalidateSystemSeedQueries(): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["/api/tours"] }),
+    queryClient.invalidateQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/customers",
+    }),
+    queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] }),
+    queryClient.invalidateQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/tags",
+    }),
+    invalidateTagProjectionQueries(),
+  ]);
 }
 
 function BackupStatusIcon({ row }: { row: BackupLogRow }) {
@@ -250,8 +267,9 @@ export function SettingsPage() {
       setSystemSeedError(null);
       setSystemSeedLogLines([]);
     },
-    onSuccess: (payload) => {
+    onSuccess: async (payload) => {
       setSystemSeedLogLines(payload.logLines);
+      await invalidateSystemSeedQueries();
     },
     onError: (error) => {
       setSystemSeedError(error instanceof Error ? error.message : "System-Seed konnte nicht ausgeführt werden");
@@ -1207,7 +1225,7 @@ export function SettingsPage() {
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="settings-system-seed-section">
                     <p className="font-semibold text-slate-900 text-sm">System-Stammdaten</p>
                     <p className="mb-3 text-xs text-slate-500">
-                      Prüft definierte System-Tags, Soll-Touren und Notizvorlagen, zeigt Abweichungen mit Checkboxen und führt nur die bestätigten Schritte aus.
+                      Prüft definierte System-Tags, Soll-Touren, Systemkunden und Notizvorlagen, zeigt Abweichungen mit Checkboxen und führt nur die bestätigten Schritte aus.
                     </p>
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
@@ -1272,7 +1290,13 @@ export function SettingsPage() {
                                     <div className="flex flex-wrap items-center gap-2">
                                       <span className="text-sm font-medium text-slate-900">{item.label}</span>
                                       <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
-                                        {item.kind === "noteTemplate" ? "Notizvorlage" : item.kind === "tour" ? "Tour" : "Tag"}
+                                        {item.kind === "noteTemplate"
+                                          ? "Notizvorlage"
+                                          : item.kind === "tour"
+                                            ? "Tour"
+                                            : item.kind === "customer"
+                                              ? "Kunde"
+                                              : "Tag"}
                                       </span>
                                       <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
                                         {statusLabel}
@@ -1460,7 +1484,7 @@ export function SettingsPage() {
                           <tbody>
                             {dumpRows.map((row) => (
                               <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
-                                <td className="px-3 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
+                                <td className="px-3 py-2">{formatDisplayTimestamp(row.createdAt, row.createdAt)}</td>
                                 <td className="px-3 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
                                 <td className="px-3 py-2">
                                   <a

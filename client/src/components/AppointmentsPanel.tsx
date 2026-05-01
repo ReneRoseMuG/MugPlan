@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { SidebarChildPanel } from "@/components/ui/sidebar-child-panel";
 import { TerminInfoBadge } from "@/components/ui/termin-info-badge";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 
 type AppointmentItemMode = "kunde" | "projekt" | "mitarbeiter";
 
@@ -103,7 +104,15 @@ export function AppointmentsPanel({
               onRemove={appointment.onRemove}
               actionDisabled={appointment.actionDisabled}
               testId={appointment.testId}
-              onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
+              onDoubleClick={
+                onOpenAppointment
+                && !isAbsenceAppointmentSummary({
+                  tourName: appointment.previewAppointment.tourName,
+                  appointmentTags: appointment.previewAppointment.appointmentTags,
+                })
+                  ? () => onOpenAppointment(appointment.id)
+                  : undefined
+              }
               fullWidth
               compact={compact}
             />

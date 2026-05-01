@@ -80,7 +80,6 @@ import {
 } from "@/lib/workflow-note-templates";
 import {
   isManagedComplaintTagName,
-  isManagedRemarksTagName,
   MANAGED_COMPLAINT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
@@ -91,16 +90,6 @@ async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, { credentials: "include" });
   if (!res.ok) throw new Error((await res.text()) || `Request failed for ${url}`);
   return res.json() as Promise<T>;
-}
-
-function hasVisibleProjectDescriptionContent(value: string | null | undefined): boolean {
-  if (!value) return false;
-  const normalized = value
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return normalized.length > 0;
 }
 
 interface ProjectFormProps {
@@ -1298,25 +1287,6 @@ export function ProjectForm({
     return persistDraftProjectAttachments(targetProjectId);
   };
 
-  const ensureManagedRemarksTagForProject = async (
-    targetProjectId: number,
-    descriptionHtml: string,
-  ) => {
-    if (!hasVisibleProjectDescriptionContent(descriptionHtml)) {
-      return;
-    }
-
-    const remarksTag = availableTags.find((entry) => isManagedRemarksTagName(entry.name));
-    if (!remarksTag) {
-      return;
-    }
-
-    await apiRequest("POST", `/api/projects/${targetProjectId}/tags`, { tagId: remarksTag.id });
-    await queryClient.invalidateQueries({ queryKey: ['/api/projects', targetProjectId, 'tags'] });
-    await queryClient.invalidateQueries({ queryKey: ['/api/projects', targetProjectId] });
-    await invalidateProjectQueries();
-  };
-
   const persistEditAttachmentDrafts = async (targetProjectId: number) => {
     const attachmentLinked = await persistDraftProjectAttachments(targetProjectId);
     setDraftProjectAttachments([]);
@@ -1459,9 +1429,6 @@ export function ProjectForm({
       if (effectiveProjectId && draftProjectAttachments.length > 0) {
         extractionAttachmentLinked = await persistEditAttachmentDrafts(effectiveProjectId);
       }
-      if (effectiveProjectId) {
-        await ensureManagedRemarksTagForProject(effectiveProjectId, persistedDescriptionMd);
-      }
     } else {
       let createdProject: Awaited<ReturnType<typeof createMutation.mutateAsync>>;
       try {
@@ -1500,7 +1467,6 @@ export function ProjectForm({
       }
       try {
         extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id);
-        await ensureManagedRemarksTagForProject(createdProject.id, persistedDescriptionMd);
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'tags'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'notes'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'attachments'] });

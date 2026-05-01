@@ -21,6 +21,7 @@ import { formatListDate, formatListTime } from "@/lib/list-display-format";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 import type { AppointmentListAvailableRange } from "@/components/ui/appointment-period-picker";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 
 type AppointmentListItem = CalendarAppointment & {
   startTimeHour: number | null;
@@ -588,7 +589,12 @@ export function AppointmentsListPage({
           columns={tableColumns}
           rows={rows}
           rowKey={(row) => row.id}
-          onRowDoubleClick={(row) => onOpenAppointment?.(row.id, context ?? { type: "standalone" })}
+          onRowDoubleClick={(row) => {
+            if (isAbsenceAppointmentSummary({ tourName: row.tourName, appointmentTags: row.appointmentTags })) {
+              return;
+            }
+            onOpenAppointment?.(row.id, context ?? { type: "standalone" });
+          }}
           rowPreviewRenderer={(row) => createAppointmentWeeklyPanelPreview(row, { sizeProfile: "sidebarTable" })}
           rowClassName={(row) => {
             const classNames: string[] = [];

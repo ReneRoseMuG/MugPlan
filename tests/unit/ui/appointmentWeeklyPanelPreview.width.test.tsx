@@ -30,6 +30,7 @@ vi.mock("@/components/calendar/CalendarWeekAppointmentPanel", () => ({
 import {
   AppointmentWeeklyPanelPreview,
   appointmentWeeklyPanelPreviewOptions,
+  createAppointmentWeeklyPanelPreview,
   resolveAppointmentWeeklyPanelPreviewWidthPx,
 } from "../../../client/src/components/ui/badge-previews/appointment-weekly-panel-preview";
 import {
@@ -142,6 +143,60 @@ describe("FT03 weekly preview width resolution", () => {
       mode: "cursor",
       maxHeight: null,
       scrollY: "visible",
+    });
+  });
+
+  it("uses an internal height cap for sidebar/table previews", () => {
+    const preview = createAppointmentWeeklyPanelPreview(
+      {
+        id: 78,
+        version: 1,
+        projectId: 1,
+        projectName: "Projekt",
+        projectVersion: 1,
+        projectOrderNumber: "A-2",
+        projectArticleItems: [],
+        projectDescription: null,
+        project: null,
+        startDate: "2099-04-02",
+        endDate: null,
+        startTime: null,
+        tourId: null,
+        tourName: null,
+        tourColor: null,
+        customer: {
+          id: 1,
+          customerNumber: "K-1",
+          fullName: "Kunde",
+          postalCode: "12345",
+          city: "Berlin",
+          addressLine1: null,
+          phone: null,
+          email: null,
+        },
+        customerNotesCount: 0,
+        projectNotesCount: 0,
+        appointmentNotesCount: 0,
+        customerAttachmentsCount: 0,
+        projectAttachmentsCount: 0,
+        appointmentAttachmentsCount: 0,
+        totalAttachmentsCount: 0,
+        appointmentTags: [],
+        customerTags: [],
+        projectTags: [],
+        displayMode: "standard",
+        employees: [],
+        isLocked: false,
+        isCancelled: false,
+      },
+      { sizeProfile: "sidebarTable" },
+    );
+
+    expect(preview.options).toMatchObject({
+      mode: "cursor",
+      maxWidth: 320,
+      maxHeight: 360,
+      scrollY: "auto",
     });
   });
 });

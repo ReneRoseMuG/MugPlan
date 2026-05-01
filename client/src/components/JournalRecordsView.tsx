@@ -1,5 +1,4 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { RotateCcw } from "lucide-react";
 import { api } from "@shared/routes";
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
+import { formatDisplayTimestamp } from "@/lib/date-display-format";
 import { cn } from "@/lib/utils";
 
 type JournalContextItem = {
@@ -82,11 +82,7 @@ function getEntityLabel(tableName: string): string {
 }
 
 function formatTimestamp(value: string): string {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return value;
-  }
-  return format(parsed, "dd.MM.yyyy HH:mm");
+  return formatDisplayTimestamp(value, value);
 }
 
 export function JournalRecordsView({

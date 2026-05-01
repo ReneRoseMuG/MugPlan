@@ -1,3 +1,5 @@
+import { isAbsenceTagName } from "./absenceAppointments";
+
 export const RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME = "Storniert";
 export const RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR = "#3B2025";
 export const MANAGED_COMPLAINT_TAG_NAME = "Reklamation";
@@ -52,7 +54,8 @@ export function isProtectedSystemTagName(value: string): boolean {
     || isManagedComplaintTagName(value)
     || isManagedSpecialMeasureTagName(value)
     || isManagedMesseTagName(value)
-    || isReservedVacantTagName(value);
+    || isReservedVacantTagName(value)
+    || isAbsenceTagName(value);
 }
 
 export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain): boolean {
@@ -61,6 +64,9 @@ export function isPickerVisibleForDomain(value: string, domain: TagPickerDomain)
     return false;
   }
   if (isReservedVacantTagName(value)) {
+    return false;
+  }
+  if (isAbsenceTagName(value)) {
     return false;
   }
 

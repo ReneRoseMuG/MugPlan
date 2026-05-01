@@ -38,6 +38,15 @@ export async function getAppointmentNotes(appointmentId: number): Promise<Note[]
   return result.map((row) => row.note);
 }
 
+export async function getAppointmentIdByNoteId(noteId: number): Promise<number | null> {
+  const [relation] = await db
+    .select({ appointmentId: appointmentNotes.appointmentId })
+    .from(appointmentNotes)
+    .where(eq(appointmentNotes.noteId, noteId))
+    .limit(1);
+  return relation?.appointmentId ?? null;
+}
+
 export async function getEmployeeNotes(employeeId: number): Promise<Note[]> {
   const result = await db
     .select({ note: notes })

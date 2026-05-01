@@ -5,6 +5,7 @@ import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { getWeekAppointmentGridSpan, getWeekAppointmentGridStartColumn } from "@/lib/calendar-utils";
 import { CalendarWeekAppointmentPanel } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile } from "./CalendarWeekSpanningTile";
+import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { buildWeekLaneRenderData } from "./CalendarWeekView";
 
@@ -212,7 +213,15 @@ export function TourPostalPlanWeekPreview({
                 zIndex: 10,
                 alignSelf: "start",
               }}
-              onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
+              onDoubleClick={
+                onOpenAppointment
+                && !isAbsenceAppointmentSummary({
+                  tourName: appointment.tourName,
+                  appointmentTags: appointment.appointmentTags,
+                })
+                  ? () => onOpenAppointment(appointment.id)
+                  : undefined
+              }
               testId={`tour-postal-plan-spanning-tile-${appointment.id}`}
             />
           );
@@ -238,7 +247,15 @@ export function TourPostalPlanWeekPreview({
                 weekTileBodyMode="collapsed"
                 context="week-calendar"
                 testId={`tour-postal-plan-appointment-panel-${appointment.id}`}
-                onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
+                onDoubleClick={
+                  onOpenAppointment
+                  && !isAbsenceAppointmentSummary({
+                    tourName: appointment.tourName,
+                    appointmentTags: appointment.appointmentTags,
+                  })
+                    ? () => onOpenAppointment(appointment.id)
+                    : undefined
+                }
               />
             </div>
           );
@@ -261,7 +278,15 @@ export function TourPostalPlanWeekPreview({
                   weekTileBodyMode="collapsed"
                   context="week-calendar"
                   testId={`tour-postal-plan-overflow-panel-${appointment.id}`}
-                  onDoubleClick={onOpenAppointment ? () => onOpenAppointment(appointment.id) : undefined}
+                  onDoubleClick={
+                    onOpenAppointment
+                    && !isAbsenceAppointmentSummary({
+                      tourName: appointment.tourName,
+                      appointmentTags: appointment.appointmentTags,
+                    })
+                      ? () => onOpenAppointment(appointment.id)
+                      : undefined
+                  }
                 />
               );
             })}
