@@ -242,7 +242,7 @@ Codex führt ausschließlich seriell `git add`, `git commit` und `git push` für
 Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
 
 `journal`  
-Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag direkt als normalen Block auf der Notion-Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` gemäß Abschnitt 14.2a. Unterseiten sind dabei unzulässig.
+Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag direkt als normalen Block auf der Notion-Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` gemäß Abschnitt 14.2a. Unterseiten sind dabei unzulässig. Für den Journaleintrag gilt dabei zwingend das sichtbare Datumsformat `dd.MM.yy`.
 
 `docs-sync`  
 Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
@@ -331,9 +331,12 @@ UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftr
 
 - Alle Quelltexte und Doku-Dateien werden in UTF-8 gespeichert
 - Keine UTF-16-Dateien in `client/`, `server/`, `shared/`, `tests/`, `docs/`, `script/`
-- Wenn nicht ausdrücklich anders angegeben, ist für Datumsangaben in Antworten, Logs, Dokumentation, Journaleinträgen, Notion-Einträgen, UI-Texten und fachlichen Beschreibungen zwingend das Format `dd.mm.yy` zu verwenden
-- Andere Datumsformate wie `yyyy-mm-dd`, `dd.mm.yyyy`, `yyyy/mm/dd`, englische Monatsnamen oder Langformen sind nur zulässig, wenn der Nutzer, ein externer Standard oder ein technischer Kontext dies ausdrücklich verlangt
-- Diese Datumsregel gilt nicht für technisch fest vorgegebene Formate wie Dateinamen, API-Contracts, ISO-Datumsfelder, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token oder andere maschinengebundene Bezeichner
+- Für alle sichtbaren und menschenlesbaren Datumsangaben ist projektweit zwingend das Kurzformat `dd.MM.yy` zu verwenden
+- Das gilt ausdrücklich auch für UI-Texte, Labels, Hinweise, Tooltips, Fehlermeldungen, Kommentare im Code, Testbeschreibungen, Testkommentare, Logs, Journaltexte, Notion-Einträge, Dokumentation und sonstige menschenlesbare Ausgaben
+- ISO `yyyy-MM-dd` ist ausschließlich für interne Speicherung, Datenbankwerte, API-Payloads, Query-Parameter, maschinenlesbare Werte, technische IDs, Dateinamen, Contracts, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token und andere technisch fest vorgegebene Kontexte zulässig
+- Sichtbare Datumsangaben in `yyyy-MM-dd`, `MM/DD/YYYY`, `dd/MM/yyyy`, `dd.MM.yyyy`, englischen Monatsnamen oder anderen davon abweichenden Menschenformaten gelten ausdrücklich als Fehler
+- Für Frontend-Anzeigeformate sind zentrale Helfer verpflichtend zu verwenden; direkte Ad-hoc-Formatierungen sichtbarer Datumswerte sind nur zulässig, wenn der bestehende zentrale Helfer nachweislich nicht passt
+- Verifikationspflicht nach Änderungen an sichtbaren Datumsangaben: gezielt nach verbotenen Formaten und unscharfen Datumsformatierern suchen, insbesondere mit `rg -n "dd\\.MM\\.yyyy|yyyy-MM-dd|MM/DD/YYYY|dd/MM/yyyy|toLocaleDateString\\(|toLocaleString\\(\"de-DE\"\\)" client server tests docs agents.md CLAUDE.md`, und verbleibende Treffer technisch gegen menschenlesbar abgrenzen
 - In Antworten, Plänen, Logs und Dokumentation sind deutsche Umlaute und `ß` als echte Zeichen zu schreiben (`ä`, `ö`, `ü`, `Ä`, `Ö`, `Ü`, `ß`). Umschreibungen wie `ae`, `oe`, `ue` oder `ss` sind in normaler Sprache unzulässig, sofern sie nicht technisch zwingend durch bestehende Dateinamen, APIs, Fremdsysteme oder Code-Bezeichner vorgegeben sind.
 - Bei falsch dargestellten Umlauten oder Sonderzeichen: `npm run check` ausführen, gemeldete Datei in UTF-8 korrigieren, erneut `npm run check`, dann Commit
 
@@ -719,8 +722,8 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 - Der neue Eintrag steht immer ganz oben im Journal.
 - Bestehende Struktur, Reihenfolge und Formatierung der Seite sind strikt einzuhalten.
 - Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Notion-Feature-Seiten tatsächlich belegt sind.
-- Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJJJ | [Typ] | [Feature]: [Kurztitel]`.
-- Für den Journaltitel ist hier bewusst das volle europäische Datum `TT.MM.JJJJ` zu verwenden, zum Beispiel `01.05.2026`.
+- Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJ | [Typ] | [Feature]: [Kurztitel]`.
+- Für den Journaltitel ist hier bewusst das projektweite Kurzformat `TT.MM.JJ` zu verwenden, zum Beispiel `01.05.26`.
 - Der Eintrag muss mindestens diese Inhalte enthalten, sofern für den Auftrag jeweils real belegbar:
   - Zusammenfassung
   - Art der Änderung

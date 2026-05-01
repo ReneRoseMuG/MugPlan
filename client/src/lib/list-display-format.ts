@@ -1,16 +1,7 @@
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
-
-function parseDateOnly(value: string | null | undefined): Date | null {
-  if (!value) return null;
-  const parsed = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
+import { formatDisplayDate } from "@/lib/date-display-format";
 
 export function formatListDate(value: string | null | undefined): string {
-  const parsed = parseDateOnly(value);
-  if (!parsed) return "";
-  return format(parsed, "dd.MM.yy", { locale: de });
+  return formatDisplayDate(value, "");
 }
 
 export function formatListDateRange(startDate: string | null | undefined, endDate: string | null | undefined): string {

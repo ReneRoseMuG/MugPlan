@@ -43,8 +43,12 @@ function formatDateIso(input: Date): string {
 function formatDateGerman(input: Date): string {
   const d = String(input.getDate()).padStart(2, "0");
   const m = String(input.getMonth() + 1).padStart(2, "0");
-  const y = input.getFullYear();
+  const y = String(input.getFullYear()).slice(-2);
   return `${d}.${m}.${y}`;
+}
+
+function formatTimestampGerman(input: Date): string {
+  return `${formatDateGerman(input)} ${String(input.getHours()).padStart(2, "0")}:${String(input.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatDateForDisplay(value: string | null): string {
@@ -341,7 +345,7 @@ async function buildPdfBuffer(appointments: ExportAppointmentRow[]): Promise<Buf
 
   doc.fontSize(16).text("Anstehende Termine");
   doc.moveDown(0.5);
-  doc.fontSize(10).text(`Erzeugt am: ${new Date().toISOString()}`);
+  doc.fontSize(10).text(`Erzeugt am: ${formatTimestampGerman(new Date())}`);
   doc.moveDown(1);
 
   const byDate = groupBy(appointments, (row) => row.startDate ?? "");

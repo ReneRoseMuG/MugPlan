@@ -1,7 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
-import { de } from "date-fns/locale";
 import type { z } from "zod";
 import { api } from "@shared/routes";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
@@ -26,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { useSetting, useSettings } from "@/hooks/useSettings";
+import { formatDisplayDate } from "@/lib/date-display-format";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
@@ -81,7 +81,8 @@ function resolveRequiredToDate(value: string | undefined, fallback: string): str
 }
 
 function buildQuickRangeLabel(referenceDate: Date, offsetWeeks: number): string {
-  return `Mo. ${format(startOfISOWeek(addWeeks(referenceDate, offsetWeeks)), "dd.MM.yyyy", { locale: de })}`;
+  const monday = startOfISOWeek(addWeeks(referenceDate, offsetWeeks));
+  return `Mo. ${formatDisplayDate(monday, format(monday, "yyyy-MM-dd"))}`;
 }
 
 function buildQuickRange(referenceDate: Date, offsetWeeks: number) {

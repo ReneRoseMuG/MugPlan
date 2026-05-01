@@ -258,6 +258,12 @@ UI-Elemente darf Claude nur ändern oder ergänzen, wenn dies **explizit im Auft
 
 - Keine Zugangsdaten, Tokens oder Secrets in Quellcode, Logs oder Dokumentation
 - Für Beispiele, Tests oder Platzhalter ausschließlich synthetische, eindeutig nicht-produktive Daten verwenden
+- Für alle sichtbaren und menschenlesbaren Datumsangaben ist projektweit zwingend das Kurzformat `dd.MM.yy` zu verwenden
+- Das gilt ausdrücklich auch für UI-Texte, Labels, Hinweise, Tooltips, Fehlermeldungen, Kommentare im Code, Testbeschreibungen, Testkommentare, Logs, Journaltexte, Notion-Einträge, Dokumentation und sonstige menschenlesbare Ausgaben
+- ISO `yyyy-MM-dd` ist ausschließlich für interne Speicherung, Datenbankwerte, API-Payloads, Query-Parameter, maschinenlesbare Werte, technische IDs, Dateinamen, Contracts, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token und andere technisch fest vorgegebene Kontexte zulässig
+- Sichtbare Datumsangaben in `yyyy-MM-dd`, `MM/DD/YYYY`, `dd/MM/yyyy`, `dd.MM.yyyy`, englischen Monatsnamen oder anderen davon abweichenden Menschenformaten gelten ausdrücklich als Fehler
+- Für Frontend-Anzeigeformate sind zentrale Helfer verpflichtend zu verwenden; direkte Ad-hoc-Formatierungen sichtbarer Datumswerte sind nur zulässig, wenn der bestehende zentrale Helfer nachweislich nicht passt
+- Verifikationspflicht nach Änderungen an sichtbaren Datumsangaben: gezielt nach verbotenen Formaten und unscharfen Datumsformatierern suchen, insbesondere mit `rg -n "dd\\.MM\\.yyyy|yyyy-MM-dd|MM/DD/YYYY|dd/MM/yyyy|toLocaleDateString\\(|toLocaleString\\(\"de-DE\"\\)" client server tests docs agents.md CLAUDE.md`, und verbleibende Treffer technisch gegen menschenlesbar abgrenzen
 - Debug-Ausgaben mit potenziell sensiblen oder personenbezogenen Daten vermeiden
 
 ---

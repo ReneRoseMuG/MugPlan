@@ -1,5 +1,6 @@
-import { differenceInCalendarDays, format, parseISO } from "date-fns";
+import { differenceInCalendarDays, parseISO } from "date-fns";
 import type { CalendarAppointment } from "./calendar-appointments";
+import { formatDisplayDate } from "@/lib/date-display-format";
 
 export const CALENDAR_NEUTRAL_COLOR = "#CBD5E1";
 export const CALENDAR_UNASSIGNED_TOUR_COLOR = "#64748b";
@@ -108,5 +109,5 @@ export function compareAppointmentsByTourIndexThenTime(a: CalendarAppointment, b
 }
 
 export function formatDateLabel(date: string) {
-  return format(parseISO(date), "dd.MM.yyyy");
+  return formatDisplayDate(parseISO(date), date);
 }

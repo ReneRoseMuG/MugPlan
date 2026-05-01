@@ -9,6 +9,7 @@ import { queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { api } from "@shared/routes";
 import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
+import { formatDisplayDate, formatDisplayTimestamp } from "@/lib/date-display-format";
 
 const previewOptions = ["small", "medium", "large"] as const;
 type PreviewSize = (typeof previewOptions)[number];
@@ -123,7 +124,7 @@ function parseBackupFileRefs(filePathRaw: string | null): { excelPath?: string; 
 }
 
 function formatBackupDate(value: string): string {
-  return new Date(value).toLocaleDateString("de-DE");
+  return formatDisplayDate(value, value);
 }
 
 function formatBackupScope(value: number): string {
@@ -1483,7 +1484,7 @@ export function SettingsPage() {
                           <tbody>
                             {dumpRows.map((row) => (
                               <tr key={row.filename} className="border-b border-slate-100" data-testid={`dump-row-${row.filename}`}>
-                                <td className="px-3 py-2">{new Date(row.createdAt).toLocaleString("de-DE")}</td>
+                                <td className="px-3 py-2">{formatDisplayTimestamp(row.createdAt, row.createdAt)}</td>
                                 <td className="px-3 py-2">{(row.sizeBytes / 1024 / 1024).toFixed(2)} MB</td>
                                 <td className="px-3 py-2">
                                   <a

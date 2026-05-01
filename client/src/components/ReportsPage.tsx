@@ -67,6 +67,7 @@ import {
   buildVorlauflistePrintPages,
   type VorlauflistePrintColumn,
 } from "@/lib/vorlaufliste-print-model";
+import { formatDisplayDate } from "@/lib/date-display-format";
 
 type ReportType = "vorlaufliste" | "produktionsplanung" | "auftragsliste";
 
@@ -245,10 +246,7 @@ function toTestIdToken(value: string): string {
 }
 
 function formatDate(value: string | null): string {
-  if (!value) return "-";
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return format(parsed, "dd.MM.yyyy", { locale: de });
+  return formatDisplayDate(value, "-");
 }
 
 function formatCompactWeekdayDate(value: string | null | undefined): string {
