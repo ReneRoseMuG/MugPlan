@@ -2,6 +2,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { createAppointmentWeeklyPanelPreview } from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import { CALENDAR_NEUTRAL_COLOR } from "@/lib/calendar-utils";
+import { isAbsenceTourName } from "@shared/absenceAppointments";
 import { AlertTriangle, CalendarDays, Clock3 } from "lucide-react";
 
 const MONTH_APPOINTMENT_PREVIEW_OPEN_DELAY_MS = 650;
@@ -51,10 +52,14 @@ export function CalendarAppointmentCompactBar({
 }: CompactBarProps) {
   const hasStartTime = Boolean(appointment.startTime && appointment.startTime.trim());
   const TimingIcon = hasStartTime ? Clock3 : CalendarDays;
+  const isAbsenceAppointment = isAbsenceTourName(appointment.tourName);
   const customerNumber = appointment.customer.customerNumber?.trim() || "-";
   const customerName = appointment.customer.fullName?.trim() || "-";
+  const absenceEmployeeName = appointment.employees[0]?.fullName?.trim() || "Abwesenheit";
+  const labelPrimary = isAbsenceAppointment ? absenceEmployeeName : customerName;
+  const labelSuffix = isAbsenceAppointment ? null : customerNumber;
   const postalCode = appointment.customer.postalCode?.trim() || "-";
-  const rightContent = `PLZ: ${postalCode}`;
+  const rightContent = isAbsenceAppointment ? null : `PLZ: ${postalCode}`;
 
   const backgroundColor = appointment.tourColor ?? CALENDAR_NEUTRAL_COLOR;
   const isCancelled = appointment.isCancelled;
@@ -118,17 +123,19 @@ export function CalendarAppointmentCompactBar({
           <TimingIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </span>
         <span className="inline-flex min-w-0 flex-1 items-center overflow-hidden text-[10px] text-left">
-          <span className="min-w-0 truncate">{customerName}</span>
-          <span className="shrink-0 text-[10px] opacity-90"> - {customerNumber}</span>
+          <span className="min-w-0 truncate">{labelPrimary}</span>
+          {labelSuffix ? <span className="shrink-0 text-[10px] opacity-90"> - {labelSuffix}</span> : null}
         </span>
         {isCancelled ? (
           <span className="inline-flex shrink-0 rounded bg-black/15 px-1 py-0.5 text-[9px] uppercase tracking-wide">
             Storniert
           </span>
         ) : null}
-        <span className="ml-auto inline-flex min-w-0 max-w-[34%] items-center justify-end text-[10px] text-right">
-          <span className="truncate">{rightContent}</span>
-        </span>
+        {rightContent ? (
+          <span className="ml-auto inline-flex min-w-0 max-w-[34%] items-center justify-end text-[10px] text-right">
+            <span className="truncate">{rightContent}</span>
+          </span>
+        ) : null}
         {menuSlot ? (
           <span
             className="shrink-0 flex items-center justify-center"

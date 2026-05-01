@@ -3,6 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Tages- und Mehrtagestermine zeigen links den Kundennamen mit Kundennummer.
+ * - Abwesenheiten auf der Tour `Abwesenheiten` zeigen stattdessen den Mitarbeiternamen.
  * - Das alte "Name:"-Label erscheint nicht mehr in der Monatsbar.
  * - Die PLZ bleibt weiterhin als eigener rechter Inhalt sichtbar.
  *
@@ -102,5 +103,33 @@ describe("CalendarAppointmentCompactBar customer label", () => {
     expect(html).toContain("PLZ: 74889");
     expect(html).not.toContain("Name:");
     expect(html).not.toContain("K: 163273");
+  });
+
+  it("shows the employee name instead of internal FT-33 customer data on absence bars", () => {
+    const html = renderToStaticMarkup(
+      <CalendarAppointmentCompactBar
+        appointment={createAppointment({
+          tourName: "Abwesenheiten",
+          customer: {
+            id: 1776,
+            customerNumber: "001",
+            fullName: "Meisel & Gerken",
+            postalCode: "28857",
+            city: "Syke",
+          },
+          employees: [
+            { id: 44, firstName: "Mia", lastName: "Muster", fullName: "Muster, Mia" },
+          ],
+        })}
+        isFirstDay
+        isLastDay
+        showPopover={false}
+      />,
+    );
+
+    expect(html).toContain("Muster, Mia");
+    expect(html).not.toContain("Meisel &amp; Gerken");
+    expect(html).not.toContain(" - 001");
+    expect(html).not.toContain("PLZ: 28857");
   });
 });
