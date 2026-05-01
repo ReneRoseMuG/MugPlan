@@ -329,6 +329,47 @@ export async function getCustomersByCustomerNumber(customerNumber: string): Prom
   }));
 }
 
+export async function getCustomersByExactDisplayName(displayName: string): Promise<CustomerWithTags[]> {
+  const normalizedDisplayName = displayName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+  const rows = await db
+    .select()
+    .from(customers)
+    .where(or(
+      sql`lower(trim(coalesce(${customers.fullName}, ''))) = ${normalizedDisplayName}`,
+      sql`lower(trim(coalesce(${customers.company}, ''))) = ${normalizedDisplayName}`,
+    )!);
+
+  const customerIds = rows.map((row) => row.id);
+  if (customerIds.length === 0) return [];
+
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
+  return rows.map((row) => ({
+    ...row,
+    tags: tagsByCustomerId.get(row.id) ?? [],
+  }));
+}
+
+export async function getCustomersByExactNameParts(firstName: string, lastName: string): Promise<CustomerWithTags[]> {
+  const normalizedFirstName = firstName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+  const normalizedLastName = lastName.trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+  const rows = await db
+    .select()
+    .from(customers)
+    .where(and(
+      sql`lower(trim(coalesce(${customers.firstName}, ''))) = ${normalizedFirstName}`,
+      sql`lower(trim(coalesce(${customers.lastName}, ''))) = ${normalizedLastName}`,
+    ));
+
+  const customerIds = rows.map((row) => row.id);
+  if (customerIds.length === 0) return [];
+
+  const tagsByCustomerId = await getCustomerTagsByCustomerIds(customerIds);
+  return rows.map((row) => ({
+    ...row,
+    tags: tagsByCustomerId.get(row.id) ?? [],
+  }));
+}
+
 export async function createCustomer(data: InsertCustomer & { fullName: string | null }): Promise<Customer> {
   const result = await db.insert(customers).values(data);
   const insertId = (result as any)[0].insertId;

@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { api } from "@shared/routes";
 import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
 
@@ -126,6 +128,17 @@ function formatBackupDate(value: string): string {
 
 function formatBackupScope(value: number): string {
   return `${value} DS`;
+}
+
+async function invalidateSystemSeedQueries(): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["/api/tours"] }),
+    queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] }),
+    queryClient.invalidateQueries({
+      predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/tags",
+    }),
+    invalidateTagProjectionQueries(),
+  ]);
 }
 
 function BackupStatusIcon({ row }: { row: BackupLogRow }) {
@@ -250,8 +263,9 @@ export function SettingsPage() {
       setSystemSeedError(null);
       setSystemSeedLogLines([]);
     },
-    onSuccess: (payload) => {
+    onSuccess: async (payload) => {
       setSystemSeedLogLines(payload.logLines);
+      await invalidateSystemSeedQueries();
     },
     onError: (error) => {
       setSystemSeedError(error instanceof Error ? error.message : "System-Seed konnte nicht ausgeführt werden");

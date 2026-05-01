@@ -1,6 +1,5 @@
 export const ABSENCE_TOUR_NAME = "Abwesenheiten";
 export const ABSENCE_TOUR_COLOR = "#64748B";
-export const ABSENCE_CUSTOMER_NUMBER = "MUG-PERSONALPLANUNG";
 export const ABSENCE_CUSTOMER_NAME = "MuG Personalplanung";
 
 export const absenceTypeValues = ["vacation", "sick", "absent"] as const;

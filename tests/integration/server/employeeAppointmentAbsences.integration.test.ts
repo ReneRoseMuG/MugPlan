@@ -11,10 +11,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   ABSENCE_CUSTOMER_NAME,
-  ABSENCE_CUSTOMER_NUMBER,
   ABSENCE_TOUR_NAME,
 } from "../../../shared/absenceAppointments";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import * as customersService from "../../../server/services/customersService";
 import {
   EmployeeAppointmentAbsencesError,
   createEmployeeAppointmentAbsence,
@@ -29,6 +29,20 @@ describe("FT33 integration: Employee absence appointments", () => {
   it("creates a vacation absence as appointment with system tour, system customer, tag and note", async () => {
     const employee = await createEmployeeFixture("ABS-CREATE-EMP");
     const noteToken = `ABS-NOTE-${employee.id}`;
+    await customersService.createCustomer({
+      customerNumber: "001",
+      firstName: "MUG",
+      lastName: "Messebau",
+      fullName: "Messebau, MUG",
+      company: "Meisel&Gerken",
+      email: null,
+      phone: null,
+      addressLine1: null,
+      addressLine2: null,
+      postalCode: null,
+      city: null,
+      country: null,
+    });
 
     const created = await createEmployeeAppointmentAbsence(employee.id, {
       absenceType: "vacation",
@@ -43,7 +57,7 @@ describe("FT33 integration: Employee absence appointments", () => {
     expect(created.startTime).toBeNull();
     expect(created.description).toBe(noteToken);
     expect(created.tourName).toBe(ABSENCE_TOUR_NAME);
-    expect(created.customer.customerNumber).toBe(ABSENCE_CUSTOMER_NUMBER);
+    expect(created.customer.customerNumber).toBe("002");
     expect(created.customer.fullName).toBe(ABSENCE_CUSTOMER_NAME);
     expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
     expect(created.appointmentTags.map((tag) => tag.name)).toContain("Urlaub");
