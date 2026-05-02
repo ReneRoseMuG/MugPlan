@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Feature: [FT (33): Abwesenheiten über interne Personalplanung](../feature.md)
+- Feature: [FT (33): Abwesenheiten über interne Personalplanung](../ft-33-abwesenheiten-ueber-interne-personalplanung.md)
 - Notion-Quelle: https://app.notion.com/p/34dda094354e81d096b0f47ea36c177e
 - Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
@@ -25,7 +25,7 @@ Mitarbeiterformular ist geöffnet. Akteur besitzt Disponent- oder Administratorr
 3. Akteur setzt Startdatum und optional Enddatum
 4. Akteur setzt optional eine Notiz
 5. System stellt Systemdaten sicher (Lazy Ensure für Tour, Kunde, Tag)
-6. System legt Termin an mit Systemkunde **MuG Personalplanung**, Systemtour **Abwesenheiten**, genau diesem Mitarbeiter, ohne Startzeit
+6. System legt Termin an mit bestehendem Seed-Kunden **Meisel & Gerken** mit Kundennummer `001`, Systemtour **Abwesenheiten**, genau diesem Mitarbeiter, ohne Startzeit
 7. System setzt den gewählten Abwesenheits-Tag
 8. System prüft Terminüberschneidungen
 9. System speichert die Abwesenheit

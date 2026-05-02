@@ -1,10 +1,10 @@
-# UC 09/16: Statusänderung des Kunden während Notiz- oder Attachment-Operation
+﻿# UC 09/16: StatusÃ¤nderung des Kunden wÃ¤hrend Notiz- oder Attachment-Operation
 
 ## Metadaten
 
-- Feature: [FT (09): Kundenverwaltung](../feature.md)
+- Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Löschen) keine inkonsistenten Zustände bei Notiz- oder Attachment-Operationen erzeugen.
+Sicherstellen, dass parallele StatusÃ¤nderungen eines Kunden (Deaktivieren / LÃ¶schen) keine inkonsistenten ZustÃ¤nde bei Notiz- oder Attachment-Operationen erzeugen.
 
 ## Vorbedingungen
 
@@ -23,60 +23,60 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 
 ---
 
-## Ablauf – Beispiel 1: Notiz hinzufügen während Deaktivierung
+## Ablauf â€“ Beispiel 1: Notiz hinzufÃ¼gen wÃ¤hrend Deaktivierung
 
-1. Akteur A (Disponent) öffnet die Kundendetailansicht und beginnt, eine Notiz zu erstellen.
+1. Akteur A (Disponent) Ã¶ffnet die Kundendetailansicht und beginnt, eine Notiz zu erstellen.
 2. Akteur B (Administrator) deaktiviert den Kunden.
-3. Das System persistiert `is_active = false` und erhöht die Versionskennung.
+3. Das System persistiert `is_active = false` und erhÃ¶ht die Versionskennung.
 4. Akteur A speichert die Notiz.
-5. Das System prüft:
+5. Das System prÃ¼ft:
     - Existenz des Kunden,
     - aktuellen Status,
     - Versionskonsistenz des Parent-Objekts.
-6. Das System erlaubt die Notizspeicherung, da Deaktivierung keine fachliche Sperre für bestehende Stammdatenoperationen darstellt.
+6. Das System erlaubt die Notizspeicherung, da Deaktivierung keine fachliche Sperre fÃ¼r bestehende Stammdatenoperationen darstellt.
 
 ---
 
-## Ablauf – Beispiel 2: Notiz hinzufügen während Löschung
+## Ablauf â€“ Beispiel 2: Notiz hinzufÃ¼gen wÃ¤hrend LÃ¶schung
 
 1. Akteur A beginnt mit dem Erstellen einer Notiz.
-2. Akteur B löscht den Kunden gemäß UC 13.
+2. Akteur B lÃ¶scht den Kunden gemÃ¤ÃŸ UC 13.
 3. Das System entfernt den Kundendatensatz.
 4. Akteur A speichert die Notiz.
-5. Das System prüft die Parent-Existenz.
+5. Das System prÃ¼ft die Parent-Existenz.
 6. Das System erkennt, dass der Kunde nicht mehr existiert.
 7. Das System blockiert mit 404 oder 409.
 
 ---
 
-## Ablauf – Beispiel 3: Attachment-Upload während Deaktivierung
+## Ablauf â€“ Beispiel 3: Attachment-Upload wÃ¤hrend Deaktivierung
 
 1. Akteur A startet einen Upload.
 2. Akteur B deaktiviert den Kunden.
 3. Das System persistiert `is_active = false`.
 4. Der Upload wird abgeschlossen.
-5. Das System erlaubt die Persistierung des Attachment-Datensatzes, da Deaktivierung keine Parent-Löschung darstellt.
+5. Das System erlaubt die Persistierung des Attachment-Datensatzes, da Deaktivierung keine Parent-LÃ¶schung darstellt.
 
 ---
 
-## Ablauf – Beispiel 4: Attachment-Upload während Löschung
+## Ablauf â€“ Beispiel 4: Attachment-Upload wÃ¤hrend LÃ¶schung
 
 1. Akteur A startet Upload.
-2. Akteur B löscht den Kunden.
+2. Akteur B lÃ¶scht den Kunden.
 3. Das System entfernt den Kundendatensatz.
 4. Der Upload versucht, den Attachment-Datensatz zu persistieren.
-5. Das System prüft die Parent-Existenz.
+5. Das System prÃ¼ft die Parent-Existenz.
 6. Das System blockiert mit 404 oder 409.
 
 ---
 
 ### Konsistenzregeln
 
-- Notiz- und Attachment-Operationen sind nur zulässig, wenn der Parent-Kunde existiert.
-- Deaktivierung verhindert keine fachlich zulässigen Operationen auf bestehende Kunden.
-- Löschung eines Kunden verhindert jede weitere Operation auf diesem Parent.
-- Es dürfen keine verwaisten Notizen oder Attachments entstehen.
-- Referenzielle Integrität ist serverseitig garantiert.
+- Notiz- und Attachment-Operationen sind nur zulÃ¤ssig, wenn der Parent-Kunde existiert.
+- Deaktivierung verhindert keine fachlich zulÃ¤ssigen Operationen auf bestehende Kunden.
+- LÃ¶schung eines Kunden verhindert jede weitere Operation auf diesem Parent.
+- Es dÃ¼rfen keine verwaisten Notizen oder Attachments entstehen.
+- Referenzielle IntegritÃ¤t ist serverseitig garantiert.
 
 ---
 
@@ -86,13 +86,14 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
-- Versionskonflikt → System blockiert mit 409.
-- Technischer Fehler → System antwortet mit 500.
+- Versionskonflikt â†’ System blockiert mit 409.
+- Technischer Fehler â†’ System antwortet mit 500.
 
 ---
 
 ## Ergebnis
 
-- Es entstehen keine verwaisten Datensätze.
-- Deaktivierung und Löschung sind sauber voneinander abgegrenzt.
-- Parent-Integrität bleibt auch bei parallelen Operationen gewahrt.
+- Es entstehen keine verwaisten DatensÃ¤tze.
+- Deaktivierung und LÃ¶schung sind sauber voneinander abgegrenzt.
+- Parent-IntegritÃ¤t bleibt auch bei parallelen Operationen gewahrt.
+

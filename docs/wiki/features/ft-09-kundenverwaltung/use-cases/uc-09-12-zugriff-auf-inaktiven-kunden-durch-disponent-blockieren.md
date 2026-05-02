@@ -1,10 +1,10 @@
-# UC 09/12: Zugriff auf inaktiven Kunden durch Disponent blockieren
+﻿# UC 09/12: Zugriff auf inaktiven Kunden durch Disponent blockieren
 
 ## Metadaten
 
-- Feature: [FT (09): Kundenverwaltung](../feature.md)
+- Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent
 
 ## Ziel
 
-Sicherstellen, dass ein Disponent weder über direkte URL noch über manipulierte API-Requests auf einen inaktiven Kunden zugreifen kann.
+Sicherstellen, dass ein Disponent weder Ã¼ber direkte URL noch Ã¼ber manipulierte API-Requests auf einen inaktiven Kunden zugreifen kann.
 
 ## Vorbedingungen
 
@@ -31,30 +31,31 @@ Sicherstellen, dass ein Disponent weder über direkte URL noch über manipuliert
 2. Das System ermittelt:
     - Rolle des Akteurs,
     - Aktiv-Status des Kunden.
-3. Das System prüft serverseitig die Zugriffsberechtigung.
+3. Das System prÃ¼ft serverseitig die Zugriffsberechtigung.
 4. Das System blockiert den Zugriff.
-5. Das System antwortet mit 404 oder 403 gemäß Sicherheitskonzept.
+5. Das System antwortet mit 404 oder 403 gemÃ¤ÃŸ Sicherheitskonzept.
 
 ---
 
 ### Sicherheits- und Query-Regel
 
-- Die Zugriffskontrolle erfolgt ausschließlich serverseitig.
-- Der Aktiv-Status wird vor Auslieferung des Datensatzes geprüft.
-- Es darf kein vollständiger Kundendatensatz an einen Disponenten ausgeliefert werden, wenn `is_active = false`.
+- Die Zugriffskontrolle erfolgt ausschlieÃŸlich serverseitig.
+- Der Aktiv-Status wird vor Auslieferung des Datensatzes geprÃ¼ft.
+- Es darf kein vollstÃ¤ndiger Kundendatensatz an einen Disponenten ausgeliefert werden, wenn `is_active = false`.
 
 ---
 
 ## Alternativen
 
-- Kunde existiert nicht → System antwortet mit 404.
-- Akteur ist Administrator → Zugriff wird erlaubt.
-- Technischer Fehler → System antwortet mit 500.
+- Kunde existiert nicht â†’ System antwortet mit 404.
+- Akteur ist Administrator â†’ Zugriff wird erlaubt.
+- Technischer Fehler â†’ System antwortet mit 500.
 
 ---
 
 ## Ergebnis
 
-- Disponenten können inaktive Kunden nicht laden oder anzeigen.
-- Administratoren behalten vollständigen Zugriff.
-- Die Zugriffskontrolle ist unabhängig von der UI durchgesetzt.
+- Disponenten kÃ¶nnen inaktive Kunden nicht laden oder anzeigen.
+- Administratoren behalten vollstÃ¤ndigen Zugriff.
+- Die Zugriffskontrolle ist unabhÃ¤ngig von der UI durchgesetzt.
+

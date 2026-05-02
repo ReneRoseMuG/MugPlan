@@ -2,13 +2,13 @@
 
 ## Metadaten
 
-- Feature: [FT (05): Mitarbeiterverwaltung](../feature.md)
+- Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
 - Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
-Administrator, Disponent, Monteur (Leserolle)
+Administrator, Disponent, Leser
 
 ## Ziel
 
@@ -26,7 +26,7 @@ Mitarbeiterdaten in Listen- und Detailansichten anzeigen, rollenbasiert gefilter
 3. System lädt Mitarbeiterdaten:
     - Administrator erhält aktive und inaktive Mitarbeiter.
     - Disponent erhält ausschließlich aktive Mitarbeiter.
-    - Monteur erhält ausschließlich Lesedaten gemäß seiner Rolle.
+    - Leser erhält ausschließlich Lesedaten gemäß seiner Rolle.
 4. System stellt Daten in Board- oder Tabellenansicht dar.
 
 ## Ablauf – Detailansicht

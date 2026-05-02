@@ -1,10 +1,10 @@
-# UC 07/05: Backup-Historie einsehen
+﻿# UC 07/05: Backup-Historie einsehen
 
 ## Metadaten
 
-- Feature: [FT (07): Automatisierte Datensicherung und Fallback](../feature.md)
+- Feature: [FT (07): Automatisierte Datensicherung und Fallback](../ft-07-automatisierte-datensicherung-und-fallback.md)
 - Notion-Quelle: https://app.notion.com/p/8ed9ebce7bd1439592e891b51a433b8a
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Administrator
 
 ## Ziel
 
-Nachvollziehen aller Backup-Läufe.
+Nachvollziehen aller Backup-LÃ¤ufe.
 
 Vorbedingungen:
 
@@ -24,14 +24,15 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Ablauf
 
-- Admin öffnet Einstellungsbereich.
-- Admin wechselt zum Tab „Backups“.
-- System zeigt tabellarische Liste aller `backup_log`Einträge.
+- Admin Ã¶ffnet Einstellungsbereich.
+- Admin wechselt zum Tab â€žBackupsâ€œ.
+- System zeigt tabellarische Liste aller `backup_log`EintrÃ¤ge.
 
 ## Alternativen
 
-- Keine Logeinträge vorhanden → Leere Liste.
+- Keine LogeintrÃ¤ge vorhanden â†’ Leere Liste.
 
 ## Ergebnis
 
 Admin kann Status und Verlauf aller Backups einsehen.
+

@@ -1,10 +1,10 @@
-# UC 14/05: Rollenabhängige UI-Reduktion
+﻿# UC 14/05: RollenabhÃ¤ngige UI-Reduktion
 
 ## Metadaten
 
-- Feature: [FT (14): Benutzer- und Rollenverwaltung](../feature.md)
+- Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -21,15 +21,16 @@ Sicherstellen, dass ein Leser keine schreibenden UI-Elemente sieht.
 
 ## Ablauf
 
-1. Der Akteur öffnet eine fachliche Ansicht.
-2. Das System rendert die UI rollenabhängig.
+1. Der Akteur Ã¶ffnet eine fachliche Ansicht.
+2. Das System rendert die UI rollenabhÃ¤ngig.
 3. Das System blendet schreibende Elemente aus.
-4. Der Akteur kann ausschließlich lesende Aktionen durchführen.
+4. Der Akteur kann ausschlieÃŸlich lesende Aktionen durchfÃ¼hren.
 
 ## Alternativen
 
-- Deep-Link auf Bearbeitungsroute → Serverseitige Prüfung blockiert.
+- Deep-Link auf Bearbeitungsroute â†’ Serverseitige PrÃ¼fung blockiert.
 
 ## Ergebnis
 
-Die UI ist funktionsreduziert, ohne Datenmodelländerung.
+Die UI ist funktionsreduziert, ohne DatenmodellÃ¤nderung.
+

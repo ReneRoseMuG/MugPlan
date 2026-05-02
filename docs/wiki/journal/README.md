@@ -6,6 +6,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 - Neue Journaleinträge werden als Markdown-Dateien in diesem Verzeichnis gepflegt.
 - Neue Einträge werden oben unter `## Einträge` verlinkt.
+- Umfangreiche Aufgaben, Refactorings und mehrschichtige Implementierungen erhalten einen eigenen Journaleintrag.
 - Sichtbare Datumsangaben verwenden das Kurzformat `dd.MM.yy`.
 
 ## Historische Quelle
@@ -14,6 +15,8 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [02.05.26 - Wiki: Lastenheft-Import und Grundstruktur ins Repo überführt](02-05-26-wiki-lastenheft-import.md)
+- [02.05.26 - FT-34: Persistierter Feiertags-Seed und Marker-Visualisierung nachgezogen](02-05-26-ft-34-persistierter-feiertags-seed-und-marker-visualisierung.md)
 - [01.05.26 - Kalendermarker: Feiertage und Betriebsferien im Kalender](01-05-26-kalendermarker-feiertage-und-betriebsferien.md)
 - [01.05.26 - Datumsregel: Kurzformat projektweit verbindlich dokumentiert](01-05-26-datumsregel-kurzformat.md)
 - [01.05.26 - FT-33: Readonly-Schnitt mit Testsuite abgesichert](01-05-26-ft-33-readonly-schnitt-testsuite.md)
@@ -21,3 +24,10 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 - [01.05.26 - FT-01: Architektur & Kontext erstmalig befüllt](01-05-26-ft-01-architektur-kontext.md)
 - [01.05.26 - FT-33: Vollständige Überarbeitung nach Feature-Vorlage](01-05-26-ft-33-feature-vorlage.md)
 - [01.05.26 - Kalendernavigation: KW-Sprung in Monat und Auslastungsübersicht vereinheitlicht](01-05-26-kalendernavigation-kw-sprung.md)
+- [30.04.26 - FT-33: Abwesenheiten als Terminworkflow umgestellt](30-04-26-ft-33-abwesenheiten-als-terminworkflow.md)
+- [28.04.26 - Mitarbeiter: Umsatzübersicht im Formular ergänzt](28-04-26-mitarbeiter-umsatzuebersicht.md)
+- [28.04.26 - Leser: Reports lesbar und Mitarbeiter sichtbar gemacht](28-04-26-leser-zugriff-reports-und-mitarbeiter.md)
+- [27.04.26 - FT-08 und FT-04: Tour- und KW-Journal ausgebaut](27-04-26-tour-und-kw-journal.md)
+- [27.04.26 - FT-14: 2FA-Reset und Admin-Benutzerpflege erweitert](27-04-26-2fa-reset-und-admin-benutzerpflege.md)
+- [26.04.26 - System-Seed: Prüfen, auswählen und selektiv ausführen](26-04-26-system-seed-pruefen-auswaehlen-ausfuehren.md)
+- [26.04.26 - Terminlisten: Datumsfokus und Monitoring-Hervorhebung](26-04-26-terminlisten-datumsfokus-und-monitoring.md)

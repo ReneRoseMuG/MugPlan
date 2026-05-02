@@ -1,0 +1,30 @@
+﻿# FT (02) Use Cases
+
+Diese Use Cases wurden vollstÃ¤ndig aus dem lokalen Notion-Markdown-Export fÃ¼r [FT (02): Projekte](../ft-02-projekte.md) Ã¼bernommen.
+
+- [UC 02/01: Projekt anlegen](uc-02-01-projekt-anlegen.md)
+- [UC 02/02: Projekt bearbeiten](uc-02-02-projekt-bearbeiten.md)
+- [UC 02/03: Projekt anzeigen](uc-02-03-projekt-anzeigen.md)
+- [UC 02/04: Projekt-Tags Ã¤ndern](uc-02-04-projekt-tags-aendern.md)
+- [UC 02/05: Projektnotizen pflegen](uc-02-05-projektnotizen-pflegen.md)
+- [UC 02/06: ProjektanhÃ¤nge verwalten](uc-02-06-projektanhaenge-verwalten.md)
+- [UC 02/07: Projekte anzeigen (Liste)](uc-02-07-projekte-anzeigen-liste.md)
+- [UC 02/08: Projekt lÃ¶schen](uc-02-08-projekt-loeschen.md)
+- [UC 02/09: ProjektÃ¤nderung wird in Terminansichten konsistent dargestellt](uc-02-09-projektaenderung-wird-in-terminansichten-konsistent-dargestellt.md)
+- [UC 02/10: Projekt-Tag-Ã„nderung wirkt systemweit konsistent](uc-02-10-projekt-tag-aenderung-wirkt-systemweit-konsistent.md)
+- [UC 02/11: ProjektlÃ¶schung wird systemweit korrekt verarbeitet](uc-02-11-projektloeschung-wird-systemweit-korrekt-verarbeitet.md)
+- [UC 02/12: Projekt in abhÃ¤ngigen Sichten anzeigen (QuerÂ­sicht-Vertrag)](uc-02-12-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.md)
+- [UC 02/13: Denormalisierte Projektanzeige aktualisieren (QuerÂ­sicht-Vertrag)](uc-02-13-denormalisierte-projektanzeige-aktualisieren-quer-sicht-vertrag.md)
+- [UC 02/14: Konsistenz bei parallelen Ã„nderungen an Projekten (Optimistic Locking)](uc-02-14-konsistenz-bei-parallelen-aenderungen-an-projekten-optimistic-locking.md)
+- [UC 02/15: Projekt-Join-Konsistenz (Projekt â†” Tags)](uc-02-15-projekt-join-konsistenz-projekt-tags.md)
+- [UC 02/16: Projekt-Referenz-Konsistenz (Projekt â†” Kunde)](uc-02-16-projekt-referenz-konsistenz-projekt-kunde.md)
+- [UC 02/17: Projekt-Mengenlogik-Konsistenz (ProjektÃ¼bersicht)](uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.md)
+- [UC 02/18: Race Condition bei ProjektlÃ¶schung](uc-02-18-race-condition-bei-projektloeschung.md)
+- [UC 02/19: Projekt in abhÃ¤ngigen Sichten anzeigen (QuerÂ­sicht-Vertrag)](uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.md)
+- [UC 02/20: ENTFERNT â€” Duplikat von UC 02/13](uc-02-20-entfernt-duplikat-von-uc-02-13.md)
+- [UC 02/21: Termin fÃ¼r Projekt ohne Termine anlegen (Ã¼ber Kalendersicht)](uc-02-21-termin-fuer-projekt-ohne-termine-anlegen-ueber-kalendersicht.md)
+- [UC 02/22: Notiz von Projekt entfernen](uc-02-22-notiz-von-projekt-entfernen.md)
+- [UC 02/23: Notiz anpinnen / lospinnen](uc-02-23-notiz-anpinnen-lospinnen.md)
+- [UC 02/24: Projekt aktivieren / deaktivieren](uc-02-24-projekt-aktivieren-deaktivieren.md)
+- [UC 02/26: Auftragspositionen verwalten](uc-02-26-auftragspositionen-verwalten.md)
+

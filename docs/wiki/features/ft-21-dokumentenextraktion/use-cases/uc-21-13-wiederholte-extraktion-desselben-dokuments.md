@@ -1,10 +1,10 @@
-# UC 21/13: Wiederholte Extraktion desselben Dokuments
+﻿# UC 21/13: Wiederholte Extraktion desselben Dokuments
 
 ## Metadaten
 
-- Feature: [FT (21): Dokumentenextraktion](../feature.md)
+- Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
 - Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -17,25 +17,26 @@ Sicherstellen, dass die wiederholte Extraktion desselben Attachments keine inkon
 ## Vorbedingungen
 
 - Ein Attachment wurde bereits extrahiert.
-- Es wurden noch keine oder bereits bestätigte Daten aus diesem Dokument übernommen.
+- Es wurden noch keine oder bereits bestÃ¤tigte Daten aus diesem Dokument Ã¼bernommen.
 
 ## Ablauf
 
-1. Der Akteur startet erneut die Funktion „Dokument extrahieren" für dasselbe Attachment.
-2. Das System führt die regelbasierte Parsing-Analyse erneut vollständig aus.
-3. Das System prüft, ob eine Auftragsnummer im extrahierten Text identifiziert wurde.
-4. Falls eine Auftragsnummer vorhanden ist: Das System prüft, ob diese bereits in der Datenbank existiert.
-5. Falls die Auftragsnummer bereits existiert: Das System bricht den Prozess ab und zeigt eine Fehlermeldung an (z. B. „Auftrag mit dieser Nummer bereits vorhanden. Weitere Verarbeitung nicht möglich.").
-6. Falls die Auftragsnummer nicht existiert oder nicht vorhanden ist: Das System führt die Validierung durch und erzeugt einen neuen, unabhängigen Extraktionsvorschlag.
-7. Der Akteur bestätigt oder verwirft den neuen Vorschlag.
-8. Bei Bestätigung führt das System reguläre Duplikats- und Validierungsprüfungen durch und persistiert die Daten gemäß den bestehenden Domänenregeln.
+1. Der Akteur startet erneut die Funktion â€žDokument extrahieren" fÃ¼r dasselbe Attachment.
+2. Das System fÃ¼hrt die regelbasierte Parsing-Analyse erneut vollstÃ¤ndig aus.
+3. Das System prÃ¼ft, ob eine Auftragsnummer im extrahierten Text identifiziert wurde.
+4. Falls eine Auftragsnummer vorhanden ist: Das System prÃ¼ft, ob diese bereits in der Datenbank existiert.
+5. Falls die Auftragsnummer bereits existiert: Das System bricht den Prozess ab und zeigt eine Fehlermeldung an (z. B. â€žAuftrag mit dieser Nummer bereits vorhanden. Weitere Verarbeitung nicht mÃ¶glich.").
+6. Falls die Auftragsnummer nicht existiert oder nicht vorhanden ist: Das System fÃ¼hrt die Validierung durch und erzeugt einen neuen, unabhÃ¤ngigen Extraktionsvorschlag.
+7. Der Akteur bestÃ¤tigt oder verwirft den neuen Vorschlag.
+8. Bei BestÃ¤tigung fÃ¼hrt das System regulÃ¤re Duplikats- und ValidierungsprÃ¼fungen durch und persistiert die Daten gemÃ¤ÃŸ den bestehenden DomÃ¤nenregeln.
 
 ## Alternativen
 
-- Der Akteur verwirft den neuen Vorschlag → Keine Änderung an bestehenden Daten.
-- Auftragsnummer existiert bereits (Wiederholung desselben Dokuments) → Das System bricht ab. Der Akteur kann das Dokument mit geänderter Auftragsnummer erneut extrahieren oder die bestehenden Daten manuell aktualisieren.
-- Duplikatsprüfung verhindert eine doppelte Kunden- oder Projektanlage → Das System aktualisiert bestehende Datensätze still gemäß UC 21/07 und UC 21/08, oder verweist auf bestehende Datensätze.
+- Der Akteur verwirft den neuen Vorschlag â†’ Keine Ã„nderung an bestehenden Daten.
+- Auftragsnummer existiert bereits (Wiederholung desselben Dokuments) â†’ Das System bricht ab. Der Akteur kann das Dokument mit geÃ¤nderter Auftragsnummer erneut extrahieren oder die bestehenden Daten manuell aktualisieren.
+- DuplikatsprÃ¼fung verhindert eine doppelte Kunden- oder Projektanlage â†’ Das System aktualisiert bestehende DatensÃ¤tze still gemÃ¤ÃŸ UC 21/07 und UC 21/08, oder verweist auf bestehende DatensÃ¤tze.
 
 ## Ergebnis
 
-Es entstehen keine automatischen Dubletten. Die Auftragsnummer-Eindeutigkeit ist gewährleistet. Jede Persistierung erfolgt ausschließlich nach expliziter Bestätigung des Akteurs und unter Anwendung der bestehenden Domänenregeln (einschließlich still erfolgender Kundenaktualisierungen).
+Es entstehen keine automatischen Dubletten. Die Auftragsnummer-Eindeutigkeit ist gewÃ¤hrleistet. Jede Persistierung erfolgt ausschlieÃŸlich nach expliziter BestÃ¤tigung des Akteurs und unter Anwendung der bestehenden DomÃ¤nenregeln (einschlieÃŸlich still erfolgender Kundenaktualisierungen).
+

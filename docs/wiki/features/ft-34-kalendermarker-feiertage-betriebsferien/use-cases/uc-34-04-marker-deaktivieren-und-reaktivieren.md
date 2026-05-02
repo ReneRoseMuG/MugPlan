@@ -1,8 +1,8 @@
-# UC 34/04: Marker deaktivieren und reaktivieren
+﻿# UC 34/04: Marker deaktivieren und reaktivieren
 
 ## Metadaten
 
-- Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../feature.md)
+- Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
 - Notion-Quelle: Nicht vorhanden
 - Importstatus: Neu im Repo-Wiki erfasst
 
@@ -12,7 +12,7 @@ Administrator
 
 ## Ziel
 
-Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und später wieder anzeigen.
+Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spÃ¤ter wieder anzeigen.
 
 ## Vorbedingungen
 
@@ -21,8 +21,8 @@ Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spät
 
 ## Ablauf
 
-1. Administrator öffnet `Stammdaten > Feiertage`.
-2. Administrator wählt einen aktiven Marker.
+1. Administrator Ã¶ffnet `Stammdaten > Feiertage`.
+2. Administrator wÃ¤hlt einen aktiven Marker.
 3. Administrator deaktiviert den Marker.
 4. System speichert den Marker mit Aktiv-Status inaktiv.
 5. System entfernt den Marker aus dem Kalender-Leseendpunkt.
@@ -31,9 +31,10 @@ Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spät
 
 ## Alternativen
 
-- Wird der Marker nur bearbeitet, bleibt sein Aktiv-Status unverändert.
-- Ein späterer Seed darf den deaktivierten Marker nicht wieder aktivieren.
+- Wird der Marker nur bearbeitet, bleibt sein Aktiv-Status unverÃ¤ndert.
+- Ein spÃ¤terer Seed darf den deaktivierten Marker nicht wieder aktivieren.
 
 ## Ergebnis
 
 Der Aktiv-Status steuert die Kalenderanzeige, ohne den gespeicherten Marker aus der Verwaltung zu entfernen.
+

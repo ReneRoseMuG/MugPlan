@@ -1,10 +1,10 @@
-# UC 02/15: Projekt-Join-Konsistenz (Projekt ↔ Tags)
+﻿# UC 02/15: Projekt-Join-Konsistenz (Projekt â†” Tags)
 
 ## Metadaten
 
-- Feature: [FT (02): Projekte](../feature.md)
+- Feature: [FT (02): Projekte](../ft-02-projekte.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -18,29 +18,30 @@ Sicherstellen, dass die Beziehung zwischen Projekt und projektbezogenen Tags jed
 
 - Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Änderungsrechte gemäß seiner Rolle.
+- Der Akteur besitzt Ã„nderungsrechte gemÃ¤ÃŸ seiner Rolle.
 - Mindestens ein projektbezogener Tag ist im System definiert.
 
 ## Ablauf
 
-1. Akteur fügt einem Projekt einen oder mehrere Tags hinzu oder entfernt bestehende Tags gemäß UC 02/04.
-2. System prüft vor dem Speichern, ob der Tag existiert und für Projekte zulässig ist.
+1. Akteur fÃ¼gt einem Projekt einen oder mehrere Tags hinzu oder entfernt bestehende Tags gemÃ¤ÃŸ UC 02/04.
+2. System prÃ¼ft vor dem Speichern, ob der Tag existiert und fÃ¼r Projekte zulÃ¤ssig ist.
 3. System verhindert die Mehrfachzuweisung desselben Tags zum selben Projekt.
-4. System speichert die Join-Änderung atomar.
-5. Bei Projektlöschung entfernt das System alle zugehörigen Tag-Zuordnungen (Cascade).
+4. System speichert die Join-Ã„nderung atomar.
+5. Bei ProjektlÃ¶schung entfernt das System alle zugehÃ¶rigen Tag-Zuordnungen (Cascade).
 
 ## Alternativen
 
-- Akteur nicht authentifiziert → HTTP 401.
-- Akteur ohne Änderungsrechte → HTTP 403.
-- Tag existiert nicht → HTTP 404.
-- Tag ist geschützter System-Tag (`isDefault = true`) → HTTP 409 WORKFLOW_TAG_PROTECTED.
-- Parallele Änderung der Tag-Zuordnungen → HTTP 409 VERSION_CONFLICT.
+- Akteur nicht authentifiziert â†’ HTTP 401.
+- Akteur ohne Ã„nderungsrechte â†’ HTTP 403.
+- Tag existiert nicht â†’ HTTP 404.
+- Tag ist geschÃ¼tzter System-Tag (`isDefault = true`) â†’ HTTP 409 WORKFLOW_TAG_PROTECTED.
+- Parallele Ã„nderung der Tag-Zuordnungen â†’ HTTP 409 VERSION_CONFLICT.
 
 ## Ergebnis
 
 Die Beziehung zwischen Projekt und Tags ist eindeutig und konsistent gespeichert.
 
-Es existieren keine doppelten oder verwaisten Join-Einträge.
+Es existieren keine doppelten oder verwaisten Join-EintrÃ¤ge.
 
-Die Integrität bleibt auch bei Projektlöschung gewahrt.
+Die IntegritÃ¤t bleibt auch bei ProjektlÃ¶schung gewahrt.
+

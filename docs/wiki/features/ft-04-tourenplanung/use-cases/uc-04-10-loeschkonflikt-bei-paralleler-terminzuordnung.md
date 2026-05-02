@@ -1,10 +1,10 @@
-# UC 04/10: Löschkonflikt bei paralleler Terminzuordnung
+﻿# UC 04/10: LÃ¶schkonflikt bei paralleler Terminzuordnung
 
 ## Metadaten
 
-- Feature: [FT (04): Tourenplanung](../feature.md)
+- Feature: [FT (04): Tourenplanung](../ft-04-tourenplanung.md)
 - Notion-Quelle: https://app.notion.com/p/746286ccf41d46629ec614541a871345
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -29,3 +29,4 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 Nicht angegeben in der Notion-Quelle.
+

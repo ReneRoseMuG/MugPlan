@@ -1,10 +1,10 @@
-# UC 33/01: Abwesenheiten anzeigen
+﻿# UC 33/01: Abwesenheiten anzeigen
 
 ## Metadaten
 
-- Feature: [FT (33): Abwesenheiten über interne Personalplanung](../feature.md)
+- Feature: [FT (33): Abwesenheiten Ã¼ber interne Personalplanung](../ft-33-abwesenheiten-ueber-interne-personalplanung.md)
 - Notion-Quelle: https://app.notion.com/p/34dda094354e81d096b0f47ea36c177e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,16 +12,16 @@ Leser, Disponent, Administrator
 
 ## Ziel
 
-Überblick über alle erfassten Abwesenheiten eines Mitarbeiters erhalten
+Ãœberblick Ã¼ber alle erfassten Abwesenheiten eines Mitarbeiters erhalten
 
 ## Vorbedingungen
 
-Mitarbeiterformular ist geöffnet
+Mitarbeiterformular ist geÃ¶ffnet
 
 ## Ablauf
 
-1. Akteur öffnet den Tab **Abwesenheiten** im Mitarbeiterformular
-2. System lädt die Abwesenheiten des Mitarbeiters
+1. Akteur Ã¶ffnet den Tab **Abwesenheiten** im Mitarbeiterformular
+2. System lÃ¤dt die Abwesenheiten des Mitarbeiters
 3. System zeigt vorhandene Abwesenheiten mit Art, Zeitraum, Notiz und Aktionen an
 
 ## Alternativen
@@ -31,3 +31,4 @@ Keine
 ## Ergebnis
 
 Akteur sieht alle erfassten Abwesenheiten des Mitarbeiters
+

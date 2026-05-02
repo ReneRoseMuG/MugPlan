@@ -1,10 +1,10 @@
-# UC 01/19: Notiz von Termin entfernen
+﻿# UC 01/19: Notiz von Termin entfernen
 
 ## Metadaten
 
-- Feature: [FT (01): Kalendertermine](../feature.md)
+- Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -21,11 +21,11 @@ Eine Notiz vom Termin entfernen, ohne dass dies Auswirkungen auf andere Termin-D
 
 ## Ablauf
 
-1. Der Akteur öffnet einen bestehenden Termin im Terminformular.
-2. Der Akteur navigiert zum Bereich „Notizen".
-3. Der Akteur wählt eine Notiz und klickt auf „Entfernen" oder eine Delete-Action.
-4. Optional: Das System fordert eine Bestätigung an.
-5. Der Akteur bestätigt das Löschen.
+1. Der Akteur Ã¶ffnet einen bestehenden Termin im Terminformular.
+2. Der Akteur navigiert zum Bereich â€žNotizen".
+3. Der Akteur wÃ¤hlt eine Notiz und klickt auf â€žEntfernen" oder eine Delete-Action.
+4. Optional: Das System fordert eine BestÃ¤tigung an.
+5. Der Akteur bestÃ¤tigt das LÃ¶schen.
 6. Das System entfernt die Zuordnung zwischen Termin und Notiz.
 7. Das System aktualisiert die Notizenliste und die Notiz ist nicht mehr sichtbar.
 
@@ -35,4 +35,5 @@ Eine Notiz vom Termin entfernen, ohne dass dies Auswirkungen auf andere Termin-D
 
 ## Ergebnis
 
-Die Notiz ist vom Termin entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Termin und alle anderen Termine sind unverändert.
+Die Notiz ist vom Termin entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Termin und alle anderen Termine sind unverÃ¤ndert.
+

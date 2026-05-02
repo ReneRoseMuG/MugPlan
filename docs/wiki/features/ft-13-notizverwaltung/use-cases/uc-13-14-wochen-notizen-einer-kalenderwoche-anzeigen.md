@@ -1,10 +1,10 @@
-# UC 13/14: Wochen-Notizen einer Kalenderwoche anzeigen
+﻿# UC 13/14: Wochen-Notizen einer Kalenderwoche anzeigen
 
 ## Metadaten
 
-- Feature: [FT (13): Notizverwaltung](../feature.md)
+- Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent, Administrator, Leser
 
 ## Ziel
 
-Alle einer Kalenderwoche zugeordneten Notizen vollständig und konsistent einsehen.
+Alle einer Kalenderwoche zugeordneten Notizen vollstÃ¤ndig und konsistent einsehen.
 
 ## Vorbedingungen
 
@@ -22,26 +22,26 @@ Alle einer Kalenderwoche zugeordneten Notizen vollständig und konsistent einseh
 
 ## Ablauf
 
-1. Der Akteur öffnet den Kalenderwochen-Kontext der gewünschten Woche.
-2. Das System prüft serverseitig die Leseberechtigung.
-3. Das System lädt alle Notizen, die über `calendar_week_note` dieser Woche zugeordnet sind.
+1. Der Akteur Ã¶ffnet den Kalenderwochen-Kontext der gewÃ¼nschten Woche.
+2. Das System prÃ¼ft serverseitig die Leseberechtigung.
+3. Das System lÃ¤dt alle Notizen, die Ã¼ber `calendar_week_note` dieser Woche zugeordnet sind.
 4. Das System sortiert die Notizen deterministisch:
     - Angepinnte Notizen (`is_pinned = true`) erscheinen zuerst.
     - Innerhalb gleicher Pin-Logik erfolgt die Sortierung nach `updated_at` absteigend.
-5. Das System rendert die Notizen als vertikale Kärtchenliste.
+5. Das System rendert die Notizen als vertikale KÃ¤rtchenliste.
 6. Jede Notiz zeigt mindestens:
     - Titel,
     - Beschreibung (Richtext formatiert),
     - visuelle Kennzeichnung bei gesetzter `color`,
     - ggf. Pin-Symbol.
-7. Besitzt der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
+7. Besitzt der Akteur ausschlieÃŸlich Leserechte, werden keine Bearbeitungs- oder LÃ¶schfunktionen angezeigt.
 
-### Alternativabläufe
+### AlternativablÃ¤ufe
 
-- Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
-- Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
-- Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.
-- Technischer Fehler → HTTP 500, keine Anzeige.
+- Der Akteur ist nicht authentifiziert â†’ HTTP 401, keine Anzeige.
+- Der Akteur besitzt keine Leserechte â†’ HTTP 403, keine Anzeige.
+- Es existieren keine Notizen â†’ Das System zeigt eine leere Liste ohne Fehler an.
+- Technischer Fehler â†’ HTTP 500, keine Anzeige.
 
 ## Alternativen
 
@@ -50,6 +50,7 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 - Alle Wochen-Notizen dieser Kalenderwoche sind konsistent sichtbar.
-- Es werden ausschließlich Notizen dieser Woche angezeigt.
+- Es werden ausschlieÃŸlich Notizen dieser Woche angezeigt.
 - Die Sortierung ist deterministisch und reproduzierbar.
-- Die Anzeige verändert keine persistierten Daten.
+- Die Anzeige verÃ¤ndert keine persistierten Daten.
+

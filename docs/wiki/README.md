@@ -15,6 +15,10 @@ Dieses Wiki ist die repo-geführte fachliche Quelle für Lastenheft, Use Cases, 
 
 ## Quellenstatus
 
-Die Migration wurde aus Notion gestartet. Die direkte Datenquellenabfrage war im aktuellen Notion-Connector blockiert; große Feature-Seiten wurden beim Abruf gekürzt. Deshalb enthält diese erste Repo-Struktur vollständige Zielorte, Importregeln und Quellenlinks, markiert aber fachliche Vollimporte dort als offen, wo der vollständige Notion-Body nicht belastbar verfügbar war.
+Die Wiki-Struktur wurde aus lokalen Notion-Markdown-Exporten aufgebaut und danach repo-intern weitergeführt. Für viele Features liegen vollständige Importstände, Use-Case-Dateien und redaktionelle Nachträge aus Codebase, Logs und Umsetzungsarbeit bereits lokal vor.
+
+Notion bleibt als Quellenreferenz in Metadaten, Journal und Einzelverweisen erhalten, ist aber nicht mehr die alleinige Arbeitsgrundlage. Maßgeblich ist der aktuelle Stand im Repository-Wiki.
+
+Einzelne Bereiche können weiterhin redaktionell nachgeschärft werden, wenn Implementierungen oder Refactorings aus der Codebase noch nicht vollständig in Feature-, Relations- oder Journal-Texte nachgezogen wurden.
 
 Siehe [Migrationsreport](migration-report.md).

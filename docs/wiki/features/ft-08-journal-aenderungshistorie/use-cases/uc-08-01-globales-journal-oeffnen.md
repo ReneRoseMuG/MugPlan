@@ -1,10 +1,10 @@
-# UC 08/01: Globales Journal öffnen
+﻿# UC 08/01: Globales Journal Ã¶ffnen
 
 ## Metadaten
 
-- Feature: [FT (08): Journal / Änderungshistorie](../feature.md)
+- Feature: [FT (08): Journal / Ã„nderungshistorie](../ft-08-journal-aenderungshistorie.md)
 - Notion-Quelle: https://app.notion.com/p/344da094354e814a8830dab54ce60040
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -29,3 +29,4 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 Nicht angegeben in der Notion-Quelle.
+

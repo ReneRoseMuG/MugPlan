@@ -1,10 +1,10 @@
-# UC 32/03: Verbindung nach Unterbrechung wiederherstellen
+﻿# UC 32/03: Verbindung nach Unterbrechung wiederherstellen
 
 ## Metadaten
 
-- Feature: [FT (32): Aktive Änderungsbenachrichtigung](../feature.md)
+- Feature: [FT (32): Aktive Ã„nderungsbenachrichtigung](../ft-32-aktive-aenderungsbenachrichtigung.md)
 - Notion-Quelle: https://app.notion.com/p/337da094354e81c09d0bc94c1b789398
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -29,3 +29,4 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 Nicht angegeben in der Notion-Quelle.
+

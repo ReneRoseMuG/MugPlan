@@ -1,12 +1,12 @@
-# W-08 - Storno historischer Termine: Admin-Ausnahme undokumentiert
+﻿# W-08 - Storno historischer Termine: Admin-Ausnahme undokumentiert
 
 ## Metadaten
 
 - Status: offen
-- Priorität: Mittel
-- Feature: [FT (01): Kalendertermine](../features/ft-01-kalendertermine/feature.md)
+- PrioritÃ¤t: Mittel
+- Feature: [FT (01): Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Entdeckt: 01.05.26
-- Art: Widerspruch Code ↔ Spec
+- Art: Widerspruch Code â†” Spec
 
 ## Befund
 
@@ -14,21 +14,22 @@ Der Code erlaubt Admins, auch historische Termine zu stornieren. Der betroffene 
 
 ## Optionen
 
-- A) Spec anpassen: Rollenausnahme für Admin explizit in UC 01/22 aufnehmen
-- B) Code einschränken: Storno historischer Termine auch für Admin blockieren
+- A) Spec anpassen: Rollenausnahme fÃ¼r Admin explizit in UC 01/22 aufnehmen
+- B) Code einschrÃ¤nken: Storno historischer Termine auch fÃ¼r Admin blockieren
 
 ## Auswirkungen eines Eingriffs
 
-Eine Anpassung der Spec würde das bestehende Admin-Verhalten fachlich legitimieren. Eine Codeeinschränkung würde Admins eine heute mögliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
+Eine Anpassung der Spec wÃ¼rde das bestehende Admin-Verhalten fachlich legitimieren. Eine CodeeinschrÃ¤nkung wÃ¼rde Admins eine heute mÃ¶gliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
 
 ## Schadenspotential
 
-Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu führen, dass Admins Termine unzulässig stornieren oder eine fachlich gewollte Ausnahme verlieren. Das Risiko liegt in Rollen- und Fachregelabweichungen, nicht in einer breiten technischen Instabilität.
+Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu fÃ¼hren, dass Admins Termine unzulÃ¤ssig stornieren oder eine fachlich gewollte Ausnahme verlieren. Das Risiko liegt in Rollen- und Fachregelabweichungen, nicht in einer breiten technischen InstabilitÃ¤t.
 
-## Vorgeschlagene Maßnahme
+## Vorgeschlagene MaÃŸnahme
 
-Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschränken.
+Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschrÃ¤nken.
 
 ## Quelle
 
 https://app.notion.com/p/352da094354e802f98cdf0f824251d52
+

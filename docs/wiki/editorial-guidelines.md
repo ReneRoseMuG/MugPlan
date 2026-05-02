@@ -7,9 +7,11 @@ Das Repo ist nach der Migration die führende redaktionelle Quelle. Notion bleib
 ## Importregeln
 
 - Jedes Feature wird vollständig übernommen, sobald der vollständige Notion-Body verfügbar ist.
-- Der Notion-Bereich `Projekt Management` wird nicht als eigener Abschnitt in `feature.md` übernommen.
+- Der Notion-Bereich `Projekt Management` wird nicht als eigener Abschnitt im jeweiligen Feature-Hauptdokument übernommen.
 - Inhalte aus `Projekt Management` werden nur übernommen, wenn sie fachlich relevant sind, zum Beispiel Backlog-Verweise, Teststrategie-Links oder Quellenhinweise.
 - Jedes Feature wird auf die Feature-Vorlage gehoben.
+- Das Feature-Hauptdokument erhält einen sprechenden Dateinamen nach dem Ordnerslug, zum Beispiel `ft-03-kalenderansichten.md`.
+- Indexdateien in Feature-Unterordnern erhalten ebenfalls sprechende Dateinamen mit Feature-Slug, zum Beispiel `ft-03-kalenderansichten-use-cases.md` und `ft-03-kalenderansichten-backlog.md`.
 - Jeder Use Case wird in eine eigene Datei übernommen und auf die Use-Case-Vorlage gehoben.
 - Fehlende Vorlagenabschnitte werden mit `Nicht angegeben in der Notion-Quelle.` markiert.
 - Unklare fachliche Beziehungen werden nicht geraten, sondern als offene Frage dokumentiert.

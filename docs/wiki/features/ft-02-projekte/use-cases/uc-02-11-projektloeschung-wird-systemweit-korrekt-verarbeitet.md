@@ -1,10 +1,10 @@
-# UC 02/11: Projektlöschung wird systemweit korrekt verarbeitet
+﻿# UC 02/11: ProjektlÃ¶schung wird systemweit korrekt verarbeitet
 
 ## Metadaten
 
-- Feature: [FT (02): Projekte](../feature.md)
+- Feature: [FT (02): Projekte](../ft-02-projekte.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
 
 ## Akteur
 
@@ -12,31 +12,32 @@ Administrator, Disponent
 
 ## Ziel
 
-Sicherstellen, dass die Löschung eines Projekts keine inkonsistenten Referenzen hinterlässt.
+Sicherstellen, dass die LÃ¶schung eines Projekts keine inkonsistenten Referenzen hinterlÃ¤sst.
 
 ## Vorbedingungen
 
 - Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Löschrechte (Disponent oder Administrator).
+- Der Akteur besitzt LÃ¶schrechte (Disponent oder Administrator).
 - Dem Projekt sind keine Termine zugeordnet.
 
 ## Ablauf
 
-1. Akteur löscht ein Projekt gemäß UC 02/08.
-2. System entfernt das Projekt und alle abhängigen Datensätze in einer Transaktion.
-3. System aktualisiert Projektübersichten.
-4. Offene Detailansichten schließen sich oder wechseln in einen neutralen Zustand.
+1. Akteur lÃ¶scht ein Projekt gemÃ¤ÃŸ UC 02/08.
+2. System entfernt das Projekt und alle abhÃ¤ngigen DatensÃ¤tze in einer Transaktion.
+3. System aktualisiert ProjektÃ¼bersichten.
+4. Offene Detailansichten schlieÃŸen sich oder wechseln in einen neutralen Zustand.
 
 ## Alternativen
 
-- Akteur nicht authentifiziert → HTTP 401.
-- Akteur ohne Löschrechte → HTTP 403.
-- Projekt besitzt Termine → HTTP 409 BUSINESS_CONFLICT, Löschung wird blockiert, keine Ansicht ändert sich.
-- Technischer Fehler → HTTP 500, kein Teilzustand.
+- Akteur nicht authentifiziert â†’ HTTP 401.
+- Akteur ohne LÃ¶schrechte â†’ HTTP 403.
+- Projekt besitzt Termine â†’ HTTP 409 BUSINESS_CONFLICT, LÃ¶schung wird blockiert, keine Ansicht Ã¤ndert sich.
+- Technischer Fehler â†’ HTTP 500, kein Teilzustand.
 
 ## Ergebnis
 
-Es existieren keine Referenzen auf das gelöschte Projekt.
+Es existieren keine Referenzen auf das gelÃ¶schte Projekt.
 
 Alle Sichten sind konsistent.
+
