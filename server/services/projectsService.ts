@@ -1,7 +1,7 @@
 import type { Customer, InsertProject, Project, UpdateProject } from "@shared/schema";
 import type { InsertProjectOrderItem, ProjectOrderItem, UpdateProjectOrderItem } from "@shared/schema";
 import { MANAGED_COMPLAINT_TAG_NAME, MANAGED_REMARKS_TAG_NAME } from "@shared/appointmentCancellation";
-import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
+import type { ProjectMutationEvent } from "@shared/appointmentMutationEvents";
 import * as projectsRepository from "../repositories/projectsRepository";
 import * as customersRepository from "../repositories/customersRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
@@ -287,7 +287,7 @@ export async function setProjectReklamation(
   projectId: number,
   expectedVersion: number,
   roleKey: CanonicalRoleKey,
-): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: ProjectMutationEvent[] }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
@@ -314,7 +314,7 @@ export async function setProjectReklamation(
       kind: "updated",
       mutationEvents: [{
         kind: "tag_mutated",
-        appointmentId: projectId,
+        projectId,
         tagName: MANAGED_COMPLAINT_TAG_NAME,
         action: "added",
       }],
@@ -326,7 +326,7 @@ export async function removeProjectReklamation(
   projectId: number,
   expectedVersion: number,
   roleKey: CanonicalRoleKey,
-): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }> {
+): Promise<{ found: boolean; kind: "updated" | "noop"; mutationEvents?: ProjectMutationEvent[] }> {
   requireDispatcherOrAdmin(roleKey);
   if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
     throw new ProjectsError(422, "VALIDATION_ERROR");
@@ -353,7 +353,7 @@ export async function removeProjectReklamation(
       kind: "updated",
       mutationEvents: [{
         kind: "tag_mutated",
-        appointmentId: projectId,
+        projectId,
         tagName: MANAGED_COMPLAINT_TAG_NAME,
         action: "removed",
       }],

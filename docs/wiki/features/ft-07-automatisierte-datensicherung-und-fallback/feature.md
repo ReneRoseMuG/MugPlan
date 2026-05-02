@@ -1,0 +1,88 @@
+# FT (07): Automatisierte Datensicherung und Fallback
+
+## Metadaten
+
+- Status: Abgeschlossen
+- Typ: Feature
+- Notion-Quelle: https://app.notion.com/p/8ed9ebce7bd1439592e891b51a433b8a
+- Importquelle lokal: `C:/Users/schro/Desktop/FT (07) Automatisierte Datensicherung und Fallback 8ed9ebce7bd1439592e891b51a433b8a.md`
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+
+## Ziel / Zweck
+
+Sicherstellung der operativen Handlungsfähigkeit bei Systemausfällen durch zwei unabhängige Sicherungsebenen: einen täglichen vollständigen Datenbankdump als primäre Datensicherung sowie ein ereignisgetriebenes PDF-Dokument „Anstehende Termine" als operative Kurzübersicht. Ergänzend erfolgt eine optionale Synchronisation mit einem externen CalDAV-Kalender als zusätzliche Anzeige- und Ausfallsicherung.
+
+## Fachliche Beschreibung
+
+Das System erzeugt ereignisgetrieben ein PDF-Dokument „Anstehende Termine", sobald ein Termin neu angelegt oder geändert wird.
+
+Das PDF enthält alle Termine ab dem heutigen Tag, sortiert nach Datum und Uhrzeit. Vergangene Termine werden nicht aufgenommen.
+
+Jeder Termin wird als visuell abgegrenzter horizontaler Abschnitt dargestellt. Der Abschnitt gliedert sich in zwei Bereiche:
+
+**Kopfzeile** (immer vorhanden):
+Uhrzeit (sofern erfasst), Datum, Kundennummer, vollständiger Kundenname, Auftragsnummer des Projekts.
+
+**Detailbereich** (nur wenn eine Auftragsnummer vorhanden ist):
+Eingerückt unter der Kopfzeile: die Artikelliste des Projekts sowie die Anmerkungen aus der Projektbeschreibung.
+
+Die Abschnitte werden durch eine klare visuelle Trennung voneinander abgegrenzt. Die Darstellung muss auch bei ca. 200 Terminen übersichtlich und gut lesbar sein.
+
+Das Dokument wird serverseitig gespeichert und im Backup-Log protokolliert. Ein Administrator kann vergangene Dokumente einsehen und herunterladen.
+
+Backups älter als 30 Tage werden automatisch gelöscht. Logeinträge bleiben dauerhaft erhalten.
+
+Unabhängig vom PDF erzeugt das System täglich einen vollständigen Datenbankdump. Der Dump wird als ZIP-Archiv gespeichert, das eine strukturierte JSON-Exportdatei aller Tabellen sowie den Anhang-Ordner enthält. Format und Struktur entsprechen dem internen Dump-Format (formatVersion 2) und ermöglichen einen vollständigen Datenimport in eine andere Instanz. Dumps älter als 30 Tage werden automatisch gelöscht. Ein Administrator kann vorhandene Dumps einsehen und herunterladen. Der Dump-Prozess darf die normale Systemfunktion nicht blockieren; Fehler werden protokolliert.
+
+Zusätzlich synchronisiert das System Termine mit einem externen CalDAV-Kalender (Nextcloud). Die Synchronisation erfolgt ereignisgetrieben bei Termin-Neuanlage, -Änderung und -Löschung, serverseitig, nicht blockierend und ausschließlich vom System zum externen Kalender. Der externe Kalender dient als zusätzliche Anzeige- und Fallback-Instanz und ist kein führendes System.
+
+## Regeln & Randbedingungen
+
+- Das PDF wird bei jeder Termin-Neuanlage und bei jeder Terminänderung neu erzeugt.
+- Das PDF enthält ausschließlich Termine ab dem heutigen Tag (heute inklusive), sortiert aufsteigend nach Datum, dann nach Uhrzeit.
+- Termine ohne Uhrzeit werden innerhalb ihres Datums vor Terminen mit Uhrzeit einsortiert.
+- Jeder Termin wird als eigener horizontaler Abschnitt dargestellt, visuell klar von den benachbarten Abschnitten getrennt.
+- Die Kopfzeile jedes Abschnitts enthält: Uhrzeit (nur wenn erfasst), Datum, Kundennummer, vollständiger Kundenname, Auftragsnummer.
+- Der Detailbereich wird nur gerendert, wenn eine Auftragsnummer vorhanden ist. Er enthält eingerückt: die Artikelliste des Projekts sowie die Anmerkungen aus der Projektbeschreibung.
+- Das Dokument wird serverseitig gespeichert und im Backup-Log protokolliert.
+- Ein Administrator kann vergangene Dokumente über die Backup-Historie einsehen und herunterladen.
+- Dokumente älter als 30 Tage werden automatisch gelöscht. Logeinträge bleiben dauerhaft erhalten.
+- Monitoring und Download sind ausschließlich für Administratoren sichtbar.
+- Es wird genau ein CalDAV-Kalender synchronisiert.
+- Die CalDAV-Synchronisation erfolgt bei Termin-Neuanlage, -Änderung und -Löschung.
+- Der externe Kalender ist nicht führend. Es erfolgt keine Rücksynchronisation. Externe Änderungen werden bei nächster Aktualisierung überschrieben.
+- Jeder Termin besitzt eine stabile externe UID, die sich niemals ändert.
+- Synchronisationsfehler dürfen die Termin-Speicherung nicht blockieren. Fehler werden protokolliert.
+- Authentifizierung erfolgt über Nextcloud-App-Passwort. Kommunikation ausschließlich über HTTPS. CalDAV-Zugangsdaten werden über Umgebungsvariablen konfiguriert.
+- Das System erzeugt täglich automatisch einen vollständigen Datenbankdump (Scheduler, täglich 02:00 Uhr Europe/Berlin).
+- Der Dump wird als ZIP-Archiv gespeichert und enthält eine strukturierte JSON-Exportdatei aller Anwendungstabellen sowie den Anhang-Ordner.
+- Dumps werden nach demselben Retention-Prinzip wie PDF-Backups behandelt: Dateien älter als 30 Tage werden automatisch gelöscht, Logeinträge bleiben dauerhaft erhalten.
+- Der Dump-Prozess darf laufende Systemoperationen nicht blockieren. Fehler werden protokolliert, ohne den normalen Betrieb zu unterbrechen.
+- Monitoring und Download von Dumps sind ausschließlich für Administratoren zugänglich.
+
+---
+
+## Use Cases
+
+- [UC 07/03: PDF „Anstehende Termine“ erzeugen](use-cases/uc-07-03-pdf-anstehende-termine-erzeugen.md)
+- [UC 07/05: Backup-Historie einsehen](use-cases/uc-07-05-backup-historie-einsehen.md)
+- [UC 07/06: Backup herunterladen](use-cases/uc-07-06-backup-herunterladen.md)
+- [UC 07/07: Alte Backups automatisch löschen](use-cases/uc-07-07-alte-backups-automatisch-loeschen.md)
+- [UC 07/08: Termin in externen Kalender übertragen](use-cases/uc-07-08-termin-in-externen-kalender-uebertragen.md)
+- [UC 07/09: Synchronisationsfehler protokollieren](use-cases/uc-07-09-synchronisationsfehler-protokollieren.md)
+- [UC 07/10: Terminänderung im CalDAV-Kalender aktualisieren](use-cases/uc-07-10-terminaenderung-im-caldav-kalender-aktualisieren.md)
+- [UC 07/11: Termin im CalDAV-Kalender löschen](use-cases/uc-07-11-termin-im-caldav-kalender-loeschen.md)
+- [UC 07/12: DB-Dump automatisch erzeugen](use-cases/uc-07-12-db-dump-automatisch-erzeugen.md)
+- [UC 07/13: DB-Dump herunterladen](use-cases/uc-07-13-db-dump-herunterladen.md)
+
+## Backlogs
+
+Nicht angegeben in der Notion-Quelle.
+
+## Architektur & Kontext
+
+Nicht angegeben in der Notion-Quelle.
+
+## Entscheidungen & Offene Punkte
+
+Nicht angegeben in der Notion-Quelle.

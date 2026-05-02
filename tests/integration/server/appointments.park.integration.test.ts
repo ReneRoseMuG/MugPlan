@@ -49,26 +49,34 @@ import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 
 let app: Awaited<ReturnType<typeof createApiTestApp>>;
-let readerCounter = 1;
+let roleCounter = 1;
 
 beforeAll(async () => {
   app = await createApiTestApp();
 });
 
-async function loginReaderAgent() {
-  const token = `reader-park-${readerCounter}`;
-  readerCounter += 1;
+async function loginRoleAgent(roleCode: "DISPATCHER" | "READER") {
+  const token = `${roleCode.toLowerCase()}-park-${roleCounter}`;
+  roleCounter += 1;
   const password = `${token}-password`;
   const passwordHash = await hashPassword(password);
   await createUser({
     username: `test-${token}`,
     email: `test-${token}@local.test`,
     firstName: "Test",
-    lastName: "Reader",
+    lastName: roleCode,
     passwordHash,
-    roleCode: "READER",
+    roleCode,
   });
   return loginAgent(app, { username: `test-${token}`, password });
+}
+
+async function loginReaderAgent() {
+  return loginRoleAgent("READER");
+}
+
+async function loginDispatcherAgent() {
+  return loginRoleAgent("DISPATCHER");
 }
 
 async function getGeparktTagId(): Promise<number | null> {
@@ -615,12 +623,32 @@ describe("FT28 integration: Reklamation action routes", () => {
         expect(body.code).toBe("WORKFLOW_TAG_PROTECTED");
       });
 
-    await admin
+    const setResponse = await admin
       .post(`/api/projects/${project.id}/reklamation`)
       .send({ version: project.version })
       .expect(200)
       .expect(({ body }) => {
         expect(body.kind).toBe("updated");
+      });
+    expect(setResponse.body).toMatchObject({
+      kind: "updated",
+      mutationEvents: [
+        {
+          kind: "tag_mutated",
+          projectId: project.id,
+          tagName: MANAGED_COMPLAINT_TAG_NAME,
+          action: "added",
+        },
+      ],
+    });
+    expect(setResponse.body.mutationEvents[0]).not.toHaveProperty("appointmentId");
+
+    await admin
+      .post(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ kind: "noop" });
       });
 
     await admin.get(`/api/projects/${project.id}/tags`).expect(200).expect(({ body }) => {
@@ -629,21 +657,116 @@ describe("FT28 integration: Reklamation action routes", () => {
 
     const reader = await loginReaderAgent();
     await reader
+      .post(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version + 1 })
+      .expect(403);
+    await reader
       .delete(`/api/projects/${project.id}/reklamation`)
       .send({ version: project.version + 1 })
       .expect(403);
 
-    await admin
+    const removeResponse = await admin
       .delete(`/api/projects/${project.id}/reklamation`)
       .send({ version: project.version + 1 })
       .expect(200)
       .expect(({ body }) => {
         expect(body.kind).toBe("updated");
       });
+    expect(removeResponse.body).toMatchObject({
+      kind: "updated",
+      mutationEvents: [
+        {
+          kind: "tag_mutated",
+          projectId: project.id,
+          tagName: MANAGED_COMPLAINT_TAG_NAME,
+          action: "removed",
+        },
+      ],
+    });
+    expect(removeResponse.body.mutationEvents[0]).not.toHaveProperty("appointmentId");
+
+    await admin
+      .delete(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version + 1 })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ kind: "noop" });
+      });
 
     await admin.get(`/api/projects/${project.id}/tags`).expect(200).expect(({ body }) => {
       expect((body as Array<{ tag: { name: string } }>).map((item) => item.tag.name)).not.toContain(MANAGED_COMPLAINT_TAG_NAME);
     });
+  });
+
+  it("guards Reklamation action routes with dispatcher access and optimistic locking", async () => {
+    const dispatcher = await loginDispatcherAgent();
+    const admin = await loginAdminAgent(app);
+    await applySystemSeed();
+    const project = await createProjectFixture({ prefix: "FT28-REKLAMATION-GUARDS" });
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(7),
+      employeeIds: [],
+    });
+
+    await dispatcher
+      .post(`/api/appointments/${appointment.id}/reklamation`)
+      .send({ version: appointment.version })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          kind: "updated",
+          mutationEvents: [
+            {
+              kind: "tag_mutated",
+              appointmentId: appointment.id,
+              tagName: MANAGED_COMPLAINT_TAG_NAME,
+              action: "added",
+            },
+          ],
+        });
+      });
+
+    await dispatcher
+      .post(`/api/appointments/${appointment.id}/reklamation`)
+      .send({ version: appointment.version })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual({ kind: "noop" });
+      });
+
+    const staleProject = await createProjectFixture({ prefix: "FT28-PROJECT-REKL-STale" });
+    await admin
+      .post(`/api/projects/${staleProject.id}/reklamation`)
+      .send({ version: staleProject.version + 1 })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("VERSION_CONFLICT");
+      });
+
+    const projectSet = await dispatcher
+      .post(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version })
+      .expect(200);
+    expect(projectSet.body).toMatchObject({
+      kind: "updated",
+      mutationEvents: [
+        {
+          kind: "tag_mutated",
+          projectId: project.id,
+          tagName: MANAGED_COMPLAINT_TAG_NAME,
+          action: "added",
+        },
+      ],
+    });
+
+    await admin
+      .delete(`/api/projects/${project.id}/reklamation`)
+      .send({ version: project.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("VERSION_CONFLICT");
+      });
   });
 });
 
@@ -827,4 +950,3 @@ describe("FT06 integration: historische Parkplatz-Termine bleiben editierbar", (
     await admin.get(`/api/appointments/${deletableAppointment.id}`).expect(404);
   });
 });
-

@@ -118,6 +118,8 @@ Client-Header sind keine Autorisierungsquelle.
 - destruktive Admin-Operationen in `production` blockiert
 - in `development`/`test` nur auf sicheren DB-Zielen gemäß Guards
 
+Kalendermarker folgen einer eigenen Rollenabgrenzung: aktive Marker sind für `ADMIN`, `DISPONENT` und `LESER` lesbar; die Pflege und automatische Feiertags-Overrides unter `/api/admin/calendar-markers` sind ausschließlich `ADMIN` erlaubt.
+
 ## 6. Domänen- und Datenmodellarchitektur
 
 Das relationale Modell ist in `shared/schema.ts` definiert. Zentrale Entitäten:
@@ -237,6 +239,7 @@ Neue Funktionalität folgt den bestehenden Pfaden:
 - API: Contract zuerst, dann Route -> Controller -> Service -> Repository
 - Kalenderweite Daten: bevorzugt Aggregation erweitern statt paralleler UI-Requests
 - Neue Nebenobjekte: als eigene Entität + dedizierte Endpunkte
+- Server-FS-basierte Nebenobjekte nutzen den `ServerScopedFileStore`; fachliche Rollenprüfung bleibt in Controller/Service
 - Frontend: bestehende Layout-/List-/Dialog-Bausteine wiederverwenden
 
 ## 11. Bekannte Risiken / Architekturhinweise

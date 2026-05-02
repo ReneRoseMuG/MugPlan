@@ -1,0 +1,31 @@
+# UC 08/03: Kontextbezogenes Journal in einem Detailformular lesen
+
+## Metadaten
+
+- Feature: [FT (08): Journal / Änderungshistorie](../feature.md)
+- Notion-Quelle: https://app.notion.com/p/344da094354e814a8830dab54ce60040
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+
+## Akteur
+
+Nicht angegeben in der Notion-Quelle.
+
+## Ziel
+
+Nicht angegeben in der Notion-Quelle.
+
+## Vorbedingungen
+
+Nicht angegeben in der Notion-Quelle.
+
+## Ablauf
+
+Nicht angegeben in der Notion-Quelle.
+
+## Alternativen
+
+Nicht angegeben in der Notion-Quelle.
+
+## Ergebnis
+
+Nicht angegeben in der Notion-Quelle.

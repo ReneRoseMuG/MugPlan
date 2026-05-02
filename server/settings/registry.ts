@@ -51,6 +51,8 @@ const employeePickerViewModeOptions = ["board", "list"] as const;
 type EmployeePickerViewMode = (typeof employeePickerViewModeOptions)[number];
 const weekTileBodyModeOptions = ["collapsed", "semiexpanded", "expanded"] as const;
 type WeekTileBodyMode = (typeof weekTileBodyModeOptions)[number];
+const calendarMarkerVisualizationStyleOptions = ["subtle", "standard", "highlighted"] as const;
+type CalendarMarkerVisualizationStyle = (typeof calendarMarkerVisualizationStyleOptions)[number];
 const tourenplanPrintModeOptions = ["farbdruck", "spardruck"] as const;
 const tourenplanFontSizeOptions = ["small", "medium", "large"] as const;
 type VorlauflisteCategorySelection = {
@@ -532,6 +534,17 @@ export const userSettingsRegistry = {
     allowedScopes: ["GLOBAL"],
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
+  },
+  calendarMarkerVisualizationStyle: {
+    key: "calendar.markerVisualizationStyle",
+    label: "Kalendermarker Darstellung",
+    description: "Steuert global die Farbintensität von Feiertagen, Betriebsfeiertagen und Betriebsferien im Kalender.",
+    type: "enum",
+    options: calendarMarkerVisualizationStyleOptions,
+    defaultValue: "standard",
+    allowedScopes: ["GLOBAL"],
+    validate: (value: unknown): value is CalendarMarkerVisualizationStyle =>
+      typeof value === "string" && calendarMarkerVisualizationStyleOptions.includes(value as CalendarMarkerVisualizationStyle),
   },
   hoverPreviewOpenDelayMs: {
     key: "hoverPreviewOpenDelayMs",

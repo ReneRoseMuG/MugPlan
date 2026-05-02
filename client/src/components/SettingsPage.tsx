@@ -99,7 +99,7 @@ type DumpImportApplyRow = {
 
 type SystemSeedPreviewItem = {
   key: string;
-  kind: "tag" | "tour" | "customer" | "noteTemplate";
+  kind: "tag" | "tour" | "customer" | "noteTemplate" | "calendarMarker";
   label: string;
   status: "missing" | "unchanged" | "update" | "migrate";
   message: string;
@@ -138,6 +138,8 @@ async function invalidateSystemSeedQueries(): Promise<void> {
       predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/customers",
     }),
     queryClient.invalidateQueries({ queryKey: ["/api/note-templates"] }),
+    queryClient.invalidateQueries({ queryKey: ["adminCalendarMarkers"] }),
+    queryClient.invalidateQueries({ queryKey: ["calendarMarkers"] }),
     queryClient.invalidateQueries({
       predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === "/api/tags",
     }),
@@ -1296,7 +1298,9 @@ export function SettingsPage() {
                                             ? "Tour"
                                             : item.kind === "customer"
                                               ? "Kunde"
-                                              : "Tag"}
+                                              : item.kind === "calendarMarker"
+                                                ? "Kalendermarker"
+                                                : "Tag"}
                                       </span>
                                       <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[11px] text-slate-600">
                                         {statusLabel}

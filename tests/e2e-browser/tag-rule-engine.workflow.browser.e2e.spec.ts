@@ -29,7 +29,7 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { loginAsAdmin, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -64,6 +64,12 @@ async function openAppointmentInCalendar(page: Page, appointmentId: number): Pro
   await expect(page.getByTestId(`week-appointment-panel-${appointmentId}`)).toBeVisible();
 }
 
+async function openSpanningAppointmentInCalendar(page: Page, appointmentId: number): Promise<void> {
+  await page.getByTestId("nav-wochenuebersicht").click();
+  await expect(page.getByTestId("calendar-week-view")).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-${appointmentId}`).first()).toBeVisible();
+}
+
 async function openAppointmentFormFromCalendar(page: Page, appointmentId: number): Promise<void> {
   await openAppointmentInCalendar(page, appointmentId);
   await page.getByTestId(`week-appointment-panel-${appointmentId}`).dblclick();
@@ -85,6 +91,11 @@ async function removeReklamationViaWeekCardAction(page: Page, appointmentId: num
   await page.getByTestId(`week-appointment-menu-trigger-${appointmentId}`).click();
   await expect(page.getByTestId(`week-appointment-remove-reklamation-${appointmentId}`)).toBeVisible();
   await page.getByTestId(`week-appointment-remove-reklamation-${appointmentId}`).click();
+}
+
+async function setReklamationViaSpanningTileAction(page: Page, appointmentId: number): Promise<void> {
+  await page.getByTestId(`week-spanning-tile-menu-trigger-${appointmentId}`).first().click();
+  await page.getByTestId(`week-spanning-tile-set-reklamation-${appointmentId}`).click();
 }
 
 async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ id: number; title: string; body: string; cardColor: string | null; print: boolean }>> {
@@ -238,6 +249,73 @@ test("sets Reklamation from the appointment form action and opens the template-b
   });
 });
 
+test("dispatcher sets Reklamation from the appointment form and skips the note suggestion", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-DISP-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-DISP",
+    customerId: customer.id,
+    name: "FT06 Rule Engine Dispatcher",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(3),
+  });
+
+  await loginAsRole(page, "DISPATCHER");
+
+  await openAppointmentFormFromCalendar(page, appointment.id);
+  await page.getByTestId("button-set-appointment-reklamation").click();
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+});
+
+test("sets Reklamation from a week spanning tile and opens the template-backed editor", async ({ page }) => {
+  const customer = await createCustomerFixture("FT06-RULE-SPAN-CUST");
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-SPAN",
+    customerId: customer.id,
+    name: "FT06 Rule Engine Spanning",
+  });
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(3),
+    endDate: getRelativeBerlinDate(4),
+  });
+
+  await loginAsAdmin(page);
+  const reklamationTemplate = await readNoteTemplateByTitle(page, MANAGED_COMPLAINT_TAG_NAME);
+
+  await openSpanningAppointmentInCalendar(page, appointment.id);
+  await setReklamationViaSpanningTileAction(page, appointment.id);
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(reklamationTemplate.title);
+
+  await expect.poll(async () => {
+    const tagNames = await readAppointmentTagNames(page, appointment.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointment.id);
+    return notes.some((note) => note.title === reklamationTemplate.title);
+  }).toBe(true);
+});
+
 test("sets Reklamation from the project form action and creates a project note from the suggestion", async ({ page }) => {
   const project = await createProjectFixture({
     prefix: "FT06-RULE-PROJECT",
@@ -306,6 +384,56 @@ test("project note suggestion dialog stays closed after the prefilled note dialo
 
   const notes = await readProjectNotes(page, project.id);
   expect(notes.map((note) => note.title)).not.toContain(reklamationTemplate.title);
+});
+
+test("sets project Reklamation and skips the note suggestion without creating a note", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT-SKIP",
+    name: "FT06 Rule Engine Projekt Skip",
+  });
+
+  await loginAsAdmin(page);
+
+  await openProjectForm(page, project.id);
+  await page.getByTestId("button-set-project-reklamation").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const tagNames = await readProjectTagNames(page, project.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+});
+
+test("sets project Reklamation without suggestion when a matching project note already exists", async ({ page }) => {
+  const project = await createProjectFixture({
+    prefix: "FT06-RULE-PROJECT-DUP",
+    name: "FT06 Rule Engine Projekt Duplikat",
+  });
+
+  await loginAsAdmin(page);
+  const noteCreateResponse = await page.request.post(`/api/projects/${project.id}/notes`, {
+    data: { title: MANAGED_COMPLAINT_TAG_NAME, body: "", print: false },
+  });
+  expect(noteCreateResponse.ok(), await noteCreateResponse.text()).toBeTruthy();
+
+  await openProjectForm(page, project.id);
+  await page.getByTestId("button-set-project-reklamation").click();
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect.poll(async () => {
+    const tagNames = await readProjectTagNames(page, project.id);
+    return tagNames.includes(MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(true);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.filter((note) => note.title === MANAGED_COMPLAINT_TAG_NAME).length;
+  }).toBe(1);
 });
 
 test("sets Reklamation from the appointment action and skips the note suggestion without creating a note", async ({ page }) => {

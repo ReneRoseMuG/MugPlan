@@ -343,6 +343,8 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält nur `is_active = true` bei:
   - Mitarbeiter
   - Kunden
+- erhält aktive Kalendermarker über `/api/calendar/markers`
+- erhält keinen Zugriff auf die Admin-Pflege unter `/api/admin/calendar-markers`
 - erhält Zugriff auf `/api/monitoring`, aber nicht auf die Admin-Konfiguration unter `/api/admin/monitoring/config`
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
@@ -355,6 +357,8 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält aktive und inaktive Einträge
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
+- erhält aktive Kalendermarker über `/api/calendar/markers`
+- kann Kalendermarker und automatische Feiertags-Overrides über `/api/admin/calendar-markers` lesen, anlegen, bearbeiten und löschen
 - darf historische Termine mutieren; die übrigen Terminregeln wie Relationspflicht, Versionsschutz, Overlap-Prüfung, Storno-Sperre und blockierte Tourwochen bleiben serverseitig aktiv
 - erhält Lese- und Schreibzugriff auf die FT31-Monitoring-Konfiguration sowie Lesezugriff auf `/api/monitoring`
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
@@ -364,6 +368,8 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar
+- erhält aktive Kalendermarker über `/api/calendar/markers`
+- erhält keinen Zugriff auf die Admin-Pflege unter `/api/admin/calendar-markers`
 - kein Zugriff auf FT31-Monitoring-Endpunkte oder Monitoring-Konfiguration
 
 ### Listenfilter (serverseitig)

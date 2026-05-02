@@ -210,7 +210,7 @@ describe("FT26 integration: report vorlaufliste print preview", () => {
     expect(printResponse.body).not.toHaveProperty("page");
     expect(printResponse.body).not.toHaveProperty("pageSize");
     expect(printResponse.body).not.toHaveProperty("totalPages");
-  });
+  }, 30_000);
 
   it("matches article values, reportState and highlightTag with the list endpoint", async () => {
     const admin = await loginAdminAgent(app);

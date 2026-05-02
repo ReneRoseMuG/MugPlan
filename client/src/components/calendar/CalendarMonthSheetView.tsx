@@ -11,8 +11,11 @@ import {
   useCalendarBlockedTourWeeks,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
+import { useCalendarMarkers, type CalendarMarker } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
+import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
+import type { CalendarMarkerVisualizationStyle } from "@/hooks/useSettings";
 import {
   compareAppointmentsByTourIndexThenTime,
   getAppointmentDurationDays,
@@ -57,6 +60,7 @@ import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceA
 import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
+import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
 
 type CalendarMonthSheetViewProps = {
   currentDate: Date;
@@ -142,6 +146,7 @@ export function CalendarMonthSheetView({
   const userRole = useMemo(() => getStoredUserRole(), []);
   const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
+  const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
@@ -170,6 +175,29 @@ export function CalendarMonthSheetView({
     fromDate: stripFromDate,
     toDate: stripToDate,
   });
+  const { data: calendarMarkers = [] } = useCalendarMarkers({
+    fromDate: stripFromDate,
+    toDate: stripToDate,
+    userRole,
+  });
+  const calendarMarkersByDate = useMemo(() => {
+    const result = new Map<string, typeof calendarMarkers>();
+    for (const marker of calendarMarkers) {
+      const markerEndDate = marker.endDate ?? marker.date;
+      for (
+        let cursor = parseISO(marker.date);
+        format(cursor, "yyyy-MM-dd") <= markerEndDate;
+        cursor = addDays(cursor, 1)
+      ) {
+        const dateKey = format(cursor, "yyyy-MM-dd");
+        if (dateKey < stripFromDate || dateKey > stripToDate) {
+          continue;
+        }
+        result.set(dateKey, [...(result.get(dateKey) ?? []), marker]);
+      }
+    }
+    return result;
+  }, [calendarMarkers, stripFromDate, stripToDate]);
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
@@ -442,6 +470,8 @@ export function CalendarMonthSheetView({
           monthRowTemplate={monthRowTemplate}
           dayGridTemplate={dayGridTemplate}
           appointmentsById={appointmentsById}
+          calendarMarkersByDate={calendarMarkersByDate}
+          markerVisualizationStyle={markerVisualizationStyle}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentMap={conflictAppointmentMap}
           blockedTourWeekKeys={blockedTourWeekKeys}
@@ -473,6 +503,8 @@ function MonthSheetSection({
   monthRowTemplate,
   dayGridTemplate,
   appointmentsById,
+  calendarMarkersByDate,
+  markerVisualizationStyle,
   conflictHighlightActive,
   conflictAppointmentMap,
   blockedTourWeekKeys,
@@ -494,6 +526,8 @@ function MonthSheetSection({
   monthRowTemplate: string;
   dayGridTemplate: string;
   appointmentsById: Map<number, CalendarAppointment>;
+  calendarMarkersByDate: Map<string, CalendarMarker[]>;
+  markerVisualizationStyle: CalendarMarkerVisualizationStyle;
   conflictHighlightActive: boolean;
   conflictAppointmentMap: Map<number, MonitoringConflictMeta>;
   blockedTourWeekKeys: Set<string>;
@@ -585,6 +619,8 @@ function MonthSheetSection({
                         : isWeekend
                           ? "bg-slate-300/10"
                           : "bg-slate-200/20";
+                    const dayMarkers = calendarMarkersByDate.get(day.dateKey) ?? [];
+                    const markerVisualization = getPrimaryCalendarMarkerVisualization(dayMarkers, markerVisualizationStyle);
                     const dayNumberClassName = day.isToday
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                       : day.isCurrentMonth
@@ -601,6 +637,7 @@ function MonthSheetSection({
                           relative h-full min-h-0 border-r border-b border-border/30 px-1
                           transition-colors duration-200
                           ${dayCellClassName}
+                          ${markerVisualization?.tileClassName ?? ""}
                           ${dayIdx === 6 ? "border-r-0" : ""}
                         `}
                         onDragOver={readOnly ? undefined : (event) => event.preventDefault()}
@@ -609,10 +646,11 @@ function MonthSheetSection({
                         }}
                         data-testid={`month-sheet-day-${day.dateKey}`}
                         data-month-scope={day.isCurrentMonth ? "current" : "adjacent"}
+                        data-marker-visualization={markerVisualization?.tone ?? "none"}
                       >
                         <div
                           style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
-                          className={`flex items-center justify-between rounded-md px-1.5 ${dayHeaderClassName}`}
+                          className={`grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-1 rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
                         >
                           <span
                             className={`
@@ -622,6 +660,12 @@ function MonthSheetSection({
                           >
                             {format(day.date, "d")}
                           </span>
+                          <CalendarMarkerHeaderLabel
+                            markers={dayMarkers}
+                            visualizationStyle={markerVisualizationStyle}
+                            dateKey={day.dateKey}
+                            className="w-full"
+                          />
                           {!readOnly && day.dateKey >= berlinToday ? (
                             <button
                               onClick={() => onNewAppointment(day.dateKey)}
