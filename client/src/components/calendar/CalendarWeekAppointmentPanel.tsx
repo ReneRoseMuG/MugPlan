@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText } from "lucide-react";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -45,6 +45,7 @@ import {
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { stripHtmlToText } from "@/lib/printText";
 
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
@@ -125,6 +126,9 @@ export function CalendarWeekAppointmentPanel({
   containerRef,
   testId,
   maxHeightPx,
+  showInlineNotes = false,
+  onCreateAppointmentNote,
+  onAssignAppointmentEmployees,
 }: {
   appointment: CalendarAppointment;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
@@ -154,6 +158,9 @@ export function CalendarWeekAppointmentPanel({
   containerRef?: React.Ref<HTMLDivElement>;
   testId?: string;
   maxHeightPx?: number | null;
+  showInlineNotes?: boolean;
+  onCreateAppointmentNote?: (appointmentId: number) => void;
+  onAssignAppointmentEmployees?: (appointmentId: number) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -167,6 +174,7 @@ export function CalendarWeekAppointmentPanel({
     && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
   const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
+  const inlineNotes = showInlineNotes ? (appointment.appointmentNotesPreview ?? []) : [];
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -384,6 +392,26 @@ export function CalendarWeekAppointmentPanel({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          {onCreateAppointmentNote && !isPastStartDate(appointment.startDate) ? (
+            <DropdownMenuItem
+              onClick={() => onCreateAppointmentNote(appointment.id)}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-appointment-create-note-${appointment.id}`}
+            >
+              <StickyNote className="h-3.5 w-3.5 shrink-0" />
+              Neue Notiz anlegen
+            </DropdownMenuItem>
+          ) : null}
+          {onAssignAppointmentEmployees ? (
+            <DropdownMenuItem
+              onClick={() => onAssignAppointmentEmployees(appointment.id)}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-appointment-assign-employees-${appointment.id}`}
+            >
+              <UserPlus className="h-3.5 w-3.5 shrink-0" />
+              Mitarbeiter zuweisen
+            </DropdownMenuItem>
+          ) : null}
           {!appointment.isCancelled && (
             <DropdownMenuItem
               onClick={() => setCancelConfirmOpen(true)}
@@ -717,6 +745,29 @@ export function CalendarWeekAppointmentPanel({
         />
       )}
     </div>
+    {inlineNotes.length > 0 ? (
+      <div className="mt-1 space-y-1" data-testid={`week-appointment-inline-notes-${appointment.id}`}>
+        {inlineNotes.map((note) => {
+          const noteText = stripHtmlToText(note.body);
+          return (
+            <div
+              key={note.id}
+              className="rounded-md border px-2 py-1 text-[10px] leading-snug shadow-sm"
+              style={{
+                backgroundColor: note.cardColor ?? "#f8fafc",
+                borderColor: "rgba(15,23,42,0.14)",
+              }}
+              data-testid={`week-appointment-inline-note-${appointment.id}-${note.id}`}
+            >
+              <div className="truncate font-semibold text-slate-800">{note.title}</div>
+              {noteText ? (
+                <div className="mt-0.5 line-clamp-2 text-slate-700">{noteText}</div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    ) : null}
     <AppointmentCancelConfirmDialog
       open={cancelConfirmOpen}
       onOpenChange={setCancelConfirmOpen}

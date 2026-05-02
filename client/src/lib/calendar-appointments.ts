@@ -42,6 +42,15 @@ export type CalendarAppointment = {
   customerNotesCount: number;
   projectNotesCount: number;
   appointmentNotesCount: number;
+  appointmentNotesPreview?: {
+    id: number;
+    title: string;
+    body: string;
+    cardColor: string | null;
+    isPinned: boolean;
+    print: boolean;
+    updatedAt: string;
+  }[];
   customerAttachmentsCount: number;
   projectAttachmentsCount: number;
   appointmentAttachmentsCount: number;
@@ -50,7 +59,7 @@ export type CalendarAppointment = {
   customerTags: Tag[];
   projectTags: Tag[];
   displayMode: "standard" | "compact" | "detail";
-  employees: { id: number; firstName: string; lastName: string; fullName: string }[];
+  employees: { id: number; firstName?: string | null; lastName?: string | null; fullName: string }[];
   isLocked: boolean;
   isCancelled: boolean;
 };
@@ -156,6 +165,7 @@ export function useCalendarAppointments({
   toDate,
   employeeId,
   detail,
+  includeAppointmentNotes,
   userRole,
   enabled,
 }: {
@@ -163,18 +173,20 @@ export function useCalendarAppointments({
   toDate: string;
   employeeId?: number | null;
   detail?: "compact" | "full";
+  includeAppointmentNotes?: boolean;
   userRole: string;
   enabled?: boolean;
 }) {
   const resolvedDetail = detail ?? "compact";
   return useQuery<CalendarAppointment[]>({
-    queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail],
+    queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail, includeAppointmentNotes ? "notes" : "no-notes"],
     enabled,
     staleTime: 0,
     refetchOnMount: "always",
     queryFn: async () => {
       const params = new URLSearchParams({ fromDate, toDate, detail: resolvedDetail });
       if (employeeId) params.set("employeeId", String(employeeId));
+      if (includeAppointmentNotes) params.set("includeAppointmentNotes", "true");
       console.info(`${logPrefix} fetch`, { fromDate, toDate, detail: resolvedDetail, employeeId: employeeId ?? null });
       const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
         headers: {
@@ -215,6 +227,7 @@ export function useCalendarAppointments({
           customerNotesCount,
           projectNotesCount,
           appointmentNotesCount,
+          appointmentNotesPreview: Array.isArray(rawAppointment.appointmentNotesPreview) ? rawAppointment.appointmentNotesPreview : [],
           customerAttachmentsCount,
           projectAttachmentsCount,
           appointmentAttachmentsCount,

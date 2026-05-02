@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { appointmentNotes, calendarWeekNotes, customerNotes, employeeNotes, notes, projectNotes, type Note, type InsertNote, type UpdateNote } from "@shared/schema";
 
@@ -36,6 +36,26 @@ export async function getAppointmentNotes(appointmentId: number): Promise<Note[]
     .where(eq(appointmentNotes.appointmentId, appointmentId))
     .orderBy(desc(notes.isPinned), desc(notes.updatedAt));
   return result.map((row) => row.note);
+}
+
+export async function getAppointmentNotesByAppointmentIds(appointmentIds: number[]): Promise<Map<number, Note[]>> {
+  const uniqueAppointmentIds = Array.from(new Set(appointmentIds.filter((id) => Number.isFinite(id) && id > 0)));
+  if (uniqueAppointmentIds.length === 0) return new Map();
+
+  const result = await db
+    .select({ appointmentId: appointmentNotes.appointmentId, note: notes })
+    .from(appointmentNotes)
+    .innerJoin(notes, eq(appointmentNotes.noteId, notes.id))
+    .where(inArray(appointmentNotes.appointmentId, uniqueAppointmentIds))
+    .orderBy(appointmentNotes.appointmentId, desc(notes.isPinned), desc(notes.updatedAt));
+
+  const notesByAppointmentId = new Map<number, Note[]>();
+  for (const row of result) {
+    const currentNotes = notesByAppointmentId.get(row.appointmentId) ?? [];
+    currentNotes.push(row.note);
+    notesByAppointmentId.set(row.appointmentId, currentNotes);
+  }
+  return notesByAppointmentId;
 }
 
 export async function getAppointmentIdByNoteId(noteId: number): Promise<number | null> {

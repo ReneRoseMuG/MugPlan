@@ -6,12 +6,34 @@ import * as appointmentsService from "./appointmentsService";
 
 export class AppointmentNotesError extends Error {
   status: number;
-  code: "ABSENCE_APPOINTMENT_READONLY";
+  code: "ABSENCE_APPOINTMENT_READONLY" | "PAST_APPOINTMENT_READONLY";
 
-  constructor(status: number, code: "ABSENCE_APPOINTMENT_READONLY") {
+  constructor(status: number, code: "ABSENCE_APPOINTMENT_READONLY" | "PAST_APPOINTMENT_READONLY") {
     super(code);
     this.status = status;
     this.code = code;
+  }
+}
+
+const berlinFormatter = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" });
+
+function getBerlinTodayDateString(): string {
+  return berlinFormatter.format(new Date());
+}
+
+function toDateOnlyString(input: Date | string | null | undefined): string | null {
+  if (!input) return null;
+  if (typeof input === "string") return input.slice(0, 10);
+  const year = input.getFullYear();
+  const month = String(input.getMonth() + 1).padStart(2, "0");
+  const day = String(input.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function assertAppointmentAllowsNotes(appointment: { startDate: Date | string | null }): void {
+  const startDate = toDateOnlyString(appointment.startDate);
+  if (startDate && startDate < getBerlinTodayDateString()) {
+    throw new AppointmentNotesError(409, "PAST_APPOINTMENT_READONLY");
   }
 }
 
@@ -27,6 +49,7 @@ export async function createAppointmentNote(
 ): Promise<Note | null> {
   const appointment = await appointmentsRepository.getAppointment(appointmentId);
   if (!appointment) return null;
+  assertAppointmentAllowsNotes(appointment);
   if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
     throw new AppointmentNotesError(409, "ABSENCE_APPOINTMENT_READONLY");
   }

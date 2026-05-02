@@ -28,7 +28,7 @@ describe("calendar appointments query options", () => {
     expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
       staleTime: 0,
       refetchOnMount: "always",
-      queryKey: ["calendarAppointments", "2026-04-27", "2026-05-31", "all", "ADMIN", "full"],
+      queryKey: ["calendarAppointments", "2026-04-27", "2026-05-31", "all", "ADMIN", "full", "no-notes"],
     }));
   });
 

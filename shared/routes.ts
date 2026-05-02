@@ -683,6 +683,16 @@ const calendarTourPostalPlanDaySchema = z.object({
   appointments: z.array(calendarTourPostalPlanDayAppointmentSchema),
 });
 
+const calendarAppointmentNotePreviewSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string(),
+  body: z.string(),
+  cardColor: z.string().nullable(),
+  isPinned: z.boolean(),
+  print: z.boolean(),
+  updatedAt: z.string(),
+});
+
 const calendarTourPostalPlanAppointmentSchema = z.object({
   id: z.number().int().positive(),
   version: z.number().int().min(1),
@@ -1788,6 +1798,7 @@ export const api = {
         toDate: z.string(),
         employeeId: z.union([z.string(), z.number()]).optional(),
         detail: z.enum(["compact", "full"]).optional(),
+        includeAppointmentNotes: z.union([z.literal("true"), z.literal("false"), z.boolean()]).optional(),
       }).strict(),
       responses: {
         200: z.array(
@@ -1830,6 +1841,7 @@ export const api = {
             customerNotesCount: z.number().int().min(0),
             projectNotesCount: z.number().int().min(0),
             appointmentNotesCount: z.number().int().min(0),
+            appointmentNotesPreview: z.array(calendarAppointmentNotePreviewSchema).optional(),
             customerAttachmentsCount: z.number().int().min(0),
             projectAttachmentsCount: z.number().int().min(0),
             appointmentAttachmentsCount: z.number().int().min(0),
@@ -1841,6 +1853,8 @@ export const api = {
             employees: z.array(
               z.object({
                 id: z.number(),
+                firstName: z.string().optional(),
+                lastName: z.string().optional(),
                 fullName: z.string(),
               }),
             ),

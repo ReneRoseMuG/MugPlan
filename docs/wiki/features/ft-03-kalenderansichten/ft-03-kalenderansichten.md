@@ -43,6 +43,14 @@ Dieser Modus steuert ausschließlich die visuelle Darstellung der Tour-Lanes.
 
 Beide Darstellungsmodi verändern keine fachliche Terminlogik.
 
+Zusätzlich kann der Wochenkalender optionale Arbeitsbereiche einblenden:
+
+- Termin-Notizen als rein lesende Karten direkt unter Terminkarten im Kachelmodus.
+- Eine Personalübersicht je Tour-Lane auf Basis der bestehenden Kalenderwochen-Tourenplanung.
+- Eine passive Abwesenheitszeile je sichtbarem Kalendertag.
+
+Diese Bereiche ändern keine fachliche Termin-, Tour- oder Abwesenheitslogik. Sie machen bestehende Daten sichtbar oder öffnen bestehende Mutationspfade.
+
 ### Monatsübersicht
 
 Die Monatsübersicht dient der kompakten Übersicht über einen Monatsbereich. Sie übernimmt die fachliche Kalenderlogik des Wochenkalenders in verdichteter Form. Termine bleiben nach Datum, Dauer, Tourzuordnung und optionaler Startzeit organisiert.
@@ -85,6 +93,10 @@ Die Umschaltung Touren Aufgeklappt oder Zugeklappt verändert ausschließlich di
 
 Die Kalenderansichten benötigen für die dargestellten Termine Zugriff auf Projekt- und Kundendaten sowie auf Tour- und Mitarbeiterzuordnungen. Diese Informationen dürfen serverseitig zusammengeführt oder bei Bedarf nachgeladen werden, solange die Oberfläche ohne spürbare Verzögerung bedienbar bleibt.
 
+Direkte Aktionen an Terminkarten dürfen keine eigene Fachlogik einführen. Notizen werden über den bestehenden Termin-Notiz-Pfad angelegt. Mitarbeiterzuweisungen aus der Terminkarte verwenden die bestehende Tour-KW-Vorschau und die normale Terminmutation, sodass serverseitige Rollen-, Historien-, Overlap- und Abwesenheitsprüfungen maßgeblich bleiben.
+
+Druckvorschauen für Monats- und Wochenkalender sind read-only. Sie orientieren sich am aktuellen sichtbaren Zustand und blenden interaktive Bedienelemente aus.
+
 ## Darstellung
 
 ### Gesamtkonzept
@@ -108,6 +120,14 @@ Im Wochenkalender werden Termine innerhalb der sichtbaren Woche tourbezogen orga
 Kalendermarker wirken im Wochenkalender als tagesbezogene Hintergrundmarkierung über die gesamte betroffene Tagesspalte hinweg. Bei Feiertagen, Betriebsfeiertagen oder Betriebsferien reicht diese farbliche Markierung über alle sichtbaren Tour-Lanes der betroffenen Spalte.
 
 Die textliche Markeranzeige sitzt im Kopf des jeweiligen Kalendertags. Sie verwendet eine adaptive Darstellung: Wenn genügend Platz vorhanden ist, wird der volle Markername gezeigt. Reicht der Platz nicht aus, wird ein kompakter Platzhalter angezeigt. Ist auch dieser nicht mehr stabil darstellbar, wird ein Icon verwendet. In kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.
+
+Die Tagesspalten im Wochenkalender verwenden eine kompakte Beschriftung mit deutschem Wochentag, Tageszahl und Monatskürzel, zum Beispiel `Mo 27 Apr`. Bei knappem Platz kann das Monatskürzel ausgeblendet werden. Diese Darstellung ist als bewusste Ausnahme von der allgemeinen sichtbaren Datumsregel dokumentiert; andere sichtbare Datumsangaben bleiben beim Kurzformat `dd.MM.yy`.
+
+Termin-Notizen können im Wochenkalender dauerhaft sichtbar gemacht werden. Angezeigt werden Titel, Inhalt und Kartenfarbe; Bearbeiten, Löschen, Pinning und Vorlagenfunktionen bleiben den bestehenden Notizdialogen vorbehalten.
+
+Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Änderungen aus der Terminkarte verwenden die bestehende Vorschau-/Bestätigungslogik und speichern keine getrennte Mitarbeiterplanung.
+
+Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist vollständig passiv und bietet keine Pflege von Abwesenheiten an.
 
 #### Kachelmodus
 

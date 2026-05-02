@@ -757,6 +757,9 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     const toDate = typeof req.query.toDate === "string" ? req.query.toDate : undefined;
     const employeeIdParam = typeof req.query.employeeId === "string" ? req.query.employeeId : undefined;
     const detailParam = typeof req.query.detail === "string" ? req.query.detail : undefined;
+    const includeAppointmentNotesParam = typeof req.query.includeAppointmentNotes === "string"
+      ? req.query.includeAppointmentNotes
+      : undefined;
 
     if (!fromDate || !toDate) {
       res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
@@ -782,7 +785,12 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       res.status(400).json({ message: "Ungültiger detail-Parameter" });
       return;
     }
+    if (includeAppointmentNotesParam && includeAppointmentNotesParam !== "true" && includeAppointmentNotesParam !== "false") {
+      res.status(400).json({ message: "Ungültiger includeAppointmentNotes-Parameter" });
+      return;
+    }
     const detail = detailParam === "full" ? "full" : "compact";
+    const includeAppointmentNotes = includeAppointmentNotesParam === "true";
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
@@ -798,6 +806,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       toDate,
       employeeId,
       detail,
+      includeAppointmentNotes,
       roleKey,
     });
     res.json(appointments);

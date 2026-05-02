@@ -282,7 +282,7 @@ describe("CalendarWeekView blocked week behavior", () => {
     expect(markup).toContain("Wochenplanung freigeben");
     expect(markup).toContain("repeating-linear-gradient(135deg");
     expect(markup).not.toContain('week-tour-lane-blocked-badge-');
-    expect(markup).toContain(`data-testid="week-tour-lane-day-divider-tour-7-${testWeekSecondDate}"`);
+    expect(markup).toContain(`data-testid="week-tour-lane-day-hover-trigger-tour-7-${testWeekSecondDate}"`);
     expect(markup).toContain('data-testid="week-tour-lane-day-counter-');
     expect(markup).toContain("1 Termin");
     expect(markup).toContain(`data-testid="button-new-appointment-week-${testWeekStartDate}-lane-`);

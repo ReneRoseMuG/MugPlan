@@ -7,7 +7,7 @@ import {
 } from "@shared/appointmentCancellation";
 import { hasAbsenceTagRelation } from "@shared/absenceAppointments";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
-import type { InsertAppointment } from "@shared/schema";
+import type { InsertAppointment, Note } from "@shared/schema";
 import { addDays, addWeeks, differenceInCalendarDays, endOfWeek, getISOWeek, getISOWeekYear, startOfWeek } from "date-fns";
 import * as appointmentsRepository from "../repositories/appointmentsRepository";
 import * as notesRepository from "../repositories/notesRepository";
@@ -1185,12 +1185,14 @@ export async function listCalendarAppointments({
   toDate,
   employeeId,
   detail,
+  includeAppointmentNotes,
   roleKey,
 }: {
   fromDate: string;
   toDate: string;
   employeeId?: number | null;
   detail?: "compact" | "full";
+  includeAppointmentNotes?: boolean;
   roleKey: CanonicalRoleKey;
 }) {
   const resolvedDetail = detail ?? "compact";
@@ -1209,6 +1211,9 @@ export async function listCalendarAppointments({
   const customerNoteCounts = await appointmentsRepository.getCustomerNoteCountsByCustomerIds(customerIds);
   const projectNoteCounts = await appointmentsRepository.getProjectNoteCountsByProjectIds(projectIds);
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
+  const appointmentNotesByAppointmentId = includeAppointmentNotes
+    ? await notesRepository.getAppointmentNotesByAppointmentIds(appointmentIds)
+    : new Map();
   const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
   const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
   const appointmentAttachmentCounts = await appointmentsRepository.getAppointmentAttachmentCountsByAppointmentIds(appointmentIds);
@@ -1254,6 +1259,19 @@ export async function listCalendarAppointments({
       customerNotesCount: customerNoteCounts.get(row.customer.id) ?? 0,
       projectNotesCount: projectId ? (projectNoteCounts.get(projectId) ?? 0) : 0,
       appointmentNotesCount: appointmentNoteCounts.get(row.appointment.id) ?? 0,
+      ...(includeAppointmentNotes
+        ? {
+            appointmentNotesPreview: (appointmentNotesByAppointmentId.get(row.appointment.id) ?? []).map((note: Note) => ({
+              id: note.id,
+              title: note.title,
+              body: note.body,
+              cardColor: note.cardColor ?? null,
+              isPinned: note.isPinned,
+              print: note.print,
+              updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt),
+            })),
+          }
+        : {}),
       customerAttachmentsCount,
       projectAttachmentsCount,
       appointmentAttachmentsCount,

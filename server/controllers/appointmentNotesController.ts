@@ -7,6 +7,10 @@ import { buildNoteMessage } from "../lib/journalMessages";
 import { getRequestActor } from "../lib/requestActor";
 import * as journalService from "../services/journalService";
 
+function canMutateAppointmentNotes(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listAppointmentNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const appointmentId = Number(req.params.appointmentId);
@@ -23,6 +27,10 @@ export async function listAppointmentNotes(req: Request, res: Response, next: Ne
 
 export async function createAppointmentNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateAppointmentNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const appointmentId = Number(req.params.appointmentId);
     const input = api.appointmentNotes.create.input.parse(req.body);
     const note = await appointmentNotesService.createAppointmentNote(appointmentId, input);
@@ -67,6 +75,10 @@ export async function createAppointmentNote(req: Request, res: Response, next: N
 
 export async function deleteAppointmentNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateAppointmentNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.appointmentNotes.delete.input.parse(req.body);
     const appointmentId = Number(req.params.appointmentId);
     const noteId = Number(req.params.noteId);

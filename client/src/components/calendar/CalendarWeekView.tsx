@@ -62,6 +62,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
+import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { Note, NoteTemplate, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
@@ -73,6 +74,9 @@ import {
   normalizeWorkflowNoteTitle,
 } from "@/lib/workflow-note-templates";
 import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
+import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { PrintPageShell } from "@/components/print/PrintPageShell";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -107,6 +111,15 @@ type WeekTourLane = {
 };
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
+
+const SHORT_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
+const SHORT_MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"] as const;
+
+export function formatCompactWeekDayHeader(day: Date, includeMonth = true): string {
+  const weekday = SHORT_WEEKDAYS[(day.getDay() + 6) % 7] ?? "Mo";
+  const month = SHORT_MONTHS[day.getMonth()] ?? "";
+  return includeMonth ? `${weekday} ${format(day, "d")} ${month}` : `${weekday} ${format(day, "d")}`;
+}
 
 function isHistoricalParkplatzAppointment(appointment: CalendarAppointment): boolean {
   return appointment.startDate < getBerlinTodayDateString()
@@ -286,6 +299,24 @@ export function CalendarWeekView({
   const [workflowNoteCardColor, setWorkflowNoteCardColor] = useState<string>("#f8fafc");
   const [workflowNotePrint, setWorkflowNotePrint] = useState(false);
   const [workflowNoteCardColorLocked, setWorkflowNoteCardColorLocked] = useState(false);
+  const [showAppointmentNotesInline, setShowAppointmentNotesInline] = useState(false);
+  const [showAbsenceRow, setShowAbsenceRow] = useState(false);
+  const [weekPrintPreviewOpen, setWeekPrintPreviewOpen] = useState(false);
+  const [weekPrintPageIndex, setWeekPrintPageIndex] = useState(0);
+  const [appointmentEmployeeDialog, setAppointmentEmployeeDialog] = useState<{
+    appointmentId: number;
+    title: string;
+    description: string;
+    previewItems: Array<{
+      employeeId: number;
+      employeeName: string;
+      status: "will_add" | "conflict" | "already_present" | "current_only";
+      selectable: boolean;
+      conflictReason: string | null;
+    }>;
+    currentEmployeeIds: number[];
+    selectedIds: number[];
+  } | null>(null);
   const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
   const cardHeightByLaneRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
@@ -306,6 +337,7 @@ export function CalendarWeekView({
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
+  const persistedPersonnelColumnVisible = useSetting("calendar.weekPersonnelColumn.visible");
   const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const canWriteNotes = userRole !== "READER";
@@ -316,6 +348,7 @@ export function CalendarWeekView({
       : 4;
   const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
+  const showPersonnelColumn = Boolean(persistedPersonnelColumnVisible);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
   const canManageWeekPlanning = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
@@ -423,6 +456,7 @@ export function CalendarWeekView({
     toDate: stripToDate,
     employeeId: employeeFilterId ?? undefined,
     detail: "full",
+    includeAppointmentNotes: showAppointmentNotesInline,
     userRole,
   });
   const { data: weekLaneEmployeePreviews = [] } = useCalendarWeekLaneEmployeePreviews({
@@ -456,6 +490,45 @@ export function CalendarWeekView({
     }
     return result;
   }, [calendarMarkers, stripFromDate, stripToDate]);
+
+  const absenceEmployeesByDate = useMemo(() => {
+    const result = new Map<string, CalendarAppointment["employees"]>();
+    for (const appointment of appointments) {
+      if (!isAbsenceAppointmentSummary({ tourName: appointment.tourName, appointmentTags: appointment.appointmentTags })) {
+        continue;
+      }
+      const startDate = appointment.startDate;
+      const endDate = appointment.endDate ?? appointment.startDate;
+      for (let cursor = parseISO(startDate); format(cursor, "yyyy-MM-dd") <= endDate; cursor = addDays(cursor, 1)) {
+        const dateKey = format(cursor, "yyyy-MM-dd");
+        if (dateKey < stripFromDate || dateKey > stripToDate) continue;
+        const existing = result.get(dateKey) ?? [];
+        const merged = [...existing];
+        for (const employee of appointment.employees) {
+          if (!merged.some((entry) => entry.id === employee.id)) {
+            merged.push(employee);
+          }
+        }
+        result.set(dateKey, merged);
+      }
+    }
+    return result;
+  }, [appointments, stripFromDate, stripToDate]);
+
+  const setPersonnelColumnVisible = (visible: boolean) => {
+    void setSetting({
+      key: "calendar.weekPersonnelColumn.visible",
+      scopeType: "USER",
+      value: visible,
+    }).catch((error) => {
+      console.error(`${logPrefix} personnel column persist failed`, error);
+      toast({
+        title: "Personalspalte konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
 
   useEffect(() => {
     cardHeightByLaneRef.current.clear();
@@ -750,6 +823,104 @@ export function CalendarWeekView({
     event.dataTransfer.setData("text/plain", String(appointmentId));
     console.info(`${logPrefix} drag start`, { appointmentId });
   };
+
+  const openNewAppointmentNoteEditor = (appointmentId: number) => {
+    setWorkflowNoteEditorAppointmentId(appointmentId);
+    setWorkflowNoteEditorId(null);
+    setWorkflowNoteEditorVersion(1);
+    setWorkflowNoteTitle("");
+    setWorkflowNoteBody("");
+    setWorkflowNoteCardColor("#f8fafc");
+    setWorkflowNotePrint(false);
+    setWorkflowNoteCardColorLocked(false);
+    setWorkflowNoteEditorOpen(true);
+  };
+
+  const openAppointmentEmployeeAssignmentDialog = async (appointmentId: number) => {
+    const appointment = appointmentsById.get(appointmentId);
+    if (!appointment || !appointment.tourId) {
+      toast({
+        title: "Mitarbeiterzuweisung nicht möglich",
+        description: "Der Termin ist keiner Tour zugeordnet.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiRequest("POST", `/api/tours/${appointment.tourId}/week-employees/assignment-preview`, {
+        startDate: appointment.startDate,
+        endDate: appointment.endDate,
+        startTime: appointment.startTime,
+        existingEmployeeIds: appointment.employees.map((employee) => employee.id),
+      });
+      const preview = await response.json() as {
+        hasWeekPlan: boolean;
+        items: Array<{
+          employeeId: number;
+          employeeName: string;
+          status: "will_add" | "conflict" | "already_present" | "current_only";
+          selectable: boolean;
+          conflictReason: string | null;
+        }>;
+      };
+      if (!preview.hasWeekPlan || preview.items.length === 0) {
+        toast({
+          title: "Keine KW-Planung vorhanden",
+          description: "Für diese Tour und Woche sind keine Mitarbeiter geplant.",
+        });
+        return;
+      }
+      setAppointmentEmployeeDialog({
+        appointmentId,
+        title: "Mitarbeiter zuweisen",
+        description: "Wählen Sie Mitarbeiter aus der bestehenden Tour-KW-Planung für diesen Termin.",
+        previewItems: preview.items,
+        currentEmployeeIds: appointment.employees.map((employee) => employee.id),
+        selectedIds: preview.items
+          .filter((item) => item.selectable && item.status === "will_add")
+          .map((item) => item.employeeId),
+      });
+    } catch (error) {
+      toast({
+        title: "Mitarbeitervorschau fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignAppointmentEmployees = (appointmentId: number) => {
+    void openAppointmentEmployeeAssignmentDialog(appointmentId);
+  };
+
+  const assignAppointmentEmployeesMutation = useMutation({
+    mutationFn: async ({ appointmentId, employeeIds }: { appointmentId: number; employeeIds: number[] }) => {
+      const appointment = appointmentsById.get(appointmentId);
+      if (!appointment) throw new Error("Termin nicht gefunden.");
+      const response = await apiRequest("PATCH", `/api/appointments/${appointmentId}`, {
+        version: appointment.version,
+        projectId: appointment.projectId,
+        customerId: appointment.customer.id,
+        tourId: appointment.tourId,
+        startDate: appointment.startDate,
+        endDate: appointment.endDate,
+        startTime: appointment.startTime,
+        employeeIds,
+      });
+      return response.json() as Promise<CalendarAppointment>;
+    },
+    onSuccess: async () => {
+      setAppointmentEmployeeDialog(null);
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Mitarbeiter zugewiesen" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Mitarbeiterzuweisung nicht möglich", description: error.message, variant: "destructive" });
+    },
+  });
 
   const handleDragEnd = () => {
     if (draggedAppointmentId) {
@@ -1119,6 +1290,16 @@ export function CalendarWeekView({
   };
 
   const visibleWeekEnd = endOfWeek(visibleWeekStart, { weekStartsOn: 1, locale: de });
+  const weekPrintPages = useMemo(() => weekStarts.map((weekStart) => {
+    const weekKey = format(weekStart, "yyyy-MM-dd");
+    return {
+      weekKey,
+      title: `KW ${getISOWeek(weekStart)} · ${format(weekStart, "dd.MM.yy")} bis ${format(endOfWeek(weekStart, { weekStartsOn: 1, locale: de }), "dd.MM.yy")}`,
+      weekStart,
+      days: Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
+      lanes: lanesByWeekStart.get(weekKey) ?? [],
+    };
+  }), [lanesByWeekStart, weekStarts]);
 
   return (
     <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
@@ -1130,6 +1311,54 @@ export function CalendarWeekView({
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+            <Label htmlFor="week-inline-notes-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Notizen
+            </Label>
+            <Switch
+              id="week-inline-notes-toggle"
+              checked={showAppointmentNotesInline}
+              onCheckedChange={setShowAppointmentNotesInline}
+              data-testid="switch-week-inline-notes"
+              aria-label="Terminnotizen immer anzeigen"
+            />
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+            <Label htmlFor="week-personnel-column-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Personal
+            </Label>
+            <Switch
+              id="week-personnel-column-toggle"
+              checked={showPersonnelColumn}
+              onCheckedChange={setPersonnelColumnVisible}
+              data-testid="switch-week-personnel-column"
+              aria-label="Personalspalte anzeigen"
+            />
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+            <Label htmlFor="week-absence-row-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Abwesenheiten
+            </Label>
+            <Switch
+              id="week-absence-row-toggle"
+              checked={showAbsenceRow}
+              onCheckedChange={setShowAbsenceRow}
+              data-testid="switch-week-absence-row"
+              aria-label="Abwesenheitszeile anzeigen"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setWeekPrintPageIndex(0);
+              setWeekPrintPreviewOpen(true);
+            }}
+            data-testid="button-week-print-preview"
+          >
+            Drucken
+          </Button>
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kacheln</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
             <button
@@ -1300,16 +1529,14 @@ export function CalendarWeekView({
                             `}
                             data-marker-visualization={dayMarkerVisualization?.tone ?? "none"}
                           >
-                            <div className="text-[10px] font-bold text-muted-foreground">
-                              {format(day, "EEEE", { locale: de })}
-                            </div>
                             <div
-                              className={`
-                                mt-0.5 inline-flex items-center justify-center min-w-6 h-6 rounded-full px-1 text-sm font-bold
-                                ${isTodayDate ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25" : "text-foreground"}
-                              `}
+                              className={`mx-auto inline-flex max-w-full items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
+                                isTodayDate ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
+                              }`}
+                              data-testid={`week-day-header-label-${dayKey}`}
                             >
-                              {format(day, "d")}
+                              <span className="hidden sm:inline">{formatCompactWeekDayHeader(day, true)}</span>
+                              <span className="sm:hidden">{formatCompactWeekDayHeader(day, false)}</span>
                             </div>
                             <div
                               className="mt-1 h-5 flex items-center justify-center gap-1 overflow-hidden px-1"
@@ -1342,6 +1569,46 @@ export function CalendarWeekView({
                       );
                     })}
                   </div>
+
+                  {showAbsenceRow ? (
+                    <div
+                      className="sticky top-[3.75rem] z-10 grid divide-x divide-border/30 border-b border-border/30 bg-slate-50"
+                      style={{ gridTemplateColumns: weekDayGridTemplate }}
+                      data-testid={`week-absence-row-${weekKey}`}
+                    >
+                      {days.map((day) => {
+                        const dayKey = format(day, "yyyy-MM-dd");
+                        const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
+                        const visibleEmployees = absentEmployees.slice(0, 4);
+                        const overflowCount = Math.max(0, absentEmployees.length - visibleEmployees.length);
+                        return (
+                          <div key={`week-absence-cell-${dayKey}`} className="min-h-12 overflow-hidden px-2 py-1" data-testid={`week-absence-cell-${dayKey}`}>
+                            <div className="flex flex-wrap items-center justify-center gap-1">
+                              {visibleEmployees.map((employee) => (
+                                <EmployeeInfoBadge
+                                  key={`absence-${dayKey}-${employee.id}`}
+                                  id={employee.id}
+                                  firstName={employee.firstName}
+                                  lastName={employee.lastName}
+                                  fullName={employee.fullName}
+                                  renderMode="compact"
+                                  size="sm"
+                                  action="none"
+                                  showPreview
+                                  testId={`week-absence-employee-${dayKey}-${employee.id}`}
+                                />
+                              ))}
+                              {overflowCount > 0 ? (
+                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`week-absence-overflow-${dayKey}`}>
+                                  +{overflowCount}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
 
                   <div className="relative pb-3">
                     <div
@@ -1399,6 +1666,9 @@ export function CalendarWeekView({
                         && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
                       const isLaneWeekLocked = weekKey <= format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
                       const isAbsenceLane = isAbsenceTourName(tourLane.label);
+                      const laneWeekEmployees = tourLane.tourId == null
+                        ? []
+                        : (weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${format(weekStart, "yyyy-MM-dd")}`)?.weekEmployees ?? []);
 
                       return (
                       <CalendarWeekNotesButton
@@ -1522,6 +1792,29 @@ export function CalendarWeekView({
                               style={BLOCKED_WEEK_OVERLAY_STYLE}
                               aria-hidden
                             />
+                          ) : null}
+                          {showPersonnelColumn && !isAbsenceLane ? (
+                            <div
+                              className="relative z-10 flex min-h-10 flex-wrap items-center gap-1 border-b border-border/30 bg-white/80 px-2 py-1"
+                              data-testid={`week-personnel-column-${tourLane.laneKey}`}
+                            >
+                              <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Personal</span>
+                              {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
+                                <EmployeeInfoBadge
+                                  key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
+                                  id={employee.id}
+                                  firstName={employee.firstName}
+                                  lastName={employee.lastName}
+                                  fullName={employee.fullName}
+                                  renderMode="compact"
+                                  size="sm"
+                                  action="none"
+                                  testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
+                                />
+                              )) : (
+                                <span className="text-xs italic text-slate-400">Keine KW-Zuordnung</span>
+                              )}
+                            </div>
                           ) : null}
                           <div
                             className="pointer-events-none absolute inset-0 grid"
@@ -1803,6 +2096,9 @@ export function CalendarWeekView({
                                     allowHistoricalActions={isAdmin}
                                     interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
+                                    showInlineNotes={showAppointmentNotesInline}
+                                    onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                    onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
                                       ? undefined
@@ -1897,6 +2193,9 @@ export function CalendarWeekView({
                                         allowHistoricalActions={isAdmin}
                                         interactive={!isAbsenceLane}
                                         onTagMutationEvents={handleAppointmentTagMutationEvents}
+                                        showInlineNotes={showAppointmentNotesInline}
+                                        onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                        onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode
                                             ? undefined
@@ -1949,6 +2248,81 @@ export function CalendarWeekView({
           })}
         </div>
       </div>
+      <PrintPreviewDialog
+        open={weekPrintPreviewOpen}
+        onOpenChange={setWeekPrintPreviewOpen}
+        title="Wochenkalender drucken"
+        pages={weekPrintPages}
+        activePageIndex={weekPrintPageIndex}
+        onPageChange={setWeekPrintPageIndex}
+        pageOrientation="landscape"
+        testIdPrefix="week-calendar-print-preview"
+        dialogTestId="dialog-week-calendar-print-preview"
+        headerActions={(
+          <Button type="button" variant="outline" onClick={() => window.print()} data-testid="button-week-calendar-print">
+            Drucken
+          </Button>
+        )}
+        getPageTitle={(page) => page.title}
+        getPageKey={(page) => page.weekKey}
+        renderPage={(page) => (
+          <PrintPageShell orientation="landscape" paddingMm={7} testId={`week-calendar-print-page-${page.weekKey}`}>
+            <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+              <div className="text-lg font-bold text-slate-900">{page.title}</div>
+              <div className="text-xs text-slate-500">Wochenkalender</div>
+            </div>
+            <div className="grid flex-1 grid-cols-7 gap-1 overflow-hidden text-[8px]">
+              {page.days.map((day) => {
+                const dayKey = format(day, "yyyy-MM-dd");
+                const absentEmployees = showAbsenceRow ? (absenceEmployeesByDate.get(dayKey) ?? []) : [];
+                return (
+                  <div key={`print-week-day-${dayKey}`} className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-200">
+                    <div className="border-b border-slate-200 bg-slate-100 px-1 py-1 text-center font-semibold">
+                      {formatCompactWeekDayHeader(day, true)}
+                    </div>
+                    {absentEmployees.length > 0 ? (
+                      <div className="border-b border-slate-200 bg-slate-50 px-1 py-0.5 text-[7px] text-slate-700">
+                        Abwesend: {absentEmployees.map((employee) => employee.fullName).join(", ")}
+                      </div>
+                    ) : null}
+                    <div className="min-h-0 flex-1 space-y-1 overflow-hidden p-1">
+                      {page.lanes.flatMap((lane) => {
+                        const bucket = lane.dayBuckets.find((item) => item.dateKey === dayKey);
+                        return (bucket?.appointments ?? []).map((appointmentId) => ({ lane, appointmentId }));
+                      }).map(({ lane, appointmentId }) => {
+                        const appointment = appointmentsById.get(appointmentId);
+                        if (!appointment) return null;
+                        return (
+                          <div
+                            key={`print-week-appointment-${dayKey}-${appointmentId}`}
+                            className="rounded border px-1 py-0.5"
+                            style={{ borderColor: appointment.tourColor ?? lane.color ?? "#94a3b8" }}
+                          >
+                            <div className="truncate font-semibold">{appointment.customer.fullName ?? appointment.customer.customerNumber}</div>
+                            <div className="truncate text-slate-700">{appointment.projectName}</div>
+                            {appointment.employees.length > 0 ? (
+                              <div className="truncate text-slate-600">{appointment.employees.map((employee) => employee.fullName).join(", ")}</div>
+                            ) : null}
+                            {showAppointmentNotesInline && appointment.appointmentNotesPreview && appointment.appointmentNotesPreview.length > 0 ? (
+                              <div className="mt-0.5 space-y-0.5">
+                                {appointment.appointmentNotesPreview.map((note) => (
+                                  <div key={`print-note-${appointment.id}-${note.id}`} className="truncate rounded bg-slate-100 px-1 text-[7px]">
+                                    {note.title}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </PrintPageShell>
+        )}
+      />
       <WorkflowNoteSuggestionDialog
         open={noteSuggestionDialog !== null}
         templateTitle={noteSuggestionDialog?.templateTitle}
@@ -1956,6 +2330,30 @@ export function CalendarWeekView({
         onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
         onSkip={() => setNoteSuggestionDialog(null)}
         onConfirm={handleCreateAppointmentNoteFromSuggestion}
+      />
+      <TourEmployeeCascadeDialog
+        open={appointmentEmployeeDialog !== null}
+        variant="appointment"
+        title={appointmentEmployeeDialog?.title ?? "Mitarbeiter zuweisen"}
+        description={appointmentEmployeeDialog?.description ?? ""}
+        previewItems={appointmentEmployeeDialog?.previewItems ?? []}
+        selectedIds={appointmentEmployeeDialog?.selectedIds ?? []}
+        isSubmitting={assignAppointmentEmployeesMutation.isPending}
+        onSelectedIdsChange={(ids) => {
+          setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
+        }}
+        onConfirm={() => {
+          if (!appointmentEmployeeDialog) return;
+          assignAppointmentEmployeesMutation.mutate({
+            appointmentId: appointmentEmployeeDialog.appointmentId,
+            employeeIds: Array.from(new Set([
+              ...appointmentEmployeeDialog.currentEmployeeIds,
+              ...appointmentEmployeeDialog.selectedIds,
+            ])),
+          });
+        }}
+        onClose={() => setAppointmentEmployeeDialog(null)}
+        confirmLabel="Zuweisen"
       />
       <WorkflowNoteRemovalDialog
         open={noteRemovalDialog !== null}
@@ -1975,7 +2373,7 @@ export function CalendarWeekView({
       <Dialog open={workflowNoteEditorOpen} onOpenChange={setWorkflowNoteEditorOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Notiz bearbeiten</DialogTitle>
+            <DialogTitle>{workflowNoteEditorId ? "Notiz bearbeiten" : "Neue Notiz anlegen"}</DialogTitle>
             <EditFormContextText>{workflowNoteTitle.trim() || null}</EditFormContextText>
           </DialogHeader>
 
@@ -2035,7 +2433,20 @@ export function CalendarWeekView({
             </Button>
             <Button
               onClick={() => {
-                if (!workflowNoteEditorId || !workflowNoteTitle.trim()) return;
+                if (!workflowNoteTitle.trim()) return;
+                if (!workflowNoteEditorId && workflowNoteEditorAppointmentId) {
+                  createAppointmentNoteMutation.mutate({
+                    appointmentId: workflowNoteEditorAppointmentId,
+                    title: workflowNoteTitle,
+                    body: workflowNoteBody,
+                    cardColor: workflowNoteCardColor,
+                    print: workflowNotePrint,
+                  }, {
+                    onSuccess: () => setWorkflowNoteEditorOpen(false),
+                  });
+                  return;
+                }
+                if (!workflowNoteEditorId) return;
                 updateWorkflowAppointmentNoteMutation.mutate({
                   noteId: workflowNoteEditorId,
                   version: workflowNoteEditorVersion,

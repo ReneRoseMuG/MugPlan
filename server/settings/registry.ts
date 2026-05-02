@@ -602,6 +602,15 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is WeekTileBodyMode =>
       typeof value === "string" && weekTileBodyModeOptions.includes(value as WeekTileBodyMode),
   },
+  calendarWeekPersonnelColumnVisible: {
+    key: "calendar.weekPersonnelColumn.visible",
+    label: "Wochenansicht Personalspalte",
+    description: "Steuert benutzerspezifisch, ob die Personalspalte im Wochenkalender sichtbar ist.",
+    type: "boolean",
+    defaultValue: false,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
   reportsVorlauflisteCategorySelection: {
     key: "reports.vorlaufliste.categorySelection",
     label: "Vorlaufliste Spaltenkonfiguration",

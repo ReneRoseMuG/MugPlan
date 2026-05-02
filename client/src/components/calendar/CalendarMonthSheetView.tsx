@@ -61,6 +61,9 @@ import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-r
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
+import { Button } from "@/components/ui/button";
+import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { PrintPageShell } from "@/components/print/PrintPageShell";
 
 type CalendarMonthSheetViewProps = {
   currentDate: Date;
@@ -141,6 +144,7 @@ export function CalendarMonthSheetView({
   onOpenAppointment,
 }: CalendarMonthSheetViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
+  const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(() => getStoredUserRole(), []);
@@ -457,9 +461,19 @@ export function CalendarMonthSheetView({
   };
 
   const weekDays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+  const printPages = useMemo(() => [{
+    key: month.monthKey,
+    title: `${format(month.visibleStart, "dd.MM.yy")} bis ${format(month.visibleEnd, "dd.MM.yy")}`,
+    weeks: month.weeks,
+  }], [month]);
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
+      <div className="flex items-center justify-end border-b border-border/40 bg-muted/20 px-3 py-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => setPrintPreviewOpen(true)} data-testid="button-month-print-preview">
+          Drucken
+        </Button>
+      </div>
       <div
         className="flex-1 min-h-0"
         data-testid="month-sheet-container"
@@ -493,6 +507,55 @@ export function CalendarMonthSheetView({
           weekDays={weekDays}
         />
       </div>
+      <PrintPreviewDialog
+        open={printPreviewOpen}
+        onOpenChange={setPrintPreviewOpen}
+        title="Monatskalender drucken"
+        pages={printPages}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        pageOrientation="landscape"
+        testIdPrefix="month-calendar-print-preview"
+        dialogTestId="dialog-month-calendar-print-preview"
+        showPageMetaBar={false}
+        headerActions={(
+          <Button type="button" variant="outline" onClick={() => window.print()} data-testid="button-month-calendar-print">
+            Drucken
+          </Button>
+        )}
+        getPageKey={(page) => page.key}
+        renderPage={(page) => (
+          <PrintPageShell orientation="landscape" paddingMm={7} testId={`month-calendar-print-page-${page.key}`}>
+            <div className="flex items-center justify-between border-b border-slate-300 pb-2">
+              <div className="text-lg font-bold text-slate-900">Monatskalender</div>
+              <div className="text-xs text-slate-500">{page.title}</div>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-[8px] font-semibold text-slate-600">
+              {weekDays.map((dayLabel) => <div key={`print-month-head-${dayLabel}`} className="text-center">{dayLabel}</div>)}
+            </div>
+            <div className="grid flex-1 grid-cols-7 gap-1 overflow-hidden text-[7px]">
+              {page.weeks.flatMap((week) => week.days).map((day) => {
+                const dayAppointments = visibleAppointments
+                  .filter((appointment) => appointment.startDate <= day.dateKey && (appointment.endDate ?? appointment.startDate) >= day.dateKey)
+                  .sort(compareAppointmentsByTourIndexThenTime);
+                return (
+                  <div key={`print-month-day-${day.dateKey}`} className="min-h-0 overflow-hidden rounded border border-slate-200 p-1">
+                    <div className="mb-1 font-semibold text-slate-800">{format(parseISO(day.dateKey), "dd.MM.yy")}</div>
+                    <div className="space-y-0.5">
+                      {dayAppointments.slice(0, 8).map((appointment) => (
+                        <div key={`print-month-appointment-${day.dateKey}-${appointment.id}`} className="truncate rounded px-1" style={{ backgroundColor: toTransparentTourColor(appointment.tourColor, 0.2) }}>
+                          {appointment.customer.fullName ?? appointment.customer.customerNumber} · {appointment.projectName}
+                        </div>
+                      ))}
+                      {dayAppointments.length > 8 ? <div className="text-slate-500">+{dayAppointments.length - 8} weitere</div> : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </PrintPageShell>
+        )}
+      />
     </div>
   );
 }

@@ -123,6 +123,7 @@ Kalender-Endpoints liefern aggregierte Terminobjekte mit:
 - Tourdaten
 - Mitarbeiterliste
 - Notizzähler
+- optionaler Termin-Notizvorschau über `includeAppointmentNotes=true`
 - Anzeige-Felder wie `displayMode`, `allDay`, `singleEmployee`
 - `isLocked`
 
