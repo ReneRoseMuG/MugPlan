@@ -24,7 +24,8 @@ Die Intensität der Kalendermarker-Darstellung global festlegen.
 1. Administrator sieht die Stilauswahl `Dezent`, `Standard`, `Hervorgehoben`.
 2. Administrator wählt einen Stil.
 3. System speichert den Stil als globales Setting.
-4. Wochen- und Monatskalender verwenden den wirksamen Stil beim nächsten Laden oder Aktualisieren.
+4. Wochen- und Monatskalender verwenden den wirksamen Stil beim nächsten Laden oder Aktualisieren für Hintergrundmarkierung und Markerchips.
+5. System verändert dabei nur die Intensität der Farben, nicht Markerart, Markertext, Persistenz oder Seed-Logik.
 
 ## Alternativen
 

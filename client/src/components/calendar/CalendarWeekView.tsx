@@ -72,7 +72,7 @@ import {
   findWorkflowNoteTemplate,
   normalizeWorkflowNoteTitle,
 } from "@/lib/workflow-note-templates";
-import { CalendarMarkerBadges } from "./CalendarMarkerBadges";
+import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -1329,14 +1329,43 @@ export function CalendarWeekView({
                                 </span>
                               ))}
                             </div>
-                            <CalendarMarkerBadges markers={dayMarkers} visualizationStyle={markerVisualizationStyle} />
+                            <div className="mt-1 flex min-h-5 items-center justify-center px-1">
+                              <CalendarMarkerHeaderLabel
+                                markers={dayMarkers}
+                                visualizationStyle={markerVisualizationStyle}
+                                dateKey={dayKey}
+                                className="w-full"
+                              />
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
 
-                  <div className="space-y-3 pb-3">
+                  <div className="relative pb-3">
+                    <div
+                      className="pointer-events-none absolute inset-0 grid"
+                      style={{ gridTemplateColumns: weekDayGridTemplate }}
+                      aria-hidden
+                    >
+                      {days.map((day) => {
+                        const dayKey = format(day, "yyyy-MM-dd");
+                        const markerVisualization = getPrimaryCalendarMarkerVisualization(
+                          calendarMarkersByDate.get(dayKey) ?? [],
+                          markerVisualizationStyle,
+                        );
+                        return (
+                          <div
+                            key={`week-body-marker-column-${dayKey}`}
+                            className={markerVisualization?.columnClassName ?? ""}
+                            data-testid={`week-body-marker-column-${dayKey}`}
+                            data-marker-visualization={markerVisualization?.tone ?? "none"}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="relative z-10 space-y-3">
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
@@ -1497,26 +1526,6 @@ export function CalendarWeekView({
                           <div
                             className="pointer-events-none absolute inset-0 grid"
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
-                            aria-hidden
-                          >
-                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
-                              const markerVisualization = getPrimaryCalendarMarkerVisualization(
-                                calendarMarkersByDate.get(dayBucket.dateKey) ?? [],
-                                markerVisualizationStyle,
-                              );
-                              return (
-                                <div
-                                  key={`lane-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  className={`${dayIdx === 0 ? "" : "border-l border-white/20"} ${markerVisualization?.columnClassName ?? ""}`}
-                                  data-testid={`week-tour-lane-day-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  data-marker-visualization={markerVisualization?.tone ?? "none"}
-                                />
-                              );
-                            })}
-                          </div>
-                          <div
-                            className="pointer-events-none absolute inset-0 grid"
-                            style={{ gridTemplateColumns: weekDayGridTemplate }}
                           >
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
                               const dayPreview = tourLane.tourId == null
@@ -1623,7 +1632,7 @@ export function CalendarWeekView({
                               return (
                                 <div
                                   key={`week-lane-column-background-${tourLane.laneKey}-${dayIdx}`}
-                                  className={isWeekend ? "bg-slate-200/45" : "bg-white/80"}
+                                  className={isWeekend ? "bg-slate-200/30" : "bg-white/65"}
                                   style={{
                                     gridColumn: dayIdx + 1,
                                     gridRow: `1 / span ${laneGridRowCount}`,
@@ -1932,6 +1941,7 @@ export function CalendarWeekView({
                       </CalendarWeekNotesButton>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
               </section>

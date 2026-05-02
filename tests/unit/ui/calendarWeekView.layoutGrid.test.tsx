@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
+import type { CalendarMarker } from "../../../client/src/lib/calendar-markers";
 
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
@@ -10,6 +11,7 @@ const useCalendarWeekLaneEmployeePreviewsMock = vi.fn();
 const useCalendarBlockedTourWeeksMock = vi.fn();
 const useSettingMock = vi.fn();
 const setSettingMock = vi.fn();
+let calendarMarkersForTest: CalendarMarker[] = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
@@ -147,11 +149,18 @@ describe("CalendarWeekView layout grid regression", () => {
 
     useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({ data: [] });
     useCalendarBlockedTourWeeksMock.mockReturnValue({ data: [] });
+    calendarMarkersForTest = [];
     useQueryMock.mockImplementation((options: { queryKey?: unknown }) => {
       const first = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (first === "/api/tours") {
         return {
           data: [{ id: 7, name: "Tour 7", color: "#225588", version: 1 }],
+          isLoading: false,
+        };
+      }
+      if (first === "calendarMarkers") {
+        return {
+          data: calendarMarkersForTest,
           isLoading: false,
         };
       }
@@ -236,5 +245,34 @@ describe("CalendarWeekView layout grid regression", () => {
     const widenedWeekendTemplateMatches = html.match(/grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr/g) ?? [];
     expect(widenedWeekendTemplateMatches.length).toBeGreaterThanOrEqual(4);
     expect(html).not.toContain("grid-template-columns:1fr 1fr 1fr 1fr 1fr 0.33fr 0.33fr");
+  });
+
+  it("renders one shared week body marker column instead of lane-specific holiday dividers", () => {
+    calendarMarkersForTest = [{
+      id: "marker-2026-04-21",
+      date: "2026-04-21",
+      endDate: null,
+      name: "Feiertag Test",
+      type: "public_holiday",
+      source: "automatic",
+      scope: "national",
+      states: [],
+      active: true,
+      note: null,
+      version: 1,
+    }];
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2026-04-20", endDate: null, startTime: "09:00" }),
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2026-04-20T00:00:00Z")} />,
+    );
+
+    expect(html).toContain('data-testid="week-body-marker-column-2026-04-21"');
+    expect(html).toContain('data-testid="calendar-marker-header-2026-04-21"');
+    expect(html).not.toContain("week-tour-lane-day-divider-");
   });
 });

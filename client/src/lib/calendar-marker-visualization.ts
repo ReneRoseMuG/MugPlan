@@ -28,62 +28,62 @@ function styleClasses(tone: MarkerVisualizationTone, style: CalendarMarkerVisual
   const classByTone = {
     holiday: {
       subtle: {
-        header: "bg-red-50/60",
-        column: "bg-red-50/35",
-        tile: "bg-red-50/55",
-        badge: "border-red-200 bg-red-50 text-red-900",
-      },
-      standard: {
-        header: "bg-red-100/75",
-        column: "bg-red-100/45",
-        tile: "bg-red-100/70",
-        badge: "border-red-300 bg-red-100 text-red-950",
-      },
-      highlighted: {
         header: "bg-red-200/85",
         column: "bg-red-200/55",
-        tile: "bg-red-200/80",
+        tile: "bg-red-200/72",
         badge: "border-red-400 bg-red-200 text-red-950",
+      },
+      standard: {
+        header: "bg-red-300/90",
+        column: "bg-red-300/65",
+        tile: "bg-red-300/82",
+        badge: "border-red-500 bg-red-300 text-red-950",
+      },
+      highlighted: {
+        header: "bg-red-400/95",
+        column: "bg-red-400/78",
+        tile: "bg-red-400/90",
+        badge: "border-red-600 bg-red-400 text-red-950",
       },
     },
     companyHoliday: {
       subtle: {
-        header: "bg-emerald-50/60",
-        column: "bg-emerald-50/35",
-        tile: "bg-emerald-50/55",
-        badge: "border-emerald-200 bg-emerald-50 text-emerald-900",
-      },
-      standard: {
-        header: "bg-emerald-100/75",
-        column: "bg-emerald-100/45",
-        tile: "bg-emerald-100/70",
-        badge: "border-emerald-300 bg-emerald-100 text-emerald-950",
-      },
-      highlighted: {
         header: "bg-emerald-200/85",
         column: "bg-emerald-200/55",
-        tile: "bg-emerald-200/80",
+        tile: "bg-emerald-200/72",
         badge: "border-emerald-400 bg-emerald-200 text-emerald-950",
+      },
+      standard: {
+        header: "bg-emerald-300/90",
+        column: "bg-emerald-300/65",
+        tile: "bg-emerald-300/82",
+        badge: "border-emerald-500 bg-emerald-300 text-emerald-950",
+      },
+      highlighted: {
+        header: "bg-emerald-400/95",
+        column: "bg-emerald-400/78",
+        tile: "bg-emerald-400/90",
+        badge: "border-emerald-600 bg-emerald-400 text-emerald-950",
       },
     },
     companyVacation: {
       subtle: {
-        header: "bg-sky-50/60",
-        column: "bg-sky-50/35",
-        tile: "bg-sky-50/55",
-        badge: "border-sky-200 bg-sky-50 text-sky-900",
-      },
-      standard: {
-        header: "bg-sky-100/75",
-        column: "bg-sky-100/45",
-        tile: "bg-sky-100/70",
-        badge: "border-sky-300 bg-sky-100 text-sky-950",
-      },
-      highlighted: {
         header: "bg-sky-200/85",
         column: "bg-sky-200/55",
-        tile: "bg-sky-200/80",
+        tile: "bg-sky-200/72",
         badge: "border-sky-400 bg-sky-200 text-sky-950",
+      },
+      standard: {
+        header: "bg-sky-300/90",
+        column: "bg-sky-300/65",
+        tile: "bg-sky-300/82",
+        badge: "border-sky-500 bg-sky-300 text-sky-950",
+      },
+      highlighted: {
+        header: "bg-sky-400/95",
+        column: "bg-sky-400/78",
+        tile: "bg-sky-400/90",
+        badge: "border-sky-600 bg-sky-400 text-sky-950",
       },
     },
   } as const;

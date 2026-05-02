@@ -1,29 +1,14 @@
 import React from "react";
 import type { CalendarMarker } from "@/lib/calendar-markers";
-import { formatDisplayDate } from "@/lib/date-display-format";
 import type { CalendarMarkerVisualizationStyle } from "@/hooks/useSettings";
 import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
+import { calendarMarkersTitle, calendarMarkerTitle } from "@/lib/calendar-marker-text";
 
 type CalendarMarkerBadgesProps = {
   markers: CalendarMarker[];
   compact?: boolean;
   visualizationStyle?: CalendarMarkerVisualizationStyle;
 };
-
-function markerTypeLabel(marker: CalendarMarker): string {
-  if (marker.type === "company_vacation") return "Betriebsferien";
-  if (marker.type === "company_holiday") return "Betriebsfeiertag";
-  return "Feiertag";
-}
-
-function markerTitle(marker: CalendarMarker): string {
-  const dateLabel = marker.endDate
-    ? `${formatDisplayDate(marker.date)} bis ${formatDisplayDate(marker.endDate)}`
-    : formatDisplayDate(marker.date);
-  const statesLabel = marker.states.length > 0 ? ` (${marker.states.join(", ")})` : "";
-  const noteLabel = marker.note ? ` - ${marker.note}` : "";
-  return `${markerTypeLabel(marker)}: ${marker.name}${statesLabel}, ${dateLabel}${noteLabel}`;
-}
 
 export function CalendarMarkerBadges({ markers, compact = false, visualizationStyle = "standard" }: CalendarMarkerBadgesProps) {
   if (markers.length === 0) {
@@ -38,7 +23,7 @@ export function CalendarMarkerBadges({ markers, compact = false, visualizationSt
       {visibleMarkers.map((marker) => (
         <span
           key={marker.id}
-          title={markerTitle(marker)}
+          title={calendarMarkerTitle(marker)}
           className={`inline-flex max-w-full items-center rounded border px-1 font-semibold leading-none ${
             getPrimaryCalendarMarkerVisualization([marker], visualizationStyle)?.badgeClassName ?? "border-slate-300 bg-slate-50 text-slate-700"
           } ${compact ? "h-4 text-[9px]" : "h-4 text-[10px]"}`}
@@ -49,7 +34,7 @@ export function CalendarMarkerBadges({ markers, compact = false, visualizationSt
       ))}
       {hiddenCount > 0 ? (
         <span
-          title={markers.map(markerTitle).join("\n")}
+          title={calendarMarkersTitle(markers)}
           className="inline-flex h-4 items-center rounded border border-slate-300 bg-slate-50 px-1 text-[9px] font-semibold leading-none text-slate-700"
           data-testid="calendar-marker-badge-more"
         >

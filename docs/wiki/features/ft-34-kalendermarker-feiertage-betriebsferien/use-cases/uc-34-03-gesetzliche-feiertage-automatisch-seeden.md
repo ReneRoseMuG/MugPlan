@@ -25,14 +25,15 @@ Gesetzliche Feiertage automatisch als gespeicherte Kalendermarker bereitstellen.
 2. System bestimmt den Zeitraum aktuelles Jahr bis aktuelles Jahr plus fünf Jahre.
 3. System berechnet bundesweite und regionale gesetzliche Feiertage.
 4. System bildet daraus Kalendermarker mit Quelle `automatic`.
-5. System prüft je Marker, ob die fachliche Identität bereits existiert.
-6. System ergänzt nur fehlende Marker.
+5. System prüft je Marker, ob die fachliche Identität aus Datum, Typ, Quelle, Geltung und Bundesländern bereits existiert.
+6. System ergänzt nur fehlende Marker und überschreibt vorhandene Marker mit identischer fachlicher Identität nicht.
 
 ## Alternativen
 
 - Existiert ein Marker bereits, bleibt er unverändert.
 - Läuft am selben Tag ein weiterer Admin-Login, wird kein erneuter Login-Seed ausgeführt.
 - Nicht-Admin-Logins lösen keinen Feiertags-Seed aus.
+- Schlägt der Seed technisch fehl, bleiben bereits vorhandene Marker unverändert nutzbar.
 
 ## Ergebnis
 

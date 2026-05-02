@@ -41,7 +41,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
-import { CalendarMarkerBadges } from "./CalendarMarkerBadges";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +60,7 @@ import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceA
 import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
+import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
 
 type CalendarMonthSheetViewProps = {
   currentDate: Date;
@@ -650,7 +650,7 @@ function MonthSheetSection({
                       >
                         <div
                           style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
-                          className={`flex items-center justify-between rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
+                          className={`grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-1 rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
                         >
                           <span
                             className={`
@@ -660,6 +660,12 @@ function MonthSheetSection({
                           >
                             {format(day.date, "d")}
                           </span>
+                          <CalendarMarkerHeaderLabel
+                            markers={dayMarkers}
+                            visualizationStyle={markerVisualizationStyle}
+                            dateKey={day.dateKey}
+                            className="w-full"
+                          />
                           {!readOnly && day.dateKey >= berlinToday ? (
                             <button
                               onClick={() => onNewAppointment(day.dateKey)}
@@ -672,7 +678,6 @@ function MonthSheetSection({
                             <span className="h-5 w-5" aria-hidden="true" />
                           )}
                         </div>
-                        <CalendarMarkerBadges markers={dayMarkers} compact visualizationStyle={markerVisualizationStyle} />
 
                         <div className="flex w-full flex-col">
                           {renderData.rowLayout.slots.map((slot) => {

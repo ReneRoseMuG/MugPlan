@@ -63,6 +63,8 @@ Kalendermarker aus FT (34) werden in Wochen- und Monatskalender als zusätzliche
 
 Gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien werden farblich unterschieden. Die globale Intensität der Darstellung wird über FT (34) gepflegt und wirkt nur visuell.
 
+Die Kalenderansichten lesen dafür aktive, bereits gespeicherte Kalendermarker im sichtbaren Zeitraum. Eine Live-Berechnung gesetzlicher Feiertage in FT (03) findet nicht statt.
+
 Der Wochenkalender ist die primäre Dispositionsoberfläche. In dieser Ansicht können Termine über den Plus-Button pro Kalendertag angelegt, über Klick geöffnet und, sofern erlaubt, per Drag & Drop verschoben werden.
 
 Die Monatsübersicht ist eine verdichtete Kalenderansicht mit denselben fachlichen Termindaten. Sie dient vorrangig der Übersicht, unterstützt aber weiterhin das Öffnen bestehender Termine und, sofern in der Oberfläche vorgesehen, das Anlegen und fachlich zulässige Verschieben von Terminen.
@@ -103,6 +105,10 @@ Ein Termin kann optional eine Startzeit haben. Solche Termine bleiben geometrisc
 
 Im Wochenkalender werden Termine innerhalb der sichtbaren Woche tourbezogen organisiert. Die Darstellung unterscheidet zwischen Tour-Lanes und der Gruppe „Ohne Tour“. Mehrtägige Termine können sich über mehrere Tage spannen. Termine mit Uhrzeit bleiben Tagesobjekte.
 
+Kalendermarker wirken im Wochenkalender als tagesbezogene Hintergrundmarkierung über die gesamte betroffene Tagesspalte hinweg. Bei Feiertagen, Betriebsfeiertagen oder Betriebsferien reicht diese farbliche Markierung über alle sichtbaren Tour-Lanes der betroffenen Spalte.
+
+Die textliche Markeranzeige sitzt im Kopf des jeweiligen Kalendertags. Sie verwendet eine adaptive Darstellung: Wenn genügend Platz vorhanden ist, wird der volle Markername gezeigt. Reicht der Platz nicht aus, wird ein kompakter Platzhalter angezeigt. Ist auch dieser nicht mehr stabil darstellbar, wird ein Icon verwendet. In kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.
+
 #### Kachelmodus
 
 Der Regler Kacheln steuert die Informationsdichte der Terminkacheln.
@@ -130,6 +136,10 @@ Die Lane-Reihenfolge und die fachliche Zuordnung der Termine bleiben stabil.
 Die Monatsübersicht organisiert den sichtbaren Zeitraum in Wochenzeilen mit Tagesspalten. Innerhalb jeder Wochenzeile werden Tour-Slots verwendet, sodass Termine einer Tour in derselben visuellen Ordnung erscheinen. Die Höhe einer Wochenzeile ergibt sich aus dem tatsächlich benötigten Platz für die in dieser Zeile vorkommenden Tour-Slots und Terminbalken.
 
 Die Monatsübersicht ist damit verdichteter als der Wochenkalender, bleibt aber fachlich konsistent. Termine werden weiterhin über Tour, Datum, Dauer und optionale Startzeit strukturiert.
+
+Kalendermarker färben im Monatskalender die volle betroffene Tageskachel. Die Markerbeschriftung wird im vorhandenen Kopf der Tageskachel gezeigt und darf keine zusätzliche Layout-Zeile unterhalb des Kopfbereichs erzeugen.
+
+Wie im Wochenkalender ist die Markerbeschriftung adaptiv. Je nach verfügbarer Breite wird voller Markername, kompakter Platzhalter oder nur ein Icon gezeigt. Bei kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.
 
 ### Auslastungsansicht im Mitarbeiterformular
 

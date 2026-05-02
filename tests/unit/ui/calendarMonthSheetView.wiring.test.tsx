@@ -27,6 +27,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
+import type { CalendarMarker } from "../../../client/src/lib/calendar-markers";
 import type { Tour } from "../../../shared/schema";
 
 const compactBarCalls: Array<Record<string, unknown>> = [];
@@ -128,6 +129,7 @@ function configureDefaults(
     weekEndDate: string;
     isBlocked: boolean;
   }> = [],
+  calendarMarkers: CalendarMarker[] = [],
 ) {
   useSettingMock.mockImplementation((key: string) => {
     switch (key) {
@@ -144,6 +146,9 @@ function configureDefaults(
     const first = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
     if (first === "/api/tours") {
       return { data: tours, isLoading: false };
+    }
+    if (first === "calendarMarkers") {
+      return { data: calendarMarkers, isLoading: false };
     }
     return { data: [], isLoading: false };
   });
@@ -255,6 +260,36 @@ describe("calendar month sheet view wiring", () => {
     const conflictBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 77);
     expect(conflictBar?.isConflict).toBe(true);
     expect(conflictBar?.conflictColor).toBe("#D4537E");
+  });
+
+  it("renders holiday markers inside the day header without creating a separate badge row", async () => {
+    configureDefaults(
+      [],
+      [{ id: 7, name: "Alpha", color: "#225588", version: 1 }],
+      [],
+      [{
+        id: "marker-2026-05-01",
+        date: "2026-05-01",
+        endDate: null,
+        name: "Maifeiertag",
+        type: "public_holiday",
+        source: "automatic",
+        scope: "national",
+        states: [],
+        active: true,
+        note: null,
+        version: 1,
+      }],
+    );
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView currentDate={new Date("2026-05-15T00:00:00Z")} />,
+    );
+
+    expect(markup).toContain('data-testid="calendar-marker-header-2026-05-01"');
+    expect(markup).toContain('data-marker-header-variant="ft"');
+    expect(markup).not.toContain("calendar-marker-badge-2026-05-01");
   });
 
   it("renders a blocked-week overlay and suppresses conflict markers inside blocked weeks", async () => {

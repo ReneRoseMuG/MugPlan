@@ -59,6 +59,14 @@ async function expectWeekHolidayVisible(page: Page, expectedName: string) {
   await expect(page.getByTestId("week-day-header-2026-05-01")).not.toContainText("FT");
 }
 
+async function forceMarkerWidthAndExpectVariant(page: Page, dateKey: string, widthPx: number, variant: "full" | "ft" | "icon") {
+  const marker = page.getByTestId(`calendar-marker-header-${dateKey}`);
+  await marker.evaluate((node, width) => {
+    (node as HTMLDivElement).style.width = `${String(width)}px`;
+  }, widthPx);
+  await expect.poll(async () => marker.getAttribute("data-marker-header-variant")).toBe(variant);
+}
+
 test.beforeEach(async () => {
   await resetBrowserSuiteState(suitePath);
 });
@@ -90,8 +98,10 @@ test("Admin bearbeitet, deaktiviert und reaktiviert gesiedete Feiertage mit Kale
   await expectWeekHolidayVisible(page, "Maifeiertag Browser");
 
   await page.goto("/standalone/calendar/month");
-  await expect(page.getByTestId("month-sheet-day-2026-05-01")).toContainText("Maifeiertag Browser");
-  await expect(page.getByTestId("month-sheet-day-2026-05-01")).not.toContainText("FT");
+  const monthMarker = page.getByTestId("calendar-marker-header-2026-05-01");
+  await expect.poll(async () => monthMarker.getAttribute("data-marker-header-variant")).toBe("ft");
+  await monthMarker.hover();
+  await expect(page.getByText("Maifeiertag Browser", { exact: true }).last()).toBeVisible();
 });
 
 test("Visualisierungs-Toggle steuert globale Hintergrundintensität", async ({ page }) => {
@@ -105,15 +115,34 @@ test("Visualisierungs-Toggle steuert globale Hintergrundintensität", async ({ p
   ]);
 
   await expectWeekHolidayVisible(page, "Maifeiertag");
-  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-200/);
+  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-400/);
 
   await setMarkerStyle(page, "subtle");
   await page.reload();
   await expectWeekHolidayVisible(page, "Maifeiertag");
-  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-50/);
+  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-200/);
 
   await setMarkerStyle(page, "standard");
   await page.reload();
   await expectWeekHolidayVisible(page, "Maifeiertag");
-  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-100/);
+  await expect(page.getByTestId("week-day-header-2026-05-01").locator("> div")).toHaveClass(/bg-red-300/);
+});
+
+test("Adaptive Feiertagsanzeige schaltet zwischen Volltext, FT und Icon mit Hover um", async ({ page }) => {
+  await loginAsAdmin(page);
+  await ensureHolidaySeed(page);
+
+  await page.goto("/standalone/calendar/month");
+  await expect(page.getByTestId("month-sheet-day-2026-05-01")).toBeVisible();
+
+  const marker = page.getByTestId("calendar-marker-header-2026-05-01");
+  await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 180, "full");
+
+  await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 44, "ft");
+  await marker.hover();
+  await expect(page.getByRole("dialog")).toContainText(/Maifeiertag/);
+
+  await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 20, "icon");
+  await marker.hover();
+  await expect(page.getByRole("dialog")).toContainText(/Maifeiertag/);
 });
