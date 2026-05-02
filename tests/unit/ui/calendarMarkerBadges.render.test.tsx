@@ -9,7 +9,7 @@
  * - Zielobjekt: `CalendarMarkerBadges` mit einem mehrtägigen Betriebsferien-Marker.
  * - Eindeutiger Nachweis: Marker-ID `admin:test` und Name `Betriebsferien Jahreswechsel`.
  * - Realistische Daten: Zeitraum, Admin-Quelle, Firmen-Scope, aktive Version und Notiz sind vollständig gesetzt.
- * - Kritische Assertion: das kompakte Label `BF` und der Tooltip-Zeitraum `24.12.26 bis 31.12.26` werden gerendert.
+ * - Kritische Assertion: der volle Markername und der Tooltip-Zeitraum `24.12.26 bis 31.12.26` werden gerendert.
  * - False-Positive-Schutz: der Test prüft zusätzlich, dass der Tooltip nicht auf das technische ISO-Datum im sichtbaren Text zurückfällt.
  */
 import { renderToStaticMarkup } from "react-dom/server";
@@ -36,7 +36,8 @@ describe("CalendarMarkerBadges", () => {
 
     const html = renderToStaticMarkup(<CalendarMarkerBadges markers={[marker]} compact />);
 
-    expect(html).toContain("BF");
+    expect(html).toContain("Betriebsferien Jahreswechsel");
+    expect(html).not.toContain(">FT<");
     expect(html).toContain("24.12.26 bis 31.12.26");
     expect(html).not.toContain("Betriebsferien Jahreswechsel, 2026-12-24");
   });

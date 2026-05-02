@@ -28,6 +28,7 @@ import { useCalendarMarkers } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { apiRequest } from "@/lib/queryClient";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
+import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
 import {
   CALENDAR_UNASSIGNED_TOUR_COLOR,
   compareTourNamesForCalendar,
@@ -305,6 +306,7 @@ export function CalendarWeekView({
   const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
+  const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const canWriteNotes = userRole !== "READER";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
@@ -1280,6 +1282,8 @@ export function CalendarWeekView({
                       const isTodayDate = isToday(day);
                       const isWeekend = dayIdx >= 5;
                       const dayKey = format(day, "yyyy-MM-dd");
+                      const dayMarkers = calendarMarkersByDate.get(dayKey) ?? [];
+                      const dayMarkerVisualization = getPrimaryCalendarMarkerVisualization(dayMarkers, markerVisualizationStyle);
 
                       return (
                         <div
@@ -1292,7 +1296,9 @@ export function CalendarWeekView({
                             className={`
                               px-2 py-1.5 text-center
                               ${isTodayDate ? "bg-primary/10" : isWeekend ? "bg-slate-200/70" : "bg-muted/20"}
+                              ${dayMarkerVisualization?.headerClassName ?? ""}
                             `}
+                            data-marker-visualization={dayMarkerVisualization?.tone ?? "none"}
                           >
                             <div className="text-[10px] font-bold text-muted-foreground">
                               {format(day, "EEEE", { locale: de })}
@@ -1323,7 +1329,7 @@ export function CalendarWeekView({
                                 </span>
                               ))}
                             </div>
-                            <CalendarMarkerBadges markers={calendarMarkersByDate.get(dayKey) ?? []} />
+                            <CalendarMarkerBadges markers={dayMarkers} visualizationStyle={markerVisualizationStyle} />
                           </div>
                         </div>
                       );
@@ -1493,13 +1499,20 @@ export function CalendarWeekView({
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
                             aria-hidden
                           >
-                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => (
-                              <div
-                                key={`lane-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                className={dayIdx === 0 ? "" : "border-l border-white/20"}
-                                data-testid={`week-tour-lane-day-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                              />
-                            ))}
+                            {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
+                              const markerVisualization = getPrimaryCalendarMarkerVisualization(
+                                calendarMarkersByDate.get(dayBucket.dateKey) ?? [],
+                                markerVisualizationStyle,
+                              );
+                              return (
+                                <div
+                                  key={`lane-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  className={`${dayIdx === 0 ? "" : "border-l border-white/20"} ${markerVisualization?.columnClassName ?? ""}`}
+                                  data-testid={`week-tour-lane-day-divider-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  data-marker-visualization={markerVisualization?.tone ?? "none"}
+                                />
+                              );
+                            })}
                           </div>
                           <div
                             className="pointer-events-none absolute inset-0 grid"

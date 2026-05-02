@@ -31,6 +31,7 @@ Alle aktuell identifizierten Feature-Use-Cases wurden aus lokalen Notion-Markdow
 - [FT (31) Use Cases](features/ft-31-dispositions-monitoring-konflikte/use-cases/README.md)
 - [FT (32) Use Cases](features/ft-32-aktive-aenderungsbenachrichtigung/use-cases/README.md)
 - [FT (33) Use Cases](features/ft-33-abwesenheiten-ueber-interne-personalplanung/use-cases/README.md)
+- [FT (34) Use Cases](features/ft-34-kalendermarker-feiertage-betriebsferien/use-cases/README.md)
 
 ## Zielregel
 

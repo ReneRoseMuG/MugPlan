@@ -26,7 +26,10 @@ import {
 } from "../../server/repositories/calendarMarkersRepository";
 import {
   createCalendarMarker,
+  listAdminCalendarMarkers,
   listEffectiveCalendarMarkers,
+  seedCalendarHolidays,
+  updateCalendarMarker,
 } from "../../server/services/calendarMarkersService";
 
 let tempRoot = "";
@@ -46,6 +49,8 @@ afterEach(async () => {
 
 describe("calendarMarkersService", () => {
   it("liefert bundesweite Feiertage genau einmal", async () => {
+    await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+
     const markers = await listEffectiveCalendarMarkers("ADMIN", {
       fromDate: "2026-05-01",
       toDate: "2026-05-01",
@@ -64,6 +69,8 @@ describe("calendarMarkersService", () => {
   });
 
   it("fasst regionale Feiertage nach Bundesländern zusammen", async () => {
+    await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+
     const markers = await listEffectiveCalendarMarkers("ADMIN", {
       fromDate: "2026-01-06",
       toDate: "2026-01-06",
@@ -77,7 +84,9 @@ describe("calendarMarkersService", () => {
     });
   });
 
-  it("kombiniert aktive Admin-Marker und automatische Feiertage", async () => {
+  it("kombiniert aktive Admin-Marker und gespeicherte Feiertage", async () => {
+    await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+
     const marker = await createCalendarMarker("ADMIN", {
       date: "2026-12-24",
       endDate: "2026-12-31",
@@ -99,6 +108,48 @@ describe("calendarMarkersService", () => {
     expect(markers.some((entry) => entry.name === "1. Weihnachtstag")).toBe(true);
   });
 
+  it("seedet Feiertage idempotent und überschreibt editierte Daten nicht", async () => {
+    const firstSeed = await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+    expect(firstSeed.created).toBeGreaterThan(0);
+
+    const initialMarkers = await listAdminCalendarMarkers("ADMIN");
+    const maifeiertag = initialMarkers.find((marker) => marker.name === "Maifeiertag");
+    expect(maifeiertag).toBeTruthy();
+
+    const edited = await updateCalendarMarker("ADMIN", maifeiertag!.id, {
+      date: maifeiertag!.date,
+      endDate: maifeiertag!.endDate,
+      name: "Maifeiertag editiert",
+      type: maifeiertag!.type,
+      source: maifeiertag!.source,
+      scope: maifeiertag!.scope,
+      states: maifeiertag!.states,
+      active: false,
+      note: "Admin-Anpassung",
+      version: maifeiertag!.version,
+    });
+
+    const secondSeed = await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+    expect(secondSeed.created).toBe(0);
+
+    const afterSecondSeed = await listAdminCalendarMarkers("ADMIN");
+    const maifeiertagEntries = afterSecondSeed.filter((marker) =>
+      marker.date === "2026-05-01"
+      && marker.type === "public_holiday"
+      && marker.source === "automatic"
+      && marker.scope === "national"
+      && marker.states.length === 0,
+    );
+    expect(maifeiertagEntries).toHaveLength(1);
+    expect(maifeiertagEntries[0]).toMatchObject({
+      id: edited.id,
+      name: "Maifeiertag editiert",
+      active: false,
+      note: "Admin-Anpassung",
+      version: edited.version,
+    });
+  });
+
   it("ignoriert ungültige gespeicherte JSON-Daten beim Kalenderlesen", async () => {
     const targetDirectory = path.join(tempRoot, "global", "calendar-markers");
     await fs.mkdir(targetDirectory, { recursive: true });
@@ -109,6 +160,6 @@ describe("calendarMarkersService", () => {
       toDate: "2026-05-01",
     });
 
-    expect(markers.map((marker) => marker.name)).toContain("Maifeiertag");
+    expect(markers).toEqual([]);
   });
 });

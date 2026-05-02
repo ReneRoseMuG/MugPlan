@@ -4120,7 +4120,7 @@ export const api = {
         200: z.object({
           items: z.array(z.object({
             key: z.string().min(1),
-            kind: z.enum(["tag", "tour", "customer", "noteTemplate"]),
+            kind: z.enum(["tag", "tour", "customer", "noteTemplate", "calendarMarker"]),
             label: z.string().min(1),
             status: z.enum(["missing", "unchanged", "update", "migrate"]),
             message: z.string().min(1),

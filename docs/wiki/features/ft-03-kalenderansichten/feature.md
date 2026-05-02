@@ -59,6 +59,10 @@ Die Navigation erfolgt relativ zur aktuellen ISO-Woche über **Früher**, **Heut
 
 ## Regeln & Randbedingungen
 
+Kalendermarker aus FT (34) werden in Wochen- und Monatskalender als zusätzliche, nicht planungswirksame Orientierung dargestellt. Sie verändern keine Terminlogik, blockieren keine Interaktion und erzeugen keine Konflikte.
+
+Gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien werden farblich unterschieden. Die globale Intensität der Darstellung wird über FT (34) gepflegt und wirkt nur visuell.
+
 Der Wochenkalender ist die primäre Dispositionsoberfläche. In dieser Ansicht können Termine über den Plus-Button pro Kalendertag angelegt, über Klick geöffnet und, sofern erlaubt, per Drag & Drop verschoben werden.
 
 Die Monatsübersicht ist eine verdichtete Kalenderansicht mit denselben fachlichen Termindaten. Sie dient vorrangig der Übersicht, unterstützt aber weiterhin das Öffnen bestehender Termine und, sofern in der Oberfläche vorgesehen, das Anlegen und fachlich zulässige Verschieben von Terminen.

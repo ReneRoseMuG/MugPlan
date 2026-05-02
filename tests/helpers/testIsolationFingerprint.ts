@@ -307,7 +307,10 @@ export async function checkStorageFingerprint(profile: StorageFingerprintProfile
 
   if (issues.length === 0) {
     const uploadsFiles = await listFilesRecursive(uploadsPath!);
-    const backupFiles = await listFilesRecursive(backupsPath!);
+    const backupFiles = (await listFilesRecursive(backupsPath!)).filter((filePath) => {
+      const relativePath = path.relative(backupsPath!, filePath).replaceAll("\\", "/");
+      return !relativePath.startsWith("ServerFS/");
+    });
 
     if ((profile === "none" || profile === "uploads" || profile === "both") && uploadsFiles.length > 0) {
       issues.push({

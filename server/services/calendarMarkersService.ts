@@ -10,7 +10,9 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import {
   CalendarMarkersRepositoryIOError,
   CalendarMarkersRepositoryValidationError,
+  readCalendarMarkerSeedState,
   readStoredCalendarMarkers,
+  writeCalendarMarkerSeedState,
   writeStoredCalendarMarkers,
 } from "../repositories/calendarMarkersRepository";
 import { logWarn } from "../lib/logger";
@@ -22,6 +24,21 @@ type CalendarMarkersErrorCode =
   | "VERSION_CONFLICT"
   | "STORAGE_NOT_WRITABLE";
 
+export type CalendarHolidaySeedResult = {
+  created: number;
+  unchanged: number;
+  fromYear: number;
+  toYear: number;
+};
+
+export type CalendarHolidaySeedPreview = {
+  missing: number;
+  unchanged: number;
+  total: number;
+  fromYear: number;
+  toYear: number;
+};
+
 export class CalendarMarkersError extends Error {
   status: number;
   code: CalendarMarkersErrorCode;
@@ -31,6 +48,14 @@ export class CalendarMarkersError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+let calendarMarkerMutationQueue: Promise<unknown> = Promise.resolve();
+
+async function runCalendarMarkerMutation<T>(operation: () => Promise<T>): Promise<T> {
+  const currentOperation = calendarMarkerMutationQueue.then(operation, operation);
+  calendarMarkerMutationQueue = currentOperation.catch(() => undefined);
+  return currentOperation;
 }
 
 const germanStates: GermanStateCode[] = [
@@ -99,6 +124,16 @@ function sortMarkers(markers: CalendarMarker[]): CalendarMarker[] {
     || left.name.localeCompare(right.name)
     || left.id.localeCompare(right.id),
   );
+}
+
+function markerIdentity(marker: Pick<CalendarMarker, "date" | "type" | "source" | "scope" | "states">): string {
+  return [
+    marker.date,
+    marker.type,
+    marker.source,
+    marker.scope,
+    [...marker.states].sort().join("|"),
+  ].join("::");
 }
 
 function validateRange(fromDate: string, toDate: string): void {
@@ -257,60 +292,35 @@ function buildAutomaticHolidayMarkers(fromDate: string, toDate: string): Calenda
   return markers.filter((marker) => overlapsRange(marker, fromDate, toDate));
 }
 
-function automaticOverrideMatches(override: CalendarMarker, marker: CalendarMarker): boolean {
-  if (override.source !== "automatic" || marker.source !== "automatic") {
-    return false;
-  }
-  if (override.date !== marker.date || override.type !== marker.type) {
-    return false;
-  }
-  if (override.name.trim().length > 0 && override.name !== marker.name) {
-    return false;
-  }
-  if (override.scope !== marker.scope) {
-    return false;
-  }
-  if (override.states.length === 0) {
-    return true;
-  }
-  return override.states.join("|") === marker.states.join("|");
+function seededHolidayId(marker: Pick<CalendarMarker, "date" | "type" | "source" | "scope" | "states">): string {
+  const stateKey = marker.states.length > 0 ? [...marker.states].sort().join("-") : "bund";
+  return `holiday:${marker.date}:${marker.type}:${marker.source}:${marker.scope}:${stateKey}`;
 }
 
-function applyStoredMarkers(automaticMarkers: CalendarMarker[], storedMarkers: CalendarMarker[]): CalendarMarker[] {
-  const automaticOverrides = storedMarkers.filter((marker) => marker.source === "automatic");
-  const effectiveAutomatic = automaticMarkers.flatMap((marker) => {
-    const override = automaticOverrides.find((candidate) => automaticOverrideMatches(candidate, marker));
-    if (!override) {
-      return [marker];
-    }
-    if (!override.active) {
-      return [];
-    }
-    return [{
-      ...marker,
-      name: override.name || marker.name,
-      note: override.note,
-      active: true,
-      version: override.version,
-    }];
-  });
+function toSeededHoliday(marker: CalendarMarker): CalendarMarker {
+  return {
+    ...marker,
+    id: seededHolidayId(marker),
+    version: 1,
+  };
+}
 
-  const adminMarkers = storedMarkers.filter((marker) => marker.source === "admin" && marker.active);
-  const deduped = new Map<string, CalendarMarker>();
-  for (const marker of [...effectiveAutomatic, ...adminMarkers]) {
-    const key = [
-      marker.date,
-      marker.endDate ?? "",
-      marker.name,
-      marker.type,
-      marker.scope,
-      marker.states.join("|"),
-    ].join("::");
-    if (!deduped.has(key)) {
-      deduped.set(key, marker);
-    }
-  }
-  return sortMarkers(Array.from(deduped.values()));
+function getDefaultHolidaySeedYears(referenceDate = new Date()): { fromYear: number; toYear: number } {
+  const fromYear = referenceDate.getFullYear();
+  return { fromYear, toYear: fromYear + 5 };
+}
+
+function toBerlinDateKey(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value ?? "1970";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+  return `${year}-${month}-${day}`;
 }
 
 async function readStoredMarkersForCalendar(): Promise<CalendarMarker[]> {
@@ -341,12 +351,10 @@ export async function listEffectiveCalendarMarkers(
 ): Promise<CalendarMarker[]> {
   assertReadRole(roleKey);
   validateRange(input.fromDate, input.toDate);
-  const automaticMarkers = buildAutomaticHolidayMarkers(input.fromDate, input.toDate);
   const storedMarkers = await readStoredMarkersForCalendar();
-  return applyStoredMarkers(
-    automaticMarkers,
-    storedMarkers.filter((marker) => overlapsRange(marker, input.fromDate, input.toDate)),
-  );
+  return sortMarkers(storedMarkers.filter((marker) =>
+    marker.active && overlapsRange(marker, input.fromDate, input.toDate),
+  ));
 }
 
 export async function listAdminCalendarMarkers(roleKey: CanonicalRoleKey): Promise<CalendarMarker[]> {
@@ -365,9 +373,121 @@ export async function createCalendarMarker(
   assertAdmin(roleKey);
   const marker = toStoredMarker(input);
   try {
-    const markers = await readStoredCalendarMarkers();
-    await writeStoredCalendarMarkers(sortMarkers([...markers, marker]));
-    return marker;
+    return await runCalendarMarkerMutation(async () => {
+      const markers = await readStoredCalendarMarkers();
+      await writeStoredCalendarMarkers(sortMarkers([...markers, marker]));
+      return marker;
+    });
+  } catch (error) {
+    return mapStorageError(error);
+  }
+}
+
+export async function seedCalendarHolidays(
+  input: { fromYear: number; toYear: number },
+): Promise<CalendarHolidaySeedResult> {
+  if (
+    !Number.isInteger(input.fromYear)
+    || !Number.isInteger(input.toYear)
+    || input.fromYear < 1900
+    || input.toYear > 2200
+    || input.fromYear > input.toYear
+  ) {
+    throw new CalendarMarkersError(422, "VALIDATION_ERROR", "Der Seed-Zeitraum ist ungültig.");
+  }
+
+  const fromDate = `${input.fromYear}-01-01`;
+  const toDate = `${input.toYear}-12-31`;
+  const seedMarkers = buildAutomaticHolidayMarkers(fromDate, toDate).map(toSeededHoliday);
+
+  try {
+    return await runCalendarMarkerMutation(async () => {
+      const storedMarkers = await readStoredCalendarMarkers();
+      const existingIdentities = new Set(storedMarkers.map(markerIdentity));
+      const nextMarkers = [...storedMarkers];
+      let created = 0;
+      let unchanged = 0;
+
+      for (const marker of seedMarkers) {
+        if (existingIdentities.has(markerIdentity(marker))) {
+          unchanged += 1;
+          continue;
+        }
+        nextMarkers.push(marker);
+        existingIdentities.add(markerIdentity(marker));
+        created += 1;
+      }
+
+      if (created > 0) {
+        await writeStoredCalendarMarkers(sortMarkers(nextMarkers));
+      }
+
+      return {
+        created,
+        unchanged,
+        fromYear: input.fromYear,
+        toYear: input.toYear,
+      };
+    });
+  } catch (error) {
+    return mapStorageError(error);
+  }
+}
+
+export async function seedDefaultCalendarHolidays(referenceDate = new Date()): Promise<CalendarHolidaySeedResult> {
+  return seedCalendarHolidays(getDefaultHolidaySeedYears(referenceDate));
+}
+
+export async function previewCalendarHolidaysSeed(
+  input: { fromYear: number; toYear: number },
+): Promise<CalendarHolidaySeedPreview> {
+  if (
+    !Number.isInteger(input.fromYear)
+    || !Number.isInteger(input.toYear)
+    || input.fromYear < 1900
+    || input.toYear > 2200
+    || input.fromYear > input.toYear
+  ) {
+    throw new CalendarMarkersError(422, "VALIDATION_ERROR", "Der Seed-Zeitraum ist ungültig.");
+  }
+
+  const fromDate = `${input.fromYear}-01-01`;
+  const toDate = `${input.toYear}-12-31`;
+  const seedMarkers = buildAutomaticHolidayMarkers(fromDate, toDate).map(toSeededHoliday);
+
+  try {
+    const storedMarkers = await readStoredCalendarMarkers();
+    const existingIdentities = new Set(storedMarkers.map(markerIdentity));
+    const unchanged = seedMarkers.filter((marker) => existingIdentities.has(markerIdentity(marker))).length;
+    return {
+      missing: seedMarkers.length - unchanged,
+      unchanged,
+      total: seedMarkers.length,
+      fromYear: input.fromYear,
+      toYear: input.toYear,
+    };
+  } catch (error) {
+    return mapStorageError(error);
+  }
+}
+
+export async function previewDefaultCalendarHolidaysSeed(referenceDate = new Date()): Promise<CalendarHolidaySeedPreview> {
+  return previewCalendarHolidaysSeed(getDefaultHolidaySeedYears(referenceDate));
+}
+
+export async function seedCalendarHolidaysAfterFirstAdminLoginOfDay(referenceDate = new Date()): Promise<CalendarHolidaySeedResult | null> {
+  const today = toBerlinDateKey(referenceDate);
+  try {
+    const state = await readCalendarMarkerSeedState();
+    if (state.lastAdminLoginSeedDate === today) {
+      return null;
+    }
+    const result = await seedDefaultCalendarHolidays(referenceDate);
+    await writeCalendarMarkerSeedState({
+      schemaVersion: 1,
+      lastAdminLoginSeedDate: today,
+    });
+    return result;
   } catch (error) {
     return mapStorageError(error);
   }
@@ -380,20 +500,22 @@ export async function updateCalendarMarker(
 ): Promise<CalendarMarker> {
   assertAdmin(roleKey);
   try {
-    const markers = await readStoredCalendarMarkers();
-    const markerIndex = markers.findIndex((marker) => marker.id === markerId);
-    if (markerIndex === -1) {
-      throw new CalendarMarkersError(404, "NOT_FOUND");
-    }
-    const existing = markers[markerIndex];
-    if (existing.version !== input.version) {
-      throw new CalendarMarkersError(409, "VERSION_CONFLICT");
-    }
-    const updated = toUpdatedMarker(existing, input);
-    const nextMarkers = [...markers];
-    nextMarkers[markerIndex] = updated;
-    await writeStoredCalendarMarkers(sortMarkers(nextMarkers));
-    return updated;
+    return await runCalendarMarkerMutation(async () => {
+      const markers = await readStoredCalendarMarkers();
+      const markerIndex = markers.findIndex((marker) => marker.id === markerId);
+      if (markerIndex === -1) {
+        throw new CalendarMarkersError(404, "NOT_FOUND");
+      }
+      const existing = markers[markerIndex];
+      if (existing.version !== input.version) {
+        throw new CalendarMarkersError(409, "VERSION_CONFLICT");
+      }
+      const updated = toUpdatedMarker(existing, input);
+      const nextMarkers = [...markers];
+      nextMarkers[markerIndex] = updated;
+      await writeStoredCalendarMarkers(sortMarkers(nextMarkers));
+      return updated;
+    });
   } catch (error) {
     if (error instanceof CalendarMarkersError) {
       throw error;
@@ -409,15 +531,17 @@ export async function deleteCalendarMarker(
 ): Promise<void> {
   assertAdmin(roleKey);
   try {
-    const markers = await readStoredCalendarMarkers();
-    const marker = markers.find((candidate) => candidate.id === markerId);
-    if (!marker) {
-      throw new CalendarMarkersError(404, "NOT_FOUND");
-    }
-    if (marker.version !== version) {
-      throw new CalendarMarkersError(409, "VERSION_CONFLICT");
-    }
-    await writeStoredCalendarMarkers(markers.filter((candidate) => candidate.id !== markerId));
+    await runCalendarMarkerMutation(async () => {
+      const markers = await readStoredCalendarMarkers();
+      const marker = markers.find((candidate) => candidate.id === markerId);
+      if (!marker) {
+        throw new CalendarMarkersError(404, "NOT_FOUND");
+      }
+      if (marker.version !== version) {
+        throw new CalendarMarkersError(409, "VERSION_CONFLICT");
+      }
+      await writeStoredCalendarMarkers(markers.filter((candidate) => candidate.id !== markerId));
+    });
   } catch (error) {
     if (error instanceof CalendarMarkersError) {
       throw error;

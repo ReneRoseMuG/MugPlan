@@ -10,6 +10,7 @@ import {
 } from "@/lib/calendar-markers";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { useToast } from "@/hooks/use-toast";
+import { resolveCalendarMarkerVisualizationStyle, useSettings, type CalendarMarkerVisualizationStyle } from "@/hooks/useSettings";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,12 @@ const emptyForm: CalendarMarkerFormState = {
   note: "",
 };
 
+const markerVisualizationOptions: Array<{ value: CalendarMarkerVisualizationStyle; label: string }> = [
+  { value: "subtle", label: "Dezent" },
+  { value: "standard", label: "Standard" },
+  { value: "highlighted", label: "Hervorgehoben" },
+];
+
 function markerTypeLabel(type: CalendarMarker["type"]): string {
   if (type === "company_vacation") return "Betriebsferien";
   if (type === "company_holiday") return "Betriebsfeiertag";
@@ -120,11 +127,15 @@ function toWriteInput(form: CalendarMarkerFormState): CalendarMarkerWriteInput {
 
 export function CalendarMarkersAdminPage() {
   const { toast } = useToast();
+  const { settingsByKey, setSetting, isSaving: isSavingSetting } = useSettings();
   const { data: markers = [], isLoading } = useAdminCalendarMarkers();
   const createMutation = useCreateCalendarMarker();
   const updateMutation = useUpdateCalendarMarker();
   const deleteMutation = useDeleteCalendarMarker();
   const [form, setForm] = useState<CalendarMarkerFormState>(emptyForm);
+  const markerVisualizationStyle = resolveCalendarMarkerVisualizationStyle(
+    settingsByKey.get("calendar.markerVisualizationStyle")?.resolvedValue,
+  );
 
   const sortedMarkers = useMemo(
     () => [...markers].sort((left, right) => left.date.localeCompare(right.date) || left.name.localeCompare(right.name)),
@@ -163,9 +174,46 @@ export function CalendarMarkersAdminPage() {
     }));
   };
 
+  const updateVisualizationStyle = async (value: CalendarMarkerVisualizationStyle) => {
+    try {
+      await setSetting({
+        key: "calendar.markerVisualizationStyle",
+        scopeType: "GLOBAL",
+        value,
+      });
+    } catch (error) {
+      toast({
+        title: error instanceof Error ? error.message : "Darstellung konnte nicht gespeichert werden",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="grid gap-3 border-b border-border/50 pb-4 md:grid-cols-[160px_160px_minmax(180px,1fr)_180px_120px]">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card p-3">
+        <div>
+          <Label>Kalenderdarstellung</Label>
+          <p className="text-xs text-muted-foreground">Globale Farbintensität für Feiertage, Betriebsfeiertage und Betriebsferien.</p>
+        </div>
+        <div className="inline-flex rounded-md border border-border bg-muted/40 p-1" data-testid="calendar-marker-visualization-toggle">
+          {markerVisualizationOptions.map((option) => (
+            <Button
+              key={option.value}
+              type="button"
+              size="sm"
+              variant={markerVisualizationStyle === option.value ? "default" : "ghost"}
+              disabled={isSavingSetting}
+              onClick={() => void updateVisualizationStyle(option.value)}
+              data-testid={`button-calendar-marker-visualization-${option.value}`}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div className="w-full max-w-full rounded-md border border-border bg-card p-3">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-[160px_160px_minmax(180px,360px)_180px_auto] lg:items-end">
         <div className="space-y-1.5">
           <Label htmlFor="calendar-marker-date">Start</Label>
           <Input
@@ -228,7 +276,7 @@ export function CalendarMarkersAdminPage() {
           <Label>Aktiv</Label>
         </div>
         {form.type === "public_holiday" ? (
-          <div className="space-y-1.5 md:col-span-2">
+          <div className="space-y-1.5 lg:col-span-2">
             <Label>Geltung</Label>
             <Select
               value={form.scope}
@@ -249,7 +297,7 @@ export function CalendarMarkersAdminPage() {
           </div>
         ) : null}
         {form.type === "public_holiday" && form.scope === "regional" ? (
-          <div className="grid grid-cols-8 gap-2 md:col-span-3">
+          <div className="grid grid-cols-8 gap-2 lg:col-span-3">
             {germanStates.map((state) => (
               <label key={state} className="flex items-center gap-1 text-xs font-medium">
                 <Checkbox
@@ -261,7 +309,7 @@ export function CalendarMarkersAdminPage() {
             ))}
           </div>
         ) : null}
-        <div className="space-y-1.5 md:col-span-4">
+        <div className="space-y-1.5 lg:col-span-4">
           <Label htmlFor="calendar-marker-note">Bemerkung</Label>
           <Textarea
             id="calendar-marker-note"
@@ -277,6 +325,7 @@ export function CalendarMarkersAdminPage() {
           <Button variant="outline" onClick={resetForm} data-testid="button-reset-calendar-marker">
             Zurücksetzen
           </Button>
+        </div>
         </div>
       </div>
 

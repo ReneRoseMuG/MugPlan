@@ -2,7 +2,20 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { api } from "@shared/routes";
 import * as authService from "../services/authService";
-import { logAuth } from "../lib/logger";
+import * as calendarMarkersService from "../services/calendarMarkersService";
+import { logAuth, logWarn } from "../lib/logger";
+
+function triggerAdminHolidaySeed(payload: { status: string; roleCode?: string; userId?: number }): void {
+  if (payload.status !== "authenticated" || payload.roleCode !== "ADMIN") {
+    return;
+  }
+  void calendarMarkersService.seedCalendarHolidaysAfterFirstAdminLoginOfDay().catch((error) => {
+    logWarn("[calendar-markers] Admin-Login-Seed fehlgeschlagen", {
+      userId: payload.userId,
+      error,
+    });
+  });
+}
 
 export async function getSetupStatus(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -32,6 +45,7 @@ export async function setupAdmin(req: Request, res: Response, next: NextFunction
     const payload = await authService.setupAdmin(input);
     delete req.session.preAuth;
     req.session.userId = payload.userId;
+    triggerAdminHolidaySeed(payload);
     res.status(201).json(payload);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -59,6 +73,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     if (result.payload.status === "authenticated") {
       req.session.userId = result.payload.userId;
       logAuth("login_success", { userId: result.payload.userId });
+      triggerAdminHolidaySeed(result.payload);
     }
     res.json(result.payload);
   } catch (error) {
@@ -84,6 +99,7 @@ export async function verifyTwoFactorSetup(req: Request, res: Response, next: Ne
     });
     delete req.session.preAuth;
     req.session.userId = payload.userId;
+    triggerAdminHolidaySeed(payload);
     res.json(payload);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -108,6 +124,7 @@ export async function verifyTwoFactor(req: Request, res: Response, next: NextFun
     delete req.session.preAuth;
     req.session.userId = payload.userId;
     logAuth("2fa_success", { userId: payload.userId });
+    triggerAdminHolidaySeed(payload);
     res.json(payload);
   } catch (error) {
     if (error instanceof ZodError) {
@@ -143,6 +160,7 @@ export async function quickLogin(req: Request, res: Response, next: NextFunction
     delete req.session.preAuth;
     req.session.userId = payload.userId;
     logAuth("quick_login", { userId: payload.userId });
+    triggerAdminHolidaySeed(payload);
     res.json(payload);
   } catch (error) {
     if (error instanceof ZodError) {

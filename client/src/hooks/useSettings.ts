@@ -24,6 +24,7 @@ type AuftragslisteSelection = {
 };
 type TourenplanPrintMode = "farbdruck" | "spardruck";
 type TourenplanFontSize = "small" | "medium" | "large";
+export type CalendarMarkerVisualizationStyle = "subtle" | "standard" | "highlighted";
 type ReportRangeConfig = {
   activeTab?: "date" | "calendarWeek";
   fromDate?: string;
@@ -58,6 +59,7 @@ export type UserSettingKey =
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
+  | "calendar.markerVisualizationStyle"
   | "hoverPreviewOpenDelayMs"
   | "cardListColumns"
   | "calendar.weekLanes.isCollapsed"
@@ -88,6 +90,7 @@ type UserSettingValueByKey = {
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
+  "calendar.markerVisualizationStyle": CalendarMarkerVisualizationStyle;
   hoverPreviewOpenDelayMs: number;
   cardListColumns: number;
   "calendar.weekLanes.isCollapsed": boolean;
@@ -110,6 +113,13 @@ export function resolveWeekTileBodyMode(value: unknown): UserSettingValueByKey["
     return value;
   }
   return "semiexpanded";
+}
+
+export function resolveCalendarMarkerVisualizationStyle(value: unknown): CalendarMarkerVisualizationStyle {
+  if (value === "subtle" || value === "standard" || value === "highlighted") {
+    return value;
+  }
+  return "standard";
 }
 
 export function resolveToastDesktopPosition(value: unknown): ToastDesktopPosition {
@@ -441,6 +451,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekTileBodyMode") {
       return resolveWeekTileBodyMode(setting?.resolvedValue) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.markerVisualizationStyle") {
+      return resolveCalendarMarkerVisualizationStyle(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
     if (key === "reports.vorlaufliste.categorySelection") {
       return resolveVorlauflisteCategorySelection(setting?.resolvedValue) as UserSettingValueByKey[K];

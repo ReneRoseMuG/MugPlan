@@ -242,7 +242,7 @@ Codex führt ausschließlich seriell `git add`, `git commit` und `git push` für
 Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
 
 `journal`  
-Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag direkt als normalen Block auf der Notion-Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` gemäß Abschnitt 14.2a. Unterseiten sind dabei unzulässig. Für den Journaleintrag gilt dabei zwingend das sichtbare Datumsformat `dd.MM.yy`.
+Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag im Repo-Wiki unter `docs/wiki/journal/` gemäß Abschnitt 14.2a und ergänzt den Eintrag oben in `docs/wiki/journal/README.md`. Für sichtbare Datumsangaben gilt zwingend das Kurzformat `dd.MM.yy`.
 
 `account`  
 Codex prüft ausschließlich lokal die aktuell gespeicherte Codex-ChatGPT-Anmeldung in `$env:USERPROFILE\.codex\auth.json`, dekodiert nur die nicht-geheimen Claims aus dem vorhandenen Token und gibt E-Mail-Adresse, Plan-Typ, Organisationen und den Änderungszeitpunkt der Auth-Datei aus. Token-, Secret-, Session- und Refresh-Werte dürfen dabei nicht ausgegeben werden. Fehlt die Datei oder sind die Claims nicht lesbar, dokumentiert Codex den Blocker kurz und nimmt keine weiteren Änderungen vor.
@@ -717,13 +717,14 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 - Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen.
 - Bei **nein**: keine Dokumentationsdatei.
 
-### 14.2a Journal in Notion schreiben
+### 14.2a Journal im Repo-Wiki schreiben
 
 > „Soll ich einen Journaleintrag für diese Session schreiben?"
 
-- Bei **ja**: Codex erstellt direkt auf der Seite `https://www.notion.so/Journal-352da094354e807daf21f330c3e76f6e` einen neuen normalen Block. Unterseiten oder Subpages dürfen dabei niemals erstellt werden.
-- Der neue Eintrag steht immer ganz oben im Journal.
-- Bestehende Struktur, Reihenfolge und Formatierung der Seite sind strikt einzuhalten.
+- Bei **ja**: Codex erstellt eine neue Markdown-Datei unter `docs/wiki/journal/`.
+- Der Dateiname verwendet das Muster `<dd-mm-yy>-<kurztitel-kebab-case>.md`, zum Beispiel `02-05-26-feiertage-marker-visualisierung.md`.
+- Codex ergänzt den neuen Eintrag in `docs/wiki/journal/README.md` ganz oben unter `## Einträge`.
+- Bestehende Struktur, Reihenfolge und Formatierung des Wiki-Journals sind strikt einzuhalten.
 - Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Notion-Feature-Seiten tatsächlich belegt sind.
 - Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJ | [Typ] | [Feature]: [Kurztitel]`.
 - Für den Journaltitel ist hier bewusst das projektweite Kurzformat `TT.MM.JJ` zu verwenden, zum Beispiel `01.05.26`.

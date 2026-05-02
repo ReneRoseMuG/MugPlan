@@ -196,6 +196,7 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
 async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
   if (!(input.scopeType === "GLOBAL" && (
     input.key === "auth_two_factor_enabled"
+    || input.key === "calendar.markerVisualizationStyle"
     || input.key.startsWith("monitoring.")
     || input.key === "reports.categoryLayout"
   ))) {

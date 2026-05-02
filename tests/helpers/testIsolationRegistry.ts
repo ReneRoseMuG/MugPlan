@@ -277,6 +277,17 @@ const isolationRegistry: TestIsolationRegistryEntry[] = [
     notes: "Settings-Steuerelemente persistieren im seeded per-suite Kandidatenmodell stabil; Canary-Lauf bleibt ohne relevante Listenangriffsfläche gruen.",
   },
   {
+    suitePath: "tests/e2e-browser/calendar-markers-visualization.browser.e2e.spec.ts",
+    isolationClass: "B",
+    baseline: "seeded",
+    storageProfile: "none",
+    resetScope: "per-suite",
+    canaryProfile: "project-list-confusion",
+    pilotStatus: "validated",
+    rolloutMode: "candidate-default",
+    notes: "Kalendermarker-Browser-Suite nutzt gespeicherte Marker, globale Settings und Kalenderanzeige ohne eigene harte Reset-Pfade.",
+  },
+  {
     suitePath: "tests/e2e-browser/filter-state-persistence.browser.e2e.spec.ts",
     isolationClass: "B",
     baseline: "seeded",

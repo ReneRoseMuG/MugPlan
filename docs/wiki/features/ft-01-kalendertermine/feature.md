@@ -52,6 +52,10 @@ Unabhängig vom Einstiegspunkt gilt:
 
 ## Regeln & Randbedingungen
 
+**Abgrenzung zu Kalendermarkern**
+
+Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und Betriebsferien erzeugen keine Terminobjekte, keine Kunden- oder Projektzuordnung, keine Mitarbeiterzuweisung, keine Überschneidungsprüfung und keine Reportwirkung.
+
 **Grundlegende Terminregeln**
 
 - Ein Termin ist immer einem Kunden direkt zugeordnet (customer_id, NOT NULL).

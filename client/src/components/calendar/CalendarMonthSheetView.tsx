@@ -14,6 +14,8 @@ import {
 import { useCalendarMarkers, type CalendarMarker } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
+import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
+import type { CalendarMarkerVisualizationStyle } from "@/hooks/useSettings";
 import {
   compareAppointmentsByTourIndexThenTime,
   getAppointmentDurationDays,
@@ -144,6 +146,7 @@ export function CalendarMonthSheetView({
   const userRole = useMemo(() => getStoredUserRole(), []);
   const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
+  const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
@@ -468,6 +471,7 @@ export function CalendarMonthSheetView({
           dayGridTemplate={dayGridTemplate}
           appointmentsById={appointmentsById}
           calendarMarkersByDate={calendarMarkersByDate}
+          markerVisualizationStyle={markerVisualizationStyle}
           conflictHighlightActive={conflictHighlightActive}
           conflictAppointmentMap={conflictAppointmentMap}
           blockedTourWeekKeys={blockedTourWeekKeys}
@@ -500,6 +504,7 @@ function MonthSheetSection({
   dayGridTemplate,
   appointmentsById,
   calendarMarkersByDate,
+  markerVisualizationStyle,
   conflictHighlightActive,
   conflictAppointmentMap,
   blockedTourWeekKeys,
@@ -522,6 +527,7 @@ function MonthSheetSection({
   dayGridTemplate: string;
   appointmentsById: Map<number, CalendarAppointment>;
   calendarMarkersByDate: Map<string, CalendarMarker[]>;
+  markerVisualizationStyle: CalendarMarkerVisualizationStyle;
   conflictHighlightActive: boolean;
   conflictAppointmentMap: Map<number, MonitoringConflictMeta>;
   blockedTourWeekKeys: Set<string>;
@@ -613,6 +619,8 @@ function MonthSheetSection({
                         : isWeekend
                           ? "bg-slate-300/10"
                           : "bg-slate-200/20";
+                    const dayMarkers = calendarMarkersByDate.get(day.dateKey) ?? [];
+                    const markerVisualization = getPrimaryCalendarMarkerVisualization(dayMarkers, markerVisualizationStyle);
                     const dayNumberClassName = day.isToday
                       ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
                       : day.isCurrentMonth
@@ -629,6 +637,7 @@ function MonthSheetSection({
                           relative h-full min-h-0 border-r border-b border-border/30 px-1
                           transition-colors duration-200
                           ${dayCellClassName}
+                          ${markerVisualization?.tileClassName ?? ""}
                           ${dayIdx === 6 ? "border-r-0" : ""}
                         `}
                         onDragOver={readOnly ? undefined : (event) => event.preventDefault()}
@@ -637,10 +646,11 @@ function MonthSheetSection({
                         }}
                         data-testid={`month-sheet-day-${day.dateKey}`}
                         data-month-scope={day.isCurrentMonth ? "current" : "adjacent"}
+                        data-marker-visualization={markerVisualization?.tone ?? "none"}
                       >
                         <div
                           style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
-                          className={`flex items-center justify-between rounded-md px-1.5 ${dayHeaderClassName}`}
+                          className={`flex items-center justify-between rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
                         >
                           <span
                             className={`
@@ -662,7 +672,7 @@ function MonthSheetSection({
                             <span className="h-5 w-5" aria-hidden="true" />
                           )}
                         </div>
-                        <CalendarMarkerBadges markers={calendarMarkersByDate.get(day.dateKey) ?? []} compact />
+                        <CalendarMarkerBadges markers={dayMarkers} compact visualizationStyle={markerVisualizationStyle} />
 
                         <div className="flex w-full flex-col">
                           {renderData.rowLayout.slots.map((slot) => {

@@ -2,9 +2,15 @@
 
 Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträge stehen oben.
 
-## Quellen
+## Pflege
 
-- Notion-Quelle: https://app.notion.com/p/352da094354e807daf21f330c3e76f6e
+- Neue Journaleinträge werden als Markdown-Dateien in diesem Verzeichnis gepflegt.
+- Neue Einträge werden oben unter `## Einträge` verlinkt.
+- Sichtbare Datumsangaben verwenden das Kurzformat `dd.MM.yy`.
+
+## Historische Quelle
+
+- Frühere Einträge wurden aus Notion übernommen: https://app.notion.com/p/352da094354e807daf21f330c3e76f6e
 
 ## Einträge
 

@@ -13,10 +13,23 @@ const calendarMarkersPayloadSchema = z.object({
 
 type CalendarMarkersPayload = z.infer<typeof calendarMarkersPayloadSchema>;
 
-const fileRequest = {
+const calendarMarkersFileRequest = {
   scope: "GLOBAL" as const,
   namespace: "calendar-markers",
   key: "admin-markers",
+};
+
+const calendarMarkerSeedStateSchema = z.object({
+  schemaVersion: z.literal(1),
+  lastAdminLoginSeedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+});
+
+type CalendarMarkerSeedState = z.infer<typeof calendarMarkerSeedStateSchema>;
+
+const calendarMarkerSeedStateFileRequest = {
+  scope: "GLOBAL" as const,
+  namespace: "calendar-markers",
+  key: "seed-state",
 };
 
 let fileStore = new ServerScopedFileStore();
@@ -35,7 +48,7 @@ export function resetCalendarMarkersFileStoreForTests(): void {
 export async function readStoredCalendarMarkers(): Promise<CalendarMarker[]> {
   try {
     const payload = await fileStore.readJson<CalendarMarkersPayload>({
-      ...fileRequest,
+      ...calendarMarkersFileRequest,
       schema: calendarMarkersPayloadSchema,
     });
     return payload?.markers ?? [];
@@ -53,12 +66,48 @@ export async function readStoredCalendarMarkers(): Promise<CalendarMarker[]> {
 export async function writeStoredCalendarMarkers(markers: CalendarMarker[]): Promise<void> {
   try {
     await fileStore.writeJson<CalendarMarkersPayload>({
-      ...fileRequest,
+      ...calendarMarkersFileRequest,
       schema: calendarMarkersPayloadSchema,
       data: {
         schemaVersion: 1,
         markers,
       },
+    });
+  } catch (error) {
+    if (error instanceof FileStoreValidationError) {
+      throw new CalendarMarkersRepositoryValidationError(error.message);
+    }
+    if (error instanceof FileStoreIOError) {
+      throw new CalendarMarkersRepositoryIOError(error.message);
+    }
+    throw error;
+  }
+}
+
+export async function readCalendarMarkerSeedState(): Promise<CalendarMarkerSeedState> {
+  try {
+    const payload = await fileStore.readJson<CalendarMarkerSeedState>({
+      ...calendarMarkerSeedStateFileRequest,
+      schema: calendarMarkerSeedStateSchema,
+    });
+    return payload ?? { schemaVersion: 1, lastAdminLoginSeedDate: null };
+  } catch (error) {
+    if (error instanceof FileStoreValidationError) {
+      throw new CalendarMarkersRepositoryValidationError(error.message);
+    }
+    if (error instanceof FileStoreIOError) {
+      throw new CalendarMarkersRepositoryIOError(error.message);
+    }
+    throw error;
+  }
+}
+
+export async function writeCalendarMarkerSeedState(state: CalendarMarkerSeedState): Promise<void> {
+  try {
+    await fileStore.writeJson<CalendarMarkerSeedState>({
+      ...calendarMarkerSeedStateFileRequest,
+      schema: calendarMarkerSeedStateSchema,
+      data: state,
     });
   } catch (error) {
     if (error instanceof FileStoreValidationError) {

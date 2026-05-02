@@ -29,8 +29,9 @@ import * as customersRepository from "../repositories/customersRepository";
 import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as noteTemplatesRepository from "../repositories/noteTemplatesRepository";
 import * as toursRepository from "../repositories/toursRepository";
+import * as calendarMarkersService from "./calendarMarkersService";
 
-export type SystemSeedEntityKind = "tag" | "tour" | "customer" | "noteTemplate";
+export type SystemSeedEntityKind = "tag" | "tour" | "customer" | "noteTemplate" | "calendarMarker";
 export type SystemSeedPreviewStatus = "missing" | "unchanged" | "update" | "migrate";
 
 export type SystemSeedPreviewItem = {
@@ -181,6 +182,10 @@ function buildCustomerKey(customerNumber: string): string {
 
 function buildNoteTemplateKey(title: string): string {
   return `noteTemplate:${normalizeName(title)}`;
+}
+
+function buildCalendarHolidaySeedKey(): string {
+  return "calendarMarker:public-holidays";
 }
 
 function customerDefinitionLabel(definition: SeedCustomerDefinition): string {
@@ -380,7 +385,23 @@ async function buildSeedPreviewMeta() {
   const tourItems = await buildTourPreviewItems();
   const customerItems = await buildCustomerPreviewItems();
   const noteTemplateItems = await buildNoteTemplatePreviewItems();
-  return [...tagItems, ...tourItems, ...customerItems, ...noteTemplateItems];
+  const holidayPreview = await calendarMarkersService.previewDefaultCalendarHolidaysSeed();
+  const calendarHolidayItem: SeedPreviewMeta<"calendarMarker", calendarMarkersService.CalendarHolidaySeedPreview> = {
+    kind: "calendarMarker",
+    definition: holidayPreview,
+    item: {
+      key: buildCalendarHolidaySeedKey(),
+      kind: "calendarMarker",
+      label: `Gesetzliche Feiertage ${holidayPreview.fromYear}-${holidayPreview.toYear}`,
+      status: holidayPreview.missing > 0 ? "missing" : "unchanged",
+      message: holidayPreview.missing > 0
+        ? `${holidayPreview.missing} von ${holidayPreview.total} Feiertagen fehlen und können angelegt werden`
+        : `${holidayPreview.total} Feiertage sind bereits vorhanden`,
+      canApply: holidayPreview.missing > 0,
+      checkedByDefault: holidayPreview.missing > 0,
+    },
+  };
+  return [...tagItems, ...tourItems, ...customerItems, ...noteTemplateItems, calendarHolidayItem];
 }
 
 async function applyTagDefinition(definition: SeedTagDefinition, logLines: string[]): Promise<void> {
@@ -531,6 +552,11 @@ async function applyNoteTemplateDefinition(definition: SeedNoteTemplateDefinitio
   logLines.push(`Notizvorlage aktualisiert: ${existing.title}`);
 }
 
+async function applyCalendarHolidaySeed(logLines: string[]): Promise<void> {
+  const result = await calendarMarkersService.seedDefaultCalendarHolidays();
+  logLines.push(`Feiertage Seed: ${result.created} angelegt, ${result.unchanged} unverändert (${result.fromYear}-${result.toYear})`);
+}
+
 export async function getSystemSeedPreview(): Promise<SystemSeedPreviewResult> {
   const meta = await buildSeedPreviewMeta();
   return {
@@ -553,6 +579,7 @@ export async function applySystemSeed(selectedKeys?: string[]): Promise<SystemSe
     for (const definition of SYSTEM_NOTE_TEMPLATES) {
       await applyNoteTemplateDefinition(definition, logLines);
     }
+    await applyCalendarHolidaySeed(logLines);
 
     return { logLines };
   }
@@ -581,6 +608,10 @@ export async function applySystemSeed(selectedKeys?: string[]): Promise<SystemSe
     if (effectiveKeys.has(buildNoteTemplateKey(definition.title))) {
       await applyNoteTemplateDefinition(definition, logLines);
     }
+  }
+
+  if (effectiveKeys.has(buildCalendarHolidaySeedKey())) {
+    await applyCalendarHolidaySeed(logLines);
   }
 
   return { logLines };

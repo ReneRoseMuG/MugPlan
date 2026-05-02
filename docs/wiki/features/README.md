@@ -4,6 +4,7 @@ Alle Feature-Dokumente folgen der Feature-Vorlage aus den [Redaktionsregeln](../
 
 | Feature | Dokument | Importstatus |
 |---|---|---|
+| FT (34): Kalendermarker, Feiertage und Betriebsferien | [feature.md](ft-34-kalendermarker-feiertage-betriebsferien/feature.md) | Neu im Repo-Wiki erfasst |
 | FT (01): Kalendertermine | [feature.md](ft-01-kalendertermine/feature.md) | Vollständig aus lokalem Notion-Markdown-Export übernommen |
 | FT (02): Projekte | [feature.md](ft-02-projekte/feature.md) | Vollständig aus lokalem Notion-Markdown-Export übernommen |
 | FT (03): Kalenderansichten | [feature.md](ft-03-kalenderansichten/feature.md) | Vollst?ndig aus lokalem Notion-Markdown-Export ?bernommen |
