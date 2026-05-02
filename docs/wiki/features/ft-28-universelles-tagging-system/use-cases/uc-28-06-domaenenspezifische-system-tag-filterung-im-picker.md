@@ -8,24 +8,31 @@
 
 ## Akteur
 
-Nicht angegeben in der Notion-Quelle.
+Administrator oder Disponent.
 
 ## Ziel
 
-Nicht angegeben in der Notion-Quelle.
+Der Akteur sieht im Tag-Picker nur Tags, die in der jeweiligen Domäne manuell zugewiesen werden dürfen. Geschützte System-Tags werden nicht als frei auswählbare Tags angeboten.
 
 ## Vorbedingungen
 
-Nicht angegeben in der Notion-Quelle.
+- Es existieren frei verwendbare Tags und geschützte System-Tags.
+- Das System kennt die Domäne, für die der Tag-Katalog geladen wird.
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
+1. Der Akteur öffnet den Tag-Picker für Kunde, Mitarbeiter, Termin oder Projekt.
+2. Das System lädt den Tag-Katalog mit Domänenbezug.
+3. Das System filtert geschützte System-Tags serverseitig aus dem Picker.
+4. Der Akteur sieht nur Tags, die in dieser Domäne manuell zuweisbar sind.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
+- Bei Kunden und Mitarbeitern werden geschützte System-Tags nicht im Picker angeboten.
+- Bei Terminen werden geschützte System-Tags nicht im Picker angeboten. **Storniert** wird ausschließlich über den Storno-Workflow gesetzt; **Reklamation** wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.
+- Bei Projekten werden geschützte System-Tags nicht im Picker angeboten. **Reklamation** wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.
+- Wenn ein Client einen geschützten System-Tag trotzdem direkt über eine generische Tag-API zuweisen oder entfernen will, muss der Server die Mutation abweisen.
 
 ## Ergebnis
 
-Nicht angegeben in der Notion-Quelle.
+Der Tag-Picker bleibt domänenspezifisch korrekt und bietet keine Systemzustände als frei pflegbare Tags an. Die fachlichen Workflows behalten die Kontrolle über geschützte System-Tags.

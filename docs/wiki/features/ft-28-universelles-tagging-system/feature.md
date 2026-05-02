@@ -18,19 +18,20 @@ Das System besteht aus zwei Ebenen: einer zentralen `tags`-Tabelle sowie je eine
 
 Jeder Tag besitzt einen eindeutigen Namen und eine Farbe. Die Farbe wird per freiem Color-Picker gewählt und dient der visuellen Unterscheidung in Listen- und Kalenderansichten. Tags können in einer zentralen Verwaltungsansicht angelegt, umbenannt, neu eingefärbt und gelöscht werden. Die Zuweisung erfolgt im Kontext des jeweiligen Domänenobjekts. Filtern und Suchen nach Tags ist in allen Listenansichten der jeweiligen Domäne vorgesehen.
 
-**Default Tags** sind systemseitig vordefinierte Tags, die beim initialen Setup oder per Migrations-Skript angelegt werden. Sie sind für Disponenten nicht lösch- und nicht umbenennbar. Änderungen an Default Tags – einschließlich Umbenennung, Farbe und Löschung – sind ausschließlich Admins vorbehalten. In der Verwaltungsansicht sind Default Tags visuell als geschützt gekennzeichnet (z. B. Schloss-Icon).
+**Default Tags** sind systemseitig vordefinierte Tags, die beim initialen Setup oder per Migrations-Skript angelegt werden. Sie sind geschützte System-Tags und dürfen nicht wie frei verfügbare Tags durch Nutzer zugewiesen, entfernt, gelöscht oder umbenannt werden. Änderungen an Default Tags einschließlich Umbenennung, Farbe und Löschung sind serverseitig geschützt. In der Verwaltungsansicht sind Default Tags visuell als geschützt gekennzeichnet (z. B. Schloss-Icon).
 
-Welche System-Tags im Tag-Picker einer Domäne erscheinen, ist pro Domäne geregelt: Bei **Mitarbeitern** und **Kunden** sind alle System-Tags aus dem Picker ausgeschlossen. Bei **Terminen** sind alle System-Tags aus dem Picker ausgeschlossen; der Storniert-Tag wird ausschließlich über den Storno-Workflow gesetzt. Bei **Projekten** sind Reklamation und Sondermaß explizit im Picker wählbar, Storniert nicht.
+Welche System-Tags im Tag-Picker einer Domäne erscheinen, ist pro Domäne geregelt: Bei **Mitarbeitern**, **Kunden**, **Terminen** und **Projekten** sind geschützte System-Tags aus dem generischen Picker ausgeschlossen. Der Storniert-Tag wird ausschließlich über den Storno-Workflow gesetzt. Der Reklamation-Tag wird ausschließlich über die fachlichen Reklamationsfunktionen am Termin oder am Projekt gesetzt und entfernt. Eine manuelle Zuweisung oder Entfernung über die generischen Tag-Funktionen ist für Nutzer nicht zulässig.
 
 ## Regeln & Randbedingungen
 
 - Ein Tag-Name ist eindeutig innerhalb der zentralen `tags`-Tabelle.
 - Tags können beliebig vielen Einträgen aller Domänen zugewiesen werden.
 - Das Löschen eines Tags entfernt automatisch alle zugehörigen Join-Einträge (Cascade Delete).
-- Tags dürfen nue vom Admin gelöscht werden und nur, wenn keine Relationen bestehen.
+- Tags dürfen nur vom Admin gelöscht werden und nur, wenn keine Relationen bestehen.
 - Default Tags besitzen ein `is_default`-Flag und werden serverseitig vor Mutation geschützt – der Schutz wird nicht allein über die UI, sondern per API-Guard durchgesetzt.
 - Die Farbwahl erfolgt über einen freien Color-Picker ohne vordefiniertes Farbset.
 - Disponenten können Tags zuweisen und entfernen, aber keine Tags anlegen, umbenennen oder löschen.
+- Disponenten und Administratoren können geschützte System-Tags nicht über generische Tag-Zuweisungen setzen oder entfernen. Dafür müssen die jeweiligen fachlichen Workflows verwendet werden.
 - Die Sichtbarkeit von System-Tags im Tag-Picker ist domänenspezifisch geregelt (siehe Fachliche Beschreibung). Die Filterung erfolgt serverseitig über den `/api/tags?domain=`-Parameter.
 
 ## Use Cases

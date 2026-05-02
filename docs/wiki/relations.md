@@ -9,7 +9,7 @@ Diese Datei bündelt feature-übergreifende Beziehungen, bis sie je Feature voll
 - FT (14) und FT (20) bilden Rollen- und Sichtbarkeitsgrenzen.
 - FT (31), FT (32) und FT (33) hängen fachlich an Termin-, Touren- und Mitarbeiterkontexten.
 
-- FT (34) liefert Kalendermarker fÃ¼r FT (03), konsumiert globale Settings aus FT (18) und Rollenregeln aus FT (20). FT (01) bleibt fachlich abgegrenzt, weil Kalendermarker keine Termine sind.
+- FT (34) liefert Kalendermarker für FT (03), konsumiert globale Settings aus FT (18) und Rollenregeln aus FT (20). FT (01) bleibt fachlich abgegrenzt, weil Kalendermarker keine Termine sind.
 
 ## Pflege
 

@@ -20,11 +20,12 @@ Projektbezogene Tags über das universelle Tagging-System anpassen.
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).
 - Die gewünschten Tags existieren gemäß FT (28).
+- Die gewünschten Tags sind frei verwendbare Tags und keine geschützten System-Tags.
 
 ## Ablauf
 
 1. Der Akteur öffnet ein Projekt.
-2. Der Akteur fügt einen projektbezogenen Tag hinzu oder entfernt einen vorhandenen Tag.
+2. Der Akteur fügt einen frei verwendbaren projektbezogenen Tag hinzu oder entfernt einen vorhandenen frei verwendbaren Tag.
 3. Das System prüft serverseitig:
     - Authentifizierung und Rolle (Disponent oder Administrator),
     - Existenz des Projekts,
@@ -40,10 +41,11 @@ Projektbezogene Tags über das universelle Tagging-System anpassen.
 - Akteur ohne Änderungsrechte (Leser) → HTTP 403.
 - Tag existiert nicht → HTTP 404.
 - Tag ist ein geschützter System-Tag (`isDefault = true`) → HTTP 409 WORKFLOW_TAG_PROTECTED.
+- **Reklamation** ist ein geschützter System-Tag und wird nicht über diesen Use Case geändert. Dafür gilt UC 06/02.
 - Doppelte Tag-Zuweisung → System verhindert Mehrfacheintrag.
 - Versionskonflikt bei paralleler Tag-Änderung → HTTP 409 VERSION_CONFLICT.
 - Technischer Fehler → HTTP 500.
 
 ## Ergebnis
 
-Die projektbezogenen Tags sind aktualisiert. System-Tags bleiben von manuellen Änderungen unberührt. Die Tag-Änderung folgt den Regeln aus FT (28).
+Die frei verwendbaren projektbezogenen Tags sind aktualisiert. System-Tags bleiben von manuellen Änderungen unberührt. Die Tag-Änderung folgt den Regeln aus FT (28); Reklamationen folgen dem Workflow aus FT (06).

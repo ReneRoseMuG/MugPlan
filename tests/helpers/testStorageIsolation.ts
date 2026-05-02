@@ -43,8 +43,8 @@ export async function configureTestStorageIsolation(): Promise<void> {
 export async function resetIsolatedTestStorage(): Promise<void> {
   await getTempRoot();
   const paths = getIsolatedTestStoragePaths();
-  await fs.rm(paths.uploadsPath, { recursive: true, force: true });
-  await fs.rm(paths.backupsPath, { recursive: true, force: true });
+  await fs.rm(paths.uploadsPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  await fs.rm(paths.backupsPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   await fs.mkdir(paths.uploadsPath, { recursive: true });
   await fs.mkdir(paths.backupsPath, { recursive: true });
 }

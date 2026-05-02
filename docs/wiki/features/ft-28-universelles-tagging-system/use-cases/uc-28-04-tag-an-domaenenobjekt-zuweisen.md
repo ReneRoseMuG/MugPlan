@@ -8,24 +8,37 @@
 
 ## Akteur
 
-Nicht angegeben in der Notion-Quelle.
+Administrator oder Disponent.
 
 ## Ziel
 
-Nicht angegeben in der Notion-Quelle.
+Der Akteur weist einem Domänenobjekt einen frei verwendbaren Tag zu, um das Objekt fachlich zu markieren und später filtern oder auswerten zu können.
 
 ## Vorbedingungen
 
-Nicht angegeben in der Notion-Quelle.
+- Der Tag existiert.
+- Der Tag ist kein geschützter System-Tag.
+- Das Domänenobjekt existiert.
+- Der Akteur besitzt Schreibrechte für das Domänenobjekt.
+- Für Termine gelten zusätzlich die fachlichen Schreibsperren aus FT (01).
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
+1. Der Akteur öffnet ein Domänenobjekt mit Tag-Bereich.
+2. Das System lädt den Tag-Katalog für die jeweilige Domäne.
+3. Das System zeigt nur Tags an, die für diese Domäne manuell zuweisbar sind.
+4. Der Akteur wählt einen Tag aus.
+5. Das System legt die Tag-Zuweisung serverseitig an.
+6. Das Objekt wird mit dem neuen Tag angezeigt.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
+- Ist der Tag bereits zugewiesen, darf keine doppelte Relation entstehen.
+- Ist der Tag ein geschützter System-Tag, wird die generische Zuweisung serverseitig abgewiesen.
+- Der System-Tag **Reklamation** darf nicht über diesen generischen Use Case gesetzt werden. Dafür gilt der Reklamationsworkflow aus FT (06).
+- Der System-Tag **Storniert** darf nicht über diesen generischen Use Case gesetzt werden. Dafür gilt der Storno-Workflow.
+- Fehlen Schreibrechte, wird die Aktion nicht angeboten bzw. serverseitig verboten.
 
 ## Ergebnis
 
-Nicht angegeben in der Notion-Quelle.
+Das Domänenobjekt besitzt den ausgewählten frei verwendbaren Tag. Geschützte System-Tags bleiben vor manueller Zuweisung geschützt.

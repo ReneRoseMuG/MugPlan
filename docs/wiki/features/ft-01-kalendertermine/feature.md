@@ -106,6 +106,7 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 - Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.
 - Notizen sind unabhängig vom Termin; Änderungen am Termin (Datum, Projekt, Tour, Mitarbeiter) wirken sich nicht auf die Notizen aus.
 - Notizen werden nicht automatisch gelöscht, wenn ein Termin bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder der gesamte Termin gelöscht wird.
+- Eine Reklamationsnotiz kann beim Setzen des Systemzustands **Reklamation** vorgeschlagen werden. Beim Aufheben der Reklamation entscheidet der Akteur ausdrücklich, ob eine vorhandene Reklamationsnotiz entfernt oder behalten wird.
 - Wenn ein Termin gelöscht wird, werden auch seine zugeordneten Notizen entfernt.
 
 **Storno-Regeln**
@@ -187,6 +188,7 @@ Nicht angegeben in der Notion-Quelle.
 - [FT-05: Mitarbeiterverwaltung](https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5) — Mitarbeiter über appointment_employee; Inaktiv- und Überschneidungsprüfung
 - [FT-09: Kundenverwaltung](https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad) — customer_id NOT NULL; Inaktiv-Prüfung bei Zuweisung
 - [FT-28: Tagging](https://app.notion.com/p/317da094354e81279271fc1c2d18eba4) — Reservierte Tags (Storniert, Reklamation, Messe, Geparkt) steuern Workflow-Zustände
+- [FT-06: Automatische Regeln](../ft-06-automatische-regeln/feature.md) — Reklamationsworkflow setzt bzw. entfernt den Systemzustand Reklamation und steuert den optionalen Notizfluss
 - [FT-30/FT-31: Touren & Disposition](https://app.notion.com/p/322da094354e80d9b02edfad47429c4d) — tour_id am Termin; Wochenplanungs-Preview-Dialog
 
 **Dieses Feature wird konsumiert von:**

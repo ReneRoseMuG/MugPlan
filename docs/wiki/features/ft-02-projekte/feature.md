@@ -42,6 +42,7 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 - Ein Projekt kann projektbezogene Tags besitzen.
 - Projektbezogene Markierungen werden über das universelle Tagging-System gepflegt.
     - System-Tags und fachlich geschützte Tags werden gemäß FT (28) verwaltet.
+- Der Systemzustand **Reklamation** wird nicht über die generische Projekt-Tag-Pflege gesetzt oder entfernt, sondern über den Reklamationsworkflow aus FT (06). Dieser Workflow setzt bzw. entfernt das geschützte System-Tag **Reklamation** und kann optional eine Projektnotiz aus der Reklamationsvorlage vorschlagen.
 - Ein Projekt kann ohne Termine existieren.
 - Projekt-Details (Beschreibung, Notizen, Anhänge) gehören **ausschließlich** zum Projekt, nicht zum Termin.
 - Notizen sind optional und frei pflegbar.
@@ -55,6 +56,7 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 - Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.
 - Notizen sind unabhängig vom Projekt; Änderungen am Projekt (Kundenänderung, Tag-Änderung, Anhänge) wirken sich nicht auf die Notizen aus.
 - Notizen werden nicht automatisch gelöscht, wenn ein Projekt bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder das gesamte Projekt gelöscht wird.
+- Eine Reklamationsnotiz kann beim Setzen des Systemzustands **Reklamation** vorgeschlagen werden. Beim Aufheben der Reklamation entscheidet der Akteur ausdrücklich, ob eine vorhandene Reklamationsnotiz entfernt oder behalten wird.
 - Wenn ein Projekt gelöscht wird, werden auch seine zugeordneten Notizen entfernt.
 - Notizen sind für alle zugehörigen Termine sichtbar, sofern das Termindetail oder die Projektreferenz angezeigt wird.
 - Notizen können optional in Druckausgaben, CSV-Exporten oder anderen Exportformaten mitgeführt werden, sofern das jeweilige Feature dies vorsieht.
