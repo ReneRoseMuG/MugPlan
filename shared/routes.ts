@@ -25,7 +25,7 @@ import {
 } from './schema';
 import type { Project, ProjectOrder } from "./schema";
 import type { ProjectArticleItem } from "./projectArticleList";
-import type { AppointmentMutationEvent } from "./appointmentMutationEvents";
+import type { AppointmentMutationEvent, ProjectMutationEvent } from "./appointmentMutationEvents";
 
 export const errorSchemas = {
   validation: z.object({
@@ -771,6 +771,17 @@ const appointmentMutationEventSchema = z.discriminatedUnion("kind", [
 
 const appointmentMutationResponseSchema = z.object({
   mutationEvents: z.array(appointmentMutationEventSchema).optional(),
+});
+
+const projectMutationEventSchema = z.object({
+  kind: z.literal("tag_mutated"),
+  projectId: z.number().int().positive(),
+  tagName: z.string().min(1),
+  action: z.enum(["added", "removed"]),
+}) as z.ZodType<ProjectMutationEvent>;
+
+const projectMutationResponseSchema = z.object({
+  mutationEvents: z.array(projectMutationEventSchema).optional(),
 });
 
 const appointmentCancellationReportStateSchema = z.enum(["default", "contains_cancelled", "cancelled_only"]);
@@ -1648,7 +1659,7 @@ export const api = {
           version: z.number().int().min(1),
         }).strict(),
         responses: {
-          200: appointmentMutationResponseSchema.extend({ kind: z.enum(["updated", "noop"]) }),
+          200: projectMutationResponseSchema.extend({ kind: z.enum(["updated", "noop"]) }),
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLED_APPOINTMENT_READONLY", "BUSINESS_CONFLICT"]) }),
@@ -1662,7 +1673,7 @@ export const api = {
           version: z.number().int().min(1),
         }).strict(),
         responses: {
-          200: appointmentMutationResponseSchema.extend({ kind: z.enum(["updated", "noop"]) }),
+          200: projectMutationResponseSchema.extend({ kind: z.enum(["updated", "noop"]) }),
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "PAST_APPOINTMENT_READONLY", "CANCELLED_APPOINTMENT_READONLY", "BUSINESS_CONFLICT"]) }),

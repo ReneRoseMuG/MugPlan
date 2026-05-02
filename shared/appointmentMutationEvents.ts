@@ -15,3 +15,12 @@ export type TagMutatedEvent = {
 };
 
 export type AppointmentMutationEvent = TourChangedEvent | TagMutatedEvent;
+
+export type ProjectTagMutatedEvent = {
+  kind: "tag_mutated";
+  projectId: number;
+  tagName: string;
+  action: "added" | "removed";
+};
+
+export type ProjectMutationEvent = ProjectTagMutatedEvent;
