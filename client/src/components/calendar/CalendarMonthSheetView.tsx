@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -75,6 +75,7 @@ type CalendarMonthSheetViewProps = {
   absenceVisibility?: "planning" | "absences" | "include";
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
+  onFooterActionChange?: (action: ReactNode | null) => void;
 };
 
 type MonthSheetRenderWeek = {
@@ -142,6 +143,7 @@ export function CalendarMonthSheetView({
   absenceVisibility = "planning",
   onNewAppointment,
   onOpenAppointment,
+  onFooterActionChange,
 }: CalendarMonthSheetViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
@@ -158,6 +160,24 @@ export function CalendarMonthSheetView({
   const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
   const totalDayWeight = useMemo(() => dayWeights.reduce((sum, weight) => sum + weight, 0), [dayWeights]);
   const berlinToday = getBerlinTodayDateString();
+
+  useEffect(() => {
+    if (!onFooterActionChange) return undefined;
+
+    onFooterActionChange(
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setPrintPreviewOpen(true)}
+        data-testid="button-month-print-preview"
+      >
+        Drucken
+      </Button>,
+    );
+
+    return () => onFooterActionChange(null);
+  }, [onFooterActionChange]);
 
   const month = useMemo(
     () => visibleWeekCount !== undefined
@@ -469,11 +489,6 @@ export function CalendarMonthSheetView({
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
-      <div className="flex items-center justify-end border-b border-border/40 bg-muted/20 px-3 py-2">
-        <Button type="button" variant="outline" size="sm" onClick={() => setPrintPreviewOpen(true)} data-testid="button-month-print-preview">
-          Drucken
-        </Button>
-      </div>
       <div
         className="flex-1 min-h-0"
         data-testid="month-sheet-container"

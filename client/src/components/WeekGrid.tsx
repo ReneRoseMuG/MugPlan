@@ -1,4 +1,5 @@
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
+import type { ReactNode } from "react";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 
@@ -18,6 +19,7 @@ interface WeekGridProps {
   restoreRequest?: WeekViewRestoreRequest | null;
   onRestoreApplied?: () => void;
   onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
+  onFooterActionChange?: (action: ReactNode | null) => void;
 }
 
 export function WeekGrid({
@@ -36,6 +38,7 @@ export function WeekGrid({
   restoreRequest,
   onRestoreApplied,
   onViewportChange,
+  onFooterActionChange,
 }: WeekGridProps) {
   return (
     <div className="h-full" data-testid="calendar-week-view">
@@ -55,6 +58,7 @@ export function WeekGrid({
         restoreRequest={restoreRequest}
         onRestoreApplied={onRestoreApplied}
         onViewportChange={onViewportChange}
+        onFooterActionChange={onFooterActionChange}
       />
     </div>
   );

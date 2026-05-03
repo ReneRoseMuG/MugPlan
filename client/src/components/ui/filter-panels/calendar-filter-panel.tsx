@@ -10,6 +10,7 @@ import { sanitizeIsoWeekInput, stepIsoWeekValue } from "@/lib/isoWeekInput";
 interface CalendarFilterPanelProps {
   employeeId: number | null;
   onEmployeeIdChange: (employeeId: number | null) => void;
+  footerAction?: React.ReactNode;
   showEmployeeFilter?: boolean;
   showWeekDisplayMode?: boolean;
   conflictHighlightActive?: boolean;
@@ -161,6 +162,7 @@ function renderConflictControls({
 export function CalendarFilterPanel({
   employeeId,
   onEmployeeIdChange,
+  footerAction,
   showEmployeeFilter = true,
   showWeekDisplayMode = false,
   conflictHighlightActive = false,
@@ -189,6 +191,7 @@ export function CalendarFilterPanel({
       ...(showEmployeeFilter ? ["180px"] : []),
       ...(showKwJumpControls ? ["max-content"] : []),
       ...(showConflictHighlightControls ? ["max-content"] : []),
+      ...(footerAction ? ["minmax(0,1fr)"] : []),
     ].join(" ");
 
     return (
@@ -201,6 +204,7 @@ export function CalendarFilterPanel({
           {showEmployeeFilter ? <FooterSectionLabel>Mitarbeiter</FooterSectionLabel> : null}
           {showKwJumpControls ? <FooterSectionLabel>KW</FooterSectionLabel> : null}
           {showConflictHighlightControls ? <FooterSectionLabel>Konflikte</FooterSectionLabel> : null}
+          {footerAction ? <span aria-hidden="true" /> : null}
 
           {showEmployeeFilter ? (
             <div className="w-full">
@@ -238,6 +242,7 @@ export function CalendarFilterPanel({
             conflictAppointmentCount,
             onConflictHighlightChange,
           }) : null}
+          {footerAction ? <div className="flex justify-end self-end">{footerAction}</div> : null}
         </div>
       </FilterPanel>
     );
@@ -247,6 +252,7 @@ export function CalendarFilterPanel({
     ...(showEmployeeFilter ? ["220px"] : []),
     ...(showKwJumpControls ? ["max-content"] : []),
     ...(showConflictHighlightControls ? ["max-content"] : []),
+    ...(footerAction ? ["minmax(0,1fr)"] : []),
   ].join(" ");
 
   return (
@@ -258,6 +264,7 @@ export function CalendarFilterPanel({
         {showEmployeeFilter ? <Label className="text-xs">Mitarbeiter</Label> : null}
         {showKwJumpControls ? <Label className="text-xs">KW</Label> : null}
         {showConflictHighlightControls ? <Label className="text-xs">Konflikte</Label> : null}
+        {footerAction ? <span aria-hidden="true" /> : null}
 
         {showEmployeeFilter ? <CalendarEmployeeFilter value={employeeId} onChange={onEmployeeIdChange} /> : null}
         {showKwJumpControls ? (
@@ -289,6 +296,7 @@ export function CalendarFilterPanel({
           conflictAppointmentCount,
           onConflictHighlightChange,
         }) : null}
+        {footerAction ? <div className="flex justify-end self-end">{footerAction}</div> : null}
       </div>
     </FilterPanel>
   );

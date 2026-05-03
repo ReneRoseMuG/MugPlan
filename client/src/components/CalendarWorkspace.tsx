@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
+import type { ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
@@ -81,6 +82,7 @@ export function CalendarWorkspace({
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
   const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
   const [calendarAbsenceMode, setCalendarAbsenceMode] = useState<CalendarAbsenceMode>("planning");
+  const [footerAction, setFooterAction] = useState<ReactNode | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
   );
@@ -232,6 +234,7 @@ export function CalendarWorkspace({
           onViewportChange={(viewport) => {
             latestWeekViewportRef.current = viewport;
           }}
+          onFooterActionChange={setFooterAction}
         />
       );
     }
@@ -279,6 +282,7 @@ export function CalendarWorkspace({
                 returnView: activeView,
               });
             }}
+            onFooterActionChange={setFooterAction}
           />
         </div>
       </div>
@@ -381,6 +385,7 @@ export function CalendarWorkspace({
               setJumpBackDate(null);
               setKwJumpError(false);
             }}
+            footerAction={footerAction}
           />
         </div>
       )}

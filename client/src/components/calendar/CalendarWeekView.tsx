@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   addDays,
   addWeeks,
@@ -94,6 +94,7 @@ type CalendarWeekViewProps = {
   restoreRequest?: WeekViewRestoreRequest | null;
   onRestoreApplied?: () => void;
   onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
+  onFooterActionChange?: (action: ReactNode | null) => void;
 };
 
 type WeekDayBucket = {
@@ -282,6 +283,7 @@ export function CalendarWeekView({
   restoreRequest,
   onRestoreApplied,
   onViewportChange,
+  onFooterActionChange,
 }: CalendarWeekViewProps) {
   // FIX-RULE:
   // Navigation/Sync-Signale werden absichtlich nicht verarbeitet.
@@ -317,6 +319,27 @@ export function CalendarWeekView({
     currentEmployeeIds: number[];
     selectedIds: number[];
   } | null>(null);
+
+  useEffect(() => {
+    if (!onFooterActionChange) return undefined;
+
+    onFooterActionChange(
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setWeekPrintPageIndex(0);
+          setWeekPrintPreviewOpen(true);
+        }}
+        data-testid="button-week-print-preview"
+      >
+        Drucken
+      </Button>,
+    );
+
+    return () => onFooterActionChange(null);
+  }, [onFooterActionChange]);
   const [visibleWeekStart, setVisibleWeekStart] = useState(() => startOfWeek(currentDate, { weekStartsOn: 1, locale: de }));
   const cardHeightByLaneRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
@@ -1347,18 +1370,6 @@ export function CalendarWeekView({
               aria-label="Abwesenheitszeile anzeigen"
             />
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setWeekPrintPageIndex(0);
-              setWeekPrintPreviewOpen(true);
-            }}
-            data-testid="button-week-print-preview"
-          >
-            Drucken
-          </Button>
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kacheln</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
             <button
