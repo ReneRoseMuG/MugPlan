@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { useStandaloneMode } from "@/hooks/useStandaloneMode";
@@ -7,9 +7,16 @@ import { useChangeNotificationsContext } from "@/providers/ChangeNotificationsPr
 type StandaloneLayoutProps = {
   title: string;
   children: ReactNode;
+  headerTone?: "navigation" | "default";
 };
 
-export default function StandaloneLayout({ title, children }: StandaloneLayoutProps) {
+const StandaloneLayoutContentContext = createContext(false);
+
+export function useIsStandaloneLayoutContent() {
+  return useContext(StandaloneLayoutContentContext);
+}
+
+export default function StandaloneLayout({ title, children, headerTone = "navigation" }: StandaloneLayoutProps) {
   const isStandaloneMode = useStandaloneMode();
   const {
     updatesAvailable,
@@ -22,13 +29,21 @@ export default function StandaloneLayout({ title, children }: StandaloneLayoutPr
     document.title = `MuG Plan | ${title}`;
   }, [title]);
 
+  const usesNavigationHeaderTone = headerTone === "navigation";
+  const headerClassName = usesNavigationHeaderTone
+    ? "flex h-10 flex-shrink-0 items-center justify-between border-b border-border bg-slate-50 px-4"
+    : "flex h-10 flex-shrink-0 items-center justify-between border-b border-border bg-white px-4";
+  const refreshIdleClassName = usesNavigationHeaderTone
+    ? "text-slate-500 hover:bg-white hover:text-slate-900"
+    : "text-slate-500 hover:bg-slate-100 hover:text-slate-900";
+
   return (
     <div
-      className="flex h-screen w-screen flex-col overflow-hidden bg-slate-100"
+      className="flex h-screen w-screen flex-col overflow-hidden bg-white"
       data-standalone-mode={isStandaloneMode ? "true" : "false"}
     >
       <header
-        className="flex h-10 flex-shrink-0 items-center justify-between border-b border-border bg-white px-4"
+        className={headerClassName}
         data-testid="standalone-header"
       >
         <div className="min-w-0 text-sm font-semibold tracking-tight text-primary">MuG Plan</div>
@@ -42,7 +57,7 @@ export default function StandaloneLayout({ title, children }: StandaloneLayoutPr
               ? "cursor-not-allowed text-slate-300"
               : updatesAvailable
                 ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                : refreshIdleClassName
           }`}
           data-testid="standalone-refresh"
           title={
@@ -58,7 +73,11 @@ export default function StandaloneLayout({ title, children }: StandaloneLayoutPr
         </button>
       </header>
 
-      <div className="flex-1 min-h-0 overflow-hidden p-4">{children}</div>
+      <StandaloneLayoutContentContext.Provider value>
+        <div className="min-h-0 flex-1 overflow-hidden bg-white [&>*]:!h-full [&>*]:!rounded-none [&>*]:!border-0 [&>*]:!shadow-none">
+          {children}
+        </div>
+      </StandaloneLayoutContentContext.Provider>
     </div>
   );
 }

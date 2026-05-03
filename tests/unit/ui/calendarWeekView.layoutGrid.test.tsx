@@ -211,6 +211,8 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain("min-height:180px");
     expect(html).toContain("grid-template-rows:minmax(180px, auto)");
     expect(html).toContain('data-testid="week-spanning-91"');
+    expect(html).toContain('class="flex flex-col h-full bg-white overflow-hidden"');
+    expect(html).not.toContain("flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden");
     expect(html).toContain("relative z-10 space-y-0");
     expect(html).toContain("max-h-[2200px] opacity-100 mt-0");
     expect(html).toContain("padding:0.5rem;z-index:10;min-width:0;width:100%;box-sizing:border-box;align-self:start");

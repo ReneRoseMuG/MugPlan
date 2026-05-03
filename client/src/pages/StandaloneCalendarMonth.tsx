@@ -17,7 +17,7 @@ export default function StandaloneCalendarMonth() {
 
   return (
     <>
-      <StandaloneLayout title="Monatsübersicht">
+      <StandaloneLayout title="Monatsübersicht" headerTone="default">
         <CalendarWorkspace
           mode="global"
           activeView="monthSheet"

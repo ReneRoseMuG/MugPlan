@@ -286,7 +286,7 @@ export function CalendarWorkspace({
   };
 
   return (
-    <div className="h-full bg-white rounded-lg overflow-hidden border-2 border-foreground flex flex-col">
+    <div className="h-full bg-white overflow-hidden flex flex-col">
       {mode === "contextual" ? (
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">

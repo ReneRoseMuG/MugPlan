@@ -468,7 +468,7 @@ export function CalendarMonthSheetView({
   }], [month]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm">
+    <div className="flex h-full flex-col overflow-hidden bg-white">
       <div className="flex items-center justify-end border-b border-border/40 bg-muted/20 px-3 py-2">
         <Button type="button" variant="outline" size="sm" onClick={() => setPrintPreviewOpen(true)} data-testid="button-month-print-preview">
           Drucken

@@ -186,6 +186,8 @@ describe("calendar month sheet view wiring", () => {
     expect(markup).not.toContain('data-testid="month-sheet-2026-04-01"');
     expect(markup).not.toContain('data-testid="month-sheet-2026-05-01"');
     expect(markup).toContain('data-testid="month-sheet-container"');
+    expect(markup).toContain('class="flex h-full flex-col overflow-hidden bg-white"');
+    expect(markup).not.toContain("flex h-full flex-col overflow-hidden rounded-2xl border border-border/50 bg-white shadow-sm");
     expect(markup).toContain("month-sheet-week-number-2026-03-01-2026-02-23");
   });
 

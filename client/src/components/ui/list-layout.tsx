@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsStandaloneLayoutContent } from "@/components/StandaloneLayout";
 
 export interface ListLayoutProps {
   title: string;
@@ -44,6 +45,9 @@ export function ListLayout({
   className,
   contentClassName,
 }: ListLayoutProps) {
+  const isStandaloneLayoutContent = useIsStandaloneLayoutContent();
+  const shouldHideHeader = hideHeader || isStandaloneLayoutContent;
+
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -59,8 +63,8 @@ export function ListLayout({
       className={cn("bg-card h-full min-h-0 flex flex-col overflow-visible", className)}
       data-view-mode-key={viewModeKey}
     >
-      {!hideHeader && (
-        <CardHeader className="pb-4 flex-shrink-0 border-b border-border">
+      {!shouldHideHeader && (
+        <CardHeader className="flex-shrink-0 border-b border-border bg-slate-50 pb-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-3 min-w-0">
               <CardTitle className="text-lg font-bold tracking-wider text-primary flex items-center gap-2">
@@ -84,7 +88,7 @@ export function ListLayout({
       )}
 
       {filterSlot && filterPlacement === "top" && (
-        <div className="flex-shrink-0 border-b border-border px-6 py-4 bg-card">
+        <div className="flex-shrink-0 border-b border-border bg-slate-50 px-6 py-4">
           {filterSlot}
         </div>
       )}
@@ -92,13 +96,13 @@ export function ListLayout({
       <div className={cn("flex-1 min-h-0", contentClassName)}>{contentSlot}</div>
 
       {filterSlot && filterPlacement === "bottom" && (
-        <div className="flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+        <div className="flex-shrink-0 border-t border-border bg-slate-50 px-6 py-4">
           {filterSlot}
         </div>
       )}
 
       {footerSlot && (
-        <div className="sticky bottom-0 z-10 flex-shrink-0 border-t border-border px-6 py-4 bg-card">
+        <div className="sticky bottom-0 z-10 flex-shrink-0 border-t border-border bg-slate-50 px-6 py-4">
           {footerSlot}
         </div>
       )}

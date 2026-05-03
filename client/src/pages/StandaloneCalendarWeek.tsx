@@ -58,7 +58,7 @@ export default function StandaloneCalendarWeek() {
 
   return (
     <>
-      <StandaloneLayout title="Wochenübersicht">
+      <StandaloneLayout title="Wochenübersicht" headerTone="default">
         <CalendarWorkspace
           mode="global"
           activeView="week"

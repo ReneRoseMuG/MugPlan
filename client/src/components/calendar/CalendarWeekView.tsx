@@ -1302,7 +1302,7 @@ export function CalendarWeekView({
   }), [lanesByWeekStart, weekStarts]);
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-2xl shadow-sm border border-border/50 overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden">
       <div className="relative z-30 flex items-center justify-between border-b border-border/40 bg-muted/30 px-6 py-4">
         <div className="flex items-center gap-3">
           <span className="text-lg font-bold text-primary">KW {getISOWeek(visibleWeekStart)}</span>
