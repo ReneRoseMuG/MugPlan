@@ -50,16 +50,19 @@ vi.mock("../../../client/src/components/ui/employee-info-badge", () => ({
     fullName,
     renderMode,
     showPreview,
+    showAvatar,
   }: {
     testId?: string;
     fullName?: string;
     renderMode?: string;
     showPreview?: boolean;
+    showAvatar?: boolean;
   }) => (
     <div
       data-testid={testId ?? "mock-employee-badge"}
       data-render-mode={renderMode ?? ""}
       data-show-preview={showPreview ? "true" : "false"}
+      data-show-avatar={showAvatar === false ? "false" : "true"}
     >
       {fullName ?? "Unbekannt"}
     </div>
@@ -282,6 +285,7 @@ describe("calendar week appointment card layout", () => {
     expect(html.match(/class="flex h-full flex-col gap-1"/g)).toHaveLength(2);
     expect(html.match(/class="flex min-h-6 w-full items-center"/g)).toHaveLength(2);
     expect(html.match(/data-show-preview="true"/g)).toHaveLength(2);
+    expect(html.match(/data-show-avatar="false"/g)).toHaveLength(2);
     expect(html).toContain('data-testid="week-spanning-tile-body-filled-42"');
     expect(html).toContain('class="flex min-h-0 h-full flex-col bg-white/90"');
     expect(html).toContain('class="flex min-h-0 flex-1 flex-col"');

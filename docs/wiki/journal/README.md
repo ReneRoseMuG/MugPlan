@@ -15,6 +15,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar](03-05-26-wochenkalender-abwesenheitsspur.md)
 - [02.05.26 - Kalender-Refactoring umgesetzt](02-05-26-kalender-refactoring.md)
 - [02.05.26 - Wiki: Lastenheft-Import und Grundstruktur ins Repo überführt](02-05-26-wiki-lastenheft-import.md)
 - [02.05.26 - FT-34: Persistierter Feiertags-Seed und Marker-Visualisierung nachgezogen](02-05-26-ft-34-persistierter-feiertags-seed-und-marker-visualisierung.md)

@@ -17,6 +17,7 @@ interface PersonInfoBadgeProps {
   avatarClassName?: string;
   avatarTextClassName?: string;
   avatarStyle?: CSSProperties;
+  showAvatar?: boolean;
   preview?: InfoBadgePreview;
   renderMode?: "compact" | "standard" | "detail";
 }
@@ -57,6 +58,7 @@ export function PersonInfoBadge({
   avatarClassName,
   avatarTextClassName,
   avatarStyle,
+  showAvatar = true,
   preview,
   renderMode = "detail",
 }: PersonInfoBadgeProps) {
@@ -98,7 +100,7 @@ export function PersonInfoBadge({
 
   return (
     <InfoBadge
-      icon={(
+      icon={showAvatar ? (
         <div
           className={`flex items-center justify-center rounded-full border border-border bg-muted text-muted-foreground ${avatarSizeClass} ${avatarClassName ?? ""}`}
           style={avatarStyle}
@@ -106,7 +108,7 @@ export function PersonInfoBadge({
         >
           <span className={`font-semibold ${avatarTextClassName ?? ""}`}>{initials}</span>
         </div>
-      )}
+      ) : undefined}
       label={label}
       borderColor={borderColor}
       action={action}

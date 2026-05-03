@@ -1,4 +1,5 @@
 import React from "react";
+import { addDays } from "date-fns";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
@@ -12,6 +13,7 @@ const useCalendarBlockedTourWeeksMock = vi.fn();
 const useSettingMock = vi.fn();
 const setSettingMock = vi.fn();
 let calendarMarkersForTest: CalendarMarker[] = [];
+let toursForTest = [{ id: 7, name: "Tour 7", color: "#225588", version: 1 }];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: { queryKey?: unknown }) => useQueryMock(options),
@@ -93,7 +95,32 @@ vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
   ),
 }));
 
-import { CalendarWeekView } from "../../../client/src/components/calendar/CalendarWeekView";
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+    showPreview,
+    showAvatar,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+    showPreview?: boolean;
+    showAvatar?: boolean;
+  }) => (
+    <span
+      data-testid={testId}
+      data-render-mode={renderMode}
+      data-show-preview={showPreview ? "true" : "false"}
+      data-show-avatar={showAvatar === false ? "false" : "true"}
+    >
+      {fullName}
+    </span>
+  ),
+}));
+
+import { CalendarWeekAbsenceRow, CalendarWeekView } from "../../../client/src/components/calendar/CalendarWeekView";
 
 function createAppointment(overrides: Partial<CalendarAppointment>): CalendarAppointment {
   return {
@@ -150,11 +177,12 @@ describe("CalendarWeekView layout grid regression", () => {
     useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({ data: [] });
     useCalendarBlockedTourWeeksMock.mockReturnValue({ data: [] });
     calendarMarkersForTest = [];
+    toursForTest = [{ id: 7, name: "Tour 7", color: "#225588", version: 1 }];
     useQueryMock.mockImplementation((options: { queryKey?: unknown }) => {
       const first = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (first === "/api/tours") {
         return {
-          data: [{ id: 7, name: "Tour 7", color: "#225588", version: 1 }],
+          data: toursForTest,
           isLoading: false,
         };
       }
@@ -234,6 +262,8 @@ describe("CalendarWeekView layout grid regression", () => {
 
     const narrowWeekendTemplateMatches = html.match(/grid-template-columns:1fr 1fr 1fr 1fr 1fr 0\.33fr 0\.33fr/g) ?? [];
     expect(narrowWeekendTemplateMatches.length).toBeGreaterThanOrEqual(4);
+    expect(html).toContain('data-testid="week-absence-row-2026-04-20"');
+    expect(html).toContain('data-testid="week-absence-row-header-2026-04-20"');
   });
 
   it("widens weekend columns to weekday width across header and lane grids when a weekend appointment exists", () => {
@@ -251,6 +281,63 @@ describe("CalendarWeekView layout grid regression", () => {
     const widenedWeekendTemplateMatches = html.match(/grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr/g) ?? [];
     expect(widenedWeekendTemplateMatches.length).toBeGreaterThanOrEqual(4);
     expect(html).not.toContain("grid-template-columns:1fr 1fr 1fr 1fr 1fr 0.33fr 0.33fr");
+  });
+
+  it("keeps weekend columns narrow when weekend entries are only absences", () => {
+    toursForTest = [
+      { id: 7, name: "Tour 7", color: "#225588", version: 1 },
+      { id: 8, name: "Abwesenheiten", color: "#64748B", version: 1 },
+    ];
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({
+          id: 93,
+          startDate: "2026-04-20",
+          endDate: "2026-04-26",
+          startTime: null,
+          tourId: 8,
+          tourName: "Abwesenheiten",
+          tourColor: "#64748B",
+          employees: [{ id: 31, firstName: "Mira", lastName: "Urlaub", fullName: "Mira Urlaub" }],
+        }),
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2026-04-20T00:00:00Z")} />,
+    );
+
+    expect(html).toContain('data-testid="week-day-tour-badge-2026-04-25-tour-8"');
+    expect(html).toContain("grid-template-columns:1fr 1fr 1fr 1fr 1fr 0.33fr 0.33fr");
+    expect(html).not.toContain("grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr");
+  });
+
+  it("renders the absence strip with a compact colored header and standard left-aligned employee badges", () => {
+    const weekStart = new Date("2026-04-20T00:00:00Z");
+    const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    const absenceEmployeesByDate = new Map<string, CalendarAppointment["employees"]>([
+      ["2026-04-20", [{ id: 31, firstName: "Mira", lastName: "Urlaub", fullName: "Mira Urlaub" }]],
+    ]);
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekAbsenceRow
+        weekKey="2026-04-20"
+        days={days}
+        absenceEmployeesByDate={absenceEmployeesByDate}
+        absenceTourColor="#64748B"
+        weekDayGridTemplate="1fr 1fr 1fr 1fr 1fr 0.33fr 0.33fr"
+      />,
+    );
+
+    expect(html).toContain('data-testid="week-absence-row-header-2026-04-20"');
+    expect(html).toContain("Abwesenheiten");
+    expect(html).toContain("background-color:#64748B");
+    expect(html).toContain("h-5");
+    expect(html).toContain("justify-start");
+    expect(html).toContain('data-testid="week-absence-employee-2026-04-20-31"');
+    expect(html).toContain('data-render-mode="standard"');
+    expect(html).toContain('data-show-preview="true"');
+    expect(html).toContain('data-show-avatar="false"');
   });
 
   it("renders one shared week body marker column instead of lane-specific holiday dividers", () => {

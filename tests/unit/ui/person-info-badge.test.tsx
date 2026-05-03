@@ -49,4 +49,20 @@ describe("PersonInfoBadge", () => {
 
     expect(markup).toContain("Max Muster");
   });
+
+  it("can render standard mode without the avatar circle", () => {
+    const markup = renderToStaticMarkup(
+      <PersonInfoBadge
+        firstName="Max"
+        lastName="Muster"
+        renderMode="standard"
+        size="sm"
+        testId="plain-person"
+        showAvatar={false}
+      />,
+    );
+
+    expect(markup).toContain("Max M.");
+    expect(markup).not.toContain("data-testid=\"plain-person-avatar\"");
+  });
 });

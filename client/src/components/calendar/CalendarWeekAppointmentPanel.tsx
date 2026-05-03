@@ -544,6 +544,7 @@ export function CalendarWeekAppointmentPanel({
         fullName={employee.fullName}
         renderMode="standard"
         size="sm"
+        showAvatar={false}
         showPreview={showEmployeeHoverPreview}
         testId={`week-appointment-employee-std-${appointment.id}-${employee.id}`}
       />

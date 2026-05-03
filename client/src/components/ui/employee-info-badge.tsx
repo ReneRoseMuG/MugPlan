@@ -15,6 +15,7 @@ interface EmployeeInfoBadgeProps {
   onAdd?: () => void;
   onRemove?: () => void;
   showPreview?: boolean;
+  showAvatar?: boolean;
   renderMode?: "compact" | "standard" | "detail";
 }
 
@@ -83,6 +84,7 @@ export function EmployeeInfoBadge({
   onAdd,
   onRemove,
   showPreview = true,
+  showAvatar = true,
   renderMode = "standard",
 }: EmployeeInfoBadgeProps) {
   const parsedFallbackName = parseFallbackFullName(fullName);
@@ -117,6 +119,7 @@ export function EmployeeInfoBadge({
       onRemove={onRemove}
       avatarClassName="text-white border-transparent"
       avatarStyle={{ backgroundColor }}
+      showAvatar={showAvatar}
       renderMode={renderMode}
       preview={showPreview ? createEmployeeInfoBadgePreview({
         fullName: resolvedDetailName,

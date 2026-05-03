@@ -24,7 +24,7 @@ export type InfoBadgePreview = {
 };
 
 interface InfoBadgeProps {
-  icon: ReactNode;
+  icon?: ReactNode;
   label: ReactNode;
   borderColor?: string;
   surfaceColor?: string;
@@ -118,7 +118,9 @@ export function InfoBadge({
       onDoubleClick={onDoubleClick}
     >
       <div className={`flex items-center min-w-0 ${isFooterStyle ? "gap-1 shrink-0" : size === "sm" ? "gap-1 flex-1" : "gap-2 flex-1"}`}>
-        <span className={usesSolidSurface ? "text-current" : "text-muted-foreground"}>{icon}</span>
+        {icon ? (
+          <span className={usesSolidSurface ? "text-current" : "text-muted-foreground"}>{icon}</span>
+        ) : null}
         <div className={`min-w-0 ${isFooterStyle ? "shrink-0 whitespace-nowrap" : "flex-1"} ${usesSolidSurface ? "font-semibold text-current" : `font-medium text-foreground ${size === "sm" ? "text-xs" : ""}`}`}>{label}</div>
       </div>
       <div className={`flex items-center justify-end shrink-0 ${customAction ? "overflow-visible" : "overflow-hidden"} ${actionColumnClass}`}>

@@ -111,6 +111,8 @@ type WeekTourLane = {
   dayBuckets: WeekDayBucket[];
 };
 
+type WeekAbsenceEmployee = CalendarAppointment["employees"][number];
+
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
 const SHORT_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
@@ -267,6 +269,72 @@ export function buildWeekLaneRenderData(
   };
 }
 
+export function CalendarWeekAbsenceRow({
+  weekKey,
+  days,
+  absenceEmployeesByDate,
+  absenceTourColor,
+  weekDayGridTemplate,
+}: {
+  weekKey: string;
+  days: Date[];
+  absenceEmployeesByDate: Map<string, WeekAbsenceEmployee[]>;
+  absenceTourColor: string;
+  weekDayGridTemplate: string;
+}) {
+  return (
+    <div
+      className="sticky top-[3.75rem] z-10 border-b border-border/30 bg-slate-50"
+      data-testid={`week-absence-row-${weekKey}`}
+    >
+      <div
+        className="flex h-5 items-center px-2 text-[11px] font-semibold uppercase tracking-wide text-white"
+        style={{ backgroundColor: absenceTourColor }}
+        data-testid={`week-absence-row-header-${weekKey}`}
+      >
+        Abwesenheiten
+      </div>
+      <div
+        className="grid divide-x divide-border/30"
+        style={{ gridTemplateColumns: weekDayGridTemplate }}
+      >
+        {days.map((day) => {
+          const dayKey = format(day, "yyyy-MM-dd");
+          const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
+          const visibleEmployees = absentEmployees.slice(0, 4);
+          const overflowCount = Math.max(0, absentEmployees.length - visibleEmployees.length);
+          return (
+            <div key={`week-absence-cell-${dayKey}`} className="min-h-12 overflow-hidden px-2 py-1" data-testid={`week-absence-cell-${dayKey}`}>
+              <div className="flex flex-wrap items-center justify-start gap-1">
+                {visibleEmployees.map((employee) => (
+                  <EmployeeInfoBadge
+                    key={`absence-${dayKey}-${employee.id}`}
+                    id={employee.id}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    fullName={employee.fullName}
+                    renderMode="standard"
+                    size="sm"
+                    action="none"
+                    showAvatar={false}
+                    showPreview
+                    testId={`week-absence-employee-${dayKey}-${employee.id}`}
+                  />
+                ))}
+                {overflowCount > 0 ? (
+                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`week-absence-overflow-${dayKey}`}>
+                    +{overflowCount}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function CalendarWeekView({
   currentDate,
   employeeFilterId,
@@ -302,7 +370,6 @@ export function CalendarWeekView({
   const [workflowNotePrint, setWorkflowNotePrint] = useState(false);
   const [workflowNoteCardColorLocked, setWorkflowNoteCardColorLocked] = useState(false);
   const [showAppointmentNotesInline, setShowAppointmentNotesInline] = useState(false);
-  const [showAbsenceRow, setShowAbsenceRow] = useState(false);
   const [weekPrintPreviewOpen, setWeekPrintPreviewOpen] = useState(false);
   const [weekPrintPageIndex, setWeekPrintPageIndex] = useState(0);
   const [appointmentEmployeeDialog, setAppointmentEmployeeDialog] = useState<{
@@ -562,6 +629,10 @@ export function CalendarWeekView({
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
   });
+  const absenceTourColor = useMemo(
+    () => tours.find((tour) => isAbsenceTourName(tour.name))?.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR,
+    [tours],
+  );
 
   const appointmentsById = useMemo(
     () => new Map(appointments.map((appointment) => [appointment.id, appointment] as const)),
@@ -1358,18 +1429,6 @@ export function CalendarWeekView({
               aria-label="Personalspalte anzeigen"
             />
           </div>
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
-            <Label htmlFor="week-absence-row-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Abwesenheiten
-            </Label>
-            <Switch
-              id="week-absence-row-toggle"
-              checked={showAbsenceRow}
-              onCheckedChange={setShowAbsenceRow}
-              data-testid="switch-week-absence-row"
-              aria-label="Abwesenheitszeile anzeigen"
-            />
-          </div>
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kacheln</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
             <button
@@ -1480,6 +1539,7 @@ export function CalendarWeekView({
                     tourId: lane.tourId,
                     color: lane.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR,
                     count: lane.dayBuckets[dayIdx]?.appointments.length ?? 0,
+                    isAbsenceLane: isAbsenceTourName(lane.label),
                   }))
                 .filter((entry) => entry.count > 0)
                 .sort((a, b) => {
@@ -1491,7 +1551,7 @@ export function CalendarWeekView({
             );
 
             const weekDayWeights = dayWeights.map((weight, dayIdx) =>
-              dayIdx >= 5 && dayHeaderBadges[dayIdx].length > 0 ? 1 : weight,
+              dayIdx >= 5 && dayHeaderBadges[dayIdx].some((badge) => !badge.isAbsenceLane) ? 1 : weight,
             );
             const weekDayGridTemplate = buildDayGridTemplate(weekDayWeights);
 
@@ -1581,45 +1641,13 @@ export function CalendarWeekView({
                     })}
                   </div>
 
-                  {showAbsenceRow ? (
-                    <div
-                      className="sticky top-[3.75rem] z-10 grid divide-x divide-border/30 border-b border-border/30 bg-slate-50"
-                      style={{ gridTemplateColumns: weekDayGridTemplate }}
-                      data-testid={`week-absence-row-${weekKey}`}
-                    >
-                      {days.map((day) => {
-                        const dayKey = format(day, "yyyy-MM-dd");
-                        const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
-                        const visibleEmployees = absentEmployees.slice(0, 4);
-                        const overflowCount = Math.max(0, absentEmployees.length - visibleEmployees.length);
-                        return (
-                          <div key={`week-absence-cell-${dayKey}`} className="min-h-12 overflow-hidden px-2 py-1" data-testid={`week-absence-cell-${dayKey}`}>
-                            <div className="flex flex-wrap items-center justify-center gap-1">
-                              {visibleEmployees.map((employee) => (
-                                <EmployeeInfoBadge
-                                  key={`absence-${dayKey}-${employee.id}`}
-                                  id={employee.id}
-                                  firstName={employee.firstName}
-                                  lastName={employee.lastName}
-                                  fullName={employee.fullName}
-                                  renderMode="compact"
-                                  size="sm"
-                                  action="none"
-                                  showPreview
-                                  testId={`week-absence-employee-${dayKey}-${employee.id}`}
-                                />
-                              ))}
-                              {overflowCount > 0 ? (
-                                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`week-absence-overflow-${dayKey}`}>
-                                  +{overflowCount}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : null}
+                  <CalendarWeekAbsenceRow
+                    weekKey={weekKey}
+                    days={days}
+                    absenceEmployeesByDate={absenceEmployeesByDate}
+                    absenceTourColor={absenceTourColor}
+                    weekDayGridTemplate={weekDayGridTemplate}
+                  />
 
                   <div className="relative pb-3">
                     <div
@@ -2285,7 +2313,7 @@ export function CalendarWeekView({
             <div className="grid flex-1 grid-cols-7 gap-1 overflow-hidden text-[8px]">
               {page.days.map((day) => {
                 const dayKey = format(day, "yyyy-MM-dd");
-                const absentEmployees = showAbsenceRow ? (absenceEmployeesByDate.get(dayKey) ?? []) : [];
+                const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
                 return (
                   <div key={`print-week-day-${dayKey}`} className="flex min-h-0 flex-col overflow-hidden rounded border border-slate-200">
                     <div className="border-b border-slate-200 bg-slate-100 px-1 py-1 text-center font-semibold">

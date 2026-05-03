@@ -529,6 +529,7 @@ export function CalendarWeekSpanningTile({
         fullName={employee.fullName}
         renderMode="standard"
         size="sm"
+        showAvatar={false}
         showPreview
         testId={`week-spanning-tile-employee-std-${appointment.id}-${employee.id}`}
       />

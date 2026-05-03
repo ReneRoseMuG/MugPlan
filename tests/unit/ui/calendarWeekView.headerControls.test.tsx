@@ -4,11 +4,13 @@
  * Abgedeckte Regeln:
  * - Der Week-Header zeigt weiterhin KW und Datumsbereich.
  * - Der neue Kachel-Toggle erscheint links neben dem Touren-Toggle.
+ * - Der Abwesenheiten-Schalter ist entfernt, weil die Spur immer sichtbar ist.
  * - Der Touren-Toggle bleibt weiterhin rechts in derselben Titelzeile.
  *
  * Fehlerfaelle:
  * - Die Titelzeile verliert KW oder Datumsinformation.
  * - Der Kachel-Toggle erscheint an falscher Stelle oder fehlt.
+ * - Der entfernte Abwesenheiten-Toggle taucht wieder auf.
  * - Der Touren-Toggle bleibt im Footer oder fehlt im Header.
  *
  * Ziel:
@@ -140,6 +142,9 @@ describe("CalendarWeekView - header controls", () => {
     expect(html).toContain("toggle-week-tile-body-mode-collapsed");
     expect(html).toContain("toggle-week-tile-body-mode-semiexpanded");
     expect(html).toContain("toggle-week-tile-body-mode-expanded");
+    expect(html).not.toContain("toggle-week-absence-row-hidden");
+    expect(html).not.toContain("toggle-week-absence-row-visible");
+    expect(html).not.toContain("switch-week-absence-row");
     expect(html).toContain("Touren");
     expect(html).toContain("toggle-week-lanes-expanded");
     expect(html).toContain("toggle-week-lanes-collapsed");
