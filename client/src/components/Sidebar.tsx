@@ -20,17 +20,20 @@ interface SidebarProps {
 
 function NavGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="mb-2.5 overflow-hidden rounded-lg border border-border" data-testid={`nav-group-${title.toLowerCase().replace(/\s+/g, "-")}`}>
+    <section
+      className="border-b border-border py-4 last:border-b-0"
+      data-testid={`nav-group-${title.toLowerCase().replace(/\s+/g, "-")}`}
+    >
       <div
-        className="bg-secondary px-3 py-2 text-xs font-bold tracking-wider text-primary"
+        className="px-3 pb-2 text-xs font-bold uppercase tracking-wider text-slate-500"
         data-testid={`nav-header-${title.toLowerCase().replace(/\s+/g, "-")}`}
       >
         {title}
       </div>
-      <div className="flex flex-col gap-1 p-2">
+      <div className="flex flex-col gap-1">
         {children}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -52,9 +55,9 @@ function NavButton({
   const resolvedTestId = testId ?? `nav-${label.toLowerCase().replace(/\s+/g, "-")}`;
   const standaloneTestId = `${resolvedTestId}-open-tab`;
   const mainButtonClassName = `
-    flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition-all duration-200
-    ${standaloneUrl ? "min-w-0 flex-1" : "w-full"}
-    ${isActive ? "border border-slate-200 bg-white text-primary" : "text-slate-600 hover:bg-white hover:text-slate-900"}
+    flex h-9 items-center gap-3 rounded-md px-3 text-left text-sm font-medium transition-all duration-200
+    ${standaloneUrl ? "min-w-max flex-1" : "w-full"}
+    ${isActive ? "bg-white text-primary shadow-sm ring-1 ring-slate-200" : "text-slate-700 hover:bg-white hover:text-slate-900"}
   `;
 
   if (onClick) {
@@ -132,45 +135,45 @@ export function Sidebar({
 
   return (
     <div
-      className={`h-full w-auto min-w-[260px] max-w-[360px] overflow-y-auto border-r border-border bg-slate-50 p-4 ${
+      className={`flex h-full w-max max-w-[280px] flex-col overflow-hidden border-r border-border bg-slate-50 ${
         backupDisabled ? "border-2 border-red-600" : ""
       }`}
       data-testid="sidebar"
     >
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold tracking-tight text-primary" data-testid="text-app-title">
-          MuG Plan
-        </h1>
-        <button
-          type="button"
-          onClick={() => void triggerGlobalReload()}
-          disabled={isReloadDisabled}
-          className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
-            isReloadDisabled
-              ? "cursor-not-allowed text-slate-300"
-              : updatesAvailable
-                ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
-                : "text-slate-400 hover:bg-white hover:text-slate-600"
-          }`}
-          data-testid="sidebar-refresh"
-          title={
-            isReloadDisabled
-              ? "Neu Laden ist gesperrt, solange irgendwo eine Bearbeitung offen ist"
-              : updatesAvailable
-                ? "Änderungen verfügbar"
-                : "Daten neu laden"
-          }
-        >
-          <RefreshCw className="h-3 w-3" />
-          {isReloadPending ? "Lädt..." : "Neu Laden"}
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => void triggerGlobalReload()}
+        disabled={isReloadDisabled}
+        className={`flex-shrink-0 border-b border-border p-6 pb-4 text-left transition-colors ${
+          isReloadDisabled
+            ? "cursor-not-allowed bg-slate-50 text-slate-300"
+            : updatesAvailable
+              ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+              : "bg-slate-50 text-primary hover:bg-white"
+        }`}
+        data-testid="sidebar-refresh"
+        title={
+          isReloadDisabled
+            ? "Neu Laden ist gesperrt, solange irgendwo eine Bearbeitung offen ist"
+            : updatesAvailable
+              ? "Änderungen verfügbar"
+              : "Daten neu laden"
+        }
+        aria-label={isReloadPending ? "Daten werden neu geladen" : "Daten neu laden"}
+      >
+        <div className="flex h-8 items-center gap-3">
+          <RefreshCw className="h-5 w-5 flex-shrink-0" />
+          <h1 className="min-w-0 truncate text-lg font-bold tracking-wider" data-testid="text-app-title">
+            MuG Plan
+          </h1>
+        </div>
+      </button>
 
-      <nav className="flex flex-1 flex-col">
-        <NavGroup title="Terminplanung">
+      <nav className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4">
+        <NavGroup title="Termine">
           <NavButton
             icon={CalendarDays}
-            label="Wochenübersicht"
+            label="Woche"
             testId="nav-wochenuebersicht"
             isActive={currentView === "week"}
             onClick={() => onViewChange("week")}
@@ -178,7 +181,7 @@ export function Sidebar({
           />
           <NavButton
             icon={Calendar}
-            label="Monatsübersicht"
+            label="Monat"
             testId="nav-monatsuebersicht"
             isActive={currentView === "month" || currentView === "monthSheet"}
             onClick={() => onViewChange("monthSheet")}
@@ -186,7 +189,7 @@ export function Sidebar({
           />
           <NavButton
             icon={AppointmentsIcon}
-            label="Termine"
+            label="Tabelle"
             testId="nav-termine"
             isActive={currentView === "appointmentsList"}
             onClick={() => onViewChange("appointmentsList")}
@@ -195,7 +198,7 @@ export function Sidebar({
           {canOpenTourPostalPlan ? (
             <NavButton
               icon={CalendarDays}
-              label="Tour PLZ Planung"
+              label="PLZ Planung"
               testId="nav-tour-plz-plan"
               isActive={currentView === "tourPostalPlan"}
               onClick={() => onViewChange("tourPostalPlan")}
@@ -204,7 +207,7 @@ export function Sidebar({
           ) : null}
         </NavGroup>
 
-        <NavGroup title="Projektplanung">
+        <NavGroup title="Planung">
           <NavButton
             icon={ProjectsIcon}
             label="Projekte"
@@ -224,7 +227,7 @@ export function Sidebar({
         </NavGroup>
 
         {canOpenReports || canOpenMonitoring ? (
-          <NavGroup title={canOpenReports ? "Reports" : "Monitoring"}>
+          <NavGroup title="Auswertung">
             {canOpenReports ? (
               <NavButton
                 icon={ReportsIcon}
@@ -246,10 +249,10 @@ export function Sidebar({
               <div className="flex flex-col gap-2">
                 <NavButton
                   icon={MonitoringIcon}
-                label="Monitoring"
-                isActive={currentView === "monitoring"}
-                onClick={() => onViewChange("monitoring")}
-                standaloneUrl="/standalone/monitoring"
+                  label="Monitoring"
+                  isActive={currentView === "monitoring"}
+                  onClick={() => onViewChange("monitoring")}
+                  standaloneUrl="/standalone/monitoring"
                 />
                 {monitoringSummary.length > 0 ? (
                   <div className="flex flex-wrap gap-2 px-3" data-testid="monitoring-trigger-pills">
@@ -270,7 +273,7 @@ export function Sidebar({
           </NavGroup>
         ) : null}
 
-        <NavGroup title="Mitarbeiter Verwaltung">
+        <NavGroup title="Personal">
           {canOpenEmployees ? (
             <NavButton
               icon={EmployeesIcon}
@@ -300,15 +303,14 @@ export function Sidebar({
         </NavGroup>
 
         <NavGroup title="Konto">
-          <NavButton icon={AdminIcon} label="Meine Einstellungen" testId="nav-einstellungen" isActive={currentView === "settings"} onClick={() => onViewChange("settings")} />
+          <NavButton icon={AdminIcon} label="Einstellungen" testId="nav-einstellungen" isActive={currentView === "settings"} onClick={() => onViewChange("settings")} />
+          {isAdmin ? (
+            <>
+              <NavButton icon={AdminIcon} label="Stammdaten" isActive={currentView === "masterData" || currentView === "noteTemplates" || currentView === "helpTexts"} onClick={() => onViewChange("masterData")} />
+              <NavButton icon={AdminIcon} label="Benutzer" isActive={currentView === "users"} onClick={() => onViewChange("users")} />
+            </>
+          ) : null}
         </NavGroup>
-
-        {isAdmin ? (
-          <NavGroup title="Administration">
-            <NavButton icon={AdminIcon} label="Stammdaten" isActive={currentView === "masterData" || currentView === "noteTemplates" || currentView === "helpTexts"} onClick={() => onViewChange("masterData")} />
-            <NavButton icon={AdminIcon} label="Benutzerverwaltung" isActive={currentView === "users"} onClick={() => onViewChange("users")} />
-          </NavGroup>
-        ) : null}
 
         <div className="mt-auto pt-2">
           <NavButton icon={LogOut} label="Logout" onClick={onLogout} />
