@@ -146,6 +146,17 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
   });
 }
 
+async function readProjectTagNames(page: Page, projectId: number) {
+  try {
+    const response = await page.request.get(`/api/projects/${projectId}/tags`);
+    if (!response.ok()) return [];
+    const body = await response.json();
+    return body.map((item: { tag: { name: string } }) => item.tag.name);
+  } catch {
+    return [];
+  }
+}
+
 test("persists tag, note and project attachment from the new project form and restores them on reopen", async ({ page }) => {
   const customer = await createCustomerFixture("FT02-CREATE-SIDEBAR");
   const tag = await createTagFixture("FT02-PROJECT-CREATE-TAG");
@@ -246,10 +257,7 @@ test("sets the Anmerkungen tag when a new project is saved with visible descript
   expect(createdProjectId).toBeGreaterThan(0);
 
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/projects/${createdProjectId}/tags`);
-    if (!response.ok()) return [];
-    const body = await response.json();
-    return body.map((item: { tag: { name: string } }) => item.tag.name);
+    return readProjectTagNames(page, createdProjectId);
   }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 });
 
@@ -319,10 +327,7 @@ test("sets the Anmerkungen tag when an existing project is saved with a newly ad
   expect(updateProjectResponse.ok(), await updateProjectResponse.text()).toBeTruthy();
 
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/projects/${project.id}/tags`);
-    if (!response.ok()) return [];
-    const body = await response.json();
-    return body.map((item: { tag: { name: string } }) => item.tag.name);
+    return readProjectTagNames(page, project.id);
   }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 });
 

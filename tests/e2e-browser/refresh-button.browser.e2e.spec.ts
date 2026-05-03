@@ -418,7 +418,6 @@ test("refreshes the standalone customers popup opened via in-tab-open", async ({
 
   await loginAsAdmin(page);
   const popup = await openStandalonePopup(page, "nav-kunden-open-tab");
-  await popup.getByTestId("toggle-customers-board").click();
   await expect(popup.getByTestId("list-customers")).toBeVisible({ timeout: 10_000 });
 
   const createdCustomer = await createCustomerViaApi(popup, "REFRESH-ST-CUST");
@@ -445,7 +444,6 @@ test("refreshes the standalone projects popup opened via in-tab-open", async ({ 
 
   await loginAsAdmin(page);
   const popup = await openStandalonePopup(page, "nav-projekte-open-tab");
-  await popup.getByTestId("toggle-projects-board").click();
   await expect(popup.getByTestId("list-projects")).toBeVisible({ timeout: 10_000 });
 
   const externalCustomer = await createCustomerViaApi(popup, "REFRESH-ST-PROJ-CUST");
@@ -594,7 +592,6 @@ test("refreshes the standalone employees popup opened via in-tab-open", async ({
 
   await loginAsAdmin(page);
   const popup = await openStandalonePopup(page, "nav-mitarbeiter-open-tab");
-  await popup.getByTestId("toggle-employees-board").click();
   await expect(popup.getByTestId("list-employees")).toBeVisible({ timeout: 10_000 });
 
   const createdEmployee = await createEmployeeViaApi(popup, "REFRESH-ST-EMP");

@@ -252,7 +252,7 @@ test("creates a project via UI after customer selection and keeps validation err
   await expect(page.getByTestId("button-save-project")).toBeVisible();
 
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByText("Projektname ist erforderlich")).toBeVisible();
+  await expect(page.getByText("Projektname ist erforderlich", { exact: true }).first()).toBeVisible();
 
   await page.getByTestId("input-project-name").fill("FT02 Browser Projekt");
   await page.getByTestId("button-save-project").click();

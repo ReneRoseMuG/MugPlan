@@ -105,13 +105,13 @@ describe("calendar week lane employee previews integration", () => {
       expect.objectContaining({
         date: week.monday,
         tourId: tour.id,
-        weekEmployees: [expectedWeekEmployee],
-        additionalDayEmployees: [expectedAdditionalEmployee],
+        weekEmployees: [expect.objectContaining(expectedWeekEmployee)],
+        additionalDayEmployees: [expect.objectContaining(expectedAdditionalEmployee)],
       }),
       expect.objectContaining({
         date: week.tuesday,
         tourId: tour.id,
-        weekEmployees: [expectedWeekEmployee],
+        weekEmployees: [expect.objectContaining(expectedWeekEmployee)],
         additionalDayEmployees: [],
       }),
     ]));

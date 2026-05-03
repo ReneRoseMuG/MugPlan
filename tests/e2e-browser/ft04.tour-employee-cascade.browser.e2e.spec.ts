@@ -137,18 +137,18 @@ test("prefills the next free KW and keeps duplicate/min/max validation intact", 
   await expect(insertedWeekCard).toBeVisible();
 });
 
-test("shows overlap conflicts in the week preview and only applies the selectable appointments", async ({ page }) => {
+test("hides employees with appointment conflicts from the week planning picker", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const tour = await createTourFixture("#335577");
   const project = await createProjectFixture({ prefix: "FT04-BROWSER", name: "FT04 Browser Projekt" });
   const employee = await createEmployeeFixture("FT04-BROWSER-CONFLICT");
 
-  const conflictAppointment = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: nextWeek.weekStartDate,
     tourId: tour.id,
   });
-  const safeAppointment = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: tour.id,
@@ -175,30 +175,15 @@ test("shows overlap conflicts in the week preview and only applies the selectabl
   await insertedWeekCard.getByTestId(
     `button-add-tour-week-member-${nextWeek.isoYear}-${nextWeek.isoWeek}`,
   ).click();
-  await page.getByTestId(`employee-picker-card-${employee.id}`).dblclick();
-
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter in Wochenplanung aufnehmen");
-  await expect(dialog.getByTestId(`tour-employee-cascade-status-${conflictAppointment.id}`)).toContainText(
-    "Überschneidung mit bestehendem Termin",
-  );
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).not.toBeChecked();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${conflictAppointment.id}`)).toBeDisabled();
-  await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${safeAppointment.id}`)).toBeChecked();
-
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
-  await expect(dialog).toHaveCount(0);
 
   await expect.poll(async () => {
-    const response = await page.request.get(`/api/appointments/${conflictAppointment.id}`);
-    const payload = await response.json();
-    return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
+    return page.getByTestId(`employee-picker-card-${employee.id}`).count();
+  }).toBe(0);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/tours/${tour.id}/week-employees`);
+    const weeks = await response.json() as Array<{ isoYear: number; isoWeek: number; employees: Array<unknown> }>;
+    const targetWeek = weeks.find((week) => week.isoYear === nextWeek.isoYear && week.isoWeek === nextWeek.isoWeek);
+    return targetWeek?.employees ?? null;
   }).toEqual([]);
-
-  await expect.poll(async () => {
-    const response = await page.request.get(`/api/appointments/${safeAppointment.id}`);
-    const payload = await response.json();
-    return (payload.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b);
-  }).toEqual([employee.id]);
 });
