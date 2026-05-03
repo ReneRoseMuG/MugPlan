@@ -15,6 +15,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [03.05.26 - Wochenkalender: Arbeitsbranch für Tour-Personalspalte](03-05-26-wochenkalender-tour-personal-branch.md)
 - [03.05.26 - Kalender und Einstellungen: Feiertage und Settings-Navigation](03-05-26-feiertage-settings-navigation.md)
 - [03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar](03-05-26-wochenkalender-abwesenheitsspur.md)
 - [02.05.26 - Kalender-Refactoring umgesetzt](02-05-26-kalender-refactoring.md)
