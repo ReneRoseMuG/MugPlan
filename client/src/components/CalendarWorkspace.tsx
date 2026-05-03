@@ -42,6 +42,9 @@ interface CalendarWorkspaceProps {
   onRestoreApplied?: () => void;
 }
 
+const calendarPagingButtonClassName =
+  "h-full w-7 border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
+
 export function buildWeekNavigationRestoreRequest(
   activeView: CalendarWorkspaceView,
   viewport: { scrollLeft: number; scrollTop: number } | null,
@@ -328,7 +331,7 @@ export function CalendarWorkspace({
       <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
         <button
           onClick={prev}
-          className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+          className={`${calendarPagingButtonClassName} border-r`}
           data-testid="button-prev"
           aria-label="Zurück"
         >
@@ -337,7 +340,7 @@ export function CalendarWorkspace({
         <div className="min-w-0 h-full overflow-hidden">{renderContent()}</div>
         <button
           onClick={next}
-          className="h-full w-7 text-sm font-semibold text-primary/70 hover:text-primary"
+          className={`${calendarPagingButtonClassName} border-l`}
           data-testid="button-next"
           aria-label="Vor"
         >

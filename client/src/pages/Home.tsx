@@ -467,7 +467,10 @@ export default function Home({ onLogout }: HomeProps) {
       )}
 
       <main className="flex-1 min-w-0 h-full flex flex-col relative">
-        <div className="flex-1 p-8 overflow-hidden bg-slate-100">
+        <div
+          className="min-h-0 flex-1 overflow-hidden bg-white [&>*]:!h-full [&>*]:!rounded-none [&>*]:!border-0 [&>*]:!shadow-none"
+          data-testid="main-view-surface"
+        >
           {view === "customer" ? (
             <CustomerData
               customerId={selectedCustomerId}
