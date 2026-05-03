@@ -196,7 +196,7 @@ describe("CalendarWeekView layout grid regression", () => {
     });
   });
 
-  it("keeps a compact lane minimum height and places spanning tiles inside a width-safe wrapper", () => {
+  it("keeps compact lane sizing without outer lane gaps while preserving card padding", () => {
     useCalendarAppointmentsMock.mockReturnValue({
       data: [
         createAppointment({ id: 91, startDate: "2026-04-20", endDate: "2026-04-21", startTime: null }),
@@ -211,7 +211,11 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain("min-height:180px");
     expect(html).toContain("grid-template-rows:minmax(180px, auto)");
     expect(html).toContain('data-testid="week-spanning-91"');
+    expect(html).toContain("relative z-10 space-y-0");
+    expect(html).toContain("max-h-[2200px] opacity-100 mt-0");
     expect(html).toContain("padding:0.5rem;z-index:10;min-width:0;width:100%;box-sizing:border-box;align-self:start");
+    expect(html).not.toContain("space-y-3");
+    expect(html).not.toContain("opacity-100 mt-1");
     expect(html).not.toContain("margin:0.5rem");
   });
 

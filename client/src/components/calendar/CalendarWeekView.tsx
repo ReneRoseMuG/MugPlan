@@ -1632,7 +1632,7 @@ export function CalendarWeekView({
                         );
                       })}
                     </div>
-                    <div className="relative z-10 space-y-3">
+                    <div className="relative z-10 space-y-0">
                     {weekLanes.map((tourLane) => {
                       const dayAppointmentCounts = tourLane.dayBuckets.map((bucket) => bucket.appointments.length);
                       const laneRenderData = getLaneRenderData(tourLane);
@@ -1909,7 +1909,7 @@ export function CalendarWeekView({
                               effectiveExpandedLaneId,
                             })
                               ? "max-h-0 opacity-0 mt-0"
-                              : "max-h-[2200px] opacity-100 mt-1"
+                              : "max-h-[2200px] opacity-100 mt-0"
                           }`}
                         >
                           <div
