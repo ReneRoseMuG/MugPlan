@@ -1186,6 +1186,7 @@ export async function listCalendarAppointments({
   employeeId,
   detail,
   includeAppointmentNotes,
+  includeProjectNotes,
   roleKey,
 }: {
   fromDate: string;
@@ -1193,6 +1194,7 @@ export async function listCalendarAppointments({
   employeeId?: number | null;
   detail?: "compact" | "full";
   includeAppointmentNotes?: boolean;
+  includeProjectNotes?: boolean;
   roleKey: CanonicalRoleKey;
 }) {
   const resolvedDetail = detail ?? "compact";
@@ -1213,6 +1215,9 @@ export async function listCalendarAppointments({
   const appointmentNoteCounts = await appointmentsRepository.getAppointmentNoteCountsByAppointmentIds(appointmentIds);
   const appointmentNotesByAppointmentId = includeAppointmentNotes
     ? await notesRepository.getAppointmentNotesByAppointmentIds(appointmentIds)
+    : new Map();
+  const projectNotesByProjectId = includeProjectNotes
+    ? await notesRepository.getProjectNotesByProjectIds(projectIds)
     : new Map();
   const customerAttachmentCounts = await appointmentsRepository.getCustomerAttachmentCountsByCustomerIds(customerIds);
   const projectAttachmentCounts = await appointmentsRepository.getProjectAttachmentCountsByProjectIds(projectIds);
@@ -1272,6 +1277,21 @@ export async function listCalendarAppointments({
             })),
           }
         : {}),
+      ...(includeProjectNotes && projectId
+        ? {
+            projectNotesPreview: (projectNotesByProjectId.get(projectId) ?? []).map((note: Note) => ({
+              id: note.id,
+              title: note.title,
+              body: note.body,
+              cardColor: note.cardColor ?? null,
+              isPinned: note.isPinned,
+              print: note.print,
+              updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt),
+            })),
+          }
+        : includeProjectNotes
+          ? { projectNotesPreview: [] }
+          : {}),
       customerAttachmentsCount,
       projectAttachmentsCount,
       appointmentAttachmentsCount,
@@ -1584,18 +1604,19 @@ export async function listCalendarWeekLaneEmployeePreviews({
     date: string;
     weekStartDate: string;
     tourId: number;
-    weekEmployees: Map<number, { firstName: string; lastName: string; fullName: string }>;
+    weekEmployees: Map<number, { assignmentId: number; firstName: string; lastName: string; fullName: string }>;
     additionalDayEmployees: Map<number, { firstName: string; lastName: string; fullName: string }>;
   };
 
   const previewByKey = new Map<string, PreviewAccumulator>();
-  const assignmentsByTourWeek = new Map<string, Array<{ id: number; firstName: string; lastName: string; fullName: string }>>();
+  const assignmentsByTourWeek = new Map<string, Array<{ id: number; assignmentId: number; firstName: string; lastName: string; fullName: string }>>();
 
   for (const assignment of assignmentRows) {
     const key = `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`;
     const existing = assignmentsByTourWeek.get(key) ?? [];
     existing.push({
       id: assignment.employeeId,
+      assignmentId: assignment.assignmentId,
       firstName: assignment.firstName,
       lastName: assignment.lastName,
       fullName: assignment.fullName,
@@ -1617,7 +1638,7 @@ export async function listCalendarWeekLaneEmployeePreviews({
       date,
       weekStartDate,
       tourId,
-      weekEmployees: new Map<number, { firstName: string; lastName: string; fullName: string }>(),
+      weekEmployees: new Map<number, { assignmentId: number; firstName: string; lastName: string; fullName: string }>(),
       additionalDayEmployees: new Map<number, { firstName: string; lastName: string; fullName: string }>(),
     };
     previewByKey.set(key, created);
@@ -1630,6 +1651,7 @@ export async function listCalendarWeekLaneEmployeePreviews({
     const assignmentKey = `${tourId}-${getISOWeekYear(dateValue)}-${getISOWeek(dateValue)}`;
     for (const employee of assignmentsByTourWeek.get(assignmentKey) ?? []) {
       preview.weekEmployees.set(employee.id, {
+        assignmentId: employee.assignmentId,
         firstName: employee.firstName,
         lastName: employee.lastName,
         fullName: employee.fullName,
@@ -1658,6 +1680,7 @@ export async function listCalendarWeekLaneEmployeePreviews({
         const preview = getOrCreatePreview(tourId, date);
         for (const employee of employees) {
           preview.weekEmployees.set(employee.id, {
+            assignmentId: employee.assignmentId,
             firstName: employee.firstName,
             lastName: employee.lastName,
             fullName: employee.fullName,
@@ -1709,6 +1732,7 @@ export async function listCalendarWeekLaneEmployeePreviews({
       weekEmployees: sortEmployeesByName(
         Array.from(preview.weekEmployees.entries()).map(([id, employee]) => ({
           id,
+          assignmentId: employee.assignmentId,
           firstName: employee.firstName,
           lastName: employee.lastName,
           fullName: employee.fullName,

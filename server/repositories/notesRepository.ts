@@ -28,6 +28,26 @@ export async function getProjectNotes(projectId: number): Promise<Note[]> {
   return result.map((row) => row.note);
 }
 
+export async function getProjectNotesByProjectIds(projectIds: number[]): Promise<Map<number, Note[]>> {
+  const uniqueProjectIds = Array.from(new Set(projectIds.filter((id) => Number.isFinite(id) && id > 0)));
+  if (uniqueProjectIds.length === 0) return new Map();
+
+  const result = await db
+    .select({ projectId: projectNotes.projectId, note: notes })
+    .from(projectNotes)
+    .innerJoin(notes, eq(projectNotes.noteId, notes.id))
+    .where(inArray(projectNotes.projectId, uniqueProjectIds))
+    .orderBy(projectNotes.projectId, desc(notes.isPinned), desc(notes.updatedAt));
+
+  const notesByProjectId = new Map<number, Note[]>();
+  for (const row of result) {
+    const currentNotes = notesByProjectId.get(row.projectId) ?? [];
+    currentNotes.push(row.note);
+    notesByProjectId.set(row.projectId, currentNotes);
+  }
+  return notesByProjectId;
+}
+
 export async function getAppointmentNotes(appointmentId: number): Promise<Note[]> {
   const result = await db
     .select({ note: notes })

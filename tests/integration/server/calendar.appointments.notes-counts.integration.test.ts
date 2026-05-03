@@ -174,4 +174,42 @@ describe("FT03 integration: calendar appointments note counts", () => {
     expect(byId.get(appointmentB1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 1, appointmentNotesCount: 1 }));
     expect(byId.get(appointmentC1)).toEqual(expect.objectContaining({ customerNotesCount: 0, projectNotesCount: 0, appointmentNotesCount: 0 }));
   });
+
+  it("returns appointment and project note previews for inline week calendar cards when explicitly requested", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("PREVIEW");
+    const project = await createProject(customer.id, "PREVIEW");
+    const appointmentId = await createAppointment(project, "2098-08-10", "Preview-1");
+
+    await createCustomerNote(admin, customer.id, "Kunde Preview nur Zähler");
+    await createProjectNote(admin, project.id, "Projekt Preview Inline");
+    await createAppointmentNote(admin, appointmentId, "Termin Preview Inline");
+
+    const response = await admin
+      .get(
+        "/api/calendar/appointments?fromDate=2098-08-01&toDate=2098-08-31&detail=full&includeAppointmentNotes=true&includeProjectNotes=true",
+      )
+      .expect(200);
+
+    const appointment = response.body.find((item: { id: number }) => item.id === appointmentId);
+
+    expect(appointment).toEqual(expect.objectContaining({
+      customerNotesCount: 1,
+      projectNotesCount: 1,
+      appointmentNotesCount: 1,
+      appointmentNotesPreview: [
+        expect.objectContaining({
+          title: "Termin Preview Inline",
+          body: "<p>Termin Preview Inline</p>",
+        }),
+      ],
+      projectNotesPreview: [
+        expect.objectContaining({
+          title: "Projekt Preview Inline",
+          body: "<p>Projekt Preview Inline</p>",
+        }),
+      ],
+    }));
+    expect(appointment.customerNotesPreview).toBeUndefined();
+  });
 });

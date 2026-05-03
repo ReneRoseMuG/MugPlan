@@ -250,9 +250,49 @@ async function listWeekAppointments(tourId: number, isoYear: number, isoWeek: nu
   };
 }
 
+async function isEmployeeFullyAvailableForWeekAppointments(
+  employeeId: number,
+  appointments: tourWeekEmployeesRepository.TourWeekAppointmentRow[],
+): Promise<boolean> {
+  if (appointments.length === 0) return true;
+
+  const appointmentIds = appointments.map((row) => row.appointmentId);
+  const assignedAppointmentIds = new Set(
+    await tourWeekEmployeesRepository.listAssignedAppointmentIdsForEmployee(employeeId, appointmentIds),
+  );
+
+  return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    for (const appointment of appointments) {
+      if (assignedAppointmentIds.has(appointment.appointmentId)) {
+        continue;
+      }
+
+      const startDate = toDateOnlyString(appointment.startDate);
+      if (!startDate) {
+        throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Termin ohne Startdatum");
+      }
+
+      const conflictEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+        employeeIds: [employeeId],
+        startDate: parseDateOnly(startDate),
+        endDate: appointment.endDate ? parseDateOnly(toDateOnlyString(appointment.endDate) ?? startDate) : null,
+        startTimeHour: parseStartTimeHour(appointment.startTime),
+      });
+
+      if (conflictEmployees.length > 0) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
 type TourWeekMember = {
   assignmentId: number;
   employeeId: number;
+  firstName?: string | null;
+  lastName?: string | null;
   fullName: string;
 };
 
@@ -546,6 +586,8 @@ export async function listWeekEmployeesByTour(tourId: number) {
     existing.employees.push({
       assignmentId: assignment.assignmentId,
       employeeId: assignment.employeeId,
+      firstName: assignment.firstName,
+      lastName: assignment.lastName,
       fullName: assignment.fullName,
     });
     grouped.set(key, existing);
@@ -575,7 +617,17 @@ export async function listAvailableWeekEmployees(
   ]);
 
   const assignedEmployeeIdSet = new Set(assignedEmployeeIds);
-  return activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
+  const candidates = activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
+  const { appointments } = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
+  const availableEmployees: Employee[] = [];
+
+  for (const employee of candidates) {
+    if (await isEmployeeFullyAvailableForWeekAppointments(employee.id, appointments)) {
+      availableEmployees.push(employee);
+    }
+  }
+
+  return availableEmployees;
 }
 
 export async function previewAddWeekEmployee(

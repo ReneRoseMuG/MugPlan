@@ -644,6 +644,7 @@ const projectBoardListResponseSchema = pagedListMetaSchema.extend({
 
 const calendarWeekLaneEmployeePreviewMemberSchema = z.object({
   id: z.number().int().positive(),
+  assignmentId: z.number().int().positive().optional(),
   firstName: z.string(),
   lastName: z.string(),
   fullName: z.string(),
@@ -1799,6 +1800,7 @@ export const api = {
         employeeId: z.union([z.string(), z.number()]).optional(),
         detail: z.enum(["compact", "full"]).optional(),
         includeAppointmentNotes: z.union([z.literal("true"), z.literal("false"), z.boolean()]).optional(),
+        includeProjectNotes: z.union([z.literal("true"), z.literal("false"), z.boolean()]).optional(),
       }).strict(),
       responses: {
         200: z.array(
@@ -1842,6 +1844,7 @@ export const api = {
             projectNotesCount: z.number().int().min(0),
             appointmentNotesCount: z.number().int().min(0),
             appointmentNotesPreview: z.array(calendarAppointmentNotePreviewSchema).optional(),
+            projectNotesPreview: z.array(calendarAppointmentNotePreviewSchema).optional(),
             customerAttachmentsCount: z.number().int().min(0),
             projectAttachmentsCount: z.number().int().min(0),
             appointmentAttachmentsCount: z.number().int().min(0),

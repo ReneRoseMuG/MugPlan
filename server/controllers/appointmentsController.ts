@@ -760,6 +760,9 @@ export async function listCalendarAppointments(req: Request, res: Response, next
     const includeAppointmentNotesParam = typeof req.query.includeAppointmentNotes === "string"
       ? req.query.includeAppointmentNotes
       : undefined;
+    const includeProjectNotesParam = typeof req.query.includeProjectNotes === "string"
+      ? req.query.includeProjectNotes
+      : undefined;
 
     if (!fromDate || !toDate) {
       res.status(400).json({ message: "fromDate und toDate sind erforderlich" });
@@ -789,8 +792,13 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       res.status(400).json({ message: "Ungültiger includeAppointmentNotes-Parameter" });
       return;
     }
+    if (includeProjectNotesParam && includeProjectNotesParam !== "true" && includeProjectNotesParam !== "false") {
+      res.status(400).json({ message: "Ungültiger includeProjectNotes-Parameter" });
+      return;
+    }
     const detail = detailParam === "full" ? "full" : "compact";
     const includeAppointmentNotes = includeAppointmentNotesParam === "true";
+    const includeProjectNotes = includeProjectNotesParam === "true";
 
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
@@ -807,6 +815,7 @@ export async function listCalendarAppointments(req: Request, res: Response, next
       employeeId,
       detail,
       includeAppointmentNotes,
+      includeProjectNotes,
       roleKey,
     });
     res.json(appointments);

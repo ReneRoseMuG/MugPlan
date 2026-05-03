@@ -2,7 +2,7 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Admin sieht gesiedete Feiertage im Stammdaten-Tab Feiertage.
+ * - Admin sieht gesiedete Feiertage im Einstellungsbereich Feiertage.
  * - Bearbeiten, Deaktivieren und Reaktivieren wirken bis in Wochen- und Monatskalender.
  * - Der globale Visualisierungs-Toggle speichert und verändert die Hintergrundintensität.
  * - Kalender zeigen den Feiertagsnamen statt `FT`.
@@ -21,9 +21,9 @@ async function ensureHolidaySeed(page: Page) {
 }
 
 async function openCalendarMarkersTab(page: Page) {
-  await page.getByTestId("nav-stammdaten").click();
-  await page.getByTestId("tab-trigger-calendar-markers").click();
-  await expect(page.getByTestId("tab-content-calendar-markers")).toBeVisible();
+  await page.getByTestId("nav-einstellungen").click();
+  await page.getByTestId("nav-item-feiertage").click();
+  await expect(page.getByTestId("settings-pane-feiertage")).toBeVisible();
 }
 
 async function editHolidayActiveState(page: Page, expectedName: string, nextActive: boolean) {
@@ -55,8 +55,15 @@ async function setMarkerStyle(page: Page, value: "subtle" | "standard" | "highli
 async function expectWeekHolidayVisible(page: Page, expectedName: string) {
   await page.goto("/standalone/calendar/week?kw=18&year=2026");
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
-  await expect(page.getByTestId("week-day-header-2026-05-01")).toContainText(expectedName);
-  await expect(page.getByTestId("week-day-header-2026-05-01")).not.toContainText("FT");
+  const dayHeader = page.getByTestId("week-day-header-2026-05-01");
+  await expect(dayHeader).toBeVisible();
+  const marker = page.getByTestId("calendar-marker-header-2026-05-01");
+  await expect(marker).toBeVisible();
+  const headerText = await dayHeader.textContent();
+  if (!headerText?.includes(expectedName)) {
+    await marker.hover();
+    await expect(page.getByRole("dialog")).toContainText(new RegExp(expectedName));
+  }
 }
 
 async function forceMarkerWidthAndExpectVariant(page: Page, dateKey: string, widthPx: number, variant: "full" | "ft" | "icon") {

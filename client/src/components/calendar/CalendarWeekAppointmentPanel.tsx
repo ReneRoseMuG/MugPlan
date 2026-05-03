@@ -174,7 +174,12 @@ export function CalendarWeekAppointmentPanel({
     && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
   const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
-  const inlineNotes = showInlineNotes ? (appointment.appointmentNotesPreview ?? []) : [];
+  const inlineNotes = showInlineNotes
+    ? [
+        ...(appointment.appointmentNotesPreview ?? []).map((note) => ({ ...note, source: "Termin" as const })),
+        ...(appointment.projectNotesPreview ?? []).map((note) => ({ ...note, source: "Projekt" as const })),
+      ]
+    : [];
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -760,7 +765,10 @@ export function CalendarWeekAppointmentPanel({
               }}
               data-testid={`week-appointment-inline-note-${appointment.id}-${note.id}`}
             >
-              <div className="truncate font-semibold text-slate-800">{note.title}</div>
+              <div className="flex min-w-0 items-center gap-1">
+                <span className="rounded bg-white/50 px-1 text-[9px] font-semibold uppercase text-slate-600">{note.source}</span>
+                <span className="min-w-0 truncate font-semibold text-slate-800">{note.title}</span>
+              </div>
               {noteText ? (
                 <div className="mt-0.5 line-clamp-2 text-slate-700">{noteText}</div>
               ) : null}

@@ -480,6 +480,37 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('week-spanning-tile-menu-trigger-42');
     expect(html.match(/Termin löschen/g)).toHaveLength(2);
   });
+
+  it("renders the same note and employee assignment menu actions on regular and spanning week cards", () => {
+    const appointment = createAppointment();
+    const onCreateAppointmentNote = vi.fn();
+    const onAssignAppointmentEmployees = vi.fn();
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          onCreateAppointmentNote={onCreateAppointmentNote}
+          onAssignAppointmentEmployees={onAssignAppointmentEmployees}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          onCreateAppointmentNote={onCreateAppointmentNote}
+          onAssignAppointmentEmployees={onAssignAppointmentEmployees}
+        />
+      </>,
+    );
+
+    expect(html).toContain('data-testid="week-appointment-create-note-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-create-note-42"');
+    expect(html).toContain('data-testid="week-appointment-assign-employees-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-assign-employees-42"');
+  });
+
   it("passes expanded week cards through the existing expanded customer panel path and keeps project panel rendering local", () => {
     const appointment = createAppointment();
 

@@ -51,6 +51,15 @@ export type CalendarAppointment = {
     print: boolean;
     updatedAt: string;
   }[];
+  projectNotesPreview?: {
+    id: number;
+    title: string;
+    body: string;
+    cardColor: string | null;
+    isPinned: boolean;
+    print: boolean;
+    updatedAt: string;
+  }[];
   customerAttachmentsCount: number;
   projectAttachmentsCount: number;
   appointmentAttachmentsCount: number;
@@ -68,7 +77,7 @@ export type CalendarWeekLaneEmployeePreview = {
   date: string;
   weekStartDate: string;
   tourId: number;
-  weekEmployees: { id: number; firstName: string; lastName: string; fullName: string }[];
+  weekEmployees: { id: number; assignmentId?: number; firstName: string; lastName: string; fullName: string }[];
   additionalDayEmployees: { id: number; firstName: string; lastName: string; fullName: string }[];
 };
 
@@ -166,6 +175,7 @@ export function useCalendarAppointments({
   employeeId,
   detail,
   includeAppointmentNotes,
+  includeProjectNotes,
   userRole,
   enabled,
 }: {
@@ -174,12 +184,18 @@ export function useCalendarAppointments({
   employeeId?: number | null;
   detail?: "compact" | "full";
   includeAppointmentNotes?: boolean;
+  includeProjectNotes?: boolean;
   userRole: string;
   enabled?: boolean;
 }) {
   const resolvedDetail = detail ?? "compact";
   return useQuery<CalendarAppointment[]>({
-    queryKey: [...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }), resolvedDetail, includeAppointmentNotes ? "notes" : "no-notes"],
+    queryKey: [
+      ...getCalendarAppointmentsQueryKey({ fromDate, toDate, employeeId, userRole }),
+      resolvedDetail,
+      includeAppointmentNotes ? "appointment-notes" : "no-appointment-notes",
+      includeProjectNotes ? "project-notes" : "no-project-notes",
+    ],
     enabled,
     staleTime: 0,
     refetchOnMount: "always",
@@ -187,6 +203,7 @@ export function useCalendarAppointments({
       const params = new URLSearchParams({ fromDate, toDate, detail: resolvedDetail });
       if (employeeId) params.set("employeeId", String(employeeId));
       if (includeAppointmentNotes) params.set("includeAppointmentNotes", "true");
+      if (includeProjectNotes) params.set("includeProjectNotes", "true");
       console.info(`${logPrefix} fetch`, { fromDate, toDate, detail: resolvedDetail, employeeId: employeeId ?? null });
       const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
         headers: {
@@ -228,6 +245,7 @@ export function useCalendarAppointments({
           projectNotesCount,
           appointmentNotesCount,
           appointmentNotesPreview: Array.isArray(rawAppointment.appointmentNotesPreview) ? rawAppointment.appointmentNotesPreview : [],
+          projectNotesPreview: Array.isArray(rawAppointment.projectNotesPreview) ? rawAppointment.projectNotesPreview : [],
           customerAttachmentsCount,
           projectAttachmentsCount,
           appointmentAttachmentsCount,

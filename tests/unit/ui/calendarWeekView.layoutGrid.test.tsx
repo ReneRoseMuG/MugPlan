@@ -102,18 +102,24 @@ vi.mock("@/components/ui/employee-info-badge", () => ({
     renderMode,
     showPreview,
     showAvatar,
+    fullWidth,
+    action,
   }: {
     testId?: string;
     fullName?: string;
     renderMode?: string;
     showPreview?: boolean;
     showAvatar?: boolean;
+    fullWidth?: boolean;
+    action?: string;
   }) => (
     <span
       data-testid={testId}
       data-render-mode={renderMode}
       data-show-preview={showPreview ? "true" : "false"}
       data-show-avatar={showAvatar === false ? "false" : "true"}
+      data-full-width={fullWidth ? "true" : "false"}
+      data-action={action ?? "none"}
     >
       {fullName}
     </span>
@@ -427,5 +433,148 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-testid="week-body-marker-column-2026-04-21"');
     expect(html).toContain('data-testid="calendar-marker-header-2026-04-21"');
     expect(html).not.toContain("week-tour-lane-day-divider-");
+  });
+
+  it("renders the expanded tour week personnel column as a separate functional panel with week employees and add action", () => {
+    toursForTest = [
+      { id: 7, name: "Tour 7", color: "#225588", version: 1 },
+      { id: 8, name: "Abwesenheiten", color: "#64748B", version: 1 },
+      { id: 9, name: "Parkplatz", color: "#7c3aed", version: 1 },
+    ];
+    useSettingMock.mockImplementation((key: string) => {
+      switch (key) {
+        case "calendarWeekendColumnPercent":
+          return 33;
+        case "calendarWeekScrollRange":
+          return 0;
+        case "calendar.weekTileBodyMode":
+          return "collapsed";
+        case "calendar.weekLanes.isCollapsed":
+          return false;
+        case "calendar.weekLanes.expandedLaneId":
+          return "";
+        case "calendar.weekPersonnelColumn.visible":
+          return true;
+        case "calendar.weekPersonnelColumn.collapsed":
+          return false;
+        default:
+          return null;
+      }
+    });
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2098-07-06", endDate: null, startTime: "09:00" }),
+      ],
+    });
+    useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({
+      data: [
+        {
+          date: "2098-06-30",
+          weekStartDate: "2098-06-30",
+          tourId: 7,
+          weekEmployees: [
+            {
+              id: 31,
+              assignmentId: 301,
+              firstName: "Mira",
+              lastName: "Plan",
+              fullName: "Mira Plan",
+            },
+          ],
+          additionalDayEmployees: [],
+        },
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2098-07-06T00:00:00Z")} />,
+    );
+
+    expect(html).toContain("grid-template-columns:4.75rem minmax(0, 1fr)");
+    expect(html).toContain("grid-template-columns:4.75rem 1fr 1fr 1fr 1fr 1fr 0.33fr 1fr");
+    expect(html).toContain('data-testid="week-personnel-badge-measurement"');
+    expect(html).toContain('data-testid="week-body-personnel-marker-spacer-2098-06-30"');
+    expect(html).toContain('data-testid="week-personnel-column-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-column-header-tour-7"');
+    expect(html).toContain('data-testid="button-week-personnel-column-toggle-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-column-tour-unassigned"');
+    expect(html).toContain('data-testid="week-personnel-column-header-tour-unassigned"');
+    expect(html).toContain('data-testid="week-personnel-column-tour-8"');
+    expect(html).toContain('data-testid="week-personnel-column-header-tour-8"');
+    expect(html).toContain('data-testid="week-personnel-column-tour-9"');
+    expect(html).toContain('data-testid="week-personnel-column-header-tour-9"');
+    expect(html).toContain("&lt;&lt;&lt;");
+    expect(html).toContain('data-testid="week-personnel-employee-tour-7-31"');
+    expect(html).toContain('data-render-mode="standard"');
+    expect(html).toContain('data-show-avatar="false"');
+    expect(html).toContain('data-full-width="false"');
+    expect(html).toContain('data-action="remove"');
+    expect(html).toContain("Mira Plan");
+    expect(html).toContain('data-testid="button-add-week-personnel-tour-7"');
+    expect(html).not.toContain('data-testid="button-add-week-personnel-tour-unassigned"');
+    expect(html).not.toContain('data-testid="button-add-week-personnel-tour-8"');
+    expect(html).not.toContain('data-testid="button-add-week-personnel-tour-9"');
+  });
+
+  it("keeps the tour week personnel column narrow in collapsed mode and shows compact employee badges", () => {
+    useSettingMock.mockImplementation((key: string) => {
+      switch (key) {
+        case "calendarWeekendColumnPercent":
+          return 33;
+        case "calendarWeekScrollRange":
+          return 0;
+        case "calendar.weekTileBodyMode":
+          return "collapsed";
+        case "calendar.weekLanes.isCollapsed":
+          return false;
+        case "calendar.weekLanes.expandedLaneId":
+          return "";
+        case "calendar.weekPersonnelColumn.visible":
+          return true;
+        case "calendar.weekPersonnelColumn.collapsed":
+          return true;
+        default:
+          return null;
+      }
+    });
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2098-07-06", endDate: null, startTime: "09:00" }),
+      ],
+    });
+    useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({
+      data: [
+        {
+          date: "2098-06-30",
+          weekStartDate: "2098-06-30",
+          tourId: 7,
+          weekEmployees: [
+            {
+              id: 31,
+              assignmentId: 301,
+              firstName: "Mira",
+              lastName: "Plan",
+              fullName: "Mira Plan",
+            },
+          ],
+          additionalDayEmployees: [],
+        },
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2098-07-06T00:00:00Z")} />,
+    );
+
+    expect(html).toContain("grid-template-columns:3rem minmax(0, 1fr)");
+    expect(html).toContain("grid-template-columns:3rem 1fr 1fr 1fr 1fr 1fr 0.33fr 1fr");
+    expect(html).toContain('data-testid="week-body-personnel-marker-spacer-2098-06-30"');
+    expect(html).toContain("&gt;&gt;&gt;");
+    expect(html).toContain(">Sa 5<");
+    expect(html).not.toContain(">Sa 5 Jul<");
+    expect(html).toContain('data-testid="week-personnel-employee-tour-7-31"');
+    expect(html).toContain('data-render-mode="compact"');
+    expect(html).toContain('data-show-avatar="true"');
+    expect(html).not.toContain('data-testid="button-add-week-personnel-tour-7"');
   });
 });

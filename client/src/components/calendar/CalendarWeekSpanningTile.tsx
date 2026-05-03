@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties, DragEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText } from "lucide-react";
+import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -45,6 +45,7 @@ import {
 } from "./weekAppointmentCardStyles";
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
+import { stripHtmlToText } from "@/lib/printText";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -121,6 +122,9 @@ type CalendarWeekSpanningTileProps = {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
+  showInlineNotes?: boolean;
+  onCreateAppointmentNote?: (appointmentId: number) => void;
+  onAssignAppointmentEmployees?: (appointmentId: number) => void;
   testId?: string;
 };
 
@@ -151,6 +155,9 @@ export function CalendarWeekSpanningTile({
   onMouseEnter,
   onMouseLeave,
   onTagMutationEvents,
+  showInlineNotes = false,
+  onCreateAppointmentNote,
+  onAssignAppointmentEmployees,
   testId,
 }: CalendarWeekSpanningTileProps) {
   const { toast } = useToast();
@@ -164,6 +171,7 @@ export function CalendarWeekSpanningTile({
   const isHistoricalReadOnly = isPastStartDate(appointment.startDate)
     && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
+  const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -355,7 +363,7 @@ export function CalendarWeekSpanningTile({
     },
   });
 
-  const menuSlot = interactive && !isHistoricalReadOnly ? (
+  const menuSlot = interactive && !isReadOnlyActionView ? (
     <span
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
@@ -381,6 +389,26 @@ export function CalendarWeekSpanningTile({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          {onCreateAppointmentNote && !isPastStartDate(appointment.startDate) ? (
+            <DropdownMenuItem
+              onClick={() => onCreateAppointmentNote(appointment.id)}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-spanning-tile-create-note-${appointment.id}`}
+            >
+              <StickyNote className="h-3.5 w-3.5 shrink-0" />
+              Neue Notiz anlegen
+            </DropdownMenuItem>
+          ) : null}
+          {onAssignAppointmentEmployees ? (
+            <DropdownMenuItem
+              onClick={() => onAssignAppointmentEmployees(appointment.id)}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-spanning-tile-assign-employees-${appointment.id}`}
+            >
+              <UserPlus className="h-3.5 w-3.5 shrink-0" />
+              Mitarbeiter zuweisen
+            </DropdownMenuItem>
+          ) : null}
           {!appointment.isCancelled && (
             <DropdownMenuItem
               onClick={() => setCancelConfirmOpen(true)}
@@ -478,6 +506,12 @@ export function CalendarWeekSpanningTile({
   const projectPanelClassName = projectCollapsed
     ? "h-8 w-full overflow-hidden"
     : "min-h-0 h-full w-full";
+  const inlineNotes = showInlineNotes
+    ? [
+        ...(appointment.appointmentNotesPreview ?? []).map((note) => ({ ...note, source: "Termin" as const })),
+        ...(appointment.projectNotesPreview ?? []).map((note) => ({ ...note, source: "Projekt" as const })),
+      ]
+    : [];
   const contentGridTemplateRows = isCompactPanelMode
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -758,6 +792,32 @@ export function CalendarWeekSpanningTile({
         {bodyContent}
       </div>
     </div>
+    {inlineNotes.length > 0 ? (
+      <div className="mt-1 space-y-1" data-testid={`week-spanning-tile-inline-notes-${appointment.id}`}>
+        {inlineNotes.map((note) => {
+          const noteText = stripHtmlToText(note.body);
+          return (
+            <div
+              key={note.id}
+              className="rounded-md border px-2 py-1 text-[10px] leading-snug shadow-sm"
+              style={{
+                backgroundColor: note.cardColor ?? "#f8fafc",
+                borderColor: "rgba(15,23,42,0.14)",
+              }}
+              data-testid={`week-spanning-tile-inline-note-${appointment.id}-${note.id}`}
+            >
+              <div className="flex min-w-0 items-center gap-1">
+                <span className="rounded bg-white/50 px-1 text-[9px] font-semibold uppercase text-slate-600">{note.source}</span>
+                <span className="min-w-0 truncate font-semibold text-slate-800">{note.title}</span>
+              </div>
+              {noteText ? (
+                <div className="mt-0.5 line-clamp-2 text-slate-700">{noteText}</div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    ) : null}
     <AppointmentCancelConfirmDialog
       open={cancelConfirmOpen}
       onOpenChange={setCancelConfirmOpen}

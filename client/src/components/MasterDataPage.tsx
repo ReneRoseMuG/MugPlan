@@ -1,14 +1,12 @@
 ﻿import { useMemo } from "react";
-import { Boxes, CalendarDays, FileText, HelpCircle, Package, Tags } from "lucide-react";
+import { Boxes, FileText, HelpCircle, Package, Tags } from "lucide-react";
 import { EntityFormWithTabsLayout } from "@/components/ui/entity-form-with-tabs-layout";
 import { ProductManagementPage } from "@/components/ProductManagementPage";
 import { TagManagementPage } from "@/components/TagManagementPage";
 import { NoteTemplatesPage } from "@/components/NoteTemplatesPage";
 import { HelpTextsPage } from "@/components/HelpTextsPage";
-import { CalendarMarkersAdminPage } from "@/components/CalendarMarkersAdminPage";
-import { getStoredUserRole } from "@/lib/auth";
 
-export type MasterDataTabId = "products" | "tags" | "help-texts" | "note-templates" | "calendar-markers";
+export type MasterDataTabId = "products" | "tags" | "help-texts" | "note-templates";
 
 interface MasterDataPageProps {
   initialTabId?: MasterDataTabId;
@@ -21,7 +19,6 @@ export function MasterDataPage({
   onCreateHelpText = () => undefined,
   onEditHelpText = () => undefined,
 }: MasterDataPageProps) {
-  const isAdmin = getStoredUserRole() === "ADMIN";
   const tabs = useMemo(
     () => [
       {
@@ -48,14 +45,8 @@ export function MasterDataPage({
         icon: <FileText className="h-4 w-4" />,
         content: <NoteTemplatesPage />,
       },
-      ...(isAdmin ? [{
-        id: "calendar-markers",
-        label: "Feiertage",
-        icon: <CalendarDays className="h-4 w-4" />,
-        content: <CalendarMarkersAdminPage />,
-      }] : []),
     ],
-    [isAdmin, onCreateHelpText, onEditHelpText],
+    [onCreateHelpText, onEditHelpText],
   );
 
   return (

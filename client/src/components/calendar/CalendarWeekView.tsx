@@ -63,8 +63,9 @@ import { Switch } from "@/components/ui/switch";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
+import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
-import type { Note, NoteTemplate, Tour } from "@shared/schema";
+import type { Employee, Note, NoteTemplate, Team, Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
@@ -112,11 +113,43 @@ type WeekTourLane = {
 };
 
 type WeekAbsenceEmployee = CalendarAppointment["employees"][number];
+type WeekPlanningPreviewItem = {
+  appointmentId: number;
+  startDate: string;
+  endDate: string | null;
+  projectName?: string | null;
+  customerName?: string | null;
+  status?: "will_add" | "conflict" | "already_assigned" | "will_remove" | "understaffed" | "keep";
+  selectable?: boolean;
+  conflictReason: string | null;
+  isUnderstaffed?: boolean;
+};
+type WeekPlanningDialogState = {
+  mode: "add" | "remove";
+  tourId: number;
+  isoYear: number;
+  isoWeek: number;
+  assignmentId?: number;
+  employeeId: number;
+  employeeName: string;
+  weekLabel: string;
+  previewItems: WeekPlanningPreviewItem[];
+  selectedIds: number[];
+};
+type WeekPersonnelPickerState = {
+  tourId: number;
+  isoYear: number;
+  isoWeek: number;
+  weekLabel: string;
+};
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
 const SHORT_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
 const SHORT_MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"] as const;
+const WEEK_PERSONNEL_COLLAPSED_COLUMN_WIDTH = "3rem";
+const WEEK_PERSONNEL_EXPANDED_FALLBACK_COLUMN_WIDTH = "4.75rem";
+const WEEK_PERSONNEL_EXPANDED_COLUMN_PADDING_PX = 10;
 
 export function formatCompactWeekDayHeader(day: Date, includeMonth = true): string {
   const weekday = SHORT_WEEKDAYS[(day.getDay() + 6) % 7] ?? "Mo";
@@ -162,6 +195,16 @@ function resolveWeekLaneRowMinHeightPx(weekTileBodyMode: "collapsed" | "semiexpa
   return weekTileBodyMode === "collapsed"
     ? Math.min(MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX, MIN_WEEK_CARD_HEIGHT_PX)
     : MIN_WEEK_CARD_HEIGHT_PX;
+}
+
+function buildWeekPlanningLabel(isoYear: number, isoWeek: number): string {
+  return `KW ${String(isoWeek).padStart(2, "0")} / ${isoYear}`;
+}
+
+function resolveSelectablePreviewIds(items: WeekPlanningPreviewItem[]): number[] {
+  return items
+    .filter((item) => item.selectable ?? false)
+    .map((item) => item.appointmentId);
 }
 
 export function resolveVisibleWeekStartFromScroll(params: {
@@ -279,13 +322,16 @@ export function CalendarWeekAbsenceRow({
   absenceEmployeesByDate,
   absenceTourColor,
   weekDayGridTemplate,
+  personnelColumnWidth,
 }: {
   weekKey: string;
   days: Date[];
   absenceEmployeesByDate: Map<string, WeekAbsenceEmployee[]>;
   absenceTourColor: string;
   weekDayGridTemplate: string;
+  personnelColumnWidth?: string | null;
 }) {
+  const rowGridTemplate = personnelColumnWidth ? `${personnelColumnWidth} ${weekDayGridTemplate}` : weekDayGridTemplate;
   return (
     <div
       className="sticky top-[3.75rem] z-10 border-b border-border/30 bg-slate-50"
@@ -300,8 +346,11 @@ export function CalendarWeekAbsenceRow({
       </div>
       <div
         className="grid divide-x divide-border/30"
-        style={{ gridTemplateColumns: weekDayGridTemplate }}
+        style={{ gridTemplateColumns: rowGridTemplate }}
       >
+        {personnelColumnWidth ? (
+          <div className="min-h-12 bg-slate-100/80" data-testid={`week-absence-personnel-spacer-${weekKey}`} />
+        ) : null}
         {days.map((day) => {
           const dayKey = format(day, "yyyy-MM-dd");
           const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
@@ -373,9 +422,10 @@ export function CalendarWeekView({
   const [workflowNoteCardColor, setWorkflowNoteCardColor] = useState<string>("#f8fafc");
   const [workflowNotePrint, setWorkflowNotePrint] = useState(false);
   const [workflowNoteCardColorLocked, setWorkflowNoteCardColorLocked] = useState(false);
-  const [showAppointmentNotesInline, setShowAppointmentNotesInline] = useState(false);
   const [weekPrintPreviewOpen, setWeekPrintPreviewOpen] = useState(false);
   const [weekPrintPageIndex, setWeekPrintPageIndex] = useState(0);
+  const [weekPersonnelPicker, setWeekPersonnelPicker] = useState<WeekPersonnelPickerState | null>(null);
+  const [weekPlanningDialog, setWeekPlanningDialog] = useState<WeekPlanningDialogState | null>(null);
   const [appointmentEmployeeDialog, setAppointmentEmployeeDialog] = useState<{
     appointmentId: number;
     title: string;
@@ -418,8 +468,10 @@ export function CalendarWeekView({
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const weekSectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const weekScrollContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const weekPersonnelBadgeMeasurementRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
+  const [measuredPersonnelColumnWidthsByWeek, setMeasuredPersonnelColumnWidthsByWeek] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
@@ -432,6 +484,8 @@ export function CalendarWeekView({
   const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
   const persistedWeekTileBodyMode = useSetting("calendar.weekTileBodyMode");
   const persistedPersonnelColumnVisible = useSetting("calendar.weekPersonnelColumn.visible");
+  const persistedWeekInlineNotesVisible = useSetting("calendar.weekInlineNotes.visible");
+  const persistedPersonnelColumnCollapsed = useSetting("calendar.weekPersonnelColumn.collapsed");
   const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const canWriteNotes = userRole !== "READER";
@@ -443,6 +497,8 @@ export function CalendarWeekView({
   const weekTileBodyMode = weekTileBodyModeProp ?? persistedWeekTileBodyMode ?? "semiexpanded";
   const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
   const showPersonnelColumn = Boolean(persistedPersonnelColumnVisible);
+  const showAppointmentNotesInline = Boolean(persistedWeekInlineNotesVisible);
+  const isPersonnelColumnCollapsed = persistedPersonnelColumnCollapsed !== false;
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
   const canManageWeekPlanning = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
@@ -551,12 +607,71 @@ export function CalendarWeekView({
     employeeId: employeeFilterId ?? undefined,
     detail: "full",
     includeAppointmentNotes: showAppointmentNotesInline,
+    includeProjectNotes: showAppointmentNotesInline,
     userRole,
   });
   const { data: weekLaneEmployeePreviews = [] } = useCalendarWeekLaneEmployeePreviews({
     fromDate: stripFromDate,
     toDate: stripToDate,
   });
+  const personnelBadgeMeasurementGroups = useMemo(() => {
+    const groups = new Map<string, Array<{
+      key: string;
+      id: number;
+      assignmentId?: number;
+      firstName: string;
+      lastName: string;
+      fullName: string;
+    }>>();
+    for (const preview of weekLaneEmployeePreviews) {
+      const group = groups.get(preview.weekStartDate) ?? [];
+      for (const employee of preview.weekEmployees) {
+        group.push({
+          key: `${preview.tourId}-${preview.weekStartDate}-${employee.id}-${employee.assignmentId ?? "none"}`,
+          ...employee,
+        });
+      }
+      groups.set(preview.weekStartDate, group);
+    }
+    return Array.from(groups.entries()).map(([weekStartDate, employees]) => ({ weekStartDate, employees }));
+  }, [weekLaneEmployeePreviews]);
+  useEffect(() => {
+    if (!showPersonnelColumn || isPersonnelColumnCollapsed) {
+      setMeasuredPersonnelColumnWidthsByWeek({});
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      const measurementRoot = weekPersonnelBadgeMeasurementRef.current;
+      if (!measurementRoot) return;
+
+      const nextWidths: Record<string, string> = {};
+      for (const groupNode of Array.from(measurementRoot.querySelectorAll<HTMLElement>("[data-week-personnel-measurement-week]"))) {
+        const weekStartDate = groupNode.dataset.weekPersonnelMeasurementWeek;
+        if (!weekStartDate) continue;
+
+        const maxBadgeWidth = Array.from(groupNode.querySelectorAll<HTMLElement>("[data-week-personnel-measurement-badge]"))
+          .reduce((maxWidth, badgeNode) => Math.max(maxWidth, badgeNode.getBoundingClientRect().width), 0);
+        if (maxBadgeWidth > 0) {
+          nextWidths[weekStartDate] = `${Math.ceil(maxBadgeWidth + WEEK_PERSONNEL_EXPANDED_COLUMN_PADDING_PX)}px`;
+        }
+      }
+
+      setMeasuredPersonnelColumnWidthsByWeek((currentWidths) => {
+        const currentKeys = Object.keys(currentWidths);
+        const nextKeys = Object.keys(nextWidths);
+        if (
+          currentKeys.length === nextKeys.length
+          && nextKeys.every((key) => currentWidths[key] === nextWidths[key])
+        ) {
+          return currentWidths;
+        }
+        return nextWidths;
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [isPersonnelColumnCollapsed, personnelBadgeMeasurementGroups, showPersonnelColumn]);
   const { data: blockedTourWeeks = [] } = useCalendarBlockedTourWeeks({
     fromDate: stripFromDate,
     toDate: stripToDate,
@@ -624,6 +739,36 @@ export function CalendarWeekView({
     });
   };
 
+  const setInlineNotesVisible = (visible: boolean) => {
+    void setSetting({
+      key: "calendar.weekInlineNotes.visible",
+      scopeType: "USER",
+      value: visible,
+    }).catch((error) => {
+      console.error(`${logPrefix} inline notes persist failed`, error);
+      toast({
+        title: "Notizen-Anzeige konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const setPersonnelColumnCollapsed = (collapsed: boolean) => {
+    void setSetting({
+      key: "calendar.weekPersonnelColumn.collapsed",
+      scopeType: "USER",
+      value: collapsed,
+    }).catch((error) => {
+      console.error(`${logPrefix} personnel column collapse persist failed`, error);
+      toast({
+        title: "Personalspalte konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
+
   useEffect(() => {
     cardHeightByLaneRef.current.clear();
     projectStatusHeightByWeekRef.current.clear();
@@ -632,6 +777,30 @@ export function CalendarWeekView({
 
   const { data: tours = [] } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
+  });
+  const { data: pickerTeams = [] } = useQuery<Team[]>({
+    queryKey: ["/api/teams"],
+    enabled: weekPersonnelPicker !== null,
+  });
+  const { data: availableWeekEmployees = [], isLoading: availableWeekEmployeesLoading } = useQuery<Employee[]>({
+    queryKey: weekPersonnelPicker
+      ? [`/api/tours/${weekPersonnelPicker.tourId}/week-employees/available`, weekPersonnelPicker.isoYear, weekPersonnelPicker.isoWeek]
+      : ["/api/tours/week-employees/available", "idle"],
+    enabled: weekPersonnelPicker !== null,
+    queryFn: async () => {
+      if (!weekPersonnelPicker) return [];
+      const params = new URLSearchParams({
+        isoYear: String(weekPersonnelPicker.isoYear),
+        isoWeek: String(weekPersonnelPicker.isoWeek),
+      });
+      const response = await fetch(`/api/tours/${weekPersonnelPicker.tourId}/week-employees/available?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Verfügbare Mitarbeiter konnten nicht geladen werden");
+      }
+      return response.json() as Promise<Employee[]>;
+    },
   });
   const absenceTourColor = useMemo(
     () => tours.find((tour) => isAbsenceTourName(tour.name))?.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR,
@@ -771,6 +940,86 @@ export function CalendarWeekView({
     onSuccess: async () => {
       await invalidateWeekPlanningViews();
       await refreshMonitoringWithNotification(toast);
+    },
+  });
+
+  const previewAddWeekEmployeeMutation = useMutation({
+    mutationFn: async (params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/week-employees/add/preview`, {
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+        employeeId: params.employeeId,
+      });
+      return response.json() as Promise<{
+        isoYear: number;
+        isoWeek: number;
+        employee: { employeeId: number; fullName: string };
+        items: WeekPlanningPreviewItem[];
+      }>;
+    },
+  });
+
+  const previewRemoveWeekEmployeeMutation = useMutation({
+    mutationFn: async (params: { tourId: number; assignmentId: number }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/week-employees/remove/preview`, {
+        assignmentId: params.assignmentId,
+      });
+      return response.json() as Promise<{
+        assignmentId: number;
+        isoYear: number;
+        isoWeek: number;
+        employee: { assignmentId: number; employeeId: number; fullName: string };
+        items: WeekPlanningPreviewItem[];
+      }>;
+    },
+  });
+
+  const executeAddWeekEmployeeMutation = useMutation({
+    mutationFn: async (params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number; selectedIds: number[] }) => {
+      const response = await apiRequest("POST", `/api/tours/${params.tourId}/week-employees/add`, {
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+        employeeId: params.employeeId,
+        selectedAppointmentIds: params.selectedIds,
+      });
+      return response.json();
+    },
+    onSuccess: async () => {
+      setWeekPlanningDialog(null);
+      await invalidateWeekPlanningViews();
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Wochenplanung gespeichert" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Wochenplanung konnte nicht gespeichert werden",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const executeRemoveWeekEmployeeMutation = useMutation({
+    mutationFn: async (params: { tourId: number; assignmentId: number; isoYear: number; isoWeek: number; selectedIds: number[] }) => {
+      const response = await apiRequest("DELETE", `/api/tours/${params.tourId}/week-employees/${params.assignmentId}`, {
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+        selectedAppointmentIds: params.selectedIds,
+      });
+      return response.json();
+    },
+    onSuccess: async () => {
+      setWeekPlanningDialog(null);
+      await invalidateWeekPlanningViews();
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Wochenplanung aktualisiert" });
+    },
+    onError: (error) => {
+      toast({
+        title: "Wochenplanung konnte nicht aktualisiert werden",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -990,6 +1239,89 @@ export function CalendarWeekView({
 
   const handleAssignAppointmentEmployees = (appointmentId: number) => {
     void openAppointmentEmployeeAssignmentDialog(appointmentId);
+  };
+
+  const openWeekPersonnelPicker = (params: { tourId: number; isoYear: number; isoWeek: number }) => {
+    setWeekPersonnelPicker({
+      ...params,
+      weekLabel: buildWeekPlanningLabel(params.isoYear, params.isoWeek),
+    });
+  };
+
+  const openAddWeekPlanningDialog = async (employeeId: number) => {
+    if (!weekPersonnelPicker) return;
+    try {
+      const preview = await previewAddWeekEmployeeMutation.mutateAsync({
+        tourId: weekPersonnelPicker.tourId,
+        isoYear: weekPersonnelPicker.isoYear,
+        isoWeek: weekPersonnelPicker.isoWeek,
+        employeeId,
+      });
+      setWeekPersonnelPicker(null);
+      setWeekPlanningDialog({
+        mode: "add",
+        tourId: weekPersonnelPicker.tourId,
+        isoYear: preview.isoYear,
+        isoWeek: preview.isoWeek,
+        employeeId: preview.employee.employeeId,
+        employeeName: preview.employee.fullName,
+        weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
+        previewItems: preview.items,
+        selectedIds: resolveSelectablePreviewIds(preview.items),
+      });
+    } catch (error) {
+      toast({
+        title: "Mitarbeitervorschau fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openRemoveWeekPlanningDialog = async (params: { tourId: number; assignmentId: number }) => {
+    try {
+      const preview = await previewRemoveWeekEmployeeMutation.mutateAsync(params);
+      setWeekPlanningDialog({
+        mode: "remove",
+        tourId: params.tourId,
+        isoYear: preview.isoYear,
+        isoWeek: preview.isoWeek,
+        assignmentId: preview.assignmentId,
+        employeeId: preview.employee.employeeId,
+        employeeName: preview.employee.fullName,
+        weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
+        previewItems: preview.items,
+        selectedIds: resolveSelectablePreviewIds(preview.items),
+      });
+    } catch (error) {
+      toast({
+        title: "Mitarbeitervorschau fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmWeekPlanningDialog = () => {
+    if (!weekPlanningDialog) return;
+    if (weekPlanningDialog.mode === "add") {
+      executeAddWeekEmployeeMutation.mutate({
+        tourId: weekPlanningDialog.tourId,
+        isoYear: weekPlanningDialog.isoYear,
+        isoWeek: weekPlanningDialog.isoWeek,
+        employeeId: weekPlanningDialog.employeeId,
+        selectedIds: weekPlanningDialog.selectedIds,
+      });
+      return;
+    }
+    if (typeof weekPlanningDialog.assignmentId !== "number") return;
+    executeRemoveWeekEmployeeMutation.mutate({
+      tourId: weekPlanningDialog.tourId,
+      assignmentId: weekPlanningDialog.assignmentId,
+      isoYear: weekPlanningDialog.isoYear,
+      isoWeek: weekPlanningDialog.isoWeek,
+      selectedIds: weekPlanningDialog.selectedIds,
+    });
   };
 
   const assignAppointmentEmployeesMutation = useMutation({
@@ -1410,28 +1742,58 @@ export function CalendarWeekView({
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
-            <Label htmlFor="week-inline-notes-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Notizen
-            </Label>
-            <Switch
-              id="week-inline-notes-toggle"
-              checked={showAppointmentNotesInline}
-              onCheckedChange={setShowAppointmentNotesInline}
-              data-testid="switch-week-inline-notes"
-              aria-label="Terminnotizen immer anzeigen"
-            />
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
+            <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Notizen anzeigen">
+              <button
+                type="button"
+                onClick={() => setInlineNotesVisible(true)}
+                aria-pressed={showAppointmentNotesInline}
+                data-testid="switch-week-inline-notes"
+                className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                  showAppointmentNotesInline ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Ja
+              </button>
+              <button
+                type="button"
+                onClick={() => setInlineNotesVisible(false)}
+                aria-pressed={!showAppointmentNotesInline}
+                data-testid="toggle-week-inline-notes-no"
+                className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                  !showAppointmentNotesInline ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Nein
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
-            <Label htmlFor="week-personnel-column-toggle" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Personal
-            </Label>
-            <Switch
-              id="week-personnel-column-toggle"
-              checked={showPersonnelColumn}
-              onCheckedChange={setPersonnelColumnVisible}
-              data-testid="switch-week-personnel-column"
-              aria-label="Personalspalte anzeigen"
-            />
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">KW Plan</span>
+            <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="KW Plan anzeigen">
+              <button
+                type="button"
+                onClick={() => setPersonnelColumnVisible(true)}
+                aria-pressed={showPersonnelColumn}
+                data-testid="switch-week-personnel-column"
+                className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                  showPersonnelColumn ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Ja
+              </button>
+              <button
+                type="button"
+                onClick={() => setPersonnelColumnVisible(false)}
+                aria-pressed={!showPersonnelColumn}
+                data-testid="toggle-week-personnel-column-no"
+                className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                  !showPersonnelColumn ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                Nein
+              </button>
+            </div>
           </div>
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kacheln</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5">
@@ -1530,6 +1892,42 @@ export function CalendarWeekView({
        * Der key setzt den Scrollcontainer deterministisch neu auf den linken Rand (0),
        * ohne Scrollwerte zu lesen oder zu speichern.
        */}
+      {showPersonnelColumn && !isPersonnelColumnCollapsed && personnelBadgeMeasurementGroups.length > 0 ? (
+        <div
+          ref={weekPersonnelBadgeMeasurementRef}
+          className="pointer-events-none absolute left-0 top-0 -z-10 h-0 overflow-visible opacity-0"
+          aria-hidden
+          data-testid="week-personnel-badge-measurement"
+        >
+          {personnelBadgeMeasurementGroups.map((group) => (
+            <div
+              key={`week-personnel-measurement-${group.weekStartDate}`}
+              className="flex w-max flex-col gap-1"
+              data-week-personnel-measurement-week={group.weekStartDate}
+            >
+              {group.employees.map((employee) => (
+                <span
+                  key={`week-personnel-measurement-badge-${employee.key}`}
+                  className="inline-flex"
+                  data-week-personnel-measurement-badge
+                >
+                  <EmployeeInfoBadge
+                    id={employee.id}
+                    firstName={employee.firstName}
+                    lastName={employee.lastName}
+                    fullName={employee.fullName}
+                    renderMode="standard"
+                    size="sm"
+                    action="remove"
+                    showAvatar={false}
+                    showPreview={false}
+                  />
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div key={scrollResetKey} ref={horizontalScrollContainerRef} className="relative z-0 flex-1 overflow-x-auto overflow-y-hidden">
         <div className="flex h-full">
           {weekStarts.map((weekStart, weekIndex) => {
@@ -1570,6 +1968,16 @@ export function CalendarWeekView({
               return weight;
             });
             const weekDayGridTemplate = buildDayGridTemplate(weekDayWeights);
+            const personnelColumnWidth = showPersonnelColumn
+              ? (
+                  isPersonnelColumnCollapsed
+                    ? WEEK_PERSONNEL_COLLAPSED_COLUMN_WIDTH
+                    : (measuredPersonnelColumnWidthsByWeek[weekKey] ?? WEEK_PERSONNEL_EXPANDED_FALLBACK_COLUMN_WIDTH)
+                )
+              : null;
+            const weekFullGridTemplate = personnelColumnWidth
+              ? `${personnelColumnWidth} ${weekDayGridTemplate}`
+              : weekDayGridTemplate;
 
             return (
               <section
@@ -1593,13 +2001,20 @@ export function CalendarWeekView({
                   }}
                   className="h-full flex flex-col overflow-y-auto"
                 >
-                  <div className="sticky top-0 z-20 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekDayGridTemplate }}>
+                  <div className="sticky top-0 z-20 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekFullGridTemplate }}>
+                    {personnelColumnWidth ? (
+                      <div
+                        className="flex min-h-0 items-center justify-center bg-slate-100/80 px-1 py-1.5"
+                        data-testid={`week-personnel-header-spacer-${weekKey}`}
+                      />
+                    ) : null}
                     {days.map((day, dayIdx) => {
                       const isTodayDate = isToday(day);
                       const isWeekend = dayIdx >= 5;
                       const dayKey = format(day, "yyyy-MM-dd");
                       const dayMarkers = calendarMarkersByDate.get(dayKey) ?? [];
                       const dayMarkerVisualization = getPrimaryCalendarMarkerVisualization(dayMarkers, markerVisualizationStyle);
+                      const useShortDayHeader = personnelColumnWidth !== null && (weekDayWeights[dayIdx] ?? 1) < 1;
 
                       return (
                         <div
@@ -1617,12 +2032,12 @@ export function CalendarWeekView({
                             data-marker-visualization={dayMarkerVisualization?.tone ?? "none"}
                           >
                             <div
-                              className={`mx-auto inline-flex max-w-full items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${
+                              className={`mx-auto inline-flex max-w-full items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap ${
                                 isTodayDate ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground"
                               }`}
                               data-testid={`week-day-header-label-${dayKey}`}
                             >
-                              <span className="hidden sm:inline">{formatCompactWeekDayHeader(day, true)}</span>
+                              <span className="hidden sm:inline">{formatCompactWeekDayHeader(day, !useShortDayHeader)}</span>
                               <span className="sm:hidden">{formatCompactWeekDayHeader(day, false)}</span>
                             </div>
                             <div
@@ -1663,14 +2078,21 @@ export function CalendarWeekView({
                     absenceEmployeesByDate={absenceEmployeesByDate}
                     absenceTourColor={absenceTourColor}
                     weekDayGridTemplate={weekDayGridTemplate}
+                    personnelColumnWidth={personnelColumnWidth}
                   />
 
                   <div className="relative pb-3">
                     <div
                       className="pointer-events-none absolute inset-0 grid"
-                      style={{ gridTemplateColumns: weekDayGridTemplate }}
+                      style={{ gridTemplateColumns: weekFullGridTemplate }}
                       aria-hidden
                     >
+                      {personnelColumnWidth ? (
+                        <div
+                          className="bg-slate-50"
+                          data-testid={`week-body-personnel-marker-spacer-${weekKey}`}
+                        />
+                      ) : null}
                       {days.map((day) => {
                         const dayKey = format(day, "yyyy-MM-dd");
                         const markerVisualization = getPrimaryCalendarMarkerVisualization(
@@ -1721,6 +2143,8 @@ export function CalendarWeekView({
                         && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
                       const isLaneWeekLocked = weekKey <= format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
                       const isAbsenceLane = isAbsenceTourName(tourLane.label);
+                      const isParkplatzLane = normalizeTourName(tourLane.label) === normalizeTourName("Parkplatz");
+                      const canPlanLaneWeekPersonnel = tourLane.tourId != null && !isAbsenceLane && !isParkplatzLane;
                       const laneWeekEmployees = tourLane.tourId == null
                         ? []
                         : (weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${format(weekStart, "yyyy-MM-dd")}`)?.weekEmployees ?? []);
@@ -1736,6 +2160,84 @@ export function CalendarWeekView({
                       >
                         {({ iconSlot, countSlot, dialog, openDialog }) => (
                         <div className="rounded-lg border border-border/40 bg-muted/10">
+                        <div
+                          className={personnelColumnWidth ? "grid" : undefined}
+                          style={personnelColumnWidth ? { gridTemplateColumns: `${personnelColumnWidth} minmax(0, 1fr)` } : undefined}
+                        >
+                          {personnelColumnWidth ? (
+                            <div
+                              className="relative z-10 min-w-0 border-r border-border/30 bg-slate-50"
+                              data-testid={`week-personnel-column-${tourLane.laneKey}`}
+                            >
+                              <div
+                                className="flex h-7 items-center justify-end px-1"
+                                style={{
+                                  backgroundColor: tourLane.color ?? CALENDAR_UNASSIGNED_TOUR_COLOR,
+                                  opacity: 0.82,
+                                }}
+                                data-testid={`week-personnel-column-header-${tourLane.laneKey}`}
+                              >
+                                <button
+                                  type="button"
+                                  className="rounded px-1.5 py-0.5 text-[10px] font-bold leading-none text-white hover:bg-white/15"
+                                  onClick={() => setPersonnelColumnCollapsed(!isPersonnelColumnCollapsed)}
+                                  data-testid={`button-week-personnel-column-toggle-${tourLane.laneKey}`}
+                                  aria-label={isPersonnelColumnCollapsed ? "Personalspalte erweitern" : "Personalspalte kollabieren"}
+                                >
+                                  {isPersonnelColumnCollapsed ? ">>>" : "<<<"}
+                                </button>
+                              </div>
+                              <div
+                                className={`grid min-h-0 content-start gap-1 overflow-hidden px-1 py-2 ${
+                                  isPersonnelColumnCollapsed ? "justify-items-center" : ""
+                                }`}
+                                style={{
+                                  minHeight: `${laneRowMinHeightPx}px`,
+                                  gridTemplateRows: laneGridTemplateRows,
+                                }}
+                                data-testid={`week-personnel-column-body-${tourLane.laneKey}`}
+                              >
+                                <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "space-y-1 pt-7"}>
+                                  {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
+                                    <EmployeeInfoBadge
+                                      key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
+                                      id={employee.id}
+                                      firstName={employee.firstName}
+                                      lastName={employee.lastName}
+                                      fullName={employee.fullName}
+                                      renderMode={isPersonnelColumnCollapsed ? "compact" : "standard"}
+                                      size="sm"
+                                      action={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number" ? "remove" : "none"}
+                                      onRemove={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number"
+                                        ? () => {
+                                            void openRemoveWeekPlanningDialog({
+                                              tourId: tourLane.tourId!,
+                                              assignmentId: employee.assignmentId!,
+                                            });
+                                          }
+                                        : undefined}
+                                      showAvatar={!isPersonnelColumnCollapsed ? false : undefined}
+                                      testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
+                                    />
+                                  )) : (
+                                    <span className="text-center text-[10px] italic text-slate-400">Keine MA</span>
+                                  )}
+                                </div>
+                                {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
+                                  <button
+                                    type="button"
+                                    className="absolute right-1 top-9 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-100"
+                                    onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
+                                    data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
+                                    aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
+                                  >
+                                    +
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
+                          ) : null}
+                          <div className="min-w-0">
                         <div className="relative">
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
@@ -1847,29 +2349,6 @@ export function CalendarWeekView({
                               style={BLOCKED_WEEK_OVERLAY_STYLE}
                               aria-hidden
                             />
-                          ) : null}
-                          {showPersonnelColumn && !isAbsenceLane ? (
-                            <div
-                              className="relative z-10 flex min-h-10 flex-wrap items-center gap-1 border-b border-border/30 bg-white/80 px-2 py-1"
-                              data-testid={`week-personnel-column-${tourLane.laneKey}`}
-                            >
-                              <span className="mr-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Personal</span>
-                              {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
-                                <EmployeeInfoBadge
-                                  key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
-                                  id={employee.id}
-                                  firstName={employee.firstName}
-                                  lastName={employee.lastName}
-                                  fullName={employee.fullName}
-                                  renderMode="compact"
-                                  size="sm"
-                                  action="none"
-                                  testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
-                                />
-                              )) : (
-                                <span className="text-xs italic text-slate-400">Keine KW-Zuordnung</span>
-                              )}
-                            </div>
                           ) : null}
                           <div
                             className="pointer-events-none absolute inset-0 grid"
@@ -2070,6 +2549,9 @@ export function CalendarWeekView({
                                     allowHistoricalActions={isAdmin}
                                     interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
+                                    showInlineNotes={showAppointmentNotesInline}
+                                    onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                    onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
@@ -2289,6 +2771,8 @@ export function CalendarWeekView({
                             }) : null}
                           </div>
                         </div>
+                        </div>
+                        </div>
                         {dialog}
                       </div>
                         )}
@@ -2303,6 +2787,46 @@ export function CalendarWeekView({
           })}
         </div>
       </div>
+      <Dialog open={weekPersonnelPicker !== null} onOpenChange={(open) => { if (!open) setWeekPersonnelPicker(null); }}>
+        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+          <EmployeePickerDialogList
+            employees={availableWeekEmployees}
+            teams={pickerTeams}
+            tours={[]}
+            isLoading={availableWeekEmployeesLoading || previewAddWeekEmployeeMutation.isPending}
+            title={weekPersonnelPicker ? `Mitarbeiter auswählen - ${weekPersonnelPicker.weekLabel}` : "Mitarbeiter auswählen"}
+            selectedEmployeeId={null}
+            viewModeSettingKey="appointmentEmployeePicker.viewMode"
+            onSelectEmployee={(employeeId) => {
+              void openAddWeekPlanningDialog(employeeId);
+            }}
+            onClose={() => setWeekPersonnelPicker(null)}
+          />
+        </DialogContent>
+      </Dialog>
+      {weekPlanningDialog ? (
+        <TourEmployeeCascadeDialog
+          open
+          variant="week"
+          mode={weekPlanningDialog.mode}
+          title={weekPlanningDialog.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
+          description={
+            weekPlanningDialog.mode === "add"
+              ? `${weekPlanningDialog.employeeName} wird für ${weekPlanningDialog.weekLabel} eingeplant.`
+              : `${weekPlanningDialog.employeeName} wird für ${weekPlanningDialog.weekLabel} aus der Planung entfernt.`
+          }
+          weekLabel={weekPlanningDialog.weekLabel}
+          employeeName={weekPlanningDialog.employeeName}
+          previewItems={weekPlanningDialog.previewItems}
+          selectedIds={weekPlanningDialog.selectedIds}
+          isSubmitting={executeAddWeekEmployeeMutation.isPending || executeRemoveWeekEmployeeMutation.isPending}
+          onSelectedIdsChange={(selectedIds) => {
+            setWeekPlanningDialog((current) => current ? { ...current, selectedIds } : current);
+          }}
+          onConfirm={confirmWeekPlanningDialog}
+          onClose={() => setWeekPlanningDialog(null)}
+        />
+      ) : null}
       <PrintPreviewDialog
         open={weekPrintPreviewOpen}
         onOpenChange={setWeekPrintPreviewOpen}

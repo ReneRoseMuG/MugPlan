@@ -66,6 +66,8 @@ export type UserSettingKey =
   | "calendar.weekLanes.expandedLaneId"
   | "calendar.weekTileBodyMode"
   | "calendar.weekPersonnelColumn.visible"
+  | "calendar.weekInlineNotes.visible"
+  | "calendar.weekPersonnelColumn.collapsed"
   | "reports.vorlaufliste.categorySelection"
   | "reports.produktionsplanung.selection"
   | "reports.auftragsliste.selection"
@@ -98,6 +100,8 @@ type UserSettingValueByKey = {
   "calendar.weekLanes.expandedLaneId": string;
   "calendar.weekTileBodyMode": "collapsed" | "semiexpanded" | "expanded";
   "calendar.weekPersonnelColumn.visible": boolean;
+  "calendar.weekInlineNotes.visible": boolean;
+  "calendar.weekPersonnelColumn.collapsed": boolean;
   "reports.vorlaufliste.categorySelection": VorlauflisteCategorySelection;
   "reports.produktionsplanung.selection": ProduktionsplanungSelection;
   "reports.auftragsliste.selection": AuftragslisteSelection;
@@ -456,6 +460,12 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     }
     if (key === "calendar.weekPersonnelColumn.visible") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekInlineNotes.visible") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.weekPersonnelColumn.collapsed") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : true) as UserSettingValueByKey[K];
     }
     if (key === "calendar.markerVisualizationStyle") {
       return resolveCalendarMarkerVisualizationStyle(setting?.resolvedValue) as UserSettingValueByKey[K];

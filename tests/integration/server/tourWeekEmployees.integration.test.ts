@@ -479,6 +479,68 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
+  it("filters the available week employee picker to employees conflict-free across all real tour appointments of the target ISO week", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#117799");
+    const otherTour = await createTourFixture("#991177");
+    const project = await createProjectFixture({ prefix: "TWE-AVAILABLE-CONFLICTS" });
+    const targetWeek = resolveNextEditableWeekDates();
+    const targetMultiDayEnd = format(addDays(parseISO(targetWeek.weekMidDate), 1), "yyyy-MM-dd");
+    const freeEmployee = await createEmployeeFixture("TWE-AVAILABLE-CONFLICTS-FREE");
+    const outsideWeekConflictEmployee = await createEmployeeFixture("TWE-AVAILABLE-CONFLICTS-OUTSIDE");
+    const sameDayConflictEmployee = await createEmployeeFixture("TWE-AVAILABLE-CONFLICTS-SAME-DAY");
+    const multiDayConflictEmployee = await createEmployeeFixture("TWE-AVAILABLE-CONFLICTS-MULTI-DAY");
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekStartDate,
+      startTime: null,
+      tourId: targetTour.id,
+      employeeIds: [],
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekMidDate,
+      endDate: targetMultiDayEnd,
+      startTime: null,
+      tourId: targetTour.id,
+      employeeIds: [],
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.previousWeekDate,
+      startTime: null,
+      tourId: otherTour.id,
+      employeeIds: [outsideWeekConflictEmployee.id],
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekStartDate,
+      startTime: null,
+      tourId: otherTour.id,
+      employeeIds: [sameDayConflictEmployee.id],
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetMultiDayEnd,
+      startTime: null,
+      tourId: otherTour.id,
+      employeeIds: [multiDayConflictEmployee.id],
+    });
+
+    await admin
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200)
+      .expect((res) => {
+        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+
+        expect(availableEmployeeIds).toContain(freeEmployee.id);
+        expect(availableEmployeeIds).toContain(outsideWeekConflictEmployee.id);
+        expect(availableEmployeeIds).not.toContain(sameDayConflictEmployee.id);
+        expect(availableEmployeeIds).not.toContain(multiDayConflictEmployee.id);
+      });
+  });
+
   it("rejects add preview and execute for current and past ISO weeks", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#7c3aed");
