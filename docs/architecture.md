@@ -118,7 +118,7 @@ Client-Header sind keine Autorisierungsquelle.
 - destruktive Admin-Operationen in `production` blockiert
 - in `development`/`test` nur auf sicheren DB-Zielen gemäß Guards
 
-Kalendermarker folgen einer eigenen Rollenabgrenzung: aktive Marker sind für `ADMIN`, `DISPONENT` und `LESER` lesbar; die Pflege und automatische Feiertags-Overrides unter `/api/admin/calendar-markers` sind ausschließlich `ADMIN` erlaubt.
+Kalendermarker folgen einer eigenen Rollenabgrenzung: aktive Marker sind für `ADMIN`, `DISPONENT` und `LESER` lesbar; die Pflege und automatische Feiertags-Overrides unter `/api/admin/calendar-markers` sind für `ADMIN` und `DISPONENT` erlaubt.
 
 ## 6. Domänen- und Datenmodellarchitektur
 

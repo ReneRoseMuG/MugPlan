@@ -3,15 +3,15 @@
  *
  * Abgedeckte Regeln:
  * - Alle bestehenden Rollen dürfen aktive Kalendermarker lesen.
- * - Nur Admin darf Marker anlegen, bearbeiten und löschen.
- * - Direkte Admin-API-Aufrufe von Disponent und Leser werden serverseitig mit 403 blockiert.
- * - Versionierung schützt Admin-Mutationen vor veralteten Bearbeitungsständen.
+ * - Admin und Disponent dürfen Marker anlegen, bearbeiten und löschen.
+ * - Direkte Pflege-API-Aufrufe von Lesern werden serverseitig mit 403 blockiert.
+ * - Versionierung schützt Pflege-Mutationen vor veralteten Bearbeitungsständen.
  *
  * Aussagekraft-Nachweis:
  * - Zielobjekt: echte Express-API-Routen `/api/calendar/markers` und `/api/admin/calendar-markers`.
  * - Eindeutiger Nachweis: eindeutige Testnutzer `calendar-markers-*` und Admin-Marker `Betriebsfeiertag Test` / `Brückentag`.
  * - Realistische Daten: echte Sessions, echte Rollenauflösung über Test-DB und echte Server-FS-Persistenz in temporären Verzeichnissen.
- * - Kritische Assertion: Leser/Disponent lesen Marker, Admin mutiert Marker, Nicht-Admins erhalten bei Admin-Mutation `403`, stale Versionen erhalten `409`.
+ * - Kritische Assertion: Leser/Disponent lesen Marker, Admin/Disponent mutieren Marker, Leser erhalten bei Pflege-Mutation `403`, stale Versionen erhalten `409`.
  * - False-Positive-Schutz: jeder Test setzt einen frischen File-Store, erzeugt eigene Rollenuser und prüft konkrete Response-Codes statt nur UI-Sichtbarkeit.
  */
 import fs from "fs/promises";
@@ -105,11 +105,10 @@ describe("calendar marker API", () => {
     expect(adminList.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: created.body.id })]));
   });
 
-  it("blockiert Admin-Mutationen für Disponent und Leser serverseitig", async () => {
-    const dispatcher = await createRoleAgent("DISPATCHER");
+  it("blockiert Pflege-Mutationen für Leser serverseitig", async () => {
     const reader = await createRoleAgent("READER");
 
-    for (const agent of [dispatcher, reader]) {
+    for (const agent of [reader]) {
       const response = await agent
         .post("/api/admin/calendar-markers")
         .send({
@@ -128,7 +127,64 @@ describe("calendar marker API", () => {
     }
   });
 
-  it("blockiert globale Visualisierungs-Settings für Nicht-Admins serverseitig", async () => {
+  it("blockiert globale Visualisierungs-Settings für Leser serverseitig", async () => {
+    const reader = await createRoleAgent("READER");
+    const resolved = await reader.get("/api/user-settings/resolved").expect(200);
+    const setting = (resolved.body as Array<{ key: string; globalVersion?: number }>).find(
+      (entry) => entry.key === "calendar.markerVisualizationStyle",
+    );
+    expect(setting).toBeTruthy();
+
+    await reader.patch("/api/user-settings").send({
+      key: "calendar.markerVisualizationStyle",
+      scopeType: "GLOBAL",
+      version: setting?.globalVersion ?? 1,
+      value: "highlighted",
+    }).expect(403);
+  });
+
+  it("erlaubt Pflege-Mutationen für Disponenten serverseitig", async () => {
+    const dispatcher = await createRoleAgent("DISPATCHER");
+
+    const created = await dispatcher
+      .post("/api/admin/calendar-markers")
+      .send({
+        date: "2026-05-02",
+        endDate: null,
+        name: "Disponent Feiertag",
+        type: "company_holiday",
+        source: "admin",
+        scope: "company",
+        states: [],
+        active: true,
+        note: null,
+      })
+      .expect(201);
+
+    const adminList = await dispatcher.get("/api/admin/calendar-markers").expect(200);
+    expect(adminList.body).toEqual(expect.arrayContaining([expect.objectContaining({ id: created.body.id })]));
+
+    const updated = await dispatcher
+      .patch(`/api/admin/calendar-markers/${encodeURIComponent(created.body.id)}`)
+      .send({
+        date: "2026-05-02",
+        endDate: null,
+        name: "Disponent Feiertag aktualisiert",
+        type: "company_holiday",
+        source: "admin",
+        scope: "company",
+        states: [],
+        active: true,
+        note: "Disponent",
+        version: created.body.version,
+      })
+      .expect(200);
+    expect(updated.body.name).toBe("Disponent Feiertag aktualisiert");
+
+    await dispatcher.delete(`/api/admin/calendar-markers/${encodeURIComponent(created.body.id)}`).send({ version: updated.body.version }).expect(204);
+  });
+
+  it("erlaubt globale Visualisierungs-Settings für Disponenten serverseitig", async () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const resolved = await dispatcher.get("/api/user-settings/resolved").expect(200);
     const setting = (resolved.body as Array<{ key: string; globalVersion?: number }>).find(
@@ -141,7 +197,7 @@ describe("calendar marker API", () => {
       scopeType: "GLOBAL",
       version: setting?.globalVersion ?? 1,
       value: "highlighted",
-    }).expect(403);
+    }).expect(200);
   });
 
   it("erzwingt Versionen bei Admin-Updates und Delete", async () => {

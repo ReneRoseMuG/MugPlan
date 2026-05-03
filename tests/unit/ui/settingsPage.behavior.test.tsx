@@ -4,14 +4,14 @@
  * Feature: FT07/FT16/FT29 - SettingsPage
  *
  * Abgedeckte Regeln:
- * - Die SettingsPage rendert eine Sidebar-Navigation mit vier Eintraegen in zwei Gruppen.
- * - Der Standard-Pane "Oberflaeche" ist beim ersten Laden sichtbar.
- * - Die Oberflaeche-Einstellungen (helpTextPreviewSize, EntityFormShell-Breiten) zeigen Save-Controls.
+ * - Die SettingsPage rendert eine Sidebar-Navigation mit den berechtigten Einträgen in zwei Gruppen.
+ * - Der Standard-Pane "Oberfläche" ist beim ersten Laden sichtbar.
+ * - Die Oberfläche-Einstellungen (helpTextPreviewSize, EntityFormShell-Breiten) zeigen Save-Controls.
  * - Pane-spezifische Assertions (Sicherheit, Backup) sind in settingsPage.panes.behavior.test.tsx.
  *
  * Fehlerfaelle:
- * - Sidebar-Navigation fehlt oder zeigt nicht alle vier Eintraege.
- * - Der Oberflaeche-Pane fehlt oder verliert Save-Controls.
+ * - Sidebar-Navigation fehlt oder zeigt nicht alle berechtigten Einträge.
+ * - Der Oberfläche-Pane fehlt oder verliert Save-Controls.
  *
  * Ziel:
  * Seitenskelett und Standardpane-Verhalten absichern.
@@ -92,24 +92,62 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     useMutationMock.mockReturnValue({ mutate: vi.fn(), isPending: false });
   });
 
-  it("rendert die Sidebar-Navigation mit allen vier Eintraegen", () => {
+  it("rendert die Admin-Sidebar-Navigation mit allen berechtigten Einträgen", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
 
     expect(html).toContain("settings-nav");
     expect(html).toContain("nav-item-oberflaeche");
+    expect(html).toContain("nav-item-feiertage");
     expect(html).toContain("nav-item-kalender");
     expect(html).toContain("nav-item-sicherheit");
     expect(html).toContain("nav-item-backup");
     expect(html).toContain("Oberfläche");
+    expect(html).toContain("Feiertage");
     expect(html).toContain("Kalender");
     expect(html).toContain("Sicherheit");
     expect(html).toContain("Backup");
   });
 
-  it("zeigt den Oberflaeche-Pane als Standard beim ersten Laden mit allen Save-Controls", () => {
+  it("zeigt Disponenten in Einstellungen den Feiertags-Einstieg ohne Admin-Systempanes", () => {
+    Object.assign(globalThis, {
+      window: {
+        localStorage: {
+          getItem: (key: string) => (key === "userRole" ? "DISPATCHER" : null),
+        },
+      },
+    });
+
     const html = renderToStaticMarkup(<SettingsPage />);
 
-    // Standard-Pane ist "Oberflaeche" -> settings-pane-oberflaeche muss sichtbar sein
+    expect(html).toContain("Einstellungen");
+    expect(html).not.toContain("Meine Einstellungen");
+    expect(html).toContain("nav-item-feiertage");
+    expect(html).toContain("Feiertage");
+    expect(html).not.toContain("nav-item-kalender");
+    expect(html).not.toContain("nav-item-sicherheit");
+    expect(html).not.toContain("nav-item-backup");
+  });
+
+  it("blendet den Feiertags-Einstieg für Leser aus", () => {
+    Object.assign(globalThis, {
+      window: {
+        localStorage: {
+          getItem: (key: string) => (key === "userRole" ? "READER" : null),
+        },
+      },
+    });
+
+    const html = renderToStaticMarkup(<SettingsPage />);
+
+    expect(html).toContain("Einstellungen");
+    expect(html).not.toContain("Meine Einstellungen");
+    expect(html).not.toContain("nav-item-feiertage");
+  });
+
+  it("zeigt den Oberfläche-Pane als Standard beim ersten Laden mit allen Save-Controls", () => {
+    const html = renderToStaticMarkup(<SettingsPage />);
+
+    // Standard-Pane ist "Oberfläche" -> settings-pane-oberflaeche muss sichtbar sein
     expect(html).toContain("settings-pane-oberflaeche");
 
     // USER-Einstellungen
@@ -120,7 +158,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     expect(html).toContain("input-setting-entityFormShellContentMaxWidthPx");
     expect(html).toContain("button-save-entityFormShellContentMaxWidthPx");
 
-    // GLOBAL-Einstellungen (ebenfalls im Oberflaeche-Pane)
+    // GLOBAL-Einstellungen (ebenfalls im Oberfläche-Pane)
     expect(html).toContain("button-save-toastDesktopPosition");
     expect(html).toContain("button-save-hoverPreviewOpenDelayMs");
   });
@@ -128,7 +166,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
   it("zeigt die anderen Panes im Standard-Render nicht", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
 
-    // Nur Oberflaeche ist der Standard — andere Panes sind initial nicht gerendert
+    // Nur Oberfläche ist der Standard — andere Panes sind initial nicht gerendert
     expect(html).not.toContain("settings-pane-kalender");
     expect(html).not.toContain("settings-pane-sicherheit");
     expect(html).not.toContain("settings-pane-backup");

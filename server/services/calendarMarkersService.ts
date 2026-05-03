@@ -88,8 +88,8 @@ function assertReadRole(roleKey: CanonicalRoleKey): void {
   }
 }
 
-function assertAdmin(roleKey: CanonicalRoleKey): void {
-  if (roleKey !== "ADMIN") {
+function assertManageRole(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
     throw new CalendarMarkersError(403, "FORBIDDEN");
   }
 }
@@ -358,7 +358,7 @@ export async function listEffectiveCalendarMarkers(
 }
 
 export async function listAdminCalendarMarkers(roleKey: CanonicalRoleKey): Promise<CalendarMarker[]> {
-  assertAdmin(roleKey);
+  assertManageRole(roleKey);
   try {
     return sortMarkers(await readStoredCalendarMarkers());
   } catch (error) {
@@ -370,7 +370,7 @@ export async function createCalendarMarker(
   roleKey: CanonicalRoleKey,
   input: CalendarMarkerWriteInput,
 ): Promise<CalendarMarker> {
-  assertAdmin(roleKey);
+  assertManageRole(roleKey);
   const marker = toStoredMarker(input);
   try {
     return await runCalendarMarkerMutation(async () => {
@@ -498,7 +498,7 @@ export async function updateCalendarMarker(
   markerId: string,
   input: CalendarMarkerUpdateInput,
 ): Promise<CalendarMarker> {
-  assertAdmin(roleKey);
+  assertManageRole(roleKey);
   try {
     return await runCalendarMarkerMutation(async () => {
       const markers = await readStoredCalendarMarkers();
@@ -529,7 +529,7 @@ export async function deleteCalendarMarker(
   markerId: string,
   version: number,
 ): Promise<void> {
-  assertAdmin(roleKey);
+  assertManageRole(roleKey);
   try {
     await runCalendarMarkerMutation(async () => {
       const markers = await readStoredCalendarMarkers();

@@ -10,6 +10,9 @@ import { logWarn } from "../lib/logger";
 type AdminEndpointCategory = "destructive" | "write_non_destructive" | "sensitive_read" | "none";
 
 function classifyAdminEndpoint(method: string, path: string): AdminEndpointCategory {
+  if (path === "/admin/calendar-markers" || path.startsWith("/admin/calendar-markers/")) {
+    return "none";
+  }
   if (method === "POST" && path === "/admin/dumps/import/apply") {
     return "destructive";
   }

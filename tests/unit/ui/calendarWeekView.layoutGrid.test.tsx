@@ -164,6 +164,23 @@ function createAppointment(overrides: Partial<CalendarAppointment>): CalendarApp
   };
 }
 
+function createCalendarMarker(overrides: Partial<CalendarMarker>): CalendarMarker {
+  return {
+    id: "marker-2026-04-21",
+    date: "2026-04-21",
+    endDate: null,
+    name: "Feiertag Test",
+    type: "public_holiday",
+    source: "automatic",
+    scope: "national",
+    states: [],
+    active: true,
+    note: null,
+    version: 1,
+    ...overrides,
+  };
+}
+
 describe("CalendarWeekView layout grid regression", () => {
   beforeEach(() => {
     useQueryMock.mockReset();
@@ -312,6 +329,61 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).not.toContain("grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr");
   });
 
+  it("keeps public and company holiday columns narrow when the day has no regular appointment", () => {
+    calendarMarkersForTest = [
+      createCalendarMarker({
+        id: "marker-public-2026-04-21",
+        date: "2026-04-21",
+        name: "Feiertag Test",
+        type: "public_holiday",
+      }),
+      createCalendarMarker({
+        id: "marker-company-2026-04-23",
+        date: "2026-04-23",
+        name: "Betriebsfeiertag Test",
+        type: "company_holiday",
+        source: "admin",
+        scope: "company",
+      }),
+    ];
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2026-04-20", endDate: null, startTime: "09:00" }),
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2026-04-20T00:00:00Z")} />,
+    );
+
+    const holidayTemplateMatches = html.match(/grid-template-columns:1fr 0\.33fr 1fr 0\.33fr 1fr 0\.33fr 0\.33fr/g) ?? [];
+    expect(holidayTemplateMatches.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("widens holiday columns to weekday width when a regular appointment exists on the holiday", () => {
+    calendarMarkersForTest = [
+      createCalendarMarker({
+        id: "marker-public-2026-04-21",
+        date: "2026-04-21",
+        name: "Feiertag Test",
+        type: "public_holiday",
+      }),
+    ];
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2026-04-21", endDate: null, startTime: "09:00" }),
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2026-04-20T00:00:00Z")} />,
+    );
+
+    const weekdayTemplateMatches = html.match(/grid-template-columns:1fr 1fr 1fr 1fr 1fr 0\.33fr 0\.33fr/g) ?? [];
+    expect(weekdayTemplateMatches.length).toBeGreaterThanOrEqual(4);
+    expect(html).not.toContain("grid-template-columns:1fr 0.33fr 1fr 1fr 1fr 0.33fr 0.33fr");
+  });
+
   it("renders the absence strip with a compact colored header and standard left-aligned employee badges", () => {
     const weekStart = new Date("2026-04-20T00:00:00Z");
     const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -341,19 +413,7 @@ describe("CalendarWeekView layout grid regression", () => {
   });
 
   it("renders one shared week body marker column instead of lane-specific holiday dividers", () => {
-    calendarMarkersForTest = [{
-      id: "marker-2026-04-21",
-      date: "2026-04-21",
-      endDate: null,
-      name: "Feiertag Test",
-      type: "public_holiday",
-      source: "automatic",
-      scope: "national",
-      states: [],
-      active: true,
-      note: null,
-      version: 1,
-    }];
+    calendarMarkersForTest = [createCalendarMarker({})];
     useCalendarAppointmentsMock.mockReturnValue({
       data: [
         createAppointment({ id: 91, startDate: "2026-04-20", endDate: null, startTime: "09:00" }),

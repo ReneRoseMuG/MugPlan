@@ -194,17 +194,22 @@ function normalizeResolvedSettingValue(definition: SettingDefinition, value: unk
 }
 
 async function assertCanWriteSetting(userId: number, input: SetSettingInput): Promise<void> {
-  if (!(input.scopeType === "GLOBAL" && (
+  const isRestrictedGlobalSetting = input.scopeType === "GLOBAL" && (
     input.key === "auth_two_factor_enabled"
     || input.key === "calendar.markerVisualizationStyle"
     || input.key.startsWith("monitoring.")
     || input.key === "reports.categoryLayout"
-  ))) {
+  );
+  if (!isRestrictedGlobalSetting) {
     return;
   }
+
   const userWithRole = await usersRepository.getUserWithRole(userId);
   const roleCode = userWithRole?.isActive ? userWithRole.roleCode : null;
   const roleKey = roleCode ? mapDbRoleCodeToCanonicalRole(roleCode) : null;
+  if (input.key === "calendar.markerVisualizationStyle" && (roleKey === "ADMIN" || roleKey === "DISPONENT")) {
+    return;
+  }
   if (roleKey !== "ADMIN") {
     throw new UserSettingsError("FORBIDDEN", 403);
   }

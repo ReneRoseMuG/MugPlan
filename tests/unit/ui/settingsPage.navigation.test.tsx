@@ -4,19 +4,19 @@
  * Feature: Settings Redesign - Sidebar-Navigation
  *
  * Abgedeckte Regeln:
- * - Die Sidebar-Navigation rendert alle vier Eintraege in zwei Gruppen (Anzeige, System).
- * - Der initiale Pane "Oberflaeche" ist der Standard und traegt aria-current="page".
- * - Alle anderen Nav-Eintraege haben kein aria-current im Ausgangszustand.
+ * - Die Sidebar-Navigation rendert die berechtigten Einträge in zwei Gruppen (Anzeige, System).
+ * - Der initiale Pane "Oberfläche" ist der Standard und trägt aria-current="page".
+ * - Alle anderen Nav-Einträge haben kein aria-current im Ausgangszustand.
  * - Nur der aktive Pane-Container (settings-pane-oberflaeche) wird initial gerendert.
  *
  * Fehlerfaelle:
- * - Ein Nav-Eintrag fehlt oder traegt den falschen data-testid.
+ * - Ein Nav-Eintrag fehlt oder trägt den falschen data-testid.
  * - Der falsche Pane ist initial aktiv.
  * - aria-current fehlt oder steht auf dem falschen Nav-Eintrag.
  *
  * Ziel:
  * Statische Nav-Struktur und initiales Pane-Rendering absichern.
- * Klick-Navigationverhalten wird in settingsPage.navigation.e2e.ts geprueft.
+ * Klick-Navigationverhalten wird in settingsPage.navigation.e2e.ts geprüft.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -101,9 +101,10 @@ describe("Settings Redesign UI: Sidebar-Navigation", () => {
     expect(html).toContain("settings-nav");
   });
 
-  it("rendert alle vier Nav-Eintraege mit korrekten data-testid", () => {
+  it("rendert alle Admin-Nav-Einträge mit korrekten data-testid", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).toContain("nav-item-oberflaeche");
+    expect(html).toContain("nav-item-feiertage");
     expect(html).toContain("nav-item-kalender");
     expect(html).toContain("nav-item-sicherheit");
     expect(html).toContain("nav-item-backup");
@@ -115,23 +116,25 @@ describe("Settings Redesign UI: Sidebar-Navigation", () => {
     expect(html).toContain("System");
   });
 
-  it("setzt aria-current=page auf den initialen Nav-Eintrag Oberflaeche", () => {
+  it("setzt aria-current=page auf den initialen Nav-Eintrag Oberfläche", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     // nav-item-oberflaeche muss aria-current="page" tragen
     expect(html).toMatch(/nav-item-oberflaeche[^>]*aria-current="page"/);
   });
 
-  it("setzt kein aria-current auf die anderen Nav-Eintraege im Ausgangszustand", () => {
+  it("setzt kein aria-current auf die anderen Nav-Einträge im Ausgangszustand", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
-    // nav-item-kalender, -sicherheit, -backup duerfen kein aria-current haben
+    // nav-item-feiertage, -kalender, -sicherheit, -backup dürfen kein aria-current haben
+    expect(html).not.toMatch(/nav-item-feiertage[^>]*aria-current="page"/);
     expect(html).not.toMatch(/nav-item-kalender[^>]*aria-current="page"/);
     expect(html).not.toMatch(/nav-item-sicherheit[^>]*aria-current="page"/);
     expect(html).not.toMatch(/nav-item-backup[^>]*aria-current="page"/);
   });
 
-  it("rendert initial nur den Oberflaeche-Pane und nicht die anderen", () => {
+  it("rendert initial nur den Oberfläche-Pane und nicht die anderen", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).toContain("settings-pane-oberflaeche");
+    expect(html).not.toContain("settings-pane-feiertage");
     expect(html).not.toContain("settings-pane-kalender");
     expect(html).not.toContain("settings-pane-sicherheit");
     expect(html).not.toContain("settings-pane-backup");

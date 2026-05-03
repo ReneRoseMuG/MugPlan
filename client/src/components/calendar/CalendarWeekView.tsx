@@ -148,6 +148,10 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
 } as const;
 const MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX = 180;
 
+function usesCompactDayWidthForCalendarMarker(marker: { type: string }): boolean {
+  return marker.type === "public_holiday" || marker.type === "company_holiday";
+}
+
 const compareAppointmentsForWeekLane = (a: CalendarAppointment, b: CalendarAppointment) => {
   const priorityCompare = getAppointmentStackPriority(a) - getAppointmentStackPriority(b);
   if (priorityCompare !== 0) return priorityCompare;
@@ -1550,9 +1554,21 @@ export function CalendarWeekView({
                 }),
             );
 
-            const weekDayWeights = dayWeights.map((weight, dayIdx) =>
-              dayIdx >= 5 && dayHeaderBadges[dayIdx].some((badge) => !badge.isAbsenceLane) ? 1 : weight,
-            );
+            const compactDayWeight = dayWeights[5] ?? 1;
+            const weekDayWeights = dayWeights.map((weight, dayIdx) => {
+              const hasRegularDayContent = dayHeaderBadges[dayIdx].some((badge) => !badge.isAbsenceLane);
+              if (hasRegularDayContent) {
+                return 1;
+              }
+
+              const dayKey = format(days[dayIdx], "yyyy-MM-dd");
+              const hasCompactHolidayMarker = (calendarMarkersByDate.get(dayKey) ?? []).some(usesCompactDayWidthForCalendarMarker);
+              if (hasCompactHolidayMarker) {
+                return compactDayWeight;
+              }
+
+              return weight;
+            });
             const weekDayGridTemplate = buildDayGridTemplate(weekDayWeights);
 
             return (

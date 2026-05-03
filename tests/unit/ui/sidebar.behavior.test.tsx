@@ -51,9 +51,9 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("Reports");
     expect(html).toContain("Journal");
     expect(html).toContain("Monitoring");
-    expect(html).toContain("Wochen");
-    expect(html).toContain("Monats");
-    expect(html).toContain("Tour PLZ Planung");
+    expect(html).toContain("Woche");
+    expect(html).toContain("Monat");
+    expect(html).toContain("PLZ Planung");
     expect(html).toContain("nav-tour-plz-plan");
     expect(html).toContain("nav-tour-plz-plan-open-tab");
     expect(html).toContain("nav-reports-open-tab");
@@ -66,7 +66,8 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).toContain("nav-monitoring-open-tab");
     expect(html).toContain("border-2 border-red-600");
     expect(html).not.toContain("nav-monitoring-count");
-    expect(html).toContain("Meine Einstellungen");
+    expect(html).toContain("Einstellungen");
+    expect(html).not.toContain("Meine Einstellungen");
   });
 
   it("shows reports, monitoring and employees but hides journal and tour postal planning for reader roles", () => {
@@ -82,8 +83,8 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
       />,
     );
 
-    expect(html).toContain("Wochen");
-    expect(html).toContain("Monats");
+    expect(html).toContain("Woche");
+    expect(html).toContain("Monat");
     expect(html).toContain("Reports");
     expect(html).not.toContain("Journal");
     expect(html).toContain("Monitoring");
@@ -97,6 +98,7 @@ describe("FT07/FT26/FT31 UI: Sidebar behavior", () => {
     expect(html).not.toContain("nav-tour-plz-plan-open-tab");
     expect(html).toContain("nav-mitarbeiter");
     expect(html).toContain("nav-mitarbeiter-open-tab");
-    expect(html).toContain("Meine Einstellungen");
+    expect(html).toContain("Einstellungen");
+    expect(html).not.toContain("Meine Einstellungen");
   });
 });

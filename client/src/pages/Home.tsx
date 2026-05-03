@@ -142,7 +142,7 @@ function resolveViewTitle(view: ViewType): string {
     case "helpTextForm":
       return "Hilfetexte";
     case "settings":
-      return "Meine Einstellungen";
+      return "Einstellungen";
     case "masterData":
       return "Stammdaten";
     case "users":

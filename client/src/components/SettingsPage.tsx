@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { CalendarMarkersAdminPage } from "@/components/CalendarMarkersAdminPage";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,16 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { api } from "@shared/routes";
-import { AlertTriangle, CheckCheck, MinusCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarCog,
+  CalendarDays,
+  CheckCheck,
+  DatabaseBackup,
+  MinusCircle,
+  Palette,
+  ShieldCheck,
+} from "lucide-react";
 import { formatDisplayDate, formatDisplayTimestamp } from "@/lib/date-display-format";
 
 const previewOptions = ["small", "medium", "large"] as const;
@@ -183,7 +193,8 @@ export function SettingsPage() {
   const { settingsByKey, isLoading, isError, errorMessage, retry, setSetting, isSaving } = useSettings();
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
   const isAdmin = userRole === "ADMIN";
-  const [activePane, setActivePane] = useState<"oberflaeche" | "kalender" | "sicherheit" | "backup">("oberflaeche");
+  const canManageCalendarMarkers = isAdmin || userRole === "DISPATCHER" || userRole === "DISPONENT";
+  const [activePane, setActivePane] = useState<"oberflaeche" | "feiertage" | "kalender" | "sicherheit" | "backup">("oberflaeche");
   const [activeBackupTab, setActiveBackupTab] = useState<"backups" | "dumps" | "import">("backups");
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
@@ -868,7 +879,7 @@ export function SettingsPage() {
         : "border-transparent text-slate-500 hover:text-slate-700"
     }`;
 
-  const pageTitle = isAdmin ? "Einstellungen" : "Meine Einstellungen";
+  const pageTitle = "Einstellungen";
   const pageIntro = isAdmin
     ? "Benutzerbezogene und systemweite Einstellungen"
     : "Benutzerspezifische Einstellungen für Vorschau, Layout und persönliche Anzeige";
@@ -895,8 +906,20 @@ export function SettingsPage() {
               data-testid="nav-item-oberflaeche"
               aria-current={activePane === "oberflaeche" ? "page" : undefined}
             >
+              <Palette className="h-4 w-4" aria-hidden="true" />
               Oberfläche
             </button>
+            {canManageCalendarMarkers ? (
+              <button
+                className={navItemClass("feiertage")}
+                onClick={() => setActivePane("feiertage")}
+                data-testid="nav-item-feiertage"
+                aria-current={activePane === "feiertage" ? "page" : undefined}
+              >
+                <CalendarDays className="h-4 w-4" aria-hidden="true" />
+                Feiertage
+              </button>
+            ) : null}
             {isAdmin ? (
               <button
                 className={navItemClass("kalender")}
@@ -904,6 +927,7 @@ export function SettingsPage() {
                 data-testid="nav-item-kalender"
                 aria-current={activePane === "kalender" ? "page" : undefined}
               >
+                <CalendarCog className="h-4 w-4" aria-hidden="true" />
                 Kalender
               </button>
             ) : null}
@@ -918,6 +942,7 @@ export function SettingsPage() {
                 data-testid="nav-item-sicherheit"
                 aria-current={activePane === "sicherheit" ? "page" : undefined}
               >
+                <ShieldCheck className="h-4 w-4" aria-hidden="true" />
                 Sicherheit
               </button>
               <button
@@ -926,6 +951,7 @@ export function SettingsPage() {
                 data-testid="nav-item-backup"
                 aria-current={activePane === "backup" ? "page" : undefined}
               >
+                <DatabaseBackup className="h-4 w-4" aria-hidden="true" />
                 Backup &amp; Dump
               </button>
             </div>
@@ -1116,6 +1142,18 @@ export function SettingsPage() {
           )}
 
           {/* ── Kalender ── */}
+          {activePane === "feiertage" && canManageCalendarMarkers && (
+            <div className="flex h-full min-h-[520px] flex-col" data-testid="settings-pane-feiertage">
+              <div className="mb-5 pb-3 border-b border-slate-200">
+                <h2 className="text-base font-medium text-slate-900">Feiertage</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Pflege von Feiertagen, Betriebsfeiertagen und Betriebsferien
+                </p>
+              </div>
+              <CalendarMarkersAdminPage />
+            </div>
+          )}
+
           {activePane === "kalender" && isAdmin && (
             <div data-testid="settings-pane-kalender">
               <div className="mb-5 pb-3 border-b border-slate-200">
