@@ -11,4 +11,4 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 26/07: Auftragsliste drucken](uc-26-07-auftragsliste-drucken.md)
 - [UC 26/08: Tourenplan konfigurieren und erzeugen](uc-26-08-tourenplan-konfigurieren-und-erzeugen.md)
 - [UC 26/09: Tourenplan drucken](uc-26-09-tourenplan-drucken.md)
-
+- [UC 26/10: Report-Preset speichern und ausführen](uc-26-10-report-preset-speichern-und-ausfuehren.md)

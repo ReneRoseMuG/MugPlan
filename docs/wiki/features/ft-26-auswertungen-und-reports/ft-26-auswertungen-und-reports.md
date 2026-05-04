@@ -2,219 +2,247 @@
 
 ## Metadaten
 
-- Status: Abgeschlossen
+- Status: In Überarbeitung
 - Typ: Feature
 - Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (26) Auswertungen und Reports 313da094354e80b2a13ad9fdb689a254.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
+- Lokaler Stand: 04.05.26
+- Importstatus: Ursprünglich aus lokalem Notion-Markdown-Export übernommen; fachlich für Report-Presets und entkoppelte Report-Persistenz aktualisiert.
 
 ## Ziel / Zweck
 
-Unter einem neuen Navigationspunkt **Reports** stellt die Anwendung konfigurierbare tabellarische Auswertungen bereit. Reports sind keine Echtzeitansichten, sondern werden auf Anforderung erzeugt. Der Navigationspunkt ist für Admins, Disponenten und Leser sichtbar; Leser nutzen den Bereich rein lesend. Der Bereich umfasst vier Reports: Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan.
+Unter dem Navigationspunkt **Reports** stellt die Anwendung konfigurierbare Auswertungen bereit. Reports sind Lese- und Erzeugungsfunktionen, keine Echtzeitansichten. Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und eigene Presets verwalten.
 
-## Fachliche Beschreibung
+Der Bereich umfasst vier Reports:
 
-**Gemeinsame Struktur aller Reports:**
-Jeder Report wird über ein **Konfigurationspanel** gesteuert, das die volle Breite des verfügbaren Containers einnimmt. Das Panel enthält mindestens einen Button **Report erzeugen** und wird um eine generische Preset-Steuerung erweitert. Die Ergebnistabelle oder Ergebnisansicht erscheint unterhalb des Panels. Reports werden nicht automatisch aktualisiert; jede Ausgabe erfordert eine explizite Erzeugung durch den Akteur oder die explizite Ausführung eines gespeicherten Presets.
+- Vorlaufliste
+- Produktionsplanung
+- Auftragsliste
+- Tourenplan
 
-Report-Konfigurationen werden nicht mehr automatisch über User-Settings persistiert. Beim Öffnen eines Reports startet der Report in einem definierten Default-Zustand. Die Datumsspannen-Konfiguration fokussiert dabei die aktuelle ISO-Kalenderwoche. Weitere vom Akteur vorgenommene Änderungen bleiben zunächst nur temporär im aktuellen UI-Zustand erhalten. Wenn eine Konfiguration dauerhaft wiederverwendet werden soll, speichert der Akteur sie bewusst als Preset.
+Reports speichern ihren Zustand nicht mehr automatisch über User-Settings oder andere stille Settings-Mechanismen. Dauerhafte Wiederverwendung erfolgt ausschließlich über bewusst gespeicherte Presets. Die einzige fachliche Ausnahme ist die globale Layout-Konfiguration der Produktionsplanung; sie bleibt Admin-seitig persistent und gilt zunächst für alle.
 
-Ein Preset ist eine gespeicherte Report-Konfiguration. Presets können benutzerspezifisch (USER) oder global (GLOBAL) sein. USER-Presets sind nur für den jeweiligen Benutzer sichtbar und verwaltbar. GLOBAL-Presets sind für alle berechtigten Report-Nutzer sichtbar und können nur von Admins angelegt, geändert oder gelöscht werden. Ein Preset kann neben der eigentlichen Report-Konfiguration auch Folgeaktionen enthalten, zum Beispiel „Report erzeugen“ oder „Druckvorschau öffnen“.
+## Gemeinsame Struktur
 
-Presets können dynamische Zeitraumangaben enthalten. Dadurch kann ein Preset beispielsweise festlegen, dass die Auftragsliste immer ab der kommenden Kalenderwoche für vier Wochen erzeugt wird. Die dynamische Angabe wird erst bei der Ausführung des Presets in eine konkrete Datumsspanne aufgelöst.
+Jeder Report wird über ein Konfigurationspanel gesteuert. Das Panel enthält mindestens die Aktion **Report erzeugen** und eine generische Preset-Steuerung. Die Ergebnistabelle oder Ergebnisansicht erscheint unterhalb des Panels.
 
-Jedem Report ist ein eindeutiger **HelpKey** zugewiesen, der die Zuweisung eines Hilfetexts zur Ansicht ermöglicht.
+Reports werden nicht automatisch aktualisiert. Eine Ausgabe entsteht nur durch eine ausdrückliche Aktion des Benutzers oder durch die ausdrückliche Ausführung eines Presets, das die Aktion **Report erzeugen** enthält.
 
-**Report: Vorlaufliste**
+## Zustandsmodell
+
+### Flüchtiger UI-Zustand
+
+Alle Report-Konfigurationsmöglichkeiten bleiben als UI-Funktionen erhalten. Dazu gehören insbesondere:
+
+- Zeitraum und Kalenderwochenmodus
+- aktive Tabs
+- Spaltenauswahl und Spaltenreihenfolge
+- Kategorieauswahl
+- Shortcode-Schalter
+- Tour-Auswahl
+- Druck- und Vorschauoptionen
+
+Diese Werte bleiben zunächst nur im aktuellen UI-Zustand. Beim Verlassen oder erneuten Öffnen eines Reports dürfen sie nicht still aus User-Settings oder vergleichbaren Settings wiederhergestellt werden.
+
+### Explizite Preset-Persistenz
+
+Ein Preset ist eine bewusst gespeicherte Report-Konfiguration. Es kann alle für den jeweiligen Report fachlich zulässigen Konfigurationswerte enthalten. Presets können außerdem Folgeaktionen enthalten, zum Beispiel:
+
+- Report erzeugen
+- Druckvorschau öffnen
+
+Ein Preset enthält mindestens:
+
+- Name
+- Report-Key
+- Scope
+- Konfiguration
+- optionale Aktionen
+
+Presets werden serverseitig im Dateisystem über die vorhandene generische Server-Filesystem-Infrastruktur gespeichert. Sie werden nicht in der Datenbank gespeichert.
+
+### Scope und Rechte
+
+Presets haben zwei Scopes:
+
+- `USER`: nur für den jeweiligen Benutzer sichtbar und durch diesen Benutzer verwaltbar.
+- `GLOBAL`: für alle angemeldeten Benutzer sichtbar, aber nur durch Admins anlegbar, änderbar und löschbar.
+
+Alle angemeldeten Rollen dürfen eigene USER-Presets anlegen, ändern, löschen und ausführen. Admins dürfen zusätzlich GLOBAL-Presets verwalten.
+
+Die technische Durchsetzung erfolgt serverseitig. UI-Sichtbarkeit ist nur ergänzende Bedienlogik und keine ausreichende Berechtigungsprüfung.
+
+### Globale Produktionsplanungs-Layout-Konfiguration
+
+Die globale Layout-Konfiguration der Produktionsplanung bleibt als Admin-seitig verwaltete Persistenz erhalten. Sie gilt zunächst für alle Benutzer als Standardlayout.
+
+Dieses Layout darf Bestandteil eines Presets sein. Wenn ein Preset ein Layout enthält, ist das eine explizit gespeicherte Preset-Konfiguration und keine stille User-Settings-Persistenz. Das Ändern der globalen Layout-Konfiguration bleibt Admins vorbehalten.
+
+## Datumskonfiguration
+
+Beim Öffnen eines Reports wird ein definierter Default-Zustand gesetzt:
+
+- Modus: Kalenderwoche
+- Start: aktuelle ISO-Kalenderwoche
+- Zeitraum: 1 KW
+
+Für Presets muss die Report-Datumskonfiguration dynamische Kalenderwochen-Modi unterstützen:
+
+- Start aktuelle KW
+- Start kommende KW
+- Anzahl der KW als Zeitraum
+
+Die dynamische Angabe wird erst bei der Ausführung des Presets in eine konkrete Datumsspanne aufgelöst. Dadurch kann ein Preset zum Beispiel immer die kommenden 4 KW erzeugen, ohne ein statisches Datum zu speichern.
+
+Die bestehenden UI-Modi für konkrete Datumsspannen bleiben erhalten, solange sie für den jeweiligen Report fachlich vorgesehen sind. Sie dürfen aber nicht automatisch als Setting persistiert werden.
+
+## Report: Vorlaufliste
+
 HelpKey: `report-vorlaufliste`
 
-Die Vorlaufliste fasst alle Termine innerhalb eines wählbaren Zeitraums zusammen, denen ein Projekt zugeordnet ist. Sie zeigt je Zeile die wesentlichen Auftragsdaten für die operative Disposition und die Vorbereitung von Montageeinsätzen.
+Die Vorlaufliste fasst Termine innerhalb eines wählbaren Zeitraums zusammen, denen ein Projekt zugeordnet ist. Termine ohne Projekt werden nicht aufgenommen.
 
-**Konfigurationspanel — drei Tabs:**
+Das Konfigurationspanel hat drei Tabs:
 
-Das Konfigurationspanel der Vorlaufliste gliedert sich in drei Tabs: **Datum**, **Kalenderwoche** und **Spalten**. Beim Öffnen des Reports wird die Kalenderwochen-Konfiguration auf die aktuelle ISO-Kalenderwoche fokussiert. Der zuletzt aktive Tab und die Spaltenauswahl werden nicht mehr automatisch über User-Settings wiederhergestellt. Soll eine bestimmte Tab-/Spalten-/Zeitraumskonfiguration dauerhaft wiederverwendet werden, speichert der Akteur diese als Preset.
+- Datum
+- Kalenderwoche
+- Spalten
 
-- **Tab Datum:** Von-Datum (Pflichtfeld; bezieht sich auf den vorgeplanten Termin) und Bis-Datum (optional, initial verborgen, durch Klicken freilegbar). Ohne Bis-Datum keine obere Grenze.
-- **Tab Kalenderwoche:** Eingabefeld KW Start mit Aufwärts-/Abwärts-Steuerung (max. 3 Zeichen) und Eingabefeld Anzahl Wochen mit Aufwärts-/Abwärts-Steuerung (max. 3 Zeichen). Ein Hinweis zeigt die aktuelle Kalenderwoche und das berechnete Enddatum. Die Auswahl wird in eine konkrete Datumsspanne aufgelöst.
-- **Tab Spalten:** Spalten-Editor zur Steuerung von Sichtbarkeit und Reihenfolge der Tabellenspalten. Die Konfiguration bleibt temporär, bis sie als Bestandteil eines Presets gespeichert wird.
+Beim Öffnen startet die Vorlaufliste im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum. Der zuletzt aktive Tab und die Spaltenauswahl werden nicht automatisch wiederhergestellt. Tab, Zeitraum, Spaltenauswahl, Spaltenreihenfolge, Spaltenbreiten und Shortcode-Option dürfen aber Bestandteil eines Presets sein.
 
-**Datenbasis:**
-Nur Termine mit Projektzuordnung. Termine ohne Projekt werden nicht aufgenommen. Je Zeile werden Daten aus Termin, Projekt, Kunde und `project_order_items` zusammengeführt.
+Die Sortierung bleibt aufsteigend nach vorgeplantem Termin und ist nicht konfigurierbar.
 
-**Produktspalten:** Je konfigurierter Komponentenkategorie maximal eine Auftragsposition. Ist keine vorhanden, bleibt die Zelle leer.
+## Report: Produktionsplanung
 
-**Tatsächlicher Termin:** Der früheste nicht-stornierte Termin mit derselben Projekt-ID innerhalb des abgefragten Zeitfensters. Sind alle Termine des Projekts im Zeitfenster storniert, wird der früheste stornierte Termin als Fallback verwendet. Gibt es keinen Termin im Zeitfenster, bleibt die Zelle leer.
-
-**Sortierung:** Aufsteigend nach vorgeplanter Termin. Die Sortierung ist nicht konfigurierbar.
-
-**Verfügbare Spalten** (Sichtbarkeit und Reihenfolge über den Tab Spalten konfigurierbar):
-
-| Spalte | Quelle |
-| --- | --- |
-| Auftragssumme | 1:1-Join-Tabelle am Projekt |
-| Fullname Kunde | Kunde |
-| PLZ | Kunde |
-| Ort | Kunde |
-| Saunamodell | Komponentenkategorie (project_order_items) |
-| Tür Variante | Komponentenkategorie (project_order_items) |
-| Fenster | Komponentenkategorie (project_order_items) |
-| Ofen | Komponentenkategorie (project_order_items) |
-| Steuerung | Komponentenkategorie (project_order_items) |
-| Dach | Komponentenkategorie (project_order_items) |
-| Vorgeplanter Termin | Termin (Datum) |
-| KW Vorgeplant | Kalenderwochen-Ableitung aus Termindatum (ISO) |
-| Tatsächlicher Termin | Frühester aktiver Termin mit gleicher Projekt-ID im Abfragezeitraum (Fallback: frühester stornierter) |
-| Projekt Beschreibung | Projekt |
-
-**Report: Produktionsplanung**
 HelpKey: `reports-produkte`
 
-Der Report Produktionsplanung beantwortet zwei Fragen: welche Artikel werden in einem Zeitraum verbaut und in welcher Gesamtmenge, und welche Projekte erfordern besondere Aufmerksamkeit. Er aggregiert Auftragsmengen aus `project_order_items` über alle Projekte mit Terminen im konfigurierten Zeitraum und listet anschließend Projekte mit den Tags Sondermaß oder Anmerkungen als detaillierte Projektkarten auf.
+Der Report Produktionsplanung aggregiert Auftragsmengen aus `project_order_items` über Projekte mit Terminen im konfigurierten Zeitraum. Die Datumsspannen-Konfiguration folgt den gemeinsamen Regeln.
 
-**Datumsspannen-Konfiguration:**
+Die anzuzeigenden Kategorien und ihre Darstellung in Blöcken und Spalten werden über die globale Produktionsplanungs-Layout-Konfiguration gesteuert. Der Layout-Editor bleibt Admin-seitig. Ist kein Layout konfiguriert, werden Standardkategorien verwendet.
 
-Identisch mit der Vorlaufliste: Modus Datum (Von/Bis) oder Modus Kalenderwoche (KW Start + Anzahl Wochen). Der Kategorie-Layout-Editor ist über den Button Kategorie-Layout neben dem Modus-Toggle zugänglich und öffnet einen Dialog. Nur Admins können das Layout bearbeiten.
+Shortcodes bleiben als expliziter Schalter erhalten. Wenn Shortcodes aktiv sind, werden Artikel mit identischem Shortcode innerhalb derselben Kategorie zu einem Eintrag zusammengeführt und ihre Mengen summiert. Artikel ohne Shortcode bleiben unter ihrem Vollnamen.
 
-**Ausgabe — drei Bereiche:**
+Projekte oder Termine mit Reklamation-Tag oder Storniert-Tag werden vollständig ausgeschlossen.
 
-- **Produktkategorien:** Je Kategorie eine Liste der vorkommenden Produktnamen mit Gesamtmenge (summiert über alle Projekte und Auftragsmengen).
-- **Komponentenkategorien:** Analog zu Produktkategorien, aber für Komponenten.
-- **Sondermaße:** Flache Liste aller Projekte, bei denen das systemverwaltete Tag „Sondermaß" am Termin oder Projekt gesetzt ist. Je Eintrag: Auftragsnummer, Kundennummer, Kundenname, frühester Termin im Zeitfenster, Projektbeschreibung.
+### Projekt- und Terminkacheln
 
-**Kategorie-Layout:** Die anzuzeigenden Kategorien sowie ihre Darstellung in Blöcken und Spalten werden über den Kategorie-Layout-Editor gesteuert. Der Editor öffnet sich als Dialog über den Button Kategorie-Layout neben dem Modus-Toggle. Nur Admins können das Layout bearbeiten. Kategorien außerhalb des konfigurierten Layouts erscheinen nicht im Report. Ist kein Layout konfiguriert, werden Standardkategorien verwendet.
+Unterhalb der Summenbereiche werden nur noch Einzelkacheln für Projekte bzw. Termine ausgegeben, die das System-Tag **Sondermaß** tragen. Die Tags **Anmerkungen** und **Gespiegelt** sind keine eigenständigen Gründe mehr, eine Kachel im unteren Bereich der Produktionsplanung auszugeben.
 
-**Ausschlusslogik:** Projekte oder Termine mit Reklamation-Tag oder Storniert-Tag werden vollständig ausgeschlossen — kein Fallback, keine Markierung (Unterschied zur Vorlaufliste, wo Storniert nur markiert wird).
+Wenn ein Projekt oder Termin zusätzlich andere Tags trägt, bleiben diese in der Kachel sichtbar, sofern die Kachel wegen Sondermaß aufgenommen wurde.
 
-**Keine Pagination.** Der Report gibt alle passenden Einträge auf einmal zurück.
-
-**Shortcodes:** Der Report kann wahlweise mit Shortcodes statt Vollnamen betrieben werden (expliziter Schalter, kein Automatismus). Wenn Shortcodes aktiv sind, werden Artikel mit identischem Shortcode zu einem einzigen Eintrag zusammengeführt und ihre Mengen summiert. Artikel ohne Shortcode bleiben unter ihrem Vollnamen. Diese Zusammenführungslogik gilt ausschließlich für den Produktionsplanung-Report.
-
-**Projektzeilen-Ausgabe:** Im Anschluss an die Summenbereiche werden alle Projekte des Zeitraums, die das Tag Sondermaß, Anmerkungen oder Gespiegelt tragen, zeitlich aufsteigend sortiert als höhenflexible Projektkarten ausgegeben. Das Tag Anmerkungen wird vom System namentlich erkannt; es bleibt für Nutzer frei wählbar und veränderbar wie jedes andere Tag.
-
-Jede Projektkarte besteht aus drei Bereichen:
-
-- **Header:** Links Kundenname (vollständig) und Kundennummer, in der Mitte Auftragsnummer und Projektname, rechts Datum des repräsentativen Termins und Dauer in Tagen.
-- **Inhaltsbereich:** Vollständige Projektbeschreibung, höhenflexibel.
-- **Footer:** Entspricht dem Footer einer EntityCard — zugeordnete Mitarbeiter, akkumulierte Notizen, akkumulierte Anhänge und akkumulierte Tags des repräsentativen Termins.
-
-**Druckausgabe (Produktionsplanung):** Aus dem generierten Report heraus kann der Akteur eine Druckausgabe im Format Landscape A4 erzeugen. Die Druckausgabe gliedert sich in drei Bereiche: erstens der Summenreport (Produkt- und Komponentenkategorien komprimiert, mit Shortcodes wenn aktiv und Shortcode-Zusammenführung), zweitens die Vorlaufliste (streng eine Zeile pro Projekt, mit fortlaufendem Index als Zeilennummer, ohne Kundendaten, mit Tourname, mit Shortcodes wenn aktiv), drittens die Projektzeilen (alle Projekte mit Tag Sondermaß, Anmerkungen oder Gespiegelt als höhenflexible Projektkarten mit Header, Beschreibung und EntityCard-Footer). Reklamation und Storniert werden in der Druckausgabe vollständig ausgeschlossen.
-
-**Report: Auftragsliste**
+## Report: Auftragsliste
 
 HelpKey: `report-auftragsliste`
 
-Der Report Auftragsliste zeigt alle Projekte mit mindestens einem gültigen Termin im konfigurierten Zeitraum als paginierte Kachelansicht. Jede Kachel repräsentiert ein Projekt und fasst die wesentlichen Auftragsdaten, Komponentenauswahl sowie Mitarbeiterzuordnung kompakt zusammen.
+Die Auftragsliste zeigt Projekte mit mindestens einem gültigen Termin im konfigurierten Zeitraum als Kachelansicht. Pro Projekt wird der erste gültige Termin im Zeitfenster als repräsentativer Termin genutzt. Projekte und Termine mit Reklamation-Tag werden vollständig ausgeschlossen.
 
-**Datumsspannen-Konfiguration:**
+Die Datumsspanne wird über Modus Datum oder Kalenderwoche konfiguriert. Beim Öffnen startet der Report im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.
 
-Identisch mit den bestehenden Reports: Modus Datum (Von/Bis) oder Modus Kalenderwoche (KW Start + Anzahl Wochen). Von Datum bzw. KW Start sind Pflichtfelder. Zusätzlich ist ein Kategorie-Popover verfügbar, über das einzelne Komponentenkategorien aus der Ausgabe abgewählt werden können.
+Komponenten- und Produktkategorien können im Konfigurationspanel abgewählt werden. Diese Auswahl bleibt flüchtig, bis sie als Bestandteil eines Presets gespeichert wird. Deaktivierte Kategorien erscheinen weder in den Kacheln noch in der Druckausgabe.
 
-**Datenbasis:**
-
-Pro Projekt der erste gültige Termin im Zeitfenster als repräsentativer Termin (frühester nicht-stornierter; Fallback: frühester stornierter, wenn kein aktiver vorhanden). Projekte und Termine mit Reklamation-Tag werden vollständig ausgeschlossen. Je Item werden Termin, Projekt, Kunde, Mitarbeiter, Notizen, Anhänge, Tags und `project_order_items` zusammengeführt.
-
-**Sortierung:** Aufsteigend nach dem repräsentativen Termin. Die Sortierung ist nicht konfigurierbar.
-
-**Ausgabe — Kachelraster:**
-
-Die Ergebnisse werden zeitlich aufsteigend als Kacheln unterhalb des Konfigurationspanels ausgegeben. Das Raster verwendet zwei Spalten ab Viewport-Breite xl. Jede Kachel besteht aus drei Bereichen:
-
-- **Header:** Links Kundenname (vollständig) und Kundennummer, in der Mitte Auftragsnummer und Projektname, rechts Datum des repräsentativen Termins und Dauer in Tagen.
-- **Inhaltsbereich:** Vollständige Projektbeschreibung (höhenflexibel); darunter die Komponentenwerte je aktiver Kategorie (Kategoriename + Wert, kompakt).
-- **Footer:** Entspricht dem Footer einer EntityCard — zugeordnete Mitarbeiter, akkumulierte Notizen, akkumulierte Anhänge und akkumulierte Tags des repräsentativen Termins.
-
-**Druckausgabe (Auftragsliste):** Aus dem generierten Report heraus kann der Akteur eine paginierte Druckvorschau im Format Landscape A4 öffnen. Je Seite werden so viele Kacheln ausgegeben, wie vollständig passen. Eine Kachel, die am Seitenende nicht vollständig Platz findet, wird vollständig auf die nächste Seite verschoben — kein Umbruch innerhalb einer Kachel. Die Druckvorschau zeigt jeweils eine Seite. Reklamation und Storniert werden vollständig ausgeschlossen.
-
-**Report: Tourenplan**
+## Report: Tourenplan
 
 HelpKey: `report-tourenplan`
 
-Der Report Tourenplan gibt die Terminplanung einer gewählten Tour als druckfähige Kartenansicht aus. Er ersetzt die bisherige Druckfunktion aus dem Wochenkalender und ist als eigenständiger vierter Report in die Reports-Seite integriert, ohne die bestehenden drei Reports fachlich oder technisch zu berühren.
+Der Tourenplan gibt Termine einer gewählten Tour als druckfähige Kartenansicht aus. Die Option **Ohne Tour** schließt Termine ohne Tourzuordnung ein.
 
-**Konfigurationspanel:**
+Die Tour-Auswahl, der Zeitraum, der Shortcode-Schalter sowie Druck- und Vorschauoptionen bleiben UI-Funktionen. Sie werden nicht automatisch über User-Settings oder globale Settings gespeichert. Wenn diese Werte dauerhaft wiederverwendet werden sollen, müssen sie Bestandteil eines Presets sein.
 
-Tour-Auswahl (Pflichtfeld; enthält alle aktiven Touren sowie die Option „Ohne Tour“ für nicht zugeordnete Termine), Datumsspannen-Modus (Datum Von/Bis oder Kalenderwoche KW Start + Anzahl Wochen), Wochen-Schnellauswahl (aktuelle Woche, nächste Woche, übernächste Woche), Shortcode-Schalter (optional, kein Automatismus), Printmodus-Schalter (Farbdruck / Spardruck; nur Admins können den Modus ändern).
+Die Tag-Priorität pro Karte bleibt:
 
-**Datenbasis:**
+- Reklamation
+- Sondermaß
+- Messe Aufbau/Abbau
+- Neutral
 
-Alle Termine der gewählten Tour im konfigurierten Zeitraum. Karten werden nach Kalenderwoche gruppiert. Jede Karte repräsentiert einen Termin und zeigt Mitarbeitende (Kurzform), Notizen, Beschreibung und die Artikelliste des Projekts (Sauna-Artikel werden ausgeblendet; optional mit Shortcode-Ersetzung).
-
-**Tag-Priorität (pro Karte):**
-
-Reklamation übersteuert Sondermaß, Sondermaß übersteuert Messe Aufbau/Abbau, Messe Aufbau/Abbau übersteuert Neutral. Die Priorität bestimmt ausschließlich die visuelle Darstellung der Karte; eine Ausschlusslogik wie bei der Produktionsplanung gilt hier nicht.
-
-**System-Tag „Messe Aufbau/Abbau“:**
-
-Ein neu eingeführter, systemverwalteter Termin-Tag analog zu Storniert, Reklamation und Sondermaß. Er unterliegt demselben Schutz- und Sichtbarkeitsmechanismus (kein Nutzer-Rename, kein Löschen).
-
-**Druckvorschau (Tourenplan):**
-
-Aus dem generierten Report kann der Akteur eine Druckvorschau öffnen. Das Seitenformat (Hochformat / Querformat) ist in der Druckvorschau umschaltbar. Die Druckkopfzeile enthält ausschließlich den Tournamen. Die Druckfußzeile enthält ausschließlich die Seitennummer. Karten werden nicht umgebrochen — eine Karte, die am Seitenende nicht vollständig passt, wird vollständig auf die nächste Seite verschoben.
-
-**Preset-Verhalten:**
-
-Die Tourenplan-Konfiguration wird nicht mehr über `reports.tourenplan.rangeConfig` als USER-Setting gespeichert. Beim Öffnen des Reports wird die Datumsspanne auf die aktuelle ISO-Kalenderwoche fokussiert. Tour-Auswahl, Zeitraum, Shortcode-Schalter und Druckoptionen bleiben temporär, bis sie als Preset gespeichert werden. Globale Tourenplan-Presets dürfen nur von Admins verwaltet werden. Soweit ein Druckmodus als verbindliche globale Vorgabe benötigt wird, wird er als GLOBAL-Preset oder als administrativ verwaltete globale Report-Konfiguration geführt; er wird nicht als benutzerspezifisches User-Setting gespeichert.
+Die Priorität steuert ausschließlich die Darstellung. Es gibt im Tourenplan keine stille Ausschlusslogik wie in der Produktionsplanung.
 
 ## Regeln & Randbedingungen
 
-- Der Navigationspunkt Reports ist für Admins, Disponenten und Leser sichtbar und lesend zugänglich.
-- Reports werden nicht automatisch erzeugt; jede Ausgabe erfordert eine explizite Anforderung durch den Akteur oder die explizite Ausführung eines gespeicherten Presets.
-- Jeder Report-Bereich nimmt die volle Breite des verfügbaren Containers ein.
-- Jeder Report hat einen eindeutigen HelpKey für die Zuweisung von Hilfetexten.
-- Reports speichern ihren UI-Zustand nicht mehr automatisch in User-Settings. Beim Öffnen eines Reports wird eine Default-Konfiguration geladen, deren Datumsspanne die aktuelle ISO-Kalenderwoche fokussiert.
-- Wiederverwendbare Report-Konfigurationen werden ausschließlich als Presets gespeichert. USER-Presets sind benutzerspezifisch; GLOBAL-Presets sind für alle berechtigten Report-Nutzer sichtbar und nur durch Admins verwaltbar.
-- Presets können neben Konfigurationswerten auch Folgeaktionen enthalten, zum Beispiel Report erzeugen oder Druckvorschau öffnen.
-- Leser dürfen bestehende Reports lesen und erzeugen, erhalten dadurch aber keine Schreib- oder Administrationsrechte für globale Layouts, globale Presets oder Systemkonfiguration.
+- Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und eigene USER-Presets verwalten.
+- GLOBAL-Presets dürfen nur Admins verwalten.
+- Die globale Produktionsplanungs-Layout-Konfiguration darf nur durch Admins geändert werden.
+- Reports erzeugen keine Ausgabe ohne ausdrückliche Aktion.
+- Reports lesen beim Öffnen keine alten Report-User-Settings für Zeitraum, Tab, Spalten, Kategorien, Shortcodes, Tourenplan-Optionen oder vergleichbare UI-Zustände.
+- Änderungen im Konfigurationspanel schreiben keine Report-Settings.
+- Wiederverwendbare Konfigurationen werden ausschließlich über Presets gespeichert.
+- Presets werden serverseitig validiert. Der Client darf keine Rechte aus UI-Sichtbarkeit ableiten.
+- Alte Report-Settings werden nicht migriert und dürfen den Report-Startzustand nicht beeinflussen.
 
-### Vorlaufliste
+## Geplante Umsetzungsaufgaben
 
-- Nur Termine mit Projektzuordnung werden aufgenommen.
-- Termine/Projekte mit Reklamation Tag werden gefiltert.
-- Termine mit Storniert Tag werden markiert.
-- Das Konfigurationspanel hat drei Tabs: Datum, Kalenderwoche und Spalten.
-- Die Datumsspanne wird über Tab Datum (Von/Bis) oder Tab Kalenderwoche (KW Start + Anzahl Wochen) konfiguriert. Von Datum bzw. KW Start sind Pflichtfelder.
-- Bis Datum ist optional. Ohne Bis-Datum keine obere Grenze.
-- Sichtbarkeit und Reihenfolge der Spalten werden über den Tab Spalten konfiguriert. Die Auswahl wird nicht mehr automatisch benutzerspezifisch persistiert, sondern nur dann dauerhaft gespeichert, wenn der Akteur sie als Bestandteil eines Presets sichert. Die Sortierung der Zeilen (aufsteigend nach vorgeplanter Termin) ist nicht konfigurierbar.
-- Tatsächlicher Termin = frühester nicht-stornierter Termin mit gleicher Projekt-ID im Abfragezeitraum; Fallback auf frühesten stornierten Termin, wenn kein aktiver vorhanden. Kein Termin im Zeitfenster: Zelle leer.
-- Pro Komponentenkategorie maximal eine Auftragsposition; fehlende Kategorie = leere Zelle.
+### 1. Report-Preset-Infrastruktur
 
-### Produktionsplanung
+Allgemeine Infrastruktur für Report-Presets erstellen: Contracts, Route, Controller, Service, Repository und Dateisystem-Anbindung. Dazu gehören Report-Key-Validierung, Scope-Validierung, erlaubte Aktionen, dynamische KW-Auflösung und serverseitige Rechteprüfung.
 
-- Nur Projekte mit mindestens einem Termin im konfigurierten Zeitraum werden berücksichtigt. Als repräsentativer Termin gilt der früheste Termin des Projekts innerhalb der Datumsspanne.
-- Projekte und Termine mit Reklamation-Tag oder Storniert-Tag werden vollständig ausgeschlossen (kein Fallback, keine Markierung).
-- Die Datumsspanne wird über Modus Datum (Von/Bis) oder Modus Kalenderwoche (KW Start + Anzahl Wochen) konfiguriert. Von Datum bzw. KW Start sind Pflichtfelder.
-- Die anzuzeigenden Kategorien werden über das Kategorie-Layout gesteuert. Ist kein Layout konfiguriert, werden Standardkategorien verwendet.
-- Keine Pagination; der Report gibt alle passenden Einträge auf einmal zurück.
-- Shortcodes-Schalter ist vorhanden. Wenn aktiv, werden Artikel mit identischem Shortcode zu einem Eintrag zusammengeführt, Mengen summiert. Kein stiller Automatismus — nur auf explizite Aktivierung.
-- Projekte mit dem Tag Sondermaß, Anmerkungen oder Gespiegelt werden nach den Summenbereichen als Projektzeilen ausgegeben. Das Tag Anmerkungen ist für Nutzer frei wählbar und veränderbar.
-- Die Projektzeilen enthalten Header (Kundenname, Kundennummer, Auftragsnummer, Projektname, Termindatum, Dauer in Tagen), Projektbeschreibung und EntityCard-Footer (Mitarbeiter, Notizen, Anhänge, Tags).
-- Die Druckausgabe umfasst Summenreport, Vorlaufliste und Projektzeilen.
-- In der Druckausgabe werden Stornierungen und Reklamationen vollständig ausgeschlossen — kein Fallback, keine Markierung.
+Tests:
 
-### Auftragsliste
+- USER-Presets sind je Benutzer getrennt.
+- GLOBAL-Presets sind für alle angemeldeten Benutzer sichtbar.
+- GLOBAL-Presets dürfen nur Admins schreiben oder löschen.
+- Alle Rollen dürfen eigene USER-Presets schreiben, ändern und löschen.
+- Start aktuelle KW und Start kommende KW werden mit Anzahl KW korrekt in konkrete Datumsspannen aufgelöst.
+- Ungültige Report-Keys, Aktionen und Konfigurationen werden abgelehnt.
 
-- Nur Projekte mit mindestens einem Termin im konfigurierten Zeitraum werden berücksichtigt. Als repräsentativer Termin gilt der früheste nicht-stornierte Termin des Projekts innerhalb der Datumsspanne; Fallback auf den frühesten stornierten Termin, wenn kein aktiver vorhanden.
-- Projekte und Termine mit Reklamation-Tag werden vollständig ausgeschlossen (kein Fallback, keine Markierung).
-- Die Datumsspanne wird über Modus Datum (Von/Bis) oder Modus Kalenderwoche (KW Start + Anzahl Wochen) konfiguriert. Von Datum bzw. KW Start sind Pflichtfelder.
-- Komponentenkategorien können über ein Kategorie-Popover im Konfigurationspanel individuell abgewählt werden. Initial sind alle aktiven Kategorien eingeschlossen. Deaktivierte Kategorien erscheinen weder in den Kacheln noch in der Druckausgabe.
-- Keine konfigurierbare Spaltenreihenfolge; die Kachelstruktur ist fest.
-- Sortierung: aufsteigend nach dem repräsentativen Termin. Nicht konfigurierbar.
-- Jede Kachel enthält Header (Kundenname, Kundennummer, Auftragsnummer, Projektname, Termindatum, Dauer in Tagen), Inhaltsbereich (Projektbeschreibung + Komponentenwerte) und EntityCard-Footer (Mitarbeiter, Notizen, Anhänge, Tags).
-- Druckausgabe: paginiert, Landscape A4. Kacheln werden nicht umgebrochen — eine Kachel, die am Seitenende nicht vollständig passt, wird vollständig auf die nächste Seite verschoben.
-- In der Druckausgabe werden Stornierungen und Reklamationen vollständig ausgeschlossen.
+### 2. Implizite Report-Persistenz entkoppeln
 
-### Tourenplan
+Alle bestehenden Report-UI-Funktionen bleiben erhalten. Entfernt wird nur das automatische Lesen und Schreiben reportbezogener Settings. Vorhandene alte Settings dürfen beim Öffnen eines Reports keine Werte still setzen. Änderungen in Report-Panels dürfen keine alten Report-Settings mehr schreiben.
 
-- Tour-Auswahl ist Pflichtfeld. Die Option „Ohne Tour“ schließt Termine ohne Tourzuordnung ein.
-- Die Datumsspanne wird über Modus Datum (Von/Bis) oder Modus Kalenderwoche (KW Start + Anzahl Wochen) konfiguriert. Von Datum bzw. KW Start sind Pflichtfelder.
-- Karten werden nach Kalenderwoche gruppiert.
-- Tag-Priorität pro Karte: Reklamation > Sondermaß > Messe Aufbau/Abbau > Neutral. Die Priorität steuert ausschließlich die visuelle Darstellung; es gibt keine stille Ausschlusslogik.
-- „Messe Aufbau/Abbau“ ist ein systemverwalteter Tag (kein Nutzer-Rename, kein Löschen).
-- Die Artikelliste blendet Sauna-Artikel aus.
-- Shortcode-Schalter ist vorhanden. Wenn aktiv, werden Artikel mit identischem Shortcode zusammengeführt. Kein Automatismus.
-- Die Tourenplan-Konfiguration wird nicht mehr über benutzerspezifische Report-Settings persistiert. Zeitraum, Tour-Auswahl, Shortcode-Schalter und Druckoptionen können als Bestandteil eines Presets gespeichert werden.
-- Globale Tourenplan-Vorgaben dürfen nur von Admins verwaltet werden und werden als GLOBAL-Preset oder administrative globale Report-Konfiguration geführt.
-- Druckvorschau: Seitenformat (Hochformat / Querformat) ist in der Druckvorschau umschaltbar. Karten werden nicht umgebrochen.
+Ausnahme: Die globale Produktionsplanungs-Layout-Konfiguration bleibt Admin-seitig persistent.
+
+Tests:
+
+- Alte User-Settings für Reports beeinflussen den Startzustand nicht.
+- UI-Änderungen schreiben keine Report-Settings.
+- Dieselben Konfigurationswerte können explizit als Preset gespeichert und angewendet werden.
+- Die globale Produktionsplanungs-Layout-Konfiguration bleibt wirksam und Admin-seitig geschützt.
+
+### 3. Vorlaufliste mit Presets
+
+Die Vorlaufliste wird an Presets angebunden. Zeitraum, aktiver Tab, Spaltenauswahl, Reihenfolge, Breiten und Shortcode-Optionen können im Preset enthalten sein.
+
+Tests:
+
+- Default startet mit aktueller KW und 1 KW.
+- Ein Preset mit Start kommende KW und mehreren KW erzeugt den erwarteten Datenbereich.
+- Spaltenkonfiguration aus einem Preset wirkt auf die konkrete Vorlaufliste mit echten Daten.
+- Ohne Preset erfolgt keine Wiederherstellung alter Tab- oder Spaltenwerte.
+
+### 4. Produktionsplanung mit Presets
+
+Die Produktionsplanung wird an Presets angebunden. Zeitraum, Shortcode-Schalter und optionales Layout können Bestandteil eines Presets sein. Der untere Kachelbereich enthält nur Sondermaß-Projekte bzw. Sondermaß-Termine.
+
+Tests:
+
+- Default startet mit aktueller KW und 1 KW.
+- Ein Preset mit Start kommende KW und mehreren KW wirkt auf die Summenbereiche mit echten Auftragspositionen.
+- Shortcode-Konfiguration aus einem Preset wirkt auf die Aggregation.
+- Ein im Preset enthaltenes Layout wirkt auf die Report-Ausgabe.
+- Projekt-/Terminkacheln erscheinen unten nur bei Sondermaß; Anmerkungen und Gespiegelt allein reichen nicht.
+- Reklamation und Storniert bleiben vollständig ausgeschlossen.
+
+### 5. Auftragsliste mit Presets
+
+Die Auftragsliste wird an Presets angebunden. Zeitraum, Kategorieauswahl, Tag-Filter, Sauna-Modell-Auswahl, Shortcodes und Druckvorschau-Aktion können Bestandteil eines Presets sein.
+
+Tests:
+
+- Default startet mit aktueller KW und 1 KW.
+- Ein Preset mit Start kommende KW und mehreren KW erzeugt die erwarteten Kacheln mit echten Projekten.
+- Kategorieauswahl aus einem Preset verändert Kachel- und Druckausgabe.
+- Ein Preset kann Report-Erzeugung und Druckvorschau-Aktion auslösen.
+- Ohne Preset wird keine alte Kategorieauswahl wiederhergestellt.
+
+### 6. Tourenplan mit Presets
+
+Der Tourenplan wird an Presets angebunden. Tour-Auswahl, Zeitraum, Shortcodes, Druckmodus, Vorschauoptionen und Druckvorschau-Aktion können Bestandteil eines Presets sein.
+
+Tests:
+
+- Default startet mit aktueller KW und 1 KW.
+- Ein Preset mit Start kommende KW und mehreren KW erzeugt die erwarteten Tour-Karten mit echten Terminen.
+- Tour-Auswahl aus einem Preset beschränkt die Ausgabe korrekt.
+- Shortcode- und Druckoptionen aus einem Preset wirken auf Vorschau und Druckmodell.
+- Ohne Preset werden keine alten Tourenplan-Settings für Zeitraum, Druckmodus oder Schriftgröße wiederhergestellt.
 
 ## Use Cases
 
@@ -227,15 +255,12 @@ Die Tourenplan-Konfiguration wird nicht mehr über `reports.tourenplan.rangeConf
 - [UC 26/07: Auftragsliste drucken](use-cases/uc-26-07-auftragsliste-drucken.md)
 - [UC 26/08: Tourenplan konfigurieren und erzeugen](use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.md)
 - [UC 26/09: Tourenplan drucken](use-cases/uc-26-09-tourenplan-drucken.md)
-
-## Backlogs
-
-Nicht angegeben in der Notion-Quelle.
-
-## Architektur & Kontext
-
-Nicht angegeben in der Notion-Quelle.
+- [UC 26/10: Report-Preset speichern und ausführen](use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.md)
 
 ## Entscheidungen & Offene Punkte
 
-Nicht angegeben in der Notion-Quelle.
+- Alle angemeldeten Rollen dürfen eigene USER-Presets verwalten.
+- GLOBAL-Presets bleiben Admin-seitig.
+- Die globale Produktionsplanungs-Layout-Konfiguration bleibt Admin-seitig persistent und darf Bestandteil eines Presets sein.
+- Produktionsplanung zeigt unten nur noch Sondermaß-Kacheln.
+- Es findet keine Migration alter Report-Settings statt.
