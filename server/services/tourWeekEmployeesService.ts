@@ -29,6 +29,20 @@ type AppointmentEmployeePreviewStatus =
   | "already_present"
   | "current_only";
 
+type AppointmentEmployeePreviewSource =
+  | "week_plan"
+  | "available"
+  | "current";
+
+type AppointmentEmployeePreviewItem = {
+  employeeId: number;
+  employeeName: string;
+  status: AppointmentEmployeePreviewStatus;
+  selectable: boolean;
+  conflictReason: string | null;
+  source: AppointmentEmployeePreviewSource;
+};
+
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
@@ -397,6 +411,42 @@ function buildCurrentOnlyPreviewItems(
       status: "current_only" as const,
       selectable: false,
       conflictReason: null,
+      source: "current" as const,
+    }));
+}
+
+async function buildAvailableEmployeePreviewItemsTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  params: {
+    appointmentId?: number;
+    startDate: string;
+    endDate?: string | null;
+    startTime?: string | null;
+    excludedEmployeeIds: Set<number>;
+    activeEmployees: Employee[];
+  },
+): Promise<AppointmentEmployeePreviewItem[]> {
+  const candidates = params.activeEmployees.filter((employee) => !params.excludedEmployeeIds.has(employee.id));
+  if (candidates.length === 0) return [];
+
+  const conflictingEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+    employeeIds: candidates.map((employee) => employee.id),
+    startDate: parseDateOnly(params.startDate),
+    endDate: params.endDate ? parseDateOnly(params.endDate) : null,
+    startTimeHour: parseStartTimeHour(params.startTime),
+    excludeAppointmentId: params.appointmentId,
+  });
+  const conflictingEmployeeIds = new Set(conflictingEmployees.map((employee) => employee.id));
+
+  return candidates
+    .filter((employee) => !conflictingEmployeeIds.has(employee.id))
+    .map((employee) => ({
+      employeeId: employee.id,
+      employeeName: employee.fullName,
+      status: "will_add" as const,
+      selectable: true,
+      conflictReason: null,
+      source: "available" as const,
     }));
 }
 
@@ -409,22 +459,32 @@ async function buildAppointmentEmployeePreview(
     endDate?: string | null;
     startTime?: string | null;
     currentEmployees: Array<{ id: number; fullName: string }>;
+    includeAvailableEmployees?: boolean;
   },
 ): Promise<{
   isoYear: number;
   isoWeek: number;
   hasWeekPlan: boolean;
   currentEmployeeIds: number[];
-  items: Array<{
-    employeeId: number;
-    employeeName: string;
-    status: AppointmentEmployeePreviewStatus;
-    selectable: boolean;
-    conflictReason: string | null;
-  }>;
+  items: AppointmentEmployeePreviewItem[];
 }> {
   const week = resolveIsoWeekFromDate(params.startDate);
   const currentEmployeeIds = params.currentEmployees.map((employee) => employee.id);
+  const activeEmployees = params.includeAvailableEmployees ? await employeesRepository.getEmployees("active") : [];
+
+  const buildFallbackItems = async (): Promise<AppointmentEmployeePreviewItem[]> => {
+    if (!params.includeAvailableEmployees) {
+      return buildCurrentOnlyPreviewItems(params.currentEmployees, new Set());
+    }
+    return appointmentsRepository.withAppointmentTransaction((tx) => buildAvailableEmployeePreviewItemsTx(tx, {
+      appointmentId: params.appointmentId,
+      startDate: params.startDate,
+      endDate: params.endDate ?? null,
+      startTime: params.startTime ?? null,
+      excludedEmployeeIds: new Set(currentEmployeeIds),
+      activeEmployees,
+    }));
+  };
 
   if (!params.tourId) {
     return {
@@ -432,7 +492,7 @@ async function buildAppointmentEmployeePreview(
       isoWeek: week.isoWeek,
       hasWeekPlan: false,
       currentEmployeeIds,
-      items: buildCurrentOnlyPreviewItems(params.currentEmployees, new Set()),
+      items: await buildFallbackItems(),
     };
   }
 
@@ -442,7 +502,7 @@ async function buildAppointmentEmployeePreview(
       isoWeek: week.isoWeek,
       hasWeekPlan: false,
       currentEmployeeIds,
-      items: buildCurrentOnlyPreviewItems(params.currentEmployees, new Set()),
+      items: await buildFallbackItems(),
     };
   }
 
@@ -459,7 +519,7 @@ async function buildAppointmentEmployeePreview(
       isoWeek: week.isoWeek,
       hasWeekPlan: false,
       currentEmployeeIds,
-      items: buildCurrentOnlyPreviewItems(params.currentEmployees, new Set()),
+      items: await buildFallbackItems(),
     };
   }
 
@@ -469,19 +529,13 @@ async function buildAppointmentEmployeePreview(
       isoWeek: week.isoWeek,
       hasWeekPlan: false,
       currentEmployeeIds,
-      items: buildCurrentOnlyPreviewItems(params.currentEmployees, new Set()),
+      items: await buildFallbackItems(),
     };
   }
 
   const weekEmployeeIds = new Set(weekAssignments.map((assignment) => assignment.employeeId));
   const items = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
-    const nextItems: Array<{
-      employeeId: number;
-      employeeName: string;
-      status: AppointmentEmployeePreviewStatus;
-      selectable: boolean;
-      conflictReason: string | null;
-    }> = [];
+    const nextItems: AppointmentEmployeePreviewItem[] = [];
 
     for (const assignment of weekAssignments) {
       if (currentEmployeeIds.includes(assignment.employeeId)) {
@@ -491,6 +545,7 @@ async function buildAppointmentEmployeePreview(
           status: "already_present",
           selectable: false,
           conflictReason: null,
+          source: "week_plan",
         });
         continue;
       }
@@ -510,7 +565,19 @@ async function buildAppointmentEmployeePreview(
         status: hasConflict ? "conflict" : "will_add",
         selectable: !hasConflict,
         conflictReason: hasConflict ? "EMPLOYEE_OVERLAP" : null,
+        source: "week_plan",
       });
+    }
+
+    if (params.includeAvailableEmployees) {
+      nextItems.push(...await buildAvailableEmployeePreviewItemsTx(tx, {
+        appointmentId: params.appointmentId,
+        startDate: params.startDate,
+        endDate: params.endDate ?? null,
+        startTime: params.startTime ?? null,
+        excludedEmployeeIds: new Set([...currentEmployeeIds, ...Array.from(weekEmployeeIds)]),
+        activeEmployees,
+      }));
     }
 
     return nextItems;
@@ -931,6 +998,7 @@ export async function previewTourAssignment(
     endDate?: string | null;
     startTime?: string | null;
     existingEmployeeIds: number[];
+    includeAvailableEmployees?: boolean;
   },
 ) {
   const tour = await requireTour(tourId);
@@ -944,6 +1012,7 @@ export async function previewTourAssignment(
     endDate: params.endDate ?? null,
     startTime: params.startTime ?? null,
     currentEmployees: currentEmployees.map((employee) => ({ id: employee.id, fullName: employee.fullName })),
+    includeAvailableEmployees: params.includeAvailableEmployees === true,
   });
 }
 

@@ -742,6 +742,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           onUnblockWeek={activeTour ? handleUnblockWeek : undefined}
           onAddWeekEmployee={activeTour ? handleStartAddWeekEmployee : undefined}
           onAddWeekEmployees={activeTour ? handleStartAddWeekEmployees : undefined}
+          onApplyWeekEmployees={activeTour ? handleStartAddWeekEmployees : undefined}
           onRemoveWeekEmployee={activeTour ? handleStartRemoveWeekEmployee : undefined}
           onDelete={handleDeleteFromDialog}
           canDelete={isAdmin}

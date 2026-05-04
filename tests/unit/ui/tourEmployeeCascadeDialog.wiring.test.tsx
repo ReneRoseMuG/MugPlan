@@ -129,4 +129,46 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");
   });
+
+  it("groups appointment assignment candidates by week plan and conflict-free remainder", () => {
+    const html = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        variant="appointment"
+        title="Mitarbeiter zuweisen"
+        description="Mitarbeiter auswählen"
+        previewItems={[
+          {
+            employeeId: 11,
+            employeeName: "Mia Woche",
+            status: "will_add",
+            selectable: true,
+            conflictReason: null,
+            source: "week_plan",
+          },
+          {
+            employeeId: 12,
+            employeeName: "Mia Frei",
+            status: "will_add",
+            selectable: true,
+            conflictReason: null,
+            source: "available",
+          },
+        ]}
+        selectedIds={[11, 12]}
+        isSubmitting={false}
+        onSelectedIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Tour-KW-Mitarbeiter");
+    expect(html).toContain("Weitere konfliktfreie Mitarbeiter");
+    expect(html).toContain("Mia Woche");
+    expect(html).toContain("Mia Frei");
+    expect(html).toContain("Konfliktfrei zuweisbar");
+    expect(html).toContain("appointment-week-preview-group-week_plan");
+    expect(html).toContain("appointment-week-preview-group-available");
+  });
 });

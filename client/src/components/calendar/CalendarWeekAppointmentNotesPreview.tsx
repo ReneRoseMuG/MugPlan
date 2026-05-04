@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Note } from "@shared/schema";
 import { formatDisplayDate } from "@/lib/date-display-format";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 function htmlToExcerpt(value: string, maxLength = 140): string {
   const plainText = value
@@ -42,22 +43,32 @@ function NotesSection({
         {title} ({notes.length})
       </div>
       <div className="space-y-1.5">
-        {notes.map((note) => (
-          <article
-            key={note.id}
-            className="rounded-md border border-slate-200 px-2 py-1.5"
-            style={{ backgroundColor: note.cardColor ?? "#ffffff" }}
-          >
-            <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-slate-800">
-              <span>{note.title}</span>
-              <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
-                {note.print ? "D" : "N"}
-              </span>
-            </div>
-            <div className="text-[11px] leading-snug text-slate-600">{htmlToExcerpt(note.body ?? "") || "-"}</div>
-            <div className="mt-1 text-[10px] text-slate-400">{formatNoteDate(note.updatedAt)}</div>
-          </article>
-        ))}
+        {notes.map((note) => {
+          const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#ffffff");
+          return (
+            <article
+              key={note.id}
+              className="rounded-md border border-slate-200 px-2 py-1.5"
+              style={{ backgroundColor: note.cardColor ?? "#ffffff" }}
+            >
+              <div
+                className="flex items-center justify-between gap-2 text-[11px] font-semibold"
+                style={{ color: noteTextColors.primary }}
+              >
+                <span>{note.title}</span>
+                <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
+                  {note.print ? "D" : "N"}
+                </span>
+              </div>
+              <div className="text-[11px] leading-snug" style={{ color: noteTextColors.secondary }}>
+                {htmlToExcerpt(note.body ?? "") || "-"}
+              </div>
+              <div className="mt-1 text-[10px]" style={{ color: noteTextColors.secondary }}>
+                {formatNoteDate(note.updatedAt)}
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

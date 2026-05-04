@@ -46,6 +46,7 @@ import {
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { stripHtmlToText } from "@/lib/printText";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -125,6 +126,7 @@ type CalendarWeekSpanningTileProps = {
   showInlineNotes?: boolean;
   onCreateAppointmentNote?: (appointmentId: number) => void;
   onAssignAppointmentEmployees?: (appointmentId: number) => void;
+  onRemoveAppointmentEmployee?: (appointmentId: number, employeeId: number) => void;
   testId?: string;
 };
 
@@ -158,6 +160,7 @@ export function CalendarWeekSpanningTile({
   showInlineNotes = false,
   onCreateAppointmentNote,
   onAssignAppointmentEmployees,
+  onRemoveAppointmentEmployee,
   testId,
 }: CalendarWeekSpanningTileProps) {
   const { toast } = useToast();
@@ -172,6 +175,7 @@ export function CalendarWeekSpanningTile({
     && !allowHistoricalActions
     && normalizeTourName(appointment.tourName) !== normalizeTourName("Parkplatz");
   const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
+  const canRemoveAppointmentEmployees = interactive && !isReadOnlyActionView && Boolean(onRemoveAppointmentEmployee);
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -508,8 +512,8 @@ export function CalendarWeekSpanningTile({
     : "min-h-0 h-full w-full";
   const inlineNotes = showInlineNotes
     ? [
-        ...(appointment.appointmentNotesPreview ?? []).map((note) => ({ ...note, source: "Termin" as const })),
-        ...(appointment.projectNotesPreview ?? []).map((note) => ({ ...note, source: "Projekt" as const })),
+        ...(appointment.appointmentNotesPreview ?? []),
+        ...(appointment.projectNotesPreview ?? []),
       ]
     : [];
   const contentGridTemplateRows = isCompactPanelMode
@@ -547,6 +551,8 @@ export function CalendarWeekSpanningTile({
         renderMode="compact"
         size="sm"
         showPreview
+        action={canRemoveAppointmentEmployees ? "remove" : "none"}
+        onRemove={canRemoveAppointmentEmployees ? () => onRemoveAppointmentEmployee?.(appointment.id, employee.id) : undefined}
         testId={`week-spanning-tile-employee-compact-${appointment.id}-${employee.id}`}
       />
     ))
@@ -565,6 +571,8 @@ export function CalendarWeekSpanningTile({
         size="sm"
         showAvatar={false}
         showPreview
+        action={canRemoveAppointmentEmployees ? "remove" : "none"}
+        onRemove={canRemoveAppointmentEmployees ? () => onRemoveAppointmentEmployee?.(appointment.id, employee.id) : undefined}
         testId={`week-spanning-tile-employee-std-${appointment.id}-${employee.id}`}
       />
     ))
@@ -796,6 +804,7 @@ export function CalendarWeekSpanningTile({
       <div className="mt-1 space-y-1" data-testid={`week-spanning-tile-inline-notes-${appointment.id}`}>
         {inlineNotes.map((note) => {
           const noteText = stripHtmlToText(note.body);
+          const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#f8fafc");
           return (
             <div
               key={note.id}
@@ -803,15 +812,15 @@ export function CalendarWeekSpanningTile({
               style={{
                 backgroundColor: note.cardColor ?? "#f8fafc",
                 borderColor: "rgba(15,23,42,0.14)",
+                color: noteTextColors.primary,
               }}
               data-testid={`week-spanning-tile-inline-note-${appointment.id}-${note.id}`}
             >
               <div className="flex min-w-0 items-center gap-1">
-                <span className="rounded bg-white/50 px-1 text-[9px] font-semibold uppercase text-slate-600">{note.source}</span>
-                <span className="min-w-0 truncate font-semibold text-slate-800">{note.title}</span>
+                <span className="min-w-0 truncate font-semibold">{note.title}</span>
               </div>
               {noteText ? (
-                <div className="mt-0.5 line-clamp-2 text-slate-700">{noteText}</div>
+                <div className="mt-0.5 line-clamp-2" style={{ color: noteTextColors.secondary }}>{noteText}</div>
               ) : null}
             </div>
           );

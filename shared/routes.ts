@@ -452,12 +452,19 @@ const appointmentWeekEmployeePreviewStatusSchema = z.enum([
   "current_only",
 ]);
 
+const appointmentWeekEmployeePreviewSourceSchema = z.enum([
+  "week_plan",
+  "available",
+  "current",
+]);
+
 const appointmentWeekEmployeePreviewItemSchema = z.object({
   employeeId: z.number().int().positive(),
   employeeName: z.string(),
   status: appointmentWeekEmployeePreviewStatusSchema,
   selectable: z.boolean(),
   conflictReason: z.string().nullable(),
+  source: appointmentWeekEmployeePreviewSourceSchema.optional(),
 });
 
 const tourAssignmentPreviewInputSchema = z.object({
@@ -465,6 +472,7 @@ const tourAssignmentPreviewInputSchema = z.object({
   endDate: z.string().nullable().optional(),
   startTime: z.string().nullable().optional(),
   existingEmployeeIds: z.array(z.number().int().positive()),
+  includeAvailableEmployees: z.boolean().optional(),
 }).strict();
 
 const appointmentTourChangePreviewInputSchema = z.object({

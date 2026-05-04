@@ -4,6 +4,7 @@ import { StickyNote } from "lucide-react";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { FooterChildCollectionBadge } from "@/components/ui/footer-child-collection-badge";
 import type { Note } from "@shared/schema";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 type NotesSourceType = "customer" | "project" | "appointment" | "employee";
 
@@ -80,17 +81,6 @@ function htmlToExcerpt(value: string, maxLength = 140): string {
   return `${plainText.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
-function resolveTextColor(hex: string | null | undefined): string {
-  if (!hex) return "#1e293b";
-  const h = hex.replace("#", "");
-  if (h.length !== 6) return "#1e293b";
-  const r = parseInt(h.slice(0, 2), 16);
-  const g = parseInt(h.slice(2, 4), 16);
-  const b = parseInt(h.slice(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5 ? "#1e293b" : "#ffffff";
-}
-
 function NotesSection({
   title,
   notes,
@@ -116,20 +106,23 @@ function NotesSection({
         {title} ({notes.length})
       </div>
       <div className="space-y-1.5">
-        {notes.map((note) => (
-          <article
-            key={note.id}
-            className="rounded-md border border-slate-200 px-2 py-1.5"
-            style={{ backgroundColor: note.cardColor ?? "#ffffff", color: resolveTextColor(note.cardColor) }}
-          >
-            <div className="text-[11px] font-semibold">
-              {note.title}
-            </div>
-            <div className="text-[11px] leading-snug whitespace-pre-line">
-              {htmlToExcerpt(note.body ?? "") || "-"}
-            </div>
-          </article>
-        ))}
+        {notes.map((note) => {
+          const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#ffffff");
+          return (
+            <article
+              key={note.id}
+              className="rounded-md border border-slate-200 px-2 py-1.5"
+              style={{ backgroundColor: note.cardColor ?? "#ffffff", color: noteTextColors.primary }}
+            >
+              <div className="text-[11px] font-semibold">
+                {note.title}
+              </div>
+              <div className="text-[11px] leading-snug whitespace-pre-line" style={{ color: noteTextColors.secondary }}>
+                {htmlToExcerpt(note.body ?? "") || "-"}
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

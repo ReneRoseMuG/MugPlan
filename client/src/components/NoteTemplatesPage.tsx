@@ -13,6 +13,7 @@ import { joinEditFormContext } from "@/lib/edit-form-context";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 const fallbackCardColor = "#f8fafc";
 
@@ -24,10 +25,8 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardProps) {
-  const hasCustomCardColor = template.cardColor !== null;
-  const contentClassName = hasCustomCardColor ? "text-white" : "text-slate-800";
-  const bodyClassName = hasCustomCardColor ? "text-white/90" : "text-slate-600";
-  const deleteButtonClassName = hasCustomCardColor
+  const templateTextColors = getReadableNoteTextColors(template.cardColor ?? fallbackCardColor);
+  const deleteButtonClassName = templateTextColors.isLight
     ? "text-white hover:bg-white/15 hover:text-white"
     : undefined;
 
@@ -40,7 +39,10 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
       onDoubleClick={onEdit}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <div className={`flex items-center gap-2 text-sm font-semibold ${contentClassName}`}>
+        <div
+          className="flex items-center gap-2 text-sm font-semibold"
+          style={{ color: templateTextColors.primary }}
+        >
           <FileText className="h-4 w-4" />
           <span>{template.title}</span>
         </div>
@@ -70,7 +72,8 @@ function TemplateCard({ template, onEdit, onDelete, isDeleting }: TemplateCardPr
         )}
         {template.body && (
           <div
-            className={`text-sm line-clamp-3 ${bodyClassName}`}
+            className="text-sm line-clamp-3"
+            style={{ color: templateTextColors.secondary }}
             dangerouslySetInnerHTML={{ __html: template.body }}
             data-testid={`text-template-body-${template.id}`}
           />

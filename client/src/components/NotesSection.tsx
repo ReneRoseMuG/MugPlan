@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { StickyNote, Plus, Pin, PinOff, X } from "lucide-react";
 import type { Note, NoteTemplate } from "@shared/schema";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 const fallbackCardColor = "#f8fafc";
 
@@ -48,10 +49,8 @@ function NoteCard({
   onTogglePin?: (isPinned: boolean) => void;
   onDelete?: () => void;
 }) {
-  const hasCustomCardColor = note.cardColor !== null;
-  const titleClassName = hasCustomCardColor ? "text-white" : "text-slate-800 dark:text-slate-200";
-  const bodyClassName = hasCustomCardColor ? "text-white/90" : "text-slate-600 dark:text-slate-400";
-  const iconButtonClassName = hasCustomCardColor
+  const noteTextColors = getReadableNoteTextColors(note.cardColor ?? fallbackCardColor);
+  const iconButtonClassName = noteTextColors.isLight
     ? "text-white/80 hover:bg-white/15 hover:text-white"
     : "text-slate-400 hover:bg-slate-100 hover:text-slate-600";
 
@@ -72,7 +71,7 @@ function NoteCard({
             }}
             className={`flex h-6 w-6 items-center justify-center rounded-full transition-colors ${
               note.isPinned
-                ? hasCustomCardColor
+                ? noteTextColors.isLight
                   ? "text-white hover:bg-white/15"
                   : "text-primary hover:bg-primary/10"
                 : iconButtonClassName
@@ -99,7 +98,11 @@ function NoteCard({
         ) : null}
       </div>
       <div className="mb-2 flex items-center gap-2 pr-16">
-        <h4 className={`text-sm font-medium ${titleClassName}`} data-testid={`text-note-title-${note.id}`}>
+        <h4
+          className="text-sm font-medium"
+          style={{ color: noteTextColors.primary }}
+          data-testid={`text-note-title-${note.id}`}
+        >
           {note.title}
         </h4>
         <span
@@ -111,7 +114,8 @@ function NoteCard({
       </div>
       {note.body ? (
         <div
-          className={`text-sm ${bodyClassName}`}
+          className="text-sm"
+          style={{ color: noteTextColors.secondary }}
           dangerouslySetInnerHTML={{ __html: note.body }}
           data-testid={`text-note-body-${note.id}`}
         />

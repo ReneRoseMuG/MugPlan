@@ -32,6 +32,7 @@ type AppointmentPreviewItem = {
   status: "will_add" | "conflict" | "already_present" | "current_only";
   selectable: boolean;
   conflictReason: string | null;
+  source?: "week_plan" | "available" | "current";
 };
 
 interface TourEmployeeCascadeDialogProps {
@@ -95,8 +96,17 @@ function appointmentStatusLabel(item: AppointmentPreviewItem): string | null {
   if (item.status === "conflict") return "Überschneidung mit bestehendem Termin";
   if (item.status === "already_present") return "Bereits im Termin";
   if (item.status === "current_only") return "Bleibt nur durch bestehende Terminzuweisung erhalten";
+  if (item.status === "will_add" && item.source === "available") return "Konfliktfrei zuweisbar";
   if (item.status === "will_add") return "Kann aus der Wochenplanung übernommen werden";
   return null;
+}
+
+function appointmentGroupTitle(source: AppointmentPreviewItem["source"], hasWeekPlanItems: boolean): string {
+  if (source === "available") {
+    return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
+  }
+  if (source === "current") return "Bereits manuell am Termin";
+  return "Tour-KW-Mitarbeiter";
 }
 
 function buildRangeLabel(items: WeekPreviewItem[]): string | null {
@@ -126,6 +136,25 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
     () => variant === "appointment" ? props.previewItems as AppointmentPreviewItem[] : [],
     [props.previewItems, variant],
   );
+  const appointmentGroups = useMemo(() => {
+    const groups: Array<{ key: "week_plan" | "available" | "current"; title: string; items: AppointmentPreviewItem[] }> = [];
+    const weekPlanItems = appointmentPreviewItems.filter((item) => (item.source ?? "week_plan") === "week_plan");
+    const availableItems = appointmentPreviewItems.filter((item) => item.source === "available");
+    const currentItems = appointmentPreviewItems.filter((item) => item.source === "current");
+    const hasWeekPlanItems = weekPlanItems.length > 0;
+
+    if (weekPlanItems.length > 0) {
+      groups.push({ key: "week_plan", title: appointmentGroupTitle("week_plan", hasWeekPlanItems), items: weekPlanItems });
+    }
+    if (availableItems.length > 0) {
+      groups.push({ key: "available", title: appointmentGroupTitle("available", hasWeekPlanItems), items: availableItems });
+    }
+    if (currentItems.length > 0) {
+      groups.push({ key: "current", title: appointmentGroupTitle("current", hasWeekPlanItems), items: currentItems });
+    }
+
+    return groups;
+  }, [appointmentPreviewItems]);
 
   const allSelectableIds = useMemo(() => {
     if (variant === "week") {
@@ -262,42 +291,51 @@ export function TourEmployeeCascadeDialog(props: TourEmployeeCascadeDialogProps)
               Keine Mitarbeiter für die Vorschau vorhanden.
             </div>
           ) : (
-            <div className="divide-y">
-              {appointmentPreviewItems.map((item) => {
-                const checked = selectedIds.includes(item.employeeId);
-                return (
-                  <label
-                    key={item.employeeId}
-                    className={`flex items-start gap-3 p-4 ${item.selectable ? "cursor-pointer" : "opacity-70"}`}
-                    data-testid={`appointment-week-preview-row-${item.employeeId}`}
-                  >
-                    <Checkbox
-                      checked={checked}
-                      disabled={!item.selectable || props.isSubmitting}
-                      onCheckedChange={(nextChecked) => {
-                        if (!item.selectable) return;
-                        if (nextChecked) {
-                          setSelectedIds([...selectedIds, item.employeeId]);
-                          return;
-                        }
-                        setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
-                      }}
-                      data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
-                    />
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="font-medium text-slate-900">{item.employeeName}</div>
-                      {appointmentStatusLabel(item) ? (
-                        <div
-                          className={item.status === "conflict" ? "text-sm text-red-600" : "text-sm text-slate-600"}
-                          data-testid={`appointment-week-preview-status-${item.employeeId}`}
+            <div>
+              {appointmentGroups.map((group) => (
+                <section key={group.key} className="border-b last:border-b-0" data-testid={`appointment-week-preview-group-${group.key}`}>
+                  <div className="sticky top-0 z-10 border-b bg-slate-50 px-4 py-2 text-xs font-semibold uppercase text-slate-500">
+                    {group.title}
+                  </div>
+                  <div className="divide-y">
+                    {group.items.map((item) => {
+                      const checked = selectedIds.includes(item.employeeId);
+                      return (
+                        <label
+                          key={item.employeeId}
+                          className={`flex items-start gap-3 p-4 ${item.selectable ? "cursor-pointer" : "opacity-70"}`}
+                          data-testid={`appointment-week-preview-row-${item.employeeId}`}
                         >
-                          {appointmentStatusLabel(item)}
-                        </div>
-                      ) : null}
-                    </div>
-                  </label>
-                );
-              })}
+                          <Checkbox
+                            checked={checked}
+                            disabled={!item.selectable || props.isSubmitting}
+                            onCheckedChange={(nextChecked) => {
+                              if (!item.selectable) return;
+                              if (nextChecked) {
+                                setSelectedIds([...selectedIds, item.employeeId]);
+                                return;
+                              }
+                              setSelectedIds(selectedIds.filter((id) => id !== item.employeeId));
+                            }}
+                            data-testid={`appointment-week-preview-checkbox-${item.employeeId}`}
+                          />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="font-medium text-slate-900">{item.employeeName}</div>
+                            {appointmentStatusLabel(item) ? (
+                              <div
+                                className={item.status === "conflict" ? "text-sm text-red-600" : "text-sm text-slate-600"}
+                                data-testid={`appointment-week-preview-status-${item.employeeId}`}
+                              >
+                                {appointmentStatusLabel(item)}
+                              </div>
+                            ) : null}
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
             </div>
           )}
         </div>

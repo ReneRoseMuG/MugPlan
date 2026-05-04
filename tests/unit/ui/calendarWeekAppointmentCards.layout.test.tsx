@@ -51,18 +51,24 @@ vi.mock("../../../client/src/components/ui/employee-info-badge", () => ({
     renderMode,
     showPreview,
     showAvatar,
+    action,
+    onRemove,
   }: {
     testId?: string;
     fullName?: string;
     renderMode?: string;
     showPreview?: boolean;
     showAvatar?: boolean;
+    action?: string;
+    onRemove?: () => void;
   }) => (
     <div
       data-testid={testId ?? "mock-employee-badge"}
       data-render-mode={renderMode ?? ""}
       data-show-preview={showPreview ? "true" : "false"}
       data-show-avatar={showAvatar === false ? "false" : "true"}
+      data-action={action ?? ""}
+      data-has-on-remove={onRemove ? "true" : "false"}
     >
       {fullName ?? "Unbekannt"}
     </div>
@@ -509,6 +515,51 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-spanning-tile-create-note-42"');
     expect(html).toContain('data-testid="week-appointment-assign-employees-42"');
     expect(html).toContain('data-testid="week-spanning-tile-assign-employees-42"');
+  });
+
+  it("adds employee remove actions only to editable week card badges", () => {
+    const appointment = createAppointment();
+    const onRemoveAppointmentEmployee = vi.fn();
+
+    const editableHtml = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          onRemoveAppointmentEmployee={onRemoveAppointmentEmployee}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          onRemoveAppointmentEmployee={onRemoveAppointmentEmployee}
+        />
+      </>,
+    );
+
+    expect(editableHtml.match(/data-action="remove"/g)).toHaveLength(2);
+    expect(editableHtml.match(/data-has-on-remove="true"/g)).toHaveLength(2);
+
+    const historicalHtml = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={createAppointment({ startDate: "2000-01-01" })}
+          context="week-calendar"
+          onRemoveAppointmentEmployee={onRemoveAppointmentEmployee}
+        />
+        <CalendarWeekSpanningTile
+          appointment={createAppointment({ startDate: "2000-01-01" })}
+          spanColumns={2}
+          visibleStartDate="2000-01-01"
+          visibleDayNumberStart={1}
+          onRemoveAppointmentEmployee={onRemoveAppointmentEmployee}
+        />
+      </>,
+    );
+
+    expect(historicalHtml).not.toContain('data-action="remove"');
+    expect(historicalHtml).not.toContain('data-has-on-remove="true"');
   });
 
   it("passes expanded week cards through the existing expanded customer panel path and keeps project panel rendering local", () => {

@@ -775,6 +775,103 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
+  it("adds conflict-free active employees to calendar assignment previews when requested", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#335588");
+    const project = await createProjectFixture({ prefix: "TWE-CALENDAR-PREVIEW" });
+    const weekEmployee = await createEmployeeFixture("TWE-CALENDAR-WEEK");
+    const availableEmployee = await createEmployeeFixture("TWE-CALENDAR-FREE");
+    const conflictEmployee = await createEmployeeFixture("TWE-CALENDAR-BLOCKED");
+    const targetDate = getRelativeBerlinDate(22);
+    const isoWeek = resolveIsoWeek(targetDate);
+    await seedWeekPlanNoise("TWE-CALENDAR-PREVIEW", targetDate);
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: tour.id,
+      isoYear: isoWeek.isoYear,
+      isoWeek: isoWeek.isoWeek,
+      employeeId: weekEmployee.id,
+    });
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetDate,
+      employeeIds: [conflictEmployee.id],
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+        includeAvailableEmployees: true,
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.hasWeekPlan).toBe(true);
+        expect(res.body.items).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            employeeId: weekEmployee.id,
+            status: "will_add",
+            selectable: true,
+            source: "week_plan",
+          }),
+          expect.objectContaining({
+            employeeId: availableEmployee.id,
+            status: "will_add",
+            selectable: true,
+            source: "available",
+          }),
+        ]));
+        expect(res.body.items).not.toEqual(expect.arrayContaining([
+          expect.objectContaining({ employeeId: conflictEmployee.id, source: "available" }),
+        ]));
+      });
+  });
+
+  it("returns conflict-free active employees when no tour week employees exist", async () => {
+    const admin = await loginAdmin();
+    const tour = await createTourFixture("#338855");
+    const project = await createProjectFixture({ prefix: "TWE-CALENDAR-FALLBACK" });
+    const availableEmployee = await createEmployeeFixture("TWE-CALENDAR-FALLBACK-FREE");
+    const conflictEmployee = await createEmployeeFixture("TWE-CALENDAR-FALLBACK-BLOCKED");
+    const targetDate = getRelativeBerlinDate(24);
+    await seedWeekPlanNoise("TWE-CALENDAR-FALLBACK", targetDate);
+
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetDate,
+      employeeIds: [conflictEmployee.id],
+    });
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/assignment-preview`)
+      .send({
+        startDate: targetDate,
+        endDate: null,
+        startTime: null,
+        existingEmployeeIds: [],
+        includeAvailableEmployees: true,
+      })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.hasWeekPlan).toBe(false);
+        expect(res.body.items).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            employeeId: availableEmployee.id,
+            status: "will_add",
+            selectable: true,
+            source: "available",
+          }),
+        ]));
+        expect(res.body.items).not.toEqual(expect.arrayContaining([
+          expect.objectContaining({ employeeId: conflictEmployee.id }),
+        ]));
+      });
+  });
+
   it("limits week previews to appointments inside the selected ISO week for single-day appointments", async () => {
     const admin = await loginAdmin();
     const tour = await createTourFixture("#447799");

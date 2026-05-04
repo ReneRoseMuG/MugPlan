@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
-import { CalendarPlus2, LayoutList, Lock, LockOpen, MoreVertical, Route, ScrollText, Trash2, X } from "lucide-react";
+import { CalendarPlus2, LayoutList, ListChecks, Lock, LockOpen, MoreVertical, Route, ScrollText, Trash2, X } from "lucide-react";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
@@ -81,6 +81,7 @@ interface TourEditFormProps {
   onUnblockWeek?: (params: { isoYear: number; isoWeek: number }) => Promise<void>;
   onAddWeekEmployee?: (params: { isoYear: number; isoWeek: number; employeeId: number }) => Promise<void>;
   onAddWeekEmployees?: (params: { isoYear: number; isoWeek: number; employeeIds: number[] }) => Promise<void>;
+  onApplyWeekEmployees?: (params: { isoYear: number; isoWeek: number; employeeIds: number[] }) => Promise<void>;
   onRemoveWeekEmployee?: (assignment: TourWeekEmployeeMember & { isoYear: number; isoWeek: number }) => Promise<void>;
   onDelete?: () => Promise<void>;
   canDelete?: boolean;
@@ -105,6 +106,7 @@ export function TourEditForm({
   onUnblockWeek,
   onAddWeekEmployee,
   onAddWeekEmployees,
+  onApplyWeekEmployees,
   onRemoveWeekEmployee,
   onDelete,
   canDelete = false,
@@ -559,6 +561,25 @@ export function TourEditForm({
                             disabled={isSaving || isMutatingMembers || isMutatingWeeks}
                             data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
                           />
+                        ) : null}
+                        {!readOnly && !week.isLocked && !week.isBlocked ? (
+                          <button
+                            type="button"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void onApplyWeekEmployees?.({
+                                isoYear: week.isoYear,
+                                isoWeek: week.isoWeek,
+                                employeeIds: week.employees.map((employee) => employee.employeeId),
+                              });
+                            }}
+                            aria-label="Tour-KW-Planung auf Termine anwenden"
+                            disabled={isSaving || isMutatingMembers || isMutatingWeeks || week.employees.length === 0}
+                            data-testid={`button-apply-tour-week-member-${week.isoYear}-${week.isoWeek}`}
+                          >
+                            <ListChecks className="h-4 w-4" />
+                          </button>
                         ) : null}
                         {!readOnly ? (
                         <DropdownMenu>

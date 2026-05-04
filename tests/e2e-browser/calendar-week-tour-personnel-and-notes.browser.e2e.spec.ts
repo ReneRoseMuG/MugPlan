@@ -380,8 +380,8 @@ test("Notizen-Toggle hängt Termin- und Projektnotizen direkt an die Terminkarte
 
   const inlineNotes = page.getByTestId(`week-appointment-inline-notes-${appointmentId}`);
   await expect(inlineNotes).toBeVisible();
-  await expect(inlineNotes).toContainText("Termin");
+  await expect(inlineNotes.getByText("Termin", { exact: true })).toHaveCount(0);
   await expect(inlineNotes).toContainText("Termin Browser Inline");
-  await expect(inlineNotes).toContainText("Projekt");
+  await expect(inlineNotes.getByText("Projekt", { exact: true })).toHaveCount(0);
   await expect(inlineNotes).toContainText("Projekt Browser Inline");
 });

@@ -14,7 +14,7 @@ import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
-import { Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
+import { ListChecks, Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -135,6 +135,7 @@ type WeekPlanningDialogState = {
   weekLabel: string;
   previewItems: WeekPlanningPreviewItem[];
   selectedIds: number[];
+  remainingEmployeeIds?: number[];
 };
 type WeekPersonnelPickerState = {
   tourId: number;
@@ -436,6 +437,7 @@ export function CalendarWeekView({
       status: "will_add" | "conflict" | "already_present" | "current_only";
       selectable: boolean;
       conflictReason: string | null;
+      source?: "week_plan" | "available" | "current";
     }>;
     currentEmployeeIds: number[];
     selectedIds: number[];
@@ -984,11 +986,26 @@ export function CalendarWeekView({
       });
       return response.json();
     },
-    onSuccess: async () => {
+    onSuccess: async (_data, variables) => {
+      const remainingEmployeeIds = weekPlanningDialog?.mode === "add"
+        && weekPlanningDialog.tourId === variables.tourId
+        && weekPlanningDialog.isoYear === variables.isoYear
+        && weekPlanningDialog.isoWeek === variables.isoWeek
+        ? (weekPlanningDialog.remainingEmployeeIds ?? [])
+        : [];
       setWeekPlanningDialog(null);
       await invalidateWeekPlanningViews();
       await refreshMonitoringWithNotification(toast);
       toast({ title: "Wochenplanung gespeichert" });
+      const [nextEmployeeId, ...nextRemainingEmployeeIds] = remainingEmployeeIds;
+      if (typeof nextEmployeeId === "number") {
+        await openAddWeekPlanningDialogForParams({
+          tourId: variables.tourId,
+          isoYear: variables.isoYear,
+          isoWeek: variables.isoWeek,
+          employeeId: nextEmployeeId,
+        }, nextRemainingEmployeeIds);
+      }
     },
     onError: (error) => {
       toast({
@@ -1200,6 +1217,7 @@ export function CalendarWeekView({
         endDate: appointment.endDate,
         startTime: appointment.startTime,
         existingEmployeeIds: appointment.employees.map((employee) => employee.id),
+        includeAvailableEmployees: true,
       });
       const preview = await response.json() as {
         hasWeekPlan: boolean;
@@ -1209,19 +1227,22 @@ export function CalendarWeekView({
           status: "will_add" | "conflict" | "already_present" | "current_only";
           selectable: boolean;
           conflictReason: string | null;
+          source?: "week_plan" | "available" | "current";
         }>;
       };
-      if (!preview.hasWeekPlan || preview.items.length === 0) {
+      if (preview.items.length === 0) {
         toast({
-          title: "Keine KW-Planung vorhanden",
-          description: "Für diese Tour und Woche sind keine Mitarbeiter geplant.",
+          title: "Keine konfliktfreien Mitarbeiter",
+          description: "Für diesen Termin sind aktuell keine weiteren Mitarbeiter konfliktfrei zuweisbar.",
         });
         return;
       }
       setAppointmentEmployeeDialog({
         appointmentId,
         title: "Mitarbeiter zuweisen",
-        description: "Wählen Sie Mitarbeiter aus der bestehenden Tour-KW-Planung für diesen Termin.",
+        description: preview.hasWeekPlan
+          ? "Wählen Sie Mitarbeiter aus der Tour-KW-Planung oder weitere konfliktfreie Mitarbeiter."
+          : "Wählen Sie konfliktfreie Mitarbeiter für diesen Termin.",
         previewItems: preview.items,
         currentEmployeeIds: appointment.employees.map((employee) => employee.id),
         selectedIds: preview.items
@@ -1248,19 +1269,21 @@ export function CalendarWeekView({
     });
   };
 
-  const openAddWeekPlanningDialog = async (employeeId: number) => {
-    if (!weekPersonnelPicker) return;
+  async function openAddWeekPlanningDialogForParams(
+    params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number },
+    remainingEmployeeIds: number[] = [],
+  ) {
     try {
       const preview = await previewAddWeekEmployeeMutation.mutateAsync({
-        tourId: weekPersonnelPicker.tourId,
-        isoYear: weekPersonnelPicker.isoYear,
-        isoWeek: weekPersonnelPicker.isoWeek,
-        employeeId,
+        tourId: params.tourId,
+        isoYear: params.isoYear,
+        isoWeek: params.isoWeek,
+        employeeId: params.employeeId,
       });
       setWeekPersonnelPicker(null);
       setWeekPlanningDialog({
         mode: "add",
-        tourId: weekPersonnelPicker.tourId,
+        tourId: params.tourId,
         isoYear: preview.isoYear,
         isoWeek: preview.isoWeek,
         employeeId: preview.employee.employeeId,
@@ -1268,6 +1291,7 @@ export function CalendarWeekView({
         weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
         previewItems: preview.items,
         selectedIds: resolveSelectablePreviewIds(preview.items),
+        remainingEmployeeIds,
       });
     } catch (error) {
       toast({
@@ -1276,6 +1300,29 @@ export function CalendarWeekView({
         variant: "destructive",
       });
     }
+  }
+
+  const openAddWeekPlanningDialog = async (employeeId: number) => {
+    if (!weekPersonnelPicker) return;
+    await openAddWeekPlanningDialogForParams({
+      tourId: weekPersonnelPicker.tourId,
+      isoYear: weekPersonnelPicker.isoYear,
+      isoWeek: weekPersonnelPicker.isoWeek,
+      employeeId,
+    });
+  };
+
+  const openApplyWeekPlanningDialog = async (params: { tourId: number; isoYear: number; isoWeek: number; employeeIds: number[] }) => {
+    const normalizedEmployeeIds = Array.from(new Set(params.employeeIds.filter((employeeId) => Number.isInteger(employeeId) && employeeId > 0)));
+    const [employeeId, ...remainingEmployeeIds] = normalizedEmployeeIds;
+    if (typeof employeeId !== "number") {
+      toast({
+        title: "Keine Mitarbeiter geplant",
+        description: "Für diese Tour-KW gibt es keine Mitarbeiter zum Anwenden.",
+      });
+      return;
+    }
+    await openAddWeekPlanningDialogForParams({ ...params, employeeId }, remainingEmployeeIds);
   };
 
   const openRemoveWeekPlanningDialog = async (params: { tourId: number; assignmentId: number }) => {
@@ -1351,6 +1398,29 @@ export function CalendarWeekView({
       toast({ title: "Mitarbeiterzuweisung nicht möglich", description: error.message, variant: "destructive" });
     },
   });
+
+  const removeAppointmentEmployeeMutation = useMutation({
+    mutationFn: async ({ appointmentId, employeeId }: { appointmentId: number; employeeId: number }) => {
+      const appointment = appointmentsById.get(appointmentId);
+      if (!appointment) throw new Error("Termin nicht gefunden.");
+      await apiRequest("DELETE", `/api/appointments/${appointmentId}/employees/${employeeId}`, {
+        version: appointment.version,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await refreshMonitoringWithNotification(toast);
+      toast({ title: "Mitarbeiter entfernt" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Mitarbeiter entfernen nicht möglich", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleRemoveAppointmentEmployee = (appointmentId: number, employeeId: number) => {
+    removeAppointmentEmployeeMutation.mutate({ appointmentId, employeeId });
+  };
 
   const handleDragEnd = () => {
     if (draggedAppointmentId) {
@@ -2224,15 +2294,34 @@ export function CalendarWeekView({
                                   )}
                                 </div>
                                 {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
-                                  <button
-                                    type="button"
-                                    className="absolute right-1 top-9 flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-100"
-                                    onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
-                                    data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
-                                    aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
-                                  >
-                                    +
-                                  </button>
+                                  <div className="absolute right-1 top-9 flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-100"
+                                      onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
+                                      data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
+                                      aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
+                                    >
+                                      +
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-100 disabled:opacity-50"
+                                      onClick={() => {
+                                        void openApplyWeekPlanningDialog({
+                                          tourId: tourLane.tourId!,
+                                          isoYear,
+                                          isoWeek,
+                                          employeeIds: laneWeekEmployees.map((employee) => employee.id),
+                                        });
+                                      }}
+                                      disabled={laneWeekEmployees.length === 0 || previewAddWeekEmployeeMutation.isPending || executeAddWeekEmployeeMutation.isPending}
+                                      data-testid={`button-apply-week-personnel-${tourLane.laneKey}`}
+                                      aria-label="Tour-KW-Planung auf Termine anwenden"
+                                    >
+                                      <ListChecks className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
                                 ) : null}
                               </div>
                             </div>
@@ -2552,6 +2641,7 @@ export function CalendarWeekView({
                                     showInlineNotes={showAppointmentNotesInline}
                                     onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
+                                    onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isLocked={isSegmentLocked}
@@ -2636,6 +2726,7 @@ export function CalendarWeekView({
                                     showInlineNotes={showAppointmentNotesInline}
                                     onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
+                                    onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
                                       ? undefined
@@ -2733,6 +2824,7 @@ export function CalendarWeekView({
                                         showInlineNotes={showAppointmentNotesInline}
                                         onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
                                         onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
+                                        onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode
                                             ? undefined
