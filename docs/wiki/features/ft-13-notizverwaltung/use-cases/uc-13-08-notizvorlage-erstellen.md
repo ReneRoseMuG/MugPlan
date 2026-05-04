@@ -4,7 +4,7 @@
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,23 +12,23 @@ Disponent, Administrator
 
 ## Ziel
 
-Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewÃ¤hlt werden kann.
+Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt werden kann.
 
 ## Vorbedingungen
 
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemÃ¤ÃŸ Rollenkonzept.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäÃŸ Rollenkonzept.
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet die Vorlagenverwaltung.
-2. Der Akteur wÃ¤hlt die Funktion â€žVorlage hinzufÃ¼gen".
-3. Das System Ã¶ffnet einen Editor zur Erfassung der Vorlagendaten.
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt die Funktion „Vorlage hinzufügen".
+3. Das System öffnet einen Editor zur Erfassung der Vorlagendaten.
 4. Der Akteur erfasst mindestens Titel und vordefinierten Inhalt.
 5. Optional legt der Akteur eine Sortierreihenfolge fest.
-6. Optional legt der Administrator eine Kennzeichnungsfarbe (`color`) fest. Disponenten kÃ¶nnen die Kennzeichnungsfarbe nicht setzen oder Ã¤ndern.
-7. Der Akteur bestÃ¤tigt die Eingabe.
-8. Das System prÃ¼ft serverseitig:
+6. Optional legt der Administrator eine Kennzeichnungsfarbe (`color`) fest. Disponenten können die Kennzeichnungsfarbe nicht setzen oder ändern.
+7. Der Akteur bestätigt die Eingabe.
+8. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
     - Validierung der Pflichtfelder.
@@ -36,15 +36,15 @@ Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewÃ¤hlt
     - `is_active = true`,
     - Setzen von `created_at` und `updated_at`.
 10. Das System speichert die Vorlage persistent.
-11. Das System aktualisiert die Vorlagenliste gemÃ¤ÃŸ definierter Sortierlogik.
+11. Das System aktualisiert die Vorlagenliste gemäÃŸ definierter Sortierlogik.
 
-### AlternativablÃ¤ufe
+### Alternativabläufe
 
-- Pflichtfelder fehlen â†’ Validierungsfehler, keine Persistierung.
-- Der Akteur ist nicht authentifiziert â†’ HTTP 401, keine Persistierung.
-- Der Akteur besitzt keine ausreichende Rolle â†’ HTTP 403, keine Persistierung.
-- Technischer Fehler â†’ HTTP 500, keine Persistierung.
-- Abbruch durch den Akteur â†’ Keine Persistierung.
+- Pflichtfelder fehlen → Validierungsfehler, keine Persistierung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Persistierung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Persistierung.
+- Technischer Fehler → HTTP 500, keine Persistierung.
+- Abbruch durch den Akteur → Keine Persistierung.
 
 ## Alternativen
 

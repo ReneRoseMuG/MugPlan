@@ -4,7 +4,7 @@
 
 - Feature: [FT (11): Team Verwaltung](../ft-11-team-verwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/614216f215f24bd98396822215195c97
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent
 
 ## Ziel
 
-Ein neues Team anlegen, um hÃ¤ufig genutzte Mitarbeiterkombinationen schnell verwenden zu kÃ¶nnen.
+Ein neues Team anlegen, um häufig genutzte Mitarbeiterkombinationen schnell verwenden zu können.
 
 ## Vorbedingungen
 
@@ -20,31 +20,31 @@ Ein neues Team anlegen, um hÃ¤ufig genutzte Mitarbeiterkombinationen schnell v
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt die Berechtigung zur Teamanlage.
 
-### AuslÃ¶ser
+### Auslöser
 
-Der Akteur startet die Funktion â€žTeam anlegenâ€œ.
+Der Akteur startet die Funktion „Team anlegen“.
 
 ## Ablauf
 
-1. Das System erzeugt automatisch eine Bezeichnung fÃ¼r das neue Team.
-2. Das System lÃ¤dt ausschlieÃŸlich aktive Mitarbeiter ohne bestehende Teamzuordnung (`team_id = null`).
-3. Der Akteur wÃ¤hlt einen oder mehrere angezeigte Mitarbeiter aus.
-4. Der Akteur bestÃ¤tigt die Eingabe.
-5. Das System prÃ¼ft serverseitig fÃ¼r jeden ausgewÃ¤hlten Mitarbeiter:
+1. Das System erzeugt automatisch eine Bezeichnung für das neue Team.
+2. Das System lädt ausschlieÃŸlich aktive Mitarbeiter ohne bestehende Teamzuordnung (`team_id = null`).
+3. Der Akteur wählt einen oder mehrere angezeigte Mitarbeiter aus.
+4. Der Akteur bestätigt die Eingabe.
+5. Das System prüft serverseitig für jeden ausgewählten Mitarbeiter:
     - Der Mitarbeiter existiert.
     - Der Mitarbeiter ist aktiv.
     - Der Mitarbeiter besitzt keine bestehende Teamzuordnung.
 6. Das System persistiert das Team.
-7. Das System setzt fÃ¼r jeden ausgewÃ¤hlten Mitarbeiter das Feld `team_id` auf die ID des neu angelegten Teams.
-8. Das System erzeugt eine Versionskennung fÃ¼r das Team.
+7. Das System setzt für jeden ausgewählten Mitarbeiter das Feld `team_id` auf die ID des neu angelegten Teams.
+8. Das System erzeugt eine Versionskennung für das Team.
 
-### AlternativablÃ¤ufe
+### Alternativabläufe
 
-- Keine Mitarbeiter ausgewÃ¤hlt â†’ Das System lehnt die Speicherung ab und fordert zur Auswahl auf.
-- Ein ausgewÃ¤hlter Mitarbeiter ist zwischenzeitlich einem anderen Team zugeordnet worden â†’ Das System antwortet mit 409 Conflict, es erfolgt keine Persistierung.
-- Versionskonflikt bei paralleler Anlage mit identischer Bezeichnung â†’ Das System behandelt dies gemÃ¤ÃŸ allgemeiner Persistenzregeln.
-- Abbruch durch den Akteur â†’ Keine Persistierung.
-- Technischer Fehler â†’ Das System antwortet mit 500, keine Teilpersistierung erfolgt.
+- Keine Mitarbeiter ausgewählt → Das System lehnt die Speicherung ab und fordert zur Auswahl auf.
+- Ein ausgewählter Mitarbeiter ist zwischenzeitlich einem anderen Team zugeordnet worden → Das System antwortet mit 409 Conflict, es erfolgt keine Persistierung.
+- Versionskonflikt bei paralleler Anlage mit identischer Bezeichnung → Das System behandelt dies gemäÃŸ allgemeiner Persistenzregeln.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.
 
 ## Alternativen
 

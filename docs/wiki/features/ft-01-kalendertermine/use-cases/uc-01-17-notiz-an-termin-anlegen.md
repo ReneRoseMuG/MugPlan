@@ -4,7 +4,7 @@
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -21,14 +21,14 @@ Einen neuen Termin mit einer oder mehreren Notizen dokumentieren, um Information
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet einen bestehenden Termin im Terminformular.
-2. Der Akteur navigiert zum Bereich â€žNotizen".
-3. Der Akteur klickt auf â€ž+ Notiz hinzufÃ¼gen".
-4. Das System Ã¶ffnet ein Eingabeformular oder Dialog fÃ¼r eine neue Notiz.
+1. Der Akteur öffnet einen bestehenden Termin im Terminformular.
+2. Der Akteur navigiert zum Bereich „Notizen".
+3. Der Akteur klickt auf „+ Notiz hinzufügen".
+4. Das System öffnet ein Eingabeformular oder Dialog für eine neue Notiz.
 5. Der Akteur gibt einen Titel und einen Inhalt ein (beide Felder sind Pflicht).
 6. Der Akteur speichert die Notiz.
-7. Das System prÃ¼ft, dass Titel und Inhalt vorhanden sind.
-8. Das System speichert die Notiz und verknÃ¼pft sie mit dem Termin.
+7. Das System prüft, dass Titel und Inhalt vorhanden sind.
+8. Das System speichert die Notiz und verknüpft sie mit dem Termin.
 9. Das System aktualisiert die Notizenliste im Terminformular und zeigt die neue Notiz an.
 
 ## Alternativen
@@ -38,5 +38,5 @@ Einen neuen Termin mit einer oder mehreren Notizen dokumentieren, um Information
 
 ## Ergebnis
 
-Die Notiz ist dem Termin zugeordnet und in der Notizenliste sichtbar. Die Notiz bleibt beim Termin bestehen, auch wenn der Termin spÃ¤ter bearbeitet wird.
+Die Notiz ist dem Termin zugeordnet und in der Notizenliste sichtbar. Die Notiz bleibt beim Termin bestehen, auch wenn der Termin später bearbeitet wird.
 

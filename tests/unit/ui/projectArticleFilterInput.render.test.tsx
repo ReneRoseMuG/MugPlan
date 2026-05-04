@@ -89,7 +89,7 @@ describe("FT30 UI: project article filter dialog", () => {
     expect((markup.match(/checked=""/g) ?? []).length).toBe(2);
   });
 
-  it("disables reset when no article filter is active", () => {
+  it("hides reset when no article filter is active", () => {
     const markup = renderToStaticMarkup(
       <ProjectArticleFilterInput
         products={[]}
@@ -102,7 +102,6 @@ describe("FT30 UI: project article filter dialog", () => {
       />,
     );
 
-    expect(markup).toContain("button-reset-project-article-filter");
-    expect(markup).toContain("disabled=\"\"");
+    expect(markup).not.toContain("button-reset-project-article-filter");
   });
 });

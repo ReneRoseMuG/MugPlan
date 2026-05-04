@@ -1,10 +1,10 @@
-﻿# UC 02/20: ENTFERNT â€” Duplikat von UC 02/13
+﻿# UC 02/20: ENTFERNT — Duplikat von UC 02/13
 
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

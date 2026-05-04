@@ -167,18 +167,19 @@ export function ProjectArticleFilterInput({
             </span>
           ) : null}
         </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={onReset}
-          disabled={!hasActiveFilter}
-          aria-label="Artikellistenfilter zurücksetzen"
-          data-testid="button-reset-project-article-filter"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        {hasActiveFilter ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onReset}
+            aria-label="Artikellistenfilter zurücksetzen"
+            data-testid="button-reset-project-article-filter"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
       </div>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>

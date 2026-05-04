@@ -1,12 +1,12 @@
-﻿# 01.05.26 | Implementierung | FT-33: Seed-Kunde vereinheitlicht und Monatskalender-Abwesenheiten geschÃ¤rft
+﻿# 01.05.26 | Implementierung | FT-33: Seed-Kunde vereinheitlicht und Monatskalender-Abwesenheiten geschärft
 
 ## Zusammenfassung
 
-FT-33 wurde auf den bestehenden Seed-Kunden `001 Â· Meisel & Gerken` konsolidiert. Der Monatskalender zeigt bei Abwesenheiten den betroffenen Mitarbeiter statt des internen Kunden.
+FT-33 wurde auf den bestehenden Seed-Kunden `001 · Meisel & Gerken` konsolidiert. Der Monatskalender zeigt bei Abwesenheiten den betroffenen Mitarbeiter statt des internen Kunden.
 
 ## Betroffene Features
 
-- [FT (33): Abwesenheiten Ã¼ber interne Personalplanung](../features/ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md)
+- [FT (33): Abwesenheiten über interne Personalplanung](../features/ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md)
 
 ## Offene Punkte
 

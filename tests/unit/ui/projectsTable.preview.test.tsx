@@ -177,6 +177,8 @@ describe("FT03 projects table preview wiring", () => {
                 appointmentsCount: 1,
                 nextAppointmentStartDate: "2099-08-09",
                 nextAppointmentStartTimeHour: 14,
+                nextAppointmentTourName: "Tour Table",
+                nextAppointmentTourColor: "#884422",
                 attachmentsCount: 2,
                 customer: {
                   id: 4,
@@ -197,7 +199,7 @@ describe("FT03 projects table preview wiring", () => {
     });
   });
 
-  it("renders the shared project table hover preview with footer badges and tags", () => {
+  it("renders the shared project table hover preview with appointment info, footer badges and tags", () => {
     renderToStaticMarkup(<ProjectsPage />);
 
     const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
@@ -206,7 +208,9 @@ describe("FT03 projects table preview wiring", () => {
     expect(markup).toContain("ORD-31");
     expect(markup).toContain("Projekt Mit Footer");
     expect(markup).toContain("Kunde Vier");
-    expect(markup).toContain("Termine:1");
+    expect(markup).toContain("14:00 - 09.08.99 · Tour Table");
+    expect(markup).toContain("background-color:#884422");
+    expect(markup).not.toContain("Termine:1");
     expect(markup).toContain("Notizen:5");
     expect(markup).toContain("Anhänge:2");
     expect(markup).toContain("Tag A");

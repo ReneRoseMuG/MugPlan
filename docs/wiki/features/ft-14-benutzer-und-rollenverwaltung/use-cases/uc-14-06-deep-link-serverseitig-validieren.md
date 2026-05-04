@@ -4,7 +4,7 @@
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Benutzer ohne ausreichende Rolle
 
 ## Ziel
 
-Sicherstellen, dass direkte URL-Aufrufe keine unzulÃ¤ssigen Aktionen ermÃ¶glichen.
+Sicherstellen, dass direkte URL-Aufrufe keine unzulässigen Aktionen ermöglichen.
 
 ## Vorbedingungen
 
@@ -21,17 +21,17 @@ Sicherstellen, dass direkte URL-Aufrufe keine unzulÃ¤ssigen Aktionen ermÃ¶gl
 
 ## Ablauf
 
-1. Der Akteur ruft eine geschÃ¼tzte Route direkt auf.
-2. Das System prÃ¼ft serverseitig die Rolle.
+1. Der Akteur ruft eine geschützte Route direkt auf.
+2. Das System prüft serverseitig die Rolle.
 3. Das System verweigert Zugriff.
 4. Das System antwortet mit 403.
 
 ## Alternativen
 
-- Route existiert nicht â†’ 404.
-- Technischer Fehler â†’ 500.
+- Route existiert nicht → 404.
+- Technischer Fehler → 500.
 
 ## Ergebnis
 
-Keine unzulÃ¤ssige Aktion wird ausgefÃ¼hrt.
+Keine unzulässige Aktion wird ausgeführt.
 

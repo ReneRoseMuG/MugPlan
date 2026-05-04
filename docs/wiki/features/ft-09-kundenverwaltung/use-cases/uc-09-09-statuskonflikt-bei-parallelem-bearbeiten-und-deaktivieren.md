@@ -4,7 +4,7 @@
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,13 +24,13 @@ Sicherstellen, dass eine Kundenbearbeitung nicht erfolgreich gespeichert werden 
 
 ## Ablauf
 
-1. Akteur A Ã¶ffnet die Kundendetailansicht und beginnt mit der Bearbeitung.
-2. Akteur B Ã¶ffnet denselben Kunden.
-3. Akteur B lÃ¶st â€žDeaktivierenâ€œ aus.
-4. Das System prÃ¼ft Berechtigung und Versionskennung.
-5. Das System setzt `is_active = false`, persistiert die Ã„nderung und erhÃ¶ht die Versionskennung.
+1. Akteur A öffnet die Kundendetailansicht und beginnt mit der Bearbeitung.
+2. Akteur B öffnet denselben Kunden.
+3. Akteur B löst „Deaktivieren“ aus.
+4. Das System prüft Berechtigung und Versionskennung.
+5. Das System setzt `is_active = false`, persistiert die Ã„nderung und erhöht die Versionskennung.
 6. Akteur A speichert nun seine Ã„nderungen mit veralteter Versionskennung.
-7. Das System prÃ¼ft:
+7. Das System prüft:
     - Versionskennung,
     - aktuellen Status (`is_active`).
 8. Das System erkennt den Konflikt.
@@ -39,13 +39,13 @@ Sicherstellen, dass eine Kundenbearbeitung nicht erfolgreich gespeichert werden 
 
 ## Alternativen
 
-- Akteur A lÃ¤dt vor dem Speichern neu â†’ das System zeigt den Kunden als deaktiviert an; Bearbeitung ist nur eingeschrÃ¤nkt mÃ¶glich oder blockiert.
-- Akteur B bricht die Deaktivierung ab â†’ kein Konflikt.
-- Technischer Fehler â†’ System antwortet mit 500.
+- Akteur A lädt vor dem Speichern neu → das System zeigt den Kunden als deaktiviert an; Bearbeitung ist nur eingeschränkt möglich oder blockiert.
+- Akteur B bricht die Deaktivierung ab → kein Konflikt.
+- Technischer Fehler → System antwortet mit 500.
 
 ## Ergebnis
 
-- Ein deaktivierter Kunde kann nicht unbemerkt durch parallele Bearbeitung wieder verÃ¤ndert werden.
-- Es entstehen keine inkonsistenten ZustÃ¤nde zwischen Aktiv-Status und Stammdaten.
-- Optimistic Locking wird auch bei StatusÃ¤nderungen konsequent durchgesetzt.
+- Ein deaktivierter Kunde kann nicht unbemerkt durch parallele Bearbeitung wieder verändert werden.
+- Es entstehen keine inkonsistenten Zustände zwischen Aktiv-Status und Stammdaten.
+- Optimistic Locking wird auch bei Statusänderungen konsequent durchgesetzt.
 

@@ -4,7 +4,7 @@
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Administrator
 
 ## Ziel
 
-Sicherstellen, dass bei parallelen StatusÃ¤nderungen eines Kunden keine inkonsistenten Aktiv-ZustÃ¤nde entstehen.
+Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsistenten Aktiv-Zustände entstehen.
 
 ## Vorbedingungen
 
@@ -23,28 +23,28 @@ Sicherstellen, dass bei parallelen StatusÃ¤nderungen eines Kunden keine inkons
 
 ---
 
-### Ablauf â€“ Beispiel: paralleles Deaktivieren
+### Ablauf – Beispiel: paralleles Deaktivieren
 
-1. Administrator A Ã¶ffnet die Detailansicht eines aktiven Kunden.
-2. Administrator B Ã¶ffnet denselben Kunden.
-3. Administrator A lÃ¶st â€žDeaktivierenâ€œ aus.
-4. Das System prÃ¼ft Berechtigung und Versionskennung.
-5. Das System setzt `is_active = false`, persistiert und erhÃ¶ht die Versionskennung.
-6. Administrator B lÃ¶st ebenfalls â€žDeaktivierenâ€œ aus.
-7. Das System prÃ¼ft die Versionskennung.
+1. Administrator A öffnet die Detailansicht eines aktiven Kunden.
+2. Administrator B öffnet denselben Kunden.
+3. Administrator A löst „Deaktivieren“ aus.
+4. Das System prüft Berechtigung und Versionskennung.
+5. Das System setzt `is_active = false`, persistiert und erhöht die Versionskennung.
+6. Administrator B löst ebenfalls „Deaktivieren“ aus.
+7. Das System prüft die Versionskennung.
 8. Das System erkennt die veraltete Version.
 9. Das System antwortet mit 409 (Konflikt).
 
 ---
 
-### Ablauf â€“ Beispiel: Deaktivieren vs. Reaktivieren
+### Ablauf – Beispiel: Deaktivieren vs. Reaktivieren
 
-1. Administrator A Ã¶ffnet einen aktiven Kunden.
-2. Administrator B Ã¶ffnet denselben Kunden.
+1. Administrator A öffnet einen aktiven Kunden.
+2. Administrator B öffnet denselben Kunden.
 3. Administrator A deaktiviert den Kunden.
-4. Das System persistiert `is_active = false` und erhÃ¶ht die Versionskennung.
+4. Das System persistiert `is_active = false` und erhöht die Versionskennung.
 5. Administrator B versucht, den Kunden zu reaktivieren (auf Basis veralteter Version).
-6. Das System prÃ¼ft die Versionskennung.
+6. Das System prüft die Versionskennung.
 7. Das System erkennt den Konflikt.
 8. Das System blockiert mit 409.
 
@@ -56,15 +56,15 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
-- Einer der Administratoren lÃ¤dt vor dem Statuswechsel neu â†’ kein Konflikt.
-- Ein Statuswechsel wird vor dem parallelen Zugriff vollstÃ¤ndig abgeschlossen â†’ der zweite Vorgang wird mit aktuellem Status geprÃ¼ft und ggf. als â€žkeine ZustandsÃ¤nderungâ€œ behandelt.
-- Technischer Fehler â†’ System antwortet mit 500.
+- Einer der Administratoren lädt vor dem Statuswechsel neu → kein Konflikt.
+- Ein Statuswechsel wird vor dem parallelen Zugriff vollständig abgeschlossen → der zweite Vorgang wird mit aktuellem Status geprüft und ggf. als „keine Zustandsänderung“ behandelt.
+- Technischer Fehler → System antwortet mit 500.
 
 ---
 
 ## Ergebnis
 
 - Der Aktiv-Status eines Kunden ist jederzeit eindeutig und konsistent.
-- Es existiert kein Zustand, in dem zwei widersprÃ¼chliche StatusÃ¤nderungen gleichzeitig persistiert werden.
-- Optimistic Locking gilt auch fÃ¼r reine Statusoperationen.
+- Es existiert kein Zustand, in dem zwei widersprüchliche Statusänderungen gleichzeitig persistiert werden.
+- Optimistic Locking gilt auch für reine Statusoperationen.
 

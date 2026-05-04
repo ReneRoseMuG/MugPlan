@@ -1,10 +1,10 @@
-﻿# UC 02/09: ProjektÃ¤nderung wird in Terminansichten konsistent dargestellt
+﻿# UC 02/09: Projektänderung wird in Terminansichten konsistent dargestellt
 
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -20,21 +20,21 @@ Sicherstellen, dass Ã„nderungen an Projektdaten in allen Terminansichten korr
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Ã„nderungsrechte (Disponent oder Administrator).
 - Dem Projekt sind mindestens ein oder mehrere Termine zugeordnet.
-- Eine Terminansicht (Kalender oder Tabelle) ist geÃ¶ffnet.
+- Eine Terminansicht (Kalender oder Tabelle) ist geöffnet.
 
 ## Ablauf
 
-1. Akteur Ã¤ndert Projektdaten (z. B. Titel, Kunde oder Beschreibung) gemÃ¤ÃŸ UC 02/02.
+1. Akteur ändert Projektdaten (z. B. Titel, Kunde oder Beschreibung) gemäÃŸ UC 02/02.
 2. System speichert die Ã„nderung.
 3. System invalidiert betroffene Ansichten.
-4. Offene Terminansichten aktualisieren die referenzierten Projektdaten beim nÃ¤chsten Laden.
+4. Offene Terminansichten aktualisieren die referenzierten Projektdaten beim nächsten Laden.
 
 ## Alternativen
 
-- Akteur nicht authentifiziert â†’ HTTP 401.
-- Akteur ohne Ã„nderungsrechte â†’ HTTP 403.
-- Keine Terminansicht geÃ¶ffnet â†’ Aktualisierung erfolgt beim nÃ¤chsten Laden.
-- Projekt ohne Termine â†’ Keine Terminansicht betroffen.
+- Akteur nicht authentifiziert → HTTP 401.
+- Akteur ohne Ã„nderungsrechte → HTTP 403.
+- Keine Terminansicht geöffnet → Aktualisierung erfolgt beim nächsten Laden.
+- Projekt ohne Termine → Keine Terminansicht betroffen.
 
 ## Ergebnis
 

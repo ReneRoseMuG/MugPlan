@@ -1,10 +1,10 @@
-﻿# UC 13/02: Notiz zu Kunde hinzufÃ¼gen
+﻿# UC 13/02: Notiz zu Kunde hinzufügen
 
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,36 +18,36 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Kunden zuordnen.
 
 - Der Kunde existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Schreibrechte fÃ¼r Kundennotizen.
+- Der Akteur besitzt Schreibrechte für Kundennotizen.
 - Das System erzwingt eine eindeutige Parent-Zuordnung (Kunde).
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet die Detailansicht eines bestehenden Kunden.
-2. Der Akteur wÃ¤hlt die Funktion â€žNotiz hinzufÃ¼gen".
-3. Das System Ã¶ffnet einen Richtext-Editor zur Erfassung der Notizdaten.
+1. Der Akteur öffnet die Detailansicht eines bestehenden Kunden.
+2. Der Akteur wählt die Funktion „Notiz hinzufügen".
+3. Das System öffnet einen Richtext-Editor zur Erfassung der Notizdaten.
 4. Das System zeigt ausschlieÃŸlich aktive Notizvorlagen zur Auswahl an.
-5. Optional wÃ¤hlt der Akteur eine Vorlage.
-6. Wurde eine Vorlage gewÃ¤hlt, Ã¼bernimmt das System Titel und Inhalt in den Editor.
-7. Besitzt die gewÃ¤hlte Vorlage eine Kennzeichnungsfarbe (`color`), Ã¼bernimmt das System diese Kennzeichnungsfarbe einmalig in die neue Notiz.
-8. Der Akteur erfasst oder Ã¤ndert Titel und Beschreibung der Notiz.
-9. Der Akteur bestÃ¤tigt die Eingabe.
+5. Optional wählt der Akteur eine Vorlage.
+6. Wurde eine Vorlage gewählt, übernimmt das System Titel und Inhalt in den Editor.
+7. Besitzt die gewählte Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese Kennzeichnungsfarbe einmalig in die neue Notiz.
+8. Der Akteur erfasst oder ändert Titel und Beschreibung der Notiz.
+9. Der Akteur bestätigt die Eingabe.
 10. Das System validiert Pflichtfelder und Berechtigungen serverseitig.
 11. Das System erstellt die Notiz mit folgenden Initialwerten:
-    - Referenz ausschlieÃŸlich auf den gewÃ¤hlten Kunden
+    - Referenz ausschlieÃŸlich auf den gewählten Kunden
     - Keine Projekt-Referenz
     - `is_pinned = false`
     - Setzen von `created_at` und `updated_at`
 12. Das System speichert die Notiz persistent.
-13. Das System aktualisiert die Notizenliste in der Kundendetailansicht gemÃ¤ÃŸ Sortierlogik.
+13. Das System aktualisiert die Notizenliste in der Kundendetailansicht gemäÃŸ Sortierlogik.
 
-### AlternativablÃ¤ufe
+### Alternativabläufe
 
-- Pflichtfelder fehlen â†’ Das System verweigert die Speicherung und zeigt Validierungsfehler an.
-- Der Akteur ist nicht authentifiziert â†’ HTTP 401, keine Speicherung.
-- Der Akteur besitzt keine ausreichende Rolle â†’ HTTP 403, keine Speicherung.
-- Abbruch durch den Akteur â†’ Keine Persistierung.
-- Technischer Fehler bei Speicherung â†’ HTTP 500, keine persistente Notiz entsteht.
+- Pflichtfelder fehlen → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Speicherung.
+- Abbruch durch den Akteur → Keine Persistierung.
+- Technischer Fehler bei Speicherung → HTTP 500, keine persistente Notiz entsteht.
 
 ## Alternativen
 
@@ -58,5 +58,5 @@ Nicht angegeben in der Notion-Quelle.
 - Eine neue Notiz existiert persistent.
 - Die Notiz ist ausschlieÃŸlich dem Kunden zugeordnet.
 - Die Notiz erscheint in der Notizenliste des Kunden.
-- Es entstehen keine zusÃ¤tzlichen Referenzen oder Seiteneffekte in anderen DomÃ¤nen.
+- Es entstehen keine zusätzlichen Referenzen oder Seiteneffekte in anderen Domänen.
 

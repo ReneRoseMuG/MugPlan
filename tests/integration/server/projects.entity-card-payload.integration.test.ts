@@ -27,6 +27,7 @@ import {
   createProjectFixtureWithOverrides,
   createTemporaryAttachmentFilesFixture,
   createAppointmentFixture,
+  createTourFixture,
   ensureSystemTagsFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
@@ -91,9 +92,11 @@ async function buildProjectCardFixture(prefix: string) {
     prefix,
   });
 
+  const tour = await createTourFixture("#226688");
   const appointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: getRelativeBerlinDate(2),
+    tourId: tour.id,
   });
 
   await attachCustomerTagFixture(customer.id, systemTag.id);
@@ -106,6 +109,7 @@ async function buildProjectCardFixture(prefix: string) {
     admin,
     customer,
     project,
+    tour,
     appointment,
     attachmentFiles,
     systemTag,
@@ -146,6 +150,8 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
       descriptionMd: fixture.project.descriptionMd,
       notesCount: 1,
       appointmentsCount: 1,
+      nextAppointmentTourName: fixture.tour.name,
+      nextAppointmentTourColor: fixture.tour.color,
       attachmentsCount: 1,
       customer: {
         id: fixture.customer.id,
@@ -287,6 +293,8 @@ describe("FT02/FT03 integration: project entity card payloads", () => {
       descriptionMd: "Projektbeschreibung Neu",
       notesCount: 2,
       appointmentsCount: 2,
+      nextAppointmentTourName: fixture.tour.name,
+      nextAppointmentTourColor: fixture.tour.color,
       attachmentsCount: 2,
       customer: {
         fullName: customerPatch.body.fullName,

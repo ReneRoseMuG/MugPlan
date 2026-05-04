@@ -1,10 +1,10 @@
-﻿# UC 21/06: Dokumentextraktion im Formular â€žNeuer Terminâ€œ starten
+﻿# UC 21/06: Dokumentextraktion im Formular „Neuer Termin“ starten
 
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
 - Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,25 +12,25 @@ Disponent, Administrator
 
 ## Ziel
 
-Innerhalb des Formulars â€žNeuer Terminâ€œ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.
+Innerhalb des Formulars „Neuer Termin“ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.
 
 ## Vorbedingungen
 
-- Das Formular â€žNeuer Terminâ€œ ist geÃ¶ffnet.
+- Das Formular „Neuer Termin“ ist geöffnet.
 - Der Akteur besitzt die Berechtigung zur Terminanlage.
-- Ein PDF-Dokument ist verfÃ¼gbar.
+- Ein PDF-Dokument ist verfügbar.
 
 ## Ablauf
 
-1. Der Akteur lÃ¤dt ein PDF in den definierten Extraktionsbereich des Terminformulars.
-2. Das System startet die regelbasierte Dokumentextraktion gemÃ¤ÃŸ UC 21/01.
+1. Der Akteur lädt ein PDF in den definierten Extraktionsbereich des Terminformulars.
+2. Das System startet die regelbasierte Dokumentextraktion gemäÃŸ UC 21/01.
 3. Das System zeigt einen Ergebnisdialog mit editierbarem Vorschlag an.
 
 ## Alternativen
 
-- Das Dokument ist nicht geeignet â†’ Das System zeigt eine Fehlermeldung; das Terminformular bleibt unverÃ¤ndert.
+- Das Dokument ist nicht geeignet → Das System zeigt eine Fehlermeldung; das Terminformular bleibt unverändert.
 
 ## Ergebnis
 
-Ein editierbarer Extraktionsvorschlag steht im Kontext des Formulars â€žNeuer Terminâ€œ zur VerfÃ¼gung. Es wurden keine Termin- oder Projektdaten gespeichert.
+Ein editierbarer Extraktionsvorschlag steht im Kontext des Formulars „Neuer Termin“ zur Verfügung. Es wurden keine Termin- oder Projektdaten gespeichert.
 

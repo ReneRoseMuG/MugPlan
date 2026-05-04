@@ -4,7 +4,7 @@
 
 - Feature: [FT (26): Auswertungen und Reports](../ft-26-auswertungen-und-reports.md)
 - Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

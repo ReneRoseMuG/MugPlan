@@ -4,7 +4,7 @@
 
 - Feature: [FT (03): Kalenderansichten](../ft-03-kalenderansichten.md)
 - Notion-Quelle: https://app.notion.com/p/7833e4ee2b524bbb9ccaf45e9e807a98
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

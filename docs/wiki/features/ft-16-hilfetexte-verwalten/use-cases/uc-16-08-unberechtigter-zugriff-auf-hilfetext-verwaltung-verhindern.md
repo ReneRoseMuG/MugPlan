@@ -4,7 +4,7 @@
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
 - Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent, Leser
 
 ## Ziel
 
-Sicherstellen, dass nur Administratoren Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder lÃ¶schen dÃ¼rfen.
+Sicherstellen, dass nur Administratoren Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder löschen dürfen.
 
 ## Vorbedingungen
 
@@ -21,17 +21,17 @@ Sicherstellen, dass nur Administratoren Hilfetexte anlegen, bearbeiten, aktivier
 
 ## Ablauf
 
-1. Der Akteur versucht, die Hilfetext-Verwaltung aufzurufen oder eine Verwaltungsaktion auszufÃ¼hren.
-2. Das System prÃ¼ft serverseitig die Rolle des Akteurs.
+1. Der Akteur versucht, die Hilfetext-Verwaltung aufzurufen oder eine Verwaltungsaktion auszuführen.
+2. Das System prüft serverseitig die Rolle des Akteurs.
 3. Das System verweigert den Zugriff auf Verwaltungsfunktionen.
-4. Das System liefert einen Berechtigungsfehler zurÃ¼ck.
+4. Das System liefert einen Berechtigungsfehler zurück.
 
 ## Alternativen
 
-- Der Akteur versucht, direkt Ã¼ber einen API-Endpunkt eine Verwaltungsaktion auszufÃ¼hren â†’ Das System prÃ¼ft die Rolle und blockiert ebenfalls mit einem Berechtigungsfehler.
-- Technischer Fehler â†’ Das System liefert einen Fehlerstatus zurÃ¼ck.
+- Der Akteur versucht, direkt über einen API-Endpunkt eine Verwaltungsaktion auszuführen → Das System prüft die Rolle und blockiert ebenfalls mit einem Berechtigungsfehler.
+- Technischer Fehler → Das System liefert einen Fehlerstatus zurück.
 
 ## Ergebnis
 
-Nicht berechtigte Rollen kÃ¶nnen keine Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder lÃ¶schen. Die IntegritÃ¤t der Hilfetexte bleibt gewahrt.
+Nicht berechtigte Rollen können keine Hilfetexte anlegen, bearbeiten, aktivieren, deaktivieren oder löschen. Die Integrität der Hilfetexte bleibt gewahrt.
 

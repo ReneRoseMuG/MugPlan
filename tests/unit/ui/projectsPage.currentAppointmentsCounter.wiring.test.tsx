@@ -180,6 +180,8 @@ describe("FT02 projects page footer badge wiring", () => {
       name: string;
       descriptionMd: string | null;
       projectArticleItems: Array<{ label: string; value: string }>;
+      nextAppointmentTourName: string | null;
+      nextAppointmentTourColor: string | null;
     }> = {},
   ) {
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
@@ -207,6 +209,8 @@ describe("FT02 projects page footer badge wiring", () => {
                 appointmentsCount: 6,
                 nextAppointmentStartDate: "2099-06-01",
                 nextAppointmentStartTimeHour: 10,
+                nextAppointmentTourName: overrides.nextAppointmentTourName ?? "Tour 1",
+                nextAppointmentTourColor: overrides.nextAppointmentTourColor ?? "#226688",
                 attachmentsCount: 3,
                 customer: {
                   id: 17,
@@ -227,7 +231,7 @@ describe("FT02 projects page footer badge wiring", () => {
     });
   }
 
-  it("renders appointments, notes and attachments in the project card footer", () => {
+  it("renders the appointment info in the body and notes and attachments in the footer", () => {
     mockProjects(3, {
       projectArticleItems: [{ label: "Modell", value: "Classic 200" }],
     });
@@ -237,15 +241,17 @@ describe("FT02 projects page footer badge wiring", () => {
     expect(markup).toContain("h-[6.5rem]");
     expect(markup).toContain("gap-1");
     expect(markup).toContain("-mt-3");
+    expect(markup).not.toContain("h-full flex-col gap-1 overflow-hidden");
     expect(markup).toContain("w-[420px] p-2");
     expect(markup).not.toContain("w-[400px] rounded-lg bg-white p-2");
-    expect(markup).toContain("Termine:6");
+    expect(markup).toContain("10:00 - 01.06.99 · Tour 1");
+    expect(markup).toContain("background-color:rgba(34, 102, 136, 0.18)");
+    expect(markup).toContain("border-color:rgba(34, 102, 136, 0.32)");
+    expect(markup).not.toContain("bg-amber-50");
+    expect(markup).not.toContain("Termine:6");
     expect(markup).toContain("Notizen:3");
     expect(markup).toContain("Anhänge:3");
-    expect(appointmentPreviewCalls[0]).toMatchObject({
-      triggerTestId: "text-project-planned-appointments-8",
-      source: { type: "project", id: 8, count: 6 },
-    });
+    expect(appointmentPreviewCalls).toHaveLength(0);
     expect(notesPreviewCalls[0]).toMatchObject({
       sourceMode: "single-parent",
       triggerTestId: "text-project-notes-count-8",
@@ -273,6 +279,61 @@ describe("FT02 projects page footer badge wiring", () => {
     expect(notesPreviewCalls[0]).toMatchObject({
       sources: { type: "project", id: 8, count: 0 },
     });
+  });
+
+  it("shows a visible fallback when projects only have historical appointments", () => {
+    mockProjects(0, {
+      nextAppointmentTourName: null,
+    });
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/projects/list") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 50,
+            total: 1,
+            totalPages: 1,
+            items: [
+              {
+                id: 8,
+                customerId: 17,
+                name: "Projekt Sonne",
+                orderNumber: "AUF-88",
+                amount: "4999.95",
+                descriptionMd: null,
+                isActive: true,
+                version: 5,
+                projectArticleItems: [],
+                tags: [],
+                notesCount: 0,
+                appointmentsCount: 2,
+                nextAppointmentStartDate: null,
+                nextAppointmentStartTimeHour: null,
+                nextAppointmentTourName: null,
+                nextAppointmentTourColor: null,
+                attachmentsCount: 0,
+                customer: {
+                  id: 17,
+                  customerNumber: "K-17",
+                  fullName: "Mina Muster",
+                  lastName: "Muster",
+                },
+              },
+            ],
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "/api/tags") {
+        return { data: [], isLoading: false };
+      }
+      return { data: undefined, isLoading: false };
+    });
+
+    const markup = renderToStaticMarkup(<ProjectsPage />);
+
+    expect(markup).toContain("Kein anstehender Termin");
   });
 
   it("keeps the entity card footer explicitly visible", () => {

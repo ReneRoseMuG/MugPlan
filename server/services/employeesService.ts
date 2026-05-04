@@ -11,6 +11,8 @@ import type { CanonicalRoleKey } from "../settings/registry";
 import { enrichTourWeekCards, isWeekLocked, resolveIsoWeekWindow } from "./tourWeekEmployeesService";
 import { isParkplatzTourName } from "../lib/systemTours";
 import { buildEmployeeRevenueOverview } from "./employeeRevenueOverviewAggregation";
+import { deleteAttachmentFile } from "../lib/attachmentFiles";
+import { logWarn } from "../lib/logger";
 
 export class EmployeesError extends Error {
   status: number;
@@ -373,6 +375,7 @@ export async function deleteEmployee(id: number, version: number, roleKey: Canon
     throw new EmployeesError(422, "VALIDATION_ERROR");
   }
 
+  const attachments = await employeesRepository.getEmployeeAttachments(id);
   const result = await employeesRepository.deleteEmployeeWithVersion(id, version);
   if (result.kind === "version_conflict") {
     const exists = await employeesRepository.getEmployee(id);
@@ -383,6 +386,18 @@ export async function deleteEmployee(id: number, version: number, roleKey: Canon
   }
   if (result.kind === "business_conflict") {
     throw new EmployeesError(409, "BUSINESS_CONFLICT");
+  }
+
+  for (const attachment of attachments) {
+    try {
+      await deleteAttachmentFile(attachment.filename, attachment.storagePath);
+    } catch (error) {
+      logWarn("[employees-service] employee attachment file cleanup failed", {
+        employeeId: id,
+        attachmentId: attachment.id,
+        error,
+      });
+    }
   }
 }
 

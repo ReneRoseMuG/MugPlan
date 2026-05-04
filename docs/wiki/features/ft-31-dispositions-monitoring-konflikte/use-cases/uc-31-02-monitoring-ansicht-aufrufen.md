@@ -4,7 +4,7 @@
 
 - Feature: [FT (31): Dispositions-Monitoring (Konflikte)](../ft-31-dispositions-monitoring-konflikte.md)
 - Notion-Quelle: https://app.notion.com/p/322da094354e80c9af64f355f8d47b6c
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

@@ -2,11 +2,11 @@
 
 ## Zusammenfassung
 
-Der FT-33-Readonly-Schnitt wurde mit Integrations- und Browser-Tests abgesichert. RegulÃ¤re Termine bleiben generisch bearbeitbar, Abwesenheiten bleiben auÃŸerhalb des Mitarbeiterformulars readonly.
+Der FT-33-Readonly-Schnitt wurde mit Integrations- und Browser-Tests abgesichert. Reguläre Termine bleiben generisch bearbeitbar, Abwesenheiten bleiben auÃŸerhalb des Mitarbeiterformulars readonly.
 
 ## Betroffene Features
 
-- [FT (33): Abwesenheiten Ã¼ber interne Personalplanung](../features/ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md)
+- [FT (33): Abwesenheiten über interne Personalplanung](../features/ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md)
 
 ## Offene Punkte
 

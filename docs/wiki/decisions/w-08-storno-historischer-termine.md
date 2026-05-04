@@ -3,10 +3,10 @@
 ## Metadaten
 
 - Status: offen
-- PrioritÃ¤t: Mittel
+- Priorität: Mittel
 - Feature: [FT (01): Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Entdeckt: 01.05.26
-- Art: Widerspruch Code â†” Spec
+- Art: Widerspruch Code ↔ Spec
 
 ## Befund
 
@@ -14,20 +14,20 @@ Der Code erlaubt Admins, auch historische Termine zu stornieren. Der betroffene 
 
 ## Optionen
 
-- A) Spec anpassen: Rollenausnahme fÃ¼r Admin explizit in UC 01/22 aufnehmen
-- B) Code einschrÃ¤nken: Storno historischer Termine auch fÃ¼r Admin blockieren
+- A) Spec anpassen: Rollenausnahme für Admin explizit in UC 01/22 aufnehmen
+- B) Code einschränken: Storno historischer Termine auch für Admin blockieren
 
 ## Auswirkungen eines Eingriffs
 
-Eine Anpassung der Spec wÃ¼rde das bestehende Admin-Verhalten fachlich legitimieren. Eine CodeeinschrÃ¤nkung wÃ¼rde Admins eine heute mÃ¶gliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
+Eine Anpassung der Spec würde das bestehende Admin-Verhalten fachlich legitimieren. Eine Codeeinschränkung würde Admins eine heute mögliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
 
 ## Schadenspotential
 
-Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu fÃ¼hren, dass Admins Termine unzulÃ¤ssig stornieren oder eine fachlich gewollte Ausnahme verlieren. Das Risiko liegt in Rollen- und Fachregelabweichungen, nicht in einer breiten technischen InstabilitÃ¤t.
+Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu führen, dass Admins Termine unzulässig stornieren oder eine fachlich gewollte Ausnahme verlieren. Das Risiko liegt in Rollen- und Fachregelabweichungen, nicht in einer breiten technischen Instabilität.
 
 ## Vorgeschlagene MaÃŸnahme
 
-Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschrÃ¤nken.
+Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschränken.
 
 ## Quelle
 

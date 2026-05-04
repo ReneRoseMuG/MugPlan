@@ -1,8 +1,8 @@
-﻿# 01.05.26 | Lastenheft | FT-01: Architektur & Kontext erstmalig befÃ¼llt
+﻿# 01.05.26 | Lastenheft | FT-01: Architektur & Kontext erstmalig befüllt
 
 ## Zusammenfassung
 
-FÃ¼r FT (01) wurde der Abschnitt `Architektur & Kontext` aus der Codebase abgeleitet und in Notion eingepflegt.
+Für FT (01) wurde der Abschnitt `Architektur & Kontext` aus der Codebase abgeleitet und in Notion eingepflegt.
 
 ## Betroffene Features
 
@@ -10,9 +10,9 @@ FÃ¼r FT (01) wurde der Abschnitt `Architektur & Kontext` aus der Codebase abge
 
 ## Offene Punkte
 
-- FT-26-Link fehlte in den AbhÃ¤ngigkeiten von FT (01).
+- FT-26-Link fehlte in den Abhängigkeiten von FT (01).
 - W-07 und W-08 waren zur Entscheidung offen.
-- Cascade-PrÃ¼fung verwandter Features stand noch aus.
+- Cascade-Prüfung verwandter Features stand noch aus.
 
 ## Quelle
 

@@ -4,7 +4,7 @@
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -19,22 +19,22 @@ Sicherstellen, dass Tag-Ã„nderungen eines Projekts in allen relevanten Sichte
 - Projekt existiert.
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Ã„nderungsrechte (Disponent oder Administrator).
-- Mindestens ein projektbezogener Tag ist zugeordnet oder wird geÃ¤ndert.
+- Mindestens ein projektbezogener Tag ist zugeordnet oder wird geändert.
 
 ## Ablauf
 
-1. Akteur Ã¤ndert die projektbezogenen Tags gemÃ¤ÃŸ UC 02/04.
+1. Akteur ändert die projektbezogenen Tags gemäÃŸ UC 02/04.
 2. System speichert die Tag-Zuordnung.
-3. System aktualisiert ProjektÃ¼bersichten und Filterergebnisse.
+3. System aktualisiert Projektübersichten und Filterergebnisse.
 4. Terminansichten aktualisieren Tag-Anzeigen, sofern diese angezeigt werden.
 
 ## Alternativen
 
-- Akteur nicht authentifiziert â†’ HTTP 401.
-- Akteur ohne Ã„nderungsrechte â†’ HTTP 403.
-- Tag wird entfernt â†’ Darstellung aktualisiert sich entsprechend.
-- Tag wird hinzugefÃ¼gt â†’ Darstellung aktualisiert sich entsprechend.
-- Versionskonflikt â†’ HTTP 409 VERSION_CONFLICT.
+- Akteur nicht authentifiziert → HTTP 401.
+- Akteur ohne Ã„nderungsrechte → HTTP 403.
+- Tag wird entfernt → Darstellung aktualisiert sich entsprechend.
+- Tag wird hinzugefügt → Darstellung aktualisiert sich entsprechend.
+- Versionskonflikt → HTTP 409 VERSION_CONFLICT.
 
 ## Ergebnis
 

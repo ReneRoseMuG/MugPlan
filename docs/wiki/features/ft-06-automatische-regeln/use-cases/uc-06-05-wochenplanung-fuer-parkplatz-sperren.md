@@ -1,10 +1,10 @@
-﻿# UC 06/05: Wochenplanung fÃ¼r Parkplatz sperren
+﻿# UC 06/05: Wochenplanung für Parkplatz sperren
 
 ## Metadaten
 
 - Feature: [FT (06): Automatische Regeln](../ft-06-automatische-regeln.md)
 - Notion-Quelle: https://app.notion.com/p/33fda094354e8029a54fc0c7a6cc1588
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

@@ -1,10 +1,10 @@
-﻿# UC 07/10: TerminÃ¤nderung im CalDAV-Kalender aktualisieren
+﻿# UC 07/10: Terminänderung im CalDAV-Kalender aktualisieren
 
 ## Metadaten
 
 - Feature: [FT (07): Automatisierte Datensicherung und Fallback](../ft-07-automatisierte-datensicherung-und-fallback.md)
 - Notion-Quelle: https://app.notion.com/p/8ed9ebce7bd1439592e891b51a433b8a
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ System
 
 ## Ziel
 
-Externen Kalender an geÃ¤nderten Termin anpassen.
+Externen Kalender an geänderten Termin anpassen.
 
 Vorbedingungen:
 
@@ -31,7 +31,7 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
-- Event extern nicht vorhanden â†’ Event wird neu angelegt.
+- Event extern nicht vorhanden → Event wird neu angelegt.
 
 ## Ergebnis
 

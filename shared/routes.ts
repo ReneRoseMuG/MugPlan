@@ -633,6 +633,8 @@ const projectBoardListItemSchema = z.object({
   appointmentsCount: z.number().int().min(0),
   nextAppointmentStartDate: z.string().nullable(),
   nextAppointmentStartTimeHour: z.number().int().min(0).max(23).nullable(),
+  nextAppointmentTourName: z.string().nullable(),
+  nextAppointmentTourColor: z.string().nullable(),
   projectArticleItems: z.array(projectArticleItemSchema),
   tags: z.array(tagSchema),
   customer: z.object({
@@ -2502,11 +2504,14 @@ export const api = {
     delete: {
       method: "DELETE" as const,
       path: "/api/employees/:id",
-      input: z.object({}).passthrough().optional(),
+      input: z.object({
+        version: z.number().int().min(1),
+      }).strict(),
       responses: {
-        405: z.object({ code: z.literal("METHOD_NOT_ALLOWED") }),
+        204: z.void(),
         403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
+        409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

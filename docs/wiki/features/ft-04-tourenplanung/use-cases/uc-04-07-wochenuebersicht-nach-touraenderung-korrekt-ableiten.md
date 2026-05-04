@@ -1,10 +1,10 @@
-﻿# UC 04/07: WochenÃ¼bersicht nach TourÃ¤nderung korrekt ableiten
+﻿# UC 04/07: Wochenübersicht nach Touränderung korrekt ableiten
 
 ## Metadaten
 
 - Feature: [FT (04): Tourenplanung](../ft-04-tourenplanung.md)
 - Notion-Quelle: https://app.notion.com/p/746286ccf41d46629ec614541a871345
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

@@ -24,10 +24,12 @@ import {
   createCustomerFixtureWithOverrides,
   createEmployeeFixtureWithOverrides,
   createProjectFixtureWithOverrides,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 import * as appointmentsRepository from "../../server/repositories/appointmentsRepository";
+import { formatDisplayDate } from "../../client/src/lib/date-display-format";
 
 test.describe.configure({ mode: "serial" });
 
@@ -72,21 +74,25 @@ test("A2 Kunde: zukünftiger Termin erscheint im Badge und Hover", async ({ page
   await expect(page.getByTestId(`customer-appointment-preview-${appointment.id}`)).toBeVisible({ timeout: 5_000 });
 });
 
-test("A3 Projekt: zukünftiger Termin erscheint im Badge und Hover", async ({ page }) => {
+test("A3 Projekt: zukünftiger Termin erscheint in der Terminzeile", async ({ page }) => {
   const project = await createProjectFixtureWithOverrides({ prefix: "A3-PROJ" });
-  const appointment = await createAppointmentFixture({
+  const tour = await createTourFixture("#336699");
+  const startDate = getRelativeBerlinDate(2);
+  await createAppointmentFixture({
     projectId: project.id,
-    startDate: getRelativeBerlinDate(2),
+    startDate,
+    startTime: "09:00:00",
+    tourId: tour.id,
   });
 
   await loginAsAdmin(page);
   await page.getByTestId("nav-projekte").click();
   const projectCard = page.getByTestId(`project-card-${project.id}`);
   await expect(projectCard).toBeVisible({ timeout: 10_000 });
-  await expect(projectCard.getByTestId(`text-project-planned-appointments-${project.id}`)).toContainText("1");
-
-  await projectCard.getByTestId(`text-project-planned-appointments-${project.id}`).hover();
-  await expect(page.getByTestId(`project-appointment-preview-${appointment.id}`)).toBeVisible({ timeout: 5_000 });
+  const appointmentInfo = projectCard.getByTestId(`text-project-next-appointment-${project.id}`);
+  await expect(appointmentInfo).toContainText(`09:00 - ${formatDisplayDate(startDate)}`);
+  await expect(appointmentInfo).toContainText(tour.name);
+  await expect(projectCard.getByTestId(`text-project-planned-appointments-${project.id}`)).toHaveCount(0);
 });
 
 test("A4 Mitarbeiter: vergangener Termin erscheint im Badge und Hover (neue Regel)", async ({ page }) => {
@@ -156,7 +162,7 @@ test("A5 Mitarbeiter: gemischte Termine werden absteigend nach Datum sortiert", 
   expect(futureBox.y).toBeLessThan(pastBox.y);
 });
 
-test("A6 alle drei Parent-Typen: mehr als vier Termine zeigen den Hinweis auf weitere", async ({ page }) => {
+test("A6 Mitarbeiter/Kunden zeigen weitere Termine, Projekt zeigt den nächsten Termin", async ({ page }) => {
   // Appointments are created at +1 to +5 days.
   // Descending sort → +5,+4,+3,+2 are shown (index 4..1); +1 (index 0) is excluded.
 
@@ -186,14 +192,12 @@ test("A6 alle drei Parent-Typen: mehr als vier Termine zeigen den Hinweis auf we
   }
 
   const project = await createProjectFixtureWithOverrides({ prefix: "A6-PROJ" });
-  const projAppointments: Awaited<ReturnType<typeof createAppointmentFixture>>[] = [];
+  const projectNextDate = getRelativeBerlinDate(1);
   for (let i = 1; i <= 5; i++) {
-    projAppointments.push(
-      await createAppointmentFixture({
-        projectId: project.id,
-        startDate: getRelativeBerlinDate(i),
-      }),
-    );
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(i),
+    });
   }
 
   await loginAsAdmin(page);
@@ -216,14 +220,12 @@ test("A6 alle drei Parent-Typen: mehr als vier Termine zeigen den Hinweis auf we
   await expect(page.getByTestId(`customer-appointment-preview-${custAppointments[0].id}`)).toHaveCount(0);
   await expect(page.getByText("... weitere im Formular")).toBeVisible();
 
-  // Project: same structure
+  // Project: single next-appointment row, no appointment hover badge
   await page.getByTestId("nav-projekte").click();
   const projectCard = page.getByTestId(`project-card-${project.id}`);
   await expect(projectCard).toBeVisible({ timeout: 10_000 });
-  await projectCard.getByTestId(`text-project-planned-appointments-${project.id}`).hover();
-  await expect(page.getByTestId(`project-appointment-preview-${projAppointments[4].id}`)).toBeVisible({ timeout: 5_000 });
-  await expect(page.getByTestId(`project-appointment-preview-${projAppointments[0].id}`)).toHaveCount(0);
-  await expect(page.getByText("... weitere im Formular")).toBeVisible();
+  await expect(projectCard.getByTestId(`text-project-next-appointment-${project.id}`)).toContainText(formatDisplayDate(projectNextDate));
+  await expect(projectCard.getByTestId(`text-project-planned-appointments-${project.id}`)).toHaveCount(0);
 });
 
 test("B1 Cache-Invalidierung: nach UI-Löschung zeigt der Hover keine veralteten Daten (kein Seitenreload)", async ({ page }) => {

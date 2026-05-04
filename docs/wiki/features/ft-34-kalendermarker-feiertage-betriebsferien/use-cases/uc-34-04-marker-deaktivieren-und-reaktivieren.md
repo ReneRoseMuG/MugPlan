@@ -12,7 +12,7 @@ Administrator
 
 ## Ziel
 
-Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spÃ¤ter wieder anzeigen.
+Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und später wieder anzeigen.
 
 ## Vorbedingungen
 
@@ -21,8 +21,8 @@ Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spÃ�
 
 ## Ablauf
 
-1. Administrator Ã¶ffnet `Stammdaten > Feiertage`.
-2. Administrator wÃ¤hlt einen aktiven Marker.
+1. Administrator öffnet `Stammdaten > Feiertage`.
+2. Administrator wählt einen aktiven Marker.
 3. Administrator deaktiviert den Marker.
 4. System speichert den Marker mit Aktiv-Status inaktiv.
 5. System entfernt den Marker aus dem Kalender-Leseendpunkt.
@@ -31,8 +31,8 @@ Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spÃ�
 
 ## Alternativen
 
-- Wird der Marker nur bearbeitet, bleibt sein Aktiv-Status unverÃ¤ndert.
-- Ein spÃ¤terer Seed darf den deaktivierten Marker nicht wieder aktivieren.
+- Wird der Marker nur bearbeitet, bleibt sein Aktiv-Status unverändert.
+- Ein späterer Seed darf den deaktivierten Marker nicht wieder aktivieren.
 
 ## Ergebnis
 

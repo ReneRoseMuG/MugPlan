@@ -1,11 +1,11 @@
 ﻿# FT (26) Use Cases
 
-Diese Use Cases wurden vollstÃ¤ndig aus dem lokalen Notion-Markdown-Export fÃ¼r [FT (26): Auswertungen und Reports](../ft-26-auswertungen-und-reports.md) Ã¼bernommen.
+Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (26): Auswertungen und Reports](../ft-26-auswertungen-und-reports.md) übernommen.
 
 - [UC 26/01: Vorlaufliste konfigurieren und erzeugen](uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.md)
-- [UC 26/02: Bis Datum nachtrÃ¤glich entfernen](uc-26-02-bis-datum-nachtraeglich-entfernen.md)
+- [UC 26/02: Bis Datum nachträglich entfernen](uc-26-02-bis-datum-nachtraeglich-entfernen.md)
 - [UC 26/03: Produktionsplanung konfigurieren und erzeugen](uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.md)
-- [UC 26/04: Datumsspanne in der Produktionsplanung nachtrÃ¤glich anpassen](uc-26-04-datumsspanne-in-der-produktionsplanung-nachtraeglich-anpassen.md)
+- [UC 26/04: Datumsspanne in der Produktionsplanung nachträglich anpassen](uc-26-04-datumsspanne-in-der-produktionsplanung-nachtraeglich-anpassen.md)
 - [UC 26/05: Produktionsplanung drucken](uc-26-05-produktionsplanung-drucken.md)
 - [UC 26/06: Auftragsliste konfigurieren und erzeugen](uc-26-06-auftragsliste-konfigurieren-und-erzeugen.md)
 - [UC 26/07: Auftragsliste drucken](uc-26-07-auftragsliste-drucken.md)

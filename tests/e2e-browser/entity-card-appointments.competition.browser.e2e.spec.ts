@@ -27,6 +27,7 @@ import {
   createProjectFixtureWithOverrides,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
+import { formatDisplayDate } from "../../client/src/lib/date-display-format";
 
 test.describe.configure({ mode: "serial" });
 
@@ -89,7 +90,7 @@ test("Kundenkarte zeigt nur eigene Termine trotz gleichnamiger Konkurrenz", asyn
   await expect(page.getByTestId(`customer-appointment-preview-${distractorAppointment.id}`)).toHaveCount(0);
 });
 
-test("Projektkarte zeigt nur eigene Termine trotz gleichnamiger Konkurrenz", async ({ page }) => {
+test("Projektkarte zeigt den nächsten eigenen Termin trotz gleichnamiger Konkurrenz", async ({ page }) => {
   const targetCustomer = await createCustomerFixtureWithOverrides({
     prefix: "FT31-PROJ-CUST-TARGET",
     firstName: "Paula",
@@ -113,17 +114,21 @@ test("Projektkarte zeigt nur eigene Termine trotz gleichnamiger Konkurrenz", asy
     name: "Kartenprojekt Gleichklang",
   });
 
-  const targetAppointmentA = await createAppointmentFixture({
+  const targetNextDate = getRelativeBerlinDate(1);
+  const targetLaterDate = getRelativeBerlinDate(4);
+  const distractorDate = getRelativeBerlinDate(2);
+
+  await createAppointmentFixture({
     projectId: targetProject.id,
-    startDate: getRelativeBerlinDate(1),
+    startDate: targetNextDate,
   });
-  const targetAppointmentB = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: targetProject.id,
-    startDate: getRelativeBerlinDate(4),
+    startDate: targetLaterDate,
   });
-  const distractorAppointment = await createAppointmentFixture({
+  await createAppointmentFixture({
     projectId: distractorProject.id,
-    startDate: getRelativeBerlinDate(2),
+    startDate: distractorDate,
   });
 
   await loginAsAdmin(page);
@@ -135,11 +140,10 @@ test("Projektkarte zeigt nur eigene Termine trotz gleichnamiger Konkurrenz", asy
   await expect(targetCard).toBeVisible({ timeout: 10_000 });
   await expect(distractorCard).toBeVisible({ timeout: 10_000 });
 
-  await expect(targetCard.getByTestId(`text-project-planned-appointments-${targetProject.id}`)).toContainText("2");
-  await expect(distractorCard.getByTestId(`text-project-planned-appointments-${distractorProject.id}`)).toContainText("1");
+  await expect(targetCard.getByTestId(`text-project-next-appointment-${targetProject.id}`)).toContainText(formatDisplayDate(targetNextDate));
+  await expect(distractorCard.getByTestId(`text-project-next-appointment-${distractorProject.id}`)).toContainText(formatDisplayDate(distractorDate));
+  await expect(targetCard.getByTestId(`text-project-next-appointment-${targetProject.id}`)).not.toContainText(formatDisplayDate(targetLaterDate));
 
-  await targetCard.getByTestId(`text-project-planned-appointments-${targetProject.id}`).hover();
-  await expect(page.getByTestId(`project-appointment-preview-${targetAppointmentA.id}`)).toBeVisible({ timeout: 5_000 });
-  await expect(page.getByTestId(`project-appointment-preview-${targetAppointmentB.id}`)).toBeVisible({ timeout: 5_000 });
-  await expect(page.getByTestId(`project-appointment-preview-${distractorAppointment.id}`)).toHaveCount(0);
+  await expect(targetCard.getByTestId(`text-project-planned-appointments-${targetProject.id}`)).toHaveCount(0);
+  await expect(distractorCard.getByTestId(`text-project-planned-appointments-${distractorProject.id}`)).toHaveCount(0);
 });

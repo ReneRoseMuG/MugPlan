@@ -30,6 +30,8 @@ type ProjectListItem = Project & {
   appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  nextAppointmentTourName: string | null;
+  nextAppointmentTourColor: string | null;
   projectArticleItems: ProjectArticleItem[];
   tags: Tag[];
   customer: {

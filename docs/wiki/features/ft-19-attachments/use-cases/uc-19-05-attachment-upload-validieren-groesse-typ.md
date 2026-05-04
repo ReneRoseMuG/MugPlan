@@ -1,10 +1,10 @@
-﻿# UC 19/05: Attachment-Upload validieren (GrÃ¶ÃŸe / Typ)
+﻿# UC 19/05: Attachment-Upload validieren (GröÃŸe / Typ)
 
 ## Metadaten
 
 - Feature: [FT (19): Attachments](../ft-19-attachments.md)
 - Notion-Quelle: https://app.notion.com/p/0a3cbd97ab474bd68d30b0c09ed3a822
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,26 +12,26 @@ System
 
 ## Ziel
 
-Sicherstellen, dass ausschlieÃŸlich zulÃ¤ssige Dateien gespeichert werden.
+Sicherstellen, dass ausschlieÃŸlich zulässige Dateien gespeichert werden.
 
 ## Vorbedingungen
 
-- Eine Datei wurde im Rahmen eines Upload-Vorgangs Ã¼bermittelt.
+- Eine Datei wurde im Rahmen eines Upload-Vorgangs übermittelt.
 
 ## Ablauf
 
-1. Das System liest die Ã¼bermittelte DateigrÃ¶ÃŸe.
-2. Das System vergleicht die GrÃ¶ÃŸe mit dem definierten Maximalwert.
+1. Das System liest die übermittelte DateigröÃŸe.
+2. Das System vergleicht die GröÃŸe mit dem definierten Maximalwert.
 3. Das System ermittelt grundlegende Dateieigenschaften (z. B. MIME-Typ).
-4. Das System prÃ¼ft, ob der Dateityp grundsÃ¤tzlich zulÃ¤ssig ist.
-5. Bei gÃ¼ltiger Datei wird der Upload-Prozess fortgesetzt.
-6. Bei ungÃ¼ltiger Datei wird der Upload-Prozess abgebrochen.
+4. Das System prüft, ob der Dateityp grundsätzlich zulässig ist.
+5. Bei gültiger Datei wird der Upload-Prozess fortgesetzt.
+6. Bei ungültiger Datei wird der Upload-Prozess abgebrochen.
 
-**AlternativablÃ¤ufe**
+**Alternativabläufe**
 
-- Datei Ã¼berschreitet GrÃ¶ÃŸenlimit â†’ System antwortet mit 400 und speichert nichts.
-- Datei besitzt unzulÃ¤ssigen Typ â†’ System antwortet mit 400 und speichert nichts.
-- Technischer Fehler bei Validierung â†’ System antwortet mit 500 und speichert nichts.
+- Datei überschreitet GröÃŸenlimit → System antwortet mit 400 und speichert nichts.
+- Datei besitzt unzulässigen Typ → System antwortet mit 400 und speichert nichts.
+- Technischer Fehler bei Validierung → System antwortet mit 500 und speichert nichts.
 
 ## Alternativen
 
@@ -40,6 +40,6 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 - Nur valide Dateien werden persistiert.
-- UngÃ¼ltige Dateien werden vollstÃ¤ndig verworfen.
-- Es entstehen keine unvollstÃ¤ndigen Attachment-DatensÃ¤tze.
+- Ungültige Dateien werden vollständig verworfen.
+- Es entstehen keine unvollständigen Attachment-Datensätze.
 

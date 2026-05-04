@@ -1,10 +1,10 @@
-﻿# UC 32/04: Session-Ende â€“ Verbindung schlieÃŸen
+﻿# UC 32/04: Session-Ende – Verbindung schlieÃŸen
 
 ## Metadaten
 
 - Feature: [FT (32): Aktive Ã„nderungsbenachrichtigung](../ft-32-aktive-aenderungsbenachrichtigung.md)
 - Notion-Quelle: https://app.notion.com/p/337da094354e81c09d0bc94c1b789398
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

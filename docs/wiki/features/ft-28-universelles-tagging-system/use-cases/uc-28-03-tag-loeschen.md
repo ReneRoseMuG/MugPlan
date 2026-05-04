@@ -1,10 +1,10 @@
-﻿# UC 28/03: Tag lÃ¶schen
+﻿# UC 28/03: Tag löschen
 
 ## Metadaten
 
 - Feature: [FT (28): Universelles Tagging-System](../ft-28-universelles-tagging-system.md)
 - Notion-Quelle: https://app.notion.com/p/317da094354e81279271fc1c2d18eba4
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

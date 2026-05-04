@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { LayoutList, Mail, Phone, ScrollText, Users, X } from "lucide-react";
+import { LayoutList, Mail, Phone, ScrollText, Trash2, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { EmployeeAppointmentAbsencesPanel } from "@/components/EmployeeAppointmentAbsencesPanel";
 import { EmployeeRevenueOverviewTab } from "@/components/EmployeeRevenueOverviewTab";
@@ -18,6 +18,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTourWeekQueries } from "@/lib/tour-week-queries";
@@ -104,6 +114,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   const [draftEmployeeAttachments, setDraftEmployeeAttachments] = useState<PendingEmployeeAttachmentItem[]>([]);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
@@ -308,6 +319,51 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
         return;
       }
       toast({ title: "Aktiv-Status konnte nicht geändert werden", variant: "destructive" });
+    },
+  });
+
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: async () => {
+      if (!employeeId) throw new Error("Mitarbeiter-ID fehlt");
+      const version = employeeDetails?.employee.version;
+      if (!version) throw new Error("Mitarbeiterversion fehlt");
+      await apiRequest("DELETE", `/api/employees/${employeeId}`, { version });
+    },
+    onSuccess: () => {
+      invalidateEmployees();
+      void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && typeof key[0] === "string" && key[0].startsWith("/api/calendar");
+        },
+      });
+      toast({ title: "Mitarbeiter gelöscht" });
+      if (onSaved && onSaved !== onCancel) {
+        onSaved();
+        return;
+      }
+      onCancel?.();
+    },
+    onError: (error: Error) => {
+      const code = extractApiCode(error);
+      if (code === "VERSION_CONFLICT") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (code === "FORBIDDEN") {
+        toast({
+          title: "Löschen nicht möglich",
+          description: "Nur Admin darf Mitarbeiter löschen.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: "Mitarbeiter konnte nicht gelöscht werden", variant: "destructive" });
     },
   });
 
@@ -812,6 +868,30 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
                 </TabsList>
               </div>
             ) : null}
+
+            {isEditing && isAdmin && employeeDetails?.employee && !isReadOnlyView ? (
+              <div className="sub-panel space-y-3" data-testid="employee-form-functions-panel">
+                <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
+                <Button
+                  type="button"
+                  className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                  style={{
+                    "--action-bg": "hsl(var(--destructive) / 0.14)",
+                    "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                    "--action-border": "hsl(var(--destructive) / 0.35)",
+                    "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                    "--action-fg": "hsl(var(--destructive))",
+                  } as CSSProperties}
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={deleteEmployeeMutation.isPending || isSubmitPending}
+                  data-testid="button-delete-employee"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteEmployeeMutation.isPending ? "Löschen..." : "Löschen"}
+                </Button>
+              </div>
+            ) : null}
+
             <EmployeeAttachmentsPanel
               employeeId={employeeId}
               isEditing={isEditing}
@@ -1137,6 +1217,28 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
           </div>
         ) : null}
       </EntityFormShell>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mitarbeiter wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Diese Aktion ist endgültig. Termine bleiben erhalten; Notizen, Anhänge und Zuordnungen dieses Mitarbeiters werden gelöscht.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDeleteConfirmOpen(false);
+                void deleteEmployeeMutation.mutateAsync();
+              }}
+              data-testid="button-confirm-delete-employee"
+            >
+              Mitarbeiter löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     </Tabs>
   );

@@ -57,6 +57,10 @@ describe("FT03 table entity card previews", () => {
           isActive: true,
           notesCount: 2,
           appointmentsCount: 3,
+          nextAppointmentStartDate: "2099-07-01",
+          nextAppointmentStartTimeHour: 8,
+          nextAppointmentTourName: "Tour 1",
+          nextAppointmentTourColor: "#226688",
           attachmentsCount: 1,
           tags: [],
           customer: {

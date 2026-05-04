@@ -4,7 +4,7 @@
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,33 +12,33 @@ Administrator, Disponent
 
 ## Ziel
 
-Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter mit den in Dialoglisten zur Terminzuweisung verfÃ¼gbaren Mitarbeitern konsistent sind.
+Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter mit den in Dialoglisten zur Terminzuweisung verfügbaren Mitarbeitern konsistent sind.
 
 ## Vorbedingungen
 
 - Mitarbeiter existieren im System.
 - Mindestens ein Mitarbeiter ist deaktiviert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Leserechte fÃ¼r Mitarbeiter.
+- Der Akteur besitzt Leserechte für Mitarbeiter.
 
 ## Ablauf
 
-1. Akteur Ã¶ffnet die Mitarbeiterlistenansicht.
-2. System lÃ¤dt Mitarbeiterdaten gemÃ¤ÃŸ Rollenregel:
-    - Administrator erhÃ¤lt aktive und inaktive Mitarbeiter.
-    - Disponent erhÃ¤lt ausschlieÃŸlich aktive Mitarbeiter.
-3. Akteur Ã¶ffnet ein Terminformular.
-4. System lÃ¤dt die Mitarbeiterauswahlliste.
+1. Akteur öffnet die Mitarbeiterlistenansicht.
+2. System lädt Mitarbeiterdaten gemäÃŸ Rollenregel:
+    - Administrator erhält aktive und inaktive Mitarbeiter.
+    - Disponent erhält ausschlieÃŸlich aktive Mitarbeiter.
+3. Akteur öffnet ein Terminformular.
+4. System lädt die Mitarbeiterauswahlliste.
 5. System wendet dieselbe Aktiv-Filterlogik an.
 6. System stellt sicher, dass die Ergebnismenge identisch zur Listenlogik ist.
 
 ## Alternativen
 
-- Ein Mitarbeiter wird zwischenzeitlich deaktiviert â†’
+- Ein Mitarbeiter wird zwischenzeitlich deaktiviert →
     
     Bei erneuter Abfrage erscheinen die Daten konsistent gefiltert.
     
-- Unterschiedliche API-Endpunkte liefern unterschiedliche Filter â†’
+- Unterschiedliche API-Endpunkte liefern unterschiedliche Filter →
     
     System muss als fehlerhaft betrachtet werden.
 
@@ -51,7 +51,7 @@ Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter 
     - GET `/employees`
     - GET `/employees?active=true`
     - internen Dialogabfragen.
-- Integrationstests kÃ¶nnen prÃ¼fen:
+- Integrationstests können prüfen:
     - gleiche Anzahl aktiver Mitarbeiter in Liste und Dialog
     - deaktivierter Mitarbeiter erscheint in keiner Zuweisungsauswahl.
 

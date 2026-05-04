@@ -9,6 +9,7 @@ import { parseMultipartFile } from "../lib/multipart";
 import { getRequestActor } from "../lib/requestActor";
 import {
   buildCreateMessage,
+  buildDeleteMessage,
   buildTagMessage,
   buildUpdateMessage,
 } from "../lib/journalMessages";
@@ -383,6 +384,11 @@ export async function toggleEmployeeActive(req: Request, res: Response, next: Ne
 
 export async function deleteEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
     const roleKey = getRoleKeyFromRequest(req);
     if (!roleKey) {
       res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
@@ -392,7 +398,22 @@ export async function deleteEmployee(req: Request, res: Response, next: NextFunc
       res.status(403).json({ code: "FORBIDDEN" });
       return;
     }
-    res.status(405).json({ code: "METHOD_NOT_ALLOWED" });
+    const input = api.employees.delete.input.parse(req.body);
+    const before = await employeesService.getEmployeeWithRelations(id, roleKey);
+    await employeesService.deleteEmployee(id, input.version, roleKey);
+    if (before) {
+      await journalService.recordJournalEntry({
+        tableName: "employee",
+        recordId: id,
+        op: "delete",
+        oldValue: before.employee,
+        snapshot: before.employee,
+        actor: getRequestActor(req),
+        triggerKey: "employee.delete",
+        messageText: buildDeleteMessage("employee", before.employee, id),
+      });
+    }
+    res.status(204).send();
   } catch (err) {
     if (err instanceof ZodError) {
       res.status(422).json({ code: "VALIDATION_ERROR" });

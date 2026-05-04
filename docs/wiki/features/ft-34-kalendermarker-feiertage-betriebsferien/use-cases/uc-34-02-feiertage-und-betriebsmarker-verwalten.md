@@ -12,7 +12,7 @@ Administrator
 
 ## Ziel
 
-Gespeicherte Kalendermarker prÃ¼fen und Betriebsfeiertage oder Betriebsferien pflegen.
+Gespeicherte Kalendermarker prüfen und Betriebsfeiertage oder Betriebsferien pflegen.
 
 ## Vorbedingungen
 
@@ -21,7 +21,7 @@ Gespeicherte Kalendermarker prÃ¼fen und Betriebsfeiertage oder Betriebsferien 
 
 ## Ablauf
 
-1. Administrator Ã¶ffnet `Stammdaten > Feiertage`.
+1. Administrator öffnet `Stammdaten > Feiertage`.
 2. System zeigt gespeicherte gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien in der Tabelle.
 3. Administrator legt einen neuen Betriebsfeiertag oder eine neue Betriebsferienperiode an.
 4. System validiert Datum, Zeitraum, Typ und Pflichtfelder.
@@ -31,10 +31,10 @@ Gespeicherte Kalendermarker prÃ¼fen und Betriebsfeiertage oder Betriebsferien 
 ## Alternativen
 
 - Administrator bearbeitet einen bestehenden Marker.
-- Administrator lÃ¶scht einen Marker, wenn dies fachlich zulÃ¤ssig ist.
-- Bei ungÃ¼ltigen Eingaben lehnt das System die Speicherung ab.
+- Administrator löscht einen Marker, wenn dies fachlich zulässig ist.
+- Bei ungültigen Eingaben lehnt das System die Speicherung ab.
 
 ## Ergebnis
 
-Der gespeicherte Kalendermarker-Bestand ist aktualisiert und wird in Kalenderansichten berÃ¼cksichtigt, sofern der Marker aktiv ist.
+Der gespeicherte Kalendermarker-Bestand ist aktualisiert und wird in Kalenderansichten berücksichtigt, sofern der Marker aktiv ist.
 

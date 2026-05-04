@@ -1,10 +1,10 @@
-﻿# UC 14/03: UnzulÃ¤ssige Mutation blockieren
+﻿# UC 14/03: Unzulässige Mutation blockieren
 
 ## Metadaten
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Leser oder Disponent ohne ausreichende Rechte
 
 ## Ziel
 
-Verhindern, dass ein Benutzer eine nicht erlaubte Mutation ausfÃ¼hrt.
+Verhindern, dass ein Benutzer eine nicht erlaubte Mutation ausführt.
 
 ## Vorbedingungen
 
@@ -21,16 +21,16 @@ Verhindern, dass ein Benutzer eine nicht erlaubte Mutation ausfÃ¼hrt.
 
 ## Ablauf
 
-1. Der Akteur lÃ¶st eine schreibende Aktion aus.
-2. Das System prÃ¼ft serverseitig die Rolle.
+1. Der Akteur löst eine schreibende Aktion aus.
+2. Das System prüft serverseitig die Rolle.
 3. Das System erkennt fehlende Berechtigung.
 4. Das System blockiert die Mutation.
 5. Das System antwortet mit 403.
 
 ## Alternativen
 
-- UI verhindert bereits die Anzeige der Aktion â†’ Keine Mutation mÃ¶glich.
-- Manipulierter Request â†’ Serverseitige Blockade greift.
+- UI verhindert bereits die Anzeige der Aktion → Keine Mutation möglich.
+- Manipulierter Request → Serverseitige Blockade greift.
 
 ## Ergebnis
 

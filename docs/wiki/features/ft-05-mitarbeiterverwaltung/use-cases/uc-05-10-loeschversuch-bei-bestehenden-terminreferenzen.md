@@ -1,10 +1,10 @@
-﻿# UC 05/10: LÃ¶schversuch bei bestehenden Terminreferenzen
+﻿# UC 05/10: Löschversuch bei bestehenden Terminreferenzen
 
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,38 +12,38 @@ Administrator
 
 ## Ziel
 
-Sicherstellen, dass ein Mitarbeiter nicht gelÃ¶scht werden kann, wenn noch Terminreferenzen bestehen.
+Sicherstellen, dass ein Mitarbeiter nicht gelöscht werden kann, wenn noch Terminreferenzen bestehen.
 
 ## Vorbedingungen
 
 - Der Mitarbeiter existiert.
-- Mindestens ein Termin enthÃ¤lt den Mitarbeiter in seiner gespeicherten Mitarbeiterliste.
+- Mindestens ein Termin enthält den Mitarbeiter in seiner gespeicherten Mitarbeiterliste.
 - Der Akteur besitzt Administratorrechte.
 
 ## Ablauf
 
-1. Akteur Ã¶ffnet die Mitarbeiterverwaltung.
-2. Akteur wÃ¤hlt einen bestehenden Mitarbeiter.
-3. Akteur lÃ¶st die LÃ¶schaktion aus.
-4. System prÃ¼ft, ob Terminreferenzen existieren.
+1. Akteur öffnet die Mitarbeiterverwaltung.
+2. Akteur wählt einen bestehenden Mitarbeiter.
+3. Akteur löst die Löschaktion aus.
+4. System prüft, ob Terminreferenzen existieren.
 5. System erkennt mindestens eine bestehende Zuordnung.
-6. System blockiert den LÃ¶schvorgang.
+6. System blockiert den Löschvorgang.
 
 ## Alternativen
 
-- Mitarbeiter besitzt keine Terminreferenzen â†’
+- Mitarbeiter besitzt keine Terminreferenzen →
     
-    System erlaubt die LÃ¶schung.
+    System erlaubt die Löschung.
     
-- Mitarbeiter existiert nicht â†’
+- Mitarbeiter existiert nicht →
     
     System antwortet mit 404.
     
-- Akteur ohne Administratorrolle â†’
+- Akteur ohne Administratorrolle →
     
     System blockiert mit 403.
     
-- Technischer Fehler â†’
+- Technischer Fehler →
     
     System antwortet mit 500.
 

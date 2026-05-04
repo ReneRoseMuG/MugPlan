@@ -15,6 +15,10 @@ export function ProjectTableHoverPreview({
     isActive?: boolean;
     notesCount: number;
     appointmentsCount: number;
+    nextAppointmentStartDate?: string | null;
+    nextAppointmentStartTimeHour?: number | null;
+    nextAppointmentTourName?: string | null;
+    nextAppointmentTourColor?: string | null;
     attachmentsCount: number;
     tags: Tag[];
     customer: {

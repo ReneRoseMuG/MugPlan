@@ -12,6 +12,7 @@ import {
   projectNotes,
   projects,
   products,
+  tours,
   type Project,
   type ProjectOrder,
   type ProjectAttachment,
@@ -47,9 +48,12 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
 });
 
+function getBerlinTodayDateString(): string {
+  return berlinFormatter.format(new Date());
+}
+
 function getBerlinTodayDate(): Date {
-  const berlinToday = berlinFormatter.format(new Date());
-  return new Date(`${berlinToday}T00:00:00`);
+  return new Date(`${getBerlinTodayDateString()}T00:00:00`);
 }
 
 function buildScopeCondition(scope: ProjectScope) {
@@ -263,6 +267,8 @@ export type ProjectBoardListItem = ProjectListItem & {
   appointmentsCount: number;
   nextAppointmentStartDate: string | null;
   nextAppointmentStartTimeHour: number | null;
+  nextAppointmentTourName: string | null;
+  nextAppointmentTourColor: string | null;
   attachmentsCount: number;
 };
 
@@ -481,9 +487,12 @@ export async function getProjectsPaged(params: {
       projectId: appointments.projectId,
       startDate: appointments.startDate,
       startTime: appointments.startTime,
+      tourName: tours.name,
+      tourColor: tours.color,
       id: appointments.id,
     })
     .from(appointments)
+    .leftJoin(tours, eq(appointments.tourId, tours.id))
     .where(inArray(appointments.projectId, projectIds))
     .orderBy(
       asc(appointments.projectId),
@@ -506,23 +515,34 @@ export async function getProjectsPaged(params: {
   const attachmentsCountByProjectId = new Map(attachmentCountRows.map((row) => [row.projectId, Number(row.count)] as const));
 
   const tagsByProjectId = await getProjectTagsByProjectIds(projectIds);
+  const todayBerlin = getBerlinTodayDateString();
   const appointmentSummaryByProjectId = new Map<number, {
     appointmentsCount: number;
     nextAppointmentStartDate: string | null;
     nextAppointmentStartTimeHour: number | null;
+    nextAppointmentTourName: string | null;
+    nextAppointmentTourColor: string | null;
   }>();
   for (const row of appointmentRows) {
     if (row.projectId == null) continue;
     const current = appointmentSummaryByProjectId.get(row.projectId);
+    const startDate = normalizeAppointmentDate(row.startDate);
     if (!current) {
       appointmentSummaryByProjectId.set(row.projectId, {
         appointmentsCount: 1,
-        nextAppointmentStartDate: normalizeAppointmentDate(row.startDate),
-        nextAppointmentStartTimeHour: normalizeStartTimeHour(row.startTime),
+        nextAppointmentStartDate: startDate && startDate >= todayBerlin ? startDate : null,
+        nextAppointmentStartTimeHour: startDate && startDate >= todayBerlin ? normalizeStartTimeHour(row.startTime) : null,
+        nextAppointmentTourName: startDate && startDate >= todayBerlin ? row.tourName ?? null : null,
+        nextAppointmentTourColor: startDate && startDate >= todayBerlin ? row.tourColor ?? null : null,
       });
       continue;
     }
     current.appointmentsCount += 1;
+    if (current.nextAppointmentStartDate || !startDate || startDate < todayBerlin) continue;
+    current.nextAppointmentStartDate = startDate;
+    current.nextAppointmentStartTimeHour = normalizeStartTimeHour(row.startTime);
+    current.nextAppointmentTourName = row.tourName ?? null;
+    current.nextAppointmentTourColor = row.tourColor ?? null;
   }
 
   return {
@@ -535,6 +555,8 @@ export async function getProjectsPaged(params: {
         appointmentsCount: appointmentSummary?.appointmentsCount ?? 0,
         nextAppointmentStartDate: appointmentSummary?.nextAppointmentStartDate ?? null,
         nextAppointmentStartTimeHour: appointmentSummary?.nextAppointmentStartTimeHour ?? null,
+        nextAppointmentTourName: appointmentSummary?.nextAppointmentTourName ?? null,
+        nextAppointmentTourColor: appointmentSummary?.nextAppointmentTourColor ?? null,
         projectArticleItems: projectArticleItemsByProject.get(row.project.id) ?? [],
         tags: tagsByProjectId.get(row.project.id) ?? [],
         customer: {

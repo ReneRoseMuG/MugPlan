@@ -26,6 +26,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import * as appointmentsService from "../../../server/services/appointmentsService";
 import { loginAdminAgent } from "../../helpers/appointmentOverlapFixtures";
 import {
   attachProjectTagFixture,
@@ -35,6 +36,8 @@ import {
   createProjectFixture,
   createProjectOrderItemFixture,
   createTagFixture,
+  createTourFixture,
+  getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 import { db } from "../../../server/db";
 import { projectAttachments } from "../../../shared/schema";
@@ -90,6 +93,9 @@ describe("FT30 integration: paged projects list", () => {
       categoryName: "Fenster",
       name: "FT30 Rundfenster",
     });
+    const tour = await createTourFixture("#336699");
+    const nextAppointmentDate = getRelativeBerlinDate(2);
+    const laterAppointmentDate = getRelativeBerlinDate(5);
     await createProjectOrderItemFixture({
       projectId: project.id,
       orderNumber: project.orderNumber ?? "",
@@ -100,9 +106,21 @@ describe("FT30 integration: paged projects list", () => {
       orderNumber: project.orderNumber ?? "",
       componentId: windowComponent.id,
     });
+    await appointmentsService.createAppointment({
+      projectId: project.id,
+      startDate: getRelativeBerlinDate(-3),
+      startTime: "07:00:00",
+    }, "ADMIN");
     await createAppointmentFixture({
       projectId: project.id,
-      startDate: "2099-12-20",
+      startDate: laterAppointmentDate,
+      startTime: "08:00:00",
+    });
+    await createAppointmentFixture({
+      projectId: project.id,
+      startDate: nextAppointmentDate,
+      startTime: "10:00:00",
+      tourId: tour.id,
     });
 
     const response = await agent
@@ -112,8 +130,11 @@ describe("FT30 integration: paged projects list", () => {
     expect(response.body.total).toBe(1);
     expect(response.body.items).toHaveLength(1);
     expect(response.body.items[0]?.name).toBe("FT30 Target Project");
-    expect(response.body.items[0]?.appointmentsCount).toBe(1);
-    expect(response.body.items[0]?.nextAppointmentStartDate).toBe("2099-12-20");
+    expect(response.body.items[0]?.appointmentsCount).toBe(3);
+    expect(response.body.items[0]?.nextAppointmentStartDate).toBe(nextAppointmentDate);
+    expect(response.body.items[0]?.nextAppointmentStartTimeHour).toBe(10);
+    expect(response.body.items[0]?.nextAppointmentTourName).toBe(tour.name);
+    expect(response.body.items[0]?.nextAppointmentTourColor).toBe(tour.color);
     expect(response.body.items[0]?.projectArticleItems).toEqual([
       { label: "Sauna", value: "FT30 Sauna Modell", source: "product", shortCode: null },
       { label: "Fenster", value: "FT30 Rundfenster", source: "component", shortCode: null },

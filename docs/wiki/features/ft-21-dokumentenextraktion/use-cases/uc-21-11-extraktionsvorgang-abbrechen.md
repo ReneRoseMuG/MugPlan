@@ -4,7 +4,7 @@
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
 - Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -16,21 +16,21 @@ Einen gestarteten Extraktionsvorgang ohne Persistierung fachlicher Daten kontrol
 
 ## Vorbedingungen
 
-- Ein Extraktionsdialog mit Vorschlagsdaten ist geÃ¶ffnet.
+- Ein Extraktionsdialog mit Vorschlagsdaten ist geöffnet.
 - Es wurden noch keine fachlichen Stammdaten gespeichert.
 
 ## Ablauf
 
-1. Der Akteur wÃ¤hlt im Extraktionsdialog die Funktion â€žAbbrechenâ€œ.
-2. Das System verwirft alle extrahierten, nicht bestÃ¤tigten Vorschlagsdaten.
+1. Der Akteur wählt im Extraktionsdialog die Funktion „Abbrechen“.
+2. Das System verwirft alle extrahierten, nicht bestätigten Vorschlagsdaten.
 3. Das System schlieÃŸt den Extraktionsdialog.
-4. Das System stellt den ursprÃ¼nglichen Zustand des aufrufenden Formulars wieder her.
+4. Das System stellt den ursprünglichen Zustand des aufrufenden Formulars wieder her.
 
 ## Alternativen
 
-- Der Akteur schlieÃŸt den Dialog Ã¼ber die Fenstersteuerung â†’ Das System behandelt dies identisch zum aktiven Abbruch.
+- Der Akteur schlieÃŸt den Dialog über die Fenstersteuerung → Das System behandelt dies identisch zum aktiven Abbruch.
 
 ## Ergebnis
 
-Es wurden keine fachlichen Stammdaten angelegt oder verÃ¤ndert. Das System verbleibt im Zustand vor Beginn der Extraktion.
+Es wurden keine fachlichen Stammdaten angelegt oder verändert. Das System verbleibt im Zustand vor Beginn der Extraktion.
 

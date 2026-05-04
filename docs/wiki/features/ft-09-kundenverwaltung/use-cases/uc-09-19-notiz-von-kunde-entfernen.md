@@ -4,7 +4,7 @@
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -22,11 +22,11 @@ Eine Notiz vom Kunden entfernen, ohne dass dies Auswirkungen auf andere Kunden-D
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet einen bestehenden Kunden im Kundenformular.
-2. Der Akteur navigiert zum Bereich â€žNotizen".
-3. Der Akteur wÃ¤hlt eine Notiz und klickt auf â€žEntfernen" oder eine Delete-Action.
-4. Optional: Das System fordert eine BestÃ¤tigung an.
-5. Der Akteur bestÃ¤tigt das LÃ¶schen.
+1. Der Akteur öffnet einen bestehenden Kunden im Kundenformular.
+2. Der Akteur navigiert zum Bereich „Notizen".
+3. Der Akteur wählt eine Notiz und klickt auf „Entfernen" oder eine Delete-Action.
+4. Optional: Das System fordert eine Bestätigung an.
+5. Der Akteur bestätigt das Löschen.
 6. Das System entfernt die Zuordnung zwischen Kunde und Notiz.
 7. Das System aktualisiert die Notizenliste und die Notiz ist nicht mehr sichtbar.
 
@@ -36,5 +36,5 @@ Eine Notiz vom Kunden entfernen, ohne dass dies Auswirkungen auf andere Kunden-D
 
 ## Ergebnis
 
-Die Notiz ist vom Kunden entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Kunde und alle anderen Kunden sind unverÃ¤ndert.
+Die Notiz ist vom Kunden entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Kunde und alle anderen Kunden sind unverändert.
 

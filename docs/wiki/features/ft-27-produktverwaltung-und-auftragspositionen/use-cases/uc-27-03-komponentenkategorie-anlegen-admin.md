@@ -4,7 +4,7 @@
 
 - Feature: [FT (27): Produktverwaltung und Auftragspositionen](../ft-27-produktverwaltung-und-auftragspositionen.md)
 - Notion-Quelle: https://app.notion.com/p/317da094354e8154a475eef591e57861
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -20,19 +20,19 @@ Eine neue Komponentenkategorie erstellen, um Komponenten zu gruppieren.<br>
 
 ## Ablauf
 
-1. Der Administrator Ã¶ffnet die Komponentenverwaltung.
-2. Der Administrator navigiert zu â€žKomponentenkategorien".
-3. Der Administrator klickt auf â€ž+ Neue Kategorie".
-4. Der Administrator gibt einen eindeutigen Namen ein (z.B. "WÃ¤nde", "Heizung", "TÃ¼ren").
+1. Der Administrator öffnet die Komponentenverwaltung.
+2. Der Administrator navigiert zu „Komponentenkategorien".
+3. Der Administrator klickt auf „+ Neue Kategorie".
+4. Der Administrator gibt einen eindeutigen Namen ein (z.B. "Wände", "Heizung", "Türen").
 5. Der Administrator gibt optional eine Beschreibung ein.
 6. Der Administrator speichert.
 7. Das System validiert die Eindeutigkeit des Namens.
 
 ## Alternativen
 
-- Der Name existiert bereits â†’ Validierungsfehler.
+- Der Name existiert bereits → Validierungsfehler.
 
 ## Ergebnis
 
-Die Komponentenkategorie existiert und steht beim Anlegen von Komponenten zur VerfÃ¼gung.<br>
+Die Komponentenkategorie existiert und steht beim Anlegen von Komponenten zur Verfügung.<br>
 

@@ -1,10 +1,10 @@
-﻿# UC 13/04: Notiz lÃ¶schen
+﻿# UC 13/04: Notiz löschen
 
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,37 +12,37 @@ Disponent, Administrator
 
 ## Ziel
 
-Eine bestehende Notiz vollstÃ¤ndig und konsistent entfernen.
+Eine bestehende Notiz vollständig und konsistent entfernen.
 
 ## Vorbedingungen
 
 - Die Notiz existiert.
 - Die Notiz ist eindeutig einem Parent-Objekt zugeordnet (Projekt, Kunde, Mitarbeiter, Termin oder Kalenderwoche).
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt LÃ¶schrechte fÃ¼r Notizen.
-- Die Notiz verfÃ¼gt Ã¼ber ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+- Der Akteur besitzt Löschrechte für Notizen.
+- Die Notiz verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet die Notizenliste im jeweiligen Parent-Kontext.
-2. Der Akteur wÃ¤hlt eine bestehende Notiz aus.
-3. Der Akteur wÃ¤hlt die Funktion â€žNotiz lÃ¶schen".
+1. Der Akteur öffnet die Notizenliste im jeweiligen Parent-Kontext.
+2. Der Akteur wählt eine bestehende Notiz aus.
+3. Der Akteur wählt die Funktion „Notiz löschen".
 4. Das System zeigt eine Sicherheitsabfrage an.
-5. Der Akteur bestÃ¤tigt das LÃ¶schen.
-6. Das System prÃ¼ft serverseitig:
+5. Der Akteur bestätigt das Löschen.
+6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des Ã¼bermittelten Versionsmerkmals mit dem aktuellen Stand.
-7. Stimmen die Versionsinformationen Ã¼berein, lÃ¶scht das System die Notiz sowie die zugehÃ¶rige Parent-Relation endgÃ¼ltig.
+    - Ãœbereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
+7. Stimmen die Versionsinformationen überein, löscht das System die Notiz sowie die zugehörige Parent-Relation endgültig.
 8. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
-### AlternativablÃ¤ufe
+### Alternativabläufe
 
-- Der Akteur bricht die Sicherheitsabfrage ab â†’ Die Notiz bleibt unverÃ¤ndert bestehen.
-- Der Akteur ist nicht authentifiziert â†’ HTTP 401, keine LÃ¶schung.
-- Der Akteur besitzt keine ausreichende Rolle â†’ HTTP 403, keine LÃ¶schung.
-- Versionskonflikt (Notiz wurde zwischenzeitlich geÃ¤ndert oder bereits gelÃ¶scht) â†’ Das System antwortet mit HTTP 409 Conflict, es erfolgt keine LÃ¶schung, der Akteur wird zum Neuladen aufgefordert.
-- Technischer Fehler â†’ HTTP 500, keine LÃ¶schung erfolgt.
+- Der Akteur bricht die Sicherheitsabfrage ab → Die Notiz bleibt unverändert bestehen.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
+- Versionskonflikt (Notiz wurde zwischenzeitlich geändert oder bereits gelöscht) → Das System antwortet mit HTTP 409 Conflict, es erfolgt keine Löschung, der Akteur wird zum Neuladen aufgefordert.
+- Technischer Fehler → HTTP 500, keine Löschung erfolgt.
 
 ## Alternativen
 
@@ -50,8 +50,8 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
-- Die Notiz ist im Erfolgsfall vollstÃ¤ndig aus dem System entfernt.
+- Die Notiz ist im Erfolgsfall vollständig aus dem System entfernt.
 - Die Notiz erscheint in keiner Notizenliste mehr.
-- Parallele Aktionen fÃ¼hren nicht zu inkonsistenten ZustÃ¤nden oder unbeabsichtigten LÃ¶schungen.
+- Parallele Aktionen führen nicht zu inkonsistenten Zuständen oder unbeabsichtigten Löschungen.
 - Die Konsistenz der Parent-Relation bleibt gewahrt.
 

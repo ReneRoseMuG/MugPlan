@@ -1,10 +1,10 @@
-﻿# UC 13/11: Notizvorlage lÃ¶schen
+﻿# UC 13/11: Notizvorlage löschen
 
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,36 +12,36 @@ Disponent, Administrator
 
 ## Ziel
 
-Eine bestehende Notizvorlage endgÃ¼ltig aus dem System entfernen, ohne bereits erstellte Notizen zu verÃ¤ndern.
+Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits erstellte Notizen zu verändern.
 
 ## Vorbedingungen
 
 - Die Vorlage existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemÃ¤ÃŸ Rollenkonzept.
-- Die Vorlage verfÃ¼gt Ã¼ber ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäÃŸ Rollenkonzept.
+- Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet die Vorlagenverwaltung.
-2. Der Akteur wÃ¤hlt eine bestehende Vorlage aus.
-3. Der Akteur wÃ¤hlt die Funktion â€žLÃ¶schen".
+1. Der Akteur öffnet die Vorlagenverwaltung.
+2. Der Akteur wählt eine bestehende Vorlage aus.
+3. Der Akteur wählt die Funktion „Löschen".
 4. Das System zeigt eine Sicherheitsabfrage an.
-5. Der Akteur bestÃ¤tigt das LÃ¶schen.
-6. Das System prÃ¼ft serverseitig:
+5. Der Akteur bestätigt das Löschen.
+6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
     - Ãœbereinstimmung des Versionsmerkmals.
-7. Stimmen die Versionsinformationen Ã¼berein, lÃ¶scht das System die Vorlage endgÃ¼ltig aus der Persistenz.
+7. Stimmen die Versionsinformationen überein, löscht das System die Vorlage endgültig aus der Persistenz.
 8. Das System aktualisiert die Vorlagenliste.
 
-### AlternativablÃ¤ufe
+### Alternativabläufe
 
-- Der Akteur bricht die Sicherheitsabfrage ab â†’ Die Vorlage bleibt unverÃ¤ndert bestehen.
-- Der Akteur ist nicht authentifiziert â†’ HTTP 401, keine LÃ¶schung.
-- Der Akteur besitzt keine ausreichende Rolle â†’ HTTP 403, keine LÃ¶schung.
-- Versionskonflikt â†’ HTTP 409 Conflict, keine LÃ¶schung, Neuladen erforderlich.
-- Technischer Fehler â†’ HTTP 500, keine LÃ¶schung.
+- Der Akteur bricht die Sicherheitsabfrage ab → Die Vorlage bleibt unverändert bestehen.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
+- Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Löschung.
 
 ## Alternativen
 
@@ -49,8 +49,8 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
-- Die Vorlage ist im Erfolgsfall vollstÃ¤ndig aus dem System entfernt.
-- GelÃ¶schte Vorlagen erscheinen nicht mehr in der Vorlagenverwaltung und nicht in der Auswahlliste bei der Notizerstellung.
-- Bereits erstellte Notizen bleiben unverÃ¤ndert bestehen.
+- Die Vorlage ist im Erfolgsfall vollständig aus dem System entfernt.
+- Gelöschte Vorlagen erscheinen nicht mehr in der Vorlagenverwaltung und nicht in der Auswahlliste bei der Notizerstellung.
+- Bereits erstellte Notizen bleiben unverändert bestehen.
 - Es entstehen keine verwaisten Referenzen oder Seiteneffekte in bestehenden Notizen.
 

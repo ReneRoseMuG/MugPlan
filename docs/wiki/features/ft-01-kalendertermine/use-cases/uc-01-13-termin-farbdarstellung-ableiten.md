@@ -4,7 +4,7 @@
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
 - Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -23,18 +23,18 @@ Termine in Kalender- und Listenansichten mit einer konsistent abgeleiteten Farbe
 
 ## Ablauf
 
-1. Der Akteur Ã¶ffnet eine Kalender- oder Terminlistenansicht.
-2. Das System lÃ¤dt Termine als Projektion und stellt sie dar.
-3. FÃ¼r jeden Termin leitet das System die Darstellungsfarbe nach einer festen Regel ab.
+1. Der Akteur öffnet eine Kalender- oder Terminlistenansicht.
+2. Das System lädt Termine als Projektion und stellt sie dar.
+3. Für jeden Termin leitet das System die Darstellungsfarbe nach einer festen Regel ab.
     1. Wenn der Termin einer Tour zugeordnet ist, verwendet das System die Farbe dieser Tour.
     2. Wenn der Termin keiner Tour zugeordnet ist, verwendet das System eine definierte Standardfarbe.
 4. Der Akteur weist einem Termin eine Tour zu oder entfernt die Tourzuweisung.
-5. Das System aktualisiert die Darstellung, sodass sich die Farbe des Termins entsprechend der Regel sofort und konsistent Ã¤ndert.
+5. Das System aktualisiert die Darstellung, sodass sich die Farbe des Termins entsprechend der Regel sofort und konsistent ändert.
 
 ## Alternativen
 
-- Tour ohne Farbe: Wenn eine Tour keine gÃ¼ltige Farbe besitzt, muss das System eine robuste Fallback-Regel anwenden, zum Beispiel die Standardfarbe, und darf keine fehlerhafte oder leere Darstellung erzeugen.
-- Abbruch oder Blockade: Wenn eine Ã„nderung (Tour setzen oder Tour entfernen) abgebrochen oder wegen Konflikt blockiert wird, darf sich die angezeigte Farbe nicht dauerhaft Ã¤ndern, weil kein persistierter Zustand entstanden ist.
+- Tour ohne Farbe: Wenn eine Tour keine gültige Farbe besitzt, muss das System eine robuste Fallback-Regel anwenden, zum Beispiel die Standardfarbe, und darf keine fehlerhafte oder leere Darstellung erzeugen.
+- Abbruch oder Blockade: Wenn eine Ã„nderung (Tour setzen oder Tour entfernen) abgebrochen oder wegen Konflikt blockiert wird, darf sich die angezeigte Farbe nicht dauerhaft ändern, weil kein persistierter Zustand entstanden ist.
 
 ## Ergebnis
 

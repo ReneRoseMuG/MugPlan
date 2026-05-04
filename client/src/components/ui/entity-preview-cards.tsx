@@ -15,6 +15,8 @@ import { TourInfoBadge } from "@/components/ui/tour-info-badge";
 import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPreview";
 import { defaultHeaderColor } from "@/lib/colors";
 import { domainIcons } from "@/lib/domain-icons";
+import { formatListDateTime } from "@/lib/list-display-format";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Tag } from "@shared/schema";
 
@@ -47,6 +49,10 @@ type ProjectEntityCardProps = {
     isActive?: boolean;
     notesCount: number;
     appointmentsCount: number;
+    nextAppointmentStartDate?: string | null;
+    nextAppointmentStartTimeHour?: number | null;
+    nextAppointmentTourName?: string | null;
+    nextAppointmentTourColor?: string | null;
     attachmentsCount: number;
     tags: Tag[];
     customer: {
@@ -68,14 +74,50 @@ type ProjectEntityCardProps = {
     card?: string;
     customerPanel?: string;
     projectPanel?: string;
-    appointments?: string;
+    appointmentInfo?: string;
     notes?: string;
     tags?: string;
   };
 };
 
+function formatProjectAppointmentInfo(project: ProjectEntityCardProps["project"]): string {
+  const dateTimeLabel = formatListDateTime({
+    startDate: project.nextAppointmentStartDate,
+    startTimeHour: project.nextAppointmentStartTimeHour,
+  });
+  const tourLabel = project.nextAppointmentTourName?.trim() ?? "";
+
+  if (dateTimeLabel && tourLabel) return `${dateTimeLabel} · ${tourLabel}`;
+  if (dateTimeLabel) return dateTimeLabel;
+  if (tourLabel) return tourLabel;
+  if (project.appointmentsCount > 0) return "Kein anstehender Termin";
+  return "Kein Termin";
+}
+
+function toSubtleTourColor(color: string | null | undefined, alpha: number): string {
+  const normalized = color?.trim();
+  if (!normalized) return defaultHeaderColor;
+
+  const hex = normalized.startsWith("#") ? normalized.slice(1) : normalized;
+  if (!/^[0-9a-fA-F]{6}$/.test(hex)) return defaultHeaderColor;
+
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
 export function ProjectEntityCard({ project, className, onDoubleClick, testIds }: ProjectEntityCardProps) {
   const ProjectIcon = domainIcons.projects;
+  const appointmentInfo = formatProjectAppointmentInfo(project);
+  const appointmentInfoTourColor = project.nextAppointmentTourColor?.trim() || null;
+  const appointmentInfoBackground = appointmentInfoTourColor
+    ? toSubtleTourColor(appointmentInfoTourColor, 0.18)
+    : defaultHeaderColor;
+  const appointmentInfoBorderColor = appointmentInfoTourColor
+    ? toSubtleTourColor(appointmentInfoTourColor, 0.32)
+    : defaultHeaderColor;
+  const appointmentInfoTextColors = getReadableNoteTextColors(appointmentInfoBackground);
   const canOpenProjectPreview = canOpenProjectInfoPreview(
     project.name,
     project.projectArticleItems,
@@ -95,10 +137,6 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
         <EntityCardFooter
           badges={(
             <>
-              <EntityAppointmentsHoverPreview
-                source={{ type: "project", id: project.id, count: project.appointmentsCount }}
-                triggerTestId={testIds?.appointments ?? `text-project-planned-appointments-${project.id}`}
-              />
               <EntityNotesHoverPreview
                 sourceMode="single-parent"
                 sources={{ type: "project", id: project.id, count: project.notesCount ?? 0 }}
@@ -116,7 +154,7 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
       )}
       footerVisibility="visible"
     >
-      <div className="-mb-3 -mt-3 -mx-3 flex flex-col gap-1 overflow-hidden">
+      <div className="-mb-3 -mt-3 -mx-3 flex flex-col gap-1">
         <CustomerInfoPanel
           mode="collapsed"
           fullName={project.customer.fullName}
@@ -181,6 +219,17 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
             Inaktiv
           </Badge>
         ) : null}
+        <div
+          className="mt-1 flex min-h-8 shrink-0 items-center rounded-md border px-3 py-1.5 text-xs font-semibold shadow-sm"
+          style={{
+            backgroundColor: appointmentInfoBackground,
+            borderColor: appointmentInfoBorderColor,
+            color: appointmentInfoTextColors.primary,
+          }}
+          data-testid={testIds?.appointmentInfo ?? `text-project-next-appointment-${project.id}`}
+        >
+          <span className="block w-full truncate">{appointmentInfo}</span>
+        </div>
       </div>
     </EntityCard>
   );

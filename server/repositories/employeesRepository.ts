@@ -5,7 +5,10 @@ import {
   appointmentEmployees,
   employeeAttachments,
   employeeNotes,
+  employeeTags,
   employees,
+  notes,
+  tourWeekEmployees,
   type Employee,
   type EmployeeAttachment,
   type InsertEmployee,
@@ -181,9 +184,21 @@ export async function deleteEmployeeWithVersion(
       .where(eq(appointmentEmployees.employeeId, id))
       .limit(1);
     if (existingReference) {
-      return { kind: "business_conflict" as const };
+      await tx.delete(appointmentEmployees).where(eq(appointmentEmployees.employeeId, id));
     }
 
+    const noteRows = await tx
+      .select({ noteId: employeeNotes.noteId })
+      .from(employeeNotes)
+      .where(eq(employeeNotes.employeeId, id));
+    const noteIds = noteRows.map((row) => row.noteId);
+    if (noteIds.length > 0) {
+      await tx.delete(employeeNotes).where(eq(employeeNotes.employeeId, id));
+      await tx.delete(notes).where(inArray(notes.id, noteIds));
+    }
+
+    await tx.delete(employeeTags).where(eq(employeeTags.employeeId, id));
+    await tx.delete(tourWeekEmployees).where(eq(tourWeekEmployees.employeeId, id));
     await tx.delete(employeeAttachments).where(eq(employeeAttachments.employeeId, id));
     const result = await tx.execute(sql`
       delete from employee

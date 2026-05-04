@@ -4,7 +4,7 @@
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
 - Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: VollstÃ¤ndig aus lokalem Notion-Markdown-Export Ã¼bernommen
+- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +12,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Ein neuer Kunde wird mit vollstÃ¤ndigen Stammdaten angelegt und steht anschlieÃŸend fÃ¼r Projektzuordnungen zur VerfÃ¼gung.
+Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschlieÃŸend für Projektzuordnungen zur Verfügung.
 
 ## Vorbedingungen
 
@@ -22,28 +22,28 @@ Ein neuer Kunde wird mit vollstÃ¤ndigen Stammdaten angelegt und steht anschlie
 
 ## Ablauf
 
-1. Der Akteur startet die Funktion â€žKunde anlegenâ€œ.
+1. Der Akteur startet die Funktion „Kunde anlegen“.
 2. Das System zeigt ein Formular zur Erfassung der Kundendaten an.
 3. Der Akteur erfasst mindestens:
     - Kundenname bzw. Firma,
     - Telefonnummer,
     - Kundennummer,
-    - Adresse (sofern fÃ¼r Planung oder Druck erforderlich).
-4. Der Akteur bestÃ¤tigt die Eingabe.
+    - Adresse (sofern für Planung oder Druck erforderlich).
+4. Der Akteur bestätigt die Eingabe.
 5. Das System validiert:
     - Pflichtfelder,
     - formale Korrektheit der Daten,
-    - optionale DublettenprÃ¼fung anhand Name/Adresse/Kundennummer.
+    - optionale Dublettenprüfung anhand Name/Adresse/Kundennummer.
 6. Bei erfolgreicher Validierung speichert das System den Kunden mit `is_active = true`.
 7. Das System erzeugt eine Versionskennung (z. B. `version` oder `updated_at`).
 8. Das System zeigt die Kundendetailansicht des neu angelegten Kunden an.
 
 ## Alternativen
 
-- Pflichtfeld fehlt â†’ System antwortet mit Validierungsfehler, kein Persistieren.
-- Formale Validierung schlÃ¤gt fehl â†’ System lehnt ab und markiert Feld.
-- DublettenprÃ¼fung schlÃ¤gt an â†’ System warnt oder blockiert gemÃ¤ÃŸ Regel.
-- Technischer Fehler â†’ System antwortet mit 500, kein Kunde wird angelegt.
+- Pflichtfeld fehlt → System antwortet mit Validierungsfehler, kein Persistieren.
+- Formale Validierung schlägt fehl → System lehnt ab und markiert Feld.
+- Dublettenprüfung schlägt an → System warnt oder blockiert gemäÃŸ Regel.
+- Technischer Fehler → System antwortet mit 500, kein Kunde wird angelegt.
 
 ## Ergebnis
 
@@ -51,7 +51,7 @@ Ein neuer Kunde wird mit vollstÃ¤ndigen Stammdaten angelegt und steht anschlie
 - `is_active = true`.
 - Der Kunde erscheint:
     - in Kundenlisten,
-    - in Projektauswahldialogen (nur fÃ¼r aktive Kunden),
-    - in Filterkomponenten fÃ¼r aktive Kunden.
-- Es existieren noch keine Projekte, Termine oder Notizen fÃ¼r diesen Kunden.
+    - in Projektauswahldialogen (nur für aktive Kunden),
+    - in Filterkomponenten für aktive Kunden.
+- Es existieren noch keine Projekte, Termine oder Notizen für diesen Kunden.
 

@@ -9,11 +9,11 @@
  * - Detail-, Attachment- und Terminansicht sind konsistent lesbar.
  * - Parallelfaelle fuer Reaktivierung/Bearbeitung triggern VERSION_CONFLICT.
  * - Listen-/Dialog-Query fuer aktive Mitarbeiter bleibt konsistent.
- * - DELETE ist serverseitig deaktiviert und bleibt nur fuer ADMIN erreichbar.
+ * - DELETE ist serverseitig nur für ADMIN erlaubt.
  *
  * Fehlerfaelle:
  * - Konfliktfall Deaktivierung vor Terminspeicherung muss Save blockieren.
- * - DELETE liefert METHOD_NOT_ALLOWED fuer ADMIN und FORBIDDEN fuer unberechtigte Rollen.
+ * - DELETE löscht für ADMIN und liefert FORBIDDEN für unberechtigte Rollen.
  *
  * Ziel:
  * FT05-Use-Cases mit Integrationsfokus inklusive DELETE-Regeln absichern.
@@ -266,7 +266,7 @@ describe("FT05 integration: full UC coverage", () => {
     expect(listIds).not.toContain(inactive.id);
   });
 
-  it("UC 05/10: deletion is disabled and returns 405 METHOD_NOT_ALLOWED for ADMIN", async () => {
+  it("UC 05/10: admin deletes an employee even with appointment relations", async () => {
     const admin = await loginAdminAgent();
     const employee = await createEmployee(admin, "uc0510");
     const project = await createProjectFixture("uc0510");
@@ -280,13 +280,28 @@ describe("FT05 integration: full UC coverage", () => {
     await admin
       .delete(`/api/employees/${employee.id}`)
       .send({ version: employee.version })
-      .expect(405)
-      .expect((res) => {
-        expect(res.body.code).toBe("METHOD_NOT_ALLOWED");
-      });
+      .expect(204);
+
+    await admin.get(`/api/employees/${employee.id}`).expect(404);
   });
 
-  it("UC 05/12: unauthorized delete attempt is rejected with 403 FORBIDDEN", async () => {
+  it("UC 05/12: dispatcher delete attempt is rejected with 403 FORBIDDEN", async () => {
+    const admin = await loginAdminAgent();
+    const dispatcher = await createRoleAgent("DISPATCHER", "uc0512-dispatcher");
+    const employee = await createEmployee(admin, "uc0512-dispatcher");
+
+    await dispatcher
+      .delete(`/api/employees/${employee.id}`)
+      .send({ version: employee.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+
+    await admin.get(`/api/employees/${employee.id}`).expect(200);
+  });
+
+  it("UC 05/12: reader delete attempt is rejected with 403 FORBIDDEN", async () => {
     const admin = await loginAdminAgent();
     const reader = await createRoleAgent("READER", "uc0512-reader");
     const employee = await createEmployee(admin, "uc0512");
@@ -298,5 +313,7 @@ describe("FT05 integration: full UC coverage", () => {
       .expect((res) => {
         expect(res.body.code).toBe("FORBIDDEN");
       });
+
+    await admin.get(`/api/employees/${employee.id}`).expect(200);
   });
 });
