@@ -4,8 +4,8 @@
  * Abgedeckte Regeln:
  * - Produktionsplanung gruppiert konkrete Produkte und Komponenten je ausgewaehlter Kategorie und liefert die neuen FT26-Projektkarten.
  * - projectRows verwenden den fruehesten Termin im Zeitraum als repraesentativen Termin inklusive Dauer, Mitarbeitern, Notizen, Anhaengen und Tags.
- * - reportCardReasonTags enthalten serverseitig nur "Sondermaß" und "Anmerkungen"; Reklamation und Storno schliessen Projekte weiter hart aus.
- * - Nur ADMIN und DISPONENT duerfen den Report lesen; READER wird abgewiesen.
+ * - reportCardReasonTags enthalten serverseitig nur Sondermaß-Tags; Reklamation und Storno schliessen Projekte weiter hart aus.
+ * - ADMIN, DISPONENT und LESER dürfen den Report lesen.
  *
  * Fehlerfaelle:
  * - Entfernte Sonderblock-Parameter werden weiter akzeptiert.
@@ -339,8 +339,6 @@ describe("FT26 integration: report produktionsplanung", () => {
           expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
         ]),
         reportCardReasonTags: [
-          expect.objectContaining({ id: remarksTag.id, name: MANAGED_REMARKS_TAG_NAME }),
-          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
           expect.objectContaining({ id: specialMeasureTag.id, name: MANAGED_SPECIAL_MEASURE_TAG_NAME }),
         ],
         articleValues: expect.arrayContaining([
@@ -410,11 +408,11 @@ describe("FT26 integration: report produktionsplanung", () => {
     expect(response.body.projectRows[0]?.projectId).not.toBe(cancelledProject.project.id);
   });
 
-  it("treats Gespiegelt as an additional project card trigger", async () => {
+  it("does not treat Gespiegelt as a project card trigger", async () => {
     const admin = await loginAdminAgent(app);
     const mirroredTag = await ensureExactTag(MANAGED_MIRRORED_TAG_NAME, "#0891b2");
 
-    const mirroredOnlyProject = await createProduktionsplanungProjectFixture({
+    await createProduktionsplanungProjectFixture({
       prefix: "FT26-PV-MIRRORED-ONLY",
       appointmentDates: [{ startDate: "2100-03-10" }],
       projectTags: [mirroredTag],
@@ -432,14 +430,7 @@ describe("FT26 integration: report produktionsplanung", () => {
       .get(`/api/reports/produktionsplanung?fromDate=2100-03-01&toDate=2100-03-31&productCategoryIds=${saunaCategoryId}`)
       .expect(200);
 
-    expect(response.body.projectRows).toEqual([
-      expect.objectContaining({
-        projectId: mirroredOnlyProject.project.id,
-        reportCardReasonTags: [
-          expect.objectContaining({ id: mirroredTag.id, name: MANAGED_MIRRORED_TAG_NAME }),
-        ],
-      }),
-    ]);
+    expect(response.body.projectRows).toEqual([]);
   });
 
   it("allows dispatcher and reader access", async () => {

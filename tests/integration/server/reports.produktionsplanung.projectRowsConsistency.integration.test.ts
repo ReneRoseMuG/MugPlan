@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Die Projektkarten des Produkt-Reports bilden die kanonische DB-Referenz fuer kartentaugliche Projekte im Zeitraum korrekt ab.
- * - Karten erscheinen nur fuer Projekte mit Sondermaß und/oder Anmerkungen.
+ * - Karten erscheinen nur fuer Projekte mit Sondermaß.
  * - Reklamation und jeder Storno-Bezug schliessen Projekte aus dem zweiten Report vollstaendig aus.
  * - Termine ohne Projekt und Termine ausserhalb des Fensters erzeugen keine Projektzeilen.
  *
@@ -38,8 +38,6 @@ import {
   MANAGED_COMPLAINT_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
-  isManagedMirroredTagName,
-  isManagedRemarksTagName,
   isManagedComplaintTagName,
   isManagedSpecialMeasureTagName,
   isReservedAppointmentCancellationTagName,
@@ -133,13 +131,13 @@ describe("integration: produktionsplanung project rows consistency", () => {
       tourId: tourA.id,
       projectTagIds: [specialMeasureTag.id],
     });
-    const visibleB = await createStrictProjectFixture({
+    await createStrictProjectFixture({
       prefix: "FT32-CONS-B",
       appointmentDates: ["2030-06-07"],
       tourId: tourB.id,
       appointmentTagIdsByIndex: [[remarksTag.id]],
     });
-    const visibleC = await createStrictProjectFixture({
+    await createStrictProjectFixture({
       prefix: "FT32-CONS-C",
       appointmentDates: ["2030-06-06"],
       tourId: tourA.id,
@@ -231,10 +229,7 @@ describe("integration: produktionsplanung project rows consistency", () => {
           const projectTagNames = projectTagNamesByProjectId.get(row.projectId) ?? [];
           const appointmentTagNames = appointmentTagNamesByAppointmentId.get(row.appointmentId) ?? [];
           const combinedTagNames = [...projectTagNames, ...appointmentTagNames];
-          const hasCardReason = combinedTagNames.some((tagName) =>
-            isManagedSpecialMeasureTagName(tagName)
-            || isManagedRemarksTagName(tagName)
-            || isManagedMirroredTagName(tagName));
+          const hasCardReason = combinedTagNames.some((tagName) => isManagedSpecialMeasureTagName(tagName));
 
           return hasCardReason && !combinedTagNames.some((tagName) =>
             isManagedComplaintTagName(tagName) || isReservedAppointmentCancellationTagName(tagName));
@@ -242,13 +237,11 @@ describe("integration: produktionsplanung project rows consistency", () => {
         .map((row) => row.projectId),
     )).sort((left, right) => left - right);
 
-    expect(referenceProjectIds).toEqual([visibleA.project.id, visibleB.project.id, visibleC.project.id].sort((left, right) => left - right));
+    expect(referenceProjectIds).toEqual([visibleA.project.id]);
     expect(response.body.projectRows.map((row: { projectId: number }) => row.projectId).sort((left: number, right: number) => left - right))
       .toEqual(referenceProjectIds);
     expect(response.body.projectRows).toEqual(expect.arrayContaining([
       expect.objectContaining({ projectId: visibleA.project.id, tourName: tourA.name }),
-      expect.objectContaining({ projectId: visibleB.project.id, tourName: tourB.name }),
-      expect.objectContaining({ projectId: visibleC.project.id, tourName: tourA.name }),
     ]));
   });
 });
