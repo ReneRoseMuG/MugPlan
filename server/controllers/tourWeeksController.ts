@@ -36,7 +36,7 @@ export async function createTourWeek(req: Request, res: Response, next: NextFunc
 
     const tourId = Number(req.params.tourId);
     const input = api.tourWeeks.create.input.parse(req.body);
-    const result = await tourWeeksService.createTourWeek(tourId, input);
+    const result = await tourWeeksService.createTourWeek(tourId, input, req.userContext?.roleKey);
     const weekContext = journalService.buildCalendarWeekContext({
       yearNumber: result.isoYear,
       weekNumber: result.isoWeek,
@@ -73,7 +73,7 @@ export async function blockTourWeek(req: Request, res: Response, next: NextFunct
     const tourId = Number(req.params.tourId);
     const isoYear = Number(req.params.isoYear);
     const isoWeek = Number(req.params.isoWeek);
-    const result = await tourWeeksService.blockTourWeek(tourId, { isoYear, isoWeek });
+    const result = await tourWeeksService.blockTourWeek(tourId, { isoYear, isoWeek }, req.userContext?.roleKey);
     const snapshot = {
       tourId,
       isoYear,
@@ -114,7 +114,7 @@ export async function unblockTourWeek(req: Request, res: Response, next: NextFun
     const tourId = Number(req.params.tourId);
     const isoYear = Number(req.params.isoYear);
     const isoWeek = Number(req.params.isoWeek);
-    const result = await tourWeeksService.unblockTourWeek(tourId, { isoYear, isoWeek });
+    const result = await tourWeeksService.unblockTourWeek(tourId, { isoYear, isoWeek }, req.userContext?.roleKey);
     const snapshot = {
       tourId,
       isoYear,

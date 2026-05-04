@@ -11,7 +11,7 @@ function escapeIdentifier(identifier: string): string {
   return `\`${identifier}\``;
 }
 
-function buildWhereClause(key: WorkflowRowKey, params: Array<string | number | boolean>): string {
+function buildWhereClause(key: WorkflowRowKey, params: Array<string | number | boolean | null>): string {
   return Object.entries(key)
     .map(([field, value]) => {
       const escapedField = escapeIdentifier(field);
@@ -50,7 +50,7 @@ export async function selectRowByKey(
   key: WorkflowRowKey,
   options?: { forUpdate?: boolean },
 ): Promise<Record<string, JsonValue> | null> {
-  const params: Array<string | number | boolean> = [];
+  const params: Array<string | number | boolean | null> = [];
   const whereClause = buildWhereClause(key, params);
   const lockClause = options?.forUpdate === true ? " FOR UPDATE" : "";
   const query = `SELECT * FROM ${escapeIdentifier(table)} WHERE ${whereClause} LIMIT 1${lockClause}`;
@@ -87,4 +87,3 @@ export function sameRowIdentity(left: WorkflowSnapshotRow, rightTable: string, r
   }
   return leftEntries.every(([field, value]) => rightKey[field] === value);
 }
-

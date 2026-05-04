@@ -5,8 +5,8 @@
  *
  * Abgedeckte Regeln:
  * - Der Backup & Dump-Pane ist ueber den Nav-Eintrag nav-item-backup erreichbar.
- * - Der Backup & Dump-Pane enthaelt eine Inner-Tab-Leiste (backup-inner-tabs) mit den drei Tabs:
- *   backups, dumps, import.
+ * - Der Backup & Dump-Pane enthaelt eine Inner-Tab-Leiste (backup-inner-tabs) mit den Tabs:
+ *   backups, dumps, import, migrationen.
  * - Alle Inner-Tab-Buttons haben korrekte data-testid-Attribute.
  * - Die Backup-Monitoring-Tabelle ist im Backups-Inner-Tab gerendert.
  * - Der Switch fuer backup_enabled hat keinen eigenen Speichern-Button.
@@ -124,13 +124,14 @@ describe("FT07 UI: Backup & Dump Nav-Eintrag und Inner-Tab-Struktur", () => {
     expect(html).not.toContain("switch-setting-backup-enabled");
   });
 
-  it("rendert backup-inner-tabs, backup-inner-tab-backups, -dumps und -import nicht im Standardpane", () => {
+  it("rendert backup-inner-tabs und die Inner-Tabs nicht im Standardpane", () => {
     // Diese Elemente existieren nur im Backup-Pane, der initial nicht aktiv ist
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).not.toContain("backup-inner-tabs");
     expect(html).not.toContain("backup-inner-tab-backups");
     expect(html).not.toContain("backup-inner-tab-dumps");
     expect(html).not.toContain("backup-inner-tab-import");
+    expect(html).not.toContain("backup-inner-tab-migrationen");
   });
 
   it("rendert dump-import-section nicht im Standardpane", () => {

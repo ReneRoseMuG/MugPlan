@@ -31,7 +31,7 @@ function handleServiceError(err: unknown, res: Response): boolean {
 export async function listTourWeekEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const tourId = Number(req.params.tourId);
-    const result = await tourWeekEmployeesService.listWeekEmployeesByTour(tourId);
+    const result = await tourWeekEmployeesService.listWeekEmployeesByTour(tourId, req.userContext?.roleKey);
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;
@@ -65,7 +65,7 @@ export async function previewAddTourWeekEmployee(req: Request, res: Response, ne
 
     const tourId = Number(req.params.tourId);
     const input = api.tourWeekEmployees.addPreview.input.parse(req.body);
-    const result = await tourWeekEmployeesService.previewAddWeekEmployee(tourId, input);
+    const result = await tourWeekEmployeesService.previewAddWeekEmployee(tourId, input, req.userContext?.roleKey);
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;
@@ -82,7 +82,7 @@ export async function executeAddTourWeekEmployee(req: Request, res: Response, ne
 
     const tourId = Number(req.params.tourId);
     const input = api.tourWeekEmployees.addExecute.input.parse(req.body);
-    const result = await tourWeekEmployeesService.executeAddWeekEmployee(tourId, input);
+    const result = await tourWeekEmployeesService.executeAddWeekEmployee(tourId, input, req.userContext?.roleKey);
     const actor = getRequestActor(req);
     if (result.assignmentId && typeof result.employeeId === "number" && result.employeeName) {
       const assignmentSnapshot = {
@@ -177,7 +177,7 @@ export async function previewRemoveTourWeekEmployee(req: Request, res: Response,
 
     const tourId = Number(req.params.tourId);
     const input = api.tourWeekEmployees.removePreview.input.parse(req.body);
-    const result = await tourWeekEmployeesService.previewRemoveWeekEmployee(tourId, input);
+    const result = await tourWeekEmployeesService.previewRemoveWeekEmployee(tourId, input, req.userContext?.roleKey);
     res.json(result);
   } catch (err) {
     if (handleServiceError(err, res)) return;
@@ -195,7 +195,7 @@ export async function executeRemoveTourWeekEmployee(req: Request, res: Response,
     const tourId = Number(req.params.tourId);
     const assignmentId = Number(req.params.assignmentId);
     const input = api.tourWeekEmployees.removeExecute.input.parse(req.body);
-    const result = await tourWeekEmployeesService.executeRemoveWeekEmployee(tourId, assignmentId, input);
+    const result = await tourWeekEmployeesService.executeRemoveWeekEmployee(tourId, assignmentId, input, req.userContext?.roleKey);
     const actor = getRequestActor(req);
     if (typeof result.employeeId === "number" && result.employeeName) {
       const assignmentSnapshot = {

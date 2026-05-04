@@ -32,6 +32,8 @@ export class TourWeeksError extends Error {
   }
 }
 
+type WeekPlanningRoleKey = "ADMIN" | "DISPONENT" | "LESER" | null | undefined;
+
 function getBerlinDateString(date: Date): string {
   return berlinFormatter.format(date);
 }
@@ -97,8 +99,25 @@ export function isWeekLocked(isoYear: number, isoWeek: number, todayBerlin = get
   return targetWeek.weekStartDate <= todayWeek.weekStartDate;
 }
 
-function assertWeekEditable(isoYear: number, isoWeek: number): void {
-  if (isWeekLocked(isoYear, isoWeek)) {
+export function isWeekLockedForRole(
+  isoYear: number,
+  isoWeek: number,
+  roleKey?: WeekPlanningRoleKey,
+  todayBerlin = getBerlinTodayDateString(),
+): boolean {
+  const targetWeek = resolveIsoWeekWindow(isoYear, isoWeek);
+  const todayWeek = resolveIsoWeekFromDate(todayBerlin);
+  if (targetWeek.weekStartDate < todayWeek.weekStartDate) {
+    return true;
+  }
+  if (targetWeek.weekStartDate === todayWeek.weekStartDate) {
+    return roleKey !== "ADMIN";
+  }
+  return false;
+}
+
+function assertWeekEditable(isoYear: number, isoWeek: number, roleKey?: WeekPlanningRoleKey): void {
+  if (isWeekLockedForRole(isoYear, isoWeek, roleKey)) {
     throw new TourWeeksError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschützt");
   }
 }
@@ -117,7 +136,7 @@ function assertWeekPlanningSupported(tour: { name: string | null | undefined }):
   }
 }
 
-function mapWeekToResponse(week: tourWeeksRepository.TourWeekRow) {
+function mapWeekToResponse(week: tourWeeksRepository.TourWeekRow, roleKey?: WeekPlanningRoleKey) {
   const window = resolveIsoWeekWindow(week.isoYear, week.isoWeek);
   return {
     id: week.id,
@@ -126,7 +145,7 @@ function mapWeekToResponse(week: tourWeeksRepository.TourWeekRow) {
     isoWeek: week.isoWeek,
     weekStartDate: window.weekStartDate,
     weekEndDate: window.weekEndDate,
-    isLocked: isWeekLocked(week.isoYear, week.isoWeek),
+    isLocked: isWeekLockedForRole(week.isoYear, week.isoWeek, roleKey),
     isBlocked: week.isBlocked,
   };
 }
@@ -204,10 +223,11 @@ export async function isTourWeekBlocked(
 export async function createTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   assertWeekPlanningSupported(tour);
-  assertWeekEditable(params.isoYear, params.isoWeek);
+  assertWeekEditable(params.isoYear, params.isoWeek, roleKey);
 
   const week = await tourWeeksRepository.withTourWeeksTransaction(async (tx) =>
     tourWeeksRepository.getOrCreateWeekTx(tx, {
@@ -218,7 +238,7 @@ export async function createTourWeek(
   );
 
   return {
-    ...mapWeekToResponse(week),
+    ...mapWeekToResponse(week, roleKey),
     tourName: tour.name,
   };
 }
@@ -226,10 +246,11 @@ export async function createTourWeek(
 export async function blockTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   assertWeekPlanningSupported(tour);
-  assertWeekEditable(params.isoYear, params.isoWeek);
+  assertWeekEditable(params.isoYear, params.isoWeek, roleKey);
 
   const appointmentIds = await collectAppointmentIdsForWeek(tourId, params.isoYear, params.isoWeek);
   const changedAppointmentIds = await parkAppointmentsForBlockedWeek(appointmentIds);
@@ -260,7 +281,7 @@ export async function blockTourWeek(
   });
 
   return {
-    week: mapWeekToResponse(week),
+    week: mapWeekToResponse(week, roleKey),
     tourName: tour.name,
     affectedAppointmentCount: changedAppointmentIds.length,
   };
@@ -269,10 +290,11 @@ export async function blockTourWeek(
 export async function unblockTourWeek(
   tourId: number,
   params: { isoYear: number; isoWeek: number },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   assertWeekPlanningSupported(tour);
-  assertWeekEditable(params.isoYear, params.isoWeek);
+  assertWeekEditable(params.isoYear, params.isoWeek, roleKey);
 
   const existingWeek = await tourWeeksRepository.getWeekByTourAndWeek(tourId, params.isoYear, params.isoWeek);
   if (!existingWeek) {
@@ -293,7 +315,7 @@ export async function unblockTourWeek(
   });
 
   return {
-    week: mapWeekToResponse(week),
+    week: mapWeekToResponse(week, roleKey),
     tourName: tour.name,
     affectedAppointmentCount: 0,
   };

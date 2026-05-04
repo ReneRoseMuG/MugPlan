@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   formatCompactWeekDayHeader,
+  isWeekPlanningLockedForCalendarRole,
   resolveInitialAppointmentEmployeeSelection,
 } from "../../../client/src/components/calendar/CalendarWeekView";
 
@@ -56,5 +57,17 @@ describe("CalendarWeekView appointment employee selection", () => {
         source: "available",
       },
     ])).toEqual([]);
+  });
+});
+
+describe("CalendarWeekView Tour-KW lock roles", () => {
+  it("keeps past weeks locked for admins and dispatchers", () => {
+    expect(isWeekPlanningLockedForCalendarRole("2026-04-27", "2026-05-04", true)).toBe(true);
+    expect(isWeekPlanningLockedForCalendarRole("2026-04-27", "2026-05-04", false)).toBe(true);
+  });
+
+  it("unlocks the current week only for admins", () => {
+    expect(isWeekPlanningLockedForCalendarRole("2026-05-04", "2026-05-04", true)).toBe(false);
+    expect(isWeekPlanningLockedForCalendarRole("2026-05-04", "2026-05-04", false)).toBe(true);
   });
 });

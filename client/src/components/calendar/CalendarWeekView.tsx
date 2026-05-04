@@ -216,6 +216,10 @@ function resolveSelectablePreviewIds(items: WeekPlanningPreviewItem[]): number[]
     .map((item) => item.appointmentId);
 }
 
+export function isWeekPlanningLockedForCalendarRole(weekKey: string, currentWeekKey: string, isAdmin: boolean): boolean {
+  return weekKey < currentWeekKey || (weekKey === currentWeekKey && !isAdmin);
+}
+
 export function resolveInitialAppointmentEmployeeSelection(items: AppointmentEmployeePreviewItem[]): number[] {
   return items
     .filter((item) => item.selectable && item.status === "will_add" && (item.source ?? "week_plan") === "week_plan")
@@ -2209,7 +2213,8 @@ export function CalendarWeekView({
                       const isoWeek = getISOWeek(weekStart);
                       const isLaneBlocked = tourLane.tourId != null
                         && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
-                      const isLaneWeekLocked = weekKey <= format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+                      const currentWeekKey = format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
+                      const isLaneWeekLocked = isWeekPlanningLockedForCalendarRole(weekKey, currentWeekKey, isAdmin);
                       const isAbsenceLane = isAbsenceTourName(tourLane.label);
                       const isParkplatzLane = normalizeTourName(tourLane.label) === normalizeTourName("Parkplatz");
                       const canPlanLaneWeekPersonnel = tourLane.tourId != null && !isAbsenceLane && !isParkplatzLane;

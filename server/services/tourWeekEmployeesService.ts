@@ -43,6 +43,8 @@ type AppointmentEmployeePreviewItem = {
   source: AppointmentEmployeePreviewSource;
 };
 
+type WeekPlanningRoleKey = "ADMIN" | "DISPONENT" | "LESER" | null | undefined;
+
 const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Europe/Berlin",
   year: "numeric",
@@ -157,8 +159,25 @@ export function isWeekLocked(isoYear: number, isoWeek: number, todayBerlin = get
   return targetWeek.weekStartDate <= todayWeek.weekStartDate;
 }
 
-function assertWeekEditable(isoYear: number, isoWeek: number): void {
-  if (isWeekLocked(isoYear, isoWeek)) {
+export function isWeekLockedForRole(
+  isoYear: number,
+  isoWeek: number,
+  roleKey?: WeekPlanningRoleKey,
+  todayBerlin = getBerlinTodayDateString(),
+): boolean {
+  const targetWeek = resolveIsoWeekWindow(isoYear, isoWeek);
+  const todayWeek = resolveIsoWeekFromDate(todayBerlin);
+  if (targetWeek.weekStartDate < todayWeek.weekStartDate) {
+    return true;
+  }
+  if (targetWeek.weekStartDate === todayWeek.weekStartDate) {
+    return roleKey !== "ADMIN";
+  }
+  return false;
+}
+
+function assertWeekEditable(isoYear: number, isoWeek: number, roleKey?: WeekPlanningRoleKey): void {
+  if (isWeekLockedForRole(isoYear, isoWeek, roleKey)) {
     throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschützt");
   }
 }
@@ -605,7 +624,7 @@ async function ensureUpcomingWeekSeed(tourId: number): Promise<void> {
   });
 }
 
-export async function listWeekEmployeesByTour(tourId: number) {
+export async function listWeekEmployeesByTour(tourId: number, roleKey?: WeekPlanningRoleKey) {
   const tour = await requireTour(tourId);
   if (!supportsWeekPlanningForTour(tour)) {
     return [];
@@ -628,7 +647,7 @@ export async function listWeekEmployeesByTour(tourId: number) {
       isoWeek: weekRow.isoWeek,
       weekStartDate: week.weekStartDate,
       weekEndDate: week.weekEndDate,
-      isLocked: isWeekLocked(weekRow.isoYear, weekRow.isoWeek),
+      isLocked: isWeekLockedForRole(weekRow.isoYear, weekRow.isoWeek, roleKey),
       isBlocked: weekRow.isBlocked,
       employees: [],
     });
@@ -645,7 +664,7 @@ export async function listWeekEmployeesByTour(tourId: number) {
       isoWeek: assignment.isoWeek,
       weekStartDate: week.weekStartDate,
       weekEndDate: week.weekEndDate,
-      isLocked: isWeekLocked(assignment.isoYear, assignment.isoWeek),
+      isLocked: isWeekLockedForRole(assignment.isoYear, assignment.isoWeek, roleKey),
       isBlocked: false,
       employees: [],
     };
@@ -700,12 +719,13 @@ export async function listAvailableWeekEmployees(
 export async function previewAddWeekEmployee(
   tourId: number,
   params: { isoYear: number; isoWeek: number; employeeId: number },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   assertWeekAssignmentTourAllowed(tour);
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
-  assertWeekEditable(params.isoYear, params.isoWeek);
+  assertWeekEditable(params.isoYear, params.isoWeek, roleKey);
   await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
   const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   await assertWeekUniqueAssignment(tourId, params.employeeId, params.isoYear, params.isoWeek);
@@ -729,6 +749,7 @@ export async function previewAddWeekEmployee(
 export async function executeAddWeekEmployee(
   tourId: number,
   params: { isoYear: number; isoWeek: number; employeeId?: number; selectedAppointmentIds: number[] },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   if (typeof params.employeeId !== "number") {
     throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Mitarbeiter fehlt");
@@ -738,7 +759,7 @@ export async function executeAddWeekEmployee(
   assertWeekAssignmentTourAllowed(tour);
   const employee = await requireEmployee(params.employeeId);
   assertWeekAssignmentEmployee(employee);
-  assertWeekEditable(params.isoYear, params.isoWeek);
+  assertWeekEditable(params.isoYear, params.isoWeek, roleKey);
   await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
 
   const selectedAppointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
@@ -843,13 +864,14 @@ export async function executeAddWeekEmployee(
 export async function previewRemoveWeekEmployee(
   tourId: number,
   params: { assignmentId: number },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   const assignment = await tourWeekEmployeesRepository.getAssignmentById(params.assignmentId);
   if (!assignment || assignment.tourId !== tourId) {
     throw new TourWeekEmployeesError(404, "NOT_FOUND", "Wochenzuordnung nicht gefunden");
   }
-  assertWeekEditable(assignment.isoYear, assignment.isoWeek);
+  assertWeekEditable(assignment.isoYear, assignment.isoWeek, roleKey);
   await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek, tour.name);
 
   const [{ appointments }, minimumEmployees] = await Promise.all([
@@ -914,6 +936,7 @@ export async function executeRemoveWeekEmployee(
   tourId: number,
   assignmentId: number,
   params: { isoYear: number; isoWeek: number; selectedAppointmentIds: number[] },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const tour = await requireTour(tourId);
   const assignment = await tourWeekEmployeesRepository.getAssignmentById(assignmentId);
@@ -925,7 +948,7 @@ export async function executeRemoveWeekEmployee(
     throw new TourWeekEmployeesError(422, "VALIDATION_ERROR", "Wochenzuordnung passt nicht zur Zielwoche");
   }
 
-  assertWeekEditable(assignment.isoYear, assignment.isoWeek);
+  assertWeekEditable(assignment.isoYear, assignment.isoWeek, roleKey);
   await assertWeekPlanningWritable(tourId, assignment.isoYear, assignment.isoWeek, tour.name);
 
   const selectedAppointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { CalendarMarkersAdminPage } from "@/components/CalendarMarkersAdminPage";
+import { CorrectionWorkflowAdminPanel } from "@/components/CorrectionWorkflowAdminPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -195,7 +196,7 @@ export function SettingsPage() {
   const isAdmin = userRole === "ADMIN";
   const canManageCalendarMarkers = isAdmin || userRole === "DISPATCHER" || userRole === "DISPONENT";
   const [activePane, setActivePane] = useState<"oberflaeche" | "feiertage" | "kalender" | "sicherheit" | "backup">("oberflaeche");
-  const [activeBackupTab, setActiveBackupTab] = useState<"backups" | "dumps" | "import">("backups");
+  const [activeBackupTab, setActiveBackupTab] = useState<"backups" | "dumps" | "import" | "migrationen">("backups");
 
   const previewSetting = settingsByKey.get("attachmentPreviewSize");
   const helpTextPreviewSetting = settingsByKey.get("helpTextPreviewSize");
@@ -1381,6 +1382,7 @@ export function SettingsPage() {
                 <button className={innerTabClass("backups")} onClick={() => setActiveBackupTab("backups")} data-testid="backup-inner-tab-backups">Backups</button>
                 <button className={innerTabClass("dumps")} onClick={() => setActiveBackupTab("dumps")} data-testid="backup-inner-tab-dumps">Dumps</button>
                 <button className={innerTabClass("import")} onClick={() => setActiveBackupTab("import")} data-testid="backup-inner-tab-import">Import</button>
+                <button className={innerTabClass("migrationen")} onClick={() => setActiveBackupTab("migrationen")} data-testid="backup-inner-tab-migrationen">Migrationen</button>
               </div>
 
               {/* Inner tab: Backups */}
@@ -1669,6 +1671,12 @@ export function SettingsPage() {
                   {dumpImportError && (
                     <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
                   )}
+                </div>
+              )}
+
+              {activeBackupTab === "migrationen" && (
+                <div className="rounded-md border border-slate-200 bg-white p-4" data-testid="settings-group-migrationen">
+                  <CorrectionWorkflowAdminPanel />
                 </div>
               )}
 

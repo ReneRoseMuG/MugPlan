@@ -16,7 +16,13 @@ function classifyAdminEndpoint(method: string, path: string): AdminEndpointCateg
   if (method === "POST" && path === "/admin/dumps/import/apply") {
     return "destructive";
   }
+  if (method === "POST" && path === "/admin/correction-workflows/sauna-project-title/apply") {
+    return "destructive";
+  }
   if (method === "POST" && path === "/admin/dumps/import/preview") {
+    return "sensitive_read";
+  }
+  if (method === "POST" && path === "/admin/correction-workflows/sauna-project-title/preview") {
     return "sensitive_read";
   }
   if (method === "GET" && path === "/admin/backups/logs") {

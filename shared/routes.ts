@@ -1165,6 +1165,81 @@ const masterDataCategoryImportResponseSchema = z.object({
   rows: z.array(masterDataCategoryImportRowSchema),
 });
 
+const correctionWorkflowCandidateStatusSchema = z.enum(["actionable", "already_ok", "ambiguous", "blocked"]);
+const correctionWorkflowApplyStatusSchema = z.enum([
+  "applied",
+  "skipped_non_actionable",
+  "skipped_due_to_drift",
+  "failed_verification",
+  "failed",
+]);
+const correctionWorkflowSummarySchema = z.object({
+  actionable: z.number().int().min(0),
+  already_ok: z.number().int().min(0),
+  ambiguous: z.number().int().min(0),
+  blocked: z.number().int().min(0),
+});
+const correctionWorkflowTargetSchema = z.object({
+  dbName: z.string().min(1),
+  host: z.string().min(1),
+  port: z.number().int().min(1),
+});
+const correctionWorkflowCandidateSchema = z.object({
+  candidateId: z.string().min(1),
+  status: correctionWorkflowCandidateStatusSchema,
+  label: z.string().min(1),
+  message: z.string().nullable(),
+  projectId: z.number().int().positive().nullable(),
+  orderNumber: z.string().nullable(),
+  currentName: z.string().nullable(),
+  targetName: z.string().nullable(),
+  saunaModel: z.string().nullable(),
+});
+const correctionWorkflowPreviewResponseSchema = z.object({
+  workflowId: z.string().min(1),
+  workflowTitle: z.string().min(1),
+  runtimeMode: z.enum(["development", "test", "production"]),
+  target: correctionWorkflowTargetSchema,
+  createdAt: z.string().min(1),
+  runId: z.string().min(1),
+  manifestPath: z.string().min(1),
+  previewReportPath: z.string().min(1),
+  manifestHash: z.string().min(1),
+  summary: correctionWorkflowSummarySchema,
+  sourceCount: z.number().int().min(0),
+  resultCount: z.number().int().min(0),
+  candidates: z.array(correctionWorkflowCandidateSchema),
+});
+const correctionWorkflowApplyInputSchema = z.object({
+  manifestPath: z.string().min(1),
+  manifestHash: z.string().min(1),
+}).strict();
+const correctionWorkflowApplyResponseSchema = z.object({
+  workflowId: z.string().min(1),
+  workflowTitle: z.string().min(1),
+  runtimeMode: z.enum(["development", "test", "production"]),
+  target: correctionWorkflowTargetSchema,
+  createdAt: z.string().min(1),
+  runId: z.string().min(1),
+  manifestPath: z.string().min(1),
+  manifestHash: z.string().min(1),
+  verificationPassed: z.boolean(),
+  summary: z.object({
+    actionableCandidates: z.number().int().min(0),
+    applied: z.number().int().min(0),
+    skippedNonActionable: z.number().int().min(0),
+    skippedDueToDrift: z.number().int().min(0),
+    failedVerification: z.number().int().min(0),
+    failed: z.number().int().min(0),
+  }),
+  candidateResults: z.array(z.object({
+    candidateId: z.string().min(1),
+    label: z.string().min(1),
+    status: correctionWorkflowApplyStatusSchema,
+    detail: z.string().nullable(),
+  })),
+});
+
 export const api = {
   auth: {
     setupStatus: {
@@ -4147,6 +4222,27 @@ export const api = {
         400: errorSchemas.validation,
         403: z.object({ code: z.literal("FORBIDDEN") }),
         413: z.object({ code: z.literal("BULK_IMPORT_LIMIT_EXCEEDED"), message: z.string() }),
+      },
+    },
+    saunaProjectTitleMigrationPreview: {
+      method: "POST" as const,
+      path: "/api/admin/correction-workflows/sauna-project-title/preview",
+      responses: {
+        200: correctionWorkflowPreviewResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        500: z.object({ code: z.literal("INTERNAL_ERROR"), message: z.string().optional() }),
+      },
+    },
+    saunaProjectTitleMigrationApply: {
+      method: "POST" as const,
+      path: "/api/admin/correction-workflows/sauna-project-title/apply",
+      input: correctionWorkflowApplyInputSchema,
+      responses: {
+        200: correctionWorkflowApplyResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        409: z.object({ code: z.enum(["MANIFEST_HASH_MISMATCH"]) }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR"), message: z.string().optional() }),
+        500: z.object({ code: z.literal("INTERNAL_ERROR"), message: z.string().optional() }),
       },
     },
     systemSeedPreview: {

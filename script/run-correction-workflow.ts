@@ -1,5 +1,6 @@
 import { applyCorrectionWorkflow, previewCorrectionWorkflow } from "./correction-workflows/engine";
 import { getCorrectionWorkflow, listCorrectionWorkflows } from "./correction-workflows/registry";
+import "./correction-workflows/workflows";
 
 type ParsedArgs = {
   mode: "preview" | "apply";
@@ -90,4 +91,3 @@ main().catch((error) => {
   printAvailableWorkflows();
   process.exit(1);
 });
-

@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Wochenplanung kann pro Tour/KW gelesen, vorgeprueft und auf Termine uebernommen werden.
  * - Die neue KW-Unique-Regel blockiert Mehrfachzuordnungen ueber Touren hinweg.
- * - Laufende und vergangene Wochen bleiben ueber die echte API schreibgeschuetzt.
+ * - Laufende Wochen sind nur fuer Admins editierbar; vergangene Wochen bleiben ueber die echte API schreibgeschuetzt.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
  * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Pruefung fuer Konfliktfaelle.
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
@@ -17,7 +17,7 @@
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
  * - Ein Mitarbeiter kann trotz bestehender KW-Zuordnung in eine zweite Tour derselben Woche eingeplant werden.
- * - Aktuelle oder vergangene Wochen lassen sich trotz Sperrregel noch per API beschreiben.
+ * - Disponenten koennen aktuelle oder vergangene Wochen trotz Sperrregel noch per API beschreiben.
  * - Remove-Preview verliert die Unterbesetzungswarnung.
  * - Vollkonflikte verhindern faelschlich die Wochenzuordnung fuer kuenftige Termine.
  * - Leere Remove-Previews blockieren das Loeschen der Wochenzuordnung.
@@ -39,7 +39,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
 import { employees, tourWeekEmployees, tourWeeks, tours } from "../../../shared/schema";
-import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
+import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import {
   attachAppointmentTagFixture,
   createAppointmentFixture,
@@ -50,6 +50,8 @@ import {
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 import { getAppointmentEmployeeIds } from "../../helpers/appointmentOverlapFixtures";
+import { hashPassword } from "../../../server/security/passwordHash";
+import { createUser } from "../../../server/repositories/usersRepository";
 
 let app: express.Express;
 
@@ -59,6 +61,23 @@ beforeAll(async () => {
 
 async function loginAdmin(): Promise<SuperAgentTest> {
   return loginAdminAgent(app);
+}
+
+let userSequence = 0;
+
+async function loginRole(roleCode: "DISPATCHER" | "READER"): Promise<SuperAgentTest> {
+  userSequence += 1;
+  const username = `twe-${roleCode.toLowerCase()}-${Date.now()}-${userSequence}`;
+  const password = `tour-week-${roleCode.toLowerCase()}-password`;
+  await createUser({
+    username,
+    email: `${username}@example.test`,
+    firstName: "TourWeek",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+  return loginAgent(app, { username, password });
 }
 
 function resolveIsoWeek(dateValue: Date | string) {
@@ -541,14 +560,94 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
-  it("rejects add preview and execute for current and past ISO weeks", async () => {
+  it("allows admins but not dispatchers to edit the current ISO week while past weeks stay locked", async () => {
     const admin = await loginAdmin();
+    const dispatcher = await loginRole("DISPATCHER");
     const tour = await createTourFixture("#7c3aed");
     const employee = await createEmployeeFixture("TWE-LOCKED-WEEK-EMP");
+    const secondEmployee = await createEmployeeFixture("TWE-CURRENT-ADMIN-EMP");
     const currentWeek = resolveIsoWeek(getRelativeBerlinDate(0));
     const pastWeek = resolveIsoWeek(getRelativeBerlinDate(-7));
 
-    for (const lockedWeek of [currentWeek, pastWeek]) {
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+      .send({ ...currentWeek, employeeId: employee.id })
+      .expect(200);
+
+    await admin
+      .post(`/api/tours/${tour.id}/week-employees/add`)
+      .send({
+        ...currentWeek,
+        employeeId: employee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(200);
+
+    await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        const currentEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
+          week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek,
+        );
+        expect(currentEntry).toEqual(expect.objectContaining({
+          isLocked: false,
+          employees: [expect.objectContaining({ employeeId: employee.id })],
+        }));
+      });
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/block`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.week.isBlocked).toBe(true);
+        expect(res.body.week.isLocked).toBe(false);
+      });
+
+    await admin
+      .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/unblock`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.week.isBlocked).toBe(false);
+        expect(res.body.week.isLocked).toBe(false);
+      });
+
+    await admin
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        const currentEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
+          week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek,
+        );
+        expect(currentEntry).toEqual(expect.objectContaining({ isLocked: false }));
+      });
+
+    await dispatcher
+      .get(`/api/tours/${tour.id}/week-employees`)
+      .expect(200)
+      .expect((res) => {
+        const currentEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
+          week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek,
+        );
+        expect(currentEntry).toEqual(expect.objectContaining({ isLocked: true }));
+      });
+
+    await dispatcher
+      .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+      .send({ ...currentWeek, employeeId: secondEmployee.id })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("PAST_WEEK_READONLY");
+      });
+
+    await dispatcher
+      .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/block`)
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("PAST_WEEK_READONLY");
+      });
+
+    for (const lockedWeek of [pastWeek]) {
       await admin
         .post(`/api/tours/${tour.id}/week-employees/add/preview`)
         .send({ ...lockedWeek, employeeId: employee.id })

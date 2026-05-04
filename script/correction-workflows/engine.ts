@@ -228,7 +228,7 @@ export function verifyMutationChangeSet(
   const issues: WorkflowVerificationIssue[] = [];
   const fieldNames = new Set([...Object.keys(beforeRow), ...Object.keys(afterRow)]);
 
-  for (const field of fieldNames) {
+  for (const field of Array.from(fieldNames)) {
     const beforeValue = (beforeRow[field] ?? null) as JsonValue;
     const afterValue = (afterRow[field] ?? null) as JsonValue;
     if (!jsonValuesEqual(beforeValue, afterValue)) {
@@ -429,7 +429,9 @@ export async function applyCorrectionWorkflow(
             mutationPlan.allowedChangedFields,
           );
           verification.issues.forEach((issue) => verificationIssues.push(issue));
-          verification.changedFields.forEach((field) => changedFields.add(field));
+          for (const field of verification.changedFields) {
+            changedFields.add(field);
+          }
         }
 
         if (verificationIssues.length > 0) {

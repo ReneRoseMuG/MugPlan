@@ -110,7 +110,7 @@ JSON-Validation erfolgt schema-basiert über Contract-Schemas; Multipart über d
 - Überlappungsprüfung von Mitarbeiterzuweisungen
 - Fehlercodes: `EMPLOYEE_OVERLAP_CONFLICT`, `VERSION_CONFLICT`, `PAST_APPOINTMENT_READONLY`, `INACTIVE_ENTITY_ASSIGNMENT`, `VALIDATION_ERROR`
 
-KW-Planungs-Fehlercodes (`tourWeeksService`, `tourWeekEmployeesService`): `PAST_WEEK_READONLY`, `BUSINESS_CONFLICT`, `NOT_FOUND`, `VALIDATION_ERROR`.
+KW-Planungs-Fehlercodes (`tourWeeksService`, `tourWeekEmployeesService`): `PAST_WEEK_READONLY`, `BUSINESS_CONFLICT`, `NOT_FOUND`, `VALIDATION_ERROR`. Vergangene Tour-KWs bleiben serverseitig für alle Rollen schreibgeschützt. Die laufende Tour-KW ist für `ADMIN` editierbar; für `DISPONENT` bleibt sie schreibgeschützt.
 
 Overlap wird transaktional geprüft und blockierend erzwungen.
 
@@ -352,6 +352,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
 - erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
 - darf historische Termine nicht mutieren; die historische Sperre wird serverseitig durchgesetzt
+- darf die laufende und vergangene Tour-KW nicht mutieren; die Tour-KW-Sperre wird serverseitig durchgesetzt
 - erhält keine aktive FT30-Abwesenheitsdomäne; frühere FT30-Reste sind im aktuellen Routing nicht registriert
 
 ### Admin
@@ -363,6 +364,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - kann Kalendermarker und automatische Feiertags-Overrides über `/api/admin/calendar-markers` lesen, anlegen, bearbeiten und löschen
 - kann die globale Kalendermarker-Darstellung `calendar.markerVisualizationStyle` setzen
 - darf historische Termine mutieren; die übrigen Terminregeln wie Relationspflicht, Versionsschutz, Overlap-Prüfung, Storno-Sperre und blockierte Tourwochen bleiben serverseitig aktiv
+- darf die laufende Tour-KW bearbeiten und blockieren oder freigeben; vergangene Tour-KWs bleiben schreibgeschützt
 - erhält Lese- und Schreibzugriff auf die FT31-Monitoring-Konfiguration sowie Lesezugriff auf `/api/monitoring`
 - erhält den Projektstatus-Katalog nur noch im Admin-Stammdatenbereich
 - erhält ebenfalls keine aktiv verdrahtete FT30-Abwesenheitsdomäne; vorhandene Restartefakte in Contracts, Schema oder UI sind derzeit nicht Teil des aktiven Routing
