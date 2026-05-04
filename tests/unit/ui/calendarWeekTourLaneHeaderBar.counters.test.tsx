@@ -7,11 +7,11 @@
  * Abgedeckte Regeln:
  * - Header bleibt einzeilig (h-7) und rendert keine separate Tagescounter-Zeile.
  * - Header zeigt nur den Tournamen (kein Offen/Zu- oder Mitarbeiter-Counter-Text).
- * - Das Wochenaktions-Menue sitzt links vor der Notizanzeige statt rechts am Lane-Ende.
+ * - Der Header enthaelt keine Wochenaktions- oder Notizsegmente mehr.
  *
  * Fehlerfaelle:
- * - Verdickter Header durch zusaetzliche Zeilen.
- * - Unerwuenschte Zusatztexte im Header.
+ * - Verdickter Header durch zusätzliche Zeilen.
+ * - Unerwünschte Zusatztexte, Menüs oder Notizsegmente im Header.
  *
  * Ziel:
  * Sicherstellen, dass der Tour-Header kompakt bleibt und nur Kerninformationen darstellt.
@@ -64,20 +64,19 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
     expect(html).not.toContain("zu |");
   });
 
-  it("renders the menu slot before the notes segment", () => {
+  it("keeps week action and note markers out of the lane header", () => {
     const html = renderToStaticMarkup(
       React.createElement(CalendarWeekTourLaneHeaderBar, {
         label: "Tour Gamma",
         color: "#345678",
-        menuSlot: React.createElement("span", { "data-testid": "menu-marker" }, "M"),
-        weekNotesIcon: React.createElement("span", { "data-testid": "notes-icon-marker" }, "I"),
-        weekNotesCount: React.createElement("span", { "data-testid": "notes-count-marker" }, "2"),
       }),
     );
 
-    expect(html.indexOf('data-testid="menu-marker"')).toBeLessThan(html.indexOf('data-testid="notes-icon-marker"'));
-    expect(html).toContain("grid-cols-[1.75rem_minmax(0,1fr)]");
-    expect(html).toContain("grid-cols-[2.4rem_minmax(0,1fr)]");
+    expect(html).toContain("Tour Gamma");
+    expect(html).not.toContain('data-testid="menu-marker"');
+    expect(html).not.toContain('data-testid="notes-icon-marker"');
+    expect(html).not.toContain('data-testid="notes-count-marker"');
+    expect(html).toContain("grid-cols-[minmax(0,1fr)]");
   });
 
   it("supports a reduced preview mode without notes segment or legacy grid split", () => {
@@ -86,8 +85,6 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
         label: "Tour Preview",
         color: "#345678",
         reduced: true,
-        weekNotesIcon: React.createElement("span", { "data-testid": "notes-icon-marker" }, "I"),
-        weekNotesCount: React.createElement("span", { "data-testid": "notes-count-marker" }, "2"),
       }),
     );
 

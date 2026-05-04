@@ -88,10 +88,17 @@ vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
       iconSlot: React.ReactNode;
       countSlot: React.ReactNode;
       dialog: React.ReactNode;
+      notesCount: number;
       openDialog: () => void;
     }) => React.ReactNode;
   }) => (
-    <>{children({ iconSlot: null, countSlot: null, dialog: null, openDialog: vi.fn() })}</>
+    <>{children({ iconSlot: null, countSlot: null, dialog: null, notesCount: 2, openDialog: vi.fn() })}</>
+  ),
+}));
+
+vi.mock("@/components/TourWeekNotesHoverPreview", () => ({
+  TourWeekNotesHoverPreview: ({ count, triggerTestId }: { count: number; triggerTestId?: string }) => (
+    <div data-testid={triggerTestId}>notes-{count}</div>
   ),
 }));
 
@@ -496,6 +503,15 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-testid="week-body-personnel-marker-spacer-2098-06-30"');
     expect(html).toContain('data-testid="week-personnel-column-tour-7"');
     expect(html).toContain('data-testid="week-personnel-column-header-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-column-background-tour-7"');
+    expect(html).toContain('class="absolute inset-0 bg-white/65" data-testid="week-personnel-column-background-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-wrapper-tour-7"');
+    expect(html).toContain('class="absolute inset-0 z-10 min-w-0 p-2 " style="width:100%;height:100%;box-sizing:border-box" data-testid="week-personnel-card-wrapper-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-menu-trigger-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-notes-tour-7"');
+    expect(html).toContain("background-color:rgba(34, 85, 136, 0.1)");
+    expect(html).toContain("notes-2");
     expect(html).toContain('data-testid="button-week-personnel-column-toggle-tour-7"');
     expect(html).toContain('data-testid="week-personnel-column-tour-unassigned"');
     expect(html).toContain('data-testid="week-personnel-column-header-tour-unassigned"');

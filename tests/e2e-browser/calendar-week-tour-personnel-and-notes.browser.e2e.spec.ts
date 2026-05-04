@@ -13,6 +13,7 @@
  * - Der Wochenkalender öffnet die Tour-KW-Personalplanung über den Toggle KW Plan.
  * - Die linke Personalspalte startet kollabiert, zeigt vorhandene KW-Mitarbeiter als Avatar-Badges und lässt sich je Tour-Lane erweitern.
  * - Im erweiterten Zustand können Admin/Disposition Mitarbeiter zur Tour-KW hinzufügen und über den vorhandenen Kaskadendialog auf echte Termine übernehmen.
+ * - Tour-KW-Notizen und Wochenaktionen sitzen in der KW-Plan-Karte, nicht mehr in der Tour-Headerbar.
  * - Der entfernte Mitarbeiter wird über das Badge wieder aus Tour-KW und Termin entfernt.
  * - Aktivierte Notizen hängen Termin- und Projektnotizen sichtbar direkt an der Terminkarte an.
  *
@@ -121,6 +122,15 @@ test("Tour-KW-Planungen sind zwischen Tour-Formular und Wochenkalender bidirekti
   ]);
 
   await loginAsAdmin(page);
+  const weekNoteResponse = await page.request.post(`/api/calendar-weeks/${targetWeek.isoYear}/${targetWeek.isoWeek}/tours/${firstTour.id}/notes`, {
+    data: {
+      title: "BWE KW Plan Notiz",
+      body: "BWE KW Plan Notizinhalt",
+      print: false,
+    },
+  });
+  expect(weekNoteResponse.ok(), await weekNoteResponse.text()).toBeTruthy();
+
   await page.getByTestId("nav-touren").click();
   await page.getByTestId(`card-tour-${firstTour.id}`).dblclick();
   await page.getByTestId("tab-tour-wochenplanung").click();
@@ -136,6 +146,16 @@ test("Tour-KW-Planungen sind zwischen Tour-Formular und Wochenkalender bidirekti
   await expect(targetSection.getByTestId(`week-personnel-employee-tour-${secondTour.id}-${secondEmployee.id}`)).toBeVisible();
 
   await targetSection.getByTestId(`button-week-personnel-column-toggle-tour-${firstTour.id}`).click();
+  const firstTourWeekPlanCard = targetSection.getByTestId(`week-personnel-card-tour-${firstTour.id}`);
+  await expect(firstTourWeekPlanCard.getByTestId(`week-personnel-card-menu-trigger-tour-${firstTour.id}`)).toBeVisible();
+  await expect(firstTourWeekPlanCard.getByTestId(`week-personnel-card-notes-tour-${firstTour.id}`)).toContainText("1");
+  await expect(targetSection.getByTestId(`week-tour-lane-menu-trigger-tour-${firstTour.id}`)).toHaveCount(0);
+  await firstTourWeekPlanCard.getByTestId(`week-personnel-card-notes-tour-${firstTour.id}`).hover();
+  await expect(page.getByText("BWE KW Plan Notiz", { exact: true })).toBeVisible();
+  await firstTourWeekPlanCard.getByTestId(`week-personnel-card-menu-trigger-tour-${firstTour.id}`).click();
+  await expect(page.getByRole("menuitem", { name: "Notiz hinzufügen" })).toBeVisible();
+  await page.keyboard.press("Escape");
+
   await targetSection.getByTestId(`button-add-week-personnel-tour-${firstTour.id}`).click();
   await expect(page.getByTestId(`employee-picker-card-${calendarEmployee.id}`)).toBeVisible();
   await page.getByTestId(`employee-picker-card-${calendarEmployee.id}`).dblclick();
@@ -322,8 +342,16 @@ test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termi
   await page.getByTestId("switch-week-personnel-column").click();
 
   const personnelColumn = targetSection.getByTestId(`week-personnel-column-tour-${tour.id}`);
+  const personnelColumnBody = targetSection.getByTestId(`week-personnel-column-body-tour-${tour.id}`);
+  const personnelBackground = targetSection.getByTestId(`week-personnel-column-background-tour-${tour.id}`);
+  const personnelCardWrapper = targetSection.getByTestId(`week-personnel-card-wrapper-tour-${tour.id}`);
+  const personnelCard = targetSection.getByTestId(`week-personnel-card-tour-${tour.id}`);
   const existingBadge = targetSection.getByTestId(`week-personnel-employee-tour-${tour.id}-${existingEmployee.id}`);
   await expect(personnelColumn).toBeVisible();
+  await expect(personnelColumnBody).toBeVisible();
+  await expect(personnelBackground).toBeVisible();
+  await expect(personnelCardWrapper).toBeVisible();
+  await expect(personnelCard).toBeVisible();
   await expect(existingBadge).toBeVisible();
   await expect(existingBadge.getByTestId(`week-personnel-employee-tour-${tour.id}-${existingEmployee.id}-avatar`)).toBeVisible();
   await expect(targetSection.getByTestId("week-personnel-column-tour-unassigned")).toBeVisible();
@@ -346,13 +374,25 @@ test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termi
   await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${absenceTour.id}`)).toHaveCount(0);
   await expect(targetSection.getByTestId(`button-add-week-personnel-tour-${parkplatzTour.id}`)).toHaveCount(0);
   await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${parkplatzTour.id}`)).toHaveCount(0);
+  await expect.poll(async () => {
+    const bodyBox = await personnelColumnBody.boundingBox();
+    const backgroundBox = await personnelBackground.boundingBox();
+    const wrapperBox = await personnelCardWrapper.boundingBox();
+    if (!bodyBox || !backgroundBox || !wrapperBox) return false;
+    return Math.abs(backgroundBox.y - bodyBox.y) <= 2
+      && Math.abs((backgroundBox.y + backgroundBox.height) - (bodyBox.y + bodyBox.height)) <= 2
+      && Math.abs(wrapperBox.y - bodyBox.y) <= 2
+      && Math.abs((wrapperBox.y + wrapperBox.height) - (bodyBox.y + bodyBox.height)) <= 2;
+  }).toBe(true);
   await expect(existingBadge).toContainText(existingEmployee.firstName ?? "");
   await expect.poll(async () => {
-    const columnBox = await personnelColumn.boundingBox();
+    const cardBox = await personnelCard.boundingBox();
     const badgeBox = await existingBadge.boundingBox();
-    if (!columnBox || !badgeBox) return false;
-    const widthDifference = columnBox.width - badgeBox.width;
-    return widthDifference >= 0 && widthDifference <= 18;
+    if (!cardBox || !badgeBox) return false;
+    return badgeBox.x >= cardBox.x - 2
+      && badgeBox.y >= cardBox.y - 2
+      && badgeBox.x + badgeBox.width <= cardBox.x + cardBox.width + 2
+      && badgeBox.y + badgeBox.height <= cardBox.y + cardBox.height + 2;
   }).toBe(true);
 
   await targetSection.getByTestId(`button-add-week-personnel-tour-${tour.id}`).click();

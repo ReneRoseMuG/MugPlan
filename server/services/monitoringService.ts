@@ -54,43 +54,8 @@ export class MonitoringError extends Error {
   }
 }
 
-const berlinDateFormatter = new Intl.DateTimeFormat("en", {
-  timeZone: "Europe/Berlin",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-function formatBerlinDate(date: Date): string {
-  const parts = berlinDateFormatter.formatToParts(date);
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-
-  if (!year || !month || !day) {
-    throw new Error("Das Berliner Datum konnte nicht bestimmt werden.");
-  }
-
-  return `${year}-${month}-${day}`;
-}
-
-function getBerlinTodayDateString(): string {
-  return formatBerlinDate(new Date());
-}
-
-function parseDateOnly(input: string): Date {
-  const [year, month, day] = input.split("-").map((value) => Number.parseInt(value, 10));
-  return new Date(year, month - 1, day);
-}
-
-function addDays(date: Date, days: number): Date {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
 function assertMonitoringReadRole(roleKey: CanonicalRoleKey): void {
-  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT" && roleKey !== "LESER") {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
     throw new MonitoringError(403, "FORBIDDEN");
   }
 }
@@ -139,13 +104,7 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
   assertMonitoringReadRole(roleKey);
 
   const config = await readMonitoringConfig();
-  const todayBerlin = getBerlinTodayDateString();
-  const fromDate = parseDateOnly(todayBerlin);
-  const toDate = config.tr01.allAppointments ? undefined : addDays(fromDate, config.tr01.horizonDays - 1);
-  const rows = await appointmentsRepository.listAppointmentsForMonitoring({
-    fromDate,
-    toDate,
-  });
+  const rows = await appointmentsRepository.listAppointmentsForMonitoring({});
   const appointmentTagsByAppointmentId = await appointmentsRepository.getAppointmentTagsByAppointmentIds(
     rows.map((row) => row.appointmentId),
   );
@@ -154,9 +113,6 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
   for (const row of rows) {
     const appointmentTags = appointmentTagsByAppointmentId.get(row.appointmentId) ?? [];
     if (hasAppointmentCancellationTag(appointmentTags)) {
-      continue;
-    }
-    if (row.startDate < todayBerlin) {
       continue;
     }
 

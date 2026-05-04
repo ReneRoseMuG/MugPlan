@@ -26,9 +26,6 @@ export async function openWorkflowExecutionContext(
   const runtimeConfig = initializeRuntimeEnv();
   const runtimeMode = getRuntimeMode();
 
-  if (runtimeMode === "production") {
-    throw new Error("Correction workflows are blocked in production.");
-  }
   if (!workflow.allowedRuntimeModes.includes(runtimeMode)) {
     throw new Error(
       `Workflow '${workflow.id}' is not allowed in runtime mode '${runtimeMode}'. Allowed: ${workflow.allowedRuntimeModes.join(", ")}.`,
@@ -67,4 +64,3 @@ export async function openWorkflowExecutionContext(
     startedAt: now.toISOString(),
   };
 }
-

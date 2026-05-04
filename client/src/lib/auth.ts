@@ -107,7 +107,7 @@ export function canAccessJournal(value: string | null | undefined): boolean {
 
 export function canAccessMonitoring(value: string | null | undefined): boolean {
   const role = resolveClientRole(value);
-  return role === "ADMIN" || role === "DISPATCHER" || role === "READER";
+  return role === "ADMIN" || role === "DISPATCHER";
 }
 
 export function canAccessTourPostalPlan(value: string | null | undefined): boolean {

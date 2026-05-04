@@ -9,6 +9,16 @@ import {
   type AbsenceType,
 } from "@shared/absenceAppointments";
 import type { EmployeeAppointmentAbsenceResponse } from "@shared/routes";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +39,12 @@ type EmployeeAppointmentAbsencesPanelProps = {
   employeeId: number;
   readOnly: boolean;
 };
+
+type AbsenceParkingConflict = EmployeeAppointmentAbsenceResponse;
+
+type PendingParkingConfirmation =
+  | { kind: "create"; state: AbsenceFormState; conflicts: AbsenceParkingConflict[] }
+  | { kind: "update"; item: EmployeeAppointmentAbsenceResponse; state: AbsenceFormState; conflicts: AbsenceParkingConflict[] };
 
 const defaultFormState: AbsenceFormState = {
   absenceType: "vacation",
@@ -81,6 +97,18 @@ function extractConflictEmployees(error: unknown): string | null {
   }
 }
 
+function extractParkingConflicts(error: unknown): AbsenceParkingConflict[] | null {
+  if (!(error instanceof Error)) return null;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart < 0) return null;
+  try {
+    const payload = JSON.parse(error.message.slice(jsonStart)) as { parkingConflicts?: AbsenceParkingConflict[] };
+    return Array.isArray(payload.parkingConflicts) ? payload.parkingConflicts : null;
+  } catch {
+    return null;
+  }
+}
+
 function toFormState(item: EmployeeAppointmentAbsenceResponse): AbsenceFormState {
   const tagType = item.appointmentTags
     .map((tag) => resolveAbsenceTypeFromTagName(tag.name))
@@ -114,6 +142,7 @@ export function EmployeeAppointmentAbsencesPanel({
   const [newForm, setNewForm] = useState<AbsenceFormState>(defaultFormState);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<AbsenceFormState>(defaultFormState);
+  const [pendingParkingConfirmation, setPendingParkingConfirmation] = useState<PendingParkingConfirmation | null>(null);
 
   const queryKey = useMemo(() => ["/api/employees", employeeId, "absence-appointments"], [employeeId]);
 
@@ -141,8 +170,19 @@ export function EmployeeAppointmentAbsencesPanel({
     });
   };
 
-  const handleMutationError = (error: Error, action: string) => {
+  const handleMutationError = (
+    error: Error,
+    action: string,
+    context?: { kind: "create"; state: AbsenceFormState } | { kind: "update"; item: EmployeeAppointmentAbsenceResponse; state: AbsenceFormState },
+  ) => {
     const code = extractApiCode(error);
+    if (code === "ABSENCE_OVERLAP_REQUIRES_PARKING" && context) {
+      const conflicts = extractParkingConflicts(error);
+      if (conflicts && conflicts.length > 0) {
+        setPendingParkingConfirmation({ ...context, conflicts });
+        return;
+      }
+    }
     if (code === "EMPLOYEE_OVERLAP_CONFLICT") {
       const names = extractConflictEmployees(error);
       toast({
@@ -168,8 +208,14 @@ export function EmployeeAppointmentAbsencesPanel({
   };
 
   const createMutation = useMutation({
-    mutationFn: async (state: AbsenceFormState) => {
-      const response = await apiRequest("POST", `/api/employees/${employeeId}/absence-appointments`, toPayload(state));
+    mutationFn: async ({ state, confirmedParkingAppointments }: {
+      state: AbsenceFormState;
+      confirmedParkingAppointments?: Array<{ appointmentId: number; version: number }>;
+    }) => {
+      const response = await apiRequest("POST", `/api/employees/${employeeId}/absence-appointments`, {
+        ...toPayload(state),
+        ...(confirmedParkingAppointments ? { confirmedParkingAppointments } : {}),
+      });
       return response.json() as Promise<EmployeeAppointmentAbsenceResponse>;
     },
     onSuccess: async () => {
@@ -177,14 +223,19 @@ export function EmployeeAppointmentAbsencesPanel({
       await invalidateAbsenceQueries();
       toast({ title: "Abwesenheit angelegt" });
     },
-    onError: (error: Error) => handleMutationError(error, "Anlegen"),
+    onError: (error: Error, variables) => handleMutationError(error, "Anlegen", { kind: "create", state: variables.state }),
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ item, state }: { item: EmployeeAppointmentAbsenceResponse; state: AbsenceFormState }) => {
+    mutationFn: async ({ item, state, confirmedParkingAppointments }: {
+      item: EmployeeAppointmentAbsenceResponse;
+      state: AbsenceFormState;
+      confirmedParkingAppointments?: Array<{ appointmentId: number; version: number }>;
+    }) => {
       const response = await apiRequest("PUT", `/api/employees/${employeeId}/absence-appointments/${item.id}`, {
         ...toPayload(state),
         version: item.version,
+        ...(confirmedParkingAppointments ? { confirmedParkingAppointments } : {}),
       });
       return response.json() as Promise<EmployeeAppointmentAbsenceResponse>;
     },
@@ -193,7 +244,7 @@ export function EmployeeAppointmentAbsencesPanel({
       await invalidateAbsenceQueries();
       toast({ title: "Abwesenheit gespeichert" });
     },
-    onError: (error: Error) => handleMutationError(error, "Speichern"),
+    onError: (error: Error, variables) => handleMutationError(error, "Speichern", { kind: "update", item: variables.item, state: variables.state }),
   });
 
   const deleteMutation = useMutation({
@@ -224,6 +275,27 @@ export function EmployeeAppointmentAbsencesPanel({
       startDate: nextStartDate,
       endDate: shiftEndDateByStartDateChange(prev.startDate, prev.endDate, nextStartDate),
     }));
+  };
+
+  const confirmParkingAndSave = () => {
+    if (!pendingParkingConfirmation) return;
+    const confirmedParkingAppointments = pendingParkingConfirmation.conflicts.map((conflict) => ({
+      appointmentId: conflict.id,
+      version: conflict.version,
+    }));
+    if (pendingParkingConfirmation.kind === "create") {
+      createMutation.mutate({
+        state: pendingParkingConfirmation.state,
+        confirmedParkingAppointments,
+      });
+    } else {
+      updateMutation.mutate({
+        item: pendingParkingConfirmation.item,
+        state: pendingParkingConfirmation.state,
+        confirmedParkingAppointments,
+      });
+    }
+    setPendingParkingConfirmation(null);
   };
 
   return (
@@ -279,7 +351,7 @@ export function EmployeeAppointmentAbsencesPanel({
               type="button"
               className="gap-2"
               disabled={!canSubmitNew || createMutation.isPending}
-              onClick={() => createMutation.mutate(newForm)}
+              onClick={() => createMutation.mutate({ state: newForm })}
               data-testid="button-create-employee-absence"
             >
               <Plus className="h-4 w-4" aria-hidden />
@@ -431,6 +503,50 @@ export function EmployeeAppointmentAbsencesPanel({
           </TableBody>
         </Table>
       </div>
+      <AlertDialog
+        open={pendingParkingConfirmation !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingParkingConfirmation(null);
+        }}
+      >
+        <AlertDialogContent data-testid="dialog-absence-parking-confirmation">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termine auf Parkplatz verschieben?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Für den gewählten Zeitraum bestehen bereits Termine dieses Mitarbeiters. Diese Termine müssen geparkt werden, bevor die Abwesenheit gespeichert werden kann.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-72 overflow-auto rounded-md border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Datum</TableHead>
+                  <TableHead>Termin</TableHead>
+                  <TableHead>Kunde</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(pendingParkingConfirmation?.conflicts ?? []).map((conflict) => (
+                  <TableRow key={conflict.id} data-testid={`absence-parking-conflict-${conflict.id}`}>
+                    <TableCell>{formatListDateRange(conflict.startDate, conflict.endDate)}</TableCell>
+                    <TableCell>{conflict.projectName || conflict.description || "-"}</TableCell>
+                    <TableCell>{conflict.customer.fullName ?? conflict.customer.company ?? conflict.customer.customerNumber}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmParkingAndSave}
+              data-testid="button-confirm-absence-parking"
+            >
+              Termine parken und Abwesenheit speichern
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

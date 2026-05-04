@@ -529,7 +529,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       if (code === "PAST_WEEK_READONLY") {
         toast({
           title: "Anlegen nicht möglich",
-          description: "Laufende und vergangene Wochen koennen nicht mehr angelegt werden.",
+          description: "Vergangene Wochen können nicht mehr angelegt werden.",
           variant: "destructive",
         });
         return;
@@ -558,7 +558,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       if (code === "PAST_WEEK_READONLY") {
         toast({
           title: "Blockieren nicht möglich",
-          description: "Laufende und vergangene Wochen koennen nicht mehr blockiert werden.",
+          description: "Vergangene Wochen können nicht mehr blockiert werden.",
           variant: "destructive",
         });
         return;
@@ -587,7 +587,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       if (code === "PAST_WEEK_READONLY") {
         toast({
           title: "Freigeben nicht möglich",
-          description: "Laufende und vergangene Wochen koennen nicht mehr freigegeben werden.",
+          description: "Vergangene Wochen können nicht mehr freigegeben werden.",
           variant: "destructive",
         });
         return;

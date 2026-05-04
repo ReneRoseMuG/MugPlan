@@ -28,6 +28,7 @@
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Page } from "@playwright/test";
+import { MANAGED_COMPLAINT_TAG_NAME } from "../../shared/appointmentCancellation";
 import {
   createAppointmentFixture,
   createCustomerFixture,
@@ -156,6 +157,52 @@ async function readProjectTagNames(page: Page, projectId: number) {
     return [];
   }
 }
+
+async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ title: string }>> {
+  const response = await page.request.get(`/api/projects/${projectId}/notes`);
+  expect(response.ok()).toBeTruthy();
+  return response.json() as Promise<Array<{ title: string }>>;
+}
+
+test("persists Reklamation workflow from the new project form with a template note draft", async ({ page }) => {
+  const customer = await createCustomerFixture("FT02-CREATE-REKLAMATION");
+
+  await openNewProject(page);
+  await expect(page.getByTestId("project-form-functions-panel")).toBeVisible();
+  await expect(page.getByTestId("button-set-project-reklamation")).toBeVisible();
+
+  await page.getByTestId("input-project-name").fill("FT02 Browser Projekt Reklamation");
+  await page.getByTestId("input-project-order-number").fill("RKL-PRJ-01");
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+
+  await page.getByTestId("button-set-project-reklamation").click();
+  await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+
+  await page.getByTestId("button-save-note").click();
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: MANAGED_COMPLAINT_TAG_NAME }).first(),
+  ).toBeVisible();
+
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/projects"
+  ));
+  await page.getByTestId("button-save-project").click();
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+  const createdProject = await createdProjectResponse.json() as { id: number };
+
+  await expect.poll(async () => readProjectTagNames(page, createdProject.id)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, createdProject.id);
+    return notes.map((note) => note.title);
+  }).toContain(MANAGED_COMPLAINT_TAG_NAME);
+});
 
 test("persists tag, note and project attachment from the new project form and restores them on reopen", async ({ page }) => {
   const customer = await createCustomerFixture("FT02-CREATE-SIDEBAR");

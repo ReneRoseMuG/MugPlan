@@ -230,7 +230,7 @@ test("Admins bearbeiten und blockieren die aktuelle Tour-KW im Tour-Formular", a
   await expect(page.getByTestId(`text-tour-week-blocked-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toContainText("Parkplatz");
 });
 
-test("Dispatcher sehen die aktuelle Tour-KW im Tour-Formular weiterhin gesperrt", async ({ page }) => {
+test("Dispatcher bearbeiten die aktuelle Tour-KW im Tour-Formular", async ({ page }) => {
   const currentWeek = resolveCurrentWeek();
   const tour = await createTourFixture("#0f766e");
   const employee = await createEmployeeFixture("TWF-CURRENT-DISPATCHER");
@@ -256,7 +256,7 @@ test("Dispatcher sehen die aktuelle Tour-KW im Tour-Formular weiterhin gesperrt"
   const weekResponse = await page.request.get(`/api/tours/${tour.id}/week-employees`);
   expect(weekResponse.ok(), await weekResponse.text()).toBeTruthy();
   const weeks = await weekResponse.json() as Array<{ isoYear: number; isoWeek: number; isLocked: boolean }>;
-  expect(weeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(true);
+  expect(weeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(false);
 
   await page.reload();
   await expect(page.getByTestId("sidebar")).toBeVisible();
@@ -269,17 +269,17 @@ test("Dispatcher sehen die aktuelle Tour-KW im Tour-Formular weiterhin gesperrt"
   const frontendWeekResponse = await weekEmployeesResponsePromise;
   expect(frontendWeekResponse.ok(), await frontendWeekResponse.text()).toBeTruthy();
   const frontendWeeks = await frontendWeekResponse.json() as Array<{ isoYear: number; isoWeek: number; isLocked: boolean }>;
-  expect(frontendWeeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(true);
+  expect(frontendWeeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(false);
   await page.getByTestId("tab-tour-wochenplanung").click();
 
   const weekCard = page.getByTestId(`card-tour-week-${currentWeek.isoYear}-${currentWeek.isoWeek}`);
   await expect(weekCard).toBeVisible();
-  await expect(weekCard.getByTestId(`button-add-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toHaveCount(0);
-  await expect(weekCard.getByTestId(`button-apply-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toHaveCount(0);
+  await expect(weekCard.getByTestId(`button-add-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toBeVisible();
+  await expect(weekCard.getByTestId(`button-apply-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toBeEnabled();
 
   await weekCard.dblclick();
   await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
-  await expect(page.getByTestId("button-open-tour-week-employee-picker")).toBeDisabled();
+  await expect(page.getByTestId("button-open-tour-week-employee-picker")).toBeEnabled();
 });
 
 test("blocking from the tour week card parks appointments and keeps the KW visibly blocked", async ({ page }) => {
@@ -299,7 +299,7 @@ test("blocking from the tour week card parks appointments and keeps the KW visib
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
 });
 
-test("blocking from the week calendar header parks appointments and keeps the lane visible", async ({ page }) => {
+test("blocking from the week calendar KW-Plan card parks appointments and keeps the lane visible", async ({ page }) => {
   const scenario = await createBlockWeekScenario("TWF-BLOCK-WEEK");
 
   await loginAsAdmin(page);
@@ -307,12 +307,17 @@ test("blocking from the week calendar header parks appointments and keeps the la
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
   const laneHeader = page.getByTestId(`week-tour-lane-header-tour-${scenario.tour.id}`).first();
   await expect(laneHeader).toBeVisible();
+  await page.getByTestId("switch-week-personnel-column").click();
+  await page.getByTestId(`button-week-personnel-column-toggle-tour-${scenario.tour.id}`).first().click();
+  const weekPlanCard = page.getByTestId(`week-personnel-card-tour-${scenario.tour.id}`).first();
+  await expect(weekPlanCard).toBeVisible();
+  await expect(page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`)).toHaveCount(0);
 
   const blockResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === `/api/tours/${scenario.tour.id}/weeks/${scenario.targetWeek.isoYear}/${scenario.targetWeek.isoWeek}/block`
   ));
-  await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
+  await weekPlanCard.getByTestId(`week-personnel-card-menu-trigger-tour-${scenario.tour.id}`).click();
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
     element.click();
   });
@@ -328,6 +333,8 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await loginAsAdmin(page);
   await page.goto(`/standalone/calendar/week?kw=${scenario.targetWeek.isoWeek}&year=${scenario.targetWeek.isoYear}`);
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
+  await page.getByTestId("switch-week-personnel-column").click();
+  await page.getByTestId(`button-week-personnel-column-toggle-tour-${scenario.tour.id}`).first().click();
 
   const originalAppointmentPanel = page.getByTestId(`week-appointment-panel-${scenario.appointmentId}`).first();
   await expect(originalAppointmentPanel).toBeVisible();
@@ -343,7 +350,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
     response.request().method() === "POST"
     && new URL(response.url()).pathname === `/api/tours/${scenario.tour.id}/weeks/${scenario.targetWeek.isoYear}/${scenario.targetWeek.isoWeek}/block`
   ));
-  await page.getByTestId(`week-tour-lane-menu-trigger-tour-${scenario.tour.id}`).first().click();
+  await page.getByTestId(`week-personnel-card-menu-trigger-tour-${scenario.tour.id}`).first().click();
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
     element.click();
   });

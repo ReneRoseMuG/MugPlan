@@ -177,6 +177,10 @@ const employeeAppointmentAbsenceInputSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   note: z.string().trim().max(1000).nullable().optional(),
+  confirmedParkingAppointments: z.array(z.object({
+    appointmentId: z.number().int().positive(),
+    version: z.number().int().min(1),
+  })).optional(),
 }).strict();
 
 const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active");
@@ -2549,7 +2553,11 @@ export const api = {
           201: entityAppointmentItemSchema,
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
-          409: z.object({ code: z.string(), message: z.string().optional() }),
+          409: z.object({
+            code: z.string(),
+            message: z.string().optional(),
+            parkingConflicts: z.array(entityAppointmentItemSchema).optional(),
+          }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },
@@ -2563,7 +2571,11 @@ export const api = {
           200: entityAppointmentItemSchema,
           403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
-          409: z.object({ code: z.string(), message: z.string().optional() }),
+          409: z.object({
+            code: z.string(),
+            message: z.string().optional(),
+            parkingConflicts: z.array(entityAppointmentItemSchema).optional(),
+          }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
       },

@@ -6,13 +6,14 @@
  * - Im Edit-Modus zeigt ProjectForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Termine, Attachments, Tags, Notizen.
  * - Footer-Aktionen bleiben im Shell-Layout gesplittet; Delete erscheint nur im Edit-Modus.
+ * - Der Reklamationsworkflow ist in Create und Edit als explizite Formularfunktion sichtbar.
  * - Create-Verdrahtung der Sidebar behaelt Draft-faehige Attachments bei.
  *
  * Fehlerfaelle:
  * - Das Projektformular bleibt am alten Layout haengen oder rendert die Sidebar erneut im Main-Bereich.
  * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
  * - Die Sidebar-Panels tauschen ihre Reihenfolge.
- * - Delete erscheint im Create-Modus oder die Create-Sidebar verliert ihre Draft-Verdrahtung.
+ * - Reklamation fehlt im Create-Modus, Delete erscheint im Create-Modus oder die Create-Sidebar verliert ihre Draft-Verdrahtung.
  *
  * Ziel:
  * Das neue Shell-Layout des Projektformulars ueber sichtbare Struktur und Child-Props regressionssicher absichern.
@@ -325,11 +326,14 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(createMarkup).toContain("button-close-project");
     expect(createMarkup).toContain("button-cancel-project");
     expect(createMarkup).toContain("button-save-project");
-    expect(createMarkup).not.toContain("project-form-functions-panel");
+    expect(createMarkup).toContain("project-form-functions-panel");
+    expect(createMarkup).toContain("button-set-project-reklamation");
     expect(createMarkup).not.toContain("button-delete-project");
+    expect(getIndex(createMarkup, "project-form-functions-panel")).toBeLessThan(getIndex(createMarkup, "project-appointments-panel-marker"));
     expect(getIndex(createMarkup, "button-cancel-project")).toBeLessThan(getIndex(createMarkup, "button-save-project"));
 
     expect(editMarkup).toContain("project-form-functions-panel");
+    expect(editMarkup).toContain("button-set-project-reklamation");
     expect(editMarkup).toContain("button-delete-project");
     expect(getIndex(editMarkup, "project-form-functions-panel")).toBeLessThan(getIndex(editMarkup, "project-appointments-panel-marker"));
     expect(getIndex(editMarkup, "button-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));

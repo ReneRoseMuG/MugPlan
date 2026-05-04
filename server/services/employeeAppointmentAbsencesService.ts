@@ -21,16 +21,36 @@ import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as appointmentsService from "./appointmentsService";
+import { getAppointmentParkingDefaults, parkAppointmentTx } from "./appointmentParkingService";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 
 export class EmployeeAppointmentAbsencesError extends Error {
   status: number;
-  code: "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "BUSINESS_CONFLICT";
+  code:
+    | "FORBIDDEN"
+    | "NOT_FOUND"
+    | "VALIDATION_ERROR"
+    | "BUSINESS_CONFLICT"
+    | "ABSENCE_OVERLAP_REQUIRES_PARKING"
+    | "VERSION_CONFLICT";
+  parkingConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>>;
 
-  constructor(status: number, code: "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "BUSINESS_CONFLICT", message?: string) {
+  constructor(
+    status: number,
+    code:
+      | "FORBIDDEN"
+      | "NOT_FOUND"
+      | "VALIDATION_ERROR"
+      | "BUSINESS_CONFLICT"
+      | "ABSENCE_OVERLAP_REQUIRES_PARKING"
+      | "VERSION_CONFLICT",
+    message?: string,
+    options?: { parkingConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>> },
+  ) {
     super(message ?? code);
     this.status = status;
     this.code = code;
+    this.parkingConflicts = options?.parkingConflicts;
   }
 }
 
@@ -48,6 +68,20 @@ function normalizeOptionalNote(value: string | null | undefined): string | null 
 function normalizeOptionalCustomerField(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeConfirmedParkingAppointments(input: EmployeeAppointmentAbsenceInput["confirmedParkingAppointments"]) {
+  const confirmed = new Map<number, number>();
+  for (const item of input ?? []) {
+    confirmed.set(item.appointmentId, item.version);
+  }
+  return confirmed;
+}
+
+function dateRangesOverlap(leftStart: string, leftEnd: string | null | undefined, rightStart: string, rightEnd: string | null | undefined): boolean {
+  const normalizedLeftEnd = leftEnd ?? leftStart;
+  const normalizedRightEnd = rightEnd ?? rightStart;
+  return leftStart <= normalizedRightEnd && rightStart <= normalizedLeftEnd;
 }
 
 async function assertEmployeeVisible(employeeId: number, roleKey: CanonicalRoleKey) {
@@ -163,6 +197,67 @@ function isAbsenceAppointmentItem(item: Awaited<ReturnType<typeof appointmentsSe
     && item.appointmentTags.some((tag) => isAbsenceTagName(tag.name));
 }
 
+async function listRegularAppointmentConflictsForAbsence(
+  employeeId: number,
+  input: EmployeeAppointmentAbsenceInput,
+  roleKey: CanonicalRoleKey,
+  excludeAppointmentId?: number,
+) {
+  const items = await appointmentsService.listEmployeeAppointmentsByScope(employeeId, "all", roleKey);
+  return items.filter((item) => (
+    item.id !== excludeAppointmentId
+    && !isAbsenceAppointmentItem(item)
+    && dateRangesOverlap(input.startDate, input.endDate ?? null, item.startDate, item.endDate)
+  ));
+}
+
+async function parkConfirmedRegularConflicts(
+  employeeId: number,
+  input: EmployeeAppointmentAbsenceInput,
+  roleKey: CanonicalRoleKey,
+  excludeAppointmentId?: number,
+): Promise<void> {
+  const conflicts = await listRegularAppointmentConflictsForAbsence(employeeId, input, roleKey, excludeAppointmentId);
+  if (conflicts.length === 0) return;
+
+  const confirmedVersions = normalizeConfirmedParkingAppointments(input.confirmedParkingAppointments);
+  const unconfirmedConflicts = conflicts.filter((item) => confirmedVersions.get(item.id) !== item.version);
+  if (unconfirmedConflicts.length > 0 || confirmedVersions.size !== conflicts.length) {
+    throw new EmployeeAppointmentAbsencesError(
+      409,
+      "ABSENCE_OVERLAP_REQUIRES_PARKING",
+      "Bestehende Termine müssen vor dem Speichern der Abwesenheit auf Parkplatz verschoben werden.",
+      { parkingConflicts: conflicts },
+    );
+  }
+
+  const parkingDefaults = await getAppointmentParkingDefaults();
+  if (parkingDefaults.kind === "missing_parkplatz_tour") {
+    throw new EmployeeAppointmentAbsencesError(409, "BUSINESS_CONFLICT", "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausführen.");
+  }
+  if (parkingDefaults.kind === "missing_geparkt_tag") {
+    throw new EmployeeAppointmentAbsencesError(409, "BUSINESS_CONFLICT", "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausführen.");
+  }
+
+  await appointmentsRepository.withAppointmentTransaction(async (tx) => {
+    for (const conflict of conflicts) {
+      const parkResult = await parkAppointmentTx(tx, {
+        appointmentId: conflict.id,
+        expectedVersion: conflict.version,
+        parkplatzTourId: parkingDefaults.parkplatzTourId,
+        geparktTagId: parkingDefaults.geparktTagId,
+        alreadyParkedMode: "noop",
+      });
+      if (parkResult.kind === "not_found") {
+        throw new EmployeeAppointmentAbsencesError(404, "NOT_FOUND", "Zu parkender Termin nicht gefunden");
+      }
+      if (parkResult.kind === "version_conflict") {
+        throw new EmployeeAppointmentAbsencesError(409, "VERSION_CONFLICT", "Ein zu parkender Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
+      }
+    }
+  });
+}
+
 async function findEmployeeAppointmentAbsence(employeeId: number, appointmentId: number, roleKey: CanonicalRoleKey) {
   const items = await listEmployeeAppointmentAbsences(employeeId, roleKey);
   return items.find((item) => item.id === appointmentId) ?? null;
@@ -189,6 +284,7 @@ export async function createEmployeeAppointmentAbsence(
 ) {
   requireDispatcherOrAdmin(roleKey);
   await assertEmployeeVisible(employeeId, roleKey);
+  await parkConfirmedRegularConflicts(employeeId, input, roleKey);
   const { tour, customer } = await ensureAbsencePrerequisites(input.absenceType);
   const appointment = await appointmentsService.createAppointment({
     customerId: customer.id,
@@ -218,6 +314,10 @@ export async function updateEmployeeAppointmentAbsence(
   if (!existing) {
     throw new EmployeeAppointmentAbsencesError(404, "NOT_FOUND", "Abwesenheit nicht gefunden");
   }
+  if (existing.version !== input.version) {
+    throw new EmployeeAppointmentAbsencesError(409, "VERSION_CONFLICT", "Die Abwesenheit wurde zwischenzeitlich geändert. Bitte neu laden.");
+  }
+  await parkConfirmedRegularConflicts(employeeId, input, roleKey, appointmentId);
   const { tour, customer } = await ensureAbsencePrerequisites(input.absenceType);
   await appointmentsService.updateAppointment(appointmentId, {
     version: input.version,

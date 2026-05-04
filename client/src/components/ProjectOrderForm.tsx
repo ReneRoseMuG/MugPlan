@@ -128,6 +128,7 @@ export function ProjectOrderForm({
             id="projectPlannedWeek"
             value={plannedWeek}
             onChange={(e) => onPlannedWeekChange(e.target.value)}
+            maxLength={10}
             placeholder="z. B. KW 14"
             readOnly={readOnly}
             data-testid="input-project-planned-week"

@@ -5,13 +5,14 @@
  * - AppointmentForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
  * - Im Edit-Modus zeigt AppointmentForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
  * - Ohne selektierte Tour bleibt die Tour-Auswahl ueber AppointmentEmployeeSlot im Hauptbereich.
+ * - Der Reklamationsworkflow ist in Create und Edit als explizite Formularfunktion sichtbar.
  * - Attachments, Tags und Notizen bleiben in der rechten Sidebar.
  * - Die separate Tour-Badge bleibt oberhalb des Mitarbeiterpanels im Hauptbereich.
  *
  * Fehlerfaelle:
  * - Die rechte Formularspalte verschwindet erneut.
  * - Der neue Journal-Haupttab erscheint im Create-Modus oder fehlt im Edit-Modus.
- * - Tour-Badge oder Mitarbeiterpanel rutschen in die Sidebar.
+ * - Die Reklamationsfunktion fehlt im Create-Modus, oder Edit-only Aktionen erscheinen schon beim Anlegen.
  *
  * Ziel:
  * Formularlayout und Tour-Integration ueber gerenderte Struktur statt Quelltext-Strings absichern.
@@ -356,7 +357,13 @@ describe("FT01 appointment form layout tour integration", () => {
     const markup = renderToStaticMarkup(<AppointmentForm />);
 
     expect(markup).toContain("appointment-form-sidebar");
+    expect(markup).toContain("appointment-form-functions-panel");
+    expect(markup).toContain("button-set-appointment-reklamation");
+    expect(markup).not.toContain("button-cancel-appointment");
+    expect(markup).not.toContain("button-park-appointment");
+    expect(markup).not.toContain("button-delete-appointment");
     expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "appointment-form-sidebar"));
+    expect(getIndex(markup, "appointment-form-functions-panel")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
     expect(getIndex(markup, "appointment-form-sidebar")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
     expect(getIndex(markup, "appointment-attachments-panel")).toBeLessThan(getIndex(markup, "appointment-tag-picker-marker"));
     expect(getIndex(markup, "appointment-tag-picker-marker")).toBeLessThan(getIndex(markup, "notes-section-marker"));
@@ -385,6 +392,7 @@ describe("FT01 appointment form layout tour integration", () => {
     expect(markup).toContain("tabs-appointment-main");
     expect(markup).toContain("tab-appointment-details");
     expect(markup).toContain("tab-appointment-journal");
+    expect(markup).toContain("button-set-appointment-reklamation");
     expect(getIndex(markup, "appointment-form-main-column")).toBeLessThan(getIndex(markup, "appointment-form-sidebar"));
     expect(getIndex(markup, "appointment-form-sidebar")).toBeLessThan(getIndex(markup, "appointment-attachments-panel"));
     expect(getIndex(markup, "appointment-attachments-panel")).toBeLessThan(getIndex(markup, "appointment-tag-picker-marker"));

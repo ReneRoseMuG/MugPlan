@@ -81,6 +81,7 @@ import {
 import {
   isManagedComplaintTagName,
   MANAGED_COMPLAINT_TAG_COLOR,
+  MANAGED_COMPLAINT_TAG_NAME,
 } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
@@ -300,6 +301,10 @@ export function ProjectForm({
   const visibleProjectTags = isEditing ? assignedTags : draftProjectTags;
   const visibleProjectNotes = isEditing ? projectNotes : draftProjectNotes;
   const hasReklamationTag = visibleProjectTags.some((item) => isManagedComplaintTagName(item.tag.name));
+  const availableComplaintTag = useMemo(
+    () => availableTags.find((tag) => isManagedComplaintTagName(tag.name)) ?? null,
+    [availableTags],
+  );
 
   const masterDataScope = isAdmin ? "all" : "active";
   const productCategoriesUrl = `/api/admin/master-data/product-categories?active=${masterDataScope}`;
@@ -868,6 +873,40 @@ export function ProjectForm({
     setDraftProjectTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
   };
 
+  const buildDraftComplaintTag = (): Tag => availableComplaintTag ?? ({
+    id: -1000,
+    name: MANAGED_COMPLAINT_TAG_NAME,
+    color: MANAGED_COMPLAINT_TAG_COLOR,
+    isDefault: true,
+    version: 1,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
+
+  const setDraftProjectReklamation = () => {
+    const complaintTag = buildDraftComplaintTag();
+    setDraftProjectTags((current) => {
+      if (current.some((entry) => isManagedComplaintTagName(entry.tag.name))) {
+        return current;
+      }
+      return [...current, { tag: complaintTag, relationVersion: 1 }];
+    });
+    openProjectNoteSuggestionForTag("Reklamation");
+  };
+
+  const removeDraftProjectReklamation = () => {
+    setDraftProjectTags((current) => current.filter((entry) => !isManagedComplaintTagName(entry.tag.name)));
+    openProjectNoteRemovalForTag("Reklamation");
+  };
+
+  const toggleDraftProjectReklamation = () => {
+    if (hasReklamationTag) {
+      removeDraftProjectReklamation();
+      return;
+    }
+    setDraftProjectReklamation();
+  };
+
   const addDraftProjectAttachment = (file: File) => {
     setDraftProjectAttachments((current) => {
       const duplicate = current.some((attachment) => matchesAttachmentFileSignature(attachment, file));
@@ -1238,8 +1277,21 @@ export function ProjectForm({
 
   const persistDraftProjectTags = async (targetProjectId: number) => {
     for (const item of draftProjectTags) {
+      if (isManagedComplaintTagName(item.tag.name)) {
+        continue;
+      }
       await apiRequest("POST", `/api/projects/${targetProjectId}/tags`, { tagId: item.tag.id });
     }
+  };
+
+  const persistDraftProjectReklamation = async (targetProjectId: number, expectedVersion: number | undefined) => {
+    if (!draftProjectTags.some((item) => isManagedComplaintTagName(item.tag.name))) {
+      return;
+    }
+    if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new Error("Projektversion für Reklamationsworkflow fehlt.");
+    }
+    await apiRequest("POST", `/api/projects/${targetProjectId}/reklamation`, { version: expectedVersion });
   };
 
   const persistDraftProjectNotes = async (targetProjectId: number) => {
@@ -1281,7 +1333,8 @@ export function ProjectForm({
     return attachmentLinked;
   };
 
-  const persistCreateSidebarDrafts = async (targetProjectId: number) => {
+  const persistCreateSidebarDrafts = async (targetProjectId: number, expectedVersion: number | undefined) => {
+    await persistDraftProjectReklamation(targetProjectId, expectedVersion);
     await persistDraftProjectTags(targetProjectId);
     await persistDraftProjectNotes(targetProjectId);
     return persistDraftProjectAttachments(targetProjectId);
@@ -1395,6 +1448,14 @@ export function ProjectForm({
     let extractionAttachmentLinked = false;
     const normalizedPlannedDateText = plannedDateText.trim() || null;
     const normalizedPlannedWeek = plannedWeek.trim() || null;
+    if (normalizedPlannedWeek && normalizedPlannedWeek.length > 10) {
+      toast({
+        title: "Geplante Kalenderwoche ist zu lang",
+        description: "Bitte maximal 10 Zeichen verwenden, zum Beispiel KW 14.",
+        variant: "destructive",
+      });
+      return;
+    }
     const persistedDescriptionMd = buildPersistedProjectDescription(productSelections, descriptionMd);
     if (isEditing) {
       if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
@@ -1466,7 +1527,7 @@ export function ProjectForm({
         }
       }
       try {
-        extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id);
+        extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id, createdProject.version);
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'tags'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'notes'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'attachments'] });
@@ -1636,7 +1697,7 @@ export function ProjectForm({
                 </TabsList>
               </div>
             ) : null}
-            {isEditing && !isReadOnlyView ? (
+            {!isReadOnlyView && (isEditing || canManageProjectTags) ? (
               <div className="sub-panel space-y-3" data-testid="project-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
@@ -1651,35 +1712,43 @@ export function ProjectForm({
                         "--action-border-hover": `${MANAGED_COMPLAINT_TAG_COLOR}80`,
                         "--action-fg": MANAGED_COMPLAINT_TAG_COLOR,
                       } as CSSProperties}
-                      onClick={() => reklamationProjectMutation.mutate(hasReklamationTag ? "remove" : "set")}
-                      disabled={reklamationProjectMutation.isPending}
+                      onClick={() => {
+                        if (!isEditing) {
+                          toggleDraftProjectReklamation();
+                          return;
+                        }
+                        reklamationProjectMutation.mutate(hasReklamationTag ? "remove" : "set");
+                      }}
+                      disabled={isEditing && reklamationProjectMutation.isPending}
                       data-testid={hasReklamationTag ? "button-remove-project-reklamation" : "button-set-project-reklamation"}
                     >
                       <ScrollText className="w-4 h-4" />
-                      {reklamationProjectMutation.isPending
+                      {isEditing && reklamationProjectMutation.isPending
                         ? "Reklamation..."
                         : hasReklamationTag
                           ? "Reklamation aufheben"
                           : "Reklamation melden"}
                     </Button>
                   ) : null}
-                  <Button
-                    type="button"
-                    className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
-                    style={{
-                      "--action-bg": "hsl(var(--destructive) / 0.14)",
-                      "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
-                      "--action-border": "hsl(var(--destructive) / 0.35)",
-                      "--action-border-hover": "hsl(var(--destructive) / 0.5)",
-                      "--action-fg": "hsl(var(--destructive))",
-                    } as CSSProperties}
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    disabled={deleteProjectMutation.isPending}
-                    data-testid="button-delete-project"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {deleteProjectMutation.isPending ? "Löschen..." : "Löschen"}
-                  </Button>
+                  {isEditing ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": "hsl(var(--destructive) / 0.14)",
+                        "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                        "--action-border": "hsl(var(--destructive) / 0.35)",
+                        "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                        "--action-fg": "hsl(var(--destructive))",
+                      } as CSSProperties}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      disabled={deleteProjectMutation.isPending}
+                      data-testid="button-delete-project"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deleteProjectMutation.isPending ? "Löschen..." : "Löschen"}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -1984,6 +2053,11 @@ export function ProjectForm({
         onKeep={() => setNoteRemovalDialog(null)}
         onConfirm={() => {
           if (!noteRemovalDialog) return;
+          if (!isEditing) {
+            deleteDraftProjectNote(noteRemovalDialog.noteId);
+            setNoteRemovalDialog(null);
+            return;
+          }
           deleteNoteMutation.mutate({
             noteId: noteRemovalDialog.noteId,
             version: noteRemovalDialog.noteVersion,

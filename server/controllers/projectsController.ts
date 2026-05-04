@@ -24,6 +24,19 @@ function parseIdList(value: unknown): number[] {
   return Array.from(new Set(ids));
 }
 
+function sendProjectValidationError(res: Response, err: ZodError): void {
+  const plannedWeekIssue = err.issues.find((issue) => issue.path.join(".").includes("plannedWeek"));
+  if (plannedWeekIssue) {
+    res.status(422).json({
+      code: "VALIDATION_ERROR",
+      message: "Geplante Kalenderwoche darf maximal 10 Zeichen lang sein.",
+      field: "projectOrder.plannedWeek",
+    });
+    return;
+  }
+  res.status(422).json({ code: "VALIDATION_ERROR" });
+}
+
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const listInput = api.projects.list.input.parse(req.query);
@@ -55,7 +68,7 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
     res.json(projects);
   } catch (err) {
     if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
+      sendProjectValidationError(res, err);
       return;
     }
     next(err);
@@ -90,7 +103,7 @@ export async function listProjectsPaged(req: Request, res: Response, next: NextF
     res.json(projects);
   } catch (err) {
     if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
+      sendProjectValidationError(res, err);
       return;
     }
     next(err);
@@ -148,7 +161,7 @@ export async function createProject(req: Request, res: Response, next: NextFunct
     res.status(201).json(project);
   } catch (err) {
     if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
+      sendProjectValidationError(res, err);
       return;
     }
     if (err instanceof projectsService.ProjectsError) {
@@ -183,7 +196,7 @@ export async function updateProject(req: Request, res: Response, next: NextFunct
     res.json(project);
   } catch (err) {
     if (err instanceof ZodError) {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
+      sendProjectValidationError(res, err);
       return;
     }
     if (err instanceof projectsService.ProjectsError) {

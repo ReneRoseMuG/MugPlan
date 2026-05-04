@@ -128,6 +128,30 @@ describe("FT02 integration: full uc coverage", () => {
     expect(persistedOrder?.plannedWeek).toBe("2099-W14");
   });
 
+  it("UC 02/01b create project returns a clear validation message for too long planned week text", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0201B");
+
+    await admin
+      .post("/api/projects")
+      .send({
+        customerId: customer.id,
+        name: "UC02-01b Project",
+        orderNumber: "ORD-UC02-01B",
+        projectOrder: {
+          plannedWeek: "KW 14 extra",
+        },
+      })
+      .expect(422)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          code: "VALIDATION_ERROR",
+          field: "projectOrder.plannedWeek",
+          message: "Geplante Kalenderwoche darf maximal 10 Zeichen lang sein.",
+        });
+      });
+  });
+
   it("UC 02/03: create project rejects inactive customer assignment", async () => {
     const admin = await loginAdminAgent();
     const customer = await createCustomer("UC0203");

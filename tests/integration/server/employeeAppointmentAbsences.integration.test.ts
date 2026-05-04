@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Abwesenheiten werden als normale Termine mit Systemtour, Systemkunde und Systemtag angelegt.
  * - Abwesenheiten blockieren Mitarbeiter ganztägig gegen reguläre Terminzuweisungen.
- * - Reguläre Terminzuweisungen blockieren nachträgliche Abwesenheiten im selben Zeitraum.
+ * - Reguläre Terminzuweisungen erfordern vor der Abwesenheit eine bestätigte Parkplatz-Verschiebung.
  * - Leser dürfen Abwesenheiten sehen, aber nicht anlegen.
  *
  * Ziel:
@@ -93,7 +93,7 @@ describe("FT33 integration: Employee absence appointments", () => {
     });
   });
 
-  it("rejects an all-day absence when the employee already has a timed appointment", async () => {
+  it("requires parking confirmation when the employee already has a timed appointment", async () => {
     const employee = await createEmployeeFixture("ABS-REVERSE-EMP");
     const customer = await createCustomerFixture("ABS-REVERSE-CUST");
     const regular = await appointmentsService.createAppointment({
@@ -110,8 +110,72 @@ describe("FT33 integration: Employee absence appointments", () => {
       endDate: null,
       note: `ABS-REVERSE-${employee.id}`,
     }, "ADMIN")).rejects.toMatchObject({
-      code: "EMPLOYEE_OVERLAP_CONFLICT",
-      conflictEmployees: [{ id: employee.id, fullName: employee.fullName }],
+      code: "ABSENCE_OVERLAP_REQUIRES_PARKING",
+      parkingConflicts: [
+        expect.objectContaining({
+          id: regular!.id,
+          version: regular!.version,
+        }),
+      ],
+    });
+  });
+
+  it("parks confirmed regular appointments before creating the absence", async () => {
+    const employee = await createEmployeeFixture("ABS-PARK-EMP");
+    const customer = await createCustomerFixture("ABS-PARK-CUST");
+    const regular = await appointmentsService.createAppointment({
+      customerId: customer.id,
+      startDate: "2099-07-06",
+      startTime: "10:00:00",
+      employeeIds: [employee.id],
+    }, "ADMIN");
+
+    expect(regular?.id).toBeGreaterThan(0);
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "absent",
+      startDate: "2099-07-06",
+      endDate: null,
+      note: `ABS-PARK-${employee.id}`,
+      confirmedParkingAppointments: [
+        { appointmentId: regular!.id, version: regular!.version },
+      ],
+    }, "ADMIN");
+
+    expect(created.id).toBeGreaterThan(0);
+    const parked = await appointmentsService.getAppointmentDetails(regular!.id);
+    const parkplatzTour = (await listTours()).find((tour) => tour.name === "Parkplatz");
+    expect(parked?.employees).toEqual([]);
+    expect(parked?.tourId).toBe(parkplatzTour?.id);
+    expect(parked?.appointmentTags.map((tag) => tag.name)).toContain("Geparkt");
+  });
+
+  it("rejects stale parking confirmations before creating the absence", async () => {
+    const employee = await createEmployeeFixture("ABS-PARK-STALE-EMP");
+    const customer = await createCustomerFixture("ABS-PARK-STALE-CUST");
+    const regular = await appointmentsService.createAppointment({
+      customerId: customer.id,
+      startDate: "2099-07-08",
+      startTime: "10:00:00",
+      employeeIds: [employee.id],
+    }, "ADMIN");
+
+    expect(regular?.id).toBeGreaterThan(0);
+    await expect(createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "absent",
+      startDate: "2099-07-08",
+      endDate: null,
+      note: `ABS-PARK-STALE-${employee.id}`,
+      confirmedParkingAppointments: [
+        { appointmentId: regular!.id, version: regular!.version + 1 },
+      ],
+    }, "ADMIN")).rejects.toMatchObject({
+      code: "ABSENCE_OVERLAP_REQUIRES_PARKING",
+      parkingConflicts: [
+        expect.objectContaining({
+          id: regular!.id,
+          version: regular!.version,
+        }),
+      ],
     });
   });
 

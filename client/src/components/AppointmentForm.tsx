@@ -76,12 +76,14 @@ import type { Note } from "@shared/schema";
 import type { NoteTemplate } from "@shared/schema";
 import {
   MANAGED_COMPLAINT_TAG_COLOR,
+  MANAGED_COMPLAINT_TAG_NAME,
   isManagedComplaintTagName,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { computeTagAddedAction, computeTagRemovedAction } from "@/hooks/useTagRuleEngine";
 import {
+  buildWorkflowNoteDraft,
   findWorkflowNoteTemplate,
   normalizeWorkflowNoteTitle,
 } from "@/lib/workflow-note-templates";
@@ -160,6 +162,7 @@ type ApiErrorPayload = {
 };
 type ApiSuccessPayload = {
   id?: number;
+  version?: number;
   message?: string;
   employees?: Array<{ id: number }>;
   mutationEvents?: AppointmentMutationEvent[];
@@ -488,8 +491,15 @@ export function AppointmentForm({
   const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
-  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number | null } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
+  const [suggestedAppointmentNoteDraft, setSuggestedAppointmentNoteDraft] = useState<{
+    title: string;
+    body: string;
+    cardColor?: string | null;
+    print: boolean;
+    templateId?: number;
+  } | null>(null);
   const [pendingPostSaveResult, setPendingPostSaveResult] = useState<AppointmentFormSaveResult | null>(null);
   const [templateNoteEditorOpen, setTemplateNoteEditorOpen] = useState(false);
   const [templateNoteEditorId, setTemplateNoteEditorId] = useState<number | null>(null);
@@ -995,6 +1005,10 @@ export function AppointmentForm({
   const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
   const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
   const hasReklamationTag = visibleAppointmentTags.some((item) => isManagedComplaintTagName(item.tag.name));
+  const availableComplaintTag = useMemo(
+    () => availableTags.find((tag) => isManagedComplaintTagName(tag.name)) ?? null,
+    [availableTags],
+  );
   const appointmentCardTagGroups = useMemo(
     () => buildAppointmentCardTagGroups({
       appointmentTags: visibleAppointmentTags.map((item) => item.tag),
@@ -1254,6 +1268,53 @@ export function AppointmentForm({
 
   const removeDraftAppointmentTag = (item: TagRelationItem) => {
     setDraftAppointmentTags((current) => current.filter((entry) => entry.tag.id !== item.tag.id));
+  };
+
+  const buildDraftComplaintTag = (): Tag => availableComplaintTag ?? ({
+    id: -1000,
+    name: MANAGED_COMPLAINT_TAG_NAME,
+    color: MANAGED_COMPLAINT_TAG_COLOR,
+    isDefault: true,
+    version: 1,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  });
+
+  const setDraftAppointmentReklamation = () => {
+    const complaintTag = buildDraftComplaintTag();
+    setDraftAppointmentTags((current) => {
+      if (current.some((entry) => isManagedComplaintTagName(entry.tag.name))) {
+        return current;
+      }
+      return [...current, { tag: complaintTag, relationVersion: 1 }];
+    });
+    const action = computeTagAddedAction(
+      "Reklamation",
+      null,
+      visibleAppointmentNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind === "show_note_suggestion_dialog") {
+      setNoteSuggestionDialog({ templateTitle: action.templateTitle, appointmentId: null });
+    }
+  };
+
+  const removeDraftAppointmentReklamation = () => {
+    setDraftAppointmentTags((current) => current.filter((entry) => !isManagedComplaintTagName(entry.tag.name)));
+    const action = computeTagRemovedAction(
+      "Reklamation",
+      visibleAppointmentNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind === "show_note_removal_dialog") {
+      openNoteRemovalDialogForTemplate(action.templateTitle, visibleAppointmentNotes);
+    }
+  };
+
+  const toggleDraftAppointmentReklamation = () => {
+    if (hasReklamationTag) {
+      removeDraftAppointmentReklamation();
+      return;
+    }
+    setDraftAppointmentReklamation();
   };
 
   const addDraftAppointmentAttachment = (file: File) => {
@@ -2025,8 +2086,24 @@ export function AppointmentForm({
 
   const persistDraftAppointmentTags = async (targetAppointmentId: number) => {
     for (const item of draftAppointmentTags) {
+      if (isManagedComplaintTagName(item.tag.name)) {
+        continue;
+      }
       await apiRequest("POST", `/api/appointments/${targetAppointmentId}/tags`, { tagId: item.tag.id });
     }
+  };
+
+  const persistDraftAppointmentReklamation = async (
+    targetAppointmentId: number,
+    expectedVersion: number | undefined,
+  ) => {
+    if (!draftAppointmentTags.some((item) => isManagedComplaintTagName(item.tag.name))) {
+      return;
+    }
+    if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion) || expectedVersion < 1) {
+      throw new Error("Terminversion für Reklamationsworkflow fehlt.");
+    }
+    await apiRequest("POST", `/api/appointments/${targetAppointmentId}/reklamation`, { version: expectedVersion });
   };
 
   const persistDraftAppointmentNotes = async (targetAppointmentId: number) => {
@@ -2147,6 +2224,11 @@ export function AppointmentForm({
       });
       return;
     }
+    if (!noteSuggestionDialog.appointmentId) {
+      setSuggestedAppointmentNoteDraft(buildWorkflowNoteDraft(template));
+      setNoteSuggestionDialog(null);
+      return;
+    }
     try {
       await createAppointmentNoteMutation.mutateAsync({
         appointmentId: noteSuggestionDialog.appointmentId,
@@ -2169,7 +2251,12 @@ export function AppointmentForm({
   };
 
   const handleRemoveTemplateNote = async () => {
-    if (!noteRemovalDialog || !appointmentId) return;
+    if (!noteRemovalDialog) return;
+    if (!appointmentId) {
+      deleteDraftAppointmentNote(noteRemovalDialog.noteId);
+      setNoteRemovalDialog(null);
+      return;
+    }
     try {
       await deleteAppointmentNoteMutation.mutateAsync({
         noteId: noteRemovalDialog.noteId,
@@ -2182,7 +2269,8 @@ export function AppointmentForm({
     }
   };
 
-  const persistCreateSidebarDrafts = async (targetAppointmentId: number) => {
+  const persistCreateSidebarDrafts = async (targetAppointmentId: number, expectedVersion: number | undefined) => {
+    await persistDraftAppointmentReklamation(targetAppointmentId, expectedVersion);
     await persistDraftAppointmentTags(targetAppointmentId);
     await persistDraftAppointmentNotes(targetAppointmentId);
     await persistDraftAppointmentAttachments(targetAppointmentId);
@@ -2350,7 +2438,7 @@ export function AppointmentForm({
           throw new Error("Termin wurde erstellt, aber die Termin-ID fehlt fuer die Nachverarbeitung.");
         }
         try {
-          await persistCreateSidebarDrafts(savedAppointmentId);
+          await persistCreateSidebarDrafts(savedAppointmentId, data?.version);
           setDraftAppointmentTags([]);
           setDraftAppointmentNotes([]);
           setDraftAppointmentAttachments([]);
@@ -2494,11 +2582,11 @@ export function AppointmentForm({
                 </TabsList>
               </div>
             ) : null}
-            {isEditing && appointmentId && !isReadOnlyView ? (
+            {!isReadOnlyView && ((isEditing && appointmentId) || canManageAppointmentTags) ? (
               <div className="sub-panel space-y-3" data-testid="appointment-form-functions-panel">
                 <h3 className="text-sm font-bold tracking-wider text-primary">Funktionen</h3>
                 <div className="flex flex-col gap-2">
-                  {!isCancelled ? (
+                  {isEditing && appointmentId && !isCancelled ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -2517,7 +2605,7 @@ export function AppointmentForm({
                       {cancelAppointmentMutation.isPending ? "Stornieren..." : "Stornieren"}
                     </Button>
                   ) : null}
-                  {!isCancelled && !isParked ? (
+                  {isEditing && appointmentId && !isCancelled && !isParked ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -2536,7 +2624,7 @@ export function AppointmentForm({
                       {parkAppointmentMutation.isPending ? "Parken..." : "Parken"}
                     </Button>
                   ) : null}
-                  {isEditing && !isCancelled && canManageAppointmentTags ? (
+                  {!isCancelled && canManageAppointmentTags ? (
                     <Button
                       type="button"
                       className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
@@ -2548,6 +2636,10 @@ export function AppointmentForm({
                         "--action-fg": MANAGED_COMPLAINT_TAG_COLOR,
                       } as React.CSSProperties}
                       onClick={() => {
+                        if (!isEditing) {
+                          toggleDraftAppointmentReklamation();
+                          return;
+                        }
                         const version = appointmentDetail?.version;
                         if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
                           toast({ title: "Reklamation nicht möglich", description: "Terminversion fehlt. Bitte neu laden.", variant: "destructive" });
@@ -2555,34 +2647,36 @@ export function AppointmentForm({
                         }
                         reklamationAppointmentMutation.mutate({ action: hasReklamationTag ? "remove" : "set", version });
                       }}
-                      disabled={isMutationLocked || reklamationAppointmentMutation.isPending}
+                      disabled={isMutationLocked || (isEditing && reklamationAppointmentMutation.isPending)}
                       data-testid={hasReklamationTag ? "button-remove-appointment-reklamation" : "button-set-appointment-reklamation"}
                     >
                       <ScrollText className="w-4 h-4" />
-                      {reklamationAppointmentMutation.isPending
+                      {isEditing && reklamationAppointmentMutation.isPending
                         ? "Reklamation..."
                         : hasReklamationTag
                           ? "Reklamation aufheben"
                           : "Reklamation melden"}
                     </Button>
                   ) : null}
-                  <Button
-                    type="button"
-                    className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
-                    style={{
-                      "--action-bg": "hsl(var(--destructive) / 0.14)",
-                      "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
-                      "--action-border": "hsl(var(--destructive) / 0.35)",
-                      "--action-border-hover": "hsl(var(--destructive) / 0.5)",
-                      "--action-fg": "hsl(var(--destructive))",
-                    } as React.CSSProperties}
-                    onClick={() => setDeleteConfirmOpen(true)}
-                    disabled={isMutationLocked || deleteAppointmentMutation.isPending}
-                    data-testid="button-delete-appointment"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    {deleteAppointmentMutation.isPending ? "Löschen..." : "Löschen"}
-                  </Button>
+                  {isEditing && appointmentId ? (
+                    <Button
+                      type="button"
+                      className="w-full justify-start gap-2 border bg-[var(--action-bg)] text-[var(--action-fg)] [border-color:var(--action-border)] transition-[background-color,border-color,box-shadow,color] hover:bg-[var(--action-bg-hover)] hover:[border-color:var(--action-border-hover)] hover:shadow-sm"
+                      style={{
+                        "--action-bg": "hsl(var(--destructive) / 0.14)",
+                        "--action-bg-hover": "hsl(var(--destructive) / 0.22)",
+                        "--action-border": "hsl(var(--destructive) / 0.35)",
+                        "--action-border-hover": "hsl(var(--destructive) / 0.5)",
+                        "--action-fg": "hsl(var(--destructive))",
+                      } as React.CSSProperties}
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      disabled={isMutationLocked || deleteAppointmentMutation.isPending}
+                      data-testid="button-delete-appointment"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deleteAppointmentMutation.isPending ? "Löschen..." : "Löschen"}
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -2628,6 +2722,8 @@ export function AppointmentForm({
               notes={visibleAppointmentNotes}
               isLoading={isEditing ? appointmentNotesLoading : false}
               readOnly={isReadOnlyView}
+              prefillDraft={suggestedAppointmentNoteDraft}
+              onPrefillDraftConsumed={() => setSuggestedAppointmentNoteDraft(null)}
               onAdd={(data) => {
                 if (isEditing) {
                   if (!appointmentId) return;

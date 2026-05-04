@@ -47,9 +47,11 @@ import {
   WEEK_CARD_FOOTER_SAFE_SPACE_PX,
 } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
+import { getWeekAppointmentFooterStyle } from "./weekAppointmentCardStyles";
 import { CalendarWeekTourLaneDayHoverPreview } from "./CalendarWeekTourLaneDayHoverPreview";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
+import { TourWeekNotesHoverPreview } from "@/components/TourWeekNotesHoverPreview";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
 import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -216,8 +218,12 @@ function resolveSelectablePreviewIds(items: WeekPlanningPreviewItem[]): number[]
     .map((item) => item.appointmentId);
 }
 
-export function isWeekPlanningLockedForCalendarRole(weekKey: string, currentWeekKey: string, isAdmin: boolean): boolean {
-  return weekKey < currentWeekKey || (weekKey === currentWeekKey && !isAdmin);
+export function isWeekPlanningLockedForCalendarRole(
+  weekKey: string,
+  currentWeekKey: string,
+  canManageCurrentWeek: boolean,
+): boolean {
+  return weekKey < currentWeekKey || (weekKey === currentWeekKey && !canManageCurrentWeek);
 }
 
 export function resolveInitialAppointmentEmployeeSelection(items: AppointmentEmployeePreviewItem[]): number[] {
@@ -2214,14 +2220,18 @@ export function CalendarWeekView({
                       const isLaneBlocked = tourLane.tourId != null
                         && blockedTourWeekKeys.has(`${tourLane.tourId}-${isoYear}-${isoWeek}`);
                       const currentWeekKey = format(startOfWeek(new Date(), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd");
-                      const isLaneWeekLocked = isWeekPlanningLockedForCalendarRole(weekKey, currentWeekKey, isAdmin);
+                      const isLaneWeekLocked = isWeekPlanningLockedForCalendarRole(weekKey, currentWeekKey, canManageWeekPlanning);
                       const isAbsenceLane = isAbsenceTourName(tourLane.label);
                       const isParkplatzLane = normalizeTourName(tourLane.label) === normalizeTourName("Parkplatz");
                       const canPlanLaneWeekPersonnel = tourLane.tourId != null && !isAbsenceLane && !isParkplatzLane;
                       const laneWeekEmployees = tourLane.tourId == null
                         ? []
                         : (weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${format(weekStart, "yyyy-MM-dd")}`)?.weekEmployees ?? []);
-
+                      const laneFooterBaseStyle = getWeekAppointmentFooterStyle(tourLane.color, "compact");
+                      const tourWeekPlanningFooterStyle = {
+                        backgroundColor: laneFooterBaseStyle.backgroundColor,
+                        borderColor: laneFooterBaseStyle.borderTopColor,
+                      };
                       return (
                       <CalendarWeekNotesButton
                         key={tourLane.laneKey}
@@ -2231,7 +2241,80 @@ export function CalendarWeekView({
                         tourLabel={tourLane.label}
                             readOnly={!canWriteNotes || isAbsenceLane}
                       >
-                        {({ iconSlot, countSlot, dialog, openDialog }) => (
+                        {({ dialog, notesCount, openDialog }) => {
+                          const weekPlanningMenu = canPlanLaneWeekPersonnel ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                  aria-label="Tour-KW-Aktionen"
+                                  data-testid={`week-personnel-card-menu-trigger-${tourLane.laneKey}`}
+                                >
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="min-w-[190px]">
+                                <DropdownMenuItem
+                                  onClick={() => openDialog()}
+                                  className="gap-2 text-xs cursor-pointer"
+                                >
+                                  <StickyNote className="h-3.5 w-3.5 shrink-0" />
+                                  {canWriteNotes ? "Notiz hinzufügen" : "Notizen anzeigen"}
+                                </DropdownMenuItem>
+                                {!isReaderCalendarReadOnly && tourLane.tourId != null ? (
+                                  isLaneBlocked ? (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        void unblockWeekMutation.mutateAsync({
+                                          tourId: tourLane.tourId!,
+                                          isoYear,
+                                          isoWeek,
+                                        }).then(() => {
+                                          toast({ title: "Wochenplanung freigegeben" });
+                                        }).catch(() => {
+                                          toast({
+                                            title: "Wochenplanung konnte nicht freigegeben werden",
+                                            description: "Bitte erneut versuchen.",
+                                            variant: "destructive",
+                                          });
+                                        });
+                                      }}
+                                      disabled={!canManageWeekPlanning || isLaneWeekLocked || unblockWeekMutation.isPending}
+                                      className="gap-2 text-xs cursor-pointer"
+                                    >
+                                      <LockOpen className="h-3.5 w-3.5 shrink-0" />
+                                      Wochenplanung freigeben
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        void blockWeekMutation.mutateAsync({
+                                          tourId: tourLane.tourId!,
+                                          isoYear,
+                                          isoWeek,
+                                        }).then(() => {
+                                          toast({ title: "Wochenplanung blockiert" });
+                                        }).catch(() => {
+                                          toast({
+                                            title: "Wochenplanung konnte nicht blockiert werden",
+                                            description: "Bitte erneut versuchen.",
+                                            variant: "destructive",
+                                          });
+                                        });
+                                      }}
+                                      disabled={!canManageWeekPlanning || isLaneWeekLocked || blockWeekMutation.isPending}
+                                      className="gap-2 text-xs cursor-pointer"
+                                    >
+                                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                                      Wochenplanung blockieren
+                                    </DropdownMenuItem>
+                                  )
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null;
+                          return (
                         <div className="rounded-lg border border-border/40 bg-muted/10">
                         <div
                           className={personnelColumnWidth ? "grid" : undefined}
@@ -2239,7 +2322,7 @@ export function CalendarWeekView({
                         >
                           {personnelColumnWidth ? (
                             <div
-                              className="relative z-10 min-w-0 border-r border-border/30 bg-slate-50"
+                              className="relative z-10 flex h-full min-w-0 flex-col border-r border-border/30 bg-slate-50"
                               data-testid={`week-personnel-column-${tourLane.laneKey}`}
                             >
                               <div
@@ -2261,7 +2344,7 @@ export function CalendarWeekView({
                                 </button>
                               </div>
                               <div
-                                className={`grid min-h-0 content-start gap-1 overflow-hidden px-1 py-2 ${
+                                className={`relative grid min-h-0 flex-1 content-start gap-1 overflow-hidden ${
                                   isPersonnelColumnCollapsed ? "justify-items-center" : ""
                                 }`}
                                 style={{
@@ -2270,34 +2353,32 @@ export function CalendarWeekView({
                                 }}
                                 data-testid={`week-personnel-column-body-${tourLane.laneKey}`}
                               >
-                                <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "space-y-1 pt-7"}>
-                                  {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
-                                    <EmployeeInfoBadge
-                                      key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
-                                      id={employee.id}
-                                      firstName={employee.firstName}
-                                      lastName={employee.lastName}
-                                      fullName={employee.fullName}
-                                      renderMode={isPersonnelColumnCollapsed ? "compact" : "standard"}
-                                      size="sm"
-                                      action={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number" ? "remove" : "none"}
-                                      onRemove={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number"
-                                        ? () => {
-                                            void openRemoveWeekPlanningDialog({
-                                              tourId: tourLane.tourId!,
-                                              assignmentId: employee.assignmentId!,
-                                            });
-                                          }
-                                        : undefined}
-                                      showAvatar={!isPersonnelColumnCollapsed ? false : undefined}
-                                      testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
-                                    />
-                                  )) : (
-                                    <span className="text-center text-[10px] italic text-slate-400">Keine MA</span>
-                                  )}
-                                </div>
-                                {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
-                                  <div className="absolute right-1 top-9 flex items-center gap-1">
+                                <div
+                                  className="absolute inset-0 bg-white/65"
+                                  data-testid={`week-personnel-column-background-${tourLane.laneKey}`}
+                                  aria-hidden
+                                />
+                                <div
+                                  className={`absolute inset-0 z-10 min-w-0 p-2 ${
+                                    isPersonnelColumnCollapsed ? "flex justify-center" : ""
+                                  }`}
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    boxSizing: "border-box",
+                                  }}
+                                  data-testid={`week-personnel-card-wrapper-${tourLane.laneKey}`}
+                                >
+                                  <div
+                                    className={`relative flex h-full min-w-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ${
+                                      isPersonnelColumnCollapsed ? "items-center gap-1 px-1 py-1" : "gap-2 px-1.5 pb-1.5 pt-8"
+                                    }`}
+                                    data-testid={`week-personnel-card-${tourLane.laneKey}`}
+                                  >
+                                  {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel ? (
+                                    <div className="absolute right-1 top-1 flex items-center gap-1">
+                                      {canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
+                                        <>
                                     <button
                                       type="button"
                                       className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-100"
@@ -2324,8 +2405,54 @@ export function CalendarWeekView({
                                     >
                                       <ListChecks className="h-3.5 w-3.5" />
                                     </button>
+                                        </>
+                                      ) : null}
+                                      {weekPlanningMenu}
+                                    </div>
+                                  ) : null}
+                                  <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "space-y-1"}>
+                                    {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
+                                      <EmployeeInfoBadge
+                                        key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
+                                        id={employee.id}
+                                        firstName={employee.firstName}
+                                        lastName={employee.lastName}
+                                        fullName={employee.fullName}
+                                        renderMode={isPersonnelColumnCollapsed ? "compact" : "standard"}
+                                        size="sm"
+                                        action={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number" ? "remove" : "none"}
+                                        onRemove={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number"
+                                          ? () => {
+                                              void openRemoveWeekPlanningDialog({
+                                                tourId: tourLane.tourId!,
+                                                assignmentId: employee.assignmentId!,
+                                              });
+                                            }
+                                          : undefined}
+                                        showAvatar={!isPersonnelColumnCollapsed ? false : undefined}
+                                        testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
+                                      />
+                                    )) : (
+                                      <span className="text-center text-[10px] italic text-slate-400">Keine MA</span>
+                                    )}
                                   </div>
-                                ) : null}
+                                  {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel ? (
+                                    <div
+                                      className="mt-auto flex min-h-7 items-center justify-between rounded-md border px-1 py-1"
+                                      style={tourWeekPlanningFooterStyle}
+                                    >
+                                      <TourWeekNotesHoverPreview
+                                        tourId={tourLane.tourId!}
+                                        isoYear={isoYear}
+                                        isoWeek={isoWeek}
+                                        count={notesCount}
+                                        triggerTestId={`week-personnel-card-notes-${tourLane.laneKey}`}
+                                        triggerClassName="border-slate-200/70 bg-white/40 text-slate-700 hover:bg-white/70"
+                                      />
+                                    </div>
+                                  ) : null}
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           ) : null}
@@ -2351,89 +2478,6 @@ export function CalendarWeekView({
                               });
                             }}
                             testId={`week-tour-lane-header-${tourLane.laneKey}`}
-                            weekNotesIcon={iconSlot}
-                            weekNotesCount={countSlot}
-                            menuSlot={(
-                              <span
-                                onClick={(event) => event.stopPropagation()}
-                                onDoubleClick={(event) => event.stopPropagation()}
-                              >
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className="flex items-center justify-center rounded p-0.5 opacity-70 transition-opacity hover:bg-white/20 hover:opacity-100"
-                                      aria-label="Wochenaktionen"
-                                      data-testid={`week-tour-lane-menu-trigger-${tourLane.laneKey}`}
-                                    >
-                                      <MoreVertical className="h-3.5 w-3.5" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end" className="min-w-[190px]">
-                                    <DropdownMenuItem
-                                      onClick={() => openDialog()}
-                                      className="gap-2 text-xs cursor-pointer"
-                                    >
-                                      <StickyNote className="h-3.5 w-3.5 shrink-0" />
-                                      {canWriteNotes ? "Notizen verwalten" : "Notizen anzeigen"}
-                                    </DropdownMenuItem>
-                                    {!isReaderCalendarReadOnly && tourLane.tourId != null && !isAbsenceLane ? (
-                                      isLaneBlocked ? (
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            void unblockWeekMutation.mutateAsync({
-                                              tourId: tourLane.tourId!,
-                                              isoYear,
-                                              isoWeek,
-                                            }).then(() => {
-                                              toast({
-                                                title: "Wochenplanung freigegeben",
-                                              });
-                                            }).catch(() => {
-                                              toast({
-                                                title: "Wochenplanung konnte nicht freigegeben werden",
-                                                description: "Bitte erneut versuchen.",
-                                                variant: "destructive",
-                                              });
-                                            });
-                                          }}
-                                          disabled={!canManageWeekPlanning || isLaneWeekLocked || unblockWeekMutation.isPending}
-                                          className="gap-2 text-xs cursor-pointer"
-                                        >
-                                          <LockOpen className="h-3.5 w-3.5 shrink-0" />
-                                          Wochenplanung freigeben
-                                        </DropdownMenuItem>
-                                      ) : (
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            void blockWeekMutation.mutateAsync({
-                                              tourId: tourLane.tourId!,
-                                              isoYear,
-                                              isoWeek,
-                                            }).then(() => {
-                                              toast({
-                                                title: "Wochenplanung blockiert",
-                                              });
-                                            }).catch(() => {
-                                              toast({
-                                                title: "Wochenplanung konnte nicht blockiert werden",
-                                                description: "Bitte erneut versuchen.",
-                                                variant: "destructive",
-                                              });
-                                            });
-                                          }}
-                                          disabled={!canManageWeekPlanning || isLaneWeekLocked || blockWeekMutation.isPending}
-                                          className="gap-2 text-xs cursor-pointer"
-                                        >
-                                          <Lock className="h-3.5 w-3.5 shrink-0" />
-                                          Wochenplanung blockieren
-                                        </DropdownMenuItem>
-                                      )
-                                    ) : null}
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </span>
-                            )}
                           />
                           {isLaneBlocked ? (
                             <div
@@ -2870,7 +2914,8 @@ export function CalendarWeekView({
                         </div>
                         {dialog}
                       </div>
-                        )}
+                          );
+                        }}
                       </CalendarWeekNotesButton>
                       );
                     })}

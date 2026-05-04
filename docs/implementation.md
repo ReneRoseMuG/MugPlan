@@ -110,7 +110,7 @@ JSON-Validation erfolgt schema-basiert über Contract-Schemas; Multipart über d
 - Überlappungsprüfung von Mitarbeiterzuweisungen
 - Fehlercodes: `EMPLOYEE_OVERLAP_CONFLICT`, `VERSION_CONFLICT`, `PAST_APPOINTMENT_READONLY`, `INACTIVE_ENTITY_ASSIGNMENT`, `VALIDATION_ERROR`
 
-KW-Planungs-Fehlercodes (`tourWeeksService`, `tourWeekEmployeesService`): `PAST_WEEK_READONLY`, `BUSINESS_CONFLICT`, `NOT_FOUND`, `VALIDATION_ERROR`. Vergangene Tour-KWs bleiben serverseitig für alle Rollen schreibgeschützt. Die laufende Tour-KW ist für `ADMIN` editierbar; für `DISPONENT` bleibt sie schreibgeschützt.
+KW-Planungs-Fehlercodes (`tourWeeksService`, `tourWeekEmployeesService`): `PAST_WEEK_READONLY`, `BUSINESS_CONFLICT`, `NOT_FOUND`, `VALIDATION_ERROR`. Vergangene Tour-KWs bleiben serverseitig für alle Rollen schreibgeschützt. Die laufende Tour-KW ist für `ADMIN` und `DISPONENT` editierbar.
 
 Overlap wird transaktional geprüft und blockierend erzwungen.
 
@@ -352,7 +352,8 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
 - erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
 - darf historische Termine nicht mutieren; die historische Sperre wird serverseitig durchgesetzt
-- darf die laufende und vergangene Tour-KW nicht mutieren; die Tour-KW-Sperre wird serverseitig durchgesetzt
+- darf die laufende Tour-KW bearbeiten und blockieren oder freigeben
+- darf vergangene Tour-KWs nicht mutieren; die Tour-KW-Sperre wird serverseitig durchgesetzt
 - erhält keine aktive FT30-Abwesenheitsdomäne; frühere FT30-Reste sind im aktuellen Routing nicht registriert
 
 ### Admin

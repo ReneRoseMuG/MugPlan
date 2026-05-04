@@ -4,29 +4,30 @@
  * Abgedeckte Regeln:
  * - Wochenplanung kann pro Tour/KW gelesen, vorgeprueft und auf Termine uebernommen werden.
  * - Die neue KW-Unique-Regel blockiert Mehrfachzuordnungen ueber Touren hinweg.
- * - Laufende Wochen sind nur fuer Admins editierbar; vergangene Wochen bleiben ueber die echte API schreibgeschuetzt.
+ * - Laufende Wochen sind für Admins und Disponenten editierbar; vergangene Wochen bleiben über die echte API schreibgeschützt.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
- * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Pruefung fuer Konfliktfaelle.
+ * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Prüfung für Konfliktfälle.
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
- * - Wiederholte Add-Executes fuer dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
+ * - Wiederholte Add-Executes für dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
- * - Beim Oeffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
- * - Blockierte Wochen parken Termine, entfernen Wochen-Zuordnungen, blockieren Wochenplan-Mutationen und unterdruecken die aktive Wochenplan-Uebernahme.
+ * - Beim Öffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
+ * - Blockierte Wochen parken Termine, entfernen Wochen-Zuordnungen, blockieren Wochenplan-Mutationen und unterdrücken die aktive Wochenplan-Übernahme.
  * - Die System-Tour `Parkplatz` bleibt von Seed, Listen, Verfuegbarkeit, Previews und Wochen-Mutationen ausgeschlossen.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
  * - Ein Mitarbeiter kann trotz bestehender KW-Zuordnung in eine zweite Tour derselben Woche eingeplant werden.
- * - Disponenten koennen aktuelle oder vergangene Wochen trotz Sperrregel noch per API beschreiben.
+ * - Leser können aktuelle Wochen trotz Rollenregel per API beschreiben.
+ * - Admins oder Disponenten können vergangene Wochen trotz Sperrregel per API beschreiben.
  * - Remove-Preview verliert die Unterbesetzungswarnung.
- * - Vollkonflikte verhindern faelschlich die Wochenzuordnung fuer kuenftige Termine.
+ * - Vollkonflikte verhindern fälschlich die Wochenzuordnung für künftige Termine.
  * - Leere Remove-Previews blockieren das Loeschen der Wochenzuordnung.
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
- * - Parallele Terminbearbeitungen koennen Wochenplan-Mutationen still ueberschreiben.
+ * - Parallele Terminbearbeitungen können Wochenplan-Mutationen still überschreiben.
  * - Das Rollout legt vergangene oder fachlich fremde Wochen ungefragt als neue Tour-Wochen-Datensaetze an.
  * - Blockierte Wochen behalten stale Wochen-Zuordnungen in Listen oder Join-Tabellen.
- * - Die Wochenplanung erzeugt fuer `Parkplatz` beim Oeffnen wieder KW-Karten oder zeigt Legacy-Zuordnungen weiter an.
+ * - Die Wochenplanung erzeugt für `Parkplatz` beim Öffnen wieder KW-Karten oder zeigt Legacy-Zuordnungen weiter an.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -560,12 +561,14 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
-  it("allows admins but not dispatchers to edit the current ISO week while past weeks stay locked", async () => {
+  it("allows admins and dispatchers to edit the current ISO week while past weeks and readers stay locked", async () => {
     const admin = await loginAdmin();
     const dispatcher = await loginRole("DISPATCHER");
+    const reader = await loginRole("READER");
     const tour = await createTourFixture("#7c3aed");
     const employee = await createEmployeeFixture("TWE-LOCKED-WEEK-EMP");
     const secondEmployee = await createEmployeeFixture("TWE-CURRENT-ADMIN-EMP");
+    const readerEmployee = await createEmployeeFixture("TWE-CURRENT-READER-EMP");
     const currentWeek = resolveIsoWeek(getRelativeBerlinDate(0));
     const pastWeek = resolveIsoWeek(getRelativeBerlinDate(-7));
 
@@ -629,23 +632,47 @@ describe("tourWeekEmployees integration", () => {
         const currentEntry = res.body.find((week: { isoYear: number; isoWeek: number }) =>
           week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek,
         );
-        expect(currentEntry).toEqual(expect.objectContaining({ isLocked: true }));
+        expect(currentEntry).toEqual(expect.objectContaining({ isLocked: false }));
       });
 
     await dispatcher
       .post(`/api/tours/${tour.id}/week-employees/add/preview`)
       .send({ ...currentWeek, employeeId: secondEmployee.id })
-      .expect(409)
-      .expect((res) => {
-        expect(res.body.code).toBe("PAST_WEEK_READONLY");
-      });
+      .expect(200);
+
+    await dispatcher
+      .post(`/api/tours/${tour.id}/week-employees/add`)
+      .send({
+        ...currentWeek,
+        employeeId: secondEmployee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(200);
 
     await dispatcher
       .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/block`)
-      .expect(409)
+      .expect(200)
       .expect((res) => {
-        expect(res.body.code).toBe("PAST_WEEK_READONLY");
+        expect(res.body.week.isBlocked).toBe(true);
+        expect(res.body.week.isLocked).toBe(false);
       });
+
+    await dispatcher
+      .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/unblock`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.week.isBlocked).toBe(false);
+        expect(res.body.week.isLocked).toBe(false);
+      });
+
+    await reader
+      .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+      .send({ ...currentWeek, employeeId: readerEmployee.id })
+      .expect(403);
+
+    await reader
+      .post(`/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/block`)
+      .expect(403);
 
     for (const lockedWeek of [pastWeek]) {
       await admin
@@ -663,6 +690,21 @@ describe("tourWeekEmployees integration", () => {
           employeeId: employee.id,
           selectedAppointmentIds: [],
         })
+        .expect(409)
+        .expect((res) => {
+          expect(res.body.code).toBe("PAST_WEEK_READONLY");
+        });
+
+      await dispatcher
+        .post(`/api/tours/${tour.id}/week-employees/add/preview`)
+        .send({ ...lockedWeek, employeeId: secondEmployee.id })
+        .expect(409)
+        .expect((res) => {
+          expect(res.body.code).toBe("PAST_WEEK_READONLY");
+        });
+
+      await dispatcher
+        .post(`/api/tours/${tour.id}/weeks/${lockedWeek.isoYear}/${lockedWeek.isoWeek}/block`)
         .expect(409)
         .expect((res) => {
           expect(res.body.code).toBe("PAST_WEEK_READONLY");

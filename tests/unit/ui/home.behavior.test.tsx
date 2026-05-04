@@ -406,7 +406,7 @@ describe("PKG-08 home behavior wiring", () => {
     expect(setters.get(2)).toHaveBeenCalledWith("appointment");
   });
 
-  it("renders monitoring for reader roles", async () => {
+  it("blocks monitoring for reader roles", async () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: () => "READER",
@@ -420,7 +420,7 @@ describe("PKG-08 home behavior wiring", () => {
 
     const html = renderToStaticMarkup(<Home onLogout={() => undefined} />);
 
-    expect(html).toContain("monitoring-page");
+    expect(html).not.toContain("monitoring-page");
   });
 
   it("blocks the tour postal plan view for reader roles", async () => {

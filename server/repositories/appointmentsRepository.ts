@@ -1175,12 +1175,16 @@ export async function listAppointmentsForList(
 }
 
 export async function listAppointmentsForMonitoring(params: {
-  fromDate: Date;
+  fromDate?: Date;
   toDate?: Date;
 }) {
-  const whereClause = params.toDate
-    ? and(gte(appointments.startDate, params.fromDate), lte(appointments.startDate, params.toDate))
-    : gte(appointments.startDate, params.fromDate);
+  const whereConditions = [];
+  if (params.fromDate) {
+    whereConditions.push(gte(appointments.startDate, params.fromDate));
+  }
+  if (params.toDate) {
+    whereConditions.push(lte(appointments.startDate, params.toDate));
+  }
 
   return db
     .select({
@@ -1204,7 +1208,7 @@ export async function listAppointmentsForMonitoring(params: {
     .leftJoin(projectOrder, eq(projectOrder.projectId, projects.id))
     .leftJoin(customers, eq(appointments.customerId, customers.id))
     .leftJoin(appointmentEmployees, eq(appointmentEmployees.appointmentId, appointments.id))
-    .where(whereClause)
+    .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
     .groupBy(
       appointments.id,
       appointments.startDate,

@@ -2,21 +2,21 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Blockierte Tour-Wochen zeigen im Wochenkalender Menueintrag und Sperrflaeche an, aber keinen zusaetzlichen Badge.
- * - Das Drei-Punkte-Menue der linken Tour-Lane enthaelt weiterhin den Notiz-Einstieg und wechselt fuer blockierte Wochen auf Freigeben.
- * - Tageszaehler und Tages-Plusaktionen bleiben trotz Menue-Overlay im Lane-Header erhalten.
- * - Konflikt-Markierungen werden fuer Termine in blockierten Wochen unterdrueckt.
+ * - Blockierte Tour-Wochen zeigen den Menüeintrag in der KW-Plan-Karte und die Sperrfläche an, aber keinen zusätzlichen Badge.
+ * - Das Drei-Punkte-Menü der KW-Plan-Karte enthält den Notiz-Einstieg und wechselt für blockierte Wochen auf Freigeben.
+ * - Tageszähler und Tages-Plusaktionen bleiben ohne Menü-Overlay im Lane-Header erhalten.
+ * - Konflikt-Markierungen werden für Termine in blockierten Wochen unterdrückt.
  * - Blockierte Wochen reichen den gedimmten Header-Status an Terminkarten weiter.
  *
  * Fehlerfaelle:
  * - Blockierte Wochen rendern ohne Aktionsmenue oder mit redundantem Badge.
- * - Das Lane-Menue verliert den Notiz-Einstieg oder zeigt weiterhin die falsche Blockieraktion.
- * - Tageszaehler oder Tages-Plusaktionen verschwinden nach Header-Layering-Aenderungen.
+ * - Das KW-Plan-Menü verliert den Notiz-Einstieg oder zeigt weiterhin die falsche Blockieraktion.
+ * - Tageszähler oder Tages-Plusaktionen verschwinden nach der Menü-Verschiebung.
  * - Konflikt-Schraffuren bleiben trotz blockierter Woche auf Terminen aktiv.
- * - Terminkarten bleiben in blockierten Wochen trotz Sperrstatus vollsaettigt.
+ * - Terminkarten bleiben in blockierten Wochen trotz Sperrstatus vollsättigt.
  *
  * Ziel:
- * Das sichtbare Wochenkalender-Verhalten fuer blockierte Wochen inkl. Menue, Sperrflaeche und Tagessteuerung regressionssicher absichern.
+ * Das sichtbare Wochenkalender-Verhalten für blockierte Wochen inkl. KW-Plan-Menü, Sperrfläche und Tagessteuerung regressionssicher absichern.
  */
 import React from "react";
 import { addDays, format, parseISO, startOfWeek } from "date-fns";
@@ -106,23 +106,14 @@ vi.mock("@/components/calendar/CalendarWeekTourLaneDayHoverPreview", () => ({
 vi.mock("@/components/calendar/CalendarWeekTourLaneHeaderBar", () => ({
   CalendarWeekTourLaneHeaderBar: ({
     label,
-    weekNotesIcon,
-    weekNotesCount,
     statusSlot,
-    menuSlot,
   }: {
     label: string;
-    weekNotesIcon?: React.ReactNode;
-    weekNotesCount?: React.ReactNode;
     statusSlot?: React.ReactNode;
-    menuSlot?: React.ReactNode;
   }) => (
     <div data-testid={`lane-header-${label}`}>
       <span>{label}</span>
-      {weekNotesIcon}
-      {weekNotesCount}
       {statusSlot}
-      {menuSlot}
     </div>
   ),
 }));
@@ -148,6 +139,12 @@ vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
         openDialog: vi.fn(),
       })}
     </>
+  ),
+}));
+
+vi.mock("@/components/TourWeekNotesHoverPreview", () => ({
+  TourWeekNotesHoverPreview: ({ count, triggerTestId }: { count: number; triggerTestId?: string }) => (
+    <div data-testid={triggerTestId}>Notizen {count}</div>
   ),
 }));
 
@@ -249,6 +246,10 @@ describe("CalendarWeekView blocked week behavior", () => {
           return false;
         case "calendar.weekLanes.expandedLaneId":
           return "";
+        case "calendar.weekPersonnelColumn.visible":
+          return true;
+        case "calendar.weekPersonnelColumn.collapsed":
+          return false;
         default:
           return null;
       }
@@ -278,8 +279,10 @@ describe("CalendarWeekView blocked week behavior", () => {
       />,
     );
 
-    expect(markup).toContain("Notizen verwalten");
+    expect(markup).toContain("Notiz hinzufügen");
     expect(markup).toContain("Wochenplanung freigeben");
+    expect(markup).toContain('data-testid="week-personnel-card-menu-trigger-tour-7"');
+    expect(markup).not.toContain('week-tour-lane-menu-trigger-tour-7');
     expect(markup).toContain("repeating-linear-gradient(135deg");
     expect(markup).not.toContain('week-tour-lane-blocked-badge-');
     expect(markup).toContain(`data-testid="week-tour-lane-day-hover-trigger-tour-7-${testWeekSecondDate}"`);

@@ -20,7 +20,11 @@ function sendServiceError(res: Response, err: unknown): boolean {
     return true;
   }
   if (err instanceof employeeAppointmentAbsencesService.EmployeeAppointmentAbsencesError) {
-    res.status(err.status).json({ code: err.code, message: err.message });
+    res.status(err.status).json({
+      code: err.code,
+      message: err.message,
+      ...(err.parkingConflicts ? { parkingConflicts: err.parkingConflicts } : {}),
+    });
     return true;
   }
   if (appointmentsService.isAppointmentError(err)) {

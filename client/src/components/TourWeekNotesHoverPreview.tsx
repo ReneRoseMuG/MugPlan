@@ -12,6 +12,7 @@ interface TourWeekNotesHoverPreviewProps {
   isoWeek: number;
   count: number;
   triggerTestId?: string;
+  triggerClassName?: string;
 }
 
 function htmlToExcerpt(value: string, maxLength = 140): string {
@@ -37,6 +38,7 @@ export function TourWeekNotesHoverPreview({
   isoWeek,
   count,
   triggerTestId,
+  triggerClassName,
 }: TourWeekNotesHoverPreviewProps) {
   const [shouldLoadPreview, setShouldLoadPreview] = useState(false);
   const normalizedCount = Number.isFinite(count) ? Math.max(0, count) : 0;
@@ -99,6 +101,7 @@ export function TourWeekNotesHoverPreview({
         label="Notizen"
         count={normalizedCount}
         testId={triggerTestId}
+        className={triggerClassName}
         onHoverStart={() => setShouldLoadPreview(true)}
         inactive={normalizedCount <= 0}
       />

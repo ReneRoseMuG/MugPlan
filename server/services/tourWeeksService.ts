@@ -111,14 +111,14 @@ export function isWeekLockedForRole(
     return true;
   }
   if (targetWeek.weekStartDate === todayWeek.weekStartDate) {
-    return roleKey !== "ADMIN";
+    return roleKey !== "ADMIN" && roleKey !== "DISPONENT";
   }
   return false;
 }
 
 function assertWeekEditable(isoYear: number, isoWeek: number, roleKey?: WeekPlanningRoleKey): void {
   if (isWeekLockedForRole(isoYear, isoWeek, roleKey)) {
-    throw new TourWeeksError(409, "PAST_WEEK_READONLY", "Laufende und vergangene Wochen sind schreibgeschützt");
+    throw new TourWeeksError(409, "PAST_WEEK_READONLY", "Vergangene Wochen sind schreibgeschützt");
   }
 }
 

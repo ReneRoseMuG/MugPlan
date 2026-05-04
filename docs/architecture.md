@@ -162,7 +162,7 @@ Historische Termine werden serverseitig rollenabhängig blockiert (`PAST_APPOINT
 
 Ist-Stand: `DISPONENT` kann historische Termine nicht mutieren. `ADMIN` ist von dieser historischen Sperre ausgenommen und darf historische Termin-Mutationen ausführen, während die übrigen Terminregeln weiterhin greifen, insbesondere Relationspflicht, Versionsschutz, Mitarbeiter-Overlap, Storno-Sperre und blockierte Tourwochen.
 
-Für Tour-KW-Planungen gilt eine eigene rollenabhängige Sperre: Vergangene Tour-KWs sind für alle Rollen schreibgeschützt. Die laufende Tour-KW bleibt für `DISPONENT` gesperrt, ist für `ADMIN` aber editierbar, einschließlich Mitarbeiterplanung sowie Blockieren und Freigeben.
+Für Tour-KW-Planungen gilt eine eigene rollenabhängige Sperre: Vergangene Tour-KWs sind für alle Rollen schreibgeschützt. Die laufende Tour-KW ist für `ADMIN` und `DISPONENT` editierbar, einschließlich Mitarbeiterplanung sowie Blockieren und Freigeben.
 
 Ausnahme: Termine der Tour „Parkplatz“ können auch bei historischem Startdatum über die Wochenplanungs-Preview umgestellt werden (`tourWeekEmployeesService`, `previewAppointmentTourChange`).
 

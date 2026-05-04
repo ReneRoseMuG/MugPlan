@@ -1,5 +1,6 @@
 ﻿import { useCallback, useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
+import { useMemo } from "react";
 import { CalendarWorkspace } from "@/components/CalendarWorkspace";
 import { CalendarYearView } from "@/components/calendar/CalendarYearView";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
@@ -38,8 +39,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { canAccessJournal as canAccessJournalRole, canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
 import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
+import { buildDispatcherLoginConflicts, hasDispatcherLoginConflicts } from "@/lib/dispatcher-login-conflicts";
 import { useToast } from "@/hooks/use-toast";
 import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { formatListDate, formatListTime } from "@/lib/list-display-format";
 
 export type ViewType =
   | "month"
@@ -109,6 +115,41 @@ type AppointmentOverlayState = AppointmentContextState & {
 type HomeProps = {
   onLogout: () => void;
 };
+
+function DispatcherConflictRows({ items }: { items: MonitoringListResponse }) {
+  if (items.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+        Keine Einträge.
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-[52vh] overflow-auto rounded-md border border-border">
+      <table className="w-full text-sm">
+        <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500">
+          <tr>
+            <th className="px-3 py-2">Datum</th>
+            <th className="px-3 py-2">Termin</th>
+            <th className="px-3 py-2">Kunde</th>
+            <th className="px-3 py-2">Tour</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={`${item.triggerCode}-${item.appointmentId}`} className="border-t border-border" data-testid={`dispatcher-login-conflict-${item.appointmentId}`}>
+              <td className="whitespace-nowrap px-3 py-2">{formatListDate(item.startDate)} {formatListTime(item.startTime)}</td>
+              <td className="px-3 py-2">{item.projectTitle ?? item.projectName ?? item.orderNumber ?? "-"}</td>
+              <td className="px-3 py-2">{item.customerName ?? ([item.customerLastName, item.customerFirstName].filter(Boolean).join(", ") || item.customerNumber) ?? "-"}</td>
+              <td className="px-3 py-2">{item.tourName ?? "-"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function resolveViewTitle(view: ViewType): string {
   switch (view) {
@@ -242,6 +283,8 @@ export default function Home({ onLogout }: HomeProps) {
   const [tourFormVisible, setTourFormVisible] = useState(false);
   const [teamFormVisible, setTeamFormVisible] = useState(false);
   const [userRole] = useState(() => window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER");
+  const [dispatcherConflictDialogOpen, setDispatcherConflictDialogOpen] = useState(false);
+  const [dispatcherConflictDialogShown, setDispatcherConflictDialogShown] = useState(false);
   const isAdmin = userRole === "ADMIN";
   const isReader = isReaderRole(userRole);
   const canAccessReports = canAccessReportsRole(userRole);
@@ -272,6 +315,19 @@ export default function Home({ onLogout }: HomeProps) {
     if (view !== "monitoring" || !canAccessMonitoring) return;
     void refetchMonitoring();
   }, [canAccessMonitoring, refetchMonitoring, view]);
+
+  const dispatcherLoginConflicts = useMemo(
+    () => buildDispatcherLoginConflicts(monitoringItems),
+    [monitoringItems],
+  );
+
+  useEffect(() => {
+    if (dispatcherConflictDialogShown || userRole !== "DISPATCHER" || !monitoringItems) return;
+    setDispatcherConflictDialogShown(true);
+    if (hasDispatcherLoginConflicts(dispatcherLoginConflicts)) {
+      setDispatcherConflictDialogOpen(true);
+    }
+  }, [dispatcherConflictDialogShown, dispatcherLoginConflicts, monitoringItems, userRole]);
 
   useEffect(() => {
     document.title = `MuG Plan | ${resolveViewTitle(view)}`;
@@ -844,6 +900,34 @@ export default function Home({ onLogout }: HomeProps) {
           />
         </div>
       )}
+      <Dialog open={dispatcherConflictDialogOpen} onOpenChange={setDispatcherConflictDialogOpen}>
+        <DialogContent className="max-w-4xl" data-testid="dialog-dispatcher-login-conflicts">
+          <DialogHeader>
+            <DialogTitle>Offene Konflikte</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="without-employees" data-testid="tabs-dispatcher-login-conflicts">
+            <TabsList>
+              <TabsTrigger value="without-employees" data-testid="tab-dispatcher-conflicts-without-employees">
+                Termine ohne Mitarbeiter ({dispatcherLoginConflicts.withoutEmployees.length})
+              </TabsTrigger>
+              <TabsTrigger value="parked" data-testid="tab-dispatcher-conflicts-parked">
+                Termine auf Parkplatz ({dispatcherLoginConflicts.parked.length})
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="without-employees" className="mt-4">
+              <DispatcherConflictRows items={dispatcherLoginConflicts.withoutEmployees} />
+            </TabsContent>
+            <TabsContent value="parked" className="mt-4">
+              <DispatcherConflictRows items={dispatcherLoginConflicts.parked} />
+            </TabsContent>
+          </Tabs>
+          <div className="flex justify-end">
+            <Button type="button" onClick={() => setDispatcherConflictDialogOpen(false)} data-testid="button-close-dispatcher-login-conflicts">
+              Schließen
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

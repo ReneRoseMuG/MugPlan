@@ -1,0 +1,3693 @@
+{
+  "allowedRuntimeModes": [
+    "development",
+    "test",
+    "production"
+  ],
+  "candidates": [
+    {
+      "candidateId": "project-1984",
+      "label": "A1117615A | Projekt 1984 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4725
+        ],
+        "orderNumber": "A1117615A",
+        "productIds": [
+          83
+        ],
+        "projectId": 1984,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1985",
+      "label": "M300326 | Projekt 1985 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3274
+        ],
+        "orderNumber": "M300326",
+        "productIds": [
+          90
+        ],
+        "projectId": 1985,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1986",
+      "label": "A1017499A | Projekt 1986 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3370
+        ],
+        "orderNumber": "A1017499A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1986,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1987",
+      "label": "A0516293A | Projekt 1987 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3289
+        ],
+        "orderNumber": "A0516293A",
+        "productIds": [
+          90
+        ],
+        "projectId": 1987,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1988",
+      "label": "A0118113A | Projekt 1988 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3297
+        ],
+        "orderNumber": "A0118113A",
+        "productIds": [
+          89
+        ],
+        "projectId": 1988,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1989",
+      "label": "A0218384A | Projekt 1989 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3356
+        ],
+        "orderNumber": "A0218384A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1989,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1990",
+      "label": "A0118112A | Projekt 1990 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3348
+        ],
+        "orderNumber": "A0118112A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1990,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1992",
+      "label": "A0118088A | Projekt 1992 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3341
+        ],
+        "orderNumber": "A0118088A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1992,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1993",
+      "label": "A0118110A | Projekt 1993 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3325
+        ],
+        "orderNumber": "A0118110A",
+        "productIds": [
+          89
+        ],
+        "projectId": 1993,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1994",
+      "label": "A1017442A | Projekt 1994 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3378
+        ],
+        "orderNumber": "A1017442A",
+        "productIds": [
+          84
+        ],
+        "projectId": 1994,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1995",
+      "label": "A0716765A | Projekt 1995 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4930
+        ],
+        "orderNumber": "A0716765A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1995,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1998",
+      "label": "A0318618A | Projekt 1998 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4741
+        ],
+        "orderNumber": "A0318618A",
+        "productIds": [
+          90
+        ],
+        "projectId": 1998,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1999",
+      "label": "A0218299A | Projekt 1999 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3426
+        ],
+        "orderNumber": "A0218299A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1999,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2000",
+      "label": "A0218227A | Projekt 2000 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3434
+        ],
+        "orderNumber": "A0218227A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2000,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2001",
+      "label": "A1017367A | Projekt 2001 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3442
+        ],
+        "orderNumber": "A1017367A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2001,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2002",
+      "label": "A1017414A | Projekt 2002 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3450
+        ],
+        "orderNumber": "A1017414A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2002,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2003",
+      "label": "A1017498A | Projekt 2003 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3466
+        ],
+        "orderNumber": "A1017498A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2003,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2004",
+      "label": "A1117531A | Projekt 2004 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3474
+        ],
+        "orderNumber": "A1117531A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2004,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2005",
+      "label": "A1217761A | Projekt 2005 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3841
+        ],
+        "orderNumber": "A1217761A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2005,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2009",
+      "label": "A0118122A | Projekt 2009 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4749
+        ],
+        "orderNumber": "A0118122A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2009,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2011",
+      "label": "A0218135A | Projekt 2011 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3515
+        ],
+        "orderNumber": "A0218135A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2011,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2012",
+      "label": "A0118119A | Projekt 2012 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3522
+        ],
+        "orderNumber": "A0118119A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2012,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2013",
+      "label": "A0118115A | Projekt 2013 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3530
+        ],
+        "orderNumber": "A0118115A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2013,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2014",
+      "label": "A0218190A | Projekt 2014 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4757
+        ],
+        "orderNumber": "A0218190A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2014,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2015",
+      "label": "A0118117A | Projekt 2015 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          3545
+        ],
+        "orderNumber": "A0118117A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2015,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2016",
+      "label": "A0716668A | Projekt 2016 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3553
+        ],
+        "orderNumber": "A0716668A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2016,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2017",
+      "label": "A0218137A | Projekt 2017 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3561
+        ],
+        "orderNumber": "A0218137A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2017,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2018",
+      "label": "A0118111A | Projekt 2018 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3576
+        ],
+        "orderNumber": "A0118111A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2018,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2019",
+      "label": "A0118120A | Projekt 2019 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3591
+        ],
+        "orderNumber": "A0118120A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2019,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2020",
+      "label": "A0218134A | Projekt 2020 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3599
+        ],
+        "orderNumber": "A0218134A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2020,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2022",
+      "label": "A0118116A | Projekt 2022 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3606
+        ],
+        "orderNumber": "A0118116A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2022,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2023",
+      "label": "A1017440A | Projekt 2023 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3621
+        ],
+        "orderNumber": "A1017440A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2023,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2024",
+      "label": "A1017495A | Projekt 2024 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3628
+        ],
+        "orderNumber": "A1017495A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2024,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2025",
+      "label": "A1017443A | Projekt 2025 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3636
+        ],
+        "orderNumber": "A1017443A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2025,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2026",
+      "label": "A0218301A | Projekt 2026 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3644
+        ],
+        "orderNumber": "A0218301A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2026,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2027",
+      "label": "A0218184A | Projekt 2027 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3652
+        ],
+        "orderNumber": "A0218184A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2027,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2028",
+      "label": "A0616549A | Projekt 2028 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3660
+        ],
+        "orderNumber": "A0616549A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2028,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2029",
+      "label": "A0616508A | Projekt 2029 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4771
+        ],
+        "orderNumber": "A0616508A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2029,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2032",
+      "label": "A0516314A | Projekt 2032 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3739
+        ],
+        "orderNumber": "A0516314A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2032,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2033",
+      "label": "A1117544A | Projekt 2033 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          3684
+        ],
+        "orderNumber": "A1117544A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2033,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2034",
+      "label": "A0118075A | Projekt 2034 | Petite",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Petite",
+        "orderItemIds": [
+          3692
+        ],
+        "orderNumber": "A0118075A",
+        "productIds": [
+          88
+        ],
+        "projectId": 2034,
+        "saunaModel": "Petite",
+        "targetName": "Petite"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2035",
+      "label": "A0218163A | Projekt 2035 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3700
+        ],
+        "orderNumber": "A0218163A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2035,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2036",
+      "label": "A0218164A | Projekt 2036 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3707
+        ],
+        "orderNumber": "A0218164A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2036,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2037",
+      "label": "A0218317A | Projekt 2037 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3715
+        ],
+        "orderNumber": "A0218317A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2037,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2038",
+      "label": "A0218305A | Projekt 2038 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          5194
+        ],
+        "orderNumber": "A0218305A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2038,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2039",
+      "label": "A0218245A | Projekt 2039 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3731
+        ],
+        "orderNumber": "A0218245A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2039,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2040",
+      "label": "A0716817A | Projekt 2040 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3747
+        ],
+        "orderNumber": "A0716817A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2040,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2041",
+      "label": "A0817013A | Projekt 2041 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3754
+        ],
+        "orderNumber": "A0817013A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2041,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2042",
+      "label": "A0118069A | Projekt 2042 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4803
+        ],
+        "orderNumber": "A0118069A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2042,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2043",
+      "label": "A1217853A | Projekt 2043 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3770
+        ],
+        "orderNumber": "A1217853A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2043,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2044",
+      "label": "A0218258A | Projekt 2044 | Suuri",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Suuri",
+        "orderItemIds": [
+          4954
+        ],
+        "orderNumber": "A0218258A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2044,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2045",
+      "label": "A0118093A | Projekt 2045 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3786
+        ],
+        "orderNumber": "A0118093A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2045,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2046",
+      "label": "A0118101A | Projekt 2046 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3794
+        ],
+        "orderNumber": "A0118101A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2046,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2047",
+      "label": "A0218162A | Projekt 2047 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3802
+        ],
+        "orderNumber": "A0218162A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2047,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2048",
+      "label": "A0118090A | Projekt 2048 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3809
+        ],
+        "orderNumber": "A0118090A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2048,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2049",
+      "label": "A0118108A | Projekt 2049 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3817
+        ],
+        "orderNumber": "A0118108A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2049,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2051",
+      "label": "A0118124A | Projekt 2051 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3825
+        ],
+        "orderNumber": "A0118124A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2051,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2052",
+      "label": "A0218371A | Projekt 2052 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3833
+        ],
+        "orderNumber": "A0218371A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2052,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2053",
+      "label": "A0616473A | Projekt 2053 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3850
+        ],
+        "orderNumber": "A0616473A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2053,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2054",
+      "label": "A0218160A | Projekt 2054 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3858
+        ],
+        "orderNumber": "A0218160A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2054,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2055",
+      "label": "A0218165A | Projekt 2055 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3866
+        ],
+        "orderNumber": "A0218165A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2055,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2056",
+      "label": "A0218373A | Projekt 2056 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3874
+        ],
+        "orderNumber": "A0218373A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2056,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2057",
+      "label": "A0218252A | Projekt 2057 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3890
+        ],
+        "orderNumber": "A0218252A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2057,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2058",
+      "label": "A0218319A | Projekt 2058 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3898
+        ],
+        "orderNumber": "A0218319A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2058,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2059",
+      "label": "A0218379A | Projekt 2059 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3906
+        ],
+        "orderNumber": "A0218379A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2059,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2060",
+      "label": "A1017433A | Projekt 2060 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3914
+        ],
+        "orderNumber": "A1017433A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2060,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2061",
+      "label": "A0218203A | Projekt 2061 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3922
+        ],
+        "orderNumber": "A0218203A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2061,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2062",
+      "label": "A0218312A | Projekt 2062 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3929
+        ],
+        "orderNumber": "A0218312A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2062,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2063",
+      "label": "A0218329A | Projekt 2063 | Suuri",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Suuri",
+        "orderItemIds": [
+          3936
+        ],
+        "orderNumber": "A0218329A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2063,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2064",
+      "label": "A0318472A | Projekt 2064 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3944
+        ],
+        "orderNumber": "A0318472A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2064,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2065",
+      "label": "A0218314A | Projekt 2065 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3952
+        ],
+        "orderNumber": "A0218314A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2065,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2066",
+      "label": "A0218147A | Projekt 2066 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5210
+        ],
+        "orderNumber": "A0218147A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2066,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2067",
+      "label": "A0218374A | Projekt 2067 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          3968
+        ],
+        "orderNumber": "A0218374A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2067,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2068",
+      "label": "A0318554A | Projekt 2068 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3976
+        ],
+        "orderNumber": "A0318554A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2068,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2069",
+      "label": "A0616537A | Projekt 2069 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          3984
+        ],
+        "orderNumber": "A0616537A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2069,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2070",
+      "label": "A0118104A | Projekt 2070 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          3992
+        ],
+        "orderNumber": "A0118104A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2070,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2071",
+      "label": "A1117613A | Projekt 2071 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4000
+        ],
+        "orderNumber": "A1117613A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2071,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2072",
+      "label": "A0616510A | Projekt 2072 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5008
+        ],
+        "orderNumber": "A0616510A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2072,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2073",
+      "label": "A1217922A | Projekt 2073 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4016
+        ],
+        "orderNumber": "A1217922A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2073,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2074",
+      "label": "A0318424A | Projekt 2074 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4024
+        ],
+        "orderNumber": "A0318424A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2074,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2075",
+      "label": "A0218173A | Projekt 2075 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4032
+        ],
+        "orderNumber": "A0218173A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2075,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2076",
+      "label": "A0318435A | Projekt 2076 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4040
+        ],
+        "orderNumber": "A0318435A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2076,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2077",
+      "label": "A0218370A | Projekt 2077 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4047
+        ],
+        "orderNumber": "A0218370A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2077,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2079",
+      "label": "A0218311A | Projekt 2079 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4055
+        ],
+        "orderNumber": "A0218311A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2079,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2080",
+      "label": "A0318527A | Projekt 2080 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4063
+        ],
+        "orderNumber": "A0318527A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2080,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2081",
+      "label": "A0318433A | Projekt 2081 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4071
+        ],
+        "orderNumber": "A0318433A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2081,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2082",
+      "label": "A0318573A | Projekt 2082 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4079
+        ],
+        "orderNumber": "A0318573A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2082,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2083",
+      "label": "A0218170A | Projekt 2083 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4087
+        ],
+        "orderNumber": "A0218170A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2083,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2084",
+      "label": "A0218194A | Projekt 2084 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4094
+        ],
+        "orderNumber": "A0218194A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2084,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2086",
+      "label": "A0218251A | Projekt 2086 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4102
+        ],
+        "orderNumber": "A0218251A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2086,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2087",
+      "label": "A0318491A | Projekt 2087 | Suuri",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Suuri",
+        "orderItemIds": [
+          4109
+        ],
+        "orderNumber": "A0318491A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2087,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2088",
+      "label": "A0118074A | Projekt 2088 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4117
+        ],
+        "orderNumber": "A0118074A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2088,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2089",
+      "label": "A0215700A | Projekt 2089 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4125
+        ],
+        "orderNumber": "A0215700A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2089,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2090",
+      "label": "A0218325A | Projekt 2090 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4132
+        ],
+        "orderNumber": "A0218325A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2090,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2091",
+      "label": "A0218229A | Projekt 2091 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4140
+        ],
+        "orderNumber": "A0218229A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2091,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2092",
+      "label": "A0218297A | Projekt 2092 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4148
+        ],
+        "orderNumber": "A0218297A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2092,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2093",
+      "label": "A0218322A | Projekt 2093 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4156
+        ],
+        "orderNumber": "A0218322A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2093,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2094",
+      "label": "A0318499A | Projekt 2094 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4164
+        ],
+        "orderNumber": "A0318499A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2094,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2095",
+      "label": "A0318529A | Projekt 2095 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4172
+        ],
+        "orderNumber": "A0318529A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2095,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2096",
+      "label": "A1017321A | Projekt 2096 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4179
+        ],
+        "orderNumber": "A1017321A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2096,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2098",
+      "label": "A0318511A | Projekt 2098 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4186
+        ],
+        "orderNumber": "A0318511A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2098,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2099",
+      "label": "A0318530A | Projekt 2099 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4194
+        ],
+        "orderNumber": "A0318530A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2099,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2100",
+      "label": "A0218381A | Projekt 2100 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4201
+        ],
+        "orderNumber": "A0218381A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2100,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2101",
+      "label": "A0218389A | Projekt 2101 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4209
+        ],
+        "orderNumber": "A0218389A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2101,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2102",
+      "label": "A0218388A | Projekt 2102 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4217
+        ],
+        "orderNumber": "A0218388A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2102,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2103",
+      "label": "A0218391A | Projekt 2103 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4225
+        ],
+        "orderNumber": "A0218391A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2103,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2104",
+      "label": "A0218377A | Projekt 2104 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4233
+        ],
+        "orderNumber": "A0218377A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2104,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2105",
+      "label": "A0218386A | Projekt 2105 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4241
+        ],
+        "orderNumber": "A0218386A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2105,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2106",
+      "label": "A0218247A | Projekt 2106 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4962
+        ],
+        "orderNumber": "A0218247A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2106,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2107",
+      "label": "A0218324A | Projekt 2107 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4257
+        ],
+        "orderNumber": "A0218324A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2107,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2108",
+      "label": "A0318498A | Projekt 2108 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4265
+        ],
+        "orderNumber": "A0318498A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2108,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2109",
+      "label": "A0318538A | Projekt 2109 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4272
+        ],
+        "orderNumber": "A0318538A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2109,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2110",
+      "label": "A0318397A | Projekt 2110 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4280
+        ],
+        "orderNumber": "A0318397A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2110,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2111",
+      "label": "A0218385A | Projekt 2111 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4288
+        ],
+        "orderNumber": "A0218385A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2111,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2112",
+      "label": "A0318611A | Projekt 2112 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4296
+        ],
+        "orderNumber": "A0318611A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2112,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2113",
+      "label": "A0318609A | Projekt 2113 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4304
+        ],
+        "orderNumber": "A0318609A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2113,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2114",
+      "label": "A0318445A | Projekt 2114 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4312
+        ],
+        "orderNumber": "A0318445A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2114,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2115",
+      "label": "A0318482A | Projekt 2115 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4320
+        ],
+        "orderNumber": "A0318482A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2115,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2116",
+      "label": "A0218169A | Projekt 2116 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4363
+        ],
+        "orderNumber": "A0218169A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2116,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2117",
+      "label": "A0318541A | Projekt 2117 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4354
+        ],
+        "orderNumber": "A0318541A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2117,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2118",
+      "label": "A0318597A | Projekt 2118 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4371
+        ],
+        "orderNumber": "A0318597A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2118,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2119",
+      "label": "A0318484A | Projekt 2119 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4379
+        ],
+        "orderNumber": "A0318484A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2119,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2120",
+      "label": "A0318518A | Projekt 2120 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4387
+        ],
+        "orderNumber": "A0318518A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2120,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2121",
+      "label": "A0318548A | Projekt 2121 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4986
+        ],
+        "orderNumber": "A0318548A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2121,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2122",
+      "label": "A0318575A | Projekt 2122 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4403
+        ],
+        "orderNumber": "A0318575A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2122,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2123",
+      "label": "A0318568A | Projekt 2123 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4411
+        ],
+        "orderNumber": "A0318568A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2123,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2124",
+      "label": "A0318590A | Projekt 2124 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4418
+        ],
+        "orderNumber": "A0318590A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2124,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2125",
+      "label": "A0318589A | Projekt 2125 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4426
+        ],
+        "orderNumber": "A0318589A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2125,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2126",
+      "label": "A0218362A | Projekt 2126 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4434
+        ],
+        "orderNumber": "A0218362A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2126,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2127",
+      "label": "A0218358A | Projekt 2127 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4442
+        ],
+        "orderNumber": "A0218358A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2127,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2128",
+      "label": "A0418653A | Projekt 2128 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4450
+        ],
+        "orderNumber": "A0418653A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2128,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2129",
+      "label": "A0318476A | Projekt 2129 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4458
+        ],
+        "orderNumber": "A0318476A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2129,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2130",
+      "label": "A0318617A | Projekt 2130 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          5048
+        ],
+        "orderNumber": "A0318617A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2130,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2131",
+      "label": "A0218155A | Projekt 2131 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4474
+        ],
+        "orderNumber": "A0218155A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2131,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2132",
+      "label": "A0218223A | Projekt 2132 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4482
+        ],
+        "orderNumber": "A0218223A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2132,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2133",
+      "label": "A1117605A | Projekt 2133 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4490
+        ],
+        "orderNumber": "A1117605A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2133,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2134",
+      "label": "A0218375A | Projekt 2134 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4498
+        ],
+        "orderNumber": "A0218375A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2134,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2135",
+      "label": "A0218390A | Projekt 2135 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          5080
+        ],
+        "orderNumber": "A0218390A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2135,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2136",
+      "label": "A0218392A | Projekt 2136 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4513
+        ],
+        "orderNumber": "A0218392A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2136,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2137",
+      "label": "A0218361A | Projekt 2137 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5095
+        ],
+        "orderNumber": "A0218361A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2137,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2138",
+      "label": "A0318427A | Projekt 2138 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4528
+        ],
+        "orderNumber": "A0318427A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2138,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2139",
+      "label": "A0218360A | Projekt 2139 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4535
+        ],
+        "orderNumber": "A0218360A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2139,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2140",
+      "label": "A0118105A | Projekt 2140 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4543
+        ],
+        "orderNumber": "A0118105A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2140,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2141",
+      "label": "A0218158A | Projekt 2141 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4550
+        ],
+        "orderNumber": "A0218158A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2141,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2142",
+      "label": "A1017444A | Projekt 2142 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4558
+        ],
+        "orderNumber": "A1017444A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2142,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2143",
+      "label": "A0218228A | Projekt 2143 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4566
+        ],
+        "orderNumber": "A0218228A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2143,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2144",
+      "label": "A0218365A | Projekt 2144 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4574
+        ],
+        "orderNumber": "A0218365A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2144,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2145",
+      "label": "A0118094A | Projekt 2145 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4582
+        ],
+        "orderNumber": "A0118094A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2145,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2146",
+      "label": "A0118099A | Projekt 2146 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4590
+        ],
+        "orderNumber": "A0118099A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2146,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2147",
+      "label": "A0118107A | Projekt 2147 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4598
+        ],
+        "orderNumber": "A0118107A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2147,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2148",
+      "label": "A0218148A | Projekt 2148 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4606
+        ],
+        "orderNumber": "A0218148A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2148,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2149",
+      "label": "A0218221A | Projekt 2149 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4614
+        ],
+        "orderNumber": "A0218221A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2149,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2150",
+      "label": "A0218239A | Projekt 2150 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5128
+        ],
+        "orderNumber": "A0218239A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2150,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2151",
+      "label": "A0218166A | Projekt 2151 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4630
+        ],
+        "orderNumber": "A0218166A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2151,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2152",
+      "label": "A0218366A | Projekt 2152 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4638
+        ],
+        "orderNumber": "A0218366A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2152,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2153",
+      "label": "A0218217A | Projekt 2153 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4646
+        ],
+        "orderNumber": "A0218217A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2153,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2154",
+      "label": "A0218368A | Projekt 2154 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4654
+        ],
+        "orderNumber": "A0218368A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2154,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2155",
+      "label": "A0318486A | Projekt 2155 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4662
+        ],
+        "orderNumber": "A0318486A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2155,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2156",
+      "label": "A0318651A | Projekt 2156 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4670
+        ],
+        "orderNumber": "A0318651A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2156,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2157",
+      "label": "A0218249A | Projekt 2157 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4678
+        ],
+        "orderNumber": "A0218249A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2157,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2158",
+      "label": "A0318555A | Projekt 2158 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4686
+        ],
+        "orderNumber": "A0318555A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2158,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2159",
+      "label": "A0318591A | Projekt 2159 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4694
+        ],
+        "orderNumber": "A0318591A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2159,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2160",
+      "label": "A0318595A | Projekt 2160 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5152
+        ],
+        "orderNumber": "A0318595A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2160,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2161",
+      "label": "A0318593A | Projekt 2161 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          5160
+        ],
+        "orderNumber": "A0318593A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2161,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2162",
+      "label": "A0218149A | Projekt 2162 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4718
+        ],
+        "orderNumber": "A0218149A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2162,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2163",
+      "label": "A0218364A | Projekt 2163 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4764
+        ],
+        "orderNumber": "A0218364A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2163,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2165",
+      "label": "A0418662A | Projekt 2165 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4779
+        ],
+        "orderNumber": "A0418662A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2165,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2166",
+      "label": "A0418663A | Projekt 2166 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4795
+        ],
+        "orderNumber": "A0418663A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2166,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2167",
+      "label": "A0218277A | Projekt 2167 | Exclusiv 3",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Exclusiv 3",
+        "orderItemIds": [
+          4820
+        ],
+        "orderNumber": "A0218277A",
+        "productIds": [
+          92
+        ],
+        "projectId": 2167,
+        "saunaModel": "Exclusiv 3",
+        "targetName": "Exclusiv 3"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2169",
+      "label": "A0418671A | Projekt 2169 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          4836
+        ],
+        "orderNumber": "A0418671A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2169,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2170",
+      "label": "A0418658A | Projekt 2170 | Suuri",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Suuri",
+        "orderItemIds": [
+          4844
+        ],
+        "orderNumber": "A0418658A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2170,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2171",
+      "label": "A0418679A | Projekt 2171 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4851
+        ],
+        "orderNumber": "A0418679A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2171,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2172",
+      "label": "A0318638A | Projekt 2172 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          4867
+        ],
+        "orderNumber": "A0318638A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2172,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2173",
+      "label": "A0418698A | Projekt 2173 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          4875
+        ],
+        "orderNumber": "A0418698A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2173,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2174",
+      "label": "A0118102A | Projekt 2174 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4883
+        ],
+        "orderNumber": "A0118102A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2174,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2175",
+      "label": "A0218151A | Projekt 2175 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4899
+        ],
+        "orderNumber": "A0218151A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2175,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2176",
+      "label": "A0218369A | Projekt 2176 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5168
+        ],
+        "orderNumber": "A0218369A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2176,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2177",
+      "label": "A0318432A | Projekt 2177 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          4919
+        ],
+        "orderNumber": "A0318432A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2177,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2178",
+      "label": "A0418656A | Projekt 2178 | Kolmikko",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Kolmikko",
+        "orderItemIds": [
+          5178
+        ],
+        "orderNumber": "A0418656A",
+        "productIds": [
+          91
+        ],
+        "projectId": 2178,
+        "saunaModel": "Kolmikko",
+        "targetName": "Kolmikko"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2180",
+      "label": "A1217800A | Projekt 2180 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          4946
+        ],
+        "orderNumber": "A1217800A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2180,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2182",
+      "label": "A0418774A | Projekt 2182 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5104
+        ],
+        "orderNumber": "A0418774A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2182,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2183",
+      "label": "A0418760A | Projekt 2183 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5000
+        ],
+        "orderNumber": "A0418760A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2183,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2184",
+      "label": "A0418749A | Projekt 2184 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5016
+        ],
+        "orderNumber": "A0418749A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2184,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2185",
+      "label": "A0418754A | Projekt 2185 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5032
+        ],
+        "orderNumber": "A0418754A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2185,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2186",
+      "label": "A0418735A | Projekt 2186 | Palkkio",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Palkkio",
+        "orderItemIds": [
+          5040
+        ],
+        "orderNumber": "A0418735A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2186,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2187",
+      "label": "A0418745A | Projekt 2187 | Premium IV",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Premium IV",
+        "orderItemIds": [
+          5226
+        ],
+        "orderNumber": "A0418745A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2187,
+        "saunaModel": "Premium IV",
+        "targetName": "Premium IV"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2188",
+      "label": "A0418750A | Projekt 2188 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          5064
+        ],
+        "orderNumber": "A0418750A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2188,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2189",
+      "label": "A0418761A | Projekt 2189 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          5072
+        ],
+        "orderNumber": "A0418761A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2189,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2190",
+      "label": "A0418765A | Projekt 2190 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5087
+        ],
+        "orderNumber": "A0418765A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2190,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2191",
+      "label": "A0418789A | Projekt 2191 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          5120
+        ],
+        "orderNumber": "A0418789A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2191,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2192",
+      "label": "A0418753A | Projekt 2192 | XL",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL",
+        "orderItemIds": [
+          5136
+        ],
+        "orderNumber": "A0418753A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2192,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2193",
+      "label": "A0418769A | Projekt 2193 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5144
+        ],
+        "orderNumber": "A0418769A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2193,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2194",
+      "label": "A1117603A | Projekt 2194 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          5186
+        ],
+        "orderNumber": "A1117603A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2194,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    }
+  ],
+  "createdAt": "2026-05-04T14:43:37.503Z",
+  "formatVersion": 1,
+  "runId": "2026-05-04T14-43-37-503Z",
+  "runtimeMode": "development",
+  "summary": {
+    "actionable": 0,
+    "already_ok": 193,
+    "ambiguous": 0,
+    "blocked": 0
+  },
+  "target": {
+    "dbName": "mugplan_dev",
+    "host": "localhost",
+    "port": 3306
+  },
+  "workflowId": "project-title-from-sauna-model",
+  "workflowTitle": "Projekt-Titel aus Sauna-Modell"
+}

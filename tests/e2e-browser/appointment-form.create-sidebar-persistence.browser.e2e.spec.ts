@@ -37,7 +37,7 @@ import { Buffer } from "node:buffer";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { db } from "../../server/db";
-import { MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
+import { MANAGED_COMPLAINT_TAG_NAME, MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
 import { tags, tours } from "../../shared/schema";
 import {
   createAppointmentFixture,
@@ -93,6 +93,13 @@ async function readAppointmentNotes(page: Page, appointmentId: number): Promise<
   const response = await page.request.get(`/api/appointments/${appointmentId}/notes`);
   expect(response.ok()).toBeTruthy();
   return response.json() as Promise<Array<{ title: string }>>;
+}
+
+async function readAppointmentTagNames(page: Page, appointmentId: number): Promise<string[]> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/tags`);
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json() as Array<{ tag: { name: string } }>;
+  return body.map((item) => item.tag.name);
 }
 
 async function mockAppointmentDocumentExtraction(page: Page, customerNumber: string, options?: {
@@ -342,6 +349,36 @@ test("creates a new appointment on Tour Messe, persists the managed Messe tag an
   await page.getByTestId(`week-appointment-panel-${createdAppointmentId}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId(`appointment-tag-picker-tag-${messeTagId}`)).toBeVisible();
+});
+
+test("persists Reklamation workflow from the new appointment form with a template note draft", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-CREATE-REKLAMATION", targetDayOffset: 4 });
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await selectProjectWithoutAppointments(page, fixture);
+  await expect(page.getByTestId("appointment-form-functions-panel")).toBeVisible();
+  await expect(page.getByTestId("button-set-appointment-reklamation")).toBeVisible();
+
+  await page.getByTestId("button-set-appointment-reklamation").click();
+  await expect(page.getByTestId("button-remove-appointment-reklamation")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+
+  await page.getByTestId("button-save-note").click();
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: MANAGED_COMPLAINT_TAG_NAME }).first(),
+  ).toBeVisible();
+
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
+
+  await expect.poll(async () => readAppointmentTagNames(page, createdAppointmentId)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, createdAppointmentId);
+    return notes.map((note) => note.title);
+  }).toContain(MANAGED_COMPLAINT_TAG_NAME);
 });
 
 test("persists tag, note and appointment attachment from the new appointment form and restores them on reopen", async ({ page }) => {

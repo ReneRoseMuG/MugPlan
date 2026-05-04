@@ -66,7 +66,7 @@ describe("CalendarWeekView Tour-KW lock roles", () => {
     expect(isWeekPlanningLockedForCalendarRole("2026-04-27", "2026-05-04", false)).toBe(true);
   });
 
-  it("unlocks the current week only for admins", () => {
+  it("unlocks the current week for roles that can manage week planning", () => {
     expect(isWeekPlanningLockedForCalendarRole("2026-05-04", "2026-05-04", true)).toBe(false);
     expect(isWeekPlanningLockedForCalendarRole("2026-05-04", "2026-05-04", false)).toBe(true);
   });

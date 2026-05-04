@@ -184,7 +184,7 @@ async function loadProjectSaunaRows(ctx: WorkflowExecutionContext): Promise<Proj
 export const projectTitleFromSaunaModelWorkflow: CorrectionWorkflowDefinition = {
   id: WORKFLOW_ID,
   title: "Projekt-Titel aus Sauna-Modell",
-  allowedRuntimeModes: ["development", "test"],
+  allowedRuntimeModes: ["development", "test", "production"],
   async discoverCandidates(ctx) {
     const rows = await loadProjectSaunaRows(ctx);
     return buildProjectGroups(rows).map(buildCandidate);
