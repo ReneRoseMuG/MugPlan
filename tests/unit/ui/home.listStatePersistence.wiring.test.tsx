@@ -181,7 +181,15 @@ describe("PKG-08 home list state persistence wiring", () => {
         setFilter: vi.fn(),
       })
       .mockReturnValueOnce({
-        filters: { title: "Projekt Persist", customerLastName: "", customerNumber: "", orderNumber: "4711", tagIds: [] },
+        filters: {
+          title: "Projekt Persist",
+          customerLastName: "",
+          customerNumber: "",
+          orderNumber: "4711",
+          tagIds: [],
+          articleProductIds: [101],
+          articleComponentIds: [202],
+        },
         setFilter: vi.fn(),
         page: 3,
         setPage: vi.fn(),
@@ -204,7 +212,15 @@ describe("PKG-08 home list state persistence wiring", () => {
     renderToStaticMarkup(<Home onLogout={() => undefined} />);
 
     expect(projectsPageCalls[0]).toMatchObject({
-      filters: { title: "Projekt Persist", customerLastName: "", customerNumber: "", orderNumber: "4711", tagIds: [] },
+      filters: {
+        title: "Projekt Persist",
+        customerLastName: "",
+        customerNumber: "",
+        orderNumber: "4711",
+        tagIds: [],
+        articleProductIds: [101],
+        articleComponentIds: [202],
+      },
       page: 3,
       projectScope: "all",
       sortKey: "title",

@@ -139,7 +139,15 @@ describe("FT03 projects table preview wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [] },
+      filters: {
+        title: "",
+        customerLastName: "",
+        customerNumber: "",
+        orderNumber: "",
+        tagIds: [],
+        articleProductIds: [],
+        articleComponentIds: [],
+      },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),

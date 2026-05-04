@@ -6,6 +6,8 @@ export interface ProjectFilters {
   customerNumber: string;
   orderNumber: string;
   tagIds: number[];
+  articleProductIds: number[];
+  articleComponentIds: number[];
 }
 
 export type ProjectScope = "upcoming" | "noAppointments" | "all";
@@ -16,6 +18,8 @@ export const defaultProjectFilters: ProjectFilters = {
   customerNumber: "",
   orderNumber: "",
   tagIds: [],
+  articleProductIds: [],
+  articleComponentIds: [],
 };
 
 const normalizeText = (value: string) => value.trim().toLowerCase();

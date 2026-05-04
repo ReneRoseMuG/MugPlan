@@ -192,6 +192,7 @@ export async function getProjects(
   filter: "active" | "inactive" | "all" = "all",
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
+  articleFilters: { articleProductIds?: number[]; articleComponentIds?: number[] } = {},
 ): Promise<ProjectListItem[]> {
   const conditions = [];
   if (filter === "active") {
@@ -213,6 +214,7 @@ export async function getProjects(
   if (scopeCondition) {
     conditions.push(scopeCondition);
   }
+  conditions.push(...await buildProjectArticleFilterConditions(articleFilters));
 
   const query = conditions.length > 0
     ? db.select().from(projects).where(and(...conditions))
@@ -334,6 +336,66 @@ function buildProjectFilterConditions(params: {
   return conditions;
 }
 
+function normalizeIdList(ids: number[] | undefined): number[] {
+  return Array.from(new Set((ids ?? []).filter((id) => Number.isInteger(id) && id > 0)));
+}
+
+async function buildProjectArticleFilterConditions(params: {
+  articleProductIds?: number[];
+  articleComponentIds?: number[];
+}) {
+  const conditions = [];
+  const productIds = normalizeIdList(params.articleProductIds);
+  const componentIds = normalizeIdList(params.articleComponentIds);
+
+  if (productIds.length > 0) {
+    conditions.push(sql`exists (
+      select 1
+      from ${projectOrderItems}
+      where ${projectOrderItems.projectId} = ${projects.id}
+        and ${projectOrderItems.productId} in (${sql.join(productIds.map((id) => sql`${id}`), sql`, `)})
+    )`);
+  }
+
+  if (componentIds.length === 0) {
+    return conditions;
+  }
+
+  const componentRows = await db
+    .select({
+      componentId: components.id,
+      categoryName: componentCategories.name,
+    })
+    .from(components)
+    .innerJoin(componentCategories, eq(components.categoryId, componentCategories.id))
+    .where(inArray(components.id, componentIds));
+
+  const idsByArticleField = new Map<ProjectArticleFieldKey, number[]>();
+  for (const row of componentRows) {
+    const fieldKey = getProjectArticleFieldByCategoryName(row.categoryName);
+    if (!fieldKey) continue;
+    const ids = idsByArticleField.get(fieldKey) ?? [];
+    ids.push(row.componentId);
+    idsByArticleField.set(fieldKey, ids);
+  }
+
+  if (idsByArticleField.size === 0) {
+    conditions.push(sql`false`);
+    return conditions;
+  }
+
+  for (const ids of Array.from(idsByArticleField.values())) {
+    conditions.push(sql`exists (
+      select 1
+      from ${projectOrderItems}
+      where ${projectOrderItems.projectId} = ${projects.id}
+        and ${projectOrderItems.componentId} in (${sql.join(ids.map((id: number) => sql`${id}`), sql`, `)})
+    )`);
+  }
+
+  return conditions;
+}
+
 function normalizeAppointmentDate(dateValue: unknown): string | null {
   if (dateValue instanceof Date) {
     return dateValue.toISOString().slice(0, 10);
@@ -355,6 +417,8 @@ function normalizeStartTimeHour(value: unknown): number | null {
 export async function getProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
   tagIds: number[];
+  articleProductIds: number[];
+  articleComponentIds: number[];
   scope: ProjectScope;
   customerId?: number;
   title?: string;
@@ -365,6 +429,7 @@ export async function getProjectsPaged(params: {
   pageSize: number;
 }): Promise<ProjectBoardListResult> {
   const conditions = buildProjectFilterConditions(params);
+  conditions.push(...await buildProjectArticleFilterConditions(params));
   const offset = (params.page - 1) * params.pageSize;
 
   const countRows = await db
@@ -499,6 +564,7 @@ export async function getProjectsByCustomer(
   filter: "active" | "inactive" | "all" = "all",
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
+  articleFilters: { articleProductIds?: number[]; articleComponentIds?: number[] } = {},
 ): Promise<ProjectListItem[]> {
   const conditions = [eq(projects.customerId, customerId)];
   if (filter === "active") {
@@ -520,6 +586,7 @@ export async function getProjectsByCustomer(
   if (scopeCondition) {
     conditions.push(scopeCondition);
   }
+  conditions.push(...await buildProjectArticleFilterConditions(articleFilters));
   const rows = await db
     .select()
     .from(projects)

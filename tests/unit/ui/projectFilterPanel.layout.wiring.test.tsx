@@ -22,6 +22,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const filterPanelCalls: Array<Record<string, unknown>> = [];
 const tagFilterCalls: Array<Record<string, unknown>> = [];
+const articleFilterCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@/components/ui/filter-panels/filter-panel", () => ({
   FilterPanel: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
@@ -90,6 +91,13 @@ vi.mock("@/components/filters/tag-filter-input", () => ({
   },
 }));
 
+vi.mock("@/components/filters/project-article-filter-input", () => ({
+  ProjectArticleFilterInput: (props: Record<string, unknown>) => {
+    articleFilterCalls.push(props);
+    return <div data-testid="filter-project-articles">Artikellistenfilter</div>;
+  },
+}));
+
 import { ProjectFilterPanel } from "../../../client/src/components/ui/filter-panels/project-filter-panel";
 
 describe("FT02 UI: project filter panel layout wiring", () => {
@@ -98,6 +106,7 @@ describe("FT02 UI: project filter panel layout wiring", () => {
   beforeEach(() => {
     filterPanelCalls.length = 0;
     tagFilterCalls.length = 0;
+    articleFilterCalls.length = 0;
     vi.stubGlobal("React", React);
   });
 
@@ -118,6 +127,13 @@ describe("FT02 UI: project filter panel layout wiring", () => {
       onOrderNumberClear={noop}
       selectedTags={[]}
       availableTags={[]}
+      articleProducts={[]}
+      articleComponents={[]}
+      articleComponentCategories={[]}
+      articleProductIds={[]}
+      articleComponentIds={[]}
+      onArticleFilterChange={noop}
+      onArticleFilterReset={noop}
       tagPickerOpen={false}
       onTagPickerOpenChange={noop}
       onAddTag={noop}
@@ -138,6 +154,7 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     const allProjectsIndex = html.indexOf("Alle");
     const upcomingProjectsIndex = html.indexOf("Geplante");
     const noAppointmentsIndex = html.indexOf("Ohne Termin");
+    const articleIndex = html.indexOf("filter-project-articles");
     const tagIndex = html.indexOf("filter-project-tag");
 
     expect(projectIndex).toBeGreaterThan(-1);
@@ -148,7 +165,8 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     expect(allProjectsIndex).toBeGreaterThan(orderNumberIndex);
     expect(upcomingProjectsIndex).toBeGreaterThan(allProjectsIndex);
     expect(noAppointmentsIndex).toBeGreaterThan(upcomingProjectsIndex);
-    expect(tagIndex).toBeGreaterThan(noAppointmentsIndex);
+    expect(articleIndex).toBeGreaterThan(noAppointmentsIndex);
+    expect(tagIndex).toBeGreaterThan(articleIndex);
   });
 
   it("keeps visible number labels and the normalized number placeholder", () => {
@@ -170,6 +188,10 @@ describe("FT02 UI: project filter panel layout wiring", () => {
       isOpen: true,
       selectedTags: [],
       availableTags: [],
+    });
+    expect(articleFilterCalls[0]).toMatchObject({
+      selectedProductIds: [],
+      selectedComponentIds: [],
     });
   });
 });

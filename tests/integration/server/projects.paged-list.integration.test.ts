@@ -28,11 +28,13 @@ import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { loginAdminAgent } from "../../helpers/appointmentOverlapFixtures";
 import {
+  attachProjectTagFixture,
   createAppointmentFixture,
   createComponentFixture,
   createProductFixture,
   createProjectFixture,
   createProjectOrderItemFixture,
+  createTagFixture,
 } from "../../helpers/testDataFactory";
 import { db } from "../../../server/db";
 import { projectAttachments } from "../../../shared/schema";
@@ -116,6 +118,136 @@ describe("FT30 integration: paged projects list", () => {
       { label: "Sauna", value: "FT30 Sauna Modell", source: "product", shortCode: null },
       { label: "Fenster", value: "FT30 Rundfenster", source: "component", shortCode: null },
     ]);
+  });
+
+  it("filters by project article products and component categories before paging", async () => {
+    const agent = await loginAdminAgent(app);
+    const token = "FT30-ARTICLE-FILTER";
+    const articleTag = await createTagFixture(`${token}-TAG`);
+    const saunaNord = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: `${token} Sauna Nord`,
+    });
+    const saunaSued = await createProductFixture({
+      categoryName: "Fass Saunen",
+      name: `${token} Sauna Süd`,
+    });
+    const ovenCompact = await createComponentFixture({
+      categoryName: "Ofen",
+      name: `${token} Ofen Kompakt`,
+    });
+    const ovenClassic = await createComponentFixture({
+      categoryName: "Ofen",
+      name: `${token} Ofen Klassik`,
+    });
+    const windowPanorama = await createComponentFixture({
+      categoryName: "Fenster",
+      name: `${token} Fenster Panorama`,
+    });
+    const windowSmall = await createComponentFixture({
+      categoryName: "Fenster",
+      name: `${token} Fenster Klein`,
+    });
+
+    const projectNordCompactPanorama = await createProjectFixture({
+      prefix: `${token}-NORD-KOMPAKT`,
+      name: `${token} Nord Kompakt Panorama`,
+    });
+    const projectNordClassicSmall = await createProjectFixture({
+      prefix: `${token}-NORD-KLASSIK`,
+      name: `${token} Nord Klassik Klein`,
+    });
+    const projectSuedCompactSmall = await createProjectFixture({
+      prefix: `${token}-SUED-KOMPAKT`,
+      name: `${token} Süd Kompakt Klein`,
+    });
+
+    await createProjectOrderItemFixture({
+      projectId: projectNordCompactPanorama.id,
+      orderNumber: projectNordCompactPanorama.orderNumber ?? "",
+      productId: saunaNord.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectNordCompactPanorama.id,
+      orderNumber: projectNordCompactPanorama.orderNumber ?? "",
+      componentId: ovenCompact.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectNordCompactPanorama.id,
+      orderNumber: projectNordCompactPanorama.orderNumber ?? "",
+      componentId: windowPanorama.id,
+    });
+    await attachProjectTagFixture(projectNordCompactPanorama.id, articleTag.id);
+
+    await createProjectOrderItemFixture({
+      projectId: projectNordClassicSmall.id,
+      orderNumber: projectNordClassicSmall.orderNumber ?? "",
+      productId: saunaNord.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectNordClassicSmall.id,
+      orderNumber: projectNordClassicSmall.orderNumber ?? "",
+      componentId: ovenClassic.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectNordClassicSmall.id,
+      orderNumber: projectNordClassicSmall.orderNumber ?? "",
+      componentId: windowSmall.id,
+    });
+
+    await createProjectOrderItemFixture({
+      projectId: projectSuedCompactSmall.id,
+      orderNumber: projectSuedCompactSmall.orderNumber ?? "",
+      productId: saunaSued.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectSuedCompactSmall.id,
+      orderNumber: projectSuedCompactSmall.orderNumber ?? "",
+      componentId: ovenCompact.id,
+    });
+    await createProjectOrderItemFixture({
+      projectId: projectSuedCompactSmall.id,
+      orderNumber: projectSuedCompactSmall.orderNumber ?? "",
+      componentId: windowSmall.id,
+    });
+
+    await createAppointmentFixture({ projectId: projectNordCompactPanorama.id, startDate: "2099-11-01" });
+    await createAppointmentFixture({ projectId: projectNordClassicSmall.id, startDate: "2099-11-02" });
+    await createAppointmentFixture({ projectId: projectSuedCompactSmall.id, startDate: "2099-11-03" });
+
+    const getProjectNames = async (query: string) => {
+      const response = await agent
+        .get(`/api/projects/list?scope=upcoming&${query}`)
+        .expect(200);
+      return {
+        body: response.body,
+        names: (response.body.items as Array<{ name: string }>).map((item) => item.name).sort(),
+      };
+    };
+
+    const productOnly = await getProjectNames(`title=${encodeURIComponent(token)}&page=1&pageSize=1&articleProductIds=${saunaNord.id}`);
+    expect(productOnly.body.total).toBe(2);
+    expect(productOnly.body.totalPages).toBe(2);
+    expect(productOnly.names).toHaveLength(1);
+
+    const ovenOr = await getProjectNames(`title=${encodeURIComponent(token)}&page=1&pageSize=50&articleComponentIds=${ovenCompact.id},${ovenClassic.id}`);
+    expect(ovenOr.names).toEqual([
+      projectNordClassicSmall.name,
+      projectNordCompactPanorama.name,
+      projectSuedCompactSmall.name,
+    ].sort());
+
+    const productAndOven = await getProjectNames(`title=${encodeURIComponent(token)}&page=1&pageSize=50&articleProductIds=${saunaNord.id}&articleComponentIds=${ovenCompact.id}`);
+    expect(productAndOven.names).toEqual([projectNordCompactPanorama.name]);
+
+    const ovenAndWindow = await getProjectNames(`title=${encodeURIComponent(token)}&page=1&pageSize=50&articleComponentIds=${ovenCompact.id},${windowSmall.id}`);
+    expect(ovenAndWindow.names).toEqual([projectSuedCompactSmall.name]);
+
+    const combined = await getProjectNames(
+      `page=1&pageSize=50&tagIds=${articleTag.id}&title=${encodeURIComponent(`${token} Nord`)}&articleProductIds=${saunaNord.id}&articleComponentIds=${ovenCompact.id},${windowPanorama.id}`,
+    );
+    expect(combined.body.total).toBe(1);
+    expect(combined.names).toEqual([projectNordCompactPanorama.name]);
   });
 
   it("returns projectArticleItems on GET /api/projects with stable item ordering and empty arrays", async () => {

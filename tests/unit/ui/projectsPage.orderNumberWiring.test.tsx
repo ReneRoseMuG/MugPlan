@@ -157,7 +157,15 @@ describe("FT02 projects page order number wiring", () => {
       setSetting: vi.fn().mockResolvedValue(undefined),
     });
     useListFiltersMock.mockReturnValue({
-      filters: { title: "", customerLastName: "", customerNumber: "", orderNumber: "ORD-1", tagIds: [] },
+      filters: {
+        title: "",
+        customerLastName: "",
+        customerNumber: "",
+        orderNumber: "ORD-1",
+        tagIds: [],
+        articleProductIds: [],
+        articleComponentIds: [],
+      },
       setFilter: vi.fn(),
       page: 1,
       setPage: vi.fn(),
@@ -215,6 +223,8 @@ describe("FT02 projects page order number wiring", () => {
     expect(projectFilterPanelCalls[0]).toMatchObject({
       orderNumber: "ORD-1",
       projectScope: "all",
+      articleProductIds: [],
+      articleComponentIds: [],
     });
     expect(projectFilterPanelCalls[0].onOrderNumberChange).toEqual(expect.any(Function));
     expect(projectFilterPanelCalls[0].onOrderNumberClear).toEqual(expect.any(Function));

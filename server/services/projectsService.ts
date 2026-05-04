@@ -39,6 +39,10 @@ export class ProjectsError extends Error {
 export type ProjectScope = "upcoming" | "noAppointments" | "all" | "withAppointments";
 export type ProjectListItem = projectsRepository.ProjectListItem;
 export type ProjectBoardListResult = projectsRepository.ProjectBoardListResult;
+export type ProjectArticleFilterParams = {
+  articleProductIds?: number[];
+  articleComponentIds?: number[];
+};
 
 function requireDispatcherOrAdmin(roleKey: CanonicalRoleKey): void {
   if (roleKey !== "DISPONENT" && roleKey !== "ADMIN") {
@@ -74,13 +78,16 @@ export async function listProjects(
   filter: "active" | "inactive" | "all" = "all",
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
+  articleFilters: ProjectArticleFilterParams = {},
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjects(filter, tagIds, scope);
+  return projectsRepository.getProjects(filter, tagIds, scope, articleFilters);
 }
 
 export async function listProjectsPaged(params: {
   filter: "active" | "inactive" | "all";
   tagIds: number[];
+  articleProductIds: number[];
+  articleComponentIds: number[];
   scope: ProjectScope;
   customerId?: number;
   title?: string;
@@ -98,8 +105,9 @@ export async function listProjectsByCustomer(
   filter: "active" | "inactive" | "all" = "all",
   tagIds: number[] = [],
   scope: ProjectScope = "upcoming",
+  articleFilters: ProjectArticleFilterParams = {},
 ): Promise<ProjectListItem[]> {
-  return projectsRepository.getProjectsByCustomer(customerId, filter, tagIds, scope);
+  return projectsRepository.getProjectsByCustomer(customerId, filter, tagIds, scope, articleFilters);
 }
 
 export async function getProject(id: number): Promise<projectsRepository.ProjectWithTags | null> {

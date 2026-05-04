@@ -14,7 +14,7 @@ import {
 } from "../lib/journalMessages";
 import * as journalService from "../services/journalService";
 
-function parseTagIds(value: unknown): number[] {
+function parseIdList(value: unknown): number[] {
   if (!value) return [];
   const rawValues = Array.isArray(value) ? value : [value];
   const ids = rawValues
@@ -29,7 +29,9 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
     const listInput = api.projects.list.input.parse(req.query);
     const filter = req.query.filter as "active" | "inactive" | "all" | undefined;
     const customerIdParam = req.query.customerId as string | undefined;
-    const tagIds = parseTagIds(listInput.tagIds);
+    const tagIds = parseIdList(listInput.tagIds);
+    const articleProductIds = parseIdList(listInput.articleProductIds);
+    const articleComponentIds = parseIdList(listInput.articleComponentIds);
     const scope = listInput.scope;
 
     if (customerIdParam) {
@@ -43,12 +45,13 @@ export async function listProjects(req: Request, res: Response, next: NextFuncti
         filter || "all",
         tagIds,
         scope,
+        { articleProductIds, articleComponentIds },
       );
       res.json(projects);
       return;
     }
 
-    const projects = await projectsService.listProjects(filter || "all", tagIds, scope);
+    const projects = await projectsService.listProjects(filter || "all", tagIds, scope, { articleProductIds, articleComponentIds });
     res.json(projects);
   } catch (err) {
     if (err instanceof ZodError) {
@@ -71,7 +74,9 @@ export async function listProjectsPaged(req: Request, res: Response, next: NextF
 
     const projects = await projectsService.listProjectsPaged({
       filter: input.filter || "all",
-      tagIds: parseTagIds(input.tagIds),
+      tagIds: parseIdList(input.tagIds),
+      articleProductIds: parseIdList(input.articleProductIds),
+      articleComponentIds: parseIdList(input.articleComponentIds),
       scope: input.scope,
       customerId,
       title: input.title,

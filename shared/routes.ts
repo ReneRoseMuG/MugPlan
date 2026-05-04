@@ -180,6 +180,14 @@ const employeeAppointmentAbsenceInputSchema = z.object({
 }).strict();
 
 const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active");
+const idListQuerySchema = z
+  .union([
+    z.string(),
+    z.number(),
+    z.array(z.string()),
+    z.array(z.number()),
+  ])
+  .optional();
 
 const projectArticleItemSchema = z.object({
   label: z.string().min(1),
@@ -3455,14 +3463,9 @@ export const api = {
       input: z.object({
         filter: z.enum(["active", "inactive", "all"]).optional(),
         customerId: z.union([z.string(), z.number()]).optional(),
-        tagIds: z
-          .union([
-            z.string(),
-            z.number(),
-            z.array(z.string()),
-            z.array(z.number()),
-          ])
-          .optional(),
+        tagIds: idListQuerySchema,
+        articleProductIds: idListQuerySchema,
+        articleComponentIds: idListQuerySchema,
         scope: z.enum(["upcoming", "noAppointments", "all", "withAppointments"]).default("upcoming"),
       }),
       responses: {
@@ -3475,14 +3478,9 @@ export const api = {
       input: z.object({
         filter: z.enum(["active", "inactive", "all"]).optional(),
         customerId: z.union([z.string(), z.number()]).optional(),
-        tagIds: z
-          .union([
-            z.string(),
-            z.number(),
-            z.array(z.string()),
-            z.array(z.number()),
-          ])
-          .optional(),
+        tagIds: idListQuerySchema,
+        articleProductIds: idListQuerySchema,
+        articleComponentIds: idListQuerySchema,
         scope: z.enum(["upcoming", "noAppointments", "all", "withAppointments"]).default("upcoming"),
         title: z.string().trim().optional(),
         customerLastName: z.string().trim().optional(),

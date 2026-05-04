@@ -33,7 +33,7 @@ vi.mock("@/hooks/useSettings", () => ({
 
 vi.mock("@/hooks/useListFilters", () => ({
   useListFilters: () => ({
-    filters: { title: "internal", customerLastName: "internal", customerNumber: "0", orderNumber: "0", tagIds: [999] },
+    filters: { title: "internal", customerLastName: "internal", customerNumber: "0", orderNumber: "0", tagIds: [999], articleProductIds: [31], articleComponentIds: [41] },
     setFilter: vi.fn(),
     page: 99,
     setPage: vi.fn(),
@@ -146,7 +146,7 @@ describe("FT30 projects page controlled state", () => {
   it("prefers controlled filters, paging and scope over internal defaults", () => {
     renderToStaticMarkup(
       <ProjectsPage
-        filters={{ title: "Extern", customerLastName: "Extern", customerNumber: "42", orderNumber: "77", tagIds: [] }}
+        filters={{ title: "Extern", customerLastName: "Extern", customerNumber: "42", orderNumber: "77", tagIds: [], articleProductIds: [11], articleComponentIds: [22] }}
         onFilterChange={vi.fn()}
         page={4}
         onPageChange={vi.fn()}
@@ -166,17 +166,19 @@ describe("FT30 projects page controlled state", () => {
       customerNumber: "42",
       orderNumber: "77",
       projectScope: "all",
+      articleProductIds: [11],
+      articleComponentIds: [22],
     });
     expect(useQueryMock.mock.calls[0]?.[0]?.queryKey).toEqual([
       "/api/projects/list",
-      "scope=all&page=4&pageSize=50&title=Extern&customerLastName=Extern&customerNumber=42&orderNumber=77",
+      "scope=all&page=4&pageSize=50&title=Extern&customerLastName=Extern&customerNumber=42&orderNumber=77&articleProductIds=11&articleComponentIds=22",
     ]);
   });
 
   it("sorts table rows from the controlled sort props", () => {
     renderToStaticMarkup(
       <ProjectsPage
-        filters={{ title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [] }}
+        filters={{ title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [], articleProductIds: [], articleComponentIds: [] }}
         onFilterChange={vi.fn()}
         page={1}
         onPageChange={vi.fn()}
@@ -194,15 +196,44 @@ describe("FT30 projects page controlled state", () => {
     expect(rows.map((row) => row.project.id)).toEqual([1, 2]);
   });
 
+  it("wires article filter apply and reset through controlled filter changes", () => {
+    const onFilterChange = vi.fn();
+
+    renderToStaticMarkup(
+      <ProjectsPage
+        filters={{ title: "", customerLastName: "", customerNumber: "", orderNumber: "", tagIds: [], articleProductIds: [], articleComponentIds: [] }}
+        onFilterChange={onFilterChange}
+        page={1}
+        onPageChange={vi.fn()}
+        projectScope="all"
+        onProjectScopeChange={vi.fn()}
+        tableOnly
+      />,
+    );
+
+    (projectFilterPanelCalls[0].onArticleFilterChange as (selection: { productIds: number[]; componentIds: number[] }) => void)({
+      productIds: [7, 8],
+      componentIds: [12],
+    });
+    (projectFilterPanelCalls[0].onArticleFilterReset as () => void)();
+
+    expect(onFilterChange).toHaveBeenNthCalledWith(1, "articleProductIds", [7, 8]);
+    expect(onFilterChange).toHaveBeenNthCalledWith(2, "articleComponentIds", [12]);
+    expect(onFilterChange).toHaveBeenNthCalledWith(3, "articleProductIds", []);
+    expect(onFilterChange).toHaveBeenNthCalledWith(4, "articleComponentIds", []);
+  });
+
   it("uses all as the uncontrolled default scope", () => {
     renderToStaticMarkup(<ProjectsPage tableOnly />);
 
     expect(projectFilterPanelCalls[0]).toMatchObject({
       projectScope: "all",
+      articleProductIds: [31],
+      articleComponentIds: [41],
     });
     expect(useQueryMock.mock.calls[0]?.[0]?.queryKey).toEqual([
       "/api/projects/list",
-      "scope=all&page=99&pageSize=50&title=internal&customerLastName=internal&customerNumber=0&orderNumber=0&tagIds=999",
+      "scope=all&page=99&pageSize=50&title=internal&customerLastName=internal&customerNumber=0&orderNumber=0&tagIds=999&articleProductIds=31&articleComponentIds=41",
     ]);
   });
 });

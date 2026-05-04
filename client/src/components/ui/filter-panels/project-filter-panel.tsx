@@ -1,13 +1,14 @@
 import { CustomerNameFilterInput } from "@/components/filters/customer-name-filter-input";
 import { CustomerNumberFilterInput } from "@/components/filters/customer-number-filter-input";
 import { ProjectOrderNumberFilterInput } from "@/components/filters/project-order-number-filter-input";
+import { ProjectArticleFilterInput } from "@/components/filters/project-article-filter-input";
 import { ProjectTitleFilterInput } from "@/components/filters/project-title-filter-input";
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { HelpIcon } from "@/components/ui/help/help-icon";
 import { FilterPanel } from "@/components/ui/filter-panels/filter-panel";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { Tag } from "@shared/schema";
+import type { Component, ComponentCategory, Product, Tag } from "@shared/schema";
 import type { ProjectScope } from "@/lib/project-filters";
 
 interface ProjectFilterPanelProps {
@@ -26,6 +27,13 @@ interface ProjectFilterPanelProps {
   onOrderNumberClear: () => void;
   selectedTags: Tag[];
   availableTags: Tag[];
+  articleProducts: Product[];
+  articleComponents: Component[];
+  articleComponentCategories: ComponentCategory[];
+  articleProductIds: number[];
+  articleComponentIds: number[];
+  onArticleFilterChange: (selection: { productIds: number[]; componentIds: number[] }) => void;
+  onArticleFilterReset: () => void;
   tagPickerOpen: boolean;
   onTagPickerOpenChange: (open: boolean) => void;
   onAddTag: (tagId: number) => void;
@@ -50,6 +58,13 @@ export function ProjectFilterPanel({
   onOrderNumberClear,
   selectedTags,
   availableTags,
+  articleProducts,
+  articleComponents,
+  articleComponentCategories,
+  articleProductIds,
+  articleComponentIds,
+  onArticleFilterChange,
+  onArticleFilterReset,
   tagPickerOpen,
   onTagPickerOpenChange,
   onAddTag,
@@ -126,6 +141,15 @@ export function ProjectFilterPanel({
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
+        <ProjectArticleFilterInput
+          products={articleProducts}
+          components={articleComponents}
+          componentCategories={articleComponentCategories}
+          selectedProductIds={articleProductIds}
+          selectedComponentIds={articleComponentIds}
+          onChange={onArticleFilterChange}
+          onReset={onArticleFilterReset}
+        />
         <TagFilterInput
           selectedTags={selectedTags}
           availableTags={availableTags}

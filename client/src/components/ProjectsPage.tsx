@@ -12,7 +12,7 @@ import { ProjectEntityCard } from "@/components/ui/entity-preview-cards";
 import { defaultProjectFilters, type ProjectFilters, type ProjectScope } from "@/lib/project-filters";
 import { useSettings } from "@/hooks/useSettings";
 import { useListFilters } from "@/hooks/useListFilters";
-import type { Project, Tag } from "@shared/schema";
+import type { Component, ComponentCategory, Product, Project, Tag } from "@shared/schema";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import { domainIcons } from "@/lib/domain-icons";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -90,6 +90,14 @@ function formatProjectAmount(amount: unknown): string {
   }).format(normalized);
 }
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error((await response.text()) || `Request failed for ${url}`);
+  }
+  return response.json() as Promise<T>;
+}
+
 
 function SortIcon({ direction }: { direction: SortDirection | null }) {
   if (direction === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
@@ -147,6 +155,8 @@ export function ProjectsPage({
   const [internalSortKey, setInternalSortKey] = useState<ProjectSortKey>("title");
   const [internalSortDirection, setInternalSortDirection] = useState<SortDirection>("asc");
   const filters = controlledFilters ?? internalListFilters.filters;
+  const articleProductIds = filters.articleProductIds ?? [];
+  const articleComponentIds = filters.articleComponentIds ?? [];
   const setFilter = onFilterChange ?? internalListFilters.setFilter;
   const page = controlledPage ?? internalListFilters.page;
   const setPage = onPageChange ?? internalListFilters.setPage;
@@ -173,9 +183,11 @@ export function ProjectsPage({
     if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
     if (filters.orderNumber.trim().length > 0) params.set("orderNumber", filters.orderNumber.trim());
     if (filters.tagIds.length > 0) params.set("tagIds", filters.tagIds.join(","));
+    if (articleProductIds.length > 0) params.set("articleProductIds", articleProductIds.join(","));
+    if (articleComponentIds.length > 0) params.set("articleComponentIds", articleComponentIds.join(","));
 
     return params.toString();
-  }, [filters, page, projectScope]);
+  }, [articleComponentIds, articleProductIds, filters, page, projectScope]);
 
   const { data, isLoading: projectsLoading } = useQuery<ProjectListResponse>({
     queryKey: ["/api/projects/list", projectQueryParams],
@@ -196,6 +208,24 @@ export function ProjectsPage({
 
   const projects = data?.items ?? [];
   const selectedTagIds = useMemo(() => new Set(filters.tagIds), [filters.tagIds]);
+  const masterDataScope = userRole === "ADMIN" ? "all" : "active";
+  const productsUrl = `/api/admin/master-data/products?active=${masterDataScope}`;
+  const componentsUrl = `/api/admin/master-data/components?active=${masterDataScope}`;
+  const componentCategoriesUrl = `/api/admin/master-data/component-categories?active=${masterDataScope}`;
+
+  const { data: articleProducts = [] } = useQuery<Product[]>({
+    queryKey: [productsUrl],
+    queryFn: () => fetchJson<Product[]>(productsUrl),
+  });
+  const { data: articleComponents = [] } = useQuery<Component[]>({
+    queryKey: [componentsUrl],
+    queryFn: () => fetchJson<Component[]>(componentsUrl),
+  });
+  const { data: articleComponentCategories = [] } = useQuery<ComponentCategory[]>({
+    queryKey: [componentCategoriesUrl],
+    queryFn: () => fetchJson<ComponentCategory[]>(componentCategoriesUrl),
+  });
+
   const selectedTags = useMemo(
     () => filters.tagIds
       .map((id) => availableTags.find((tag) => tag.id === id))
@@ -348,6 +378,8 @@ export function ProjectsPage({
     || filters.customerNumber.trim().length > 0
     || filters.orderNumber.trim().length > 0
     || filters.tagIds.length > 0
+    || articleProductIds.length > 0
+    || articleComponentIds.length > 0
     || projectScope !== "all";
   const emptyState = hasActiveFilters ? (
     <ListEmptyState
@@ -424,6 +456,19 @@ export function ProjectsPage({
             onOrderNumberClear={() => setFilter("orderNumber", "")}
             selectedTags={selectedTags}
             availableTags={unselectedTags}
+            articleProducts={articleProducts}
+            articleComponents={articleComponents}
+            articleComponentCategories={articleComponentCategories}
+            articleProductIds={articleProductIds}
+            articleComponentIds={articleComponentIds}
+            onArticleFilterChange={(selection) => {
+              setFilter("articleProductIds", selection.productIds);
+              setFilter("articleComponentIds", selection.componentIds);
+            }}
+            onArticleFilterReset={() => {
+              setFilter("articleProductIds", []);
+              setFilter("articleComponentIds", []);
+            }}
             tagPickerOpen={tagPickerOpen}
             onTagPickerOpenChange={setTagPickerOpen}
             onAddTag={(tagId) => setFilter("tagIds", [...filters.tagIds, tagId])}
