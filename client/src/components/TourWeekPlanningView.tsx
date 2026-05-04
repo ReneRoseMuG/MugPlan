@@ -210,7 +210,7 @@ export function TourWeekPlanningView({
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <div className="visible-horizontal-scrollbar min-w-0 h-full overflow-auto bg-white">
-          <div className="min-w-[1040px] p-4">
+          <div className="min-w-[880px] p-4">
             <div
               className="grid gap-3"
               style={{ gridTemplateColumns: "repeat(4, minmax(12.5rem, 1fr))" }}
@@ -228,44 +228,44 @@ export function TourWeekPlanningView({
               ))}
 
               {planningQuery.isLoading ? (
-              <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
-                Wochenplanung wird geladen...
-              </div>
-            ) : tours.length === 0 ? (
-              <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
-                Keine Touren mit Wochenplanung vorhanden.
-              </div>
-            ) : tours.map((tour) => (
-              <Fragment key={`tour-week-planning-row-${tour.id}`}>
-                <div className="col-span-4 pt-1">
-                  <CalendarWeekTourLaneHeaderBar
-                    label={tour.name}
-                    color={tour.color}
-                    isExpanded
-                    reduced
-                    testId={`tour-week-planning-lane-${tour.id}`}
-                  />
+                <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+                  Wochenplanung wird geladen...
                 </div>
-                {weeks.map((week) => {
-                  const cell = cellsByTourAndWeek.get(`${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`);
-                  if (!cell) {
-                    return (
-                      <div
-                        key={`empty-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
-                        className="min-h-[9rem] rounded-md border border-dashed border-slate-200"
-                      />
-                    );
-                  }
+              ) : tours.length === 0 ? (
+                <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+                  Keine Touren mit Wochenplanung vorhanden.
+                </div>
+              ) : tours.map((tour) => (
+                <Fragment key={`tour-week-planning-row-${tour.id}`}>
+                  <div className="col-span-4 pt-1">
+                    <CalendarWeekTourLaneHeaderBar
+                      label={tour.name}
+                      color={tour.color}
+                      isExpanded
+                      reduced
+                      testId={`tour-week-planning-lane-${tour.id}`}
+                    />
+                  </div>
+                  {weeks.map((week) => {
+                    const cell = cellsByTourAndWeek.get(`${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`);
+                    if (!cell) {
+                      return (
+                        <div
+                          key={`empty-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
+                          className="min-h-[9rem] rounded-md border border-dashed border-slate-200"
+                        />
+                      );
+                    }
 
-                  return (
-                    <CalendarWeekNotesButton
-                      key={`cell-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
-                      yearNumber={cell.isoYear}
-                      weekNumber={cell.isoWeek}
-                      tourId={cell.tourId}
-                      tourLabel={`${cell.tourName} - KW ${String(cell.isoWeek).padStart(2, "0")} / ${cell.isoYear}`}
-                      readOnly={readOnly}
-                    >
+                    return (
+                      <CalendarWeekNotesButton
+                        key={`cell-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
+                        yearNumber={cell.isoYear}
+                        weekNumber={cell.isoWeek}
+                        tourId={cell.tourId}
+                        tourLabel={`${cell.tourName} - KW ${String(cell.isoWeek).padStart(2, "0")} / ${cell.isoYear}`}
+                        readOnly={readOnly}
+                      >
                       {({ dialog, openDialog }) => (
                         <>
                           <TourWeekCard
