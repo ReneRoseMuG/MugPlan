@@ -2232,6 +2232,11 @@ export function CalendarWeekView({
                         backgroundColor: laneFooterBaseStyle.backgroundColor,
                         borderColor: laneFooterBaseStyle.borderTopColor,
                       };
+                      const isCurrentLaneCollapsed = isLaneCollapsed({
+                        isCollapsedMode,
+                        laneKey: tourLane.laneKey,
+                        effectiveExpandedLaneId,
+                      });
                       return (
                       <CalendarWeekNotesButton
                         key={tourLane.laneKey}
@@ -2344,11 +2349,13 @@ export function CalendarWeekView({
                                 </button>
                               </div>
                               <div
-                                className={`relative grid min-h-0 flex-1 content-start gap-1 overflow-hidden ${
+                                className={`relative grid min-h-0 content-start gap-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                                  isCurrentLaneCollapsed ? "max-h-0 flex-none opacity-0" : "max-h-[2200px] flex-1 opacity-100"
+                                } ${
                                   isPersonnelColumnCollapsed ? "justify-items-center" : ""
                                 }`}
                                 style={{
-                                  minHeight: `${laneRowMinHeightPx}px`,
+                                  minHeight: isCurrentLaneCollapsed ? "0px" : `${laneRowMinHeightPx}px`,
                                   gridTemplateRows: laneGridTemplateRows,
                                 }}
                                 data-testid={`week-personnel-column-body-${tourLane.laneKey}`}
@@ -2461,11 +2468,7 @@ export function CalendarWeekView({
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
                             color={tourLane.color}
-                            isExpanded={!isLaneCollapsed({
-                              isCollapsedMode,
-                              laneKey: tourLane.laneKey,
-                              effectiveExpandedLaneId,
-                            })}
+                            isExpanded={!isCurrentLaneCollapsed}
                             interactive={isCollapsedMode}
                             onClick={() => {
                               void handleLaneHeaderClick(tourLane.laneKey).catch((error) => {
@@ -2573,11 +2576,7 @@ export function CalendarWeekView({
                         </div>
                         <div
                           className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                            isLaneCollapsed({
-                              isCollapsedMode,
-                              laneKey: tourLane.laneKey,
-                              effectiveExpandedLaneId,
-                            })
+                            isCurrentLaneCollapsed
                               ? "max-h-0 opacity-0 mt-0"
                               : "max-h-[2200px] opacity-100 mt-0"
                           }`}

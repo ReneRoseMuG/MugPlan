@@ -1,5 +1,14 @@
 import type { InsertTour, Tour, UpdateTour } from "@shared/schema";
+import { addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
+import { isAbsenceTourName, isParkplatzTourName } from "../lib/systemTours";
+import * as tourWeekEmployeesRepository from "../repositories/tourWeekEmployeesRepository";
+import * as tourWeeksRepository from "../repositories/tourWeeksRepository";
 import * as toursRepository from "../repositories/toursRepository";
+import {
+  enrichTourWeekCards,
+  isWeekLockedForRole,
+  resolveIsoWeekWindow,
+} from "./tourWeekEmployeesService";
 
 export class ToursError extends Error {
   status: number;
@@ -11,6 +20,8 @@ export class ToursError extends Error {
     this.code = code;
   }
 }
+
+type WeekPlanningRoleKey = "ADMIN" | "DISPONENT" | "LESER" | null | undefined;
 
 export async function listTours(): Promise<Tour[]> {
   return toursRepository.getTours();
@@ -39,6 +50,103 @@ function buildNextTourName(existing: Tour[]): string {
     nextNumber += 1;
   }
   return `Tour ${nextNumber}`;
+}
+
+function parseDateOnlyInput(value: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new ToursError(422, "VALIDATION_ERROR");
+  }
+  const parsed = parseISO(value);
+  if (Number.isNaN(parsed.getTime()) || format(parsed, "yyyy-MM-dd") !== value) {
+    throw new ToursError(422, "VALIDATION_ERROR");
+  }
+  return parsed;
+}
+
+function supportsWeekPlanningView(tour: Pick<Tour, "name">): boolean {
+  return !isParkplatzTourName(tour.name) && !isAbsenceTourName(tour.name);
+}
+
+function resolveWeekWindows(fromDate: string, toDate: string) {
+  const parsedFromDate = parseDateOnlyInput(fromDate);
+  const parsedToDate = parseDateOnlyInput(toDate);
+  if (parsedToDate < parsedFromDate) {
+    throw new ToursError(422, "VALIDATION_ERROR");
+  }
+
+  const weeks = [];
+  for (
+    let cursor = startOfISOWeek(parsedFromDate);
+    format(cursor, "yyyy-MM-dd") <= format(parsedToDate, "yyyy-MM-dd");
+    cursor = addWeeks(cursor, 1)
+  ) {
+    weeks.push(resolveIsoWeekWindow(getISOWeekYear(cursor), getISOWeek(cursor)));
+  }
+  return weeks;
+}
+
+export async function listTourWeekPlanning(
+  params: { fromDate: string; toDate: string },
+  roleKey?: WeekPlanningRoleKey,
+) {
+  const weeks = resolveWeekWindows(params.fromDate, params.toDate);
+  const planningTours = (await toursRepository.getTours()).filter(supportsWeekPlanningView);
+  const tourIds = planningTours.map((tour) => tour.id);
+  const [weekRows, assignments] = await Promise.all([
+    tourWeeksRepository.listWeeksByTourIds(tourIds),
+    tourWeekEmployeesRepository.listAssignmentsByTourIds(tourIds),
+  ]);
+
+  const weekStateByKey = new Map(
+    weekRows.map((week) => [`${week.tourId}-${week.isoYear}-${week.isoWeek}`, week]),
+  );
+  const assignmentsByKey = new Map<string, typeof assignments>();
+  for (const assignment of assignments) {
+    const key = `${assignment.tourId}-${assignment.isoYear}-${assignment.isoWeek}`;
+    const group = assignmentsByKey.get(key) ?? [];
+    group.push(assignment);
+    assignmentsByKey.set(key, group);
+  }
+
+  const cells = planningTours.flatMap((tour) =>
+    weeks.map((week) => {
+      const key = `${tour.id}-${week.isoYear}-${week.isoWeek}`;
+      const weekState = weekStateByKey.get(key);
+      return {
+        tourId: tour.id,
+        tourName: tour.name,
+        tourColor: tour.color,
+        isoYear: week.isoYear,
+        isoWeek: week.isoWeek,
+        weekStartDate: week.weekStartDate,
+        weekEndDate: week.weekEndDate,
+        isLocked: isWeekLockedForRole(week.isoYear, week.isoWeek, roleKey),
+        isBlocked: weekState?.isBlocked ?? false,
+        employees: (assignmentsByKey.get(key) ?? []).map((assignment) => ({
+          assignmentId: assignment.assignmentId,
+          employeeId: assignment.employeeId,
+          firstName: assignment.firstName,
+          lastName: assignment.lastName,
+          fullName: assignment.fullName,
+        })),
+      };
+    }),
+  );
+
+  return {
+    weeks: weeks.map((week) => ({
+      isoYear: week.isoYear,
+      isoWeek: week.isoWeek,
+      weekStartDate: week.weekStartDate,
+      weekEndDate: week.weekEndDate,
+    })),
+    tours: planningTours.map((tour) => ({
+      id: tour.id,
+      name: tour.name,
+      color: tour.color,
+    })),
+    cells: await enrichTourWeekCards(cells),
+  };
 }
 
 export async function createTour(data: InsertTour): Promise<Tour> {

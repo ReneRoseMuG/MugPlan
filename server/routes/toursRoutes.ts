@@ -5,6 +5,7 @@ import * as toursController from "../controllers/toursController";
 const router = Router();
 
 router.get(api.tours.list.path, toursController.listTours);
+router.get(api.tours.weekPlanning.path, toursController.listTourWeekPlanning);
 router.post(api.tours.create.path, toursController.createTour);
 router.patch(api.tours.update.path, toursController.updateTour);
 router.delete(api.tours.delete.path, toursController.deleteTour);

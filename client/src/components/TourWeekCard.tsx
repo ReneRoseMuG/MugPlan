@@ -44,8 +44,10 @@ interface TourWeekCardProps {
   onRemoveEmployee?: (member: TourWeekCardMember) => void;
   footer?: ReactNode;
   footerVisibility?: "hidden" | "visible";
+  inlineNotes?: ReactNode;
   children?: ReactNode;
   legacyLabel?: string;
+  hideDateRange?: boolean;
 }
 
 export function TourWeekCard({
@@ -62,8 +64,10 @@ export function TourWeekCard({
   onRemoveEmployee,
   footer: _legacyFooter,
   footerVisibility: _legacyFooterVisibility,
+  inlineNotes,
   children: _legacyChildren,
   legacyLabel: _legacyLabel,
+  hideDateRange = false,
 }: TourWeekCardProps) {
   const isTourScope = scope === "tour";
   const resolvedBorderColor = borderColor ?? week.tourColor;
@@ -108,9 +112,11 @@ export function TourWeekCard({
       )}
     >
       <div className="space-y-3">
-        <div className="text-sm font-medium text-slate-700">
-          {formatListDateRange(week.weekStartDate, week.weekEndDate)}
-        </div>
+        {!hideDateRange ? (
+          <div className="text-sm font-medium text-slate-700">
+            {formatListDateRange(week.weekStartDate, week.weekEndDate)}
+          </div>
+        ) : null}
 
         {scope === "employee" ? (
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -149,6 +155,7 @@ export function TourWeekCard({
             <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
           ) : null}
         </div>
+        {inlineNotes}
       </div>
     </ColoredEntityCard>
   );

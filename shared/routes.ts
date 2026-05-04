@@ -330,6 +330,21 @@ const tourWeekEmployeesWeekSchema = z.object({
   employees: z.array(tourWeekEmployeeMemberSchema),
 });
 
+const tourWeekPlanningViewSchema = z.object({
+  weeks: z.array(z.object({
+    isoYear: z.number().int().min(1),
+    isoWeek: z.number().int().min(1).max(53),
+    weekStartDate: z.string(),
+    weekEndDate: z.string(),
+  })),
+  tours: z.array(z.object({
+    id: z.number().int().positive(),
+    name: z.string(),
+    color: z.string().nullable(),
+  })),
+  cells: z.array(tourWeekEmployeesWeekSchema),
+});
+
 const tourWeekSchema = z.object({
   id: z.number().int().positive(),
   tourId: z.number().int().positive(),
@@ -2070,6 +2085,18 @@ export const api = {
       path: '/api/tours',
       responses: {
         200: z.array(z.custom<typeof tours.$inferSelect>()),
+      },
+    },
+    weekPlanning: {
+      method: "GET" as const,
+      path: "/api/tours/week-planning",
+      input: z.object({
+        fromDate: z.string(),
+        toDate: z.string(),
+      }).strict(),
+      responses: {
+        200: tourWeekPlanningViewSchema,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     create: {

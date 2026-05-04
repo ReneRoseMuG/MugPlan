@@ -15,6 +15,9 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [04.05.26 - FT-04: Tour-KW-View Layout vereinfachen](04-05-26-tour-kw-view-layout-nacharbeit.md)
+- [04.05.26 - Wochenkalender: Touren zuklappen mit KW-Spalte](04-05-26-wochenkalender-touren-zuklappen.md)
+- [04.05.26 - FT-04: Tour-KW-View](04-05-26-tour-kw-view.md)
 - [04.05.26 - FT-06: Reklamationsworkflow in Create-Formularen](04-05-26-reklamation-create-formulare.md)
 - [04.05.26 - Bugs: Abwesenheiten, Monitoring, KW-Feld und Admin-Correction-Workflows](04-05-26-bugs-04-05-26.md)
 - [04.05.26 - FT-04: Tour-KW-Kartenaktionen im Wochenkalender](04-05-26-tour-kw-week-card-actions.md)

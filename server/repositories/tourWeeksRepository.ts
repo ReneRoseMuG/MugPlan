@@ -80,6 +80,21 @@ export async function listWeeksByTour(tourId: number): Promise<TourWeekRow[]> {
   return rows.map(mapTourWeekRow);
 }
 
+export async function listWeeksByTourIds(tourIds: number[]): Promise<TourWeekRow[]> {
+  const normalizedTourIds = Array.from(new Set(tourIds.filter((value) => Number.isInteger(value) && value > 0)));
+  if (normalizedTourIds.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select()
+    .from(tourWeeks)
+    .where(inArray(tourWeeks.tourId, normalizedTourIds))
+    .orderBy(asc(tourWeeks.tourId), asc(tourWeeks.isoYear), asc(tourWeeks.isoWeek), asc(tourWeeks.id));
+
+  return rows.map(mapTourWeekRow);
+}
+
 export async function listBlockedWeeks(): Promise<TourWeekRow[]> {
   const rows = await db
     .select()

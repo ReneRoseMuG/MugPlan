@@ -23,6 +23,24 @@ export async function listTours(_req: Request, res: Response, next: NextFunction
   }
 }
 
+export async function listTourWeekPlanning(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const input = api.tours.weekPlanning.input.parse(req.query);
+    const result = await toursService.listTourWeekPlanning(input, req.userContext?.roleKey);
+    res.json(result);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(422).json({ code: "VALIDATION_ERROR" });
+      return;
+    }
+    if (err instanceof toursService.ToursError) {
+      res.status(err.status).json({ code: err.code });
+      return;
+    }
+    next(err);
+  }
+}
+
 export async function createTour(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!canMutateTours(req)) {

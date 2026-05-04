@@ -384,6 +384,20 @@ test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termi
       && Math.abs(wrapperBox.y - bodyBox.y) <= 2
       && Math.abs((wrapperBox.y + wrapperBox.height) - (bodyBox.y + bodyBox.height)) <= 2;
   }).toBe(true);
+  await page.getByTestId("toggle-week-lanes-collapsed").click();
+  await targetSection.getByTestId(`week-tour-lane-day-hover-trigger-tour-${tour.id}-${targetWeek.weekStartDate}`).click();
+  const collapsedPersonnelColumnBody = targetSection.getByTestId(`week-personnel-column-body-tour-${absenceTour.id}`);
+  await expect.poll(async () => {
+    const activeBodyBox = await personnelColumnBody.boundingBox();
+    const collapsedBodyBox = await collapsedPersonnelColumnBody.boundingBox();
+    if (!activeBodyBox || !collapsedBodyBox) return false;
+    return activeBodyBox.height > 40 && collapsedBodyBox.height <= 3;
+  }).toBe(true);
+  await page.getByTestId("toggle-week-lanes-expanded").click();
+  await expect.poll(async () => {
+    const restoredBodyBox = await collapsedPersonnelColumnBody.boundingBox();
+    return Boolean(restoredBodyBox && restoredBodyBox.height > 40);
+  }).toBe(true);
   await expect(existingBadge).toContainText(existingEmployee.firstName ?? "");
   await expect.poll(async () => {
     const cardBox = await personnelCard.boundingBox();

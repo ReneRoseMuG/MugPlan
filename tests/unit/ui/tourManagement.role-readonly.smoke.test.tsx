@@ -33,6 +33,11 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => false,
+  useSettings: () => ({ setSetting: vi.fn() }),
+}));
+
 vi.mock("@/lib/queryClient", () => ({
   apiRequest: vi.fn(),
   queryClient: { invalidateQueries: vi.fn() },
