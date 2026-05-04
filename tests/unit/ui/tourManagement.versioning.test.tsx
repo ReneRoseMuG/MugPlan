@@ -99,6 +99,11 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: toastMock }),
 }));
 
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: () => false,
+  useSettings: () => ({ setSetting: vi.fn() }),
+}));
+
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
     <button type="button" {...props}>{children}</button>
