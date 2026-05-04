@@ -202,7 +202,7 @@ export function TourWeekPlanningView({
       <div className="min-h-0 flex-1 grid grid-cols-[28px_minmax(0,1fr)_28px] bg-white">
         <button
           type="button"
-          onClick={() => setWindowStart((current) => addWeeks(current, -4))}
+          onClick={() => setWindowStart((current) => addWeeks(current, -1))}
           className={`${tourWeekPagingButtonClassName} border-r`}
           data-testid="button-tour-week-planning-prev"
           aria-label="Zurück"
@@ -385,7 +385,7 @@ export function TourWeekPlanningView({
         </div>
         <button
           type="button"
-          onClick={() => setWindowStart((current) => addWeeks(current, 4))}
+          onClick={() => setWindowStart((current) => addWeeks(current, 1))}
           className={`${tourWeekPagingButtonClassName} border-l`}
           data-testid="button-tour-week-planning-next"
           aria-label="Vor"
