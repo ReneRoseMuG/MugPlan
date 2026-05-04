@@ -598,4 +598,71 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-7"');
     expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-7"');
   });
+
+  it("collapses the tour week personnel body together with collapsed tour lanes", () => {
+    toursForTest = [
+      { id: 7, name: "Tour 7", color: "#225588", version: 1 },
+      { id: 8, name: "Tour 8", color: "#884422", version: 1 },
+    ];
+    useSettingMock.mockImplementation((key: string) => {
+      switch (key) {
+        case "calendarWeekendColumnPercent":
+          return 33;
+        case "calendarWeekScrollRange":
+          return 0;
+        case "calendar.weekTileBodyMode":
+          return "collapsed";
+        case "calendar.weekLanes.isCollapsed":
+          return true;
+        case "calendar.weekLanes.expandedLaneId":
+          return "tour-7";
+        case "calendar.weekPersonnelColumn.visible":
+          return true;
+        case "calendar.weekPersonnelColumn.collapsed":
+          return false;
+        default:
+          return null;
+      }
+    });
+    useCalendarAppointmentsMock.mockReturnValue({
+      data: [
+        createAppointment({ id: 91, startDate: "2098-07-06", endDate: null, startTime: "09:00", tourId: 7, tourName: "Tour 7" }),
+        createAppointment({ id: 92, startDate: "2098-07-06", endDate: null, startTime: "10:00", tourId: 8, tourName: "Tour 8", tourColor: "#884422" }),
+      ],
+    });
+    useCalendarWeekLaneEmployeePreviewsMock.mockReturnValue({
+      data: [
+        {
+          date: "2098-06-30",
+          weekStartDate: "2098-06-30",
+          tourId: 7,
+          weekEmployees: [],
+          additionalDayEmployees: [],
+        },
+        {
+          date: "2098-06-30",
+          weekStartDate: "2098-06-30",
+          tourId: 8,
+          weekEmployees: [],
+          additionalDayEmployees: [],
+        },
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekView currentDate={new Date("2098-07-06T00:00:00Z")} />,
+    );
+
+    const expandedBodyIndex = html.indexOf('data-testid="week-personnel-column-body-tour-7"');
+    const collapsedBodyIndex = html.indexOf('data-testid="week-personnel-column-body-tour-8"');
+    expect(expandedBodyIndex).toBeGreaterThan(0);
+    expect(collapsedBodyIndex).toBeGreaterThan(0);
+
+    const expandedBodyMarkup = html.slice(Math.max(0, expandedBodyIndex - 320), expandedBodyIndex + 120);
+    const collapsedBodyMarkup = html.slice(Math.max(0, collapsedBodyIndex - 320), collapsedBodyIndex + 120);
+    expect(expandedBodyMarkup).toContain("max-h-[2200px] flex-1 opacity-100");
+    expect(expandedBodyMarkup).not.toContain("min-height:0px");
+    expect(collapsedBodyMarkup).toContain("max-h-0 flex-none opacity-0");
+    expect(collapsedBodyMarkup).toContain("min-height:0px");
+  });
 });

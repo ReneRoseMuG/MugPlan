@@ -47,6 +47,7 @@ interface TourWeekCardProps {
   inlineNotes?: ReactNode;
   children?: ReactNode;
   legacyLabel?: string;
+  hideDateRange?: boolean;
 }
 
 export function TourWeekCard({
@@ -66,6 +67,7 @@ export function TourWeekCard({
   inlineNotes,
   children: _legacyChildren,
   legacyLabel: _legacyLabel,
+  hideDateRange = false,
 }: TourWeekCardProps) {
   const isTourScope = scope === "tour";
   const resolvedBorderColor = borderColor ?? week.tourColor;
@@ -110,9 +112,11 @@ export function TourWeekCard({
       )}
     >
       <div className="space-y-3">
-        <div className="text-sm font-medium text-slate-700">
-          {formatListDateRange(week.weekStartDate, week.weekEndDate)}
-        </div>
+        {!hideDateRange ? (
+          <div className="text-sm font-medium text-slate-700">
+            {formatListDateRange(week.weekStartDate, week.weekEndDate)}
+          </div>
+        ) : null}
 
         {scope === "employee" ? (
           <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">

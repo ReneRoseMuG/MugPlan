@@ -4,12 +4,11 @@ import { ChevronLeft, ChevronRight, ListChecks, Lock, LockOpen, MoreVertical, St
 import { useQuery } from "@tanstack/react-query";
 import type { Employee, Note, Team, Tour } from "@shared/schema";
 import { CalendarWeekNotesButton } from "@/components/calendar/CalendarWeekNotesButton";
+import { CalendarWeekTourLaneHeaderBar } from "@/components/calendar/CalendarWeekTourLaneHeaderBar";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData, type TourWeekCardMember } from "@/components/TourWeekCard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { useSetting, useSettings } from "@/hooks/useSettings";
 import { formatListDateRange } from "@/lib/list-display-format";
 
 type TourWeekPlanningTour = Pick<Tour, "id" | "name" | "color">;
@@ -38,6 +37,7 @@ const tourWeekPagingButtonClassName =
 
 interface TourWeekPlanningViewProps {
   readOnly?: boolean;
+  showInlineNotes?: boolean;
   isMutatingMembers?: boolean;
   isMutatingWeeks?: boolean;
   onAddWeekEmployee?: (params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number }) => Promise<void>;
@@ -115,6 +115,7 @@ function TourWeekInlineNotes({
 
 export function TourWeekPlanningView({
   readOnly = false,
+  showInlineNotes = false,
   isMutatingMembers = false,
   isMutatingWeeks = false,
   onAddWeekEmployee,
@@ -125,12 +126,8 @@ export function TourWeekPlanningView({
   onUnblockWeek,
   onOpenTourWeek,
 }: TourWeekPlanningViewProps) {
-  const { toast } = useToast();
-  const { setSetting } = useSettings();
   const [windowStart, setWindowStart] = useState(resolveInitialWeekStart);
   const [pendingWeekSelection, setPendingWeekSelection] = useState<PendingWeekSelection | null>(null);
-  const inlineNotesSetting = useSetting("calendar.weekInlineNotes.visible");
-  const showInlineNotes = Boolean(inlineNotesSetting);
   const { fromDate, toDate } = useMemo(() => buildWeekRequestWindow(windowStart), [windowStart]);
 
   const planningQuery = useQuery<TourWeekPlanningResponse>({
@@ -170,20 +167,6 @@ export function TourWeekPlanningView({
     return result;
   }, [planningQuery.data?.cells]);
 
-  const setInlineNotesVisible = (visible: boolean) => {
-    void setSetting({
-      key: "calendar.weekInlineNotes.visible",
-      scopeType: "USER",
-      value: visible,
-    }).catch(() => {
-      toast({
-        title: "Notizen-Anzeige konnte nicht gespeichert werden",
-        description: "Bitte erneut versuchen.",
-        variant: "destructive",
-      });
-    });
-  };
-
   const confirmEmployeeSelection = (employeeIds: number[]) => {
     if (!pendingWeekSelection || employeeIds.length === 0) {
       setPendingWeekSelection(null);
@@ -214,33 +197,6 @@ export function TourWeekPlanningView({
         <div className="min-w-[12rem] text-sm font-semibold text-slate-700" data-testid="text-tour-week-planning-range">
           KW {getISOWeek(windowStart)} / {getISOWeekYear(windowStart)}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
-          <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Notizen anzeigen">
-            <button
-              type="button"
-              onClick={() => setInlineNotesVisible(true)}
-              aria-pressed={showInlineNotes}
-              data-testid="switch-tour-week-planning-inline-notes"
-              className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
-                showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Ja
-            </button>
-            <button
-              type="button"
-              onClick={() => setInlineNotesVisible(false)}
-              aria-pressed={!showInlineNotes}
-              data-testid="toggle-tour-week-planning-inline-notes-no"
-              className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
-                !showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              Nein
-            </button>
-          </div>
-        </div>
       </div>
 
       <div className="min-h-0 flex-1 grid grid-cols-[28px_minmax(0,1fr)_28px] bg-white">
@@ -257,12 +213,9 @@ export function TourWeekPlanningView({
           <div className="min-w-[1040px] p-4">
             <div
               className="grid gap-3"
-              style={{ gridTemplateColumns: "12rem repeat(4, minmax(12.5rem, 1fr))" }}
+              style={{ gridTemplateColumns: "repeat(4, minmax(12.5rem, 1fr))" }}
               data-testid="grid-tour-week-planning-view"
             >
-              <div className="sticky left-0 z-20 rounded-md border border-border bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Tour
-              </div>
               {weeks.map((week) => (
                 <div
                   key={buildWeekKey(week.isoYear, week.isoWeek)}
@@ -274,24 +227,24 @@ export function TourWeekPlanningView({
                 </div>
               ))}
 
-            {planningQuery.isLoading ? (
-              <div className="col-span-5 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+              {planningQuery.isLoading ? (
+              <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
                 Wochenplanung wird geladen...
               </div>
             ) : tours.length === 0 ? (
-              <div className="col-span-5 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+              <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
                 Keine Touren mit Wochenplanung vorhanden.
               </div>
             ) : tours.map((tour) => (
               <Fragment key={`tour-week-planning-row-${tour.id}`}>
-                <div
-                  className="sticky left-0 z-10 flex min-h-[9rem] items-start rounded-md border border-border bg-white p-3 shadow-sm"
-                  data-testid={`tour-week-planning-lane-${tour.id}`}
-                >
-                  <div className="min-w-0">
-                    <div className="mb-2 h-1.5 w-16 rounded-full" style={{ backgroundColor: tour.color ?? "#94a3b8" }} />
-                    <div className="truncate text-sm font-semibold text-slate-800">{tour.name}</div>
-                  </div>
+                <div className="col-span-4 pt-1">
+                  <CalendarWeekTourLaneHeaderBar
+                    label={tour.name}
+                    color={tour.color}
+                    isExpanded
+                    reduced
+                    testId={`tour-week-planning-lane-${tour.id}`}
+                  />
                 </div>
                 {weeks.map((week) => {
                   const cell = cellsByTourAndWeek.get(`${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`);
@@ -332,6 +285,7 @@ export function TourWeekPlanningView({
                                 isoWeek: cell.isoWeek,
                               });
                             } : undefined}
+                            hideDateRange
                             inlineNotes={<TourWeekInlineNotes week={cell} visible={showInlineNotes} />}
                             actions={(
                               <>
