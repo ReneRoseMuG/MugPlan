@@ -8,7 +8,9 @@ import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TourEditForm } from "@/components/TourEditForm";
 import { TourWeekForm } from "@/components/TourWeekForm";
+import { TourWeekPlanningView } from "@/components/TourWeekPlanningView";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { defaultEntityColor } from "@/lib/colors";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -106,6 +108,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const [isCreating, setIsCreating] = useState(false);
   const [activeTourWeek, setActiveTourWeek] = useState<TourWeekCardData | null>(null);
   const [weekDialogState, setWeekDialogState] = useState<WeekDialogState | null>(null);
+  const [activeOverviewTab, setActiveOverviewTab] = useState<"tours" | "weekPlanning">("tours");
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
   const isAdmin = effectiveUserRole === "ADMIN";
   const canMutateTours =
@@ -389,11 +392,12 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       employee: { employeeId: number; fullName: string };
       items: WeekPreviewItem[];
     },
-    options?: { remainingEmployeeIds?: number[] },
+    options?: { remainingEmployeeIds?: number[]; tourId?: number },
   ) => {
-    if (!editingTour) return;
+    const targetTourId = options?.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
     openCascadeDialog("add", {
-      tourId: editingTour.id,
+      tourId: targetTourId,
       isoYear: preview.isoYear,
       isoWeek: preview.isoWeek,
       weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
@@ -445,25 +449,27 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     });
   };
 
-  const handleStartAddWeekEmployee = async (params: { isoYear: number; isoWeek: number; employeeId: number }) => {
-    if (!editingTour) return;
+  const handleStartAddWeekEmployee = async (params: { tourId?: number; isoYear: number; isoWeek: number; employeeId: number }) => {
+    const targetTourId = params.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
     try {
       const preview = await previewAddCascadeMutation.mutateAsync({
-        tourId: editingTour.id,
+        tourId: targetTourId,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
         employeeId: params.employeeId,
       });
-      openAddCascadeDialog(preview);
+      openAddCascadeDialog(preview, { tourId: targetTourId });
     } catch (error) {
       handleCascadePreviewError(error, "hinzufuegen");
     }
   };
 
   const handleStartAddWeekEmployees = async (
-    params: { isoYear: number; isoWeek: number; employeeIds: number[] },
+    params: { tourId?: number; isoYear: number; isoWeek: number; employeeIds: number[] },
   ) => {
-    if (!editingTour) return;
+    const targetTourId = params.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
 
     const normalizedEmployeeIds = normalizeEmployeeIds(params.employeeIds);
     if (normalizedEmployeeIds.length === 0) return;
@@ -472,26 +478,27 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
     try {
       const preview = await previewAddCascadeMutation.mutateAsync({
-        tourId: editingTour.id,
+        tourId: targetTourId,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
         employeeId,
       });
-      openAddCascadeDialog(preview, { remainingEmployeeIds });
+      openAddCascadeDialog(preview, { remainingEmployeeIds, tourId: targetTourId });
     } catch (error) {
       handleCascadePreviewError(error, "hinzufuegen");
     }
   };
 
-  const handleStartRemoveWeekEmployee = async (assignment: TourWeekEmployeeMember & { isoYear: number; isoWeek: number }) => {
-    if (!editingTour) return;
+  const handleStartRemoveWeekEmployee = async (assignment: TourWeekEmployeeMember & { tourId?: number; isoYear: number; isoWeek: number }) => {
+    const targetTourId = assignment.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
     try {
       const preview = await previewRemoveCascadeMutation.mutateAsync({
-        tourId: editingTour.id,
+        tourId: targetTourId,
         assignmentId: assignment.assignmentId,
       });
       openCascadeDialog("remove", {
-        tourId: editingTour.id,
+        tourId: targetTourId,
         isoYear: preview.isoYear,
         isoWeek: preview.isoWeek,
         assignmentId: preview.assignmentId,
@@ -542,11 +549,12 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     }
   };
 
-  const handleBlockWeek = async (params: { isoYear: number; isoWeek: number }) => {
-    if (!editingTour) return;
+  const handleBlockWeek = async (params: { tourId?: number; isoYear: number; isoWeek: number }) => {
+    const targetTourId = params.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
     try {
       await blockWeekMutation.mutateAsync({
-        tourId: editingTour.id,
+        tourId: targetTourId,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
       });
@@ -571,11 +579,12 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     }
   };
 
-  const handleUnblockWeek = async (params: { isoYear: number; isoWeek: number }) => {
-    if (!editingTour) return;
+  const handleUnblockWeek = async (params: { tourId?: number; isoYear: number; isoWeek: number }) => {
+    const targetTourId = params.tourId ?? editingTour?.id;
+    if (!targetTourId) return;
     try {
       await unblockWeekMutation.mutateAsync({
-        tourId: editingTour.id,
+        tourId: targetTourId,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
       });
@@ -821,7 +830,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           closeTestId="button-close-tours"
           footerSlot={(
             <div className="flex items-center justify-between">
-              {canMutateTours ? (
+              {canMutateTours && activeOverviewTab === "tours" ? (
                 <Button
                   variant="outline"
                   onClick={handleOpenCreate}
@@ -839,43 +848,120 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
             </div>
           )}
           contentSlot={(
-            <BoardView
-              gridTestId="list-tours"
-              gridCols="3"
-              isEmpty={tours.length === 0}
-              emptyState={(
-                <p className="col-span-full py-8 text-center text-sm text-slate-400">
-                  Keine Touren vorhanden
-                </p>
-              )}
+            <Tabs
+              value={activeOverviewTab}
+              onValueChange={(value) => setActiveOverviewTab(value as "tours" | "weekPlanning")}
+              className="flex h-full min-h-0 flex-col"
             >
-              {tours.map((tour) => (
-                <ColoredEntityCard
-                  key={tour.id}
-                  title={tour.name}
-                  icon={<Route className="w-4 h-4" />}
-                  borderColor={tour.color}
-                  testId={`card-tour-${tour.id}`}
-                  onDoubleClick={() => handleOpenEdit(tour)}
-                  footer={(
-                    <div className="flex w-full">
-                      <AppointmentCountBadge
-                        count={appointmentCountsByTourId.get(tour.id) ?? 0}
-                        label="Termine"
-                        testId={`text-tour-appointment-count-${tour.id}`}
-                        fullWidth
-                      />
-                    </div>
+              <div className="border-b border-border/40 px-4 py-3">
+                <TabsList data-testid="tabs-tour-overview">
+                  <TabsTrigger value="tours" data-testid="tab-tour-overview-list">Touren</TabsTrigger>
+                  <TabsTrigger value="weekPlanning" data-testid="tab-tour-overview-week-planning">Wochenplanung</TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="tours" className="min-h-0 flex-1 overflow-auto">
+                <BoardView
+                  gridTestId="list-tours"
+                  gridCols="3"
+                  isEmpty={tours.length === 0}
+                  emptyState={(
+                    <p className="col-span-full py-8 text-center text-sm text-slate-400">
+                      Keine Touren vorhanden
+                    </p>
                   )}
-                  footerVisibility="visible"
                 >
-                  <div className="min-h-2" />
-                </ColoredEntityCard>
-              ))}
-            </BoardView>
+                  {tours.map((tour) => (
+                    <ColoredEntityCard
+                      key={tour.id}
+                      title={tour.name}
+                      icon={<Route className="w-4 h-4" />}
+                      borderColor={tour.color}
+                      testId={`card-tour-${tour.id}`}
+                      onDoubleClick={() => handleOpenEdit(tour)}
+                      footer={(
+                        <div className="flex w-full">
+                          <AppointmentCountBadge
+                            count={appointmentCountsByTourId.get(tour.id) ?? 0}
+                            label="Termine"
+                            testId={`text-tour-appointment-count-${tour.id}`}
+                            fullWidth
+                          />
+                        </div>
+                      )}
+                      footerVisibility="visible"
+                    >
+                      <div className="min-h-2" />
+                    </ColoredEntityCard>
+                  ))}
+                </BoardView>
+              </TabsContent>
+              <TabsContent value="weekPlanning" className="min-h-0 flex-1">
+                <TourWeekPlanningView
+                  readOnly={!canMutateTours}
+                  isMutatingMembers={isMutatingMembers}
+                  isMutatingWeeks={isMutatingWeeks}
+                  onAddWeekEmployee={handleStartAddWeekEmployee}
+                  onAddWeekEmployees={handleStartAddWeekEmployees}
+                  onApplyWeekEmployees={handleStartAddWeekEmployees}
+                  onRemoveWeekEmployee={handleStartRemoveWeekEmployee}
+                  onBlockWeek={handleBlockWeek}
+                  onUnblockWeek={handleUnblockWeek}
+                  onOpenTourWeek={(week) => setActiveTourWeek(week)}
+                />
+              </TabsContent>
+            </Tabs>
           )}
         />
       </BadgeInteractionProvider>
+      {activeTourWeek ? (
+        <TourWeekForm
+          week={activeTourWeek}
+          scope="tour"
+          readOnly={!canMutateTours}
+          onClose={() => setActiveTourWeek(null)}
+          onOpenAppointment={onOpenAppointment}
+          onAddWeekEmployees={({ employeeIds, isoYear, isoWeek }) =>
+            handleStartAddWeekEmployees({ tourId: activeTourWeek.tourId, isoYear, isoWeek, employeeIds })
+          }
+          onRemoveWeekEmployee={(assignment) =>
+            handleStartRemoveWeekEmployee({
+              assignmentId: assignment.assignmentId,
+              employeeId: assignment.employeeId,
+              fullName: assignment.fullName,
+              tourId: activeTourWeek.tourId,
+              isoYear: assignment.isoYear,
+              isoWeek: assignment.isoWeek,
+            })
+          }
+          onBlockWeek={({ isoYear, isoWeek }) => handleBlockWeek({ tourId: activeTourWeek.tourId, isoYear, isoWeek })}
+          onUnblockWeek={({ isoYear, isoWeek }) => handleUnblockWeek({ tourId: activeTourWeek.tourId, isoYear, isoWeek })}
+          isMutatingMembers={isMutatingMembers}
+          isMutatingWeeks={isMutatingWeeks}
+        />
+      ) : null}
+      {weekDialogState ? (
+        <TourEmployeeCascadeDialog
+          variant="week"
+          open={weekDialogState.open}
+          title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
+          description={
+            weekDialogState.mode === "add"
+              ? `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} eingeplant.`
+              : `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} aus der Planung entfernt.`
+          }
+          weekLabel={weekDialogState.weekLabel}
+          previewItems={weekDialogState.previewItems}
+          selectedIds={weekDialogState.selectedIds}
+          isSubmitting={executeAddCascadeMutation.isPending || executeRemoveCascadeMutation.isPending}
+          onSelectedIdsChange={(selectedIds) => {
+            setWeekDialogState((current) => current ? { ...current, selectedIds } : current);
+          }}
+          onConfirm={() => {
+            void handleConfirmCascade();
+          }}
+          onClose={() => setWeekDialogState(null)}
+        />
+      ) : null}
     </>
   );
 }

@@ -44,6 +44,7 @@ interface TourWeekCardProps {
   onRemoveEmployee?: (member: TourWeekCardMember) => void;
   footer?: ReactNode;
   footerVisibility?: "hidden" | "visible";
+  inlineNotes?: ReactNode;
   children?: ReactNode;
   legacyLabel?: string;
 }
@@ -62,6 +63,7 @@ export function TourWeekCard({
   onRemoveEmployee,
   footer: _legacyFooter,
   footerVisibility: _legacyFooterVisibility,
+  inlineNotes,
   children: _legacyChildren,
   legacyLabel: _legacyLabel,
 }: TourWeekCardProps) {
@@ -149,6 +151,7 @@ export function TourWeekCard({
             <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
           ) : null}
         </div>
+        {inlineNotes}
       </div>
     </ColoredEntityCard>
   );

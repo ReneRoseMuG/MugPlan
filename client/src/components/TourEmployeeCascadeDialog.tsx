@@ -105,7 +105,7 @@ function appointmentGroupTitle(source: AppointmentPreviewItem["source"], hasWeek
   if (source === "available") {
     return hasWeekPlanItems ? "Weitere konfliktfreie Mitarbeiter" : "Konfliktfrei zuweisbare Mitarbeiter";
   }
-  if (source === "current") return "Bereits manuell am Termin";
+  if (source === "current") return "Bereits direkt am Termin";
   return "Tour-KW-Mitarbeiter";
 }
 
