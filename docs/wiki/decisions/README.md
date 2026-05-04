@@ -30,6 +30,7 @@ Backlog offener Architektur- und Design-Entscheidungen. Neue Einträge oben einf
 
 ## Entscheidungen
 
+- [W-17 - System-Dump: Benutzer und Rollen übertragen](w-17-system-dump-benutzer-und-rollen.md)
 - [W-16 - Stryker Test Runner isoliert einführen](w-16-stryker-test-runner.md)
 - [W-15 - Chunk-Size-Warnungen strategisch behandeln](w-15-chunk-size-warnungen.md)
 - [W-14 - UTF-8-Härtung gegen Umlaute und Mojibake](w-14-utf-8-haertung-mojibake.md)
