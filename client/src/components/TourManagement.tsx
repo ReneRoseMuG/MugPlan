@@ -16,6 +16,7 @@ import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { useToast } from "@/hooks/use-toast";
+import { useSetting, useSettings } from "@/hooks/useSettings";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import type { TourWeekCardData } from "@/components/TourWeekCard";
@@ -104,6 +105,7 @@ function buildWeekDialogState(params: Omit<WeekDialogState, "selectedIds" | "ope
 
 export function TourManagement({ onCancel, userRole, onOpenAppointment, initialTourId = null, onEditingChange }: TourManagementProps) {
   const { toast } = useToast();
+  const { setSetting } = useSettings();
   const [editingTour, setEditingTour] = useState<Tour | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTourWeek, setActiveTourWeek] = useState<TourWeekCardData | null>(null);
@@ -115,6 +117,22 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     effectiveUserRole === "ADMIN"
     || effectiveUserRole === "DISPATCHER"
     || effectiveUserRole === "DISPONENT";
+  const inlineNotesSetting = useSetting("calendar.weekInlineNotes.visible");
+  const showInlineNotes = Boolean(inlineNotesSetting);
+
+  const setInlineNotesVisible = (visible: boolean) => {
+    void setSetting({
+      key: "calendar.weekInlineNotes.visible",
+      scopeType: "USER",
+      value: visible,
+    }).catch(() => {
+      toast({
+        title: "Notizen-Anzeige konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
 
   const { data: tours = [], isLoading: toursLoading } = useQuery<Tour[]>({
     queryKey: ["/api/tours"],
@@ -853,11 +871,40 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
               onValueChange={(value) => setActiveOverviewTab(value as "tours" | "weekPlanning")}
               className="flex h-full min-h-0 flex-col"
             >
-              <div className="border-b border-border/40 px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 px-4 py-3">
                 <TabsList data-testid="tabs-tour-overview">
                   <TabsTrigger value="tours" data-testid="tab-tour-overview-list">Touren</TabsTrigger>
                   <TabsTrigger value="weekPlanning" data-testid="tab-tour-overview-week-planning">Wochenplanung</TabsTrigger>
                 </TabsList>
+                {activeOverviewTab === "weekPlanning" ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
+                    <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Notizen anzeigen">
+                      <button
+                        type="button"
+                        onClick={() => setInlineNotesVisible(true)}
+                        aria-pressed={showInlineNotes}
+                        data-testid="switch-tour-week-planning-inline-notes"
+                        className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                          showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        Ja
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInlineNotesVisible(false)}
+                        aria-pressed={!showInlineNotes}
+                        data-testid="toggle-tour-week-planning-inline-notes-no"
+                        className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                          !showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        Nein
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
               </div>
               <TabsContent value="tours" className="min-h-0 flex-1 overflow-auto">
                 <BoardView
@@ -898,6 +945,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
               <TabsContent value="weekPlanning" className="h-full min-h-0 flex-1 overflow-hidden">
                 <TourWeekPlanningView
                   readOnly={!canMutateTours}
+                  showInlineNotes={showInlineNotes}
                   isMutatingMembers={isMutatingMembers}
                   isMutatingWeeks={isMutatingWeeks}
                   onAddWeekEmployee={handleStartAddWeekEmployee}
