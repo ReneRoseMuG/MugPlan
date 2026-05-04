@@ -4,12 +4,10 @@
  * Abgedeckte Regeln:
  * - Der neue Tour-KW-View rendert vier KW-Spalten, Tour-Bahnen und KW-Karten aus der API-Projektion.
  * - Mutationsrollen sehen die Kachelaktionen; Readonly-Rollen verlieren die Mitarbeiter- und Blockieraktionen.
- * - Die Notizsteuerung bleibt als Kopffunktion sichtbar.
  *
  * Fehlerfälle:
  * - Die Vier-KW-Matrix wird nicht aufgebaut.
  * - Readonly-Rollen erhalten wieder Mitarbeiter- oder Blockieraktionen.
- * - Der Notizen-Schalter verschwindet aus dem View-Kopf.
  *
  * Ziel:
  * Die neue TourWeekPlanningView-Komponente über beobachtbares Markup absichern.
@@ -19,7 +17,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
-const setSettingMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -27,11 +24,6 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
-}));
-
-vi.mock("@/hooks/useSettings", () => ({
-  useSetting: () => false,
-  useSettings: () => ({ setSetting: setSettingMock }),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -67,14 +59,17 @@ vi.mock("@/components/EmployeePickerDialogList", () => ({
 vi.mock("@/components/TourWeekCard", () => ({
   TourWeekCard: ({
     actions,
+    hideDateRange,
     inlineNotes,
     testId,
   }: {
     actions?: React.ReactNode;
+    hideDateRange?: boolean;
     inlineNotes?: React.ReactNode;
     testId?: string;
   }) => (
     <article data-testid={testId}>
+      {hideDateRange ? <span data-testid={`${testId}-date-hidden`} /> : null}
       {actions}
       {inlineNotes}
     </article>
@@ -116,7 +111,6 @@ const planningResponse = {
 describe("TourWeekPlanningView render", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
-    setSettingMock.mockReset();
     useQueryMock.mockReset();
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
@@ -131,11 +125,11 @@ describe("TourWeekPlanningView render", () => {
     const html = renderToStaticMarkup(<TourWeekPlanningView />);
 
     expect(html).toContain("tour-week-planning-view");
-    expect(html).toContain("switch-tour-week-planning-inline-notes");
     expect(html).toContain("tour-week-planning-lane-41");
     expect(html).toContain("column-tour-week-planning-2099-6");
     expect(html).toContain("column-tour-week-planning-2099-9");
     expect(html).toContain("tour-week-planning-card-41-2099-6");
+    expect(html).toContain("tour-week-planning-card-41-2099-6-date-hidden");
     expect(html).toContain("button-tour-week-planning-add-41-2099-6");
     expect(html).toContain("button-tour-week-planning-apply-41-2099-6");
     expect(html).toContain("Wochenplanung blockieren");
