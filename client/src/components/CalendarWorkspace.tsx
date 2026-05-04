@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
@@ -335,20 +336,20 @@ export function CalendarWorkspace({
       <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
         <button
           onClick={prev}
-          className={`${calendarPagingButtonClassName} border-r`}
+          className={`${calendarPagingButtonClassName} inline-flex items-center justify-center border-r`}
           data-testid="button-prev"
           aria-label="Zurück"
         >
-          {"<"}
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <div className="min-w-0 h-full overflow-hidden">{renderContent()}</div>
         <button
           onClick={next}
-          className={`${calendarPagingButtonClassName} border-l`}
+          className={`${calendarPagingButtonClassName} inline-flex items-center justify-center border-l`}
           data-testid="button-next"
           aria-label="Vor"
         >
-          {">"}
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
 

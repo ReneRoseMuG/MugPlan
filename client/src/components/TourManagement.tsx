@@ -895,7 +895,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   ))}
                 </BoardView>
               </TabsContent>
-              <TabsContent value="weekPlanning" className="min-h-0 flex-1">
+              <TabsContent value="weekPlanning" className="h-full min-h-0 flex-1 overflow-hidden">
                 <TourWeekPlanningView
                   readOnly={!canMutateTours}
                   isMutatingMembers={isMutatingMembers}

@@ -6,7 +6,6 @@ import type { Employee, Note, Team, Tour } from "@shared/schema";
 import { CalendarWeekNotesButton } from "@/components/calendar/CalendarWeekNotesButton";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData, type TourWeekCardMember } from "@/components/TourWeekCard";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +32,9 @@ type PendingWeekSelection = {
   isoYear: number;
   isoWeek: number;
 };
+
+const tourWeekPagingButtonClassName =
+  "h-full w-7 border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 inline-flex items-center justify-center";
 
 interface TourWeekPlanningViewProps {
   readOnly?: boolean;
@@ -207,30 +209,10 @@ export function TourWeekPlanningView({
   const isBusy = isMutatingMembers || isMutatingWeeks;
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col overflow-hidden" data-testid="tour-week-planning-view">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden" data-testid="tour-week-planning-view">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 bg-muted/20 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setWindowStart((current) => addWeeks(current, -4))}
-            data-testid="button-tour-week-planning-prev"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="min-w-[12rem] text-center text-sm font-semibold text-slate-700" data-testid="text-tour-week-planning-range">
-            KW {getISOWeek(windowStart)} / {getISOWeekYear(windowStart)}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setWindowStart((current) => addWeeks(current, 4))}
-            data-testid="button-tour-week-planning-next"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="min-w-[12rem] text-sm font-semibold text-slate-700" data-testid="text-tour-week-planning-range">
+          KW {getISOWeek(windowStart)} / {getISOWeekYear(windowStart)}
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
@@ -261,26 +243,36 @@ export function TourWeekPlanningView({
         </div>
       </div>
 
-      <div className="visible-horizontal-scrollbar min-h-0 flex-1 overflow-auto bg-white">
-        <div className="min-w-[1040px] p-4">
-          <div
-            className="grid gap-3"
-            style={{ gridTemplateColumns: "12rem repeat(4, minmax(12.5rem, 1fr))" }}
-            data-testid="grid-tour-week-planning-view"
-          >
-            <div className="sticky left-0 z-20 rounded-md border border-border bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Tour
-            </div>
-            {weeks.map((week) => (
-              <div
-                key={buildWeekKey(week.isoYear, week.isoWeek)}
-                className="rounded-md border border-border bg-slate-50 px-3 py-2"
-                data-testid={`column-tour-week-planning-${week.isoYear}-${week.isoWeek}`}
-              >
-                <div className="text-sm font-bold text-slate-800">KW {String(week.isoWeek).padStart(2, "0")} / {week.isoYear}</div>
-                <div className="text-xs text-slate-500">{formatListDateRange(week.weekStartDate, week.weekEndDate)}</div>
+      <div className="min-h-0 flex-1 grid grid-cols-[28px_minmax(0,1fr)_28px] bg-white">
+        <button
+          type="button"
+          onClick={() => setWindowStart((current) => addWeeks(current, -4))}
+          className={`${tourWeekPagingButtonClassName} border-r`}
+          data-testid="button-tour-week-planning-prev"
+          aria-label="Zurück"
+        >
+          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+        </button>
+        <div className="visible-horizontal-scrollbar min-w-0 h-full overflow-auto bg-white">
+          <div className="min-w-[1040px] p-4">
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "12rem repeat(4, minmax(12.5rem, 1fr))" }}
+              data-testid="grid-tour-week-planning-view"
+            >
+              <div className="sticky left-0 z-20 rounded-md border border-border bg-slate-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Tour
               </div>
-            ))}
+              {weeks.map((week) => (
+                <div
+                  key={buildWeekKey(week.isoYear, week.isoWeek)}
+                  className="rounded-md border border-border bg-slate-50 px-3 py-2"
+                  data-testid={`column-tour-week-planning-${week.isoYear}-${week.isoWeek}`}
+                >
+                  <div className="text-sm font-bold text-slate-800">KW {String(week.isoWeek).padStart(2, "0")} / {week.isoYear}</div>
+                  <div className="text-xs text-slate-500">{formatListDateRange(week.weekStartDate, week.weekEndDate)}</div>
+                </div>
+              ))}
 
             {planningQuery.isLoading ? (
               <div className="col-span-5 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
@@ -436,6 +428,16 @@ export function TourWeekPlanningView({
             ))}
           </div>
         </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setWindowStart((current) => addWeeks(current, 4))}
+          className={`${tourWeekPagingButtonClassName} border-l`}
+          data-testid="button-tour-week-planning-next"
+          aria-label="Vor"
+        >
+          <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </button>
       </div>
 
       <Dialog open={!readOnly && pendingWeekSelection !== null} onOpenChange={(open) => { if (!open) setPendingWeekSelection(null); }}>
