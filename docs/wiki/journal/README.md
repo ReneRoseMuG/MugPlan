@@ -15,6 +15,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [04.05.26 - FT-02/FT-05: Projektkarten-Terminzeile und Mitarbeiter-Löschung](04-05-26-projektkarten-mitarbeiter-delete.md)
 - [04.05.26 - Wiki: Mojibake und Encoding normalisiert](04-05-26-wiki-encoding.md)
 - [04.05.26 - FT-02: Projektliste-Toggles und Terminsortierung](04-05-26-projektliste-toggle-terminsortierung.md)
 - [04.05.26 - Kalender/Tour-KW: Mitarbeiterdialog und Anwenden-Flow](04-05-26-tour-kw-mitarbeiterdialog-vorauswahl.md)
