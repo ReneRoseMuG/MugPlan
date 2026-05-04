@@ -124,6 +124,14 @@ type WeekPlanningPreviewItem = {
   conflictReason: string | null;
   isUnderstaffed?: boolean;
 };
+type AppointmentEmployeePreviewItem = {
+  employeeId: number;
+  employeeName: string;
+  status: "will_add" | "conflict" | "already_present" | "current_only";
+  selectable: boolean;
+  conflictReason: string | null;
+  source?: "week_plan" | "available" | "current";
+};
 type WeekPlanningDialogState = {
   mode: "add" | "remove";
   tourId: number;
@@ -206,6 +214,12 @@ function resolveSelectablePreviewIds(items: WeekPlanningPreviewItem[]): number[]
   return items
     .filter((item) => item.selectable ?? false)
     .map((item) => item.appointmentId);
+}
+
+export function resolveInitialAppointmentEmployeeSelection(items: AppointmentEmployeePreviewItem[]): number[] {
+  return items
+    .filter((item) => item.selectable && item.status === "will_add" && (item.source ?? "week_plan") === "week_plan")
+    .map((item) => item.employeeId);
 }
 
 export function resolveVisibleWeekStartFromScroll(params: {
@@ -431,14 +445,7 @@ export function CalendarWeekView({
     appointmentId: number;
     title: string;
     description: string;
-    previewItems: Array<{
-      employeeId: number;
-      employeeName: string;
-      status: "will_add" | "conflict" | "already_present" | "current_only";
-      selectable: boolean;
-      conflictReason: string | null;
-      source?: "week_plan" | "available" | "current";
-    }>;
+    previewItems: AppointmentEmployeePreviewItem[];
     currentEmployeeIds: number[];
     selectedIds: number[];
   } | null>(null);
@@ -1221,14 +1228,7 @@ export function CalendarWeekView({
       });
       const preview = await response.json() as {
         hasWeekPlan: boolean;
-        items: Array<{
-          employeeId: number;
-          employeeName: string;
-          status: "will_add" | "conflict" | "already_present" | "current_only";
-          selectable: boolean;
-          conflictReason: string | null;
-          source?: "week_plan" | "available" | "current";
-        }>;
+        items: AppointmentEmployeePreviewItem[];
       };
       if (preview.items.length === 0) {
         toast({
@@ -1245,9 +1245,7 @@ export function CalendarWeekView({
           : "Wählen Sie konfliktfreie Mitarbeiter für diesen Termin.",
         previewItems: preview.items,
         currentEmployeeIds: appointment.employees.map((employee) => employee.id),
-        selectedIds: preview.items
-          .filter((item) => item.selectable && item.status === "will_add")
-          .map((item) => item.employeeId),
+        selectedIds: resolveInitialAppointmentEmployeeSelection(preview.items),
       });
     } catch (error) {
       toast({

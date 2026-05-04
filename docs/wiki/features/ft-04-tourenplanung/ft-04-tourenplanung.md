@@ -20,6 +20,8 @@ Die Mitarbeiterplanung für Touren erfolgt kalenderwochen-basiert. Im Tab „Woc
 
 Jede Mutation der Wochenplanung wird dem Disponenten zuerst als selektive Vorschau präsentiert. Die Vorschau zeigt je betroffenem Termin den Status (wird hinzugefügt, wird entfernt, Konflikt mit Grund). Konfliktbehaftete Termine sind in der Vorschau deaktiviert und werden von der Mutation ausgeschlossen. Alle konfliktfreien Termine sind vorausgewählt. Erst nach expliziter Bestätigung durch den Disponenten werden die Termine mutiert. Historische Termine bleiben in jedem Fall unverändert.
 
+Eine bestehende Tour-KW-Planung kann aus der Tour-KW-Karte im Tourformular und aus der Tour-KW-Spalte des Wochenkalenders auf die Termine dieser Tour und Kalenderwoche angewendet werden. Dabei werden keine neuen Regeln eingeführt: Die Aktion nutzt den vorhandenen Vorschau-/Bestätigungsfluss je Mitarbeiter und berücksichtigt dieselben Konflikt-, Rollen-, Historien- und Sperrregeln wie das Hinzufügen eines Mitarbeiters zur Tour-KW-Planung.
+
 ## Regeln & Randbedingungen
 
 - Eine Tour dient ausschließlich der organisatorischen Gruppierung von Terminen.
@@ -29,6 +31,7 @@ Jede Mutation der Wochenplanung wird dem Disponenten zuerst als selektive Vorsch
 - Eine Tour kann nur gelöscht werden, wenn ihr keine Termine mehr zugeordnet sind.
 - Mehrere Mitarbeiter können einer Tour zugewiesen werden.
 - Die Mitarbeiterzuordnung einer Tour erfolgt ausschließlich über die Wochenplanung (persistierte Zuordnung in tour_week_employees, verwaltbar im Tab „Wochenplanung“). Es gibt keine berechnete Aggregation mehr aus Terminen.
+- Eine vorhandene Tour-KW-Planung darf aus der Wochenansicht und aus dem Tourformular auf die Termine der passenden Tour/KW angewendet werden. Die Planung bleibt weiterhin in `tour_week_employees` gespeichert; die Anwendung erzeugt konkrete Termin-Mitarbeiter-Zuordnungen über den bestehenden Terminpfad.
 - **Historische Sperre für KW-Zuordnungen:** Kalenderwochen, deren ISO-Wochenanfang (Montag) auf dem heutigen Datum liegt oder davor, sind gesperrt. Schreibende Operationen auf tour_week_employees für solche Wochen werden serverseitig blockiert. Wochenkarten vergangener und laufender KWs sind in der UI read-only.
 - **Konfliktverhinderung:** Typ-1 (KW-Tour-Unique): Ein Mitarbeiter kann pro Kalenderwoche nur einer Tour zugeordnet sein — das System blockiert die Auswahl im Picker bereits vor dem Dialog. Typ-2 (Termin-Überschneidung): Konfliktbehaftete Termine sind im Vorschau-Dialog deaktiviert und werden von der Mutation ausgeschlossen. In keinem Szenario entsteht ein inkonsistenter Datenzustand.
 - **Bestätigungspflicht:** Jede Mutation der Wochenplanung erfordert eine explizite Bestätigung durch den Disponenten nach vorheriger selektiver Vorschau. Alle konfliktfreien Termine sind vorausgewählt. Konflikte werden pro Termin ausgewiesen.

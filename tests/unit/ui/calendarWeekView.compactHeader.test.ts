@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { formatCompactWeekDayHeader } from "../../../client/src/components/calendar/CalendarWeekView";
+import {
+  formatCompactWeekDayHeader,
+  resolveInitialAppointmentEmployeeSelection,
+} from "../../../client/src/components/calendar/CalendarWeekView";
 
 describe("CalendarWeekView compact day header", () => {
   it("formats German weekday and month labels", () => {
@@ -9,5 +12,49 @@ describe("CalendarWeekView compact day header", () => {
 
   it("omits the month label for the compact fallback", () => {
     expect(formatCompactWeekDayHeader(new Date("2026-12-31T00:00:00Z"), false)).toBe("Do 31");
+  });
+});
+
+describe("CalendarWeekView appointment employee selection", () => {
+  it("preselects only selectable Tour-KW employees that are not already assigned", () => {
+    expect(resolveInitialAppointmentEmployeeSelection([
+      {
+        employeeId: 11,
+        employeeName: "Mia Woche",
+        status: "will_add",
+        selectable: true,
+        conflictReason: null,
+        source: "week_plan",
+      },
+      {
+        employeeId: 12,
+        employeeName: "Mia Frei",
+        status: "will_add",
+        selectable: true,
+        conflictReason: null,
+        source: "available",
+      },
+      {
+        employeeId: 13,
+        employeeName: "Mia Bestand",
+        status: "already_present",
+        selectable: false,
+        conflictReason: null,
+        source: "week_plan",
+      },
+    ])).toEqual([11]);
+  });
+
+  it("does not preselect conflict-free fallback employees without Tour-KW plan", () => {
+    expect(resolveInitialAppointmentEmployeeSelection([
+      {
+        employeeId: 21,
+        employeeName: "Mia Frei",
+        status: "will_add",
+        selectable: true,
+        conflictReason: null,
+        source: "available",
+      },
+    ])).toEqual([]);
   });
 });

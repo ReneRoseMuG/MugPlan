@@ -93,7 +93,7 @@ Die Umschaltung Touren Aufgeklappt oder Zugeklappt verändert ausschließlich di
 
 Die Kalenderansichten benötigen für die dargestellten Termine Zugriff auf Projekt- und Kundendaten sowie auf Tour- und Mitarbeiterzuordnungen. Diese Informationen dürfen serverseitig zusammengeführt oder bei Bedarf nachgeladen werden, solange die Oberfläche ohne spürbare Verzögerung bedienbar bleibt.
 
-Direkte Aktionen an Terminkarten dürfen keine eigene Fachlogik einführen. Notizen werden über den bestehenden Termin-Notiz-Pfad angelegt. Mitarbeiterzuweisungen aus der Terminkarte verwenden die bestehende Tour-KW-Vorschau und die normale Terminmutation, sodass serverseitige Rollen-, Historien-, Overlap- und Abwesenheitsprüfungen maßgeblich bleiben.
+Direkte Aktionen an Terminkarten dürfen keine eigene Fachlogik einführen. Notizen werden über den bestehenden Termin-Notiz-Pfad angelegt. Mitarbeiterzuweisungen aus der Terminkarte verwenden die bestehende Tour-KW-Vorschau und die normale Terminmutation, sodass serverseitige Rollen-, Historien-, Overlap- und Abwesenheitsprüfungen maßgeblich bleiben. Wenn für den Termin eine Tour-KW-Planung existiert, zeigt der Dialog zuerst die Tour-KW-Mitarbeiter und darunter die weiteren konfliktfrei zuweisbaren Mitarbeiter. Initial vorausgewählt sind nur konfliktfrei übernehmbare Tour-KW-Mitarbeiter, die noch nicht am Termin hängen. Die konfliktfreie Restmenge bleibt sichtbar, ist aber nicht vorausgewählt. Gibt es keine oder eine leere Tour-KW-Planung, zeigt der Dialog nur konfliktfrei zuweisbare Mitarbeiter ohne Vorauswahl.
 
 Druckvorschauen für Monats- und Wochenkalender sind read-only. Sie orientieren sich am aktuellen sichtbaren Zustand und blenden interaktive Bedienelemente aus.
 
@@ -125,7 +125,7 @@ Die Tagesspalten im Wochenkalender verwenden eine kompakte Beschriftung mit deut
 
 Termin-Notizen können im Wochenkalender dauerhaft sichtbar gemacht werden. Angezeigt werden Titel, Inhalt und Kartenfarbe; Bearbeiten, Löschen, Pinning und Vorlagenfunktionen bleiben den bestehenden Notizdialogen vorbehalten.
 
-Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Änderungen aus der Terminkarte verwenden die bestehende Vorschau-/Bestätigungslogik und speichern keine getrennte Mitarbeiterplanung.
+Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Neben dem Hinzufügen einzelner Tour-KW-Mitarbeiter kann die Tour-KW-Planung direkt auf die Termine der jeweiligen Tour und Kalenderwoche angewendet werden. Diese Aktion nutzt dieselbe Vorschau-/Bestätigungslogik wie die Tour-KW-Planung und speichert keine getrennte Mitarbeiterplanung. Änderungen aus der Terminkarte verwenden ebenfalls die bestehende Vorschau-/Bestätigungslogik.
 
 Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist vollständig passiv und bietet keine Pflege von Abwesenheiten an.
 

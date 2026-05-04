@@ -15,6 +15,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [04.05.26 - Kalender/Tour-KW: Mitarbeiterdialog und Anwenden-Flow](04-05-26-tour-kw-mitarbeiterdialog-vorauswahl.md)
 - [03.05.26 - Wochenkalender: Arbeitsbranch für Tour-Personalspalte](03-05-26-wochenkalender-tour-personal-branch.md)
 - [03.05.26 - Kalender und Einstellungen: Feiertage und Settings-Navigation](03-05-26-feiertage-settings-navigation.md)
 - [03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar](03-05-26-wochenkalender-abwesenheitsspur.md)
