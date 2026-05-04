@@ -4,12 +4,12 @@
  * Abgedeckte Regeln:
  * - Der Vorlaufliste-Druckpfad liefert den vollständigen Datensatz ohne Listen-Paginierung.
  * - Druckpfad und Listenpfad liefern für denselben Filter identische Artikel- und Statusdaten.
- * - Nur ADMIN und DISPONENT dürfen den Druckpfad lesen; LESER wird abgewiesen.
+ * - ADMIN, DISPONENT und LESER dürfen den Druckpfad lesen.
  *
  * Fehlerfälle:
  * - Der Druckpfad übernimmt versehentlich das 100er-Paging der Listenansicht.
  * - Storno-, Sondermaß- oder Artikelwerte weichen zwischen Liste und Druck voneinander ab.
- * - Der neue Druckendpunkt öffnet den Zugriff für LESER.
+ * - Der neue Druckendpunkt sperrt LESER nicht mehr aus.
  *
  * Ziel:
  * Den separaten Serververtrag der Vorlaufliste-Druckvorschau end-to-end absichern.

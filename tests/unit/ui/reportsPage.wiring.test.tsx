@@ -24,11 +24,15 @@ const useSettingsMock = vi.fn();
 const useQueryMock = vi.fn();
 const tableViewMock = vi.fn();
 const localStorageGetItemMock = vi.fn();
+const getBerlinTodayDateStringMock = vi.fn(() => "2026-03-29");
 
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => useSettingsMock(),
   useSetting: (key: string) => useSettingsMock().settingsByKey.get(key)?.resolvedValue,
-  resolveLegacyProduktionsplanungSelection: (value: unknown) => value,
+}));
+
+vi.mock("@/lib/project-appointments", () => ({
+  getBerlinTodayDateString: () => getBerlinTodayDateStringMock(),
 }));
 
 vi.mock("@tanstack/react-query", () => ({
@@ -47,7 +51,13 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 vi.mock("@/components/ui/input", () => ({
-  Input: (props: Record<string, unknown>) => <input data-testid={String(props["data-testid"] ?? "")} />,
+  Input: (props: Record<string, unknown>) => (
+    <input
+      data-testid={String(props["data-testid"] ?? "")}
+      value={String(props.value ?? "")}
+      readOnly
+    />
+  ),
 }));
 
 vi.mock("@/components/ui/checkbox", () => ({
@@ -315,7 +325,9 @@ describe("FT26 UI: ReportsPage wiring", () => {
     useQueryMock.mockReset();
     tableViewMock.mockReset();
     localStorageGetItemMock.mockReset();
+    getBerlinTodayDateStringMock.mockReset();
     localStorageGetItemMock.mockReturnValue("DISPATCHER");
+    getBerlinTodayDateStringMock.mockReturnValue("2026-03-29");
     useSettingsMock.mockReturnValue({
       settingsByKey: new Map<string, { resolvedValue: unknown; resolvedScope?: string }>(),
       isSaving: false,
@@ -364,10 +376,10 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html.indexOf("Fass Saunen")).toBeLessThan(html.indexOf("Fenster"));
   });
 
-  it("renders the latest appointment week sunday as default end date in both panels", () => {
+  it("renders the current calendar week sunday as default summary in report panels", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect((html.match(/value=\"2026-10-11\"/g) ?? []).length).toBeGreaterThanOrEqual(2);
+    expect((html.match(/So 29\.03\.26/g) ?? []).length).toBeGreaterThanOrEqual(2);
   });
 
   it("renders the auftragsliste print preview in portrait with a narrower dialog shell", () => {

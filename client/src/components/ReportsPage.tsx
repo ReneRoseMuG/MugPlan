@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeekYear, getISOWeeksInYear } from "date-fns";
+import { addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
 import {
@@ -10,7 +10,7 @@ import {
   type AppointmentCancellationReportState,
 } from "@shared/appointmentCancellation";
 import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
-import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } from "@shared/routes";
+import type { ReportAuftragslisteResponse, ReportPreset, ReportPresetConfig, ReportPresetRange, ReportProduktionsplanungResponse } from "@shared/routes";
 import type { ComponentCategory, Product, ProductCategory, Tag } from "@shared/schema";
 
 import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
@@ -20,6 +20,7 @@ import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/repo
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
+import { ReportPresetControls } from "@/components/reports/ReportPresetControls";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
 import {
@@ -46,7 +47,6 @@ import {
 import { ProjectTableHoverPreview } from "@/components/ui/table-hover-previews";
 import { TableView, type TableViewColumnDef } from "@/components/ui/table-view";
 import {
-  resolveLegacyProduktionsplanungSelection,
   useSetting,
   useSettings,
 } from "@/hooks/useSettings";
@@ -56,11 +56,11 @@ import {
   distributeSortedItemsIntoColumns,
   getCategoryLayoutIds,
   orderCategoriesByLayout,
+  resolveCategoryLayoutConfig,
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { paginateAuftragslistePrintPages } from "@/lib/auftragsliste-print-model";
-import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 import {
@@ -223,14 +223,7 @@ type AuftragslisteRequestParams = {
 };
 
 const REPORT_PAGE_SIZE = 100;
-const VORLAUFLISTE_SETTING_KEY = "reports.vorlaufliste.categorySelection";
-const PRODUKTIONSPLANUNG_SETTING_KEY = "reports.produktionsplanung.selection";
-const AUFTRAGSLISTE_SETTING_KEY = "reports.auftragsliste.selection";
-const VORLAUFLISTE_RANGE_SETTING_KEY = "reports.vorlaufliste.rangeConfig";
-const PRODUKTIONSPLANUNG_RANGE_SETTING_KEY = "reports.produktionsplanung.rangeConfig";
-const AUFTRAGSLISTE_RANGE_SETTING_KEY = "reports.auftragsliste.rangeConfig";
 const PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY = "reports.categoryLayout";
-const LEGACY_PRODUCT_VORLAUF_SETTING_KEY = "reports.productVorlauf.selection";
 const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
 const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
@@ -340,16 +333,7 @@ function formatDateOnlyInput(value: Date): string {
   return format(value, "yyyy-MM-dd");
 }
 
-function resolveNextMonday(referenceDate: Date): Date {
-  const nextMonday = new Date(referenceDate);
-  const weekday = nextMonday.getDay();
-  const offset = weekday === 0 ? 1 : 8 - weekday;
-  nextMonday.setDate(nextMonday.getDate() + offset);
-  nextMonday.setHours(0, 0, 0, 0);
-  return nextMonday;
-}
-
-export function resolveDefaultReportRange(todayBerlin: string, latestProjectAppointmentDate?: string | null): {
+export function resolveDefaultReportRange(todayBerlin: string, _latestProjectAppointmentDate?: string | null): {
   fromDate: string;
   toDate: string;
   weekCount: number;
@@ -365,17 +349,12 @@ export function resolveDefaultReportRange(todayBerlin: string, latestProjectAppo
     };
   }
 
-  const nextMonday = resolveNextMonday(parsedToday);
-  const currentWeekStart = resolveKwJumpTarget(getISOWeek(parsedToday), parsedToday) ?? parsedToday;
-  const parsedLatestProjectAppointmentDate = parseDateOnlyInput(latestProjectAppointmentDate ?? "");
-  const fallbackEndDate = addDays(addWeeks(nextMonday, 4), 4);
-  const latestWeekEndDate = parsedLatestProjectAppointmentDate ? endOfISOWeek(parsedLatestProjectAppointmentDate) : null;
-  const defaultEndDate = latestWeekEndDate && latestWeekEndDate >= nextMonday ? latestWeekEndDate : fallbackEndDate;
-  const weekCount = Math.max(1, Math.ceil((differenceInCalendarDays(defaultEndDate, currentWeekStart) + 1) / 7));
+  const currentWeekStart = startOfISOWeek(parsedToday);
+  const currentWeekEnd = endOfISOWeek(parsedToday);
   return {
-    fromDate: formatDateOnlyInput(nextMonday),
-    toDate: formatDateOnlyInput(defaultEndDate),
-    weekCount,
+    fromDate: formatDateOnlyInput(currentWeekStart),
+    toDate: formatDateOnlyInput(currentWeekEnd),
+    weekCount: 1,
     referenceDate: parsedToday,
   };
 }
@@ -606,6 +585,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   );
   const defaultIsoWeek = useMemo(() => getISOWeek(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
   const defaultIsoWeekYear = useMemo(() => getISOWeekYear(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
+  const nextIsoWeek = useMemo(() => getISOWeek(addWeeks(defaultReportRange.referenceDate, 1)), [defaultReportRange.referenceDate]);
   const defaultKwStartMax = useMemo(() => getISOWeeksInYear(new Date(defaultIsoWeekYear, 0, 4)), [defaultIsoWeekYear]);
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(defaultReportRange.fromDate);
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState(defaultReportRange.toDate);
@@ -613,9 +593,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [produktionsplanungToDate, setProduktionsplanungToDate] = useState(defaultReportRange.toDate);
   const [auftragslisteFromDate, setAuftragslisteFromDate] = useState(defaultReportRange.fromDate);
   const [auftragslisteToDate, setAuftragslisteToDate] = useState(defaultReportRange.toDate);
-  const [activeVorlauflisteTab, setActiveVorlauflisteTab] = useState<VorlauflistePanelTab>("date");
-  const [activeProduktionsplanungTab, setActiveProduktionsplanungTab] = useState<ReportRangeTab>("date");
-  const [activeAuftragslisteTab, setActiveAuftragslisteTab] = useState<ReportRangeTab>("date");
+  const [activeVorlauflisteTab, setActiveVorlauflisteTab] = useState<VorlauflistePanelTab>("calendarWeek");
+  const [activeProduktionsplanungTab, setActiveProduktionsplanungTab] = useState<ReportRangeTab>("calendarWeek");
+  const [activeAuftragslisteTab, setActiveAuftragslisteTab] = useState<ReportRangeTab>("calendarWeek");
   const [vorlauflisteKwStart, setVorlauflisteKwStart] = useState<number | undefined>(defaultIsoWeek);
   const [vorlauflisteWeekCount, setVorlauflisteWeekCount] = useState<number>(defaultReportRange.weekCount);
   const [produktionsplanungKwStart, setProduktionsplanungKwStart] = useState<number | undefined>(defaultIsoWeek);
@@ -629,29 +609,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [isProduktionsplanungCategoryLayoutDialogOpen, setIsProduktionsplanungCategoryLayoutDialogOpen] = useState(false);
   const [isVorlauflisteColumnsDialogOpen, setIsVorlauflisteColumnsDialogOpen] = useState(false);
 
-  const vorlauflisteSelection = useSetting(VORLAUFLISTE_SETTING_KEY) as VorlauflisteSelection | undefined;
-  const vorlauflisteRangeConfig = useSetting(VORLAUFLISTE_RANGE_SETTING_KEY) as VorlauflisteRangeConfig | undefined;
-  const produktionsplanungSelection = useSetting(PRODUKTIONSPLANUNG_SETTING_KEY) as ProduktionsplanungSelection | undefined;
-  const produktionsplanungRangeConfig = useSetting(PRODUKTIONSPLANUNG_RANGE_SETTING_KEY) as ProduktionsplanungRangeConfig | undefined;
-  const auftragslisteSelection = useSetting(AUFTRAGSLISTE_SETTING_KEY) as AuftragslisteSelection | undefined;
-  const auftragslisteRangeConfig = useSetting(AUFTRAGSLISTE_RANGE_SETTING_KEY) as AuftragslisteRangeConfig | undefined;
   const categoryLayoutConfig = useSetting(PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY) as CategoryLayoutConfig | undefined;
-  const { isSaving, setSetting, settingsByKey } = useSettings();
-
-  const produktionsplanungSettingEntry = settingsByKey.get(PRODUKTIONSPLANUNG_SETTING_KEY);
-  const legacyProduktionsplanungSettingEntry = settingsByKey.get(LEGACY_PRODUCT_VORLAUF_SETTING_KEY);
-  const effectiveProduktionsplanungSelection = useMemo(() => {
-    if (produktionsplanungSettingEntry?.resolvedScope === "USER") {
-      return produktionsplanungSelection;
-    }
-    if (legacyProduktionsplanungSettingEntry?.resolvedScope === "USER") {
-      const legacySelection = resolveLegacyProduktionsplanungSelection(legacyProduktionsplanungSettingEntry.resolvedValue);
-      return {
-        useShortCodes: legacySelection.useShortCodes ?? false,
-      };
-    }
-    return produktionsplanungSelection;
-  }, [legacyProduktionsplanungSettingEntry, produktionsplanungSelection, produktionsplanungSettingEntry]);
+  const { isSaving, setSetting } = useSettings();
+  const [produktionsplanungPresetCategoryLayout, setProduktionsplanungPresetCategoryLayout] = useState<CategoryLayoutConfig | null>(null);
+  const activeProduktionsplanungCategoryLayoutConfig = produktionsplanungPresetCategoryLayout ?? categoryLayoutConfig ?? [];
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: ["/api/admin/master-data/product-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/product-categories?active=all"),
@@ -710,53 +671,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [isAuftragslisteSaunaModelPopoverOpen, setIsAuftragslisteSaunaModelPopoverOpen] = useState(false);
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
   const [activeAuftragslistePrintPageIndex, setActiveAuftragslistePrintPageIndex] = useState(0);
-  const hasHydratedVorlauflisteSelectionRef = useRef(false);
-  const hasHydratedProduktionsplanungSelectionRef = useRef(false);
-  const hasHydratedAuftragslisteSelectionRef = useRef(false);
   const hasAppliedStandaloneLaunchRef = useRef(false);
-
-  useEffect(() => {
-    if (hasHydratedVorlauflisteSelectionRef.current) {
-      return;
-    }
-    hasHydratedVorlauflisteSelectionRef.current = true;
-    setUseVorlauflisteShortCodes(vorlauflisteSelection?.useShortCodes ?? false);
-    setVorlauflisteColumnWidths(normalizeColumnWidths(vorlauflisteSelection?.columnWidths));
-    setVorlauflisteColumnOrder(normalizeColumnIdList(vorlauflisteSelection?.columnOrder));
-    setVorlauflisteHiddenColumns(normalizeColumnIdList(vorlauflisteSelection?.hiddenColumns));
-  }, [vorlauflisteSelection]);
-
-  useEffect(() => {
-    if (hasHydratedProduktionsplanungSelectionRef.current) {
-      return;
-    }
-    hasHydratedProduktionsplanungSelectionRef.current = true;
-    setUseProduktionsplanungShortCodes(effectiveProduktionsplanungSelection?.useShortCodes ?? false);
-  }, [effectiveProduktionsplanungSelection]);
-
-  useEffect(() => {
-    if (hasHydratedAuftragslisteSelectionRef.current) {
-      return;
-    }
-    hasHydratedAuftragslisteSelectionRef.current = true;
-    setUseAuftragslisteShortCodes(auftragslisteSelection?.useShortCodes ?? false);
-    setSelectedAuftragslisteProductCategoryIds(auftragslisteSelection?.productCategoryIds ?? []);
-    setSelectedAuftragslisteComponentCategoryIds(auftragslisteSelection?.componentCategoryIds ?? []);
-    setSelectedAuftragslisteTagIds(auftragslisteSelection?.tagIds ?? []);
-    setSelectedAuftragslisteSaunaModels(auftragslisteSelection?.saunaModels ?? []);
-  }, [auftragslisteSelection]);
-
-  useEffect(() => {
-    setActiveVorlauflisteTab(vorlauflisteRangeConfig?.activeTab ?? "date");
-  }, [vorlauflisteRangeConfig?.activeTab]);
-
-  useEffect(() => {
-    setActiveProduktionsplanungTab(produktionsplanungRangeConfig?.activeTab ?? "date");
-  }, [produktionsplanungRangeConfig?.activeTab]);
-
-  useEffect(() => {
-    setActiveAuftragslisteTab(auftragslisteRangeConfig?.activeTab ?? "date");
-  }, [auftragslisteRangeConfig?.activeTab]);
 
   useEffect(() => {
     if (standaloneLaunch) return;
@@ -822,7 +737,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     setIsReportOverlayOpen(true);
   }, [standaloneLaunch, defaultIsoWeek, defaultReportRange.fromDate, defaultReportRange.toDate, defaultReportRange.weekCount]);
 
-  const isProduktionsplanungCategoryLayoutConfigured = (categoryLayoutConfig?.length ?? 0) > 0;
+  const isProduktionsplanungCategoryLayoutConfigured = activeProduktionsplanungCategoryLayoutConfig.length > 0;
   const activeProductCategoryIds = useMemo(
     () => new Set(activeProductCategories.map((category) => category.id)),
     [activeProductCategories],
@@ -875,7 +790,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   }, [auftragslisteTagOptions, effectiveAuftragslisteTagIds]);
   const effectiveProduktionsplanungCategoryIds = useMemo(
     () => (isProduktionsplanungCategoryLayoutConfigured
-      ? getCategoryLayoutIds(categoryLayoutConfig ?? []).filter((id) =>
+      ? getCategoryLayoutIds(activeProduktionsplanungCategoryLayoutConfig).filter((id) =>
         activeProductCategoryIds.has(id) || activeComponentCategoryIds.has(id))
       : [
         ...defaultProductCategories.map((category) => category.id),
@@ -884,7 +799,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     [
       activeComponentCategoryIds,
       activeProductCategoryIds,
-      categoryLayoutConfig,
+      activeProduktionsplanungCategoryLayoutConfig,
       defaultComponentCategories,
       defaultProductCategories,
       isProduktionsplanungCategoryLayoutConfigured,
@@ -899,116 +814,17 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     [activeComponentCategoryIds, effectiveProduktionsplanungCategoryIds],
   );
   const configuredProduktionsplanungPrintCategories = useMemo<ProduktionsplanungPrintCategory[]>(
-    () => orderCategoriesByLayout(allActiveProduktionsplanungCategories, categoryLayoutConfig ?? [])
+    () => orderCategoriesByLayout(allActiveProduktionsplanungCategories, activeProduktionsplanungCategoryLayoutConfig)
       .map((category) => ({ id: category.id, name: category.name })),
-    [allActiveProduktionsplanungCategories, categoryLayoutConfig],
+    [activeProduktionsplanungCategoryLayoutConfig, allActiveProduktionsplanungCategories],
   );
 
-  const persistSelection = async (reportType: ReportType, next: VorlauflisteSelection | ProduktionsplanungSelection | AuftragslisteSelection) => {
-    if (reportType === "vorlaufliste") {
-      const vorlauflisteNext = next as VorlauflisteSelection;
-      const value: VorlauflisteSelection = {
-        useShortCodes: next.useShortCodes ?? false,
-        columnWidths: normalizeColumnWidths(vorlauflisteNext.columnWidths),
-      };
-      const columnOrder = normalizeColumnIdList(vorlauflisteNext.columnOrder);
-      const hiddenColumns = normalizeColumnIdList(vorlauflisteNext.hiddenColumns);
-      if (columnOrder.length > 0) value.columnOrder = columnOrder;
-      if (hiddenColumns.length > 0) value.hiddenColumns = hiddenColumns;
-      await setSetting({
-        key: VORLAUFLISTE_SETTING_KEY,
-        scopeType: "USER",
-        value,
-      });
-    } else if (reportType === "auftragsliste") {
-      const auftragslisteNext = next as AuftragslisteSelection;
-      const value: AuftragslisteSelection = {
-        productCategoryIds: Array.from(new Set((auftragslisteNext.productCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
-        componentCategoryIds: Array.from(new Set((auftragslisteNext.componentCategoryIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
-        tagIds: Array.from(new Set((auftragslisteNext.tagIds ?? []).filter((id) => Number.isInteger(id) && id > 0))),
-        saunaModels: Array.from(new Set((auftragslisteNext.saunaModels ?? [])
-          .map((value) => value.trim())
-          .filter((value) => value.length > 0))),
-        useShortCodes: auftragslisteNext.useShortCodes ?? false,
-      };
-      await setSetting({
-        key: AUFTRAGSLISTE_SETTING_KEY,
-        scopeType: "USER",
-        value,
-      });
-    } else {
-      const produktionsplanungNext = next as ProduktionsplanungSelection;
-      const value: ProduktionsplanungSelection = {
-        useShortCodes: produktionsplanungNext.useShortCodes ?? false,
-      };
-      await setSetting({
-        key: PRODUKTIONSPLANUNG_SETTING_KEY,
-        scopeType: "USER",
-        value,
-      });
-    }
-  };
-
-  const persistVorlauflisteSelection = async (next?: Partial<VorlauflisteSelection>) => {
-    await persistSelection("vorlaufliste", {
-      useShortCodes: next?.useShortCodes ?? useVorlauflisteShortCodes,
-      columnWidths: next?.columnWidths ?? vorlauflisteColumnWidths,
-      columnOrder: next?.columnOrder ?? vorlauflisteColumnOrder,
-      hiddenColumns: next?.hiddenColumns ?? vorlauflisteHiddenColumns,
-    });
-  };
-
-  const persistAuftragslisteSelection = async (next?: Partial<AuftragslisteSelection>) => {
-    await persistSelection("auftragsliste", {
-      productCategoryIds: next?.productCategoryIds ?? effectiveAuftragslisteProductCategoryIds,
-      componentCategoryIds: next?.componentCategoryIds ?? effectiveAuftragslisteComponentCategoryIds,
-      tagIds: next?.tagIds ?? effectiveAuftragslisteTagIds,
-      saunaModels: next?.saunaModels ?? effectiveAuftragslisteSaunaModels,
-      useShortCodes: next?.useShortCodes ?? useAuftragslisteShortCodes,
-    });
-  };
-
-  const persistVorlauflisteRangeConfig = async (next: Partial<VorlauflisteRangeConfig>) => {
-    await setSetting({
-      key: VORLAUFLISTE_RANGE_SETTING_KEY,
-      scopeType: "USER",
-      value: {
-        activeTab: next.activeTab ?? activeVorlauflisteTab,
-        fromDate: normalizePersistedDate(next.fromDate ?? vorlauflisteFromDate),
-        toDate: resolveRequiredToDate(next.toDate ?? vorlauflisteToDate, defaultReportRange.toDate),
-        kwStart: normalizeKwStart(next.kwStart ?? vorlauflisteKwStart),
-        weekCount: normalizeWeekCount(next.weekCount ?? vorlauflisteWeekCount),
-      },
-    });
-  };
-
-  const persistProduktionsplanungRangeConfig = async (next: Partial<ProduktionsplanungRangeConfig>) => {
-    await setSetting({
-      key: PRODUKTIONSPLANUNG_RANGE_SETTING_KEY,
-      scopeType: "USER",
-      value: {
-        activeTab: next.activeTab ?? activeProduktionsplanungTab,
-        fromDate: normalizePersistedDate(next.fromDate ?? produktionsplanungFromDate),
-        toDate: resolveRequiredToDate(next.toDate ?? produktionsplanungToDate, defaultReportRange.toDate),
-        kwStart: normalizeKwStart(next.kwStart ?? produktionsplanungKwStart),
-        weekCount: normalizeWeekCount(next.weekCount ?? produktionsplanungWeekCount),
-      },
-    });
-  };
-
-  const persistAuftragslisteRangeConfig = async (next: Partial<AuftragslisteRangeConfig>) => {
-    await setSetting({
-      key: AUFTRAGSLISTE_RANGE_SETTING_KEY,
-      scopeType: "USER",
-      value: {
-        activeTab: next.activeTab ?? activeAuftragslisteTab,
-        fromDate: normalizePersistedDate(next.fromDate ?? auftragslisteFromDate),
-        toDate: resolveRequiredToDate(next.toDate ?? auftragslisteToDate, defaultReportRange.toDate),
-        kwStart: normalizeKwStart(next.kwStart ?? auftragslisteKwStart),
-        weekCount: normalizeWeekCount(next.weekCount ?? auftragslisteWeekCount),
-      },
-    });
-  };
+  const persistSelection = async (_reportType: ReportType, _next: VorlauflisteSelection | ProduktionsplanungSelection | AuftragslisteSelection) => undefined;
+  const persistVorlauflisteSelection = async (_next?: Partial<VorlauflisteSelection>) => undefined;
+  const persistAuftragslisteSelection = async (_next?: Partial<AuftragslisteSelection>) => undefined;
+  const persistVorlauflisteRangeConfig = async (_next: Partial<VorlauflisteRangeConfig>) => undefined;
+  const persistProduktionsplanungRangeConfig = async (_next: Partial<ProduktionsplanungRangeConfig>) => undefined;
+  const persistAuftragslisteRangeConfig = async (_next: Partial<AuftragslisteRangeConfig>) => undefined;
 
   const { data: vorlauflisteData, isLoading: isVorlauflisteLoading } = useQuery<VorlauflisteResponse>({
     queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page],
@@ -1133,6 +949,178 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     auftragslisteData?.componentCategories,
     auftragslisteData?.productCategories,
   ]);
+  const vorlauflisteKwRange = useMemo(() => resolveReportRangeFromKw({
+    kwStart: vorlauflisteKwStart,
+    weekCount: vorlauflisteWeekCount,
+    referenceDate: defaultReportRange.referenceDate,
+  }), [defaultReportRange.referenceDate, vorlauflisteKwStart, vorlauflisteWeekCount]);
+  const produktionsplanungKwRange = useMemo(() => resolveReportRangeFromKw({
+    kwStart: produktionsplanungKwStart,
+    weekCount: produktionsplanungWeekCount,
+    referenceDate: defaultReportRange.referenceDate,
+  }), [defaultReportRange.referenceDate, produktionsplanungKwStart, produktionsplanungWeekCount]);
+  const auftragslisteKwRange = useMemo(() => resolveReportRangeFromKw({
+    kwStart: auftragslisteKwStart,
+    weekCount: auftragslisteWeekCount,
+    referenceDate: defaultReportRange.referenceDate,
+  }), [auftragslisteKwStart, auftragslisteWeekCount, defaultReportRange.referenceDate]);
+
+  const buildPresetRange = (params: {
+    activeTab: ReportRangeTab;
+    fromDate: string;
+    toDate: string;
+    kwStart: number | undefined;
+    weekCount: number;
+    kwRange: { fromDate: string; toDate: string } | null;
+  }): ReportPresetRange => {
+    if (params.activeTab !== "calendarWeek") {
+      return {
+        mode: "date",
+        fromDate: normalizePersistedDate(params.fromDate) ?? defaultReportRange.fromDate,
+        toDate: resolveRequiredToDate(params.toDate, defaultReportRange.toDate),
+      };
+    }
+
+    const normalizedKwStart = normalizeKwStart(params.kwStart);
+    const weeks = normalizeWeekCount(params.weekCount);
+    if (normalizedKwStart === nextIsoWeek) {
+      return { mode: "calendarWeek", start: "next", weeks };
+    }
+    if (normalizedKwStart === defaultIsoWeek) {
+      return { mode: "calendarWeek", start: "current", weeks };
+    }
+
+    return {
+      mode: "date",
+      fromDate: params.kwRange?.fromDate ?? defaultReportRange.fromDate,
+      toDate: params.kwRange?.toDate ?? defaultReportRange.toDate,
+    };
+  };
+
+  const buildVorlauflistePresetConfig = (): ReportPresetConfig => ({
+    range: buildPresetRange({
+      activeTab: activeVorlauflisteTab,
+      fromDate: vorlauflisteFromDate,
+      toDate: vorlauflisteToDate,
+      kwStart: vorlauflisteKwStart,
+      weekCount: vorlauflisteWeekCount,
+      kwRange: vorlauflisteKwRange,
+    }),
+    activeTab: activeVorlauflisteTab,
+    useShortCodes: useVorlauflisteShortCodes,
+    columnWidths: normalizeColumnWidths(vorlauflisteColumnWidths),
+    columnOrder: normalizeColumnIdList(vorlauflisteColumnOrder),
+    hiddenColumns: normalizeColumnIdList(vorlauflisteHiddenColumns),
+  });
+
+  const buildProduktionsplanungPresetConfig = (): ReportPresetConfig => ({
+    range: buildPresetRange({
+      activeTab: activeProduktionsplanungTab,
+      fromDate: produktionsplanungFromDate,
+      toDate: produktionsplanungToDate,
+      kwStart: produktionsplanungKwStart,
+      weekCount: produktionsplanungWeekCount,
+      kwRange: produktionsplanungKwRange,
+    }),
+    activeTab: activeProduktionsplanungTab,
+    useShortCodes: useProduktionsplanungShortCodes,
+    productCategoryIds: effectiveProduktionsplanungProductCategoryIds,
+    componentCategoryIds: effectiveProduktionsplanungComponentCategoryIds,
+    categoryLayout: activeProduktionsplanungCategoryLayoutConfig,
+  });
+
+  const buildAuftragslistePresetConfig = (): ReportPresetConfig => ({
+    range: buildPresetRange({
+      activeTab: activeAuftragslisteTab,
+      fromDate: auftragslisteFromDate,
+      toDate: auftragslisteToDate,
+      kwStart: auftragslisteKwStart,
+      weekCount: auftragslisteWeekCount,
+      kwRange: auftragslisteKwRange,
+    }),
+    activeTab: activeAuftragslisteTab,
+    useShortCodes: useAuftragslisteShortCodes,
+    productCategoryIds: effectiveAuftragslisteProductCategoryIds,
+    componentCategoryIds: effectiveAuftragslisteComponentCategoryIds,
+    tagIds: effectiveAuftragslisteTagIds,
+    saunaModels: effectiveAuftragslisteSaunaModels,
+  });
+
+  const resolvePresetKwStart = (range: ReportPresetRange): number => {
+    if (range.mode !== "calendarWeek") {
+      return defaultIsoWeek;
+    }
+    return range.start === "next" ? nextIsoWeek : defaultIsoWeek;
+  };
+
+  const applyPresetRange = (
+    config: ReportPresetConfig,
+    setters: {
+      setActiveTab: (value: ReportRangeTab) => void;
+      setFromDate: (value: string) => void;
+      setToDate: (value: string) => void;
+      setKwStart: (value: number | undefined) => void;
+      setWeekCount: (value: number) => void;
+    },
+  ) => {
+    if (config.range.mode === "calendarWeek") {
+      setters.setActiveTab("calendarWeek");
+      setters.setKwStart(resolvePresetKwStart(config.range));
+      setters.setWeekCount(normalizeWeekCount(config.range.weeks));
+      return;
+    }
+
+    setters.setActiveTab("date");
+    setters.setFromDate(config.range.fromDate);
+    setters.setToDate(config.range.toDate ?? config.range.fromDate);
+  };
+
+  const applyVorlauflistePreset = (preset: ReportPreset) => {
+    const config = preset.config;
+    applyPresetRange(config, {
+      setActiveTab: setActiveVorlauflisteTab,
+      setFromDate: setVorlauflisteFromDate,
+      setToDate: setVorlauflisteToDate,
+      setKwStart: setVorlauflisteKwStart,
+      setWeekCount: setVorlauflisteWeekCount,
+    });
+    setUseVorlauflisteShortCodes(config.useShortCodes ?? false);
+    setVorlauflisteColumnWidths(normalizeColumnWidths(config.columnWidths));
+    setVorlauflisteColumnOrder(normalizeColumnIdList(config.columnOrder));
+    setVorlauflisteHiddenColumns(normalizeColumnIdList(config.hiddenColumns));
+  };
+
+  const applyProduktionsplanungPreset = (preset: ReportPreset) => {
+    const config = preset.config;
+    applyPresetRange(config, {
+      setActiveTab: setActiveProduktionsplanungTab,
+      setFromDate: setProduktionsplanungFromDate,
+      setToDate: setProduktionsplanungToDate,
+      setKwStart: setProduktionsplanungKwStart,
+      setWeekCount: setProduktionsplanungWeekCount,
+    });
+    setUseProduktionsplanungShortCodes(config.useShortCodes ?? false);
+    setProduktionsplanungPresetCategoryLayout(
+      config.categoryLayout ? resolveCategoryLayoutConfig(config.categoryLayout) : null,
+    );
+  };
+
+  const applyAuftragslistePreset = (preset: ReportPreset) => {
+    const config = preset.config;
+    applyPresetRange(config, {
+      setActiveTab: setActiveAuftragslisteTab,
+      setFromDate: setAuftragslisteFromDate,
+      setToDate: setAuftragslisteToDate,
+      setKwStart: setAuftragslisteKwStart,
+      setWeekCount: setAuftragslisteWeekCount,
+    });
+    setUseAuftragslisteShortCodes(config.useShortCodes ?? false);
+    setSelectedAuftragslisteProductCategoryIds(config.productCategoryIds ?? []);
+    setSelectedAuftragslisteComponentCategoryIds(config.componentCategoryIds ?? []);
+    setSelectedAuftragslisteTagIds(config.tagIds ?? []);
+    setSelectedAuftragslisteSaunaModels(config.saunaModels ?? []);
+  };
+
   const persistCategoryLayoutConfig = async (nextConfig: CategoryLayoutConfig) => {
     await setSetting({
       key: PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY,
@@ -1320,21 +1308,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const isVorlauflisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "vorlaufliste";
   const isProduktionsplanungLayout = isReportOverlayOpen && submittedFilters?.reportType === "produktionsplanung";
   const isAuftragslisteOverlay = isReportOverlayOpen && submittedFilters?.reportType === "auftragsliste";
-  const vorlauflisteKwRange = useMemo(() => resolveReportRangeFromKw({
-    kwStart: vorlauflisteKwStart,
-    weekCount: vorlauflisteWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [defaultReportRange.referenceDate, vorlauflisteKwStart, vorlauflisteWeekCount]);
-  const produktionsplanungKwRange = useMemo(() => resolveReportRangeFromKw({
-    kwStart: produktionsplanungKwStart,
-    weekCount: produktionsplanungWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [defaultReportRange.referenceDate, produktionsplanungKwStart, produktionsplanungWeekCount]);
-  const auftragslisteKwRange = useMemo(() => resolveReportRangeFromKw({
-    kwStart: auftragslisteKwStart,
-    weekCount: auftragslisteWeekCount,
-    referenceDate: defaultReportRange.referenceDate,
-  }), [auftragslisteKwStart, auftragslisteWeekCount, defaultReportRange.referenceDate]);
   const vorlauflisteRangeMetaLabel = useMemo(() => resolveReportRangeMetaLabel({
     activeTab: activeVorlauflisteTab,
     fromDate: vorlauflisteFromDate,
@@ -1645,6 +1618,16 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       <span className="text-sm text-slate-600">Shortcodes verwenden</span>
                     </label>
                   )}
+                  secondaryOptionsSlot={(
+                    <ReportPresetControls
+                      reportKey="vorlaufliste"
+                      isAdmin={isAdmin}
+                      currentConfig={buildVorlauflistePresetConfig()}
+                      defaultName="Vorlaufliste Preset"
+                      onApplyPreset={applyVorlauflistePreset}
+                      testIdPrefix="reports-vorlaufliste"
+                    />
+                  )}
                   footer={(
                     <ReportOpenToggle
                       disabled={isVorlauflisteGenerateDisabled}
@@ -1726,6 +1709,16 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       />
                       <span className="text-sm text-slate-600">Shortcodes verwenden</span>
                     </label>
+                  )}
+                  secondaryOptionsSlot={(
+                    <ReportPresetControls
+                      reportKey="produktionsplanung"
+                      isAdmin={isAdmin}
+                      currentConfig={buildProduktionsplanungPresetConfig()}
+                      defaultName="Produktionsplanung Preset"
+                      onApplyPreset={applyProduktionsplanungPreset}
+                      testIdPrefix="reports-produktionsplanung"
+                    />
                   )}
                   footer={(
                     <ReportOpenToggle
@@ -1927,6 +1920,16 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                         </Popover>
                       </div>
                     </div>
+                  )}
+                  secondaryOptionsSlot={(
+                    <ReportPresetControls
+                      reportKey="auftragsliste"
+                      isAdmin={isAdmin}
+                      currentConfig={buildAuftragslistePresetConfig()}
+                      defaultName="Auftragsliste Preset"
+                      onApplyPreset={applyAuftragslistePreset}
+                      testIdPrefix="reports-auftragsliste"
+                    />
                   )}
                   footer={(
                     <ReportOpenToggle
@@ -2376,7 +2379,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                             ...(produktionsplanungData?.productCategoryGroups ?? []),
                             ...(produktionsplanungData?.componentCategoryGroups ?? []),
                           ],
-                          categoryLayoutConfig ?? [],
+                          activeProduktionsplanungCategoryLayoutConfig,
                           "Keine passenden Kategorien im gewählten Zeitraum gefunden.",
                           "reports-produktionsplanung-categories",
                         )}
@@ -2405,7 +2408,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                           projectRows: [],
                         }}
                         categories={effectiveProduktionsplanungPrintCategories}
-                        layoutConfig={categoryLayoutConfig ?? []}
+                        layoutConfig={activeProduktionsplanungCategoryLayoutConfig}
                       />
                     </>
                   )}

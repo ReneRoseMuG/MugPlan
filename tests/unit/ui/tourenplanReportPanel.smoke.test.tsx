@@ -23,6 +23,8 @@ const setSettingMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  useMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/hooks/useSettings", () => ({
@@ -99,24 +101,7 @@ describe("UI: TourenplanReportPanel smoke", () => {
     useQueryMock.mockReset();
     useSettingMock.mockReset();
     setSettingMock.mockReset();
-    useSettingMock.mockImplementation((key: string) => {
-      if (key === "reports.tourenplan.rangeConfig") {
-        return {
-          activeTab: "date",
-          fromDate: "2026-04-14",
-          toDate: "2026-04-20",
-          kwStart: 16,
-          weekCount: 1,
-        };
-      }
-      if (key === "reports.tourenplan.printMode") {
-        return "farbdruck";
-      }
-      if (key === "reports.tourenplan.fontSize") {
-        return "medium";
-      }
-      return undefined;
-    });
+    useSettingMock.mockReturnValue(undefined);
     useQueryMock.mockImplementation((options: { queryKey?: unknown[] }) => {
       const key = options.queryKey?.[0];
       if (key === "/api/tours") {
