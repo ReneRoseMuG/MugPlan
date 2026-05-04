@@ -238,6 +238,48 @@ test("Dispatcher fügt KW-Mitarbeiter im Wochenkalender hinzu und sieht sie im T
   await expect(page.getByTestId("list-tour-week-members")).toContainText(getCompactEmployeeLabel(dispatcherEmployee));
 });
 
+test("Admin rollt vorhandene Tour-KW-Mitarbeiter aus der Wochenkalender-Spalte auf Termine aus", async ({ page }) => {
+  const targetWeek = resolveTargetWeek();
+  const tour = await createTourFixture("#16a34a");
+  const project = await createProjectFixture({ prefix: "BWE-APPLY", name: "BWE Apply Projekt" });
+  const plannedEmployee = await createEmployeeFixture("BWE-APPLY-PLAN");
+  const appointmentId = await createRawAppointmentFixture({
+    projectId: project.id,
+    startDate: targetWeek.weekStartDate,
+    title: "BWE Apply Termin",
+    tourId: tour.id,
+    employeeIds: [],
+  });
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: targetWeek.isoYear,
+    isoWeek: targetWeek.isoWeek,
+    employeeId: plannedEmployee.id,
+  });
+
+  await loginAsAdmin(page);
+  await openStandaloneWeek(page, targetWeek);
+  const targetSection = getWeekSection(page, targetWeek.weekStartDate);
+  await page.getByTestId("switch-week-personnel-column").click();
+  await targetSection.getByTestId(`button-week-personnel-column-toggle-tour-${tour.id}`).click();
+
+  await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${tour.id}`)).toBeVisible();
+  await targetSection.getByTestId(`button-apply-week-personnel-tour-${tour.id}`).click();
+
+  await expect(page.getByTestId("dialog-tour-employee-cascade")).toBeVisible();
+  await expect(page.getByTestId(`tour-employee-cascade-row-${appointmentId}`)).toBeVisible();
+  const applyResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === `/api/tours/${tour.id}/week-employees/add`
+  ));
+  await page.getByTestId("button-tour-employee-cascade-confirm").click();
+  const applyResponse = await applyResponsePromise;
+  expect(applyResponse.ok(), await applyResponse.text()).toBeTruthy();
+
+  await expect.poll(async () => fetchAppointmentEmployeeIds(page, appointmentId)).toEqual([plannedEmployee.id]);
+});
+
 test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termin-Kaskaden", async ({ page }) => {
   const targetWeek = resolveTargetWeek();
   const tour = await createTourFixture("#117799");
@@ -297,9 +339,13 @@ test("KW-Plan-Toggle öffnet die Tour-KW-Spalte und add/remove nutzt echte Termi
 
   await targetSection.getByTestId(`button-week-personnel-column-toggle-tour-${tour.id}`).click();
   await expect(targetSection.getByTestId(`button-add-week-personnel-tour-${tour.id}`)).toBeVisible();
+  await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${tour.id}`)).toBeVisible();
   await expect(targetSection.getByTestId("button-add-week-personnel-tour-unassigned")).toHaveCount(0);
+  await expect(targetSection.getByTestId("button-apply-week-personnel-tour-unassigned")).toHaveCount(0);
   await expect(targetSection.getByTestId(`button-add-week-personnel-tour-${absenceTour.id}`)).toHaveCount(0);
+  await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${absenceTour.id}`)).toHaveCount(0);
   await expect(targetSection.getByTestId(`button-add-week-personnel-tour-${parkplatzTour.id}`)).toHaveCount(0);
+  await expect(targetSection.getByTestId(`button-apply-week-personnel-tour-${parkplatzTour.id}`)).toHaveCount(0);
   await expect(existingBadge).toContainText(existingEmployee.firstName ?? "");
   await expect.poll(async () => {
     const columnBox = await personnelColumn.boundingBox();

@@ -3,7 +3,8 @@
  *
  * Abgedeckte Regeln:
  * - ProjectsPage verdrahtet den Auftragsnummer-Filter in das Projektfilterpanel.
- * - Auftragsnummer und Betrag bleiben in der Tabellenansicht verfuegbar.
+ * - Auftragsnummer, Betrag und naechster Termin bleiben in der Tabellenansicht verfuegbar.
+ * - Die Spalte naechster Termin ist sortierbar.
  * - Board-Karten zeigen Auftragsnummer und HTML-Beschreibung.
  * - Die Kundenzeile bleibt als unterer Kartenabschluss sichtbar.
  * - Notiz-Trigger erscheint nur bei `notesCount > 0`.
@@ -226,6 +227,7 @@ describe("FT02 projects page order number wiring", () => {
     const columns = tableViewCalls[0].columns as Array<Record<string, unknown>>;
     const orderNumberColumn = columns.find((column) => column.id === "orderNumber");
     const amountColumn = columns.find((column) => column.id === "amount");
+    const nextAppointmentColumn = columns.find((column) => column.id === "relevantAppointment");
     const row = {
       project: {
         id: 11,
@@ -245,6 +247,86 @@ describe("FT02 projects page order number wiring", () => {
     expect(renderToStaticMarkup((orderNumberColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("ORD-1");
     expect(amountColumn?.header).toBe("Betrag");
     expect(renderToStaticMarkup((amountColumn?.cell as ({ row }: { row: typeof row }) => React.ReactNode)({ row }))).toContain("1.234,50");
+    expect(renderToStaticMarkup(<>{nextAppointmentColumn?.header as React.ReactNode}</>)).toContain("Nächster Termin");
+  });
+
+  it("sorts table rows by next appointment while keeping projects without appointment last", () => {
+    useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
+      const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
+      if (key === "/api/projects/list") {
+        return {
+          data: {
+            page: 1,
+            pageSize: 50,
+            total: 3,
+            totalPages: 1,
+            items: [
+              {
+                id: 31,
+                customerId: 22,
+                name: "Termin Spät",
+                orderNumber: "ORD-31",
+                amount: null,
+                descriptionMd: null,
+                isActive: true,
+                version: 1,
+                projectArticleItems: [],
+                tags: [],
+                notesCount: 0,
+                appointmentsCount: 1,
+                nextAppointmentStartDate: "2099-07-12",
+                nextAppointmentStartTimeHour: 9,
+                customer: { id: 22, customerNumber: "C-22", fullName: "Kunde Nord", lastName: "Nord" },
+              },
+              {
+                id: 32,
+                customerId: 22,
+                name: "Ohne Termin",
+                orderNumber: "ORD-32",
+                amount: null,
+                descriptionMd: null,
+                isActive: true,
+                version: 1,
+                projectArticleItems: [],
+                tags: [],
+                notesCount: 0,
+                appointmentsCount: 0,
+                nextAppointmentStartDate: null,
+                nextAppointmentStartTimeHour: null,
+                customer: { id: 22, customerNumber: "C-22", fullName: "Kunde Nord", lastName: "Nord" },
+              },
+              {
+                id: 33,
+                customerId: 22,
+                name: "Termin Früh",
+                orderNumber: "ORD-33",
+                amount: null,
+                descriptionMd: null,
+                isActive: true,
+                version: 1,
+                projectArticleItems: [],
+                tags: [],
+                notesCount: 0,
+                appointmentsCount: 1,
+                nextAppointmentStartDate: "2099-07-10",
+                nextAppointmentStartTimeHour: 8,
+                customer: { id: 22, customerNumber: "C-22", fullName: "Kunde Nord", lastName: "Nord" },
+              },
+            ],
+          },
+          isLoading: false,
+        };
+      }
+      if (key === "/api/tags") {
+        return { data: [], isLoading: false };
+      }
+      return { data: undefined, isLoading: false };
+    });
+
+    renderToStaticMarkup(<ProjectsPage tableOnly sortKey="nextAppointment" sortDirection="asc" />);
+
+    const rows = tableViewCalls[0].rows as Array<{ project: { name: string } }>;
+    expect(rows.map((row) => row.project.name)).toEqual(["Termin Früh", "Termin Spät", "Ohne Termin"]);
   });
 
   it("renders html description in board cards and wires project/customer previews", () => {

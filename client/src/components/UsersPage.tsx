@@ -283,6 +283,7 @@ export function UsersPage() {
             Neuer Benutzer
           </Button>
         )}
+        contentClassName="overflow-auto visible-vertical-scrollbar"
         contentSlot={(
           <div className="rounded-md border border-slate-200 bg-white" data-testid="users-management-table">
             <Table>

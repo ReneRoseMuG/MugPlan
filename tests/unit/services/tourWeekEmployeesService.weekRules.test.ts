@@ -3,7 +3,8 @@
  *
  * Abgedeckte Regeln:
  * - ISO-Wochenfenster werden auch ueber Jahresgrenzen korrekt aufgeloest.
- * - Laufende und vergangene Wochen gelten serverseitig als gesperrt.
+ * - Laufende Wochen sind rollenabhaengig gesperrt: Admin offen, Disponent gesperrt.
+ * - Vergangene Wochen bleiben serverseitig fuer alle Rollen gesperrt.
  * - Zukuenftige Wochen bleiben editierbar.
  *
  * Fehlerfaelle:
@@ -17,6 +18,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isWeekLocked,
+  isWeekLockedForRole,
   resolveIsoWeekWindow,
 } from "../../../server/services/tourWeekEmployeesService";
 
@@ -36,7 +38,19 @@ describe("tourWeekEmployeesService week rules", () => {
     expect(isWeekLocked(2026, 14, "2026-04-09")).toBe(true);
   });
 
+  it("unlocks the current week only for admins", () => {
+    expect(isWeekLockedForRole(2026, 15, "ADMIN", "2026-04-09")).toBe(false);
+    expect(isWeekLockedForRole(2026, 15, "DISPONENT", "2026-04-09")).toBe(true);
+    expect(isWeekLockedForRole(2026, 15, "LESER", "2026-04-09")).toBe(true);
+  });
+
+  it("keeps past weeks locked for admins and dispatchers", () => {
+    expect(isWeekLockedForRole(2026, 14, "ADMIN", "2026-04-09")).toBe(true);
+    expect(isWeekLockedForRole(2026, 14, "DISPONENT", "2026-04-09")).toBe(true);
+  });
+
   it("keeps future weeks editable", () => {
     expect(isWeekLocked(2026, 16, "2026-04-09")).toBe(false);
+    expect(isWeekLockedForRole(2026, 16, "DISPONENT", "2026-04-09")).toBe(false);
   });
 });

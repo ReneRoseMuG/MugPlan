@@ -116,13 +116,13 @@ export function ProjectFilterPanel({
             data-testid="toggle-project-scope"
           >
             <ToggleGroupItem value="all" data-testid="toggle-project-scope-all">
-              Alle Projekte
+              Alle
             </ToggleGroupItem>
             <ToggleGroupItem value="upcoming" data-testid="toggle-project-scope-upcoming">
-              Geplante Projekte
+              Geplante
             </ToggleGroupItem>
             <ToggleGroupItem value="noAppointments" data-testid="toggle-project-scope-no-appointments">
-              Projekte ohne Termin
+              Ohne Termin
             </ToggleGroupItem>
           </ToggleGroup>
         </div>

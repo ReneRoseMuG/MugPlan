@@ -135,9 +135,9 @@ describe("FT02 UI: project filter panel layout wiring", () => {
     const customerIndex = html.indexOf("filter-customer-last-name");
     const customerNumberIndex = html.indexOf("filter-customer-number");
     const orderNumberIndex = html.indexOf("filter-project-order-number");
-    const allProjectsIndex = html.indexOf("Alle Projekte");
-    const upcomingProjectsIndex = html.indexOf("Geplante Projekte");
-    const noAppointmentsIndex = html.indexOf("Projekte ohne Termin");
+    const allProjectsIndex = html.indexOf("Alle");
+    const upcomingProjectsIndex = html.indexOf("Geplante");
+    const noAppointmentsIndex = html.indexOf("Ohne Termin");
     const tagIndex = html.indexOf("filter-project-tag");
 
     expect(projectIndex).toBeGreaterThan(-1);

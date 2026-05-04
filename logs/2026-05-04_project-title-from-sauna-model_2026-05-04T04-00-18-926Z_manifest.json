@@ -1,0 +1,7391 @@
+{
+  "allowedRuntimeModes": [
+    "development",
+    "test"
+  ],
+  "candidates": [
+    {
+      "candidateId": "project-1984",
+      "label": "A1117615A | Projekt 1984 | Standard Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard Vorraum",
+        "orderItemIds": [
+          4725
+        ],
+        "orderNumber": "A1117615A",
+        "productIds": [
+          83
+        ],
+        "projectId": 1984,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1985",
+      "label": "M300326 | Projekt 1985 | Premium 4 \"E\" Messe Mannheim -> Premium",
+      "metadata": {
+        "currentName": "Premium 4 \"E\" Messe Mannheim",
+        "orderItemIds": [
+          3274
+        ],
+        "orderNumber": "M300326",
+        "productIds": [
+          90
+        ],
+        "projectId": 1985,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1985
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium 4 \"E\" Messe Mannheim",
+            "updated_at": "2026-03-24T10:18:53.000Z",
+            "version": 7
+          },
+          "key": {
+            "id": 1985
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1986",
+      "label": "A1017499A | Projekt 1986 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3370
+        ],
+        "orderNumber": "A1017499A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1986,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1987",
+      "label": "A0516293A | Projekt 1987 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3289
+        ],
+        "orderNumber": "A0516293A",
+        "productIds": [
+          90
+        ],
+        "projectId": 1987,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1987
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-24T13:13:02.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 1987
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1988",
+      "label": "A0118113A | Projekt 1988 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3297
+        ],
+        "orderNumber": "A0118113A",
+        "productIds": [
+          89
+        ],
+        "projectId": 1988,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1988
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-24T13:40:01.000Z",
+            "version": 6
+          },
+          "key": {
+            "id": 1988
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1989",
+      "label": "A0218384A | Projekt 1989 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3356
+        ],
+        "orderNumber": "A0218384A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1989,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1990",
+      "label": "A0118112A | Projekt 1990 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3348
+        ],
+        "orderNumber": "A0118112A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1990,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1992",
+      "label": "A0118088A | Projekt 1992 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3341
+        ],
+        "orderNumber": "A0118088A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1992,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1993",
+      "label": "A0118110A | Projekt 1993 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3325
+        ],
+        "orderNumber": "A0118110A",
+        "productIds": [
+          89
+        ],
+        "projectId": 1993,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1993
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-25T14:52:37.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 1993
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1994",
+      "label": "A1017442A | Projekt 1994 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3378
+        ],
+        "orderNumber": "A1017442A",
+        "productIds": [
+          84
+        ],
+        "projectId": 1994,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1994
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-25T15:35:45.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 1994
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1995",
+      "label": "A0716765A | Projekt 1995 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3386
+        ],
+        "orderNumber": "A0716765A",
+        "productIds": [
+          82
+        ],
+        "projectId": 1995,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-1998",
+      "label": "A0318618A | Projekt 1998 | Premium IV Sondermaß -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sondermaß",
+        "orderItemIds": [
+          4741
+        ],
+        "orderNumber": "A0318618A",
+        "productIds": [
+          90
+        ],
+        "projectId": 1998,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 1998
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sondermaß",
+            "updated_at": "2026-04-08T08:50:50.000Z",
+            "version": 4
+          },
+          "key": {
+            "id": 1998
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-1999",
+      "label": "A0218299A | Projekt 1999 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3426
+        ],
+        "orderNumber": "A0218299A",
+        "productIds": [
+          85
+        ],
+        "projectId": 1999,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2000",
+      "label": "A0218227A | Projekt 2000 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3434
+        ],
+        "orderNumber": "A0218227A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2000,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2000
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-26T12:38:28.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2000
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2001",
+      "label": "A1017367A | Projekt 2001 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3442
+        ],
+        "orderNumber": "A1017367A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2001,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2001
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-26T12:43:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2001
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2002",
+      "label": "A1017414A | Projekt 2002 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3450
+        ],
+        "orderNumber": "A1017414A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2002,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2002
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-26T13:07:10.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2002
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2003",
+      "label": "A1017498A | Projekt 2003 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3466
+        ],
+        "orderNumber": "A1017498A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2003,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2004",
+      "label": "A1117531A | Projekt 2004 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3474
+        ],
+        "orderNumber": "A1117531A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2004,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2004
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-26T15:01:03.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2004
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2005",
+      "label": "A1217761A | Projekt 2005 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3841
+        ],
+        "orderNumber": "A1217761A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2005,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2005
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T12:43:15.000Z",
+            "version": 3
+          },
+          "key": {
+            "id": 2005
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2009",
+      "label": "A0118122A | Projekt 2009 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4749
+        ],
+        "orderNumber": "A0118122A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2009,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2009
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-08T09:56:28.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2009
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2011",
+      "label": "A0218135A | Projekt 2011 | Standard",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "Standard",
+        "orderItemIds": [
+          3515
+        ],
+        "orderNumber": "A0218135A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2011,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2012",
+      "label": "A0118119A | Projekt 2012 | XL Vorraum",
+      "message": "Projektname entspricht bereits dem Sauna-Modell.",
+      "metadata": {
+        "currentName": "XL Vorraum",
+        "orderItemIds": [
+          3522
+        ],
+        "orderNumber": "A0118119A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2012,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "status": "already_ok"
+    },
+    {
+      "candidateId": "project-2013",
+      "label": "A0118115A | Projekt 2013 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3530
+        ],
+        "orderNumber": "A0118115A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2013,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2013
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T08:18:01.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2013
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2014",
+      "label": "A0218190A | Projekt 2014 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4757
+        ],
+        "orderNumber": "A0218190A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2014,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2014
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-08T10:37:14.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2014
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2015",
+      "label": "A0118117A | Projekt 2015 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3545
+        ],
+        "orderNumber": "A0118117A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2015,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2015
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T08:32:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2015
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2016",
+      "label": "A0716668A | Projekt 2016 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3553
+        ],
+        "orderNumber": "A0716668A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2016,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2016
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-30T08:34:37.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2016
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2017",
+      "label": "A0218137A | Projekt 2017 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3561
+        ],
+        "orderNumber": "A0218137A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2017,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2017
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-30T08:40:52.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2017
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2018",
+      "label": "A0118111A | Projekt 2018 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3576
+        ],
+        "orderNumber": "A0118111A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2018,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2018
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T08:45:24.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2018
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2019",
+      "label": "A0118120A | Projekt 2019 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3591
+        ],
+        "orderNumber": "A0118120A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2019,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2019
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-30T08:49:29.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2019
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2020",
+      "label": "A0218134A | Projekt 2020 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3599
+        ],
+        "orderNumber": "A0218134A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2020,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2020
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T08:51:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2020
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2022",
+      "label": "A0118116A | Projekt 2022 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3606
+        ],
+        "orderNumber": "A0118116A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2022,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2022
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-30T09:21:36.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2022
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2023",
+      "label": "A1017440A | Projekt 2023 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3621
+        ],
+        "orderNumber": "A1017440A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2023,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2023
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-30T09:41:05.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2023
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2024",
+      "label": "A1017495A | Projekt 2024 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3628
+        ],
+        "orderNumber": "A1017495A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2024,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2024
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-30T09:44:02.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2024
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2025",
+      "label": "A1017443A | Projekt 2025 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3636
+        ],
+        "orderNumber": "A1017443A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2025,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2025
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-30T09:47:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2025
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2026",
+      "label": "A0218301A | Projekt 2026 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3644
+        ],
+        "orderNumber": "A0218301A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2026,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2026
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T09:52:46.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2026
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2027",
+      "label": "A0218184A | Projekt 2027 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3652
+        ],
+        "orderNumber": "A0218184A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2027,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2027
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-30T09:56:12.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2027
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2028",
+      "label": "A0616549A | Projekt 2028 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3660
+        ],
+        "orderNumber": "A0616549A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2028,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2028
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-30T10:13:31.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2028
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2029",
+      "label": "A0616508A | Projekt 2029 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3668
+        ],
+        "orderNumber": "A0616508A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2029,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2029
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T10:17:43.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2029
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2032",
+      "label": "A0516314A | Projekt 2032 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3739
+        ],
+        "orderNumber": "A0516314A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2032,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2032
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T10:51:39.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2032
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2033",
+      "label": "A1117544A | Projekt 2033 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          9918
+        ],
+        "orderNumber": "A1117544A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2033,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2033
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-27T04:03:45.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2033
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2034",
+      "label": "A0118075A | Projekt 2034 | Petite Sauna -> Petite",
+      "metadata": {
+        "currentName": "Petite Sauna",
+        "orderItemIds": [
+          3692
+        ],
+        "orderNumber": "A0118075A",
+        "productIds": [
+          88
+        ],
+        "projectId": 2034,
+        "saunaModel": "Petite",
+        "targetName": "Petite"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2034
+          },
+          "set": {
+            "name": "Petite"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Petite Sauna",
+            "updated_at": "2026-03-30T11:34:31.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2034
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2035",
+      "label": "A0218163A | Projekt 2035 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3700
+        ],
+        "orderNumber": "A0218163A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2035,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2035
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-30T11:37:46.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2035
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2036",
+      "label": "A0218164A | Projekt 2036 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3707
+        ],
+        "orderNumber": "A0218164A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2036,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2036
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-30T11:42:43.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2036
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2037",
+      "label": "A0218317A | Projekt 2037 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3715
+        ],
+        "orderNumber": "A0218317A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2037,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2037
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-30T14:47:44.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2037
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2038",
+      "label": "A0218305A | Projekt 2038 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3723
+        ],
+        "orderNumber": "A0218305A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2038,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2038
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-30T15:13:09.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2038
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2039",
+      "label": "A0218245A | Projekt 2039 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3731
+        ],
+        "orderNumber": "A0218245A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2039,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2039
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-30T15:17:22.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2039
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2040",
+      "label": "A0716817A | Projekt 2040 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3747
+        ],
+        "orderNumber": "A0716817A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2040,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2040
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T11:11:06.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2040
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2041",
+      "label": "A0817013A | Projekt 2041 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3754
+        ],
+        "orderNumber": "A0817013A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2041,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2041
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T11:15:56.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2041
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2042",
+      "label": "A0118069A | Projekt 2042 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3762
+        ],
+        "orderNumber": "A0118069A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2042,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2042
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T11:21:32.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2042
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2043",
+      "label": "A1217853A | Projekt 2043 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3770
+        ],
+        "orderNumber": "A1217853A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2043,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2043
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-31T11:47:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2043
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2044",
+      "label": "A0218258A | Projekt 2044 | Suuri Sauna -> Suuri",
+      "metadata": {
+        "currentName": "Suuri Sauna",
+        "orderItemIds": [
+          3778
+        ],
+        "orderNumber": "A0218258A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2044,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2044
+          },
+          "set": {
+            "name": "Suuri"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Suuri Sauna",
+            "updated_at": "2026-03-31T11:50:57.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2044
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2045",
+      "label": "A0118093A | Projekt 2045 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3786
+        ],
+        "orderNumber": "A0118093A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2045,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2045
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T12:10:17.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2045
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2046",
+      "label": "A0118101A | Projekt 2046 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3794
+        ],
+        "orderNumber": "A0118101A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2046,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2046
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-31T12:13:30.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2046
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2047",
+      "label": "A0218162A | Projekt 2047 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3802
+        ],
+        "orderNumber": "A0218162A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2047,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2047
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T12:17:55.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2047
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2048",
+      "label": "A0118090A | Projekt 2048 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3809
+        ],
+        "orderNumber": "A0118090A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2048,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2048
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T12:20:35.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2048
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2049",
+      "label": "A0118108A | Projekt 2049 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3817
+        ],
+        "orderNumber": "A0118108A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2049,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2049
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T12:24:51.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2049
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2051",
+      "label": "A0118124A | Projekt 2051 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3825
+        ],
+        "orderNumber": "A0118124A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2051,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2051
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T12:33:02.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2051
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2052",
+      "label": "A0218371A | Projekt 2052 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3833
+        ],
+        "orderNumber": "A0218371A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2052,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2052
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T12:36:25.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2052
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2053",
+      "label": "A0616473A | Projekt 2053 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3850
+        ],
+        "orderNumber": "A0616473A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2053,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2053
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-31T14:22:21.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2053
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2054",
+      "label": "A0218160A | Projekt 2054 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3858
+        ],
+        "orderNumber": "A0218160A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2054,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2054
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-31T14:26:11.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2054
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2055",
+      "label": "A0218165A | Projekt 2055 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3866
+        ],
+        "orderNumber": "A0218165A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2055,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2055
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-31T14:31:25.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2055
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2056",
+      "label": "A0218373A | Projekt 2056 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3874
+        ],
+        "orderNumber": "A0218373A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2056,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2056
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T14:34:20.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2056
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2057",
+      "label": "A0218252A | Projekt 2057 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3890
+        ],
+        "orderNumber": "A0218252A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2057,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2057
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T14:44:52.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2057
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2058",
+      "label": "A0218319A | Projekt 2058 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3898
+        ],
+        "orderNumber": "A0218319A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2058,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2058
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-31T14:48:52.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2058
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2059",
+      "label": "A0218379A | Projekt 2059 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3906
+        ],
+        "orderNumber": "A0218379A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2059,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2059
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-31T15:10:45.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2059
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2060",
+      "label": "A1017433A | Projekt 2060 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3914
+        ],
+        "orderNumber": "A1017433A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2060,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2060
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-03-31T15:14:23.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2060
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2061",
+      "label": "A0218203A | Projekt 2061 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3922
+        ],
+        "orderNumber": "A0218203A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2061,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2061
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T15:17:05.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2061
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2062",
+      "label": "A0218312A | Projekt 2062 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3929
+        ],
+        "orderNumber": "A0218312A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2062,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2062
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T15:20:40.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2062
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2063",
+      "label": "A0218329A | Projekt 2063 | Suuri Sauna -> Suuri",
+      "metadata": {
+        "currentName": "Suuri Sauna",
+        "orderItemIds": [
+          3936
+        ],
+        "orderNumber": "A0218329A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2063,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2063
+          },
+          "set": {
+            "name": "Suuri"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Suuri Sauna",
+            "updated_at": "2026-03-31T15:30:51.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2063
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2064",
+      "label": "A0318472A | Projekt 2064 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3944
+        ],
+        "orderNumber": "A0318472A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2064,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2064
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-03-31T15:37:47.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2064
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2065",
+      "label": "A0218314A | Projekt 2065 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3952
+        ],
+        "orderNumber": "A0218314A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2065,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2065
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-03-31T15:44:45.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2065
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2066",
+      "label": "A0218147A | Projekt 2066 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          3960
+        ],
+        "orderNumber": "A0218147A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2066,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2066
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-03-31T15:54:45.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2066
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2067",
+      "label": "A0218374A | Projekt 2067 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3968
+        ],
+        "orderNumber": "A0218374A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2067,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2067
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T07:47:00.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2067
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2068",
+      "label": "A0318554A | Projekt 2068 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          3976
+        ],
+        "orderNumber": "A0318554A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2068,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2068
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T07:49:16.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2068
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2069",
+      "label": "A0616537A | Projekt 2069 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          3984
+        ],
+        "orderNumber": "A0616537A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2069,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2069
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-01T07:56:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2069
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2070",
+      "label": "A0118104A | Projekt 2070 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          3992
+        ],
+        "orderNumber": "A0118104A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2070,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2070
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T08:02:21.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2070
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2071",
+      "label": "A1117613A | Projekt 2071 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4000
+        ],
+        "orderNumber": "A1117613A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2071,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2071
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T09:10:21.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2071
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2072",
+      "label": "A0616510A | Projekt 2072 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4008
+        ],
+        "orderNumber": "A0616510A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2072,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2072
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T09:12:50.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2072
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2073",
+      "label": "A1217922A | Projekt 2073 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4016
+        ],
+        "orderNumber": "A1217922A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2073,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2073
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-01T09:16:06.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2073
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2074",
+      "label": "A0318424A | Projekt 2074 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4024
+        ],
+        "orderNumber": "A0318424A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2074,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2074
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-01T09:24:21.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2074
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2075",
+      "label": "A0218173A | Projekt 2075 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4032
+        ],
+        "orderNumber": "A0218173A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2075,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2075
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T09:27:22.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2075
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2076",
+      "label": "A0318435A | Projekt 2076 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4040
+        ],
+        "orderNumber": "A0318435A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2076,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2076
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T09:31:09.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2076
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2077",
+      "label": "A0218370A | Projekt 2077 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4047
+        ],
+        "orderNumber": "A0218370A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2077,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2077
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T09:37:46.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2077
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2079",
+      "label": "A0218311A | Projekt 2079 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4055
+        ],
+        "orderNumber": "A0218311A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2079,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2079
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T09:43:01.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2079
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2080",
+      "label": "A0318527A | Projekt 2080 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4063
+        ],
+        "orderNumber": "A0318527A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2080,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2080
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T09:48:19.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2080
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2081",
+      "label": "A0318433A | Projekt 2081 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4071
+        ],
+        "orderNumber": "A0318433A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2081,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2081
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T09:53:40.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2081
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2082",
+      "label": "A0318573A | Projekt 2082 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4079
+        ],
+        "orderNumber": "A0318573A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2082,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2082
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T09:56:16.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2082
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2083",
+      "label": "A0218170A | Projekt 2083 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4087
+        ],
+        "orderNumber": "A0218170A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2083,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2083
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T10:02:11.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2083
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2084",
+      "label": "A0218194A | Projekt 2084 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4094
+        ],
+        "orderNumber": "A0218194A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2084,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2084
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T10:05:17.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2084
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2086",
+      "label": "A0218251A | Projekt 2086 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4102
+        ],
+        "orderNumber": "A0218251A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2086,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2086
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T10:16:25.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2086
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2087",
+      "label": "A0318491A | Projekt 2087 | Suuri Sauna -> Suuri",
+      "metadata": {
+        "currentName": "Suuri Sauna",
+        "orderItemIds": [
+          4109
+        ],
+        "orderNumber": "A0318491A",
+        "productIds": [
+          86
+        ],
+        "projectId": 2087,
+        "saunaModel": "Suuri",
+        "targetName": "Suuri"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2087
+          },
+          "set": {
+            "name": "Suuri"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Suuri Sauna",
+            "updated_at": "2026-04-01T10:22:15.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2087
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2088",
+      "label": "A0118074A | Projekt 2088 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4117
+        ],
+        "orderNumber": "A0118074A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2088,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2088
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T10:25:14.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2088
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2089",
+      "label": "A0215700A | Projekt 2089 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4125
+        ],
+        "orderNumber": "A0215700A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2089,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2089
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T10:29:00.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2089
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2090",
+      "label": "A0218325A | Projekt 2090 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4132
+        ],
+        "orderNumber": "A0218325A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2090,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2090
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T10:44:25.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2090
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2091",
+      "label": "A0218229A | Projekt 2091 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4140
+        ],
+        "orderNumber": "A0218229A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2091,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2091
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T10:47:27.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2091
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2092",
+      "label": "A0218297A | Projekt 2092 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4148
+        ],
+        "orderNumber": "A0218297A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2092,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2092
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T12:34:22.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2092
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2093",
+      "label": "A0218322A | Projekt 2093 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4156
+        ],
+        "orderNumber": "A0218322A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2093,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2093
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T12:37:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2093
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2094",
+      "label": "A0318499A | Projekt 2094 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4164
+        ],
+        "orderNumber": "A0318499A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2094,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2094
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-01T12:40:15.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2094
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2095",
+      "label": "A0318529A | Projekt 2095 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4172
+        ],
+        "orderNumber": "A0318529A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2095,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2095
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T12:47:10.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2095
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2096",
+      "label": "A1017321A | Projekt 2096 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4179
+        ],
+        "orderNumber": "A1017321A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2096,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2096
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T12:50:49.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2096
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2098",
+      "label": "A0318511A | Projekt 2098 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4186
+        ],
+        "orderNumber": "A0318511A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2098,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2098
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T12:54:24.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2098
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2099",
+      "label": "A0318530A | Projekt 2099 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4194
+        ],
+        "orderNumber": "A0318530A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2099,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2099
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:02:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2099
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2100",
+      "label": "A0218381A | Projekt 2100 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4201
+        ],
+        "orderNumber": "A0218381A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2100,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2100
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:10:13.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2100
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2101",
+      "label": "A0218389A | Projekt 2101 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4209
+        ],
+        "orderNumber": "A0218389A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2101,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2101
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T13:12:30.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2101
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2102",
+      "label": "A0218388A | Projekt 2102 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4217
+        ],
+        "orderNumber": "A0218388A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2102,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2102
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T13:19:18.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2102
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2103",
+      "label": "A0218391A | Projekt 2103 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4225
+        ],
+        "orderNumber": "A0218391A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2103,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2103
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T13:24:35.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2103
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2104",
+      "label": "A0218377A | Projekt 2104 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4233
+        ],
+        "orderNumber": "A0218377A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2104,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2104
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:27:00.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2104
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2105",
+      "label": "A0218386A | Projekt 2105 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4241
+        ],
+        "orderNumber": "A0218386A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2105,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2105
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:29:29.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2105
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2106",
+      "label": "A0218247A | Projekt 2106 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4249
+        ],
+        "orderNumber": "A0218247A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2106,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2106
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:31:49.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2106
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2107",
+      "label": "A0218324A | Projekt 2107 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4257
+        ],
+        "orderNumber": "A0218324A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2107,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2107
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:34:28.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2107
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2108",
+      "label": "A0318498A | Projekt 2108 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4265
+        ],
+        "orderNumber": "A0318498A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2108,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2108
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T13:36:56.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2108
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2109",
+      "label": "A0318538A | Projekt 2109 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4272
+        ],
+        "orderNumber": "A0318538A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2109,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2109
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:39:20.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2109
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2110",
+      "label": "A0318397A | Projekt 2110 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4280
+        ],
+        "orderNumber": "A0318397A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2110,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2110
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-01T13:47:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2110
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2111",
+      "label": "A0218385A | Projekt 2111 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4288
+        ],
+        "orderNumber": "A0218385A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2111,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2111
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:50:08.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2111
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2112",
+      "label": "A0318611A | Projekt 2112 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4296
+        ],
+        "orderNumber": "A0318611A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2112,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2112
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-01T13:53:43.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2112
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2113",
+      "label": "A0318609A | Projekt 2113 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4304
+        ],
+        "orderNumber": "A0318609A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2113,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2113
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-01T13:56:42.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2113
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2114",
+      "label": "A0318445A | Projekt 2114 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4312
+        ],
+        "orderNumber": "A0318445A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2114,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2114
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T08:16:56.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2114
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2115",
+      "label": "A0318482A | Projekt 2115 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4320
+        ],
+        "orderNumber": "A0318482A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2115,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2115
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T08:19:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2115
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2116",
+      "label": "A0218169A | Projekt 2116 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4363
+        ],
+        "orderNumber": "A0218169A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2116,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2116
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T08:33:35.000Z",
+            "version": 4
+          },
+          "key": {
+            "id": 2116
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2117",
+      "label": "A0318541A | Projekt 2117 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4354
+        ],
+        "orderNumber": "A0318541A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2117,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2117
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T08:32:15.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2117
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2118",
+      "label": "A0318597A | Projekt 2118 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4371
+        ],
+        "orderNumber": "A0318597A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2118,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2118
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T08:36:11.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2118
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2119",
+      "label": "A0318484A | Projekt 2119 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4379
+        ],
+        "orderNumber": "A0318484A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2119,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2119
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T08:39:07.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2119
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2120",
+      "label": "A0318518A | Projekt 2120 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4387
+        ],
+        "orderNumber": "A0318518A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2120,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2120
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T08:42:56.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2120
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2121",
+      "label": "A0318548A | Projekt 2121 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4395
+        ],
+        "orderNumber": "A0318548A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2121,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2121
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T08:50:49.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2121
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2122",
+      "label": "A0318575A | Projekt 2122 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4403
+        ],
+        "orderNumber": "A0318575A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2122,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2122
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T08:53:14.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2122
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2123",
+      "label": "A0318568A | Projekt 2123 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4411
+        ],
+        "orderNumber": "A0318568A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2123,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2123
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T08:57:03.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2123
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2124",
+      "label": "A0318590A | Projekt 2124 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4418
+        ],
+        "orderNumber": "A0318590A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2124,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2124
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T09:00:33.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2124
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2125",
+      "label": "A0318589A | Projekt 2125 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4426
+        ],
+        "orderNumber": "A0318589A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2125,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2125
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T09:02:24.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2125
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2126",
+      "label": "A0218362A | Projekt 2126 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4434
+        ],
+        "orderNumber": "A0218362A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2126,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2126
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T09:05:13.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2126
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2127",
+      "label": "A0218358A | Projekt 2127 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4442
+        ],
+        "orderNumber": "A0218358A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2127,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2127
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T09:08:14.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2127
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2128",
+      "label": "A0418653A | Projekt 2128 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4450
+        ],
+        "orderNumber": "A0418653A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2128,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2128
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T09:10:12.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2128
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2129",
+      "label": "A0318476A | Projekt 2129 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4458
+        ],
+        "orderNumber": "A0318476A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2129,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2129
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T09:14:15.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2129
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2130",
+      "label": "A0318617A | Projekt 2130 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4466
+        ],
+        "orderNumber": "A0318617A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2130,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2130
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T09:16:58.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2130
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2131",
+      "label": "A0218155A | Projekt 2131 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4474
+        ],
+        "orderNumber": "A0218155A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2131,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2131
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T09:20:26.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2131
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2132",
+      "label": "A0218223A | Projekt 2132 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4482
+        ],
+        "orderNumber": "A0218223A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2132,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2132
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T09:22:37.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2132
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2133",
+      "label": "A1117605A | Projekt 2133 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4490
+        ],
+        "orderNumber": "A1117605A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2133,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2133
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T10:28:42.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2133
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2134",
+      "label": "A0218375A | Projekt 2134 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4498
+        ],
+        "orderNumber": "A0218375A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2134,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2134
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T10:31:26.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2134
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2135",
+      "label": "A0218390A | Projekt 2135 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4506
+        ],
+        "orderNumber": "A0218390A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2135,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2135
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T10:33:57.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2135
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2136",
+      "label": "A0218392A | Projekt 2136 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4513
+        ],
+        "orderNumber": "A0218392A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2136,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2136
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T10:36:06.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2136
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2137",
+      "label": "A0218361A | Projekt 2137 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4520
+        ],
+        "orderNumber": "A0218361A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2137,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2137
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T10:40:16.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2137
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2138",
+      "label": "A0318427A | Projekt 2138 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4528
+        ],
+        "orderNumber": "A0318427A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2138,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2138
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T10:46:13.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2138
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2139",
+      "label": "A0218360A | Projekt 2139 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4535
+        ],
+        "orderNumber": "A0218360A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2139,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2139
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T10:49:51.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2139
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2140",
+      "label": "A0118105A | Projekt 2140 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4543
+        ],
+        "orderNumber": "A0118105A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2140,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2140
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T11:36:13.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2140
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2141",
+      "label": "A0218158A | Projekt 2141 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4550
+        ],
+        "orderNumber": "A0218158A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2141,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2141
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T11:38:46.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2141
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2142",
+      "label": "A1017444A | Projekt 2142 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4558
+        ],
+        "orderNumber": "A1017444A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2142,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2142
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T11:41:08.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2142
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2143",
+      "label": "A0218228A | Projekt 2143 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4566
+        ],
+        "orderNumber": "A0218228A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2143,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2143
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T11:45:02.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2143
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2144",
+      "label": "A0218365A | Projekt 2144 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4574
+        ],
+        "orderNumber": "A0218365A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2144,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2144
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T11:47:31.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2144
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2145",
+      "label": "A0118094A | Projekt 2145 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4582
+        ],
+        "orderNumber": "A0118094A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2145,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2145
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T13:31:28.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2145
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2146",
+      "label": "A0118099A | Projekt 2146 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4590
+        ],
+        "orderNumber": "A0118099A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2146,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2146
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T13:33:20.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2146
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2147",
+      "label": "A0118107A | Projekt 2147 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4598
+        ],
+        "orderNumber": "A0118107A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2147,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2147
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T13:36:20.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2147
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2148",
+      "label": "A0218148A | Projekt 2148 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4606
+        ],
+        "orderNumber": "A0218148A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2148,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2148
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T13:53:14.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2148
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2149",
+      "label": "A0218221A | Projekt 2149 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4614
+        ],
+        "orderNumber": "A0218221A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2149,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2149
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T13:56:21.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2149
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2150",
+      "label": "A0218239A | Projekt 2150 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4622
+        ],
+        "orderNumber": "A0218239A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2150,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2150
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T13:59:27.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2150
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2151",
+      "label": "A0218166A | Projekt 2151 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4630
+        ],
+        "orderNumber": "A0218166A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2151,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2151
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T14:02:03.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2151
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2152",
+      "label": "A0218366A | Projekt 2152 | FassSauna -> Standard",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4638
+        ],
+        "orderNumber": "A0218366A",
+        "productIds": [
+          82
+        ],
+        "projectId": 2152,
+        "saunaModel": "Standard",
+        "targetName": "Standard"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2152
+          },
+          "set": {
+            "name": "Standard"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T14:04:28.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2152
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2153",
+      "label": "A0218217A | Projekt 2153 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4646
+        ],
+        "orderNumber": "A0218217A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2153,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2153
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T14:06:44.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2153
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2154",
+      "label": "A0218368A | Projekt 2154 | FassSauna -> Standard Vorraum",
+      "metadata": {
+        "currentName": "FassSauna",
+        "orderItemIds": [
+          4654
+        ],
+        "orderNumber": "A0218368A",
+        "productIds": [
+          83
+        ],
+        "projectId": 2154,
+        "saunaModel": "Standard Vorraum",
+        "targetName": "Standard Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2154
+          },
+          "set": {
+            "name": "Standard Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "FassSauna",
+            "updated_at": "2026-04-02T14:08:51.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2154
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2155",
+      "label": "A0318486A | Projekt 2155 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4662
+        ],
+        "orderNumber": "A0318486A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2155,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2155
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T14:13:46.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2155
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2156",
+      "label": "A0318651A | Projekt 2156 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4670
+        ],
+        "orderNumber": "A0318651A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2156,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2156
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T14:16:04.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2156
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2157",
+      "label": "A0218249A | Projekt 2157 | Palkkio Sauna -> Palkkio",
+      "metadata": {
+        "currentName": "Palkkio Sauna",
+        "orderItemIds": [
+          4678
+        ],
+        "orderNumber": "A0218249A",
+        "productIds": [
+          89
+        ],
+        "projectId": 2157,
+        "saunaModel": "Palkkio",
+        "targetName": "Palkkio"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2157
+          },
+          "set": {
+            "name": "Palkkio"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Palkkio Sauna",
+            "updated_at": "2026-04-02T14:19:31.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2157
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2158",
+      "label": "A0318555A | Projekt 2158 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4686
+        ],
+        "orderNumber": "A0318555A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2158,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2158
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T14:21:55.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2158
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2159",
+      "label": "A0318591A | Projekt 2159 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4694
+        ],
+        "orderNumber": "A0318591A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2159,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2159
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T14:26:43.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2159
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2160",
+      "label": "A0318595A | Projekt 2160 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          4702
+        ],
+        "orderNumber": "A0318595A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2160,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2160
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-02T14:35:10.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2160
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2161",
+      "label": "A0318593A | Projekt 2161 | XL Sauna -> XL Vorraum",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4710
+        ],
+        "orderNumber": "A0318593A",
+        "productIds": [
+          85
+        ],
+        "projectId": 2161,
+        "saunaModel": "XL Vorraum",
+        "targetName": "XL Vorraum"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2161
+          },
+          "set": {
+            "name": "XL Vorraum"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-02T14:37:58.000Z",
+            "version": 1
+          },
+          "key": {
+            "id": 2161
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2162",
+      "label": "A0218149A | Projekt 2162 | Premium IV Sauna -> Premium",
+      "metadata": {
+        "currentName": "Premium IV Sauna",
+        "orderItemIds": [
+          9911
+        ],
+        "orderNumber": "A0218149A",
+        "productIds": [
+          90
+        ],
+        "projectId": 2162,
+        "saunaModel": "Premium",
+        "targetName": "Premium"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2162
+          },
+          "set": {
+            "name": "Premium"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "Premium IV Sauna",
+            "updated_at": "2026-04-26T14:19:57.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2162
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    },
+    {
+      "candidateId": "project-2163",
+      "label": "A0218364A | Projekt 2163 | XL Sauna -> XL",
+      "metadata": {
+        "currentName": "XL Sauna",
+        "orderItemIds": [
+          4764
+        ],
+        "orderNumber": "A0218364A",
+        "productIds": [
+          84
+        ],
+        "projectId": 2163,
+        "saunaModel": "XL",
+        "targetName": "XL"
+      },
+      "mutationPlans": [
+        {
+          "allowedChangedFields": [
+            "name",
+            "updated_at"
+          ],
+          "key": {
+            "id": 2163
+          },
+          "set": {
+            "name": "XL"
+          },
+          "table": "project"
+        }
+      ],
+      "snapshotRows": [
+        {
+          "data": {
+            "name": "XL Sauna",
+            "updated_at": "2026-04-09T11:46:54.000Z",
+            "version": 2
+          },
+          "key": {
+            "id": 2163
+          },
+          "table": "project"
+        }
+      ],
+      "status": "actionable"
+    }
+  ],
+  "createdAt": "2026-05-04T04:00:18.926Z",
+  "formatVersion": 1,
+  "runId": "2026-05-04T04-00-18-926Z",
+  "runtimeMode": "development",
+  "summary": {
+    "actionable": 156,
+    "already_ok": 10,
+    "ambiguous": 0,
+    "blocked": 0
+  },
+  "target": {
+    "dbName": "mugplan_dev",
+    "host": "localhost",
+    "port": 3306
+  },
+  "workflowId": "project-title-from-sauna-model",
+  "workflowTitle": "Projekt-Titel aus Sauna-Modell"
+}

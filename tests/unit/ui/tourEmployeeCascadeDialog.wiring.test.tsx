@@ -155,7 +155,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
             source: "available",
           },
         ]}
-        selectedIds={[11, 12]}
+        selectedIds={[11]}
         isSubmitting={false}
         onSelectedIdsChange={() => undefined}
         onConfirm={() => undefined}
@@ -170,5 +170,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Konfliktfrei zuweisbar");
     expect(html).toContain("appointment-week-preview-group-week_plan");
     expect(html).toContain("appointment-week-preview-group-available");
+    expect(html).toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-11")(?=[^>]*checked)/);
+    expect(html).not.toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-12")(?=[^>]*checked)/);
   });
 });

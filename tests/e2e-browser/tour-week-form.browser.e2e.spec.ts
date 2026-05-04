@@ -29,7 +29,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { loginAsAdmin, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -63,6 +63,16 @@ function resolveNextEditableWeek() {
     weekStartDate: format(weekStart, "yyyy-MM-dd"),
     weekEndDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
     monthKey: format(weekStart, "yyyy-MM"),
+  };
+}
+
+function resolveCurrentWeek() {
+  const weekStart = startOfISOWeek(parseISO(getRelativeBerlinDate(0)));
+  return {
+    isoYear: getISOWeekYear(weekStart),
+    isoWeek: getISOWeek(weekStart),
+    weekStartDate: format(weekStart, "yyyy-MM-dd"),
+    weekEndDate: format(addDays(weekStart, 6), "yyyy-MM-dd"),
   };
 }
 
@@ -172,6 +182,104 @@ async function navigateToMonthContaining(page: Page, dateString: string) {
 
 test.beforeEach(async () => {
   await resetBrowserSuiteState();
+});
+
+test("Admins bearbeiten und blockieren die aktuelle Tour-KW im Tour-Formular", async ({ page }) => {
+  const currentWeek = resolveCurrentWeek();
+  const tour = await createTourFixture("#2563eb");
+  const employee = await createEmployeeFixture("TWF-CURRENT-ADMIN");
+  const project = await createProjectFixture({ prefix: "TWF-CUR-ADMIN", name: "TWF Aktuelle Admin KW" });
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: currentWeek.isoYear,
+    isoWeek: currentWeek.isoWeek,
+    employeeId: employee.id,
+  });
+  await createRawAppointmentFixture({
+    projectId: project.id,
+    startDate: currentWeek.weekStartDate,
+    title: "TWF-Admin-Aktuelle-KW",
+    tourId: tour.id,
+    employeeIds: [employee.id],
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-touren").click();
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  await page.getByTestId("tab-tour-wochenplanung").click();
+
+  const weekCard = page.getByTestId(`card-tour-week-${currentWeek.isoYear}-${currentWeek.isoWeek}`);
+  await expect(weekCard).toBeVisible();
+  await expect(weekCard.getByTestId(`button-add-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toBeVisible();
+  await expect(weekCard.getByTestId(`button-apply-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toBeEnabled();
+
+  await weekCard.dblclick();
+  await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
+  await expect(page.getByTestId("button-open-tour-week-employee-picker")).toBeEnabled();
+  await page.getByTestId("button-close-tour-week").click();
+
+  const blockResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === `/api/tours/${tour.id}/weeks/${currentWeek.isoYear}/${currentWeek.isoWeek}/block`
+  ));
+  await weekCard.getByTestId(`button-tour-week-menu-${currentWeek.isoYear}-${currentWeek.isoWeek}`).click();
+  await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
+  const blockResponse = await blockResponsePromise;
+  expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
+  await expect(page.getByTestId(`text-tour-week-blocked-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toContainText("Parkplatz");
+});
+
+test("Dispatcher sehen die aktuelle Tour-KW im Tour-Formular weiterhin gesperrt", async ({ page }) => {
+  const currentWeek = resolveCurrentWeek();
+  const tour = await createTourFixture("#0f766e");
+  const employee = await createEmployeeFixture("TWF-CURRENT-DISPATCHER");
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: currentWeek.isoYear,
+    isoWeek: currentWeek.isoWeek,
+    employeeId: employee.id,
+  });
+
+  await page.context().clearCookies();
+  await page.goto("/");
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+  });
+  await loginAsRole(page, "DISPATCHER");
+  const sessionResponse = await page.request.get("/api/auth/session");
+  expect(sessionResponse.ok(), await sessionResponse.text()).toBeTruthy();
+  const session = await sessionResponse.json() as { roleCode?: string };
+  expect(session.roleCode).toBe("DISPATCHER");
+  const weekResponse = await page.request.get(`/api/tours/${tour.id}/week-employees`);
+  expect(weekResponse.ok(), await weekResponse.text()).toBeTruthy();
+  const weeks = await weekResponse.json() as Array<{ isoYear: number; isoWeek: number; isLocked: boolean }>;
+  expect(weeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(true);
+
+  await page.reload();
+  await expect(page.getByTestId("sidebar")).toBeVisible();
+  await page.getByTestId("nav-touren").click();
+  const weekEmployeesResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "GET"
+    && new URL(response.url()).pathname === `/api/tours/${tour.id}/week-employees`
+  ));
+  await page.getByTestId(`card-tour-${tour.id}`).dblclick();
+  const frontendWeekResponse = await weekEmployeesResponsePromise;
+  expect(frontendWeekResponse.ok(), await frontendWeekResponse.text()).toBeTruthy();
+  const frontendWeeks = await frontendWeekResponse.json() as Array<{ isoYear: number; isoWeek: number; isLocked: boolean }>;
+  expect(frontendWeeks.find((week) => week.isoYear === currentWeek.isoYear && week.isoWeek === currentWeek.isoWeek)?.isLocked).toBe(true);
+  await page.getByTestId("tab-tour-wochenplanung").click();
+
+  const weekCard = page.getByTestId(`card-tour-week-${currentWeek.isoYear}-${currentWeek.isoWeek}`);
+  await expect(weekCard).toBeVisible();
+  await expect(weekCard.getByTestId(`button-add-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toHaveCount(0);
+  await expect(weekCard.getByTestId(`button-apply-tour-week-member-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toHaveCount(0);
+
+  await weekCard.dblclick();
+  await expect(page.getByTestId("tour-week-form-overlay")).toBeVisible();
+  await expect(page.getByTestId("button-open-tour-week-employee-picker")).toBeDisabled();
 });
 
 test("blocking from the tour week card parks appointments and keeps the KW visibly blocked", async ({ page }) => {

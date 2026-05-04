@@ -511,9 +511,13 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-action="remove"');
     expect(html).toContain("Mira Plan");
     expect(html).toContain('data-testid="button-add-week-personnel-tour-7"');
+    expect(html).toContain('data-testid="button-apply-week-personnel-tour-7"');
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-unassigned"');
+    expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-unassigned"');
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-8"');
+    expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-8"');
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-9"');
+    expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-9"');
   });
 
   it("keeps the tour week personnel column narrow in collapsed mode and shows compact employee badges", () => {
@@ -576,5 +580,6 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-render-mode="compact"');
     expect(html).toContain('data-show-avatar="true"');
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-7"');
+    expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-7"');
   });
 });

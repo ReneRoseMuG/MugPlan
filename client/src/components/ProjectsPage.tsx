@@ -23,7 +23,7 @@ import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 
 type ViewMode = "board" | "table";
 export type SortDirection = "asc" | "desc";
-export type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber";
+export type ProjectSortKey = "title" | "customer" | "customerNumber" | "orderNumber" | "nextAppointment";
 
 type ProjectListItem = Project & {
   notesCount: number;
@@ -98,6 +98,20 @@ function SortIcon({ direction }: { direction: SortDirection | null }) {
 }
 
 const DEFAULT_PROJECTS_PAGE_SIZE = 50;
+
+function getNextAppointmentSortValue(project: Pick<ProjectListItem, "nextAppointmentStartDate" | "nextAppointmentStartTimeHour">): number | null {
+  if (!project.nextAppointmentStartDate) return null;
+  const hour = project.nextAppointmentStartTimeHour ?? 0;
+  const time = Date.parse(`${project.nextAppointmentStartDate}T${String(hour).padStart(2, "0")}:00:00`);
+  return Number.isFinite(time) ? time : null;
+}
+
+function compareNullableNumbers(left: number | null, right: number | null, directionMultiplier: number): number {
+  if (left === null && right === null) return 0;
+  if (left === null) return 1;
+  if (right === null) return -1;
+  return (left - right) * directionMultiplier;
+}
 
 export function ProjectsPage({
   onCancel,
@@ -256,6 +270,13 @@ export function ProjectsPage({
       if (sortKey === "orderNumber") {
         return (a.project.orderNumber ?? "").localeCompare(b.project.orderNumber ?? "", "de", { numeric: true }) * directionMultiplier;
       }
+      if (sortKey === "nextAppointment") {
+        return compareNullableNumbers(
+          getNextAppointmentSortValue(a.project),
+          getNextAppointmentSortValue(b.project),
+          directionMultiplier,
+        );
+      }
 
       return a.project.name.localeCompare(b.project.name, "de") * directionMultiplier;
     });
@@ -301,7 +322,7 @@ export function ProjectsPage({
       },
       {
         id: "relevantAppointment",
-        header: "Nächster Termin",
+        header: renderSortHeader("Nächster Termin", "nextAppointment"),
         accessor: (row) => row.project.nextAppointmentStartDate ?? "",
         minWidth: 180,
         cell: ({ row }) => (

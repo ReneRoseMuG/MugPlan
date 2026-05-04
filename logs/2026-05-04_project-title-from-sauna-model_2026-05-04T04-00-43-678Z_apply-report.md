@@ -1,0 +1,188 @@
+# Projekt-Titel aus Sauna-Modell Apply Report
+
+Erzeugt: 2026-05-04T04:00:44.466Z
+Workflow: project-title-from-sauna-model
+Run-ID: 2026-05-04T04-00-43-678Z
+Ziel: mugplan_dev (localhost:3306)
+Runtime: development
+Manifest: C:\Users\schro\source\repos\Plan\Releases\version02\logs\2026-05-04_project-title-from-sauna-model_2026-05-04T04-00-18-926Z_manifest.json
+Manifest-Hash: e16fbc0f3bf10ead659f8dd10908ad945302c122fbb91c6b7a11a08ac6570c44
+
+Zusammenfassung:
+- Actionable Kandidaten: 156
+- Angewendet: 156
+- Uebersprungen (nicht actionable): 10
+- Uebersprungen (Drift): 0
+- Verifikation fehlgeschlagen: 0
+- Fehler: 0
+- Gesamtverifikation bestanden: ja
+
+## Ergebnisse
+
+- A1117615A | Projekt 1984 | Standard Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- M300326 | Projekt 1985 | Premium 4 "E" Messe Mannheim -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017499A | Projekt 1986 | XL Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0516293A | Projekt 1987 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118113A | Projekt 1988 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218384A | Projekt 1989 | Standard -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0118112A | Projekt 1990 | XL Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0118088A | Projekt 1992 | Standard -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0118110A | Projekt 1993 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017442A | Projekt 1994 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0716765A | Projekt 1995 | Standard -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0318618A | Projekt 1998 | Premium IV Sondermaß -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218299A | Projekt 1999 | XL Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0218227A | Projekt 2000 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017367A | Projekt 2001 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017414A | Projekt 2002 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017498A | Projekt 2003 | XL Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A1117531A | Projekt 2004 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1217761A | Projekt 2005 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118122A | Projekt 2009 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218135A | Projekt 2011 | Standard -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0118119A | Projekt 2012 | XL Vorraum -> skipped_non_actionable | Projektname entspricht bereits dem Sauna-Modell.
+- A0118115A | Projekt 2013 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218190A | Projekt 2014 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118117A | Projekt 2015 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0716668A | Projekt 2016 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218137A | Projekt 2017 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118111A | Projekt 2018 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118120A | Projekt 2019 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218134A | Projekt 2020 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118116A | Projekt 2022 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017440A | Projekt 2023 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017495A | Projekt 2024 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017443A | Projekt 2025 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218301A | Projekt 2026 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218184A | Projekt 2027 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0616549A | Projekt 2028 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0616508A | Projekt 2029 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0516314A | Projekt 2032 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1117544A | Projekt 2033 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118075A | Projekt 2034 | Petite Sauna -> Petite -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218163A | Projekt 2035 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218164A | Projekt 2036 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218317A | Projekt 2037 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218305A | Projekt 2038 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218245A | Projekt 2039 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0716817A | Projekt 2040 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0817013A | Projekt 2041 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118069A | Projekt 2042 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1217853A | Projekt 2043 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218258A | Projekt 2044 | Suuri Sauna -> Suuri -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118093A | Projekt 2045 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118101A | Projekt 2046 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218162A | Projekt 2047 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118090A | Projekt 2048 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118108A | Projekt 2049 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118124A | Projekt 2051 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218371A | Projekt 2052 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0616473A | Projekt 2053 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218160A | Projekt 2054 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218165A | Projekt 2055 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218373A | Projekt 2056 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218252A | Projekt 2057 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218319A | Projekt 2058 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218379A | Projekt 2059 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017433A | Projekt 2060 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218203A | Projekt 2061 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218312A | Projekt 2062 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218329A | Projekt 2063 | Suuri Sauna -> Suuri -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318472A | Projekt 2064 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218314A | Projekt 2065 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218147A | Projekt 2066 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218374A | Projekt 2067 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318554A | Projekt 2068 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0616537A | Projekt 2069 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118104A | Projekt 2070 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1117613A | Projekt 2071 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0616510A | Projekt 2072 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1217922A | Projekt 2073 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318424A | Projekt 2074 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218173A | Projekt 2075 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318435A | Projekt 2076 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218370A | Projekt 2077 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218311A | Projekt 2079 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318527A | Projekt 2080 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318433A | Projekt 2081 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318573A | Projekt 2082 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218170A | Projekt 2083 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218194A | Projekt 2084 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218251A | Projekt 2086 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318491A | Projekt 2087 | Suuri Sauna -> Suuri -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118074A | Projekt 2088 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0215700A | Projekt 2089 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218325A | Projekt 2090 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218229A | Projekt 2091 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218297A | Projekt 2092 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218322A | Projekt 2093 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318499A | Projekt 2094 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318529A | Projekt 2095 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017321A | Projekt 2096 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318511A | Projekt 2098 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318530A | Projekt 2099 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218381A | Projekt 2100 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218389A | Projekt 2101 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218388A | Projekt 2102 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218391A | Projekt 2103 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218377A | Projekt 2104 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218386A | Projekt 2105 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218247A | Projekt 2106 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218324A | Projekt 2107 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318498A | Projekt 2108 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318538A | Projekt 2109 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318397A | Projekt 2110 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218385A | Projekt 2111 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318611A | Projekt 2112 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318609A | Projekt 2113 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318445A | Projekt 2114 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318482A | Projekt 2115 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218169A | Projekt 2116 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318541A | Projekt 2117 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318597A | Projekt 2118 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318484A | Projekt 2119 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318518A | Projekt 2120 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318548A | Projekt 2121 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318575A | Projekt 2122 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318568A | Projekt 2123 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318590A | Projekt 2124 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318589A | Projekt 2125 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218362A | Projekt 2126 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218358A | Projekt 2127 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0418653A | Projekt 2128 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318476A | Projekt 2129 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318617A | Projekt 2130 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218155A | Projekt 2131 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218223A | Projekt 2132 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1117605A | Projekt 2133 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218375A | Projekt 2134 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218390A | Projekt 2135 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218392A | Projekt 2136 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218361A | Projekt 2137 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318427A | Projekt 2138 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218360A | Projekt 2139 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118105A | Projekt 2140 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218158A | Projekt 2141 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A1017444A | Projekt 2142 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218228A | Projekt 2143 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218365A | Projekt 2144 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118094A | Projekt 2145 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118099A | Projekt 2146 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0118107A | Projekt 2147 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218148A | Projekt 2148 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218221A | Projekt 2149 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218239A | Projekt 2150 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218166A | Projekt 2151 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218366A | Projekt 2152 | FassSauna -> Standard -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218217A | Projekt 2153 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218368A | Projekt 2154 | FassSauna -> Standard Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318486A | Projekt 2155 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318651A | Projekt 2156 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218249A | Projekt 2157 | Palkkio Sauna -> Palkkio -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318555A | Projekt 2158 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318591A | Projekt 2159 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318595A | Projekt 2160 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0318593A | Projekt 2161 | XL Sauna -> XL Vorraum -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218149A | Projekt 2162 | Premium IV Sauna -> Premium -> applied | Mutation erfolgreich angewendet und verifiziert.
+- A0218364A | Projekt 2163 | XL Sauna -> XL -> applied | Mutation erfolgreich angewendet und verifiziert.
+

@@ -26,6 +26,7 @@ export function getIsolatedTestStoragePaths() {
     tempRoot,
     uploadsPath: path.join(tempRoot, "uploads"),
     backupsPath: path.join(tempRoot, "backups"),
+    correctionWorkflowsPath: path.join(tempRoot, "correction-workflows"),
   };
 }
 
@@ -33,6 +34,7 @@ export function configureTestStorageIsolationSync(): void {
   const paths = getIsolatedTestStoragePaths();
   process.env.ATTACHMENT_STORAGE_PATH = paths.uploadsPath;
   process.env.BACKUP_BASE_PATH = paths.backupsPath;
+  process.env.CORRECTION_WORKFLOW_OUTPUT_DIR = paths.correctionWorkflowsPath;
 }
 
 export async function configureTestStorageIsolation(): Promise<void> {
@@ -45,6 +47,8 @@ export async function resetIsolatedTestStorage(): Promise<void> {
   const paths = getIsolatedTestStoragePaths();
   await fs.rm(paths.uploadsPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   await fs.rm(paths.backupsPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  await fs.rm(paths.correctionWorkflowsPath, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   await fs.mkdir(paths.uploadsPath, { recursive: true });
   await fs.mkdir(paths.backupsPath, { recursive: true });
+  await fs.mkdir(paths.correctionWorkflowsPath, { recursive: true });
 }

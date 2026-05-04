@@ -295,6 +295,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("tab-tour-wochenplanung");
     expect(markup).toContain("card-tour-week-2099-6");
     expect(markup).toContain("button-add-tour-week-member-2099-6");
+    expect(markup).toContain("button-apply-tour-week-member-2099-6");
     expect(markup).toContain("badge-tour-week-member-301");
     expect(markup).toContain("text-tour-week-dialog-title");
     expect(markup).toContain("text-tour-week-dialog-year");
@@ -347,6 +348,50 @@ describe("FT04 tour form shell layout integration", () => {
     expect(employeePickerCalls[0].onConfirmSelection).toEqual(expect.any(Function));
   });
 
+  it("keeps the tour week apply action visible but disabled for empty editable weeks", () => {
+    useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
+      if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
+        return {
+          data: [
+            {
+              tourId: 12,
+              tourName: "Nordtour",
+              tourColor: "#335577",
+              isoYear: 2099,
+              isoWeek: 8,
+              weekStartDate: "2099-02-16",
+              weekEndDate: "2099-02-22",
+              isLocked: false,
+              isBlocked: false,
+              appointmentsCount: 0,
+              notesCount: 0,
+              employees: [],
+            },
+          ],
+          isLoading: false,
+        };
+      }
+
+      return {
+        data: [],
+        isLoading: false,
+      };
+    });
+
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={tourFixture}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("button-apply-tour-week-member-2099-8");
+    expect(markup).toMatch(/<button(?=[^>]*data-testid="button-apply-tour-week-member-2099-8")(?=[^>]*disabled)/);
+  });
+
   it("shows the corrected blocked week notice in edit mode", () => {
     useQueryMock.mockImplementation(({ queryKey }: { queryKey: unknown }) => {
       if (Array.isArray(queryKey) && queryKey[0] === "/api/tours/12/week-employees") {
@@ -395,6 +440,7 @@ describe("FT04 tour form shell layout integration", () => {
 
     expect(markup).toContain("text-tour-week-blocked-2099-7");
     expect(markup).toContain("Termine dieser Woche wurden auf Parkplatz verschoben");
+    expect(markup).not.toContain("button-apply-tour-week-member-2099-7");
     expect(markup).not.toContain("Mitarbeiter bleiben sichtbar");
   });
 

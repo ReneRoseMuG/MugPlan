@@ -91,14 +91,26 @@ function invalidateProjectMigrationQueries(): Promise<unknown[]> {
   ]);
 }
 
-async function readErrorMessage(response: Response, fallback: string): Promise<string> {
+async function readJsonResponse<T>(response: Response, fallback: string): Promise<T> {
   const text = await response.text();
-  if (!text) return fallback;
+  if (!response.ok) {
+    if (!text) {
+      throw new Error(fallback);
+    }
+    try {
+      const parsed = JSON.parse(text) as { message?: string; code?: string };
+      throw new Error(parsed.message ?? parsed.code ?? fallback);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(text);
+      }
+      throw error;
+    }
+  }
   try {
-    const parsed = JSON.parse(text) as { message?: string; code?: string };
-    return parsed.message ?? parsed.code ?? fallback;
+    return JSON.parse(text) as T;
   } catch {
-    return text;
+    throw new Error("Unerwartete Serverantwort. Bitte Anwendung neu starten und erneut versuchen.");
   }
 }
 
@@ -112,10 +124,10 @@ export function CorrectionWorkflowAdminPanel() {
         method: "POST",
         credentials: "include",
       });
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response, "Migrationsvorschau konnte nicht erzeugt werden."));
-      }
-      return response.json() as Promise<WorkflowPreviewResponse>;
+      return readJsonResponse<WorkflowPreviewResponse>(
+        response,
+        "Migrationsvorschau konnte nicht erzeugt werden.",
+      );
     },
     onSuccess: (payload) => {
       setPreview(payload);
@@ -131,10 +143,10 @@ export function CorrectionWorkflowAdminPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
-      if (!response.ok) {
-        throw new Error(await readErrorMessage(response, "Migration konnte nicht ausgeführt werden."));
-      }
-      return response.json() as Promise<WorkflowApplyResponse>;
+      return readJsonResponse<WorkflowApplyResponse>(
+        response,
+        "Migration konnte nicht ausgeführt werden.",
+      );
     },
     onSuccess: async (payload) => {
       setApplyResult(payload);

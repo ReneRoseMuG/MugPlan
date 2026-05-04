@@ -1,0 +1,184 @@
+# Projekt-Titel aus Sauna-Modell Preview
+
+Erzeugt: 2026-05-04T04:00:18.926Z
+Workflow: project-title-from-sauna-model
+Run-ID: 2026-05-04T04-00-18-926Z
+Ziel: mugplan_dev (localhost:3306)
+Runtime: development
+Manifest-Hash: e16fbc0f3bf10ead659f8dd10908ad945302c122fbb91c6b7a11a08ac6570c44
+
+Zusammenfassung:
+- Actionable Kandidaten: 156
+- Bereits passend: 10
+- Mehrdeutig: 0
+- Blockiert: 0
+
+## Auswahl
+
+- [=] A1117615A | Projekt 1984 | Standard Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] M300326 | Projekt 1985 | Premium 4 "E" Messe Mannheim -> Premium
+- [=] A1017499A | Projekt 1986 | XL Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A0516293A | Projekt 1987 | Premium IV Sauna -> Premium
+- [ ] A0118113A | Projekt 1988 | Palkkio Sauna -> Palkkio
+- [=] A0218384A | Projekt 1989 | Standard | Projektname entspricht bereits dem Sauna-Modell.
+- [=] A0118112A | Projekt 1990 | XL Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [=] A0118088A | Projekt 1992 | Standard | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A0118110A | Projekt 1993 | Palkkio Sauna -> Palkkio
+- [ ] A1017442A | Projekt 1994 | XL Sauna -> XL
+- [=] A0716765A | Projekt 1995 | Standard | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A0318618A | Projekt 1998 | Premium IV Sondermaß -> Premium
+- [=] A0218299A | Projekt 1999 | XL Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A0218227A | Projekt 2000 | Palkkio Sauna -> Palkkio
+- [ ] A1017367A | Projekt 2001 | Premium IV Sauna -> Premium
+- [ ] A1017414A | Projekt 2002 | Palkkio Sauna -> Palkkio
+- [=] A1017498A | Projekt 2003 | XL Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A1117531A | Projekt 2004 | Palkkio Sauna -> Palkkio
+- [ ] A1217761A | Projekt 2005 | XL Sauna -> XL
+- [ ] A0118122A | Projekt 2009 | Palkkio Sauna -> Palkkio
+- [=] A0218135A | Projekt 2011 | Standard | Projektname entspricht bereits dem Sauna-Modell.
+- [=] A0118119A | Projekt 2012 | XL Vorraum | Projektname entspricht bereits dem Sauna-Modell.
+- [ ] A0118115A | Projekt 2013 | FassSauna -> Standard
+- [ ] A0218190A | Projekt 2014 | Palkkio Sauna -> Palkkio
+- [ ] A0118117A | Projekt 2015 | FassSauna -> Standard Vorraum
+- [ ] A0716668A | Projekt 2016 | Premium IV Sauna -> Premium
+- [ ] A0218137A | Projekt 2017 | XL Sauna -> XL
+- [ ] A0118111A | Projekt 2018 | FassSauna -> Standard
+- [ ] A0118120A | Projekt 2019 | Premium IV Sauna -> Premium
+- [ ] A0218134A | Projekt 2020 | FassSauna -> Standard
+- [ ] A0118116A | Projekt 2022 | Premium IV Sauna -> Premium
+- [ ] A1017440A | Projekt 2023 | Palkkio Sauna -> Palkkio
+- [ ] A1017495A | Projekt 2024 | Palkkio Sauna -> Palkkio
+- [ ] A1017443A | Projekt 2025 | XL Sauna -> XL Vorraum
+- [ ] A0218301A | Projekt 2026 | FassSauna -> Standard
+- [ ] A0218184A | Projekt 2027 | Palkkio Sauna -> Palkkio
+- [ ] A0616549A | Projekt 2028 | Premium IV Sauna -> Premium
+- [ ] A0616508A | Projekt 2029 | FassSauna -> Standard
+- [ ] A0516314A | Projekt 2032 | XL Sauna -> XL
+- [ ] A1117544A | Projekt 2033 | FassSauna -> Standard Vorraum
+- [ ] A0118075A | Projekt 2034 | Petite Sauna -> Petite
+- [ ] A0218163A | Projekt 2035 | FassSauna -> Standard
+- [ ] A0218164A | Projekt 2036 | Palkkio Sauna -> Palkkio
+- [ ] A0218317A | Projekt 2037 | XL Sauna -> XL Vorraum
+- [ ] A0218305A | Projekt 2038 | Palkkio Sauna -> Palkkio
+- [ ] A0218245A | Projekt 2039 | XL Sauna -> XL Vorraum
+- [ ] A0716817A | Projekt 2040 | XL Sauna -> XL Vorraum
+- [ ] A0817013A | Projekt 2041 | XL Sauna -> XL Vorraum
+- [ ] A0118069A | Projekt 2042 | FassSauna -> Standard Vorraum
+- [ ] A1217853A | Projekt 2043 | Palkkio Sauna -> Palkkio
+- [ ] A0218258A | Projekt 2044 | Suuri Sauna -> Suuri
+- [ ] A0118093A | Projekt 2045 | XL Sauna -> XL
+- [ ] A0118101A | Projekt 2046 | Premium IV Sauna -> Premium
+- [ ] A0218162A | Projekt 2047 | FassSauna -> Standard
+- [ ] A0118090A | Projekt 2048 | XL Sauna -> XL Vorraum
+- [ ] A0118108A | Projekt 2049 | XL Sauna -> XL Vorraum
+- [ ] A0118124A | Projekt 2051 | FassSauna -> Standard
+- [ ] A0218371A | Projekt 2052 | XL Sauna -> XL
+- [ ] A0616473A | Projekt 2053 | Premium IV Sauna -> Premium
+- [ ] A0218160A | Projekt 2054 | Premium IV Sauna -> Premium
+- [ ] A0218165A | Projekt 2055 | Palkkio Sauna -> Palkkio
+- [ ] A0218373A | Projekt 2056 | XL Sauna -> XL Vorraum
+- [ ] A0218252A | Projekt 2057 | FassSauna -> Standard
+- [ ] A0218319A | Projekt 2058 | Palkkio Sauna -> Palkkio
+- [ ] A0218379A | Projekt 2059 | Premium IV Sauna -> Premium
+- [ ] A1017433A | Projekt 2060 | Palkkio Sauna -> Palkkio
+- [ ] A0218203A | Projekt 2061 | FassSauna -> Standard
+- [ ] A0218312A | Projekt 2062 | FassSauna -> Standard
+- [ ] A0218329A | Projekt 2063 | Suuri Sauna -> Suuri
+- [ ] A0318472A | Projekt 2064 | Premium IV Sauna -> Premium
+- [ ] A0218314A | Projekt 2065 | XL Sauna -> XL Vorraum
+- [ ] A0218147A | Projekt 2066 | FassSauna -> Standard
+- [ ] A0218374A | Projekt 2067 | XL Sauna -> XL
+- [ ] A0318554A | Projekt 2068 | XL Sauna -> XL Vorraum
+- [ ] A0616537A | Projekt 2069 | Palkkio Sauna -> Palkkio
+- [ ] A0118104A | Projekt 2070 | Premium IV Sauna -> Premium
+- [ ] A1117613A | Projekt 2071 | XL Sauna -> XL Vorraum
+- [ ] A0616510A | Projekt 2072 | Premium IV Sauna -> Premium
+- [ ] A1217922A | Projekt 2073 | Palkkio Sauna -> Palkkio
+- [ ] A0318424A | Projekt 2074 | Palkkio Sauna -> Palkkio
+- [ ] A0218173A | Projekt 2075 | XL Sauna -> XL Vorraum
+- [ ] A0318435A | Projekt 2076 | FassSauna -> Standard
+- [ ] A0218370A | Projekt 2077 | Premium IV Sauna -> Premium
+- [ ] A0218311A | Projekt 2079 | FassSauna -> Standard
+- [ ] A0318527A | Projekt 2080 | FassSauna -> Standard
+- [ ] A0318433A | Projekt 2081 | Premium IV Sauna -> Premium
+- [ ] A0318573A | Projekt 2082 | FassSauna -> Standard
+- [ ] A0218170A | Projekt 2083 | FassSauna -> Standard
+- [ ] A0218194A | Projekt 2084 | Premium IV Sauna -> Premium
+- [ ] A0218251A | Projekt 2086 | FassSauna -> Standard
+- [ ] A0318491A | Projekt 2087 | Suuri Sauna -> Suuri
+- [ ] A0118074A | Projekt 2088 | FassSauna -> Standard Vorraum
+- [ ] A0215700A | Projekt 2089 | XL Sauna -> XL Vorraum
+- [ ] A0218325A | Projekt 2090 | FassSauna -> Standard
+- [ ] A0218229A | Projekt 2091 | XL Sauna -> XL
+- [ ] A0218297A | Projekt 2092 | Premium IV Sauna -> Premium
+- [ ] A0218322A | Projekt 2093 | XL Sauna -> XL
+- [ ] A0318499A | Projekt 2094 | Palkkio Sauna -> Palkkio
+- [ ] A0318529A | Projekt 2095 | FassSauna -> Standard
+- [ ] A1017321A | Projekt 2096 | FassSauna -> Standard
+- [ ] A0318511A | Projekt 2098 | XL Sauna -> XL Vorraum
+- [ ] A0318530A | Projekt 2099 | XL Sauna -> XL Vorraum
+- [ ] A0218381A | Projekt 2100 | XL Sauna -> XL Vorraum
+- [ ] A0218389A | Projekt 2101 | FassSauna -> Standard Vorraum
+- [ ] A0218388A | Projekt 2102 | Premium IV Sauna -> Premium
+- [ ] A0218391A | Projekt 2103 | Premium IV Sauna -> Premium
+- [ ] A0218377A | Projekt 2104 | XL Sauna -> XL
+- [ ] A0218386A | Projekt 2105 | XL Sauna -> XL Vorraum
+- [ ] A0218247A | Projekt 2106 | XL Sauna -> XL Vorraum
+- [ ] A0218324A | Projekt 2107 | XL Sauna -> XL
+- [ ] A0318498A | Projekt 2108 | FassSauna -> Standard
+- [ ] A0318538A | Projekt 2109 | XL Sauna -> XL Vorraum
+- [ ] A0318397A | Projekt 2110 | FassSauna -> Standard
+- [ ] A0218385A | Projekt 2111 | XL Sauna -> XL Vorraum
+- [ ] A0318611A | Projekt 2112 | Premium IV Sauna -> Premium
+- [ ] A0318609A | Projekt 2113 | XL Sauna -> XL Vorraum
+- [ ] A0318445A | Projekt 2114 | Palkkio Sauna -> Palkkio
+- [ ] A0318482A | Projekt 2115 | Premium IV Sauna -> Premium
+- [ ] A0218169A | Projekt 2116 | Premium IV Sauna -> Premium
+- [ ] A0318541A | Projekt 2117 | XL Sauna -> XL Vorraum
+- [ ] A0318597A | Projekt 2118 | XL Sauna -> XL Vorraum
+- [ ] A0318484A | Projekt 2119 | XL Sauna -> XL
+- [ ] A0318518A | Projekt 2120 | FassSauna -> Standard Vorraum
+- [ ] A0318548A | Projekt 2121 | FassSauna -> Standard
+- [ ] A0318575A | Projekt 2122 | FassSauna -> Standard
+- [ ] A0318568A | Projekt 2123 | FassSauna -> Standard
+- [ ] A0318590A | Projekt 2124 | FassSauna -> Standard
+- [ ] A0318589A | Projekt 2125 | Premium IV Sauna -> Premium
+- [ ] A0218362A | Projekt 2126 | XL Sauna -> XL
+- [ ] A0218358A | Projekt 2127 | XL Sauna -> XL Vorraum
+- [ ] A0418653A | Projekt 2128 | XL Sauna -> XL
+- [ ] A0318476A | Projekt 2129 | Palkkio Sauna -> Palkkio
+- [ ] A0318617A | Projekt 2130 | Palkkio Sauna -> Palkkio
+- [ ] A0218155A | Projekt 2131 | Premium IV Sauna -> Premium
+- [ ] A0218223A | Projekt 2132 | Premium IV Sauna -> Premium
+- [ ] A1117605A | Projekt 2133 | Premium IV Sauna -> Premium
+- [ ] A0218375A | Projekt 2134 | FassSauna -> Standard
+- [ ] A0218390A | Projekt 2135 | XL Sauna -> XL Vorraum
+- [ ] A0218392A | Projekt 2136 | FassSauna -> Standard
+- [ ] A0218361A | Projekt 2137 | Premium IV Sauna -> Premium
+- [ ] A0318427A | Projekt 2138 | XL Sauna -> XL Vorraum
+- [ ] A0218360A | Projekt 2139 | Palkkio Sauna -> Palkkio
+- [ ] A0118105A | Projekt 2140 | XL Sauna -> XL Vorraum
+- [ ] A0218158A | Projekt 2141 | FassSauna -> Standard
+- [ ] A1017444A | Projekt 2142 | Palkkio Sauna -> Palkkio
+- [ ] A0218228A | Projekt 2143 | Palkkio Sauna -> Palkkio
+- [ ] A0218365A | Projekt 2144 | Palkkio Sauna -> Palkkio
+- [ ] A0118094A | Projekt 2145 | FassSauna -> Standard
+- [ ] A0118099A | Projekt 2146 | XL Sauna -> XL
+- [ ] A0118107A | Projekt 2147 | Palkkio Sauna -> Palkkio
+- [ ] A0218148A | Projekt 2148 | XL Sauna -> XL Vorraum
+- [ ] A0218221A | Projekt 2149 | Premium IV Sauna -> Premium
+- [ ] A0218239A | Projekt 2150 | Premium IV Sauna -> Premium
+- [ ] A0218166A | Projekt 2151 | Palkkio Sauna -> Palkkio
+- [ ] A0218366A | Projekt 2152 | FassSauna -> Standard
+- [ ] A0218217A | Projekt 2153 | Palkkio Sauna -> Palkkio
+- [ ] A0218368A | Projekt 2154 | FassSauna -> Standard Vorraum
+- [ ] A0318486A | Projekt 2155 | XL Sauna -> XL Vorraum
+- [ ] A0318651A | Projekt 2156 | XL Sauna -> XL Vorraum
+- [ ] A0218249A | Projekt 2157 | Palkkio Sauna -> Palkkio
+- [ ] A0318555A | Projekt 2158 | Premium IV Sauna -> Premium
+- [ ] A0318591A | Projekt 2159 | Premium IV Sauna -> Premium
+- [ ] A0318595A | Projekt 2160 | Premium IV Sauna -> Premium
+- [ ] A0318593A | Projekt 2161 | XL Sauna -> XL Vorraum
+- [ ] A0218149A | Projekt 2162 | Premium IV Sauna -> Premium
+- [ ] A0218364A | Projekt 2163 | XL Sauna -> XL
+
