@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { addWeeks, endOfISOWeek, format, getISOWeek, getISOWeekYear, startOfISOWeek } from "date-fns";
 import { ChevronLeft, ChevronRight, ListChecks, Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +10,10 @@ import { TourWeekCard, type TourWeekCardData, type TourWeekCardMember } from "@/
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatListDateRange } from "@/lib/list-display-format";
+import { getReadableNoteTextColors } from "@/lib/note-colors";
+import { useToast } from "@/hooks/use-toast";
+import { useSetting, useSettings } from "@/hooks/useSettings";
+import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "@/components/calendar/weekLaneState";
 
 type TourWeekPlanningTour = Pick<Tour, "id" | "name" | "color">;
 
@@ -35,9 +39,12 @@ type PendingWeekSelection = {
 const tourWeekPagingButtonClassName =
   "h-full w-7 border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 inline-flex items-center justify-center";
 
+const logPrefix = "[tour-week-planning-view]";
+
 interface TourWeekPlanningViewProps {
   readOnly?: boolean;
   showInlineNotes?: boolean;
+  weekLanesCollapsed?: boolean;
   isMutatingMembers?: boolean;
   isMutatingWeeks?: boolean;
   onAddWeekEmployee?: (params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number }) => Promise<void>;
@@ -63,6 +70,10 @@ function buildWeekKey(isoYear: number, isoWeek: number): string {
   return `${isoYear}-${String(isoWeek).padStart(2, "0")}`;
 }
 
+function buildTourLaneKey(tourId: number): string {
+  return `tour-${tourId}`;
+}
+
 function htmlToExcerpt(value: string, maxLength = 180): string {
   const plainText = value
     .replace(/<\/p>/gi, "\n")
@@ -76,7 +87,7 @@ function htmlToExcerpt(value: string, maxLength = 180): string {
   return plainText.length <= maxLength ? plainText : `${plainText.slice(0, maxLength - 1).trimEnd()}...`;
 }
 
-function TourWeekInlineNotes({
+function TourWeekBelowNotes({
   week,
   visible,
 }: {
@@ -98,17 +109,20 @@ function TourWeekInlineNotes({
   if (!visible || notes.length === 0) return null;
 
   return (
-    <div className="mt-3 space-y-1.5 border-t border-slate-200 pt-2" data-testid={`tour-week-planning-inline-notes-${week.tourId}-${week.isoYear}-${week.isoWeek}`}>
-      {notes.map((note) => (
-        <article
-          key={note.id}
-          className="rounded-md border border-slate-200 px-2 py-1.5 text-xs"
-          style={{ backgroundColor: note.cardColor ?? "#ffffff" }}
-        >
-          <div className="font-semibold text-slate-800">{note.title}</div>
-          <div className="whitespace-pre-line text-slate-600">{htmlToExcerpt(note.body ?? "") || "-"}</div>
-        </article>
-      ))}
+    <div className="space-y-1.5" data-testid={`tour-week-planning-below-notes-${week.tourId}-${week.isoYear}-${week.isoWeek}`}>
+      {notes.map((note) => {
+        const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#ffffff");
+        return (
+          <article
+            key={note.id}
+            className="rounded-md border border-slate-200 px-2 py-1.5 text-xs shadow-sm"
+            style={{ backgroundColor: note.cardColor ?? "#ffffff" }}
+          >
+            <div className="font-semibold" style={{ color: noteTextColors.primary }}>{note.title}</div>
+            <div className="whitespace-pre-line" style={{ color: noteTextColors.secondary }}>{htmlToExcerpt(note.body ?? "") || "-"}</div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -116,6 +130,7 @@ function TourWeekInlineNotes({
 export function TourWeekPlanningView({
   readOnly = false,
   showInlineNotes = false,
+  weekLanesCollapsed: weekLanesCollapsedProp,
   isMutatingMembers = false,
   isMutatingWeeks = false,
   onAddWeekEmployee,
@@ -126,8 +141,13 @@ export function TourWeekPlanningView({
   onUnblockWeek,
   onOpenTourWeek,
 }: TourWeekPlanningViewProps) {
+  const { toast } = useToast();
+  const { setSetting } = useSettings();
   const [windowStart, setWindowStart] = useState(resolveInitialWeekStart);
   const [pendingWeekSelection, setPendingWeekSelection] = useState<PendingWeekSelection | null>(null);
+  const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
+  const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
+  const pendingLaneCorrectionRef = useRef<string | null>(null);
   const { fromDate, toDate } = useMemo(() => buildWeekRequestWindow(windowStart), [windowStart]);
 
   const planningQuery = useQuery<TourWeekPlanningResponse>({
@@ -190,6 +210,58 @@ export function TourWeekPlanningView({
   const weeks = planningQuery.data?.weeks ?? [];
   const tours = planningQuery.data?.tours ?? [];
   const isBusy = isMutatingMembers || isMutatingWeeks;
+  const isCollapsedMode = typeof weekLanesCollapsedProp === "boolean" ? weekLanesCollapsedProp : Boolean(persistedIsCollapsed);
+  const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
+  const tourLaneKeys = useMemo(() => tours.map((tour) => buildTourLaneKey(tour.id)), [tours]);
+  const collapsedLaneSelection = useMemo(
+    () => resolveCollapsedLaneSelection({
+      laneKeys: tourLaneKeys,
+      persistedExpandedLaneId,
+    }),
+    [persistedExpandedLaneId, tourLaneKeys],
+  );
+  const effectiveExpandedLaneId = isCollapsedMode ? collapsedLaneSelection.effectiveExpandedLaneId : null;
+
+  const persistExpandedLaneId = async (laneId: string) => {
+    await setSetting({
+      key: "calendar.weekLanes.expandedLaneId",
+      scopeType: "USER",
+      value: laneId,
+    });
+  };
+
+  useEffect(() => {
+    if (!isCollapsedMode) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (!collapsedLaneSelection.requiresCorrection || !collapsedLaneSelection.effectiveExpandedLaneId) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (collapsedLaneSelection.effectiveExpandedLaneId === persistedExpandedLaneId) {
+      pendingLaneCorrectionRef.current = null;
+      return;
+    }
+    if (pendingLaneCorrectionRef.current === collapsedLaneSelection.effectiveExpandedLaneId) return;
+
+    pendingLaneCorrectionRef.current = collapsedLaneSelection.effectiveExpandedLaneId;
+    void persistExpandedLaneId(collapsedLaneSelection.effectiveExpandedLaneId).catch((error) => {
+      console.error(`${logPrefix} failed to persist lane correction`, error);
+      toast({
+        title: "Lane-Zustand konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+      pendingLaneCorrectionRef.current = null;
+    });
+  }, [collapsedLaneSelection, isCollapsedMode, persistedExpandedLaneId, toast]);
+
+  const handleLaneHeaderClick = async (laneKey: string) => {
+    if (!isCollapsedMode) return;
+    if (effectiveExpandedLaneId === laneKey) return;
+    await persistExpandedLaneId(laneKey);
+  };
 
   return (
     <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden" data-testid="tour-week-planning-view">
@@ -235,24 +307,52 @@ export function TourWeekPlanningView({
                 <div className="col-span-4 rounded-md border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
                   Keine Touren mit Wochenplanung vorhanden.
                 </div>
-              ) : tours.map((tour) => (
+              ) : tours.map((tour) => {
+                const laneKey = buildTourLaneKey(tour.id);
+                const isCurrentLaneCollapsed = isLaneCollapsed({
+                  isCollapsedMode,
+                  laneKey,
+                  effectiveExpandedLaneId,
+                });
+                return (
                 <Fragment key={`tour-week-planning-row-${tour.id}`}>
                   <div className="col-span-4 pt-1">
                     <CalendarWeekTourLaneHeaderBar
                       label={tour.name}
                       color={tour.color}
-                      isExpanded
+                      isExpanded={!isCurrentLaneCollapsed}
+                      interactive={isCollapsedMode}
+                      onClick={() => {
+                        void handleLaneHeaderClick(laneKey).catch((error) => {
+                          console.error(`${logPrefix} lane header click failed`, error);
+                          toast({
+                            title: "Lane-Zustand konnte nicht gespeichert werden",
+                            description: "Bitte erneut versuchen.",
+                            variant: "destructive",
+                          });
+                        });
+                      }}
                       reduced
                       testId={`tour-week-planning-lane-${tour.id}`}
                     />
                   </div>
+                  <div
+                    className={`col-span-4 overflow-hidden transition-all duration-300 ease-in-out ${
+                      isCurrentLaneCollapsed ? "max-h-0 opacity-0" : "max-h-[2200px] opacity-100"
+                    }`}
+                    data-testid={`tour-week-planning-lane-body-${tour.id}`}
+                  >
+                    <div
+                      className="grid items-stretch gap-3"
+                      style={{ gridTemplateColumns: "repeat(4, minmax(12.5rem, 1fr))" }}
+                    >
                   {weeks.map((week) => {
                     const cell = cellsByTourAndWeek.get(`${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`);
                     if (!cell) {
                       return (
                         <div
                           key={`empty-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
-                          className="min-h-[9rem] rounded-md border border-dashed border-slate-200"
+                          className="h-full min-h-[9rem] rounded-md border border-dashed border-slate-200"
                         />
                       );
                     }
@@ -267,11 +367,12 @@ export function TourWeekPlanningView({
                         readOnly={readOnly}
                       >
                       {({ dialog, openDialog }) => (
-                        <>
+                        <div className="h-full">
                           <TourWeekCard
                             week={cell}
                             scope="tour"
                             borderColor={tour.color}
+                            className="h-full"
                             testId={`tour-week-planning-card-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
                             memberTestIdPrefix={`tour-week-planning-member-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
                             blockedTextTestId={`tour-week-planning-blocked-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
@@ -286,7 +387,6 @@ export function TourWeekPlanningView({
                               });
                             } : undefined}
                             hideDateRange
-                            inlineNotes={<TourWeekInlineNotes week={cell} visible={showInlineNotes} />}
                             actions={(
                               <>
                                 {!readOnly && !cell.isLocked && !cell.isBlocked ? (
@@ -373,13 +473,35 @@ export function TourWeekPlanningView({
                             )}
                           />
                           {dialog}
-                        </>
+                        </div>
                       )}
                     </CalendarWeekNotesButton>
                   );
                 })}
+                    </div>
+                    {showInlineNotes ? (
+                      <div
+                        className="mt-2 grid items-start gap-3"
+                        style={{ gridTemplateColumns: "repeat(4, minmax(12.5rem, 1fr))" }}
+                      >
+                        {weeks.map((week) => {
+                          const cell = cellsByTourAndWeek.get(`${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`);
+                          return cell ? (
+                            <TourWeekBelowNotes
+                              key={`notes-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`}
+                              week={cell}
+                              visible={showInlineNotes}
+                            />
+                          ) : (
+                            <div key={`notes-empty-${tour.id}-${buildWeekKey(week.isoYear, week.isoWeek)}`} />
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
               </Fragment>
-            ))}
+              );
+            })}
           </div>
         </div>
         </div>

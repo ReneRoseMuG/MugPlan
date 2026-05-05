@@ -17,6 +17,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const useQueryMock = vi.fn();
+const useSettingMock = vi.fn();
+const setSettingMock = vi.fn();
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -24,6 +26,11 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
+}));
+
+vi.mock("@/hooks/useSettings", () => ({
+  useSetting: (key: string) => useSettingMock(key),
+  useSettings: () => ({ setSetting: setSettingMock }),
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -85,7 +92,10 @@ const planningResponse = {
     { isoYear: 2099, isoWeek: 8, weekStartDate: "2099-02-16", weekEndDate: "2099-02-22" },
     { isoYear: 2099, isoWeek: 9, weekStartDate: "2099-02-23", weekEndDate: "2099-03-01" },
   ],
-  tours: [{ id: 41, name: "Nordtour", color: "#225588" }],
+  tours: [
+    { id: 41, name: "Nordtour", color: "#225588" },
+    { id: 42, name: "Suedtour", color: "#a855f7" },
+  ],
   cells: [{
     tourId: 41,
     tourName: "Nordtour",
@@ -105,6 +115,19 @@ const planningResponse = {
       lastName: "Plan",
       fullName: "Ada Plan",
     }],
+  }, {
+    tourId: 42,
+    tourName: "Suedtour",
+    tourColor: "#a855f7",
+    isoYear: 2099,
+    isoWeek: 6,
+    weekStartDate: "2099-02-02",
+    weekEndDate: "2099-02-08",
+    isLocked: false,
+    isBlocked: false,
+    appointmentsCount: 1,
+    notesCount: 0,
+    employees: [],
   }],
 };
 
@@ -112,10 +135,28 @@ describe("TourWeekPlanningView render", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
     useQueryMock.mockReset();
+    useSettingMock.mockReset();
+    setSettingMock.mockReset();
+    useSettingMock.mockImplementation((key: string) => {
+      if (key === "calendar.weekLanes.expandedLaneId") return "tour-41";
+      if (key === "calendar.weekLanes.isCollapsed") return false;
+      return null;
+    });
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "tourWeekPlanningView") {
         return { data: planningResponse, isLoading: false };
+      }
+      if (key === "calendarWeekNotes") {
+        return {
+          data: [{
+            id: 701,
+            title: "Kräftige Notiz",
+            body: "<p>Bitte beachten</p>",
+            cardColor: "#ef4444",
+          }],
+          isLoading: false,
+        };
       }
       return { data: [], isLoading: false };
     });
@@ -133,6 +174,24 @@ describe("TourWeekPlanningView render", () => {
     expect(html).toContain("button-tour-week-planning-add-41-2099-6");
     expect(html).toContain("button-tour-week-planning-apply-41-2099-6");
     expect(html).toContain("Wochenplanung blockieren");
+  });
+
+  it("renders week notes below the card when enabled", () => {
+    const html = renderToStaticMarkup(<TourWeekPlanningView showInlineNotes />);
+
+    expect(html).toContain("tour-week-planning-card-41-2099-6");
+    expect(html).toContain("tour-week-planning-below-notes-41-2099-6");
+    expect(html.indexOf("tour-week-planning-card-41-2099-6")).toBeLessThan(html.indexOf("tour-week-planning-below-notes-41-2099-6"));
+    expect(html).toContain("Kräftige Notiz");
+    expect(html).toContain("color:#ffffff");
+  });
+
+  it("collapses non-selected tour lanes in collapsed mode", () => {
+    const html = renderToStaticMarkup(<TourWeekPlanningView weekLanesCollapsed />);
+
+    expect(html).toContain("tour-week-planning-lane-body-41");
+    expect(html).toContain("tour-week-planning-lane-body-42");
+    expect(html).toContain("max-h-0 opacity-0");
   });
 
   it("hides mutating card actions in readonly mode", () => {

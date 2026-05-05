@@ -126,6 +126,6 @@ describe("tourWeekCard render", () => {
 
     expect(markup).toContain("Die Wochenplanung ist blockiert");
     expect(markup).toContain("badge-tour-week-blocked-2026-19");
-    expect(markup).toContain("Keine Mitarbeiter geplant");
+    expect(markup).not.toContain("Keine Mitarbeiter geplant");
   });
 });

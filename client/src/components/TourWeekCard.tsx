@@ -48,6 +48,7 @@ interface TourWeekCardProps {
   children?: ReactNode;
   legacyLabel?: string;
   hideDateRange?: boolean;
+  className?: string;
 }
 
 export function TourWeekCard({
@@ -68,6 +69,7 @@ export function TourWeekCard({
   children: _legacyChildren,
   legacyLabel: _legacyLabel,
   hideDateRange = false,
+  className,
 }: TourWeekCardProps) {
   const isTourScope = scope === "tour";
   const resolvedBorderColor = borderColor ?? week.tourColor;
@@ -81,6 +83,7 @@ export function TourWeekCard({
       actions={actions}
       onDoubleClick={onOpen}
       footerVisibility="visible"
+      className={className}
       footer={(
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -151,7 +154,7 @@ export function TourWeekCard({
               testId={`${memberTestIdPrefix}-${employee.assignmentId}`}
             />
           ))}
-          {week.employees.length === 0 ? (
+          {week.employees.length === 0 && !week.isBlocked ? (
             <div className="text-sm italic text-slate-400">Keine Mitarbeiter geplant</div>
           ) : null}
         </div>

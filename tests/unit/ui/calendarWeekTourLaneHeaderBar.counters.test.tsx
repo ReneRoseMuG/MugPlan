@@ -94,4 +94,21 @@ describe("FT03 UI: CalendarWeekTourLaneHeaderBar layout", () => {
     expect(html).not.toContain("notes-count-marker");
     expect(html).not.toContain("grid-cols-[2.4rem_minmax(0,1fr)]");
   });
+
+  it("uses a full-size interactive button when the lane can be toggled", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(CalendarWeekTourLaneHeaderBar, {
+        label: "Tour Toggle",
+        color: "#345678",
+        interactive: true,
+        isExpanded: false,
+        testId: "week-tour-lane-header-toggle",
+      }),
+    );
+
+    expect(html).toContain('data-testid="week-tour-lane-header-toggle"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("h-full w-full");
+    expect(html).toContain("cursor-pointer");
+  });
 });

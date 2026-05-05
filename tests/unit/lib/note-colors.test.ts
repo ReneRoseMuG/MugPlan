@@ -18,6 +18,14 @@ describe("note color contrast", () => {
     });
   });
 
+  it("uses light text on strong saturated mid-tone note backgrounds", () => {
+    expect(shouldUseLightNoteText("#ef4444")).toBe(true);
+    expect(getReadableNoteTextColors("#ef4444")).toMatchObject({
+      primary: "#ffffff",
+      isLight: true,
+    });
+  });
+
   it("falls back to dark text for missing or invalid colors", () => {
     expect(shouldUseLightNoteText(null)).toBe(false);
     expect(shouldUseLightNoteText("not-a-color")).toBe(false);

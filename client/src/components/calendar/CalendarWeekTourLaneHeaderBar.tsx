@@ -56,7 +56,7 @@ export function CalendarWeekTourLaneHeaderBar({
           <button
             type="button"
             onClick={onClick}
-            className="grid min-w-0 grid-cols-[minmax(0,1fr)] transition hover:-translate-y-[1px] hover:shadow-md"
+            className="grid h-full w-full min-w-0 cursor-pointer grid-cols-[minmax(0,1fr)] items-center rounded-md text-left transition hover:-translate-y-[1px] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             data-testid={testId}
             aria-expanded={isExpanded}
           >

@@ -119,6 +119,8 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     || effectiveUserRole === "DISPONENT";
   const inlineNotesSetting = useSetting("calendar.weekInlineNotes.visible");
   const showInlineNotes = Boolean(inlineNotesSetting);
+  const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
+  const areWeekLanesCollapsed = Boolean(weekLanesCollapsedSetting);
 
   const setInlineNotesVisible = (visible: boolean) => {
     void setSetting({
@@ -128,6 +130,20 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     }).catch(() => {
       toast({
         title: "Notizen-Anzeige konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const setWeekLanesCollapsed = (collapsed: boolean) => {
+    void setSetting({
+      key: "calendar.weekLanes.isCollapsed",
+      scopeType: "USER",
+      value: collapsed,
+    }).catch(() => {
+      toast({
+        title: "Tourenansicht konnte nicht gespeichert werden",
         description: "Bitte erneut versuchen.",
         variant: "destructive",
       });
@@ -877,31 +893,60 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                   <TabsTrigger value="weekPlanning" data-testid="tab-tour-overview-week-planning">Wochenplanung</TabsTrigger>
                 </TabsList>
                 {activeOverviewTab === "weekPlanning" ? (
-                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
-                    <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Notizen anzeigen">
-                      <button
-                        type="button"
-                        onClick={() => setInlineNotesVisible(true)}
-                        aria-pressed={showInlineNotes}
-                        data-testid="switch-tour-week-planning-inline-notes"
-                        className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
-                          showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        Ja
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setInlineNotesVisible(false)}
-                        aria-pressed={!showInlineNotes}
-                        data-testid="toggle-tour-week-planning-inline-notes-no"
-                        className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
-                          !showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        Nein
-                      </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Touren</span>
+                      <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Touren einklappen">
+                        <button
+                          type="button"
+                          onClick={() => setWeekLanesCollapsed(false)}
+                          aria-pressed={!areWeekLanesCollapsed}
+                          data-testid="toggle-tour-week-planning-lanes-expanded"
+                          className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                            !areWeekLanesCollapsed ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          Aufgeklappt
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setWeekLanesCollapsed(true)}
+                          aria-pressed={areWeekLanesCollapsed}
+                          data-testid="toggle-tour-week-planning-lanes-collapsed"
+                          className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                            areWeekLanesCollapsed ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          Zugeklappt
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notizen</span>
+                      <div className="inline-flex rounded-md border border-slate-200 bg-white p-0.5" role="group" aria-label="Notizen anzeigen">
+                        <button
+                          type="button"
+                          onClick={() => setInlineNotesVisible(true)}
+                          aria-pressed={showInlineNotes}
+                          data-testid="switch-tour-week-planning-inline-notes"
+                          className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                            showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          Ja
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInlineNotesVisible(false)}
+                          aria-pressed={!showInlineNotes}
+                          data-testid="toggle-tour-week-planning-inline-notes-no"
+                          className={`rounded px-2 py-1 text-[10px] font-semibold leading-none transition-all ${
+                            !showInlineNotes ? "bg-primary text-primary-foreground shadow-sm" : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          Nein
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : null}
@@ -946,6 +991,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                 <TourWeekPlanningView
                   readOnly={!canMutateTours}
                   showInlineNotes={showInlineNotes}
+                  weekLanesCollapsed={areWeekLanesCollapsed}
                   isMutatingMembers={isMutatingMembers}
                   isMutatingWeeks={isMutatingWeeks}
                   onAddWeekEmployee={handleStartAddWeekEmployee}

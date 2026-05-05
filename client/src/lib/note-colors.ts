@@ -49,6 +49,11 @@ function getContrastRatio(luminanceA: number, luminanceB: number): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function hasStrongMidToneChroma(color: { r: number; g: number; b: number }, luminance: number): boolean {
+  const chroma = Math.max(color.r, color.g, color.b) - Math.min(color.r, color.g, color.b);
+  return chroma >= 90 && luminance >= 0.18 && luminance <= 0.4;
+}
+
 export function shouldUseLightNoteText(backgroundColor: string | null | undefined): boolean {
   const color = parseHexColor(backgroundColor);
   if (!color) return false;
@@ -58,8 +63,14 @@ export function shouldUseLightNoteText(backgroundColor: string | null | undefine
   const darkTextLuminance = darkTextColor ? getRelativeLuminance(darkTextColor) : 0;
   const whiteTextLuminance = 1;
 
-  return getContrastRatio(backgroundLuminance, whiteTextLuminance)
-    > getContrastRatio(backgroundLuminance, darkTextLuminance);
+  const lightContrast = getContrastRatio(backgroundLuminance, whiteTextLuminance);
+  const darkContrast = getContrastRatio(backgroundLuminance, darkTextLuminance);
+
+  if (lightContrast >= darkContrast) {
+    return true;
+  }
+
+  return lightContrast >= 3.5 && hasStrongMidToneChroma(color, backgroundLuminance);
 }
 
 export function getReadableNoteTextColors(backgroundColor: string | null | undefined): ReadableNoteTextColors {
