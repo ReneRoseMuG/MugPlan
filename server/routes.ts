@@ -37,7 +37,6 @@ import userSettingsRoutes from "./routes/userSettingsRoutes";
 import usersRoutes from "./routes/usersRoutes";
 import authRoutes from "./routes/authRoutes";
 import attachmentQueriesRoutes from "./routes/attachmentQueriesRoutes";
-import adminBulkImportRoutes from "./routes/adminBulkImportRoutes";
 import calendarWeekNotesRoutes from "./routes/calendarWeekNotesRoutes";
 import calendarMarkersRoutes from "./routes/calendarMarkersRoutes";
 import changeNotificationsRoutes from "./routes/changeNotificationsRoutes";
@@ -88,7 +87,6 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(calendarWeekNotesRoutes);
   app.use(journalRoutes);
   app.use(attachmentQueriesRoutes);
-  app.use(adminBulkImportRoutes);
   app.use(correctionWorkflowRoutes);
   app.use(systemSeedRoutes);
   app.use(userSettingsRoutes);
