@@ -74,7 +74,7 @@ vi.mock("@/components/ui/list-layout", () => ({
       {viewModeToggle}
       {filterSlot}
       {contentSlot}
-      {footerSlot}
+      <footer data-testid="employee-picker-layout-footer">{footerSlot}</footer>
     </div>
   ),
 }));
@@ -160,6 +160,9 @@ describe("FT01 UI: EmployeePickerDialogList bulk selection wiring", () => {
     const markup = renderPicker();
 
     expect(markup).toContain("employee-picker-list-view");
+    expect(markup).toContain("employee-picker-layout-footer");
+    expect(markup).toContain("employee-picker-footer");
+    expect(markup).toContain("employee-picker-filter");
     expect(markup).toContain("employee-picker-checkbox-2");
     expect(markup).toContain("employee-picker-checkbox-1");
     expect(markup).toContain("button-confirm-employee-picker-selection");
@@ -178,6 +181,8 @@ describe("FT01 UI: EmployeePickerDialogList bulk selection wiring", () => {
     expect(markup).toContain("toggle-employee-picker-board");
     expect(markup).toContain("toggle-employee-picker-list");
     expect(markup).toContain("list-employee-picker");
+    expect(markup).toContain("employee-picker-layout-footer");
+    expect(markup).toContain("employee-picker-filter");
     expect(markup).toContain("employee-picker-card-2");
     expect(markup).toContain("employee-picker-card-1");
     expect(markup).not.toContain("employee-picker-list-view");

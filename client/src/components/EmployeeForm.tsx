@@ -146,7 +146,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
-    void queryClient.invalidateQueries({
+    return queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/employees";
@@ -155,7 +155,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   };
 
   const invalidateEmployeeTagQueries = async () => {
-    invalidateEmployees();
+    await invalidateEmployees();
     if (employeeId) {
       await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "tags"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
@@ -164,7 +164,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   };
 
   const invalidateEmployeeNotesQueries = async () => {
-    invalidateEmployees();
+    await invalidateEmployees();
     if (employeeId) {
       await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "notes"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
@@ -278,9 +278,6 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       const response = await apiRequest("POST", "/api/employees", data);
       return response.json() as Promise<Employee>;
     },
-    onSuccess: () => {
-      invalidateEmployees();
-    },
   });
 
   const updateMutation = useMutation({
@@ -294,7 +291,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       return apiRequest("PUT", `/api/employees/${id}`, data);
     },
     onSuccess: () => {
-      invalidateEmployees();
+      void invalidateEmployees();
     },
     onError: (error: Error) => {
       const code = extractApiCode(error);
@@ -323,7 +320,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       return apiRequest("PATCH", `/api/employees/${id}/active`, { isActive, version });
     },
     onSuccess: () => {
-      invalidateEmployees();
+      void invalidateEmployees();
       if (employeeId) {
         void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       }
@@ -358,7 +355,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       await apiRequest("DELETE", `/api/employees/${employeeId}`, { version });
     },
     onSuccess: () => {
-      invalidateEmployees();
+      void invalidateEmployees();
       void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
       void queryClient.invalidateQueries({
         predicate: (query) => {
@@ -772,6 +769,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
           variant: "destructive",
         });
       }
+      await invalidateEmployees();
     }
 
     if (onSaved && onSaved !== onCancel) {

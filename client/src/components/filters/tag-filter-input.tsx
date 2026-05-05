@@ -18,6 +18,7 @@ interface TagFilterInputProps {
   addButtonTestId?: string;
   testIdPrefix?: string;
   className?: string;
+  disableAddWhenEmpty?: boolean;
 }
 
 export function TagFilterInput({
@@ -32,6 +33,7 @@ export function TagFilterInput({
   addButtonTestId,
   testIdPrefix = "tag-filter",
   className,
+  disableAddWhenEmpty = true,
 }: TagFilterInputProps) {
   return (
     <div className={cn("flex flex-col gap-1 sm:min-w-[280px]", className)}>
@@ -58,7 +60,7 @@ export function TagFilterInput({
           <PopoverTrigger asChild>
             <PlusActionButton
               className="mt-0.5 shrink-0"
-              disabled={availableTags.length === 0}
+              disabled={disableAddWhenEmpty && availableTags.length === 0}
               data-testid={addButtonTestId}
               aria-label="Tag hinzufügen"
             />

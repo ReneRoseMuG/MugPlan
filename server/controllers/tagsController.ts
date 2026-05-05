@@ -4,8 +4,8 @@ import * as tagRelationsService from "../services/tagRelationsService";
 
 export async function listTagCatalog(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { domain } = api.tags.list.input.parse(req.query);
-    const tags = await tagRelationsService.listTagCatalog(domain);
+    const { domain, includeReportTags } = api.tags.list.input.parse(req.query);
+    const tags = await tagRelationsService.listTagCatalog(domain, { includeReportTags });
     res.json(tags);
   } catch (err) {
     next(err);

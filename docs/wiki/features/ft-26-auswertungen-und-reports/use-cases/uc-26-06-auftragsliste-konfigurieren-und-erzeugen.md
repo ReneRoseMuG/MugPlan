@@ -26,7 +26,7 @@ Der Benutzer ruft die Auftragsliste auf, konfiguriert Zeitraum und Filter und er
 2. Das System zeigt das Konfigurationspanel.
 3. Der Report startet ohne Wiederherstellung alter Report-Settings im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.
 4. Der Benutzer passt optional Zeitraum, Kategorieauswahl, Tag-Filter, Sauna-Modell-Auswahl oder Shortcode-Schalter an.
-   Der Tag-Filter bietet Nicht-System-Tags an. System-Tags aus dedizierten Workflows sind dort nicht wählbar.
+   Der Tag-Filter bietet Nicht-System-Tags sowie die Report-Tags Sondermaß und Anmerkungen an. Sperr- und Workflow-Tags wie Reklamation, Storniert oder Geparkt sind dort nicht wählbar.
 5. Der Benutzer klickt auf Report erzeugen.
 6. Das System ermittelt Projekte mit mindestens einem gültigen Termin im konfigurierten Zeitraum.
 7. Das System schließt Projekte und Termine mit Reklamation-Tag oder Storniert-Tag vollständig aus.

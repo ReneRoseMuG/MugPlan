@@ -14,6 +14,8 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [05.05.26 - FT-26: Report-Presets und Auftragsliste](05-05-26-report-presets-auftragsliste.md)
+- [05.05.26 - Mitarbeiter-Picker nach Neuanlage aktualisiert](05-05-26-mitarbeiter-picker-aktualisierung.md)
 - [05.05.26 - Mitarbeiterformular: tababhängige HelpKeys ergänzt](05-05-26-mitarbeiter-form-helpkeys.md)
 - [05.05.26 - FT-33: Abwesenheiten entfernen Mitarbeiter aus Tour-KW-Planungen](05-05-26-ft-33-abwesenheiten-kw-planungsabzug.md)
 - [05.05.26 - FT-04: Tour-KW-Settings getrennt](05-05-26-tour-kw-settings-trennung.md)

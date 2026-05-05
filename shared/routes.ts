@@ -2286,6 +2286,10 @@ export const api = {
       path: "/api/tags",
       input: z.object({
         domain: tagPickerDomainSchema.default("appointment"),
+        includeReportTags: z.preprocess(
+          (value) => value === "true" || value === true,
+          z.boolean().default(false),
+        ),
       }).strict(),
       responses: {
         200: z.array(tagSchema),

@@ -119,6 +119,24 @@ export function EmployeePickerDialogList({
       Keine Mitarbeiter gefunden.
     </p>
   );
+  const filterPanel = (
+    <EmployeePickerFilterPanel
+      nameFilter={nameFilter}
+      onNameFilterChange={setNameFilter}
+      firstNameFilter={firstNameFilter}
+      onFirstNameFilterChange={setFirstNameFilter}
+    />
+  );
+  const confirmAction = allowBulkSelection && viewMode === "list" ? (
+    <Button
+      type="button"
+      onClick={() => onConfirmSelection?.(selectedEmployeeIds)}
+      disabled={selectedEmployeeIds.length === 0}
+      data-testid="button-confirm-employee-picker-selection"
+    >
+      Mitarbeiter übernehmen{selectedEmployeeIds.length > 0 ? ` (${selectedEmployeeIds.length})` : ""}
+    </Button>
+  ) : null;
 
   return (
     <ListLayout
@@ -129,14 +147,6 @@ export function EmployeePickerDialogList({
       onClose={onClose}
       showCloseButton={false}
       contentClassName="min-h-0 overflow-hidden"
-      filterSlot={(
-        <EmployeePickerFilterPanel
-          nameFilter={nameFilter}
-          onNameFilterChange={setNameFilter}
-          firstNameFilter={firstNameFilter}
-          onFirstNameFilterChange={setFirstNameFilter}
-        />
-      )}
       viewModeToggle={allowBulkSelection ? (
         <ToggleGroup
           type="single"
@@ -154,18 +164,19 @@ export function EmployeePickerDialogList({
           </ToggleGroupItem>
         </ToggleGroup>
       ) : undefined}
-      footerSlot={allowBulkSelection && viewMode === "list" ? (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            onClick={() => onConfirmSelection?.(selectedEmployeeIds)}
-            disabled={selectedEmployeeIds.length === 0}
-            data-testid="button-confirm-employee-picker-selection"
-          >
-            Mitarbeiter übernehmen{selectedEmployeeIds.length > 0 ? ` (${selectedEmployeeIds.length})` : ""}
-          </Button>
+      footerSlot={(
+        <div
+          className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"
+          data-testid="employee-picker-footer"
+        >
+          {filterPanel}
+          {confirmAction ? (
+            <div className="flex justify-end">
+              {confirmAction}
+            </div>
+          ) : null}
         </div>
-      ) : undefined}
+      )}
       contentSlot={(
         viewMode === "list" ? (
           <div className="flex h-full min-h-0 flex-col overflow-hidden" data-testid="employee-picker-list-view">
@@ -259,4 +270,3 @@ export function EmployeePickerDialogList({
     />
   );
 }
-

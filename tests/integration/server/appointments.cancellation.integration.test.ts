@@ -27,6 +27,7 @@ import { db } from "../../../server/db";
 import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
 import {
   MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_REMARKS_TAG_NAME,
   MANAGED_SPECIAL_MEASURE_TAG_COLOR,
   MANAGED_SPECIAL_MEASURE_TAG_NAME,
   RESERVED_APPOINTMENT_CANCELLATION_TAG_COLOR,
@@ -59,6 +60,15 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(false);
       expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REMARKS_TAG_NAME)).toBe(false);
+    });
+
+    await admin.get("/api/tags?includeReportTags=true").expect(200).expect(({ body }) => {
+      expect(Array.isArray(body)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_COMPLAINT_TAG_NAME)).toBe(false);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_SPECIAL_MEASURE_TAG_NAME)).toBe(true);
+      expect((body as Array<{ name: string }>).some((tag) => tag.name === MANAGED_REMARKS_TAG_NAME)).toBe(true);
     });
 
     await admin.get("/api/tags?domain=appointment").expect(200).expect(({ body }) => {

@@ -137,7 +137,7 @@ Die Auftragsliste zeigt Projekte mit mindestens einem gültigen Termin im konfig
 
 Die Datumsspanne wird über Modus Datum oder Kalenderwoche konfiguriert. Beim Öffnen startet der Report im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.
 
-Komponenten- und Produktkategorien können im Konfigurationspanel abgewählt werden. Der Tag-Filter bietet Nicht-System-Tags an; System-Tags, die über dedizierte Workflows gesetzt werden, sind dort nicht wählbar. Diese Auswahl bleibt flüchtig, bis sie als Bestandteil eines Presets gespeichert wird. Deaktivierte Kategorien erscheinen weder in den Kacheln noch in der Druckausgabe.
+Komponenten- und Produktkategorien können im Konfigurationspanel abgewählt werden. Der Tag-Filter bietet Nicht-System-Tags sowie die Report-Tags Sondermaß und Anmerkungen an; Sperr- und Workflow-Tags wie Reklamation, Storniert oder Geparkt sind dort nicht wählbar. Diese Auswahl bleibt flüchtig, bis sie als Bestandteil eines Presets gespeichert wird. Deaktivierte Kategorien erscheinen weder in den Kacheln noch in der Druckausgabe.
 
 ## Report: Tourenplan
 

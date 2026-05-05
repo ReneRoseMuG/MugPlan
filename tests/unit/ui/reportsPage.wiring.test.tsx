@@ -382,7 +382,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html.indexOf("Fass Saunen")).toBeLessThan(html.indexOf("Fenster"));
   });
 
-  it("offers only non-system tags in the auftragsliste tag filter", () => {
+  it("offers non-system tags plus Sondermaß and Anmerkungen in the auftragsliste tag filter", () => {
     installReportsPageQueryMock({
       "/api/tags": {
         data: [
@@ -401,9 +401,9 @@ describe("FT26 UI: ReportsPage wiring", () => {
 
     expect(html).toContain("reports-auftragsliste-tag-filter-add-11");
     expect(html).toContain("reports-auftragsliste-tag-filter-add-12");
-    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-13");
+    expect(html).toContain("reports-auftragsliste-tag-filter-add-13");
     expect(html).not.toContain("reports-auftragsliste-tag-filter-add-14");
-    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-15");
+    expect(html).toContain("reports-auftragsliste-tag-filter-add-15");
     expect(html).not.toContain("reports-auftragsliste-tag-filter-add-16");
   });
 

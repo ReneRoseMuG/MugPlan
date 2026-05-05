@@ -5,6 +5,8 @@ import { addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear,
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
 import {
+  isManagedRemarksTagName,
+  isManagedSpecialMeasureTagName,
   isProtectedSystemTagName,
   type AppointmentCancellationReportState,
 } from "@shared/appointmentCancellation";
@@ -621,8 +623,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     queryFn: () => fetchJson("/api/admin/master-data/component-categories?active=all"),
   });
   const { data: tags = [] } = useQuery<Tag[]>({
-    queryKey: ["/api/tags"],
-    queryFn: () => fetchJson("/api/tags"),
+    queryKey: ["/api/tags", "reports"],
+    queryFn: () => fetchJson("/api/tags?includeReportTags=true"),
   });
   const activeProductCategories = useMemo<ActiveProduktionsplanungCategory[]>(
     () => productCategories
@@ -759,7 +761,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   }, [activeComponentCategoryIds, allActiveAuftragslisteComponentCategoryIds, selectedAuftragslisteComponentCategoryIds]);
   const auftragslisteTagOptions = useMemo(
     () => tags
-      .filter((tag) => !tag.isDefault && !isProtectedSystemTagName(tag.name))
+      .filter((tag) =>
+        isManagedSpecialMeasureTagName(tag.name)
+        || isManagedRemarksTagName(tag.name)
+        || (!tag.isDefault && !isProtectedSystemTagName(tag.name)))
       .sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id),
     [tags],
   );
@@ -1871,6 +1876,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                         addButtonTestId="button-reports-auftragsliste-add-tag-filter"
                         testIdPrefix="reports-auftragsliste-tag-filter"
                         className="w-[170px] sm:min-w-0"
+                        disableAddWhenEmpty={false}
                       />
                       <div className="flex w-[170px] flex-col gap-1" data-testid="reports-auftragsliste-sauna-model-filter">
                         <span className="text-xs text-slate-500">Sauna Modell</span>

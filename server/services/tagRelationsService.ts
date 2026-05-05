@@ -1,4 +1,8 @@
-import { type TagPickerDomain } from "@shared/appointmentCancellation";
+import {
+  isManagedRemarksTagName,
+  isManagedSpecialMeasureTagName,
+  type TagPickerDomain,
+} from "@shared/appointmentCancellation";
 import type { Tag } from "@shared/schema";
 import * as tagRelationsRepository from "../repositories/tagRelationsRepository";
 import { filterPickerTagsForDomain } from "../lib/appointmentCancellation";
@@ -6,9 +10,22 @@ import { filterPickerTagsForDomain } from "../lib/appointmentCancellation";
 export type TagRelationDomain = TagPickerDomain;
 export type TagRelationItem = tagRelationsRepository.TagRelationItem;
 
-export async function listTagCatalog(domain: TagPickerDomain = "appointment"): Promise<Tag[]> {
+export async function listTagCatalog(
+  domain: TagPickerDomain = "appointment",
+  options: { includeReportTags?: boolean } = {},
+): Promise<Tag[]> {
   const tags = await tagRelationsRepository.listTagCatalog();
-  return filterPickerTagsForDomain(tags, domain);
+  const pickerTags = filterPickerTagsForDomain(tags, domain);
+  if (!options.includeReportTags) {
+    return pickerTags;
+  }
+
+  const pickerTagIds = new Set(pickerTags.map((tag) => tag.id));
+  const reportTags = tags.filter((tag) =>
+    !pickerTagIds.has(tag.id)
+    && (isManagedSpecialMeasureTagName(tag.name) || isManagedRemarksTagName(tag.name)));
+  return [...pickerTags, ...reportTags]
+    .sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id);
 }
 
 export async function getTagById(tagId: number): Promise<Tag | null> {
