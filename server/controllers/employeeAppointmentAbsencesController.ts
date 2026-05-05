@@ -24,6 +24,7 @@ function sendServiceError(res: Response, err: unknown): boolean {
       code: err.code,
       message: err.message,
       ...(err.employeeRemovalConflicts ? { employeeRemovalConflicts: err.employeeRemovalConflicts } : {}),
+      ...(err.weekPlanningRemovalConflicts ? { weekPlanningRemovalConflicts: err.weekPlanningRemovalConflicts } : {}),
     });
     return true;
   }

@@ -187,6 +187,61 @@ describe("PKG-08 user settings resolved mapping", () => {
     expect(expandedLaneSetting?.resolvedVersion).toBe(3);
   });
 
+  it("maps Tour-KW lane settings independently from calendar week lanes", async () => {
+    usersRepoMock.getUserWithRole.mockResolvedValue({
+      id: 1,
+      isActive: true,
+      roleCode: "ADMIN",
+    } as any);
+    settingsRepoMock.listSettingCandidates.mockResolvedValue([
+      {
+        settingKey: "calendar.weekLanes.isCollapsed",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: false,
+        version: 2,
+        updatedAt: new Date("2026-05-05T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+      {
+        settingKey: "tourWeekPlanning.weekLanes.isCollapsed",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: true,
+        version: 4,
+        updatedAt: new Date("2026-05-05T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+      {
+        settingKey: "tourWeekPlanning.weekLanes.expandedLaneId",
+        scopeType: "USER",
+        scopeId: "1",
+        valueJson: "tour-99",
+        version: 5,
+        updatedAt: new Date("2026-05-05T00:00:00.000Z"),
+        updatedBy: 1,
+      },
+    ] as any);
+
+    const result = await getResolvedSettingsForUser(1);
+    const calendarCollapsedSetting = result.find((entry) => entry.key === "calendar.weekLanes.isCollapsed");
+    const tourCollapsedSetting = result.find((entry) => entry.key === "tourWeekPlanning.weekLanes.isCollapsed");
+    const tourExpandedLaneSetting = result.find((entry) => entry.key === "tourWeekPlanning.weekLanes.expandedLaneId");
+
+    expect(calendarCollapsedSetting?.resolvedValue).toBe(false);
+    expect(tourCollapsedSetting).toBeDefined();
+    expect(tourCollapsedSetting?.type).toBe("boolean");
+    expect(tourCollapsedSetting?.resolvedValue).toBe(true);
+    expect(tourCollapsedSetting?.resolvedScope).toBe("USER");
+    expect(tourCollapsedSetting?.resolvedVersion).toBe(4);
+
+    expect(tourExpandedLaneSetting).toBeDefined();
+    expect(tourExpandedLaneSetting?.type).toBe("string");
+    expect(tourExpandedLaneSetting?.resolvedValue).toBe("tour-99");
+    expect(tourExpandedLaneSetting?.resolvedScope).toBe("USER");
+    expect(tourExpandedLaneSetting?.resolvedVersion).toBe(5);
+  });
+
   it("maps week tile body mode with USER scope and version", async () => {
     usersRepoMock.getUserWithRole.mockResolvedValue({
       id: 1,

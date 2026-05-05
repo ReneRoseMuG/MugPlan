@@ -138,8 +138,8 @@ describe("TourWeekPlanningView render", () => {
     useSettingMock.mockReset();
     setSettingMock.mockReset();
     useSettingMock.mockImplementation((key: string) => {
-      if (key === "calendar.weekLanes.expandedLaneId") return "tour-41";
-      if (key === "calendar.weekLanes.isCollapsed") return false;
+      if (key === "tourWeekPlanning.weekLanes.expandedLaneId") return "tour-41";
+      if (key === "tourWeekPlanning.weekLanes.isCollapsed") return false;
       return null;
     });
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {

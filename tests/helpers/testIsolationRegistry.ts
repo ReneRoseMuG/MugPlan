@@ -387,6 +387,17 @@ const isolationRegistry: TestIsolationRegistryEntry[] = [
     notes: "FT33 Readonly-Schnitt startet vom Core-Reset und zieht den benoetigten System-Seed explizit nach, um regulaere sowie dedizierte Abwesenheits-Mutationspfade ueber mehrere Oberflaechen zu pruefen.",
   },
   {
+    suitePath: "tests/e2e-browser/ft33-absence-week-planning.browser.e2e.spec.ts",
+    isolationClass: "A",
+    baseline: "core",
+    storageProfile: "none",
+    resetScope: "per-test",
+    canaryProfile: "week-plan-confusion",
+    pilotStatus: "validated-with-hard-isolation",
+    rolloutMode: "pilot-only",
+    notes: "FT33-KW-Planungsabzug nutzt echte Termin- und Tour-KW-Daten pro Test und zieht den System-Seed explizit nach.",
+  },
+  {
     suitePath: "tests/e2e-browser/calendar-month-sheet.navigation.browser.e2e.spec.ts",
     isolationClass: "B",
     baseline: "seeded",

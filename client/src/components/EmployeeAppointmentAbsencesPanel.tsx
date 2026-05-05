@@ -42,9 +42,30 @@ type EmployeeAppointmentAbsencesPanelProps = {
 
 type AbsenceEmployeeRemovalConflict = EmployeeAppointmentAbsenceResponse;
 
+type AbsenceWeekPlanningRemovalConflict = {
+  assignmentId: number;
+  tourId: number;
+  tourName: string;
+  isoYear: number;
+  isoWeek: number;
+  weekStartDate: string;
+  weekEndDate: string;
+};
+
 type PendingEmployeeRemovalConfirmation =
-  | { kind: "create"; state: AbsenceFormState; conflicts: AbsenceEmployeeRemovalConflict[] }
-  | { kind: "update"; item: EmployeeAppointmentAbsenceResponse; state: AbsenceFormState; conflicts: AbsenceEmployeeRemovalConflict[] };
+  | {
+    kind: "create";
+    state: AbsenceFormState;
+    appointmentConflicts: AbsenceEmployeeRemovalConflict[];
+    weekPlanningConflicts: AbsenceWeekPlanningRemovalConflict[];
+  }
+  | {
+    kind: "update";
+    item: EmployeeAppointmentAbsenceResponse;
+    state: AbsenceFormState;
+    appointmentConflicts: AbsenceEmployeeRemovalConflict[];
+    weekPlanningConflicts: AbsenceWeekPlanningRemovalConflict[];
+  };
 
 const defaultFormState: AbsenceFormState = {
   absenceType: "vacation",
@@ -84,6 +105,20 @@ function extractApiCode(error: unknown): string | null {
   return match?.[1] ?? null;
 }
 
+function extractApiMessage(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart < 0) return null;
+  try {
+    const payload = JSON.parse(error.message.slice(jsonStart)) as { message?: unknown };
+    return typeof payload.message === "string" && payload.message.trim().length > 0
+      ? payload.message.trim()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function extractConflictEmployees(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
   const match = error.message.match(/"conflictEmployees"\s*:\s*(\[[^\]]*\])/);
@@ -104,6 +139,18 @@ function extractEmployeeRemovalConflicts(error: unknown): AbsenceEmployeeRemoval
   try {
     const payload = JSON.parse(error.message.slice(jsonStart)) as { employeeRemovalConflicts?: AbsenceEmployeeRemovalConflict[] };
     return Array.isArray(payload.employeeRemovalConflicts) ? payload.employeeRemovalConflicts : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractWeekPlanningRemovalConflicts(error: unknown): AbsenceWeekPlanningRemovalConflict[] | null {
+  if (!(error instanceof Error)) return null;
+  const jsonStart = error.message.indexOf("{");
+  if (jsonStart < 0) return null;
+  try {
+    const payload = JSON.parse(error.message.slice(jsonStart)) as { weekPlanningRemovalConflicts?: AbsenceWeekPlanningRemovalConflict[] };
+    return Array.isArray(payload.weekPlanningRemovalConflicts) ? payload.weekPlanningRemovalConflicts : null;
   } catch {
     return null;
   }
@@ -165,7 +212,10 @@ export function EmployeeAppointmentAbsencesPanel({
     await queryClient.invalidateQueries({
       predicate: (query) => {
         const firstKey = Array.isArray(query.queryKey) ? query.queryKey[0] : null;
-        return firstKey === "calendarAppointments" || firstKey === "employees-page-appointments";
+        return firstKey === "calendarAppointments"
+          || firstKey === "employees-page-appointments"
+          || firstKey === "tour-week-planning"
+          || (typeof firstKey === "string" && firstKey.includes("/week-employees"));
       },
     });
   };
@@ -177,9 +227,10 @@ export function EmployeeAppointmentAbsencesPanel({
   ) => {
     const code = extractApiCode(error);
     if (code === "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL" && context) {
-      const conflicts = extractEmployeeRemovalConflicts(error);
-      if (conflicts && conflicts.length > 0) {
-        setPendingEmployeeRemovalConfirmation({ ...context, conflicts });
+      const appointmentConflicts = extractEmployeeRemovalConflicts(error) ?? [];
+      const weekPlanningConflicts = extractWeekPlanningRemovalConflicts(error) ?? [];
+      if (appointmentConflicts.length > 0 || weekPlanningConflicts.length > 0) {
+        setPendingEmployeeRemovalConfirmation({ ...context, appointmentConflicts, weekPlanningConflicts });
         return;
       }
     }
@@ -200,6 +251,22 @@ export function EmployeeAppointmentAbsencesPanel({
       });
       return;
     }
+    if (code === "PAST_APPOINTMENT_READONLY") {
+      toast({
+        title: `${action} nicht möglich`,
+        description: "Vollständig vergangene Abwesenheiten können nicht geändert werden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (code === "BUSINESS_CONFLICT") {
+      toast({
+        title: `${action} nicht möglich`,
+        description: extractApiMessage(error) ?? "Die Abwesenheit kann wegen eines fachlichen Konflikts nicht gespeichert werden.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (code === "FORBIDDEN") {
       toast({ title: `${action} nicht erlaubt`, variant: "destructive" });
       return;
@@ -208,13 +275,15 @@ export function EmployeeAppointmentAbsencesPanel({
   };
 
   const createMutation = useMutation({
-    mutationFn: async ({ state, confirmedEmployeeRemovalAppointments }: {
+    mutationFn: async ({ state, confirmedEmployeeRemovalAppointments, confirmedWeekPlanningRemovals }: {
       state: AbsenceFormState;
       confirmedEmployeeRemovalAppointments?: Array<{ appointmentId: number; version: number }>;
+      confirmedWeekPlanningRemovals?: Array<{ assignmentId: number; tourId: number; isoYear: number; isoWeek: number }>;
     }) => {
       const response = await apiRequest("POST", `/api/employees/${employeeId}/absence-appointments`, {
         ...toPayload(state),
         ...(confirmedEmployeeRemovalAppointments ? { confirmedEmployeeRemovalAppointments } : {}),
+        ...(confirmedWeekPlanningRemovals ? { confirmedWeekPlanningRemovals } : {}),
       });
       return response.json() as Promise<EmployeeAppointmentAbsenceResponse>;
     },
@@ -227,15 +296,17 @@ export function EmployeeAppointmentAbsencesPanel({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ item, state, confirmedEmployeeRemovalAppointments }: {
+    mutationFn: async ({ item, state, confirmedEmployeeRemovalAppointments, confirmedWeekPlanningRemovals }: {
       item: EmployeeAppointmentAbsenceResponse;
       state: AbsenceFormState;
       confirmedEmployeeRemovalAppointments?: Array<{ appointmentId: number; version: number }>;
+      confirmedWeekPlanningRemovals?: Array<{ assignmentId: number; tourId: number; isoYear: number; isoWeek: number }>;
     }) => {
       const response = await apiRequest("PUT", `/api/employees/${employeeId}/absence-appointments/${item.id}`, {
         ...toPayload(state),
         version: item.version,
         ...(confirmedEmployeeRemovalAppointments ? { confirmedEmployeeRemovalAppointments } : {}),
+        ...(confirmedWeekPlanningRemovals ? { confirmedWeekPlanningRemovals } : {}),
       });
       return response.json() as Promise<EmployeeAppointmentAbsenceResponse>;
     },
@@ -279,20 +350,28 @@ export function EmployeeAppointmentAbsencesPanel({
 
   const confirmEmployeeRemovalAndSave = () => {
     if (!pendingEmployeeRemovalConfirmation) return;
-    const confirmedEmployeeRemovalAppointments = pendingEmployeeRemovalConfirmation.conflicts.map((conflict) => ({
+    const confirmedEmployeeRemovalAppointments = pendingEmployeeRemovalConfirmation.appointmentConflicts.map((conflict) => ({
       appointmentId: conflict.id,
       version: conflict.version,
+    }));
+    const confirmedWeekPlanningRemovals = pendingEmployeeRemovalConfirmation.weekPlanningConflicts.map((conflict) => ({
+      assignmentId: conflict.assignmentId,
+      tourId: conflict.tourId,
+      isoYear: conflict.isoYear,
+      isoWeek: conflict.isoWeek,
     }));
     if (pendingEmployeeRemovalConfirmation.kind === "create") {
       createMutation.mutate({
         state: pendingEmployeeRemovalConfirmation.state,
         confirmedEmployeeRemovalAppointments,
+        confirmedWeekPlanningRemovals,
       });
     } else {
       updateMutation.mutate({
         item: pendingEmployeeRemovalConfirmation.item,
         state: pendingEmployeeRemovalConfirmation.state,
         confirmedEmployeeRemovalAppointments,
+        confirmedWeekPlanningRemovals,
       });
     }
     setPendingEmployeeRemovalConfirmation(null);
@@ -511,30 +590,59 @@ export function EmployeeAppointmentAbsencesPanel({
       >
         <AlertDialogContent data-testid="dialog-absence-employee-removal-confirmation">
           <AlertDialogHeader>
-            <AlertDialogTitle>Mitarbeiter aus Terminen entfernen?</AlertDialogTitle>
+            <AlertDialogTitle>Mitarbeiter aus Planung entfernen?</AlertDialogTitle>
             <AlertDialogDescription>
               Für den gewählten Zeitraum bestehen bereits Termine dieses Mitarbeiters. Der Mitarbeiter wird aus diesen Terminen entfernt; die Termine bleiben in ihrer bisherigen Tour.
             </AlertDialogDescription>
+            <p className="text-sm text-muted-foreground">
+              Betroffene Tour-KW-Planungen werden ebenfalls entfernt.
+            </p>
           </AlertDialogHeader>
-          <div className="max-h-72 overflow-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Datum</TableHead>
-                  <TableHead>Termin</TableHead>
-                  <TableHead>Kunde</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(pendingEmployeeRemovalConfirmation?.conflicts ?? []).map((conflict) => (
-                  <TableRow key={conflict.id} data-testid={`absence-employee-removal-conflict-${conflict.id}`}>
-                    <TableCell>{formatListDateRange(conflict.startDate, conflict.endDate)}</TableCell>
-                    <TableCell>{conflict.projectName || conflict.description || "-"}</TableCell>
-                    <TableCell>{conflict.customer.fullName ?? conflict.customer.company ?? conflict.customer.customerNumber}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="max-h-80 space-y-3 overflow-auto">
+            {(pendingEmployeeRemovalConfirmation?.appointmentConflicts.length ?? 0) > 0 ? (
+              <div className="rounded-md border border-border" data-testid="absence-employee-removal-appointments">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Datum</TableHead>
+                      <TableHead>Termin</TableHead>
+                      <TableHead>Kunde</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(pendingEmployeeRemovalConfirmation?.appointmentConflicts ?? []).map((conflict) => (
+                      <TableRow key={conflict.id} data-testid={`absence-employee-removal-conflict-${conflict.id}`}>
+                        <TableCell>{formatListDateRange(conflict.startDate, conflict.endDate)}</TableCell>
+                        <TableCell>{conflict.projectName || conflict.description || "-"}</TableCell>
+                        <TableCell>{conflict.customer.fullName ?? conflict.customer.company ?? conflict.customer.customerNumber}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : null}
+            {(pendingEmployeeRemovalConfirmation?.weekPlanningConflicts.length ?? 0) > 0 ? (
+              <div className="rounded-md border border-border" data-testid="absence-employee-removal-week-planning">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>KW</TableHead>
+                      <TableHead>Zeitraum</TableHead>
+                      <TableHead>Tour</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(pendingEmployeeRemovalConfirmation?.weekPlanningConflicts ?? []).map((conflict) => (
+                      <TableRow key={conflict.assignmentId} data-testid={`absence-week-planning-removal-conflict-${conflict.assignmentId}`}>
+                        <TableCell>{`KW ${String(conflict.isoWeek).padStart(2, "0")} / ${conflict.isoYear}`}</TableCell>
+                        <TableCell>{formatListDateRange(conflict.weekStartDate, conflict.weekEndDate)}</TableCell>
+                        <TableCell>{conflict.tourName}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : null}
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Abbrechen</AlertDialogCancel>

@@ -14,6 +14,8 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [05.05.26 - FT-33: Abwesenheiten entfernen Mitarbeiter aus Tour-KW-Planungen](05-05-26-ft-33-abwesenheiten-kw-planungsabzug.md)
+- [05.05.26 - FT-04: Tour-KW-Settings getrennt](05-05-26-tour-kw-settings-trennung.md)
 - [05.05.26 - FT-33: Abwesenheiten entfernen Mitarbeiter aus kollidierenden Terminen](05-05-26-ft-33-abwesenheiten-mitarbeiterentfernung.md)
 - [05.05.26 - FT-04: Tour-KW-View Notizen und Tour-Lanes](05-05-26-tour-kw-view-notizen-lanes.md)
 - [04.05.26 - FT-04: Tour-KW-View Layout vereinfachen](04-05-26-tour-kw-view-layout-nacharbeit.md)

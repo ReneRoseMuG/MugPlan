@@ -119,7 +119,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     || effectiveUserRole === "DISPONENT";
   const inlineNotesSetting = useSetting("calendar.weekInlineNotes.visible");
   const showInlineNotes = Boolean(inlineNotesSetting);
-  const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
+  const weekLanesCollapsedSetting = useSetting("tourWeekPlanning.weekLanes.isCollapsed");
   const areWeekLanesCollapsed = Boolean(weekLanesCollapsedSetting);
 
   const setInlineNotesVisible = (visible: boolean) => {
@@ -138,7 +138,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const setWeekLanesCollapsed = (collapsed: boolean) => {
     void setSetting({
-      key: "calendar.weekLanes.isCollapsed",
+      key: "tourWeekPlanning.weekLanes.isCollapsed",
       scopeType: "USER",
       value: collapsed,
     }).catch(() => {

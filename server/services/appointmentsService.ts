@@ -142,7 +142,11 @@ function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWe
   return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
 }
 
-async function assertTargetTourWeekWritable(tourId: number | null | undefined, startDateText: string): Promise<void> {
+async function assertTargetTourWeekWritable(
+  tourId: number | null | undefined,
+  startDateText: string,
+  options?: { allowAbsenceTour?: boolean },
+): Promise<void> {
   if (tourId == null) return;
   const startDate = parseDateOnly(startDateText);
   const isoYear = getISOWeekYear(startDate);
@@ -152,6 +156,9 @@ async function assertTargetTourWeekWritable(tourId: number | null | undefined, s
   }
 
   const tour = await toursRepository.getTour(tourId);
+  if (options?.allowAbsenceTour && isAbsenceTourName(tour?.name)) {
+    return;
+  }
   throw new AppointmentError(formatBlockedTourWeekMessage(tour?.name, isoWeek), 409, "BUSINESS_CONFLICT");
 }
 
@@ -641,15 +648,17 @@ export async function createAppointment(
     employeeIds?: number[];
   },
   roleKey?: CanonicalRoleKey,
-  options?: { allowAbsenceWorkflow?: boolean },
+  options?: { allowAbsenceWorkflow?: boolean; allowHistoricalInput?: boolean },
 ) {
   logDebug(`${logPrefix} create request projectId=${data.projectId ?? null} customerId=${data.customerId ?? null}`);
   validateDateRange(data.startDate, data.endDate ?? null);
   assertNotHistoricalInput(
     { startDate: data.startDate, startTime: data.startTime ?? null },
-    { allowHistorical: roleKey === "ADMIN" },
+    { allowHistorical: roleKey === "ADMIN" || options?.allowHistoricalInput },
   );
-  await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate);
+  await assertTargetTourWeekWritable(data.tourId ?? null, data.startDate, {
+    allowAbsenceTour: options?.allowAbsenceWorkflow,
+  });
 
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
   const startDate = parseDateOnly(data.startDate);
@@ -750,7 +759,7 @@ export async function updateAppointment(
     employeeIds?: number[];
   },
   roleKey: CanonicalRoleKey,
-  options?: { allowAbsenceWorkflow?: boolean },
+  options?: { allowAbsenceWorkflow?: boolean; allowHistoricalInput?: boolean },
 ) {
   validateDateRange(data.startDate, data.endDate ?? null);
   const employeeIds = normalizeEmployeeIds(data.employeeIds);
@@ -775,20 +784,23 @@ export async function updateAppointment(
     const parkplatzTourId = await getParkplatzTourId();
     await assertAppointmentWriteAllowed(appointmentId, existing, {
       parkplatzTourId,
-      allowHistorical: allowsHistoricalAppointmentMutation(roleKey),
+      allowHistorical: allowsHistoricalAppointmentMutation(roleKey) || options?.allowHistoricalInput,
       historicalMessage: roleKey !== "ADMIN"
         ? "Termin ist ab dem Starttag gesperrt"
         : "Historische Termine können nicht geändert werden",
     });
     const existingStartDate = toDateOnlyString(existing.startDate);
     if (nextTourId !== existing.tourId || existingStartDate !== data.startDate) {
-      await assertTargetTourWeekWritable(nextTourId, data.startDate);
+      await assertTargetTourWeekWritable(nextTourId, data.startDate, {
+        allowAbsenceTour: options?.allowAbsenceWorkflow,
+      });
     }
     assertNotHistoricalInput(
       { startDate: data.startDate, startTime: data.startTime ?? null },
       {
         allowHistorical:
           allowsHistoricalAppointmentMutation(roleKey)
+          || options?.allowHistoricalInput
           || allowsHistoricalParkplatzMutation(existing.tourId, nextTourId, parkplatzTourId),
       },
     );

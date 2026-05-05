@@ -181,6 +181,12 @@ const employeeAppointmentAbsenceInputSchema = z.object({
     appointmentId: z.number().int().positive(),
     version: z.number().int().min(1),
   })).optional(),
+  confirmedWeekPlanningRemovals: z.array(z.object({
+    assignmentId: z.number().int().positive(),
+    tourId: z.number().int().positive(),
+    isoYear: z.number().int().min(1),
+    isoWeek: z.number().int().min(1).max(53),
+  })).optional(),
 }).strict();
 
 const activeScopeSchema = z.enum(["active", "inactive", "all"]).default("active");
@@ -328,6 +334,16 @@ const tourWeekEmployeesWeekSchema = z.object({
   appointmentsCount: z.number().int().min(0),
   notesCount: z.number().int().min(0),
   employees: z.array(tourWeekEmployeeMemberSchema),
+});
+
+const employeeAbsenceWeekPlanningRemovalConflictSchema = z.object({
+  assignmentId: z.number().int().positive(),
+  tourId: z.number().int().positive(),
+  tourName: z.string(),
+  isoYear: z.number().int().min(1),
+  isoWeek: z.number().int().min(1).max(53),
+  weekStartDate: z.string(),
+  weekEndDate: z.string(),
 });
 
 const tourWeekPlanningViewSchema = z.object({
@@ -2666,6 +2682,7 @@ export const api = {
             code: z.string(),
             message: z.string().optional(),
             employeeRemovalConflicts: z.array(entityAppointmentItemSchema).optional(),
+            weekPlanningRemovalConflicts: z.array(employeeAbsenceWeekPlanningRemovalConflictSchema).optional(),
           }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
@@ -2684,6 +2701,7 @@ export const api = {
             code: z.string(),
             message: z.string().optional(),
             employeeRemovalConflicts: z.array(entityAppointmentItemSchema).optional(),
+            weekPlanningRemovalConflicts: z.array(employeeAbsenceWeekPlanningRemovalConflictSchema).optional(),
           }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },

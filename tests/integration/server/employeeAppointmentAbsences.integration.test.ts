@@ -11,7 +11,10 @@
  * Die FT-33-Abwesenheitslogik gegen echte Service- und DB-Pfade absichern.
  */
 import { beforeEach, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 
+import { db } from "../../../server/db";
 import {
   ABSENCE_CUSTOMER_ADDRESS_LINE1,
   ABSENCE_CUSTOMER_CITY,
@@ -28,13 +31,59 @@ import {
   EmployeeAppointmentAbsencesError,
   createEmployeeAppointmentAbsence,
   listEmployeeAppointmentAbsences,
+  updateEmployeeAppointmentAbsence,
 } from "../../../server/services/employeeAppointmentAbsencesService";
+import { tourWeekEmployees } from "../../../shared/schema";
 import {
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixtureWithOverrides,
+  getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 import { listTours } from "../../../server/services/toursService";
+import * as tourWeeksService from "../../../server/services/tourWeeksService";
+
+function resolveIsoWeek(date: string) {
+  const parsedDate = parseISO(date);
+  return {
+    isoYear: getISOWeekYear(parsedDate),
+    isoWeek: getISOWeek(parsedDate),
+  };
+}
+
+async function getTourOne() {
+  const tour = (await listTours()).find((entry) => entry.name === "Tour 1");
+  expect(tour?.id).toBeGreaterThan(0);
+  return tour!;
+}
+
+async function createWeekAssignment(params: {
+  tourId: number;
+  employeeId: number;
+  date: string;
+}) {
+  const isoWeek = resolveIsoWeek(params.date);
+  const insertResult = await db.insert(tourWeekEmployees).values({
+    tourId: params.tourId,
+    isoYear: isoWeek.isoYear,
+    isoWeek: isoWeek.isoWeek,
+    employeeId: params.employeeId,
+  });
+  return {
+    assignmentId: Number((insertResult as any)?.[0]?.insertId ?? (insertResult as any)?.insertId),
+    tourId: params.tourId,
+    isoYear: isoWeek.isoYear,
+    isoWeek: isoWeek.isoWeek,
+  };
+}
+
+async function listWeekAssignmentIdsForEmployee(employeeId: number): Promise<number[]> {
+  const rows = await db
+    .select({ id: tourWeekEmployees.id })
+    .from(tourWeekEmployees)
+    .where(eq(tourWeekEmployees.employeeId, employeeId));
+  return rows.map((row) => Number(row.id)).sort((left, right) => left - right);
+}
 
 describe("FT33 integration: Employee absence appointments", () => {
   beforeEach(async () => {
@@ -147,6 +196,197 @@ describe("FT33 integration: Employee absence appointments", () => {
     expect(updatedRegular?.tourId).toBe(regular!.tourId);
     expect(updatedRegular?.appointmentTags.map((tag) => tag.name)).not.toContain("Geparkt");
     expect(updatedRegular?.version).toBe(regular!.version + 1);
+  });
+
+  it("allows dispatchers to create an ongoing absence that started yesterday and removes all confirmed current-week assignments", async () => {
+    const employee = await createEmployeeFixture("ABS-ONGOING-EMP");
+    const customer = await createCustomerFixture("ABS-ONGOING-CUST");
+    const tour = await getTourOne();
+    const weekAssignment = await createWeekAssignment({
+      tourId: tour.id,
+      employeeId: employee.id,
+      date: getRelativeBerlinDate(0),
+    });
+    const regularAppointments: Array<Awaited<ReturnType<typeof appointmentsService.createAppointment>>> = [];
+    for (const offset of [0, 1, 2]) {
+      regularAppointments.push(await appointmentsService.createAppointment({
+        customerId: customer.id,
+        tourId: tour.id,
+        startDate: getRelativeBerlinDate(offset),
+        startTime: "10:00:00",
+        employeeIds: [employee.id],
+      }, "ADMIN"));
+    }
+
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: getRelativeBerlinDate(-1),
+      endDate: getRelativeBerlinDate(2),
+      note: `ABS-ONGOING-${employee.id}`,
+      confirmedEmployeeRemovalAppointments: regularAppointments.map((appointment) => ({
+        appointmentId: appointment!.id,
+        version: appointment!.version,
+      })),
+      confirmedWeekPlanningRemovals: [weekAssignment],
+    }, "DISPONENT");
+
+    expect(created.startDate).toBe(getRelativeBerlinDate(-1));
+    expect(created.endDate).toBe(getRelativeBerlinDate(2));
+    expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
+
+    for (const regular of regularAppointments) {
+      const updatedRegular = await appointmentsService.getAppointmentDetails(regular!.id);
+      expect(updatedRegular?.employees).toEqual([]);
+      expect(updatedRegular?.tourId).toBe(regular!.tourId);
+      expect(updatedRegular?.appointmentTags.map((tag) => tag.name)).not.toContain("Geparkt");
+    }
+    await expect(listWeekAssignmentIdsForEmployee(employee.id)).resolves.toEqual([]);
+  });
+
+  it("requires confirmation and leaves Tour-KW planning unchanged when the dialog is not confirmed", async () => {
+    const employee = await createEmployeeFixture("ABS-WEEK-NOCONFIRM-EMP");
+    const tour = await getTourOne();
+    const targetDate = getRelativeBerlinDate(8);
+    const weekAssignment = await createWeekAssignment({
+      tourId: tour.id,
+      employeeId: employee.id,
+      date: targetDate,
+    });
+
+    await expect(createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: targetDate,
+      endDate: getRelativeBerlinDate(10),
+      note: `ABS-WEEK-NOCONFIRM-${employee.id}`,
+    }, "DISPONENT")).rejects.toMatchObject({
+      code: "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL",
+      weekPlanningRemovalConflicts: [
+        expect.objectContaining({
+          assignmentId: weekAssignment.assignmentId,
+          tourId: tour.id,
+          isoYear: weekAssignment.isoYear,
+          isoWeek: weekAssignment.isoWeek,
+        }),
+      ],
+    });
+
+    await expect(listEmployeeAppointmentAbsences(employee.id, "DISPONENT")).resolves.toEqual([]);
+    await expect(listWeekAssignmentIdsForEmployee(employee.id)).resolves.toEqual([weekAssignment.assignmentId]);
+  });
+
+  it("allows admins to remove confirmed future Tour-KW planning while creating an absence", async () => {
+    const employee = await createEmployeeFixture("ABS-WEEK-ADMIN-EMP");
+    const tour = await getTourOne();
+    const targetDate = getRelativeBerlinDate(15);
+    const weekAssignment = await createWeekAssignment({
+      tourId: tour.id,
+      employeeId: employee.id,
+      date: targetDate,
+    });
+
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: targetDate,
+      endDate: getRelativeBerlinDate(16),
+      note: `ABS-WEEK-ADMIN-${employee.id}`,
+      confirmedWeekPlanningRemovals: [weekAssignment],
+    }, "ADMIN");
+
+    expect(created.id).toBeGreaterThan(0);
+    expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
+    await expect(listWeekAssignmentIdsForEmployee(employee.id)).resolves.toEqual([]);
+  });
+
+  it("requires Tour-KW confirmation again when an existing absence is expanded into a planned week", async () => {
+    const employee = await createEmployeeFixture("ABS-WEEK-UPDATE-EMP");
+    const tour = await getTourOne();
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: getRelativeBerlinDate(21),
+      endDate: getRelativeBerlinDate(21),
+      note: `ABS-WEEK-UPDATE-${employee.id}`,
+    }, "ADMIN");
+    const targetDate = getRelativeBerlinDate(28);
+    const weekAssignment = await createWeekAssignment({
+      tourId: tour.id,
+      employeeId: employee.id,
+      date: targetDate,
+    });
+
+    await expect(updateEmployeeAppointmentAbsence(employee.id, created.id, {
+      absenceType: "vacation",
+      startDate: created.startDate,
+      endDate: targetDate,
+      note: `ABS-WEEK-UPDATE-EXPANDED-${employee.id}`,
+      version: created.version,
+    }, "ADMIN")).rejects.toMatchObject({
+      code: "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL",
+      weekPlanningRemovalConflicts: [
+        expect.objectContaining({ assignmentId: weekAssignment.assignmentId }),
+      ],
+    });
+
+    const updated = await updateEmployeeAppointmentAbsence(employee.id, created.id, {
+      absenceType: "vacation",
+      startDate: created.startDate,
+      endDate: targetDate,
+      note: `ABS-WEEK-UPDATE-EXPANDED-${employee.id}`,
+      version: created.version,
+      confirmedWeekPlanningRemovals: [weekAssignment],
+    }, "ADMIN");
+
+    expect(updated.endDate).toBe(targetDate);
+    await expect(listWeekAssignmentIdsForEmployee(employee.id)).resolves.toEqual([]);
+  });
+
+  it("ignores blocked week planning for the absence system tour when dispatchers create a future absence", async () => {
+    const employee = await createEmployeeFixture("ABS-BLOCKED-WEEK-EMP");
+    const absenceTour = (await listTours()).find((tour) => tour.name === ABSENCE_TOUR_NAME);
+    expect(absenceTour?.id).toBeGreaterThan(0);
+    const targetDate = getRelativeBerlinDate(7);
+    const parsedTargetDate = parseISO(targetDate);
+    await tourWeeksService.blockTourWeek(absenceTour!.id, {
+      isoYear: getISOWeekYear(parsedTargetDate),
+      isoWeek: getISOWeek(parsedTargetDate),
+    }, "ADMIN");
+
+    const created = await createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: targetDate,
+      endDate: getRelativeBerlinDate(9),
+      note: `ABS-BLOCKED-WEEK-${employee.id}`,
+    }, "DISPONENT");
+
+    expect(created.id).toBeGreaterThan(0);
+    expect(created.tourName).toBe(ABSENCE_TOUR_NAME);
+    expect(created.employees.map((entry) => entry.id)).toEqual([employee.id]);
+  });
+
+  it("rejects fully historical dispatcher absences before removing employees from confirmed appointments", async () => {
+    const employee = await createEmployeeFixture("ABS-PAST-EMP");
+    const customer = await createCustomerFixture("ABS-PAST-CUST");
+    const regular = await appointmentsService.createAppointment({
+      customerId: customer.id,
+      startDate: getRelativeBerlinDate(-2),
+      startTime: null,
+      employeeIds: [employee.id],
+    }, "ADMIN");
+
+    await expect(createEmployeeAppointmentAbsence(employee.id, {
+      absenceType: "vacation",
+      startDate: getRelativeBerlinDate(-3),
+      endDate: getRelativeBerlinDate(-1),
+      note: `ABS-PAST-${employee.id}`,
+      confirmedEmployeeRemovalAppointments: [
+        { appointmentId: regular!.id, version: regular!.version },
+      ],
+    }, "DISPONENT")).rejects.toMatchObject({
+      code: "PAST_APPOINTMENT_READONLY",
+    });
+
+    const unchangedRegular = await appointmentsService.getAppointmentDetails(regular!.id);
+    expect(unchangedRegular?.employees.map((entry) => entry.id)).toEqual([employee.id]);
+    expect(unchangedRegular?.version).toBe(regular!.version);
   });
 
   it("rejects stale employee-removal confirmations before creating the absence", async () => {

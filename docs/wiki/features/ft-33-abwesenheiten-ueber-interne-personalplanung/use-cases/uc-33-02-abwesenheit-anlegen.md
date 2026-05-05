@@ -33,9 +33,14 @@ Neue Abwesenheit für einen Mitarbeiter erfassen
 
 - Kollidierende reguläre Termine existieren: System liefert die betroffenen Termine mit Versionen zurück und fordert eine ausdrückliche Bestätigung zur Entfernung des Mitarbeiters aus diesen Terminen an.
 - Akteur bestätigt die Entfernung: System entfernt nur den betroffenen Mitarbeiter aus den bestätigten regulären Terminen und speichert danach die Abwesenheit. Die Termine bleiben in ihrer bisherigen Tour.
+- Zeitraum beginnt vor dem aktuellen Tag, läuft aber am aktuellen Tag noch oder reicht in die Zukunft: Disponent darf die Abwesenheit erfassen.
+- Zeitraum liegt vollständig in der Vergangenheit: System blockiert die Erfassung für Disponenten und verändert keine regulären Termine.
 - Akteur bricht ab oder bestätigt nicht alle erforderlichen Versionen: System speichert keine Abwesenheit und verändert keine regulären Termine.
 - Konflikt mit einer bestehenden Abwesenheit oder ein Versionskonflikt liegt vor: System blockiert und meldet den Konflikt.
+- Betroffene Tour-KW-Planungen existieren: System liefert die betroffenen KW-Planungen zur Bestätigung zurück und fordert eine ausdrückliche Bestätigung zur Entfernung des Mitarbeiters aus diesen KW-Planungen an.
+- Akteur bestätigt die KW-Entfernung: System entfernt nur die betroffenen Tour-KW-Mitarbeiterzuordnungen und speichert danach die Abwesenheit.
+- Akteur bricht bei KW-Konflikten ab: System speichert keine Abwesenheit und verändert keine Tour-KW-Planungen.
 
 ## Ergebnis
 
-Abwesenheit ist als interner Termin gespeichert. Mitarbeiter ist im Zeitraum als nicht verfügbar markiert. Bestätigte kollidierende reguläre Termine bleiben bestehen und enthalten den abwesenden Mitarbeiter nicht mehr.
+Abwesenheit ist als interner Termin gespeichert. Mitarbeiter ist im Zeitraum als nicht verfügbar markiert. Bestätigte kollidierende reguläre Termine bleiben bestehen und enthalten den abwesenden Mitarbeiter nicht mehr. Bestätigte betroffene Tour-KW-Planungen enthalten den Mitarbeiter nicht mehr.

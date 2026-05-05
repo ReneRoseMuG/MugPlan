@@ -145,8 +145,8 @@ export function TourWeekPlanningView({
   const { setSetting } = useSettings();
   const [windowStart, setWindowStart] = useState(resolveInitialWeekStart);
   const [pendingWeekSelection, setPendingWeekSelection] = useState<PendingWeekSelection | null>(null);
-  const persistedIsCollapsed = useSetting("calendar.weekLanes.isCollapsed");
-  const persistedExpandedLaneIdRaw = useSetting("calendar.weekLanes.expandedLaneId");
+  const persistedIsCollapsed = useSetting("tourWeekPlanning.weekLanes.isCollapsed");
+  const persistedExpandedLaneIdRaw = useSetting("tourWeekPlanning.weekLanes.expandedLaneId");
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const { fromDate, toDate } = useMemo(() => buildWeekRequestWindow(windowStart), [windowStart]);
 
@@ -224,7 +224,7 @@ export function TourWeekPlanningView({
 
   const persistExpandedLaneId = async (laneId: string) => {
     await setSetting({
-      key: "calendar.weekLanes.expandedLaneId",
+      key: "tourWeekPlanning.weekLanes.expandedLaneId",
       scopeType: "USER",
       value: laneId,
     });

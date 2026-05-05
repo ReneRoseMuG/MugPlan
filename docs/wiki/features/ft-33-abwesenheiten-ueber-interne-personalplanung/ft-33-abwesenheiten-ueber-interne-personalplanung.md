@@ -69,11 +69,17 @@ Beim Anlegen und Bearbeiten setzt der Server automatisch den bestehenden Seed-Ku
 
 Der einem Abwesenheitstermin zugewiesene Mitarbeiter gilt im Terminzeitraum als nicht verfügbar. Die bestehende Termin-Überschneidungsprüfung prüft reguläre Termine gegen Abwesenheitstermine.
 
+Disponenten dürfen Abwesenheiten auch dann erfassen oder bearbeiten, wenn der Zeitraum bereits vor dem aktuellen Tag beginnt, solange die Abwesenheit am aktuellen Tag noch läuft oder in die Zukunft reicht. Vollständig vergangene Abwesenheiten bleiben für Disponenten schreibgeschützt. Administratoren behalten die bestehende historische Ausnahme.
+
 Wenn beim Anlegen oder Bearbeiten einer Abwesenheit bereits reguläre Termine desselben Mitarbeiters im Zeitraum liegen, liefert der Server die betroffenen Termine zur Bestätigung zurück. Nach ausdrücklicher Bestätigung wird nur der betroffene Mitarbeiter aus diesen regulären Terminen entfernt und die Abwesenheit anschließend gespeichert. Die Termine selbst bleiben in ihrer bisherigen Tour, werden nicht auf den Parkplatz verschoben und erhalten keinen Parken-Tag. Ohne Bestätigung bleibt der Bestand unverändert.
+
+Wenn der Mitarbeiter in einer vom Abwesenheitszeitraum betroffenen Tour-KW-Planung eingetragen ist, liefert der Server diese KW-Planungen ebenfalls zur Bestätigung zurück. Nach ausdrücklicher Bestätigung wird nur die Tour-KW-Mitarbeiterzuordnung entfernt. Ohne Bestätigung bleiben Terminzuweisungen, Tour-KW-Planungen und Abwesenheit unverändert.
 
 **R-04 Keine Wochenplanungsübernahme**
 
 Für die Systemtour **Abwesenheiten** darf keine automatische Mitarbeiterübernahme aus der Tour- oder Kalenderwochenplanung ausgeführt werden.
+
+Tour-KW-Sperren der Systemtour **Abwesenheiten** blockieren den dedizierten Abwesenheitsflow nicht. Abwesenheiten sind keine reguläre Tourenplanung und dürfen deshalb nicht durch Wochenplanungssperren dieser Systemtour verhindert werden.
 
 **R-05 Tag-Wechsel kontrolliert**
 

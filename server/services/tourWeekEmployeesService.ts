@@ -225,6 +225,14 @@ async function assertWeekPlanningWritable(
   }
 }
 
+export async function assertWeekEmployeeAssignmentRemovalAllowed(
+  assignment: tourWeekEmployeesRepository.TourWeekEmployeeAssignmentRow,
+  roleKey?: WeekPlanningRoleKey,
+): Promise<void> {
+  assertWeekEditable(assignment.isoYear, assignment.isoWeek, roleKey);
+  await assertWeekPlanningWritable(assignment.tourId, assignment.isoYear, assignment.isoWeek, assignment.tourName);
+}
+
 function formatBlockedTourWeekMessage(tourName: string | null | undefined, isoWeek: number): string {
   const label = tourName?.trim() ? tourName.trim() : "Tour";
   return `Für ${label}/KW ${isoWeek} wurde die Terminplanung gesperrt.`;
