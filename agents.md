@@ -454,6 +454,22 @@ Für neue oder grundlegend umgebaute Tests gilt Laufzeit ausdrücklich als gleic
 - Browser-Tests sollen vorhandene Suite-Helfer, echte Suite-Pfade und die Registry-basierte Baseline-Wahl verwenden, statt ad hoc eigene Reset-Logik aufzubauen
 - Neue Tests dürfen die Gesamtlaufzeit nicht still verschlechtern, nur weil sie fachlich korrekt sind; wenn ein langsameres Design unvermeidbar ist, muss dies im Plan ausdrücklich benannt und begründet werden
 
+### Browser-Test-Beschleunigung und Isolation
+
+Browser-Tests dürfen nicht durch Weglassen oder Abschwächen von DB-Reset, Storage-Clear, Browser-Context-Isolation, Session-Clear oder vergleichbaren Isolationsmechanismen beschleunigt werden, solange kein expliziter Isolationsnachweis vorliegt.
+
+Ein Isolationsnachweis muss mindestens belegen:
+
+- welche Daten jeder Test anlegt
+- dass spätere Tests keine fremden Daten sehen oder auswerten
+- dass Assertions über eindeutige IDs, Tokens oder Testdaten laufen
+- dass Stördaten oder Canaries den Test nicht fälschlich grün lassen
+- dass Storage-, Session- und Rollen-Zustände nicht zwischen Tests driften
+
+Playwright-Parallelisierung ist mit einer gemeinsamen festen Test-DB unzulässig, solange nicht pro Worker eine vollständig getrennte DB, ein getrenntes Schema oder eine gleichwertig harte Isolation eingerichtet ist.
+
+Wenn eine Suite bisher `beforeEach`-Reset nutzt, darf sie nur nach dokumentierter Analyse und erfolgreichem Pilotlauf auf `beforeAll` oder `per-suite` umgestellt werden. Bei Zweifel bleibt harte Isolation Pflicht.
+
 ### Timeout-Regel
 
 Für `npm run test:integration`, `npm run test:e2e` und `npm run test:e2e:browser` ist standardmäßig ein langer Command-Timeout zu verwenden.
