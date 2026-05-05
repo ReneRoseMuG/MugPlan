@@ -1012,7 +1012,7 @@ export async function getAuftragsliste(params: {
   const componentCategoryIdsForReport = new Set(componentCategoriesForReport.map((category) => category.id));
   const eligibleProjectIds = projectMeta.sortedProjectIds.filter((projectId) => {
     const tagState = projectMeta.projectReportTagStateByProjectId.get(projectId) ?? createEmptyProjectReportTagState();
-    return !tagState.hasComplaintTag;
+    return !tagState.hasComplaintTag && !tagState.cancellationTag;
   });
 
   if (eligibleProjectIds.length === 0) {

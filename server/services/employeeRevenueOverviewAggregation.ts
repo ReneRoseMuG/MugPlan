@@ -1,7 +1,7 @@
 import { endOfISOWeek, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import type { Tag } from "@shared/schema";
 import type { EmployeeRevenueOverviewResponse } from "@shared/routes";
-import { isManagedComplaintTagName } from "@shared/appointmentCancellation";
+import { isManagedComplaintTagName, isReservedAppointmentCancellationTagName } from "@shared/appointmentCancellation";
 
 type RawRevenueAppointmentRow = {
   appointment: {
@@ -80,6 +80,12 @@ function hasComplaintTag(tags: Tag[] | undefined): boolean {
   return (tags ?? []).some((tag) => isManagedComplaintTagName(tag.name));
 }
 
+function hasExcludedAppointmentTag(tags: Tag[] | undefined): boolean {
+  return (tags ?? []).some((tag) =>
+    isManagedComplaintTagName(tag.name) || isReservedAppointmentCancellationTagName(tag.name)
+  );
+}
+
 export function buildEmployeeRevenueOverview(params: {
   employeeId: number;
   employeeFullName: string;
@@ -99,7 +105,7 @@ export function buildEmployeeRevenueOverview(params: {
       continue;
     }
 
-    if (hasComplaintTag(params.appointmentTagsByAppointmentId.get(row.appointment.id))) {
+    if (hasExcludedAppointmentTag(params.appointmentTagsByAppointmentId.get(row.appointment.id))) {
       continue;
     }
 

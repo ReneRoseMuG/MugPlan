@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Nur Datensätze mit Projekt, Auftragssumme und ohne Reklamation werden gewertet.
+ * - Nur Datensätze mit Projekt, Auftragssumme und ohne Reklamation oder Storno werden gewertet.
  * - Auftragsnummern werden global dedupliziert; die früheste Terminvariante gewinnt deterministisch.
  * - ISO-Wochen- und ISO-Jahresgrenzen bleiben stabil.
  *
  * Fehlerfälle:
- * - Reklamationen oder fehlende Beträge landen trotzdem in der Umsatzübersicht.
+ * - Reklamationen, Stornos oder fehlende Beträge landen trotzdem in der Umsatzübersicht.
  * - Dubletten blähen Umsatz oder Auftragszähler mehrfach auf.
  * - Jahresgrenzen erzeugen falsche KW/Jahr-Zuordnungen.
  *
@@ -16,6 +16,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { Tag } from "@shared/schema";
+import { RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import { buildEmployeeRevenueOverview } from "../../../server/services/employeeRevenueOverviewAggregation";
 
 function createTag(name: string): Tag {
@@ -131,6 +132,37 @@ describe("employee revenue overview aggregation", () => {
         }),
       ],
     });
+  });
+
+  it("filters cancelled appointments before deduplicating order numbers", () => {
+    const cancellationTag = createTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME);
+    const result = buildEmployeeRevenueOverview({
+      employeeId: 11,
+      employeeFullName: "Storno, Sina",
+      rows: [
+        createRow({ appointmentId: 31, startDate: "2026-04-20", startTime: "08:00", orderNumber: "REV-STORNO-DUP", amount: "500.00" }),
+        createRow({ appointmentId: 32, startDate: "2026-04-27", startTime: "08:00", orderNumber: "REV-STORNO-DUP", amount: "500.00" }),
+      ],
+      appointmentTagsByAppointmentId: new Map([[31, [cancellationTag]]]),
+      projectTagsByProjectId: new Map(),
+    });
+
+    expect(result.weeks).toEqual([
+      expect.objectContaining({
+        isoYear: 2026,
+        isoWeek: 18,
+        weekLabel: "KW 18 / 2026",
+        orderCount: 1,
+        revenueAmount: "500.00",
+        appointments: [
+          expect.objectContaining({
+            appointmentId: 32,
+            startDate: "2026-04-27",
+            orderNumber: "REV-STORNO-DUP",
+          }),
+        ],
+      }),
+    ]);
   });
 
   it("keeps ISO year boundaries and week windows stable", () => {

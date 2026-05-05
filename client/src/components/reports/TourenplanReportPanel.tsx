@@ -481,8 +481,8 @@ export function TourenplanReportPanel({
         title="Tourenplan"
         helpKey="report-tourenplan"
         optionsSlot={(
-          <div className="flex flex-wrap items-start gap-6">
-            <div className="min-w-[210px] rounded-md border border-slate-200 bg-white p-2" data-testid="reports-tourenplan-tour-list">
+          <>
+            <div className="h-full min-w-[210px] rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700" data-testid="reports-tourenplan-tour-list">
               <label className="flex cursor-pointer items-center gap-2 py-1 text-xs font-semibold text-slate-700">
                 <Checkbox
                   checked={allToursSelected}
@@ -513,7 +513,7 @@ export function TourenplanReportPanel({
               </div>
             </div>
 
-            <div className="flex h-full min-h-[190px] w-full max-w-[420px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4" data-testid="reports-tourenplan-filter-box">
+            <div className="flex h-full w-fit flex-col items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700" data-testid="reports-tourenplan-filter-box">
               <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-tourenplan-shortcodes-option">
                 <Checkbox
                   checked={useShortCodes}
@@ -580,7 +580,7 @@ export function TourenplanReportPanel({
               </div>
               {quickRangeOptions}
             </div>
-          </div>
+          </>
         )}
         secondaryOptionsSlot={(
           <ReportPresetControls

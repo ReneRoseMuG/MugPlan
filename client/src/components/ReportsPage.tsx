@@ -5,8 +5,7 @@ import { addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear,
 import { de } from "date-fns/locale";
 import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
 import {
-  MANAGED_REMARKS_TAG_NAME,
-  MANAGED_SPECIAL_MEASURE_TAG_NAME,
+  isProtectedSystemTagName,
   type AppointmentCancellationReportState,
 } from "@shared/appointmentCancellation";
 import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
@@ -230,10 +229,6 @@ const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
 const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 const AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX = 920;
-function normalizeFilterLabel(value: string): string {
-  return value.trim().toLocaleLowerCase("de");
-}
-
 function toTestIdToken(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
 }
@@ -764,9 +759,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   }, [activeComponentCategoryIds, allActiveAuftragslisteComponentCategoryIds, selectedAuftragslisteComponentCategoryIds]);
   const auftragslisteTagOptions = useMemo(
     () => tags
-      .filter((tag) =>
-        normalizeFilterLabel(tag.name) === normalizeFilterLabel(MANAGED_SPECIAL_MEASURE_TAG_NAME)
-        || normalizeFilterLabel(tag.name) === normalizeFilterLabel(MANAGED_REMARKS_TAG_NAME))
+      .filter((tag) => !tag.isDefault && !isProtectedSystemTagName(tag.name))
       .sort((left, right) => left.name.localeCompare(right.name, "de") || left.id - right.id),
     [tags],
   );
@@ -1603,20 +1596,22 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     </button>
                   )}
                   optionsSlot={(
-                    <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-vorlaufliste-shortcodes-option">
-                      <input
-                        type="checkbox"
-                        checked={useVorlauflisteShortCodes}
-                        onChange={(event) => {
-                          const next = event.target.checked;
-                          setUseVorlauflisteShortCodes(next);
-                          void persistVorlauflisteSelection({ useShortCodes: next });
-                        }}
-                        className="h-4 w-4 rounded accent-slate-700"
-                        data-testid="checkbox-reports-vorlaufliste-use-shortcodes"
-                      />
-                      <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-                    </label>
+                    <div className="flex h-full w-fit items-start rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700">
+                      <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-vorlaufliste-shortcodes-option">
+                        <input
+                          type="checkbox"
+                          checked={useVorlauflisteShortCodes}
+                          onChange={(event) => {
+                            const next = event.target.checked;
+                            setUseVorlauflisteShortCodes(next);
+                            void persistVorlauflisteSelection({ useShortCodes: next });
+                          }}
+                          className="h-4 w-4 rounded accent-slate-700"
+                          data-testid="checkbox-reports-vorlaufliste-use-shortcodes"
+                        />
+                        <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+                      </label>
+                    </div>
                   )}
                   secondaryOptionsSlot={(
                     <ReportPresetControls
@@ -1695,20 +1690,22 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                     </button>
                   ) : null}
                   optionsSlot={(
-                    <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-produktionsplanung-shortcodes-option">
-                      <input
-                        type="checkbox"
-                        checked={useProduktionsplanungShortCodes}
-                        onChange={(event) => {
-                          const next = event.target.checked;
-                          setUseProduktionsplanungShortCodes(next);
-                          void persistSelection("produktionsplanung", { useShortCodes: next });
-                        }}
-                        className="h-4 w-4 rounded accent-slate-700"
-                        data-testid="checkbox-reports-produktionsplanung-use-shortcodes"
-                      />
-                      <span className="text-sm text-slate-600">Shortcodes verwenden</span>
-                    </label>
+                    <div className="flex h-full w-fit items-start rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700">
+                      <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-produktionsplanung-shortcodes-option">
+                        <input
+                          type="checkbox"
+                          checked={useProduktionsplanungShortCodes}
+                          onChange={(event) => {
+                            const next = event.target.checked;
+                            setUseProduktionsplanungShortCodes(next);
+                            void persistSelection("produktionsplanung", { useShortCodes: next });
+                          }}
+                          className="h-4 w-4 rounded accent-slate-700"
+                          data-testid="checkbox-reports-produktionsplanung-use-shortcodes"
+                        />
+                        <span className="text-sm text-slate-600">Shortcodes verwenden</span>
+                      </label>
+                    </div>
                   )}
                   secondaryOptionsSlot={(
                     <ReportPresetControls
@@ -1838,7 +1835,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   )}
                   optionsSlot={(
                     <div
-                      className="flex h-full min-h-[190px] w-full max-w-[420px] flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4"
+                      className="flex h-full w-fit flex-col items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700"
                       data-testid="reports-auftragsliste-filter-box"
                     >
                       <label className="flex cursor-pointer items-center gap-2.5" data-testid="reports-auftragsliste-shortcodes-option">
@@ -1873,9 +1870,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                         }}
                         addButtonTestId="button-reports-auftragsliste-add-tag-filter"
                         testIdPrefix="reports-auftragsliste-tag-filter"
-                        className="sm:min-w-0"
+                        className="w-[170px] sm:min-w-0"
                       />
-                      <div className="flex flex-1 flex-col gap-1" data-testid="reports-auftragsliste-sauna-model-filter">
+                      <div className="flex w-[170px] flex-col gap-1" data-testid="reports-auftragsliste-sauna-model-filter">
                         <span className="text-xs text-slate-500">Sauna Modell</span>
                         <Popover open={isAuftragslisteSaunaModelPopoverOpen} onOpenChange={setIsAuftragslisteSaunaModelPopoverOpen}>
                           <PopoverTrigger asChild>

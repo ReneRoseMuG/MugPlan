@@ -3,12 +3,12 @@
  *
  * Abgedeckte Regeln:
  * - Der Endpoint liefert aggregierte Umsatzwochen mit qualifizierten Detailterminen.
- * - Reklamations-Projekte und globale Auftrags-Dubletten werden serverseitig ausgeschlossen.
+ * - Reklamations-Projekte, stornierte Termine und globale Auftrags-Dubletten werden serverseitig ausgeschlossen.
  * - Nicht-Admin bleibt bei inaktiven Mitarbeitenden ausgesperrt, Leserolle darf aktive Daten lesen.
  *
  * Fehlerfälle:
  * - Umsatzsummen oder Wochenzuordnungen sind fachlich falsch.
- * - Reklamationen oder Dubletten tauchen im Payload wieder auf.
+ * - Reklamationen, Stornos oder Dubletten tauchen im Payload wieder auf.
  * - Inaktive Mitarbeitende werden für Nicht-Admin lesbar.
  *
  * Ziel:
@@ -17,12 +17,13 @@
 import type { Express } from "express";
 import type { SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MANAGED_COMPLAINT_TAG_NAME } from "@shared/appointmentCancellation";
+import { MANAGED_COMPLAINT_TAG_NAME, RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME } from "@shared/appointmentCancellation";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
 import * as employeesService from "../../../server/services/employeesService";
 import {
   attachProjectTagFixture,
+  attachAppointmentTagFixture,
   createAppointmentFixture,
   createEmployeeFixture,
   createExactTagFixture,
@@ -57,9 +58,10 @@ async function createReaderAgent(): Promise<SuperAgentTest> {
 }
 
 describe("employee revenue overview endpoint", () => {
-  it("returns sorted weeks, excludes complaints and deduplicates order numbers globally", async () => {
+  it("returns sorted weeks, excludes complaints and cancellations, and deduplicates order numbers globally", async () => {
     const admin = await loginAdminAgent(app);
     const complaintTag = await createExactTagFixture(MANAGED_COMPLAINT_TAG_NAME, "#ff011b");
+    const cancellationTag = await createExactTagFixture(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#3b2025");
     const employee = await createEmployeeFixture("EMP-REV-INT");
 
     const duplicatePrimaryProject = await createProjectFixtureWithOverrides({
@@ -82,6 +84,15 @@ describe("employee revenue overview endpoint", () => {
     });
 
     await attachProjectTagFixture(complaintProject.id, complaintTag.id);
+
+    const cancelledDuplicateAppointment = await createAppointmentFixture({
+      projectId: duplicatePrimaryProject.id,
+      customerId: duplicatePrimaryProject.customerId,
+      employeeIds: [employee.id],
+      startDate: "2026-12-24",
+      startTime: "08:00",
+    });
+    await attachAppointmentTagFixture(cancelledDuplicateAppointment.id, cancellationTag.id);
 
     await createAppointmentFixture({
       projectId: duplicatePrimaryProject.id,

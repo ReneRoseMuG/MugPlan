@@ -210,6 +210,12 @@ vi.mock("@/components/ui/badge", () => ({
 }));
 
 import { ReportsPage } from "../../../client/src/components/ReportsPage";
+import {
+  MANAGED_COMPLAINT_TAG_NAME,
+  MANAGED_REMARKS_TAG_NAME,
+  MANAGED_SPECIAL_MEASURE_TAG_NAME,
+  RESERVED_VACANT_TAG_NAME,
+} from "../../../shared/appointmentCancellation";
 
 function buildQueryResponseOverrides(overrides: Record<string, unknown> = {}) {
   const defaults: Record<string, unknown> = {
@@ -374,6 +380,31 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("checkbox-reports-auftragsliste-product-category-1");
     expect(html).toContain("checkbox-reports-auftragsliste-category-2");
     expect(html.indexOf("Fass Saunen")).toBeLessThan(html.indexOf("Fenster"));
+  });
+
+  it("offers only non-system tags in the auftragsliste tag filter", () => {
+    installReportsPageQueryMock({
+      "/api/tags": {
+        data: [
+          { id: 11, name: "Kundeninfo", color: "#2563eb", isDefault: false, version: 1 },
+          { id: 12, name: "Montagehinweis", color: "#0f766e", isDefault: false, version: 1 },
+          { id: 13, name: MANAGED_SPECIAL_MEASURE_TAG_NAME, color: "#BA7517", isDefault: false, version: 1 },
+          { id: 14, name: MANAGED_COMPLAINT_TAG_NAME, color: "#FF011B", isDefault: true, version: 1 },
+          { id: 15, name: MANAGED_REMARKS_TAG_NAME, color: "#888780", isDefault: true, version: 1 },
+          { id: 16, name: RESERVED_VACANT_TAG_NAME, color: "#D4537E", isDefault: true, version: 1 },
+        ],
+        isLoading: false,
+      },
+    });
+
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("reports-auftragsliste-tag-filter-add-11");
+    expect(html).toContain("reports-auftragsliste-tag-filter-add-12");
+    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-13");
+    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-14");
+    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-15");
+    expect(html).not.toContain("reports-auftragsliste-tag-filter-add-16");
   });
 
   it("renders the current calendar week sunday as default summary in report panels", () => {

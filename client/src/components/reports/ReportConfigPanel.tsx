@@ -43,16 +43,21 @@ export function ReportConfigPanel({
         {actionButton}
       </div>
 
-      {/* Body: linke Spalte (DateRange-Komponente) + rechte Spalte (Options) */}
-      <div className="grid grid-cols-[auto_1fr] gap-6 px-5 py-4">
-        {/* Linke Spalte: DateRange/KWRange Panel */}
-        <div className="shrink-0">{children}</div>
+      {/* Body */}
+      <div className="flex w-full items-stretch gap-4 overflow-x-auto px-5 py-4">
+        <div className="flex w-fit shrink-0 self-stretch [&>*]:h-full">{children}</div>
 
-        {/* Rechte Spalte: Options */}
-        <div className="flex flex-col gap-4">
-          {optionsSlot ? <div>{optionsSlot}</div> : null}
-          {secondaryOptionsSlot ? <div>{secondaryOptionsSlot}</div> : null}
-        </div>
+        {optionsSlot ? (
+          <div className="flex w-fit shrink-0 items-stretch gap-4 self-stretch">
+            {optionsSlot}
+          </div>
+        ) : null}
+
+        {secondaryOptionsSlot ? (
+          <div className="ml-auto flex w-fit shrink-0 self-stretch [&>*]:h-full">
+            {secondaryOptionsSlot}
+          </div>
+        ) : null}
       </div>
 
       {/* Footer */}

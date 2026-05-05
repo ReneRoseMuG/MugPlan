@@ -3,13 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Auftragsliste liefert projekteweise Kartenbasis mit repraesentativem Termin, Kategorien und kumulierten Metadaten.
- * - Reklamation schliesst Projekte aus; bei ausschliesslich stornierten Terminen dient der frueheste Storno als Fallback.
+ * - Reklamation und Storniert schliessen Projekte aus.
  * - Kategorienfilter und Shortcode-Substitution wirken serverseitig in `articleValues`.
  * - ADMIN, DISPONENT und LESER dürfen den Report lesen.
  *
  * Fehlerfaelle:
  * - Reklamationsprojekte erscheinen trotz Ausschluss weiter im Report.
- * - Storno-Fallback oder Shortcode-Ersatz greifen nicht.
+ * - Storno-Ausschluss oder Shortcode-Ersatz greifen nicht.
  * - Rollenpruefung fehlt oder liefert uneinheitliche Statuscodes.
  *
  * Ziel:
@@ -214,17 +214,28 @@ describe("integration: report auftragsliste", () => {
     ]);
   });
 
-  it("excludes reklamation projects and falls back to the earliest cancelled appointment", async () => {
+  it("excludes reklamation on project and appointment level and excludes cancelled appointments", async () => {
     const admin = await loginAdminAgent(app);
     const exclusionTag = await ensureExactTag(MANAGED_COMPLAINT_TAG_NAME, "#FF011B");
     const cancelledTag = await ensureExactTag(RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME, "#ef4444");
+    const includedProject = await createAuftragslisteProjectFixture({
+      prefix: "AL-INCLUDED",
+      appointmentDates: [{ startDate: "2099-10-01" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Gueltig" }],
+    });
     const excludedProject = await createAuftragslisteProjectFixture({
       prefix: "AL-EXCLUDED",
       appointmentDates: [{ startDate: "2099-10-02" }],
       componentItems: [{ categoryName: "Fenster", name: "Fenster Reklamation" }],
       projectTags: [exclusionTag],
     });
-    const fallbackProject = await createAuftragslisteProjectFixture({
+    const excludedAppointment = await createAuftragslisteProjectFixture({
+      prefix: "AL-EXCLUDED-APPT",
+      appointmentDates: [{ startDate: "2099-10-04" }],
+      componentItems: [{ categoryName: "Fenster", name: "Fenster Termin Reklamation" }],
+      appointmentTagsByIndex: [[exclusionTag]],
+    });
+    const cancelledProject = await createAuftragslisteProjectFixture({
       prefix: "AL-CANCELLED",
       appointmentDates: [{ startDate: "2099-10-03" }, { startDate: "2099-10-05" }],
       componentItems: [{ categoryName: "Fenster", name: "Fenster Storno" }],
@@ -235,10 +246,11 @@ describe("integration: report auftragsliste", () => {
       .get("/api/reports/auftragsliste?fromDate=2099-10-01&toDate=2099-10-31")
       .expect(200);
 
-    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).toContain(fallbackProject.project.id);
-    expect(response.body.items.map((item: { projectId: number }) => item.projectId)).not.toContain(excludedProject.project.id);
-    const fallbackRow = response.body.items.find((item: { projectId: number }) => item.projectId === fallbackProject.project.id);
-    expect(fallbackRow.actualDate).toBe("2099-10-03");
+    const projectIds = response.body.items.map((item: { projectId: number }) => item.projectId);
+    expect(projectIds).toContain(includedProject.project.id);
+    expect(projectIds).not.toContain(excludedProject.project.id);
+    expect(projectIds).not.toContain(excludedAppointment.project.id);
+    expect(projectIds).not.toContain(cancelledProject.project.id);
   });
 
   it("filters by report tags and Sauna Modell values and sorts by tour before date", async () => {

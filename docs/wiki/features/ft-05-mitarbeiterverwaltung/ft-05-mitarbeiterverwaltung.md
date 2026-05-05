@@ -17,13 +17,43 @@ Disponenten erhalten serverseitig nur aktive Mitarbeiter und können Mitarbeiter
 
 Das physische Löschen von Mitarbeitern ist eine Admin-Funktion. Dispatcher bzw. Disponenten und Leser werden serverseitig blockiert. Eine Löschung ist nur zulässig, wenn keine Terminreferenzen mehr bestehen.
 
-Für jeden Mitarbeiter ist eine Terminübersicht verfügbar. Diese Übersicht zeigt alle Termine, denen der Mitarbeiter aktuell oder in der Vergangenheit zugewiesen war, und bildet damit die Einsatzhistorie des Mitarbeiters ab. Die Terminliste wird ausschließlich aus der Relation zwischen Termin und Mitarbeiter abgeleitet und ist jederzeit vollständig einsehbar. Änderungen an zukünftigen Terminen wirken sich unmittelbar auf die Terminliste eines Mitarbeiters aus. Vergangene Termine sind read-only und dürfen nicht nachträglich verändert werden, um die Stabilität der Einsatzhistorie sicherzustellen.
+### Stammdaten
 
-Im Mitarbeiterformular existiert zusätzlich ein dedizierter Tab **Abwesenheiten**. Darüber werden Abwesenheiten als spezialisierter Terminworkflow aus [FT (33)](../ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md) angelegt, bearbeitet und gelöscht. Der Mitarbeiterbereich ist damit der einzige reguläre Mutationspfad für Abwesenheiten.
+Der Tab **Stammdaten** enthält die direkten Mitarbeiterdaten. Dazu gehören Identitäts- und Kontaktdaten, Tour- und Teambezüge sowie der Aktivstatus. In der Mitarbeiterdetailansicht können dem Mitarbeiter außerdem Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen; die übergreifenden Anhangsregeln liegen in [FT (19)](../ft-19-attachments/ft-19-attachments.md).
 
-Ebenfalls im Mitarbeiterformular existiert eine rein lesende **Umsatzübersicht**. Sie aggregiert qualifizierte Mitarbeitertermine serverseitig auf Wochenebene, unterstützt einen KW-Filter und zeigt zu Wochenzeilen eine Hover-Preview. Die Übersicht ist ausdrücklich lesend; es gibt daraus keine Export-, Schreib- oder Folgeaktionen.
+### Mitarbeiter Termine
 
-In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.
+Der Tab **Termine** zeigt die Einsatzhistorie des Mitarbeiters. Quelle ist ausschließlich die aktuelle Relation zwischen Termin und Mitarbeiter; es gibt keine separate Mitarbeiter-Termin-Historie in diesem Feature. Angezeigt werden Termine, denen der Mitarbeiter aktuell oder in der Vergangenheit zugewiesen war. Änderungen an zukünftigen Terminen wirken sich unmittelbar auf diese Liste aus. Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf der Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen. Die Terminanlage, Terminbearbeitung und Mitarbeiterzuweisung selbst gehören fachlich zu [FT (01)](../ft-01-kalendertermine/ft-01-kalendertermine.md).
+
+### Abwesenheiten
+
+Der Tab **Abwesenheiten** ist der dedizierte Mitarbeiterpfad für Abwesenheiten. Darüber werden Abwesenheiten als spezialisierter Terminworkflow aus [FT (33)](../ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md) angelegt, bearbeitet und gelöscht. Der Mitarbeiterbereich ist damit der einzige reguläre Mutationspfad für Abwesenheiten; außerhalb dieses Pfads bleiben Abwesenheiten lesbar, dürfen aber nicht über generische Terminaktionen verändert werden.
+
+### Wochenplanung
+
+Der Tab **Wochenplanung** zeigt Tour-Kalenderwochen, in denen der Mitarbeiter eingeplant ist. Quelle sind die Tour-KW-Mitarbeiterzuordnungen aus der Tourenplanung, nicht die Terminliste des Mitarbeiters. Der Tab dient der Einordnung, in welchen Tourwochen der Mitarbeiter als Ressource vorgesehen ist; fachliche Regeln, Sperren und Mutationen der Tour-KW-Planung liegen in [FT (04)](../ft-04-tourenplanung/ft-04-tourenplanung.md).
+
+### Umsatzübersicht
+
+Der Tab **Umsatz Übersicht** ist eine rein lesende Auswertung bereits vorhandener Mitarbeitertermine. Die Übersicht aggregiert die qualifizierten Termine serverseitig auf ISO-Wochenebene und zeigt pro Woche Anzahl der gewerteten Aufträge, Umsatzsumme und eine Hover-Preview der enthaltenen Termine. Der Kalenderwochenfilter im Tabellenfuß ist nur eine Oberflächenfunktion zur Eingrenzung der angezeigten Wochenzeilen; er ist keine fachliche Berechnungsregel und verändert die serverseitige Grundmenge nicht. Es gibt aus der Umsatzübersicht keine Export-, Schreib- oder Folgeaktionen.
+
+In die Umsatzübersicht gehen nur Termine ein, die alle folgenden Bedingungen erfüllen:
+
+- Der Termin ist dem betrachteten Mitarbeiter über die Termin-Mitarbeiter-Relation zugeordnet.
+- Der Termin ist einem Projekt zugeordnet; reine Kundentermine ohne Projekt werden nicht gewertet.
+- Zum Projekt existiert ein Auftrag mit einer nicht leeren, als Betrag lesbaren Auftragssumme.
+- Der Termin trägt nicht den geschützten Systemzustand **Storniert**.
+- Weder der Termin noch das zugeordnete Projekt tragen den geschützten Systemzustand **Reklamation**.
+
+Stornierte und reklamierte Termine werden vor der Deduplizierung ausgeschlossen. Mehrere verbleibende Termine mit derselben Auftragsnummer werden für die Umsatzberechnung global dedupliziert. Gewertet wird dann nur der früheste qualifizierte Termin nach Datum, Startzeit und Termin-ID. Die Umsatzsumme einer Woche ist die Summe der Auftragssummen der nach diesen Regeln ausgewählten Termine. Die Storno-, Reklamations- und Systemtag-Regeln liegen in [FT (01)](../ft-01-kalendertermine/ft-01-kalendertermine.md), [FT (06)](../ft-06-automatische-regeln/ft-06-automatische-regeln.md) und [FT (28)](../ft-28-universelles-tagging-system/ft-28-universelles-tagging-system.md); Projekt- und Auftragsdaten gehören zu [FT (02)](../ft-02-projekte/ft-02-projekte.md).
+
+### Auslastung
+
+Der Tab **Auslastung** zeigt die Belegung eines einzelnen Mitarbeiters in einer read-only Kalenderansicht. Die Darstellung nutzt dieselbe fachliche Termingrundlage wie die Kalenderansichten und dient der schnellen Einschätzung der geplanten Auslastung. Aus dieser Ansicht heraus werden keine Termine erzeugt, verschoben oder bearbeitet. Die zugehörige Kalenderlogik ist in [FT (03)](../ft-03-kalenderansichten/ft-03-kalenderansichten.md) beschrieben.
+
+### Journal
+
+Der Tab **Journal** zeigt die Änderungshistorie des Mitarbeiterdatensatzes. Er ist eine lesende Nachvollziehbarkeitsfunktion und ersetzt keine fachliche Validierung beim Speichern. Die übergreifenden Regeln für Journal-Einträge, Kontextbezüge und Leserechte sind in [FT (08)](../ft-08-journal-aenderungshistorie/ft-08-journal-aenderungshistorie.md) dokumentiert.
 
 ## Regeln & Randbedingungen
 
@@ -66,4 +96,4 @@ In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge z
 
 ## Entscheidungen & Offene Punkte
 
-Die später ergänzten Bereiche **Abwesenheiten** und **Umsatzübersicht** wurden redaktionell nachgezogen. Eigene zusätzliche Use-Case-Dateien für diese nachträglichen Erweiterungen sind im aktuellen Stand noch nicht separat ergänzt.
+Die im Mitarbeiterformular eingebundenen Querschnittsbereiche verweisen auf ihre fachlichen Hauptfeatures. Eigene zusätzliche FT-05-Use-Case-Dateien für Umsatzübersicht, Wochenplanung, Auslastung und Journal sind im aktuellen Stand nicht separat ergänzt.
