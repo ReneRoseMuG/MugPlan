@@ -64,6 +64,7 @@ vi.mock("@/lib/queryClient", () => ({
 
 import {
   EmployeeAppointmentAbsencesPanel,
+  shouldInvalidateAbsenceSideEffectQuery,
   shiftEndDateByStartDateChange,
 } from "../../../client/src/components/EmployeeAppointmentAbsencesPanel";
 
@@ -104,5 +105,13 @@ describe("EmployeeAppointmentAbsencesPanel date format", () => {
   it("pulls the end date along when the start date changes", () => {
     expect(shiftEndDateByStartDateChange("", "", "2026-07-15")).toBe("2026-07-15");
     expect(shiftEndDateByStartDateChange("2026-07-15", "2026-07-18", "2026-09-15")).toBe("2026-09-18");
+  });
+
+  it("invalidates week calendar employee badges after absence side effects", () => {
+    expect(shouldInvalidateAbsenceSideEffectQuery(["calendarWeekLaneEmployeePreviews", "2026-05-04", "2026-05-10"], 17)).toBe(true);
+    expect(shouldInvalidateAbsenceSideEffectQuery(["calendarAppointments", "2026-05-04", "2026-05-10"], 17)).toBe(true);
+    expect(shouldInvalidateAbsenceSideEffectQuery(["/api/employees", 17, "week-plans"], 17)).toBe(true);
+    expect(shouldInvalidateAbsenceSideEffectQuery(["/api/employees", 22, "week-plans"], 17)).toBe(false);
+    expect(shouldInvalidateAbsenceSideEffectQuery(["calendarMarkers", "2026-05-04", "2026-05-10"], 17)).toBe(false);
   });
 });

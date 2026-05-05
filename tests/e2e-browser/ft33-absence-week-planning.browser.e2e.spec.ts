@@ -4,6 +4,7 @@
  * Abgedeckte Regeln:
  * - Dispatcher können eine laufende Abwesenheit von gestern bis übermorgen speichern, wenn sie die Entfernung aus Terminen und aktueller Tour-KW-Planung bestätigen.
  * - Nach der Bestätigung ist der Mitarbeiter auf der regulären Terminkarte, in der Kalender-KW-Personalplanung und in der Tour-KW-Planung nicht mehr eingetragen.
+ * - Beim direkten Wechsel in den Mitarbeiter-Tab Wochenplanung wird keine gepufferte alte KW-Zuordnung mehr angezeigt.
  * - Die Abwesenheit selbst bleibt im Kalender sichtbar.
  * - Administratoren sehen denselben Bestätigungsdialog; Abbrechen lässt Termin- und KW-Zuordnung unverändert und speichert keine Abwesenheit.
  *
@@ -149,6 +150,10 @@ test("Dispatcher bestätigt Abwesenheit und entfernt den Mitarbeiter aus Termin 
 
   await expect.poll(() => fetchAppointmentEmployeeIds(page, scenario.appointmentId)).toEqual([]);
   await expect.poll(() => fetchWeekEmployeeIds(page, scenario.tour.id, scenario.targetWeek.isoYear, scenario.targetWeek.isoWeek)).toEqual([]);
+
+  await page.getByTestId("tab-employee-wochenplanung").click();
+  await expect(page.getByTestId(`card-employee-week-plan-${scenario.assignmentId}`)).toHaveCount(0);
+  await expect(page.getByText("Dieser Mitarbeiter ist aktuell keiner Wochenplanung zugeordnet.")).toBeVisible();
 
   await page.getByTestId("button-close-employee").click();
   await expect(page.getByTestId("entity-form-shell")).toHaveCount(0);

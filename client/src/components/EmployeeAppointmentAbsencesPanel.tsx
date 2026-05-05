@@ -177,6 +177,16 @@ function toPayload(state: AbsenceFormState) {
   };
 }
 
+export function shouldInvalidateAbsenceSideEffectQuery(queryKey: readonly unknown[], employeeId: number): boolean {
+  const firstKey = queryKey[0];
+  return firstKey === "calendarAppointments"
+    || firstKey === "calendarWeekLaneEmployeePreviews"
+    || firstKey === "employees-page-appointments"
+    || firstKey === "tour-week-planning"
+    || (firstKey === "/api/employees" && queryKey[1] === employeeId && queryKey[2] === "week-plans")
+    || (typeof firstKey === "string" && firstKey.includes("/week-employees"));
+}
+
 function getAbsenceTypeLabel(absenceType: AbsenceType): string {
   return ABSENCE_TAG_DEFINITIONS[absenceType].name;
 }
@@ -211,11 +221,7 @@ export function EmployeeAppointmentAbsencesPanel({
     await queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId, "revenue-overview"] });
     await queryClient.invalidateQueries({
       predicate: (query) => {
-        const firstKey = Array.isArray(query.queryKey) ? query.queryKey[0] : null;
-        return firstKey === "calendarAppointments"
-          || firstKey === "employees-page-appointments"
-          || firstKey === "tour-week-planning"
-          || (typeof firstKey === "string" && firstKey.includes("/week-employees"));
+        return Array.isArray(query.queryKey) && shouldInvalidateAbsenceSideEffectQuery(query.queryKey, employeeId);
       },
     });
   };
