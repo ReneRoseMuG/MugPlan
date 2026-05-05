@@ -159,8 +159,8 @@ const normalizeTourName = (value: string | null | undefined) => (value ?? "").tr
 const SHORT_WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
 const SHORT_MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"] as const;
 const WEEK_PERSONNEL_COLLAPSED_COLUMN_WIDTH = "3rem";
-const WEEK_PERSONNEL_EXPANDED_FALLBACK_COLUMN_WIDTH = "4.75rem";
-const WEEK_PERSONNEL_EXPANDED_COLUMN_PADDING_PX = 10;
+const WEEK_PERSONNEL_EXPANDED_FALLBACK_COLUMN_WIDTH = "8.5rem";
+const WEEK_PERSONNEL_EXPANDED_COLUMN_CHROME_PX = 36;
 
 export function formatCompactWeekDayHeader(day: Date, includeMonth = true): string {
   const weekday = SHORT_WEEKDAYS[(day.getDay() + 6) % 7] ?? "Mo";
@@ -206,6 +206,12 @@ function resolveWeekLaneRowMinHeightPx(weekTileBodyMode: "collapsed" | "semiexpa
   return weekTileBodyMode === "collapsed"
     ? Math.min(MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX, MIN_WEEK_CARD_HEIGHT_PX)
     : MIN_WEEK_CARD_HEIGHT_PX;
+}
+
+function areStringRecordsEqual(left: Record<string, string>, right: Record<string, string>): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  return leftKeys.length === rightKeys.length && rightKeys.every((key) => left[key] === right[key]);
 }
 
 function buildWeekPlanningLabel(isoYear: number, isoWeek: number): string {
@@ -491,6 +497,7 @@ export function CalendarWeekView({
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
   const [measuredPersonnelColumnWidthsByWeek, setMeasuredPersonnelColumnWidthsByWeek] = useState<Record<string, string>>({});
+  const [measuredPersonnelBadgeWidthsByWeek, setMeasuredPersonnelBadgeWidthsByWeek] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
@@ -657,6 +664,7 @@ export function CalendarWeekView({
   useEffect(() => {
     if (!showPersonnelColumn || isPersonnelColumnCollapsed) {
       setMeasuredPersonnelColumnWidthsByWeek({});
+      setMeasuredPersonnelBadgeWidthsByWeek({});
       return;
     }
 
@@ -664,7 +672,8 @@ export function CalendarWeekView({
       const measurementRoot = weekPersonnelBadgeMeasurementRef.current;
       if (!measurementRoot) return;
 
-      const nextWidths: Record<string, string> = {};
+      const nextColumnWidths: Record<string, string> = {};
+      const nextBadgeWidths: Record<string, string> = {};
       for (const groupNode of Array.from(measurementRoot.querySelectorAll<HTMLElement>("[data-week-personnel-measurement-week]"))) {
         const weekStartDate = groupNode.dataset.weekPersonnelMeasurementWeek;
         if (!weekStartDate) continue;
@@ -672,20 +681,17 @@ export function CalendarWeekView({
         const maxBadgeWidth = Array.from(groupNode.querySelectorAll<HTMLElement>("[data-week-personnel-measurement-badge]"))
           .reduce((maxWidth, badgeNode) => Math.max(maxWidth, badgeNode.getBoundingClientRect().width), 0);
         if (maxBadgeWidth > 0) {
-          nextWidths[weekStartDate] = `${Math.ceil(maxBadgeWidth + WEEK_PERSONNEL_EXPANDED_COLUMN_PADDING_PX)}px`;
+          const badgeWidth = Math.ceil(maxBadgeWidth);
+          nextBadgeWidths[weekStartDate] = `${badgeWidth}px`;
+          nextColumnWidths[weekStartDate] = `${badgeWidth + WEEK_PERSONNEL_EXPANDED_COLUMN_CHROME_PX}px`;
         }
       }
 
       setMeasuredPersonnelColumnWidthsByWeek((currentWidths) => {
-        const currentKeys = Object.keys(currentWidths);
-        const nextKeys = Object.keys(nextWidths);
-        if (
-          currentKeys.length === nextKeys.length
-          && nextKeys.every((key) => currentWidths[key] === nextWidths[key])
-        ) {
-          return currentWidths;
-        }
-        return nextWidths;
+        return areStringRecordsEqual(currentWidths, nextColumnWidths) ? currentWidths : nextColumnWidths;
+      });
+      setMeasuredPersonnelBadgeWidthsByWeek((currentWidths) => {
+        return areStringRecordsEqual(currentWidths, nextBadgeWidths) ? currentWidths : nextBadgeWidths;
       });
     });
 
@@ -1986,7 +1992,7 @@ export function CalendarWeekView({
               {group.employees.map((employee) => (
                 <span
                   key={`week-personnel-measurement-badge-${employee.key}`}
-                  className="inline-flex"
+                  className="inline-flex whitespace-nowrap"
                   data-week-personnel-measurement-badge
                 >
                   <EmployeeInfoBadge
@@ -2053,6 +2059,9 @@ export function CalendarWeekView({
                     : (measuredPersonnelColumnWidthsByWeek[weekKey] ?? WEEK_PERSONNEL_EXPANDED_FALLBACK_COLUMN_WIDTH)
                 )
               : null;
+            const personnelBadgeMinWidth = !isPersonnelColumnCollapsed
+              ? measuredPersonnelBadgeWidthsByWeek[weekKey]
+              : undefined;
             const weekFullGridTemplate = personnelColumnWidth
               ? `${personnelColumnWidth} ${weekDayGridTemplate}`
               : weekDayGridTemplate;
@@ -2419,26 +2428,32 @@ export function CalendarWeekView({
                                   ) : null}
                                   <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "space-y-1"}>
                                     {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
-                                      <EmployeeInfoBadge
+                                      <span
                                         key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
-                                        id={employee.id}
-                                        firstName={employee.firstName}
-                                        lastName={employee.lastName}
-                                        fullName={employee.fullName}
-                                        renderMode={isPersonnelColumnCollapsed ? "compact" : "standard"}
-                                        size="sm"
-                                        action={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number" ? "remove" : "none"}
-                                        onRemove={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number"
-                                          ? () => {
-                                              void openRemoveWeekPlanningDialog({
-                                                tourId: tourLane.tourId!,
-                                                assignmentId: employee.assignmentId!,
-                                              });
-                                            }
-                                          : undefined}
-                                        showAvatar={!isPersonnelColumnCollapsed ? false : undefined}
-                                        testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
-                                      />
+                                        className={isPersonnelColumnCollapsed ? "inline-flex" : "inline-flex w-full whitespace-nowrap"}
+                                        style={!isPersonnelColumnCollapsed && personnelBadgeMinWidth ? { minWidth: personnelBadgeMinWidth } : undefined}
+                                      >
+                                        <EmployeeInfoBadge
+                                          id={employee.id}
+                                          firstName={employee.firstName}
+                                          lastName={employee.lastName}
+                                          fullName={employee.fullName}
+                                          renderMode={isPersonnelColumnCollapsed ? "compact" : "standard"}
+                                          size="sm"
+                                          action={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number" ? "remove" : "none"}
+                                          onRemove={!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked && typeof employee.assignmentId === "number"
+                                            ? () => {
+                                                void openRemoveWeekPlanningDialog({
+                                                  tourId: tourLane.tourId!,
+                                                  assignmentId: employee.assignmentId!,
+                                                });
+                                              }
+                                            : undefined}
+                                          showAvatar={!isPersonnelColumnCollapsed ? false : undefined}
+                                          fullWidth={!isPersonnelColumnCollapsed}
+                                          testId={`week-personnel-employee-${tourLane.laneKey}-${employee.id}`}
+                                        />
+                                      </span>
                                     )) : (
                                       <span className="text-center text-[10px] italic text-slate-400">Keine MA</span>
                                     )}

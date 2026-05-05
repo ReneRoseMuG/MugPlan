@@ -14,6 +14,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [05.05.26 - FT-04: Wochenkalender Tour-KW-Breite](05-05-26-wochenkalender-tour-kw-breite.md)
 - [05.05.26 - FT-26: Report-Presets und Auftragsliste](05-05-26-report-presets-auftragsliste.md)
 - [05.05.26 - Mitarbeiter-Picker nach Neuanlage aktualisiert](05-05-26-mitarbeiter-picker-aktualisierung.md)
 - [05.05.26 - Mitarbeiterformular: tababhängige HelpKeys ergänzt](05-05-26-mitarbeiter-form-helpkeys.md)

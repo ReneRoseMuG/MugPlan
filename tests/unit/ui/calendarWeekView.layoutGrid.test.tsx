@@ -497,8 +497,8 @@ describe("CalendarWeekView layout grid regression", () => {
       <CalendarWeekView currentDate={new Date("2098-07-06T00:00:00Z")} />,
     );
 
-    expect(html).toContain("grid-template-columns:4.75rem minmax(0, 1fr)");
-    expect(html).toContain("grid-template-columns:4.75rem 1fr 1fr 1fr 1fr 1fr 0.33fr 1fr");
+    expect(html).toContain("grid-template-columns:8.5rem minmax(0, 1fr)");
+    expect(html).toContain("grid-template-columns:8.5rem 1fr 1fr 1fr 1fr 1fr 0.33fr 1fr");
     expect(html).toContain('data-testid="week-personnel-badge-measurement"');
     expect(html).toContain('data-testid="week-body-personnel-marker-spacer-2098-06-30"');
     expect(html).toContain('data-testid="week-personnel-column-tour-7"');
@@ -523,7 +523,7 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-testid="week-personnel-employee-tour-7-31"');
     expect(html).toContain('data-render-mode="standard"');
     expect(html).toContain('data-show-avatar="false"');
-    expect(html).toContain('data-full-width="false"');
+    expect(html).toContain('data-full-width="true"');
     expect(html).toContain('data-action="remove"');
     expect(html).toContain("Mira Plan");
     expect(html).toContain('data-testid="button-add-week-personnel-tour-7"');

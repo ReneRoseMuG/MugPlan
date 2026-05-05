@@ -29,6 +29,10 @@ Backlog offener Architektur- und Design-Entscheidungen. Neue Einträge oben einf
 
 ## Entscheidungen
 
+- [W-21 - FT-26 Reports: verbleibende Testabdeckung](w-21-ft26-reports-testabdeckung.md)
+- [W-20 - FT-07 Dump- und Import-Hardening](w-20-ft07-dump-import-hardening.md)
+- [W-19 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken](w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md)
+- [W-18 - Bulk-Import und PDF-Mining entfernen](w-18-bulk-import-und-pdf-mining-entfernen.md)
 - [W-17 - System-Dump: Benutzer und Rollen übertragen](w-17-system-dump-benutzer-und-rollen.md)
 - [W-16 - Stryker Test Runner isoliert einführen](w-16-stryker-test-runner.md)
 - [W-15 - Chunk-Size-Warnungen strategisch behandeln](w-15-chunk-size-warnungen.md)
