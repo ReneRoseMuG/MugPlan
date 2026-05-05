@@ -76,6 +76,7 @@ describe("FT03 table entity card previews", () => {
 
     expect(projectEntityCardMock).toHaveBeenCalledWith(expect.objectContaining({
       className: "w-[360px]",
+      projectPanelCompact: false,
       onDoubleClick: handleOpen,
     }));
   });

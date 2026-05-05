@@ -36,7 +36,14 @@ export function ProjectTableHoverPreview({
   };
   onDoubleClick?: () => void;
 }) {
-  return <ProjectEntityCard project={project} className={TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS} onDoubleClick={onDoubleClick} />;
+  return (
+    <ProjectEntityCard
+      project={project}
+      className={TABLE_ENTITY_CARD_PREVIEW_WIDTH_CLASS}
+      projectPanelCompact={false}
+      onDoubleClick={onDoubleClick}
+    />
+  );
 }
 
 export function CustomerTableHoverPreview({

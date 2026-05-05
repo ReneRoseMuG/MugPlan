@@ -528,16 +528,22 @@ export function ProjectsPage({
               rows={sortedProjectRows}
               rowKey={(row) => row.project.id}
               onRowDoubleClick={(row) => onSelectProject?.(row.project.id)}
-              rowPreviewRenderer={(row) => (
-                <ProjectTableHoverPreview
-                  project={{
-                    ...row.project,
-                    orderNumber: row.project.orderNumber?.trim() || null,
-                    tags: [...(row.project.tags ?? [])],
-                  }}
-                  onDoubleClick={() => onSelectProject?.(row.project.id)}
-                />
-              )}
+              rowPreviewRenderer={(row) => ({
+                content: (
+                  <ProjectTableHoverPreview
+                    project={{
+                      ...row.project,
+                      orderNumber: row.project.orderNumber?.trim() || null,
+                      tags: [...(row.project.tags ?? [])],
+                    }}
+                    onDoubleClick={() => onSelectProject?.(row.project.id)}
+                  />
+                ),
+                options: {
+                  maxHeight: null,
+                  scrollY: "visible",
+                },
+              })}
               emptyState={emptyState}
               stickyHeader
             />

@@ -202,8 +202,12 @@ describe("FT03 projects table preview wiring", () => {
   it("renders the shared project table hover preview with appointment info, footer badges and tags", () => {
     renderToStaticMarkup(<ProjectsPage />);
 
-    const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => React.ReactNode;
-    const markup = renderToStaticMarkup(rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]));
+    const rowPreviewRenderer = tableViewCalls[0].rowPreviewRenderer as (row: Record<string, unknown>) => {
+      content: React.ReactNode;
+      options?: Record<string, unknown>;
+    };
+    const preview = rowPreviewRenderer((tableViewCalls[0].rows as Array<Record<string, unknown>>)[0]);
+    const markup = renderToStaticMarkup(preview.content);
 
     expect(markup).toContain("ORD-31");
     expect(markup).toContain("Projekt Mit Footer");
@@ -214,5 +218,11 @@ describe("FT03 projects table preview wiring", () => {
     expect(markup).toContain("Notizen:5");
     expect(markup).toContain("Anhänge:2");
     expect(markup).toContain("Tag A");
+    expect(markup).toContain("min-h-[6.5rem]");
+    expect(markup).not.toContain("h-[6.5rem] overflow-hidden");
+    expect(preview.options).toMatchObject({
+      maxHeight: null,
+      scrollY: "visible",
+    });
   });
 });

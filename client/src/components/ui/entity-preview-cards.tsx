@@ -69,6 +69,7 @@ type ProjectEntityCardProps = {
     projectArticleItems: ProjectArticleItem[];
   };
   className?: string;
+  projectPanelCompact?: boolean;
   onDoubleClick?: () => void;
   testIds?: {
     card?: string;
@@ -107,7 +108,13 @@ function toSubtleTourColor(color: string | null | undefined, alpha: number): str
   return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
 }
 
-export function ProjectEntityCard({ project, className, onDoubleClick, testIds }: ProjectEntityCardProps) {
+export function ProjectEntityCard({
+  project,
+  className,
+  projectPanelCompact = true,
+  onDoubleClick,
+  testIds,
+}: ProjectEntityCardProps) {
   const ProjectIcon = domainIcons.projects;
   const appointmentInfo = formatProjectAppointmentInfo(project);
   const appointmentInfoTourColor = project.nextAppointmentTourColor?.trim() || null;
@@ -193,7 +200,7 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
               <ProjectInfoPanel
                 mode="expanded"
                 hideHeader={true}
-                compact
+                compact={projectPanelCompact}
                 projectName={project.name}
                 projectOrderNumber={project.orderNumber ?? null}
                 projectArticleItems={project.projectArticleItems}
@@ -206,7 +213,7 @@ export function ProjectEntityCard({ project, className, onDoubleClick, testIds }
             <ProjectInfoPanel
               mode="expanded"
               hideHeader={true}
-              compact
+              compact={projectPanelCompact}
               projectName={project.name}
               projectOrderNumber={project.orderNumber ?? null}
               projectArticleItems={project.projectArticleItems}
