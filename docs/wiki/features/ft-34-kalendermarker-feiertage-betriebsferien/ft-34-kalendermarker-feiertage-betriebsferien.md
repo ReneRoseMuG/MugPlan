@@ -9,7 +9,7 @@
 
 Dieses Feature beschreibt Kalendermarker als eigenständige, nicht planungswirksame Zusatzinformationen für die Kalenderansichten. Dazu gehören gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien.
 
-Ziel ist es, kalendarisch relevante Tage sichtbar zu machen, ohne daraus Termine, Mitarbeiterabwesenheiten, Konflikte, Locks, Reporteffekte oder Terminmutationen abzuleiten. Kalendermarker dienen der Orientierung in Wochen- und Monatskalender und können durch Administratoren gepflegt werden.
+Ziel ist es, kalendarisch relevante Tage sichtbar zu machen, ohne daraus Termine, Mitarbeiterabwesenheiten, Konflikte, Locks, Reporteffekte oder Terminmutationen abzuleiten. Kalendermarker dienen der Orientierung in Wochen- und Monatskalender und können durch Administratoren und Disponenten gepflegt werden.
 
 ## Fachliche Beschreibung
 
@@ -25,7 +25,7 @@ Gesetzliche Feiertage werden über einen Seed aus der Feiertagsberechnung erzeug
 
 Der automatische Seed kann über zwei technische Auslöser laufen: über den System-Seed und zusätzlich nach dem ersten erfolgreichen Admin-Login eines Tages. Mehrere spätere Admin-Logins am selben Tag lösen keinen weiteren Tages-Seed aus.
 
-Administratoren können gespeicherte Marker bearbeiten, deaktivieren, reaktivieren und löschen. Editierte Marker haben Vorrang vor dem automatischen Sollzustand. Ein Seed darf bestehende Marker nicht überschreiben, wenn sie anhand ihrer fachlichen Identität bereits vorhanden sind.
+Administratoren und Disponenten können gespeicherte Marker bearbeiten, deaktivieren, reaktivieren und löschen. Editierte Marker haben Vorrang vor dem automatischen Sollzustand. Ein Seed darf bestehende Marker nicht überschreiben, wenn sie anhand ihrer fachlichen Identität bereits vorhanden sind.
 
 Die Visualisierung der Marker ist global konfigurierbar. Es gibt die Stile **Dezent**, **Standard** und **Hervorgehoben**. Die Stile verändern nur die Intensität der Darstellung, nicht die fachliche Bedeutung des Markers.
 
@@ -63,7 +63,7 @@ Nur aktive Marker erscheinen im Kalender-Leseendpunkt und damit in Wochen- und M
 
 **R-07 Rollen**
 
-Kalenderlesen ist für Administratoren, Disponenten und Leser erlaubt. Pflege von Markern sowie Änderung des globalen Visualisierungsstils ist ausschließlich Administratoren erlaubt und serverseitig abzusichern.
+Kalenderlesen ist für Administratoren, Disponenten und Leser erlaubt. Pflege von Markern sowie Änderung des globalen Visualisierungsstils ist für Administratoren und Disponenten erlaubt und serverseitig abzusichern. Leser dürfen Marker ausschließlich lesen.
 
 **R-08 Visualisierung**
 
@@ -104,7 +104,7 @@ Gespeicherte Marker umfassen sowohl manuell gepflegte Betriebsmarker als auch ge
 
 - FT (03): Kalenderansichten, weil Wochen- und Monatskalender die Marker visualisieren.
 - FT (18): User Preferences, weil der globale Visualisierungsstil als Setting geführt wird.
-- FT (20): Rollenbasierte Zugriffsbeschränkungen, weil Pflege und globale Einstellung Administratoren vorbehalten sind.
+- FT (20): Rollenbasierte Zugriffsbeschränkungen, weil Pflege und globale Einstellung auf Administratoren und Disponenten begrenzt sind.
 
 **Dieses Feature wird konsumiert von:**
 
@@ -117,7 +117,7 @@ Kalendermarker sind keine Termine. Änderungen an Markern dürfen die fachliche 
 ### Seiteneffekte bei Änderungen
 
 - Änderungen an Markerarten oder Farben betreffen Wochen- und Monatskalender.
-- Änderungen an Rollenregeln betreffen die Stammdatenpflege und direkte Admin-API-Aufrufe.
+- Änderungen an Rollenregeln betreffen die Stammdatenpflege, die Settings-Navigation und direkte API-Aufrufe.
 - Änderungen am Seed-Verhalten können gespeicherte Feiertage duplizieren oder editierte Admin-Werte überschreiben, wenn die Idempotenz verletzt wird.
 
 ## Entscheidungen & Offene Punkte

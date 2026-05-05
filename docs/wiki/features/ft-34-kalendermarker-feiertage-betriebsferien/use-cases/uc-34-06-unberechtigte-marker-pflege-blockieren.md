@@ -6,7 +6,7 @@
 
 ## Akteur
 
-Disponent, Leser
+Leser
 
 ## Ziel
 
@@ -15,11 +15,11 @@ Verhindern, dass nicht berechtigte Rollen Kalendermarker oder globale Marker-Set
 ## Vorbedingungen
 
 - Akteur ist angemeldet.
-- Akteur besitzt nicht die Rolle Administrator.
+- Akteur besitzt nicht die Rolle Administrator oder Disponent.
 
 ## Ablauf
 
-1. Akteur ruft einen Admin-Pflegepfad für Kalendermarker direkt auf.
+1. Akteur ruft einen Pflegepfad für Kalendermarker direkt auf.
 2. System prüft die Rolle serverseitig.
 3. System lehnt die Mutation ab.
 4. Akteur ruft den Schreibpfad für den globalen Visualisierungsstil direkt auf.
@@ -32,4 +32,4 @@ Verhindern, dass nicht berechtigte Rollen Kalendermarker oder globale Marker-Set
 
 ## Ergebnis
 
-Unberechtigte Rollen können Kalendermarker sehen, aber nicht pflegen und keine globale Marker-Darstellung ändern.
+Leser können Kalendermarker sehen, aber nicht pflegen und keine globale Marker-Darstellung ändern. Administratoren und Disponenten bleiben die zulässigen schreibenden Rollen.

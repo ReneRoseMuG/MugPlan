@@ -15,6 +15,8 @@ Die Mitarbeiterverwaltung stellt Funktionen zum Anlegen, Bearbeiten und Anzeigen
 
 Disponenten erhalten serverseitig nur aktive Mitarbeiter und können Mitarbeiter damit nur aus dem aktiven Bestand auswählen. Die Verwaltung von aktiven und inaktiven Mitarbeitern (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation.
 
+Das physische Löschen von Mitarbeitern ist eine Admin-Funktion. Dispatcher bzw. Disponenten und Leser werden serverseitig blockiert. Eine Löschung ist nur zulässig, wenn keine Terminreferenzen mehr bestehen.
+
 Für jeden Mitarbeiter ist eine Terminübersicht verfügbar. Diese Übersicht zeigt alle Termine, denen der Mitarbeiter aktuell oder in der Vergangenheit zugewiesen war, und bildet damit die Einsatzhistorie des Mitarbeiters ab. Die Terminliste wird ausschließlich aus der Relation zwischen Termin und Mitarbeiter abgeleitet und ist jederzeit vollständig einsehbar. Änderungen an zukünftigen Terminen wirken sich unmittelbar auf die Terminliste eines Mitarbeiters aus. Vergangene Termine sind read-only und dürfen nicht nachträglich verändert werden, um die Stabilität der Einsatzhistorie sicherzustellen.
 
 Im Mitarbeiterformular existiert zusätzlich ein dedizierter Tab **Abwesenheiten**. Darüber werden Abwesenheiten als spezialisierter Terminworkflow aus [FT (33)](../ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md) angelegt, bearbeitet und gelöscht. Der Mitarbeiterbereich ist damit der einzige reguläre Mutationspfad für Abwesenheiten.
@@ -29,6 +31,7 @@ In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge z
 - Die Zuweisung eines Mitarbeiters zu einem Termin ist optional.
 - Ein Mitarbeiter kann einem oder mehreren Terminen zugewiesen sein.
 - Disponenten erhalten serverseitig nur aktive Mitarbeiter zur Auswahl.
+- Mitarbeiter dürfen nur durch Administratoren gelöscht werden und nur dann, wenn keine Terminreferenzen bestehen.
 - Die Terminliste eines Mitarbeiters wird ausschließlich aus den aktuellen Termindaten abgeleitet.
 - Vergangene Termine sind read-only und dürfen nicht verändert werden.
 - Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf dieser Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen.

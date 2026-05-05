@@ -23,7 +23,7 @@ function sendServiceError(res: Response, err: unknown): boolean {
     res.status(err.status).json({
       code: err.code,
       message: err.message,
-      ...(err.parkingConflicts ? { parkingConflicts: err.parkingConflicts } : {}),
+      ...(err.employeeRemovalConflicts ? { employeeRemovalConflicts: err.employeeRemovalConflicts } : {}),
     });
     return true;
   }

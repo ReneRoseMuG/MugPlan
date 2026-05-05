@@ -18,10 +18,10 @@ Die bisherige stille Persistenz reportbezogener User-Settings wurde entfernt. Er
 ## Betroffene Features
 
 - [FT-26: Auswertungen und Reports](../features/ft-26-auswertungen-und-reports/ft-26-auswertungen-und-reports.md)
-- [UC-26-01: Vorlaufliste erzeugen und drucken](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-01-vorlaufliste-erzeugen-und-drucken.md)
-- [UC-26-03: Produktionsplanung auswerten](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-03-produktionsplanung-auswerten.md)
-- [UC-26-06: Auftragsliste erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-06-auftragsliste-erzeugen.md)
-- [UC-26-08: Tourenplan-Report erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-08-tourenplan-report-erzeugen.md)
+- [UC-26-01: Vorlaufliste konfigurieren und erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.md)
+- [UC-26-03: Produktionsplanung konfigurieren und erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.md)
+- [UC-26-06: Auftragsliste konfigurieren und erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-06-auftragsliste-konfigurieren-und-erzeugen.md)
+- [UC-26-08: Tourenplan konfigurieren und erzeugen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.md)
 - [UC-26-10: Report-Preset speichern und ausführen](../features/ft-26-auswertungen-und-reports/use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.md)
 
 ## Rollen

@@ -14,7 +14,8 @@ Neue Abwesenheit für einen Mitarbeiter erfassen
 
 ## Vorbedingungen
 
-Mitarbeiterformular ist geöffnet. Akteur besitzt Disponent- oder Administratorrechte.
+- Mitarbeiterformular ist geöffnet.
+- Akteur besitzt Disponent- oder Administratorrechte.
 
 ## Ablauf
 
@@ -30,8 +31,11 @@ Mitarbeiterformular ist geöffnet. Akteur besitzt Disponent- oder Administratorr
 
 ## Alternativen
 
-Überschneidung erkannt → System blockiert das Anlegen und meldet den Konflikt
+- Kollidierende reguläre Termine existieren: System liefert die betroffenen Termine mit Versionen zurück und fordert eine ausdrückliche Bestätigung zur Entfernung des Mitarbeiters aus diesen Terminen an.
+- Akteur bestätigt die Entfernung: System entfernt nur den betroffenen Mitarbeiter aus den bestätigten regulären Terminen und speichert danach die Abwesenheit. Die Termine bleiben in ihrer bisherigen Tour.
+- Akteur bricht ab oder bestätigt nicht alle erforderlichen Versionen: System speichert keine Abwesenheit und verändert keine regulären Termine.
+- Konflikt mit einer bestehenden Abwesenheit oder ein Versionskonflikt liegt vor: System blockiert und meldet den Konflikt.
 
 ## Ergebnis
 
-Abwesenheit ist als interner Termin gespeichert. Mitarbeiter ist im Zeitraum als nicht verfügbar markiert.
+Abwesenheit ist als interner Termin gespeichert. Mitarbeiter ist im Zeitraum als nicht verfügbar markiert. Bestätigte kollidierende reguläre Termine bleiben bestehen und enthalten den abwesenden Mitarbeiter nicht mehr.

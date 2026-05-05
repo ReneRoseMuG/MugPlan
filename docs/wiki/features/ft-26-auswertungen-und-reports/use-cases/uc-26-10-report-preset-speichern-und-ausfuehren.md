@@ -3,7 +3,7 @@
 ## Metadaten
 
 - Feature: [FT (26): Auswertungen und Reports](../ft-26-auswertungen-und-reports.md)
-- Status: Geplant
+- Status: Abgeschlossen
 
 ## Akteur
 

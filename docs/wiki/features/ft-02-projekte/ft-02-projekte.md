@@ -33,6 +33,8 @@ In der Projektliste wird standardmäßig nur die für die Disposition relevante 
 
 Der Projektfilter enthält zusätzlich einen Artikellistenfilter. Er basiert auf den strukturierten Auftragspositionen (`project_order_items`) und ermöglicht das Filtern nach konkreten Sauna-Produkten sowie Komponenten aus den festen Artikellisten-Kategorien, zum Beispiel Ofen, Fenster, Dach oder Tür. Innerhalb einer Kategorie gilt ODER, zwischen mehreren Kategorien gilt UND. Der Filter ist lesend und verändert weder Projekt noch Stammdaten.
 
+Die Projektliste zeigt den nächsten Termin direkt in der Projektkarte bzw. Tabellenzeile. Bei Projekten mit mehreren Terminen wird der nächste Termin ab heute verwendet. Die Tabellenspalte **Nächster Termin** ist sortierbar; Projekte ohne nächsten Termin bleiben bei dieser Sortierung am Ende.
+
 Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifische Informationen, Absprachen oder Besonderheiten dokumentieren. Jede Notiz besteht aus einem Titel und einem Inhalt und ist dauerhaft dem Projekt zugeordnet. Ein Projekt kann mehrere Notizen enthalten. Notizen sind unabhängig von Terminplanungen, Tag-Änderungen oder Kundenanpassungen – sie bleiben bestehen und können jederzeit ergänzt oder überarbeitet werden. Notizen sind für alle zum Projekt gehörenden Termine verfügbar und können optional in Druckausgaben oder Exportformaten mitgeführt werden.
 
 ## Regeln & Randbedingungen
@@ -42,6 +44,7 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 - Projektbezogene Markierungen werden über das universelle Tagging-System gepflegt.
     - System-Tags und fachlich geschützte Tags werden gemäß FT (28) verwaltet.
 - Der Systemzustand **Reklamation** wird nicht über die generische Projekt-Tag-Pflege gesetzt oder entfernt, sondern über den Reklamationsworkflow aus FT (06). Dieser Workflow setzt bzw. entfernt das geschützte System-Tag **Reklamation** und kann optional eine Projektnotiz aus der Reklamationsvorlage vorschlagen.
+- Wird im Projektformular das Artikellistenfeld **Sauna** auf ein anderes Modell geändert, kann das System anbieten, den Projektnamen auf den Namen des gewählten Sauna-Modells zu setzen. Bei Ablehnung bleibt der bestehende Projektname unverändert. Beim erneuten Auswählen desselben Modells erfolgt keine Rückfrage.
 - Ein Projekt kann ohne Termine existieren.
 - Projekt-Details (Beschreibung, Notizen, Anhänge) gehören **ausschließlich** zum Projekt, nicht zum Termin.
 - Notizen sind optional und frei pflegbar.

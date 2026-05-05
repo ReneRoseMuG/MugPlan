@@ -21,15 +21,19 @@ Eine für die tägliche Arbeit passende Projektliste einsehen und bei Bedarf fil
 
 1. Der Akteur öffnet die Projektübersicht.
 2. Das System lädt standardmäßig die Grundmenge „Aktuelle Projekte" (mindestens ein Termin mit Startdatum ≥ heute), paginiert.
-3. Jeder Listeneintrag zeigt: Titel, Kunde, Auftragsnummer, Anzahl Notizen, Anzahl Anhänge, nächstes Termindatum, Tags.
-4. Der Akteur kann auf „Ohne Termine" umschalten. Das System lädt ausschließlich Projekte ohne Termine.
-5. Zusätzliche Filter wirken immer nur auf die jeweils geladene Grundmenge:
+3. Jeder Listeneintrag zeigt: Titel, Kunde, Auftragsnummer, Anzahl Notizen, Anzahl Anhänge, nächste Termininformation, Tags.
+4. Bei mehreren Terminen zeigt das System den nächsten Termin ab heute.
+5. Der Akteur kann zwischen den Grundmengen `Alle`, `Geplante` und `Ohne Termin` umschalten.
+6. Bei `Geplante` lädt das System Projekte mit mindestens einem aktuellen oder zukünftigen Termin. Bei `Ohne Termin` lädt das System ausschließlich Projekte ohne Termine.
+7. Zusätzliche Filter wirken immer nur auf die jeweils geladene Grundmenge:
     - Titelsuche (Substring, case-insensitiv)
     - Kundenname / Kundennummer
     - Auftragsnummer
     - Tag-Filter
+    - Artikellistenfilter nach Sauna-Produkten und Komponenten-Kategorien
     - Aktiv/Inaktiv-Status
-6. Der Akteur blättert bei Bedarf durch Seiten (Paginierung).
+8. Der Akteur kann die Spalte **Nächster Termin** sortieren. Projekte ohne nächsten Termin bleiben bei dieser Sortierung am Ende.
+9. Der Akteur blättert bei Bedarf durch Seiten (Paginierung).
 
 ## Alternativen
 
@@ -40,4 +44,4 @@ Eine für die tägliche Arbeit passende Projektliste einsehen und bei Bedarf fil
 
 ## Ergebnis
 
-Der Akteur sieht die gewählte Grundmenge gefiltert und paginiert. Die Grundmengen „Aktuelle Projekte" und „Ohne Termine" sind disjunkt — es findet keine Vermischung statt. Es erfolgt keine fachliche Datenänderung.
+Der Akteur sieht die gewählte Grundmenge gefiltert, sortiert und paginiert. Die Grundmengen sind fachlich getrennt; es erfolgt keine fachliche Datenänderung.

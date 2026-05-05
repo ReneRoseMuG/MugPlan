@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: In Überarbeitung
+- Status: Abgeschlossen
 - Typ: Feature
 - Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254
 - Lokaler Stand: 04.05.26
@@ -168,11 +168,11 @@ Die Priorität steuert ausschließlich die Darstellung. Es gibt im Tourenplan ke
 - Presets werden serverseitig validiert. Der Client darf keine Rechte aus UI-Sichtbarkeit ableiten.
 - Alte Report-Settings werden nicht migriert und dürfen den Report-Startzustand nicht beeinflussen.
 
-## Geplante Umsetzungsaufgaben
+## Umsetzungspakete
 
 ### 1. Report-Preset-Infrastruktur
 
-Allgemeine Infrastruktur für Report-Presets erstellen: Contracts, Route, Controller, Service, Repository und Dateisystem-Anbindung. Dazu gehören Report-Key-Validierung, Scope-Validierung, erlaubte Aktionen, dynamische KW-Auflösung und serverseitige Rechteprüfung.
+Die allgemeine Infrastruktur für Report-Presets umfasst Contracts, Route, Controller, Service, Repository und Dateisystem-Anbindung. Dazu gehören Report-Key-Validierung, Scope-Validierung, erlaubte Aktionen, dynamische KW-Auflösung und serverseitige Rechteprüfung.
 
 Tests:
 
@@ -185,7 +185,7 @@ Tests:
 
 ### 2. Implizite Report-Persistenz entkoppeln
 
-Alle bestehenden Report-UI-Funktionen bleiben erhalten. Entfernt wird nur das automatische Lesen und Schreiben reportbezogener Settings. Vorhandene alte Settings dürfen beim Öffnen eines Reports keine Werte still setzen. Änderungen in Report-Panels dürfen keine alten Report-Settings mehr schreiben.
+Alle bestehenden Report-UI-Funktionen bleiben erhalten. Entfernt wurde nur das automatische Lesen und Schreiben reportbezogener Settings. Vorhandene alte Settings dürfen beim Öffnen eines Reports keine Werte still setzen. Änderungen in Report-Panels dürfen keine alten Report-Settings mehr schreiben.
 
 Ausnahme: Die globale Produktionsplanungs-Layout-Konfiguration bleibt Admin-seitig persistent.
 

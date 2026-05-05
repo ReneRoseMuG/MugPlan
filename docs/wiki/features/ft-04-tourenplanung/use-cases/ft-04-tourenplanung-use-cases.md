@@ -12,3 +12,4 @@
 - [UC 04/12: Kalenderwoche einer Tour anlegen](uc-04-12-kalenderwoche-einer-tour-anlegen.md)
 - [UC 04/13: Mitarbeiter einer Tour-KW zuordnen](uc-04-13-mitarbeiter-einer-tour-kw-zuordnen.md)
 - [UC 04/14: Mitarbeiter aus einer Tour-KW entfernen](uc-04-14-mitarbeiter-aus-einer-tour-kw-entfernen.md)
+- [UC 04/15: Tour-KW-Wochenplanung anzeigen und anwenden](uc-04-15-tour-kw-wochenplanung-anzeigen-und-anwenden.md)

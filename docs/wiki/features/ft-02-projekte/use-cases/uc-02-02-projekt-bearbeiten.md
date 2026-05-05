@@ -27,8 +27,12 @@ Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Ü
     1. Das System prüft: Hat das Projekt mindestens einen Termin zugeordnet?
     2. Falls **JA:** Das System blockiert den Kundenwechsel mit Fehlermeldung. Der Kundenwert ist readonly.
     3. Falls **NEIN:** Der Akteur wählt einen neuen Kunden. Das System prüft Existenz und Aktivstatus des neuen Kunden. Das System speichert die Kundenänderung und aktualisiert den `customer_id`-Wert aller zugeordneten Termine kaskadierend.
-4. Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäß FT (28).
-5. Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.
+4. Optional ändert der Akteur strukturierte Auftragspositionen, darunter das Artikellistenfeld **Sauna**.
+    1. Wenn dadurch ein anderes Sauna-Modell gewählt wird und der Projektname nicht bereits dem neuen Modell entspricht, fragt das System, ob der Projektname angepasst werden soll.
+    2. Bestätigt der Akteur, setzt das System den Projektnamen auf den Namen des gewählten Sauna-Modells.
+    3. Lehnt der Akteur ab, bleibt der bisherige Projektname unverändert.
+5. Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäß FT (28).
+6. Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.
 
 ## Alternativen
 
@@ -39,6 +43,7 @@ Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Ü
 - Neuer Kunde existiert nicht → HTTP 422.
 - Neuer Kunde ist inaktiv → HTTP 409 INACTIVE_ENTITY_ASSIGNMENT.
 - Versionskonflikt (Optimistic Locking) → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.
+- Sauna-Modell wird nicht fachlich geändert → System zeigt keine Projektnamen-Rückfrage.
 - Abbruch → keine Änderung wird gespeichert.
 - Technischer Fehler → HTTP 500, keine Änderung.
 

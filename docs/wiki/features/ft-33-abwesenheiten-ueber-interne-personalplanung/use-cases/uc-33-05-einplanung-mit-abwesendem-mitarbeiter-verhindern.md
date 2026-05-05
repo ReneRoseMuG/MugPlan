@@ -25,7 +25,8 @@ Für den Mitarbeiter existiert ein Abwesenheitstermin im betreffenden Zeitraum
 
 ## Alternativen
 
-Keine Überschneidung → Zuweisung wird normal gespeichert
+- Keine Überschneidung → Zuweisung wird normal gespeichert.
+- Eine neue Abwesenheit kollidiert mit bereits bestehenden regulären Terminen → der dedizierte Abwesenheits-Flow kann nach ausdrücklicher Bestätigung den betroffenen Mitarbeiter aus diesen regulären Terminen entfernen; generische Terminzuweisungen dürfen den Abwesenheitskonflikt nicht still umgehen.
 
 ## Ergebnis
 

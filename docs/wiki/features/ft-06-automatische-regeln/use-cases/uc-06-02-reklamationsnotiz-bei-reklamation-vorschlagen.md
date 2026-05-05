@@ -34,13 +34,22 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 
 ### Reklamation an Projekt melden
 
-1. Der Akteur öffnet ein Projekt mit Reklamationsaktion.
+1. Der Akteur öffnet ein bestehendes Projekt mit Reklamationsaktion.
 2. Der Akteur wählt **Reklamation melden**.
 3. Das System setzt das geschützte System-Tag **Reklamation** am Projekt über die fachliche Reklamationsfunktion.
 4. Das System prüft, ob am Projekt bereits eine passende Reklamationsnotiz vorhanden ist.
 5. Wenn keine passende Notiz vorhanden ist, öffnet das System einen Vorschlagsdialog für eine Reklamationsnotiz.
 6. Bestätigt der Akteur den Vorschlag, wird eine Notiz aus der Reklamationsvorlage für die Projektnotizen vorbereitet und im Notizbereich zur Bearbeitung geöffnet.
 7. Speichert der Akteur die Notiz, wird sie am Projekt angelegt. Bricht der Akteur die Notizbearbeitung ab, bleibt die Reklamation gesetzt, ohne dass eine Notiz entsteht.
+
+### Reklamation beim Anlegen vorbereiten
+
+1. Der Akteur öffnet das Projekt- oder Terminformular im Create-Modus.
+2. Der Akteur wählt **Reklamation melden**.
+3. Das System zeigt den Reklamationszustand lokal als Draft und bietet bei Bedarf den Reklamationsnotiz-Vorschlag an.
+4. Der Akteur speichert das Projekt oder den Termin.
+5. Nach erfolgreicher Anlage setzt das System die Reklamation über den dedizierten Reklamationspfad auf dem neu erzeugten Objekt.
+6. Eine vorbereitete Reklamationsnotiz wird anschließend am neu erzeugten Objekt gespeichert oder bleibt bei Abbruch des Notizeditors aus.
 
 ### Reklamation aufheben
 
@@ -57,6 +66,7 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 - Wenn beim Aufheben keine passende Reklamationsnotiz vorhanden ist, wird kein Entferndialog geöffnet.
 - Wenn das System-Tag **Reklamation** oder die Notizvorlage **Reklamation** fehlt, kann der jeweilige Folgefluss nicht vollständig ausgeführt werden und muss als fachlicher bzw. technischer Fehler behandelt werden.
 - Wenn das Objekt durch Optimistic Locking veraltet ist, wird die Aktion abgewiesen und muss nach Neuladen erneut ausgeführt werden.
+- Wenn das Speichern im Create-Modus fehlschlägt, werden Reklamations-Draft und Notiz-Draft nicht über generische Tag-Pfade persistiert.
 - Wenn der Akteur keine ausreichende Rolle besitzt, ist die Reklamationsaktion nicht sichtbar bzw. serverseitig verboten.
 
 ## Ergebnis

@@ -32,4 +32,4 @@ Use Cases werden feature-zentriert unter `docs/wiki/features/<feature>/use-cases
 
 ## Zielregel
 
-Jeder Use Case erh?lt eine eigene Datei, verwendet die Use-Case-Vorlage und enth?lt einen R?cklink auf sein Feature.
+Jeder Use Case erhält eine eigene Datei, verwendet die Use-Case-Vorlage und enthält einen Rücklink auf sein Feature.

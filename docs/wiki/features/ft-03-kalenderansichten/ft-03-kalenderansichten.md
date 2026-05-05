@@ -44,7 +44,7 @@ Zusätzlich kann der Wochenkalender optionale Arbeitsbereiche einblenden:
 
 - Termin-Notizen als rein lesende Karten direkt unter Terminkarten im Kachelmodus.
 - Eine Personalübersicht je Tour-Lane auf Basis der bestehenden Kalenderwochen-Tourenplanung.
-- Eine passive Abwesenheitszeile je sichtbarem Kalendertag.
+- Eine dauerhaft sichtbare passive Abwesenheitszeile je sichtbarem Kalendertag.
 
 Diese Bereiche ändern keine fachliche Termin-, Tour- oder Abwesenheitslogik. Sie machen bestehende Daten sichtbar oder öffnen bestehende Mutationspfade.
 
@@ -67,6 +67,8 @@ Die Navigation verwendet dieselbe Monatsnavigation wie der Monatskalender. Dazu 
 Kalendermarker aus FT (34) werden in Wochen- und Monatskalender als zusätzliche, nicht planungswirksame Orientierung dargestellt. Sie verändern keine Terminlogik, blockieren keine Interaktion und erzeugen keine Konflikte.
 
 Gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien werden farblich unterschieden. Die globale Intensität der Darstellung wird über FT (34) gepflegt und wirkt nur visuell.
+
+Feiertage und Betriebsfeiertage verwenden im Wochenkalender dieselbe kompakte Breitenlogik wie Wochenendtage. Sie werden nur dann auf normale Wochentagsbreite verbreitert, wenn reguläre Termine auf dem Tag liegen. Reine Abwesenheiten verbreitern Feiertags-, Betriebsfeiertags- oder Wochenendspalten nicht.
 
 Die Kalenderansichten lesen dafür aktive, bereits gespeicherte Kalendermarker im sichtbaren Zeitraum. Eine Live-Berechnung gesetzlicher Feiertage in FT (03) findet nicht statt.
 
@@ -124,7 +126,7 @@ Termin-Notizen können im Wochenkalender dauerhaft sichtbar gemacht werden. Ange
 
 Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Neben dem Hinzufügen einzelner Tour-KW-Mitarbeiter kann die Tour-KW-Planung direkt auf die Termine der jeweiligen Tour und Kalenderwoche angewendet werden. Diese Aktion nutzt dieselbe Vorschau-/Bestätigungslogik wie die Tour-KW-Planung und speichert keine getrennte Mitarbeiterplanung. Änderungen aus der Terminkarte verwenden ebenfalls die bestehende Vorschau-/Bestätigungslogik.
 
-Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist vollständig passiv und bietet keine Pflege von Abwesenheiten an.
+Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist dauerhaft sichtbar, liegt direkt unter dem Tageskopf und ist vollständig passiv. Sie bietet keine Pflege von Abwesenheiten an.
 
 #### Kachelmodus
 

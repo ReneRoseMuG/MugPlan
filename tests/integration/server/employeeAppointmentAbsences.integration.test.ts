@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Abwesenheiten werden als normale Termine mit Systemtour, Systemkunde und Systemtag angelegt.
  * - Abwesenheiten blockieren Mitarbeiter ganztägig gegen reguläre Terminzuweisungen.
- * - Reguläre Terminzuweisungen erfordern vor der Abwesenheit eine bestätigte Parkplatz-Verschiebung.
+ * - Reguläre Terminzuweisungen erfordern vor der Abwesenheit eine bestätigte Mitarbeiterentfernung.
  * - Leser dürfen Abwesenheiten sehen, aber nicht anlegen.
  *
  * Ziel:
@@ -93,7 +93,7 @@ describe("FT33 integration: Employee absence appointments", () => {
     });
   });
 
-  it("requires parking confirmation when the employee already has a timed appointment", async () => {
+  it("requires employee-removal confirmation when the employee already has a timed appointment", async () => {
     const employee = await createEmployeeFixture("ABS-REVERSE-EMP");
     const customer = await createCustomerFixture("ABS-REVERSE-CUST");
     const regular = await appointmentsService.createAppointment({
@@ -110,8 +110,8 @@ describe("FT33 integration: Employee absence appointments", () => {
       endDate: null,
       note: `ABS-REVERSE-${employee.id}`,
     }, "ADMIN")).rejects.toMatchObject({
-      code: "ABSENCE_OVERLAP_REQUIRES_PARKING",
-      parkingConflicts: [
+      code: "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL",
+      employeeRemovalConflicts: [
         expect.objectContaining({
           id: regular!.id,
           version: regular!.version,
@@ -120,7 +120,7 @@ describe("FT33 integration: Employee absence appointments", () => {
     });
   });
 
-  it("parks confirmed regular appointments before creating the absence", async () => {
+  it("removes the employee from confirmed regular appointments before creating the absence", async () => {
     const employee = await createEmployeeFixture("ABS-PARK-EMP");
     const customer = await createCustomerFixture("ABS-PARK-CUST");
     const regular = await appointmentsService.createAppointment({
@@ -136,20 +136,20 @@ describe("FT33 integration: Employee absence appointments", () => {
       startDate: "2099-07-06",
       endDate: null,
       note: `ABS-PARK-${employee.id}`,
-      confirmedParkingAppointments: [
+      confirmedEmployeeRemovalAppointments: [
         { appointmentId: regular!.id, version: regular!.version },
       ],
     }, "ADMIN");
 
     expect(created.id).toBeGreaterThan(0);
-    const parked = await appointmentsService.getAppointmentDetails(regular!.id);
-    const parkplatzTour = (await listTours()).find((tour) => tour.name === "Parkplatz");
-    expect(parked?.employees).toEqual([]);
-    expect(parked?.tourId).toBe(parkplatzTour?.id);
-    expect(parked?.appointmentTags.map((tag) => tag.name)).toContain("Geparkt");
+    const updatedRegular = await appointmentsService.getAppointmentDetails(regular!.id);
+    expect(updatedRegular?.employees).toEqual([]);
+    expect(updatedRegular?.tourId).toBe(regular!.tourId);
+    expect(updatedRegular?.appointmentTags.map((tag) => tag.name)).not.toContain("Geparkt");
+    expect(updatedRegular?.version).toBe(regular!.version + 1);
   });
 
-  it("rejects stale parking confirmations before creating the absence", async () => {
+  it("rejects stale employee-removal confirmations before creating the absence", async () => {
     const employee = await createEmployeeFixture("ABS-PARK-STALE-EMP");
     const customer = await createCustomerFixture("ABS-PARK-STALE-CUST");
     const regular = await appointmentsService.createAppointment({
@@ -165,12 +165,12 @@ describe("FT33 integration: Employee absence appointments", () => {
       startDate: "2099-07-08",
       endDate: null,
       note: `ABS-PARK-STALE-${employee.id}`,
-      confirmedParkingAppointments: [
+      confirmedEmployeeRemovalAppointments: [
         { appointmentId: regular!.id, version: regular!.version + 1 },
       ],
     }, "ADMIN")).rejects.toMatchObject({
-      code: "ABSENCE_OVERLAP_REQUIRES_PARKING",
-      parkingConflicts: [
+      code: "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL",
+      employeeRemovalConflicts: [
         expect.objectContaining({
           id: regular!.id,
           version: regular!.version,

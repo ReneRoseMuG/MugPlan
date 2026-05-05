@@ -12,7 +12,7 @@ Die Projektliste wurde in der Bedienung leicht gestrafft. Die Scope-Toggles zeig
 
 ## Betroffene Features
 
-- [FT-02: Projektverwaltung](../features/ft-02-projektverwaltung/ft-02-projektverwaltung.md)
+- [FT-02: Projekte](../features/ft-02-projekte/ft-02-projekte.md)
 
 Notion-Featureseiten wurden für diese kleine UI-Nachkorrektur nicht herangezogen, weil der Auftrag direkt auf bestehendes sichtbares Verhalten in der Projektliste zielte und die lokalen Code- und Teststellen eindeutig waren.
 

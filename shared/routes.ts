@@ -177,7 +177,7 @@ const employeeAppointmentAbsenceInputSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   note: z.string().trim().max(1000).nullable().optional(),
-  confirmedParkingAppointments: z.array(z.object({
+  confirmedEmployeeRemovalAppointments: z.array(z.object({
     appointmentId: z.number().int().positive(),
     version: z.number().int().min(1),
   })).optional(),
@@ -2665,7 +2665,7 @@ export const api = {
           409: z.object({
             code: z.string(),
             message: z.string().optional(),
-            parkingConflicts: z.array(entityAppointmentItemSchema).optional(),
+            employeeRemovalConflicts: z.array(entityAppointmentItemSchema).optional(),
           }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },
@@ -2683,7 +2683,7 @@ export const api = {
           409: z.object({
             code: z.string(),
             message: z.string().optional(),
-            parkingConflicts: z.array(entityAppointmentItemSchema).optional(),
+            employeeRemovalConflicts: z.array(entityAppointmentItemSchema).optional(),
           }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         },

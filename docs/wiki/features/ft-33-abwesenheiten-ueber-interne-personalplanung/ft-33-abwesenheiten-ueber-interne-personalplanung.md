@@ -69,6 +69,8 @@ Beim Anlegen und Bearbeiten setzt der Server automatisch den bestehenden Seed-Ku
 
 Der einem Abwesenheitstermin zugewiesene Mitarbeiter gilt im Terminzeitraum als nicht verfügbar. Die bestehende Termin-Überschneidungsprüfung prüft reguläre Termine gegen Abwesenheitstermine.
 
+Wenn beim Anlegen oder Bearbeiten einer Abwesenheit bereits reguläre Termine desselben Mitarbeiters im Zeitraum liegen, liefert der Server die betroffenen Termine zur Bestätigung zurück. Nach ausdrücklicher Bestätigung wird nur der betroffene Mitarbeiter aus diesen regulären Terminen entfernt und die Abwesenheit anschließend gespeichert. Die Termine selbst bleiben in ihrer bisherigen Tour, werden nicht auf den Parkplatz verschoben und erhalten keinen Parken-Tag. Ohne Bestätigung bleibt der Bestand unverändert.
+
 **R-04 Keine Wochenplanungsübernahme**
 
 Für die Systemtour **Abwesenheiten** darf keine automatische Mitarbeiterübernahme aus der Tour- oder Kalenderwochenplanung ausgeführt werden.
@@ -125,6 +127,7 @@ Abwesenheiten bleiben außerhalb des Mitarbeiterformulars lesbar, dürfen dort a
 **Dieses Feature wird konsumiert von:**
 
 - FT-31 Dispositions-Monitoring – Überschneidungserkennung berücksichtigt Abwesenheitstermine
+- FT-01 Kalendertermine – bestätigte Konflikttermine behalten Termin-, Tour- und Tag-Zustand; nur die Mitarbeiterzuordnung des abwesenden Mitarbeiters wird entfernt
 - Wochenkalender – passive Anzeige der Tour Abwesenheiten
 - Monatskalender – Toggle Terminplanung / Abwesenheiten
 

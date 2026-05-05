@@ -21,7 +21,6 @@ import * as masterDataRepository from "../repositories/masterDataRepository";
 import * as toursRepository from "../repositories/toursRepository";
 import type { CanonicalRoleKey } from "../settings/registry";
 import * as appointmentsService from "./appointmentsService";
-import { getAppointmentParkingDefaults, parkAppointmentTx } from "./appointmentParkingService";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 
 export class EmployeeAppointmentAbsencesError extends Error {
@@ -31,9 +30,9 @@ export class EmployeeAppointmentAbsencesError extends Error {
     | "NOT_FOUND"
     | "VALIDATION_ERROR"
     | "BUSINESS_CONFLICT"
-    | "ABSENCE_OVERLAP_REQUIRES_PARKING"
+    | "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL"
     | "VERSION_CONFLICT";
-  parkingConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>>;
+  employeeRemovalConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>>;
 
   constructor(
     status: number,
@@ -42,15 +41,15 @@ export class EmployeeAppointmentAbsencesError extends Error {
       | "NOT_FOUND"
       | "VALIDATION_ERROR"
       | "BUSINESS_CONFLICT"
-      | "ABSENCE_OVERLAP_REQUIRES_PARKING"
+      | "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL"
       | "VERSION_CONFLICT",
     message?: string,
-    options?: { parkingConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>> },
+    options?: { employeeRemovalConflicts?: Awaited<ReturnType<typeof appointmentsService.listEmployeeAppointmentsByScope>> },
   ) {
     super(message ?? code);
     this.status = status;
     this.code = code;
-    this.parkingConflicts = options?.parkingConflicts;
+    this.employeeRemovalConflicts = options?.employeeRemovalConflicts;
   }
 }
 
@@ -70,7 +69,7 @@ function normalizeOptionalCustomerField(value: string | null | undefined): strin
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeConfirmedParkingAppointments(input: EmployeeAppointmentAbsenceInput["confirmedParkingAppointments"]) {
+function normalizeConfirmedEmployeeRemovalAppointments(input: EmployeeAppointmentAbsenceInput["confirmedEmployeeRemovalAppointments"]) {
   const confirmed = new Map<number, number>();
   for (const item of input ?? []) {
     confirmed.set(item.appointmentId, item.version);
@@ -211,7 +210,7 @@ async function listRegularAppointmentConflictsForAbsence(
   ));
 }
 
-async function parkConfirmedRegularConflicts(
+async function removeEmployeeFromConfirmedRegularConflicts(
   employeeId: number,
   input: EmployeeAppointmentAbsenceInput,
   roleKey: CanonicalRoleKey,
@@ -220,42 +219,33 @@ async function parkConfirmedRegularConflicts(
   const conflicts = await listRegularAppointmentConflictsForAbsence(employeeId, input, roleKey, excludeAppointmentId);
   if (conflicts.length === 0) return;
 
-  const confirmedVersions = normalizeConfirmedParkingAppointments(input.confirmedParkingAppointments);
+  const confirmedVersions = normalizeConfirmedEmployeeRemovalAppointments(input.confirmedEmployeeRemovalAppointments);
   const unconfirmedConflicts = conflicts.filter((item) => confirmedVersions.get(item.id) !== item.version);
   if (unconfirmedConflicts.length > 0 || confirmedVersions.size !== conflicts.length) {
     throw new EmployeeAppointmentAbsencesError(
       409,
-      "ABSENCE_OVERLAP_REQUIRES_PARKING",
-      "Bestehende Termine müssen vor dem Speichern der Abwesenheit auf Parkplatz verschoben werden.",
-      { parkingConflicts: conflicts },
+      "ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL",
+      "Der Mitarbeiter muss vor dem Speichern der Abwesenheit aus bestehenden Terminen entfernt werden.",
+      { employeeRemovalConflicts: conflicts },
     );
-  }
-
-  const parkingDefaults = await getAppointmentParkingDefaults();
-  if (parkingDefaults.kind === "missing_parkplatz_tour") {
-    throw new EmployeeAppointmentAbsencesError(409, "BUSINESS_CONFLICT", "Tour 'Parkplatz' nicht gefunden. Bitte den Admin-System-Seed ausführen.");
-  }
-  if (parkingDefaults.kind === "missing_geparkt_tag") {
-    throw new EmployeeAppointmentAbsencesError(409, "BUSINESS_CONFLICT", "System-Tag 'Geparkt' fehlt. Bitte den Admin-System-Seed ausführen.");
   }
 
   await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     for (const conflict of conflicts) {
-      const parkResult = await parkAppointmentTx(tx, {
+      const updateResult = await appointmentsRepository.bumpAppointmentVersionTx(tx, {
         appointmentId: conflict.id,
         expectedVersion: conflict.version,
-        parkplatzTourId: parkingDefaults.parkplatzTourId,
-        geparktTagId: parkingDefaults.geparktTagId,
-        alreadyParkedMode: "noop",
       });
-      if (parkResult.kind === "not_found") {
-        throw new EmployeeAppointmentAbsencesError(404, "NOT_FOUND", "Zu parkender Termin nicht gefunden");
+      if (updateResult.kind === "version_conflict") {
+        throw new EmployeeAppointmentAbsencesError(409, "VERSION_CONFLICT", "Ein betroffener Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
       }
-      if (parkResult.kind === "version_conflict") {
-        throw new EmployeeAppointmentAbsencesError(409, "VERSION_CONFLICT", "Ein zu parkender Termin wurde zwischenzeitlich geändert. Bitte neu laden.");
-      }
+      await appointmentsRepository.deleteAppointmentEmployeeTx(tx, conflict.id, employeeId);
     }
   });
+
+  for (const conflict of conflicts) {
+    dispatchCalDavUpsert(conflict.id);
+  }
 }
 
 async function findEmployeeAppointmentAbsence(employeeId: number, appointmentId: number, roleKey: CanonicalRoleKey) {
@@ -284,7 +274,7 @@ export async function createEmployeeAppointmentAbsence(
 ) {
   requireDispatcherOrAdmin(roleKey);
   await assertEmployeeVisible(employeeId, roleKey);
-  await parkConfirmedRegularConflicts(employeeId, input, roleKey);
+  await removeEmployeeFromConfirmedRegularConflicts(employeeId, input, roleKey);
   const { tour, customer } = await ensureAbsencePrerequisites(input.absenceType);
   const appointment = await appointmentsService.createAppointment({
     customerId: customer.id,
@@ -317,7 +307,7 @@ export async function updateEmployeeAppointmentAbsence(
   if (existing.version !== input.version) {
     throw new EmployeeAppointmentAbsencesError(409, "VERSION_CONFLICT", "Die Abwesenheit wurde zwischenzeitlich geändert. Bitte neu laden.");
   }
-  await parkConfirmedRegularConflicts(employeeId, input, roleKey, appointmentId);
+  await removeEmployeeFromConfirmedRegularConflicts(employeeId, input, roleKey, appointmentId);
   const { tour, customer } = await ensureAbsencePrerequisites(input.absenceType);
   await appointmentsService.updateAppointment(appointmentId, {
     version: input.version,
