@@ -235,20 +235,20 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(html).toContain("disabled");
   });
 
-  it("derives the date and kw defaults from the latest available project appointment week", () => {
+  it("uses the current calendar week as report default even when later project appointments exist", () => {
     const defaults = resolveDefaultReportRange("2026-04-03", "2026-10-05");
 
-    expect(defaults.fromDate).toBe("2026-04-06");
-    expect(defaults.toDate).toBe("2026-10-11");
-    expect(defaults.weekCount).toBe(28);
+    expect(defaults.fromDate).toBe("2026-03-30");
+    expect(defaults.toDate).toBe("2026-04-05");
+    expect(defaults.weekCount).toBe(1);
   });
 
-  it("keeps the fallback default when no latest project appointment date is available", () => {
+  it("keeps the current calendar week default when no latest project appointment date is available", () => {
     const defaults = resolveDefaultReportRange("2026-04-03", null);
 
-    expect(defaults.fromDate).toBe("2026-04-06");
-    expect(defaults.toDate).toBe("2026-05-08");
-    expect(defaults.weekCount).toBe(6);
+    expect(defaults.fromDate).toBe("2026-03-30");
+    expect(defaults.toDate).toBe("2026-04-05");
+    expect(defaults.weekCount).toBe(1);
   });
 
   it("omits toDate from the vorlaufliste URL when the field was cleared", () => {

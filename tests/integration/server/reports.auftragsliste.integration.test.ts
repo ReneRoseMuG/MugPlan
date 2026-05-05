@@ -5,7 +5,7 @@
  * - Die Auftragsliste liefert projekteweise Kartenbasis mit repraesentativem Termin, Kategorien und kumulierten Metadaten.
  * - Reklamation schliesst Projekte aus; bei ausschliesslich stornierten Terminen dient der frueheste Storno als Fallback.
  * - Kategorienfilter und Shortcode-Substitution wirken serverseitig in `articleValues`.
- * - Nur ADMIN und DISPONENT duerfen den Report lesen; READER wird abgewiesen.
+ * - ADMIN, DISPONENT und LESER dürfen den Report lesen.
  *
  * Fehlerfaelle:
  * - Reklamationsprojekte erscheinen trotz Ausschluss weiter im Report.

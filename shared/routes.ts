@@ -971,6 +971,88 @@ const reportConfigDefaultsResponseSchema = z.object({
   latestProjectAppointmentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
 });
 
+export const reportConfigReportKeySchema = z.enum([
+  "vorlaufliste",
+  "produktionsplanung",
+  "auftragsliste",
+  "tourenplan",
+]);
+
+export const reportPresetScopeSchema = z.enum(["USER", "GLOBAL"]);
+export const reportPresetActionSchema = z.enum(["GENERATE_REPORT", "OPEN_PRINT_PREVIEW"]);
+export const reportPresetIdSchema = z.string().regex(/^[A-Za-z0-9._-]+$/);
+
+export const reportPresetRangeSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("date"),
+    fromDate: dateOnlySchema,
+    toDate: dateOnlySchema.optional(),
+  }).strict(),
+  z.object({
+    mode: z.literal("calendarWeek"),
+    start: z.enum(["current", "next"]),
+    weeks: z.number().int().min(1).max(52),
+  }).strict(),
+]);
+
+const reportPresetCategoryLayoutEntrySchema = z.object({
+  categoryId: z.number().int().positive(),
+  block: z.number().int().min(1).max(20),
+  columns: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+}).strict();
+
+export const reportPresetConfigSchema = z.object({
+  range: reportPresetRangeSchema,
+  activeTab: z.enum(["date", "calendarWeek", "columns"]).optional(),
+  useShortCodes: z.boolean().optional(),
+  columnOrder: z.array(z.string().min(1)).optional(),
+  hiddenColumns: z.array(z.string().min(1)).optional(),
+  columnWidths: z.record(z.string().min(1), z.number().int().min(80).max(960)).optional(),
+  productCategoryIds: z.array(z.number().int().positive()).optional(),
+  componentCategoryIds: z.array(z.number().int().positive()).optional(),
+  tagIds: z.array(z.number().int().positive()).optional(),
+  saunaModels: z.array(z.string().trim().min(1)).optional(),
+  categoryLayout: z.array(reportPresetCategoryLayoutEntrySchema).optional(),
+  allToursSelected: z.boolean().optional(),
+  selectedTourIds: z.array(z.number().int().positive()).optional(),
+  includeWithoutTour: z.boolean().optional(),
+  printMode: z.enum(["farbdruck", "spardruck"]).optional(),
+  fontSize: z.enum(["small", "medium", "large"]).optional(),
+  orientation: z.enum(["portrait", "landscape"]).optional(),
+}).strict();
+
+export const reportPresetSchema = z.object({
+  id: reportPresetIdSchema,
+  name: z.string().trim().min(1).max(120),
+  reportKey: reportConfigReportKeySchema,
+  scope: reportPresetScopeSchema,
+  config: reportPresetConfigSchema,
+  actions: z.array(reportPresetActionSchema),
+  createdAt: z.string().min(1),
+  updatedAt: z.string().min(1),
+}).strict();
+
+export const reportPresetFileSchema = z.object({
+  reportKey: reportConfigReportKeySchema,
+  presets: z.array(reportPresetSchema),
+}).strict();
+
+const reportConfigPresetsResponseSchema = z.object({
+  reportKey: reportConfigReportKeySchema,
+  presets: z.array(reportPresetSchema),
+});
+
+const reportPresetUpsertInputSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  scope: reportPresetScopeSchema,
+  config: reportPresetConfigSchema,
+  actions: z.array(reportPresetActionSchema).default([]),
+}).strict();
+
+const reportPresetDeleteInputSchema = z.object({
+  scope: reportPresetScopeSchema.default("USER"),
+}).strict();
+
 const authenticatedResponseSchema = z.object({
   status: z.literal("authenticated"),
   userId: z.number().int().positive(),
@@ -4597,6 +4679,37 @@ export const api = {
       },
     },
   },
+  reportConfigs: {
+    list: {
+      method: "GET" as const,
+      path: "/api/report-configs/:reportKey",
+      responses: {
+        200: reportConfigPresetsResponseSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    set: {
+      method: "PUT" as const,
+      path: "/api/report-configs/:reportKey/presets/:presetId",
+      input: reportPresetUpsertInputSchema,
+      responses: {
+        200: reportPresetSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+    delete: {
+      method: "DELETE" as const,
+      path: "/api/report-configs/:reportKey/presets/:presetId",
+      input: reportPresetDeleteInputSchema,
+      responses: {
+        200: z.object({ ok: z.literal(true) }),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+      },
+    },
+  },
   monitoring: {
     list: {
       method: "GET" as const,
@@ -4770,6 +4883,13 @@ export type CalendarMarkerScope = z.infer<typeof calendarMarkerScopeSchema>;
 export type CalendarMarker = z.infer<typeof calendarMarkerSchema>;
 export type CalendarMarkerWriteInput = z.infer<typeof calendarMarkerWriteSchema>;
 export type CalendarMarkerUpdateInput = z.infer<typeof calendarMarkerUpdateSchema>;
+export type ReportConfigReportKey = z.infer<typeof reportConfigReportKeySchema>;
+export type ReportPresetScope = z.infer<typeof reportPresetScopeSchema>;
+export type ReportPresetAction = z.infer<typeof reportPresetActionSchema>;
+export type ReportPresetRange = z.infer<typeof reportPresetRangeSchema>;
+export type ReportPresetConfig = z.infer<typeof reportPresetConfigSchema>;
+export type ReportPreset = z.infer<typeof reportPresetSchema>;
+export type ReportPresetUpsertInput = z.infer<typeof api.reportConfigs.set.input>;
 export type MonitoringTriggerSummaryItemResponse = {
   triggerCode: (typeof MONITORING_TRIGGER_CODES)[number];
   triggerName: string;

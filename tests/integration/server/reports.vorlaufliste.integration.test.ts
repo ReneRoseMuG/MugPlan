@@ -7,7 +7,7 @@
  * - Der systemverwaltete Tag "Reklamation" schliesst Projekt- oder Termin-Treffer aus der Vorlaufliste aus.
  * - Ohne Bis-Datum werden alle Termine ab Von-Datum beruecksichtigt.
  * - Paging greift serverseitig projektbasiert mit 100er-Seiten.
- * - Nur ADMIN und DISPONENT duerfen den Report lesen; LESER wird abgewiesen.
+ * - ADMIN, DISPONENT und LESER dürfen den Report lesen.
  * - articleValues enthaelt fuer alle aktiven Report-Kategorien stabile Werte oder null.
  * - useShortCodes=true ersetzt Artikel- und Komponentennamen durch Shortcodes.
  * - Projekt-Preview-Tags der Vorlaufliste enthalten ungefiltert alle Projekt-Tags, nicht nur System-Tags.

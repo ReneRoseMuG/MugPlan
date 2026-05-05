@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Der Report-Defaults-Endpunkt liefert den letzten verfuegbaren Projektermin systemweit.
  * - Mehrtaegige Projekttermine nutzen fuer das letzte verfuegbare Datum das Terminende.
- * - Nur ADMIN und DISPONENT duerfen die Report-Defaults lesen; READER wird abgewiesen.
+ * - ADMIN, DISPONENT und LESER dürfen die Report-Defaults lesen.
  *
  * Fehlerfaelle:
  * - Kunden-Termine ohne Projekt verschieben den Report-Default nach hinten.

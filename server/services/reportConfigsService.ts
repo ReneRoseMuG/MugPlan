@@ -1,0 +1,145 @@
+import { addDays, addWeeks, format, startOfISOWeek } from "date-fns";
+
+import type {
+  ReportConfigReportKey,
+  ReportPreset,
+  ReportPresetAction,
+  ReportPresetConfig,
+  ReportPresetRange,
+  ReportPresetScope,
+  ReportPresetUpsertInput,
+} from "@shared/routes";
+
+import * as reportConfigsRepository from "../repositories/reportConfigsRepository";
+import type { CanonicalRoleKey } from "../settings/registry";
+
+export class ReportConfigsError extends Error {
+  status: number;
+  code: "FORBIDDEN" | "VALIDATION_ERROR";
+
+  constructor(status: number, code: "FORBIDDEN" | "VALIDATION_ERROR") {
+    super(code);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export type ResolvedReportPresetDateRange = {
+  fromDate: string;
+  toDate: string;
+};
+
+function assertReportPresetReadRole(roleKey: CanonicalRoleKey): void {
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT" && roleKey !== "LESER") {
+    throw new ReportConfigsError(403, "FORBIDDEN");
+  }
+}
+
+function assertReportPresetWriteRole(roleKey: CanonicalRoleKey, scope: ReportPresetScope): void {
+  assertReportPresetReadRole(roleKey);
+  if (scope === "GLOBAL" && roleKey !== "ADMIN") {
+    throw new ReportConfigsError(403, "FORBIDDEN");
+  }
+}
+
+function assertUserId(userId: number | undefined): number {
+  if (!Number.isInteger(userId) || !userId || userId <= 0) {
+    throw new ReportConfigsError(422, "VALIDATION_ERROR");
+  }
+  return userId;
+}
+
+function normalizeActions(actions: ReportPresetAction[]): ReportPresetAction[] {
+  return Array.from(new Set(actions));
+}
+
+export function resolveReportPresetRange(
+  range: ReportPresetRange,
+  referenceDate: Date = new Date(),
+): ResolvedReportPresetDateRange {
+  if (range.mode === "date") {
+    return {
+      fromDate: range.fromDate,
+      toDate: range.toDate ?? range.fromDate,
+    };
+  }
+
+  const firstWeekStart = startOfISOWeek(referenceDate);
+  const rangeStart = range.start === "next" ? addWeeks(firstWeekStart, 1) : firstWeekStart;
+  const rangeEnd = addDays(addWeeks(rangeStart, range.weeks), -1);
+
+  return {
+    fromDate: format(rangeStart, "yyyy-MM-dd"),
+    toDate: format(rangeEnd, "yyyy-MM-dd"),
+  };
+}
+
+export async function listReportPresets(params: {
+  reportKey: ReportConfigReportKey;
+  userId: number | undefined;
+  roleKey: CanonicalRoleKey;
+}): Promise<{ reportKey: ReportConfigReportKey; presets: ReportPreset[] }> {
+  assertReportPresetReadRole(params.roleKey);
+  const userId = assertUserId(params.userId);
+  const presets = await reportConfigsRepository.listReportPresets({
+    reportKey: params.reportKey,
+    userId,
+  });
+
+  return {
+    reportKey: params.reportKey,
+    presets,
+  };
+}
+
+export async function upsertReportPreset(params: {
+  reportKey: ReportConfigReportKey;
+  presetId: string;
+  userId: number | undefined;
+  roleKey: CanonicalRoleKey;
+  input: ReportPresetUpsertInput;
+}): Promise<ReportPreset> {
+  assertReportPresetWriteRole(params.roleKey, params.input.scope);
+  const userId = assertUserId(params.userId);
+  const existing = await reportConfigsRepository.findReportPreset({
+    reportKey: params.reportKey,
+    presetId: params.presetId,
+    scope: params.input.scope,
+    userId: params.input.scope === "USER" ? userId : undefined,
+  });
+  const now = new Date().toISOString();
+  const preset: ReportPreset = {
+    id: params.presetId,
+    reportKey: params.reportKey,
+    scope: params.input.scope,
+    name: params.input.name,
+    config: params.input.config as ReportPresetConfig,
+    actions: normalizeActions(params.input.actions),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  return reportConfigsRepository.upsertReportPreset({
+    reportKey: params.reportKey,
+    scope: params.input.scope,
+    userId: params.input.scope === "USER" ? userId : undefined,
+    preset,
+  });
+}
+
+export async function deleteReportPreset(params: {
+  reportKey: ReportConfigReportKey;
+  presetId: string;
+  userId: number | undefined;
+  roleKey: CanonicalRoleKey;
+  scope: ReportPresetScope;
+}): Promise<void> {
+  assertReportPresetWriteRole(params.roleKey, params.scope);
+  const userId = assertUserId(params.userId);
+  await reportConfigsRepository.deleteReportPreset({
+    reportKey: params.reportKey,
+    presetId: params.presetId,
+    scope: params.scope,
+    userId: params.scope === "USER" ? userId : undefined,
+  });
+}

@@ -2,10 +2,11 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
 import type { z } from "zod";
-import { api } from "@shared/routes";
+import { api, type ReportPreset, type ReportPresetConfig, type ReportPresetRange } from "@shared/routes";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { TourenplanPaginationMeasurement } from "@/components/reports/TourenplanPaginationMeasurement";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
+import { ReportPresetControls } from "@/components/reports/ReportPresetControls";
 import { TourenplanPrintPage } from "@/components/reports/TourenplanPrintPage";
 import {
   buildTourenplanPrintPagesForSections,
@@ -24,7 +25,6 @@ import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
-import { useSetting, useSettings } from "@/hooks/useSettings";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
@@ -59,10 +59,6 @@ type TourenplanSectionRequestData = {
   previewData: TourenplanPreviewResponse;
   appointmentItems: TourenplanAppointmentListItem[];
 };
-
-const TOURENPLAN_RANGE_SETTING_KEY = "reports.tourenplan.rangeConfig";
-const TOURENPLAN_PRINT_MODE_SETTING_KEY = "reports.tourenplan.printMode";
-const TOURENPLAN_FONT_SIZE_SETTING_KEY = "reports.tourenplan.fontSize";
 
 function parseDateOnlyInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -201,14 +197,10 @@ export function TourenplanReportPanel({
   defaultIsoWeekYear,
   isAdmin,
 }: TourenplanReportPanelProps) {
-  const { setSetting } = useSettings();
-  const rangeConfig = useSetting(TOURENPLAN_RANGE_SETTING_KEY) as TourenplanRangeConfig | undefined;
-  const configuredPrintMode = useSetting(TOURENPLAN_PRINT_MODE_SETTING_KEY) as TourenplanPrintMode | undefined;
-  const configuredFontSize = useSetting(TOURENPLAN_FONT_SIZE_SETTING_KEY) as TourenplanFontSize | undefined;
   const [allToursSelected, setAllToursSelected] = React.useState(true);
   const [selectedTourIds, setSelectedTourIds] = React.useState<number[]>([]);
   const [includeWithoutTour, setIncludeWithoutTour] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<ReportConfigPanelMode>("date");
+  const [activeTab, setActiveTab] = React.useState<ReportConfigPanelMode>("calendarWeek");
   const [fromDate, setFromDate] = React.useState(defaultReportRange.fromDate);
   const [toDate, setToDate] = React.useState(defaultReportRange.toDate);
   const [kwStart, setKwStart] = React.useState<number | undefined>(defaultIsoWeek);
@@ -221,46 +213,21 @@ export function TourenplanReportPanel({
   const [activePageIndex, setActivePageIndex] = React.useState(0);
 
   React.useEffect(() => {
-    setActiveTab(rangeConfig?.activeTab ?? "date");
-  }, [rangeConfig?.activeTab]);
-
-  React.useEffect(() => {
-    setFromDate(rangeConfig?.fromDate ?? defaultReportRange.fromDate);
-    setToDate(rangeConfig?.toDate ?? defaultReportRange.toDate);
-    setKwStart(rangeConfig?.kwStart ?? defaultIsoWeek);
-    setWeekCount(rangeConfig?.weekCount ?? defaultReportRange.weekCount);
+    setFromDate(defaultReportRange.fromDate);
+    setToDate(defaultReportRange.toDate);
+    setKwStart(defaultIsoWeek);
+    setWeekCount(defaultReportRange.weekCount);
   }, [
     defaultIsoWeek,
     defaultReportRange.fromDate,
     defaultReportRange.toDate,
     defaultReportRange.weekCount,
-    rangeConfig?.fromDate,
-    rangeConfig?.kwStart,
-    rangeConfig?.toDate,
-    rangeConfig?.weekCount,
   ]);
 
-  React.useEffect(() => {
-    setPrintMode(configuredPrintMode ?? "farbdruck");
-  }, [configuredPrintMode]);
-
-  React.useEffect(() => {
-    setFontSize(configuredFontSize ?? "medium");
-  }, [configuredFontSize]);
-
   const persistRangeConfig = React.useCallback(async (next: Partial<TourenplanRangeConfig>) => {
-    await setSetting({
-      key: TOURENPLAN_RANGE_SETTING_KEY,
-      scopeType: "USER",
-      value: {
-        activeTab: next.activeTab ?? activeTab,
-        fromDate: normalizePersistedDate(next.fromDate ?? fromDate),
-        toDate: resolveRequiredToDate(next.toDate ?? toDate, defaultReportRange.toDate),
-        kwStart: normalizeKwStart(next.kwStart ?? kwStart),
-        weekCount: normalizeWeekCount(next.weekCount ?? weekCount),
-      },
-    });
-  }, [activeTab, defaultReportRange.toDate, fromDate, kwStart, setSetting, toDate, weekCount]);
+    void next;
+    return undefined;
+  }, []);
 
   const currentWeekRange = React.useMemo(() => buildQuickRange(defaultReportRange.referenceDate, 0), [defaultReportRange.referenceDate]);
   const nextWeekRange = React.useMemo(() => buildQuickRange(defaultReportRange.referenceDate, 1), [defaultReportRange.referenceDate]);
@@ -271,6 +238,65 @@ export function TourenplanReportPanel({
     weekCount,
     referenceDate: defaultReportRange.referenceDate,
   }), [defaultReportRange.referenceDate, kwStart, weekCount]);
+
+  const nextIsoWeek = React.useMemo(() => getISOWeek(addWeeks(defaultReportRange.referenceDate, 1)), [defaultReportRange.referenceDate]);
+
+  const buildPresetRange = (): ReportPresetRange => {
+    if (activeTab !== "calendarWeek") {
+      return {
+        mode: "date",
+        fromDate: normalizePersistedDate(fromDate) ?? defaultReportRange.fromDate,
+        toDate: resolveRequiredToDate(toDate, defaultReportRange.toDate),
+      };
+    }
+
+    const normalizedKwStart = normalizeKwStart(kwStart);
+    const weeks = normalizeWeekCount(weekCount);
+    if (normalizedKwStart === nextIsoWeek) {
+      return { mode: "calendarWeek", start: "next", weeks };
+    }
+    if (normalizedKwStart === defaultIsoWeek) {
+      return { mode: "calendarWeek", start: "current", weeks };
+    }
+
+    return {
+      mode: "date",
+      fromDate: kwRange?.fromDate ?? defaultReportRange.fromDate,
+      toDate: kwRange?.toDate ?? defaultReportRange.toDate,
+    };
+  };
+
+  const buildPresetConfig = (): ReportPresetConfig => ({
+    range: buildPresetRange(),
+    activeTab,
+    useShortCodes,
+    allToursSelected,
+    selectedTourIds,
+    includeWithoutTour,
+    printMode,
+    fontSize,
+    orientation,
+  });
+
+  const applyPreset = (preset: ReportPreset) => {
+    const config = preset.config;
+    if (config.range.mode === "calendarWeek") {
+      setActiveTab("calendarWeek");
+      setKwStart(config.range.start === "next" ? nextIsoWeek : defaultIsoWeek);
+      setWeekCount(normalizeWeekCount(config.range.weeks));
+    } else {
+      setActiveTab("date");
+      setFromDate(config.range.fromDate);
+      setToDate(config.range.toDate ?? config.range.fromDate);
+    }
+    setUseShortCodes(config.useShortCodes ?? false);
+    setAllToursSelected(config.allToursSelected ?? true);
+    setSelectedTourIds(config.selectedTourIds ?? []);
+    setIncludeWithoutTour(config.includeWithoutTour ?? false);
+    setPrintMode(config.printMode ?? "farbdruck");
+    setFontSize(config.fontSize ?? "medium");
+    setOrientation(config.orientation ?? "landscape");
+  };
 
   const previewRequest = React.useMemo(() => {
     if (activeTab === "calendarWeek") {
@@ -505,7 +531,6 @@ export function TourenplanReportPanel({
                     onValueChange={(value) => {
                       const nextFontSize = value === "small" || value === "large" ? value : "medium";
                       setFontSize(nextFontSize);
-                      void setSetting({ key: TOURENPLAN_FONT_SIZE_SETTING_KEY, scopeType: "USER", value: nextFontSize });
                     }}
                   >
                     <SelectTrigger className="h-8 w-[120px] bg-white text-xs" data-testid="select-reports-tourenplan-font-size">
@@ -525,7 +550,6 @@ export function TourenplanReportPanel({
                     onValueChange={(value) => {
                       if (value === "farbdruck" || value === "spardruck") {
                         setPrintMode(value);
-                        void setSetting({ key: TOURENPLAN_PRINT_MODE_SETTING_KEY, scopeType: "GLOBAL", value });
                       }
                     }}
                     className="flex w-fit items-center gap-0.5 rounded-lg border border-slate-200 bg-slate-100 p-1"
@@ -557,6 +581,16 @@ export function TourenplanReportPanel({
               {quickRangeOptions}
             </div>
           </div>
+        )}
+        secondaryOptionsSlot={(
+          <ReportPresetControls
+            reportKey="tourenplan"
+            isAdmin={isAdmin}
+            currentConfig={buildPresetConfig()}
+            defaultName="Tourenplan Preset"
+            onApplyPreset={applyPreset}
+            testIdPrefix="reports-tourenplan"
+          />
         )}
         footer={(
           <Button

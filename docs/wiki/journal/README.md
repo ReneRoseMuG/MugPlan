@@ -20,6 +20,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 - [04.05.26 - FT-06: Reklamationsworkflow in Create-Formularen](04-05-26-reklamation-create-formulare.md)
 - [04.05.26 - Bugs: Abwesenheiten, Monitoring, KW-Feld und Admin-Correction-Workflows](04-05-26-bugs-04-05-26.md)
 - [04.05.26 - FT-04: Tour-KW-Kartenaktionen im Wochenkalender](04-05-26-tour-kw-week-card-actions.md)
+- [04.05.26 - FT-26: Report-Presets mit User-Scope](04-05-26-report-presets-user-scope.md)
 - [04.05.26 - FT-02/FT-05: Projektkarten-Terminzeile und Mitarbeiter-Löschung](04-05-26-projektkarten-mitarbeiter-delete.md)
 - [04.05.26 - Wiki: Mojibake und Encoding normalisiert](04-05-26-wiki-encoding.md)
 - [04.05.26 - FT-02: Projektliste-Toggles und Terminsortierung](04-05-26-projektliste-toggle-terminsortierung.md)
