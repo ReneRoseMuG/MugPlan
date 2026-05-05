@@ -28,6 +28,7 @@ const employeeAttachmentsPanelCalls: Array<Record<string, unknown>> = [];
 const tagPickerPanelCalls: Array<Record<string, unknown>> = [];
 const notesSectionCalls: Array<Record<string, unknown>> = [];
 const utilizationBoardCalls: Array<Record<string, unknown>> = [];
+const helpIconCalls: string[] = [];
 const useQueryMock = vi.fn();
 const useMutationMock = vi.fn();
 
@@ -56,6 +57,13 @@ vi.mock("@/components/ui/entity-form-shell", () => ({
       <div data-testid="entity-form-shell-footer">{footer}</div>
     </div>
   ),
+}));
+
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: ({ helpKey }: { helpKey: string }) => {
+    helpIconCalls.push(helpKey);
+    return <span data-help-key={helpKey}>help</span>;
+  },
 }));
 
 vi.mock("@/components/ui/button", () => ({
@@ -191,7 +199,7 @@ vi.mock("@/lib/tags", () => ({
   ]),
 }));
 
-import { EmployeeForm } from "../../../client/src/components/EmployeeForm";
+import { EmployeeForm, resolveEmployeeFormHelpKey } from "../../../client/src/components/EmployeeForm";
 
 function buildQueryResult(queryKey: unknown): { data: unknown; isLoading: boolean; error?: unknown } {
   if (Array.isArray(queryKey) && queryKey[0] === "/api/employees" && queryKey[2] === "absence-appointments") {
@@ -334,6 +342,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     tagPickerPanelCalls.length = 0;
     notesSectionCalls.length = 0;
     utilizationBoardCalls.length = 0;
+    helpIconCalls.length = 0;
     useMutationMock.mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(async () => ({ id: 17 })),
@@ -354,6 +363,8 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     const markup = renderToStaticMarkup(<EmployeeForm employeeId={17} onCancel={vi.fn()} />);
 
     expect(markup).toContain("entity-form-shell");
+    expect(markup).toContain("data-help-key=\"employees.form.stammdaten\"");
+    expect(helpIconCalls).toEqual(["employees.form.stammdaten"]);
     expect(markup).toContain("employee-form-main-column");
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
@@ -397,6 +408,7 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
     const markup = renderToStaticMarkup(<EmployeeForm onCancel={vi.fn()} />);
 
     expect(markup).toContain("entity-form-shell");
+    expect(markup).toContain("data-help-key=\"employees.form.stammdaten\"");
     expect(markup).toContain("employee-form-main-column");
     expect(markup).toContain("employee-form-sidebar");
     expect(markup).toContain("button-cancel-employee");
@@ -429,6 +441,17 @@ describe("FT05+/FT28 employee form shell layout integration", () => {
       readOnly: false,
     });
     expect(utilizationBoardCalls).toHaveLength(0);
+  });
+
+  it("resolves a tab-specific help key for every employee form tab", () => {
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "stammdaten" })).toBe("employees.form.stammdaten");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "termine" })).toBe("employees.form.termine");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "abwesenheiten" })).toBe("employees.form.abwesenheiten");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "wochenplanung" })).toBe("employees.form.wochenplanung");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "umsatz-uebersicht" })).toBe("employees.form.umsatz-uebersicht");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "auslastung" })).toBe("employees.form.auslastung");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "journal", activeTab: "stammdaten" })).toBe("employees.form.journal");
+    expect(resolveEmployeeFormHelpKey({ activeMainTab: "details", activeTab: "unbekannt" })).toBe("employees.form.stammdaten");
   });
 
   it("renders edit mode as readonly for reader roles", () => {

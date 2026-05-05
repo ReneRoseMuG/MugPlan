@@ -93,6 +93,7 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 
 ## Backlogs
 
+- [BL (08): Projekttypen / Projektkategorisierung](backlog/ft-02-projekte-backlog.md)
 
 ## Architektur & Kontext
 

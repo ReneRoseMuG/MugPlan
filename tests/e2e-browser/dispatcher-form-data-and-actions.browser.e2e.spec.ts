@@ -29,7 +29,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { closeDispatcherLoginConflictsDialog, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 import { applyTestSystemSeed } from "../helpers/resetDatabase";
 
 function getCompactEmployeeLabel(employee: { firstName?: string | null; lastName?: string | null }) {
@@ -63,6 +63,7 @@ function resolveNextReadableWeek() {
 
 async function loginAsDispatcher(page: Page) {
   await loginAsRole(page, "DISPATCHER");
+  await closeDispatcherLoginConflictsDialog(page);
 }
 
 async function createNoteViaDialog(page: Page, input: { title: string; body: string }) {

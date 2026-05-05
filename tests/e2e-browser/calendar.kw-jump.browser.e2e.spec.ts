@@ -18,7 +18,7 @@
  */
 import { expect, test, type Page } from "@playwright/test";
 
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { closeDispatcherLoginConflictsDialog, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -34,8 +34,13 @@ async function getVisibleMonthTitle(page: Page) {
   return page.locator('[data-testid^="month-sheet-title-"]').first().textContent();
 }
 
+async function getFirstVisibleMonthWeekNumber(page: Page) {
+  return page.locator('[data-testid^="month-sheet-week-number-"]').first().textContent();
+}
+
 test("shows an error for invalid kw zero and still allows the next valid week jump", async ({ page }) => {
   await loginAsAdmin(page);
+  await closeDispatcherLoginConflictsDialog(page);
   await page.getByTestId("nav-wochenuebersicht").click();
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
 
@@ -66,6 +71,7 @@ test("shows an error for invalid kw zero and still allows the next valid week ju
 
 test("jumps within the month calendar by kw and can return to the previous month position", async ({ page }) => {
   await loginAsAdmin(page);
+  await closeDispatcherLoginConflictsDialog(page);
   await page.getByTestId("nav-monatsuebersicht").click();
   await expect(page.getByTestId("month-sheet-container")).toBeVisible();
 
@@ -77,7 +83,8 @@ test("jumps within the month calendar by kw and can return to the previous month
     message: "month title should change after next navigation",
   }).not.toBe(initialMonthTitle);
   const jumpedMonthTitle = await getVisibleMonthTitle(page);
-  const targetKw = await kwInput.inputValue();
+  const targetKw = (await getFirstVisibleMonthWeekNumber(page))?.trim() ?? "";
+  expect(targetKw).not.toBe("");
 
   await page.getByTestId("button-prev").click();
   await expect.poll(async () => getVisibleMonthTitle(page)).toBe(initialMonthTitle);

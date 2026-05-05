@@ -22,6 +22,7 @@ Alle Feature-Dokumente folgen der Feature-Vorlage aus den [Redaktionsregeln](../
 | FT (19): Attachments | [ft-19-attachments.md](ft-19-attachments/ft-19-attachments.md) |
 | FT (20): Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung | [ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung.md](ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung/ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung.md) |
 | FT (21): Dokumentenextraktion | [ft-21-dokumentenextraktion.md](ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md) |
+| FT (24): Fahrzeugverwaltung | [ft-24-fahrzeugverwaltung.md](ft-24-fahrzeugverwaltung/ft-24-fahrzeugverwaltung.md) |
 | FT (26): Auswertungen und Reports | [ft-26-auswertungen-und-reports.md](ft-26-auswertungen-und-reports/ft-26-auswertungen-und-reports.md) |
 | FT (27): Produktverwaltung und Auftragspositionen | [ft-27-produktverwaltung-und-auftragspositionen.md](ft-27-produktverwaltung-und-auftragspositionen/ft-27-produktverwaltung-und-auftragspositionen.md) |
 | FT (28): Universelles Tagging-System | [ft-28-universelles-tagging-system.md](ft-28-universelles-tagging-system/ft-28-universelles-tagging-system.md) |

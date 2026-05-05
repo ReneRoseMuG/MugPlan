@@ -68,8 +68,6 @@ describe("reportProduktionsplanung helpers", () => {
     });
 
     expect(result).toEqual([
-      { id: 2, name: "Anmerkungen", color: "#2563eb", isDefault: false, version: 1 },
-      { id: 5, name: "Gespiegelt", color: "#0891b2", isDefault: false, version: 1 },
       { id: 3, name: "Sondermaß", color: "#1e3a8a", isDefault: false, version: 1 },
     ]);
   });

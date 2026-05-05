@@ -29,7 +29,12 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
+import {
+  closeDispatcherLoginConflictsDialog,
+  loginAsAdmin,
+  loginAsRole,
+  resetBrowserSuiteState,
+} from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -59,12 +64,14 @@ async function readNoteTemplateByTitle(page: Page, title: string): Promise<{
 }
 
 async function openAppointmentInCalendar(page: Page, appointmentId: number): Promise<void> {
+  await closeDispatcherLoginConflictsDialog(page);
   await page.getByTestId("nav-wochenuebersicht").click();
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
   await expect(page.getByTestId(`week-appointment-panel-${appointmentId}`)).toBeVisible();
 }
 
 async function openSpanningAppointmentInCalendar(page: Page, appointmentId: number): Promise<void> {
+  await closeDispatcherLoginConflictsDialog(page);
   await page.getByTestId("nav-wochenuebersicht").click();
   await expect(page.getByTestId("calendar-week-view")).toBeVisible();
   await expect(page.getByTestId(`week-spanning-tile-${appointmentId}`).first()).toBeVisible();

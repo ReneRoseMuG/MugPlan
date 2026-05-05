@@ -52,6 +52,7 @@ function buildAttachmentPayload(prefix: string, label: string) {
 }
 
 async function openProjectForm(page: Page, projectId: number, scope: "all" | "noAppointments" = "all") {
+  await closeOpenConflictsDialog(page);
   await page.getByTestId("nav-projekte").click();
   if (scope === "noAppointments") {
     await page.getByTestId("toggle-project-scope-no-appointments").click();
@@ -62,6 +63,24 @@ async function openProjectForm(page: Page, projectId: number, scope: "all" | "no
   await expect(card).toBeVisible({ timeout: 10_000 });
   await card.dblclick();
   await expect(page.getByTestId("button-save-project")).toBeVisible({ timeout: 10_000 });
+}
+
+async function closeOpenConflictsDialog(page: Page) {
+  const dialog = page.getByRole("dialog").filter({ hasText: "Offene Konflikte" });
+  await dialog.waitFor({ state: "visible", timeout: 2_000 }).catch(() => undefined);
+  if (await dialog.isVisible().catch(() => false)) {
+    await dialog.getByRole("button", { name: "Schließen" }).click();
+    await expect(dialog).toBeHidden();
+  }
+}
+
+async function closeProjectForm(page: Page) {
+  await page.getByTestId("button-cancel-project").click();
+  const discardButton = page.getByRole("button", { name: "Verwerfen und schließen" });
+  if (await discardButton.isVisible().catch(() => false)) {
+    await discardButton.click();
+  }
+  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
 }
 
 test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Preview aktualisieren", async ({ page }) => {
@@ -110,8 +129,7 @@ test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Previ
   await expect(page.getByText(attachmentPayload.originalName)).not.toBeVisible();
   await expect(page.getByText("Dokumente (0)")).toBeVisible();
 
-  await page.getByTestId("button-cancel-project").click();
-  await expect(page.getByTestId("button-save-project")).toHaveCount(0);
+  await closeProjectForm(page);
   await page.getByTestId("nav-wochenuebersicht").click();
   await expect(page.getByTestId(`week-appointment-panel-${appointment?.id}`)).toBeVisible({ timeout: 10_000 });
   const updatedHoverTrigger = page
@@ -119,6 +137,7 @@ test("Soft-Delete - Projekt: Anhang aus Liste entfernen, Counter und Hover-Previ
     .getByTestId("week-appointment-attachments-hover-trigger");
   await expect(updatedHoverTrigger).toBeVisible();
   await expect(updatedHoverTrigger).toContainText("0");
+  await closeOpenConflictsDialog(page);
 });
 
 test("Hard-Delete - Projekt: Anhang aus Liste und Counter entfernen", async ({ page }) => {
@@ -151,6 +170,7 @@ test("Hard-Delete - Projekt: Anhang aus Liste und Counter entfernen", async ({ p
 
   await expect(attachmentBadge).not.toBeVisible({ timeout: 5_000 });
   await expect(page.getByText("Dokumente (0)")).toBeVisible();
+  await closeProjectForm(page);
 });
 
 test("Abbruch - Dialog schliessen ohne Loeschung", async ({ page }) => {
@@ -182,6 +202,8 @@ test("Abbruch - Dialog schliessen ohne Loeschung", async ({ page }) => {
   await expect(attachmentBadge).toBeVisible();
   await expect(page.getByText(attachmentPayload.originalName)).toBeVisible();
   await expect(page.getByText("Dokumente (1)")).toBeVisible();
+  await closeProjectForm(page);
+  await closeOpenConflictsDialog(page);
 });
 
 test("Historischer Termin: Dispatcher sieht Readonly-Ansicht und keine Attachment-Aktionen", async ({ page }) => {
@@ -203,6 +225,7 @@ test("Historischer Termin: Dispatcher sieht Readonly-Ansicht und keine Attachmen
   });
 
   await loginAsRole(page, "DISPATCHER");
+  await closeOpenConflictsDialog(page);
 
   await page.getByTestId("nav-termine").click();
   const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");
@@ -241,6 +264,7 @@ test("Historischer Termin: Admin darf Bearbeitungs- und Attachment-Aktionen sehe
   });
 
   await loginAsAdmin(page);
+  await closeOpenConflictsDialog(page);
 
   await page.getByTestId("nav-termine").click();
   const allScopeToggle = page.getByTestId("toggle-appointments-scope-all");

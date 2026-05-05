@@ -38,9 +38,9 @@ describe("tourWeekEmployeesService week rules", () => {
     expect(isWeekLocked(2026, 14, "2026-04-09")).toBe(true);
   });
 
-  it("unlocks the current week only for admins", () => {
+  it("unlocks the current week for roles that can manage week planning", () => {
     expect(isWeekLockedForRole(2026, 15, "ADMIN", "2026-04-09")).toBe(false);
-    expect(isWeekLockedForRole(2026, 15, "DISPONENT", "2026-04-09")).toBe(true);
+    expect(isWeekLockedForRole(2026, 15, "DISPONENT", "2026-04-09")).toBe(false);
     expect(isWeekLockedForRole(2026, 15, "LESER", "2026-04-09")).toBe(true);
   });
 

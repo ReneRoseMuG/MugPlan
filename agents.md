@@ -456,8 +456,10 @@ Für neue oder grundlegend umgebaute Tests gilt Laufzeit ausdrücklich als gleic
 
 ### Timeout-Regel
 
-Für `npm run test:integration` und `npm run test:e2e` ist standardmäßig ein langer Command-Timeout zu verwenden. `npm run test:e2e:browser` bleibt davon unberührt.
-Der lange Command-Timeout ist bereits **beim ersten Lauf** zu setzen und nicht erst nach einem abgebrochenen Versuch nachzuziehen. Wiederholte Neuversuche allein wegen zu knapp gesetzter äußerer Command-Timeouts gelten als vermeidbar und sind durch vorausschauende Wahl eines ausreichend langen Timeouts zu vermeiden.
+Für `npm run test:integration`, `npm run test:e2e` und `npm run test:e2e:browser` ist standardmäßig ein langer Command-Timeout zu verwenden.
+Bei `npm run test:e2e:browser` sind die Playwright-Timeouts pro Test maßgeblich; ein äußerer Command-Timeout darf nicht als fachliche Gesamtlaufzeitgrenze verwendet werden.
+Wenn die lokale Ausführungsumgebung technisch einen äußeren Timeout verlangt, muss dieser bereits **beim ersten Lauf** so großzügig gesetzt werden, dass der vollständige Browser-E2E-Lauf regulär bis zur Playwright-Zusammenfassung durchlaufen kann. Er dient nur als Hängerschutz für defekte Prozesse, nicht als normaler Abbruchmechanismus.
+Wiederholte Neuversuche allein wegen zu knapp gesetzter äußerer Command-Timeouts gelten als vermeidbar und sind durch vorausschauende Wahl eines ausreichend langen Timeouts zu vermeiden.
 
 ### Test-Kommandos nur seriell
 

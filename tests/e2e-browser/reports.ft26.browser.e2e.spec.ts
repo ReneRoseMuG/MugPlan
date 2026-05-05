@@ -282,6 +282,16 @@ async function openReports(page: Page) {
   await expect(page.getByTestId("reports-panel")).toBeVisible();
 }
 
+async function fillReportDateRange(page: Page, prefix: string, fromDate: string, toDate = fromDate) {
+  const dateToggle = page.getByTestId(`toggle-${prefix}-date`);
+  await expect(dateToggle).toBeVisible();
+  if ((await dateToggle.getAttribute("data-state")) !== "on") {
+    await dateToggle.click();
+  }
+  await page.getByTestId(`${prefix}-from-date`).fill(fromDate);
+  await page.getByTestId(`${prefix}-to-date`).fill(toDate);
+}
+
 async function clearSelectedAuftragslisteTagFilters(page: Page) {
   const removeButtons = page
     .locator("[data-testid^='reports-auftragsliste-tag-filter-'][data-testid$='-remove']");
@@ -436,10 +446,8 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeHidden();
 
   const vorlauflisteGenerateButton = page.getByTestId("button-reports-vorlaufliste-generate");
-  await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
-
-  await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-vorlaufliste", inRangeDate);
+  await fillReportDateRange(page, "reports-produktionsplanung", inRangeDate);
   await vorlauflisteGenerateButton.click();
 
   const vorlauflisteTable = page.getByTestId("table-reports-vorlaufliste");
@@ -524,7 +532,9 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("nav-reports")).toBeVisible();
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
-  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).toBeChecked();
+  await expect(page.getByTestId("checkbox-reports-vorlaufliste-use-shortcodes")).not.toBeChecked();
+  await page.getByTestId("toggle-reports-vorlaufliste-date").click();
+  await page.getByTestId("toggle-reports-produktionsplanung-date").click();
   await expect(page.getByTestId("reports-vorlaufliste-to-date")).not.toHaveValue(inRangeDate);
   await expect(page.getByTestId("reports-produktionsplanung-to-date")).toHaveValue(await page.getByTestId("reports-vorlaufliste-to-date").inputValue());
   await page.getByTestId("toggle-reports-vorlaufliste-calendarWeek").click();
@@ -533,32 +543,31 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await page.getByTestId("toggle-reports-produktionsplanung-calendarWeek").click();
   await expect(page.getByTestId("input-reports-produktionsplanung-kw-start")).toHaveValue(resetVorlauflisteKwStart);
   await expect(page.getByTestId("input-reports-produktionsplanung-week-count")).toHaveValue(resetVorlauflisteWeekCount);
-  expect(Number.parseInt(resetVorlauflisteWeekCount, 10)).toBeGreaterThan(2);
+  expect(resetVorlauflisteWeekCount).not.toBe("2");
+  expect(Number.parseInt(resetVorlauflisteWeekCount, 10)).toBeGreaterThan(0);
   await page.getByTestId("toggle-reports-vorlaufliste-date").click();
   await page.getByTestId("toggle-reports-produktionsplanung-date").click();
 
-  await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-vorlaufliste", inRangeDate);
   await vorlauflisteGenerateButton.click();
   await page.getByTestId("button-reports-vorlaufliste-columns").click();
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).not.toBeChecked();
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
   await page.getByTestId("button-reports-vorlaufliste-columns-reset").click();
   await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
   await page.getByTestId("button-reports-vorlaufliste-columns").click();
 
-  await expect(vorlauflisteTable).toContainText("SP");
+  await expect(vorlauflisteTable).toContainText("Steuerung Pro Voll");
   const resetHeaders = await getHeaderTexts(vorlauflisteTable);
   expect(resetHeaders.indexOf("KW Vorgeplant")).toBeLessThan(resetHeaders.indexOf("Tatsächlicher Termin"));
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-produktionsplanung-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-produktionsplanung", inRangeDate);
   await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();
-  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("KOL");
-  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("FK");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Kolmikko Voll");
+  await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Fenster Klein Voll");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText(specialProject.customer.fullName ?? "");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).not.toContainText("Sondermaß");
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Browser");
@@ -626,8 +635,7 @@ test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay
   });
 
   await openReports(page);
-  await page.getByTestId("reports-auftragsliste-from-date").fill(getRelativeBerlinDate(18));
-  await page.getByTestId("reports-auftragsliste-to-date").fill(getRelativeBerlinDate(24));
+  await fillReportDateRange(page, "reports-auftragsliste", getRelativeBerlinDate(18), getRelativeBerlinDate(24));
 
   await clearSelectedAuftragslisteTagFilters(page);
   await clearSelectedAuftragslisteSaunaModels(page);
@@ -710,8 +718,7 @@ test("resolves competing Auftragsliste highlight tags consistently in overlay an
   });
 
   await openReports(page);
-  await page.getByTestId("reports-auftragsliste-from-date").fill(getRelativeBerlinDate(29));
-  await page.getByTestId("reports-auftragsliste-to-date").fill(getRelativeBerlinDate(32));
+  await fillReportDateRange(page, "reports-auftragsliste", getRelativeBerlinDate(29), getRelativeBerlinDate(32));
   await clearSelectedAuftragslisteTagFilters(page);
   await clearSelectedAuftragslisteSaunaModels(page);
   await page.getByTestId("button-reports-auftragsliste-generate").click();

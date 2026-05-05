@@ -71,6 +71,7 @@ Für den Login-Dialog werden Parkplatztermine vollständig berücksichtigt. Dadu
 
 ## Backlogs
 
+- [FT (31): Konfig Seite für Monitoring Trigger](backlog/ft-31-dispositions-monitoring-konflikte-backlog.md)
 
 ## Architektur & Kontext
 

@@ -74,6 +74,8 @@ Zusätzlich synchronisiert das System Termine mit einem externen CalDAV-Kalender
 
 ## Backlogs
 
+- [E-Mail-Versand nach Backup-Lauf](backlog/ft-07-automatisierte-datensicherung-und-fallback-backlog.md)
+- [Backup Cloud Sync](backlog/ft-07-automatisierte-datensicherung-und-fallback-backlog.md)
 
 ## Architektur & Kontext
 

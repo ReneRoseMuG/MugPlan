@@ -209,7 +209,7 @@ describe("FT03 projects table preview wiring", () => {
     expect(markup).toContain("Projekt Mit Footer");
     expect(markup).toContain("Kunde Vier");
     expect(markup).toContain("14:00 - 09.08.99 · Tour Table");
-    expect(markup).toContain("background-color:#884422");
+    expect(markup).toContain("background-color:rgba(136, 68, 34");
     expect(markup).not.toContain("Termine:1");
     expect(markup).toContain("Notizen:5");
     expect(markup).toContain("Anhänge:2");

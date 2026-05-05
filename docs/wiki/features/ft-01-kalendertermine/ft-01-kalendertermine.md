@@ -145,6 +145,7 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 
 ## Backlogs
 
+- [BL (09): Termintypen / Terminkategorisierung](backlog/ft-01-kalendertermine-backlog.md)
 
 ## Architektur & Kontext
 

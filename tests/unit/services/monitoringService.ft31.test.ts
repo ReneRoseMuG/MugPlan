@@ -2,16 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - TR-01 meldet unterbesetzte aktuelle oder zukuenftige Termine im konfigurierten Horizont.
- * - TR-02 meldet geparkte aktuelle oder zukuenftige Termine ueber den System-Tag Geparkt.
+ * - TR-01 meldet unterbesetzte Termine aus der vollstaendigen Monitoring-Konfliktmenge.
+ * - TR-02 meldet geparkte Termine ueber den System-Tag Geparkt.
  * - Ein Termin mit beiden Triggern erscheint genau einmal mit kombinierter Triggeranzeige.
- * - Stornierte und historische Termine bleiben fuer beide Trigger ausgeschlossen.
+ * - Stornierte Termine bleiben fuer beide Trigger ausgeschlossen.
+ * - Leser sind serverseitig vom Monitoring ausgeschlossen.
  * - Summary-Aggregation gruppiert Treffer je Trigger stabil.
  *
  * Fehlerfaelle:
  * - Geparkt-Termine fehlen trotz System-Tag im Monitoring.
- * - Stornierte oder historische Termine tauchen trotzdem als Treffer auf.
- * - Leser verlieren den freigegebenen Monitoring-Lesezugriff wieder.
+ * - Stornierte Termine tauchen trotzdem als Treffer auf.
+ * - Leser erhalten wieder Monitoring-Zugriff.
  *
  * Ziel:
  * Die FT31-Kernlogik des Monitoring-Service fuer beide Trigger isoliert absichern.
@@ -110,10 +111,7 @@ describe("FT31 unit: monitoringService", () => {
 
     const result = await listMonitoringItems("DISPONENT");
 
-    expect(hoisted.listAppointmentsForMonitoringMock).toHaveBeenCalledWith({
-      fromDate: new Date(2098, 11, 31),
-      toDate: new Date(2099, 0, 6),
-    });
+    expect(hoisted.listAppointmentsForMonitoringMock).toHaveBeenCalledWith({});
     expect(result).toEqual([
       {
         appointmentId: 11,
@@ -172,7 +170,7 @@ describe("FT31 unit: monitoringService", () => {
     ]);
   });
 
-  it("loads all future appointments when all-appointments is enabled", async () => {
+  it("loads the full conflict set independent of the old all-appointments horizon switch", async () => {
     hoisted.getGlobalSettingValueMock.mockImplementation(async (key: string) => {
       if (key === "monitoring.tr01.allAppointments") return true;
       if (key === "monitoring.tr01.horizonDays") return 7;
@@ -199,10 +197,7 @@ describe("FT31 unit: monitoringService", () => {
 
     const result = await listMonitoringItems("ADMIN");
 
-    expect(hoisted.listAppointmentsForMonitoringMock).toHaveBeenCalledWith({
-      fromDate: new Date(2098, 11, 31),
-      toDate: undefined,
-    });
+    expect(hoisted.listAppointmentsForMonitoringMock).toHaveBeenCalledWith({});
     expect(result).toEqual([
       expect.objectContaining({
         appointmentId: 50,
@@ -213,7 +208,7 @@ describe("FT31 unit: monitoringService", () => {
     ]);
   });
 
-  it("skips cancelled and historical appointments for both triggers", async () => {
+  it("skips cancelled appointments but keeps historical parked conflicts in the full monitoring set", async () => {
     hoisted.listAppointmentsForMonitoringMock.mockResolvedValue([
       {
         appointmentId: 61,
@@ -251,10 +246,17 @@ describe("FT31 unit: monitoringService", () => {
       [62, [{ name: RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME }, { name: RESERVED_VACANT_TAG_NAME }]],
     ]));
 
-    await expect(listMonitoringItems("ADMIN")).resolves.toEqual([]);
+    await expect(listMonitoringItems("ADMIN")).resolves.toEqual([
+      expect.objectContaining({
+        appointmentId: 61,
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01", "TR-02"],
+        triggerName: "Mindestzahl Mitarbeiter + Geparkt",
+      }),
+    ]);
   });
 
-  it("allows readers to list monitoring items", async () => {
+  it("blocks readers from listing monitoring items", async () => {
     hoisted.listAppointmentsForMonitoringMock.mockResolvedValue([
       {
         appointmentId: 71,
@@ -273,13 +275,11 @@ describe("FT31 unit: monitoringService", () => {
       },
     ]);
 
-    await expect(listMonitoringItems("LESER")).resolves.toEqual([
-      expect.objectContaining({
-        appointmentId: 71,
-        triggerCode: "TR-01",
-        triggerCodes: ["TR-01"],
-      }),
-    ]);
+    await expect(listMonitoringItems("LESER")).rejects.toMatchObject({
+      status: 403,
+      code: "FORBIDDEN",
+    });
+    expect(hoisted.listAppointmentsForMonitoringMock).not.toHaveBeenCalled();
   });
 
   it("builds a summary only for dispatcher or admin and groups by trigger", async () => {

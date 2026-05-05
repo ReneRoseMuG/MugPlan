@@ -2,16 +2,17 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - FT31 liefert Disponent/Admin frische Monitoring-Treffer fuer TR-01 und TR-02 aus echten Termindaten.
+ * - FT31 liefert Disponent/Admin die vollstaendige Monitoring-Konfliktmenge fuer TR-01 und TR-02 aus echten Termindaten.
  * - FT31-Admin-Konfiguration ist exklusiv fuer Admin les- und schreibbar.
  * - Ein Termin mit beiden Triggern erscheint genau einmal mit kombinierter Triggeranzeige.
- * - Stornierte und historische Termine werden fuer beide Trigger ignoriert.
+ * - Stornierte Termine werden fuer beide Trigger ignoriert.
+ * - Historische Parkplatz-/Unterbesetzungs-Konflikte bleiben in der vollstaendigen Konfliktmenge sichtbar.
  * - FT04-Wochenplan-Entfernungen machen unterbesetzte Tour-Termine unmittelbar im Monitoring sichtbar.
  *
  * Fehlerfaelle:
- * - Leser verliert den freigegebenen Monitoring-Lesezugriff oder erhält fälschlich Admin-Konfigrechte.
+ * - Leser erhalten fälschlich Monitoring-Zugriff oder Admin-Konfigrechte.
  * - Geparkte Termine fehlen trotz System-Tag im Monitoring.
- * - Stornierte oder historische Treffer bleiben sichtbar.
+ * - Stornierte Treffer bleiben sichtbar.
  * - TR-01-Konfiguration beeinflusst faelschlich den Geparkt-Trigger.
  *
  * Ziel:
@@ -107,7 +108,7 @@ async function parkAppointment(agent: Awaited<ReturnType<typeof createRoleAgent>
 }
 
 describe("FT31 integration: monitoring", () => {
-  it("returns TR-01 only for under-staffed appointments and allows readers to read", async () => {
+  it("returns TR-01 for the full under-staffed conflict set and blocks readers", async () => {
     const admin = await createRoleAgent("ADMIN");
     const dispatcher = await createRoleAgent("DISPATCHER");
     const reader = await createRoleAgent("READER");
@@ -158,7 +159,19 @@ describe("FT31 integration: monitoring", () => {
       .where(eq(appointments.id, historicalAppointment.id));
 
     const dispatcherResponse = await dispatcher.agent.get("/api/monitoring").expect(200);
-    expect(dispatcherResponse.body).toEqual([
+    expect(dispatcherResponse.body).toHaveLength(3);
+    expect(dispatcherResponse.body).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        appointmentId: historicalAppointment.id,
+        startDate: getRelativeBerlinDate(-1),
+        tourId: tour.id,
+        tourName: tour.name,
+        customerNumber: customer.customerNumber,
+        employeeCount: 0,
+        triggerCode: "TR-01",
+        triggerCodes: ["TR-01"],
+        triggerName: "Mindestzahl Mitarbeiter",
+      }),
       expect.objectContaining({
         appointmentId: underStaffed.id,
         startDate: getRelativeBerlinDate(1),
@@ -189,24 +202,12 @@ describe("FT31 integration: monitoring", () => {
         triggerCodes: ["TR-01"],
         triggerName: "Mindestzahl Mitarbeiter",
       }),
-    ]);
+    ]));
 
     const adminResponse = await admin.agent.get("/api/monitoring").expect(200);
-    expect(adminResponse.body).toHaveLength(2);
+    expect(adminResponse.body).toHaveLength(3);
 
-    await reader.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toHaveLength(2);
-      expect(body).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          appointmentId: underStaffed.id,
-          triggerCode: "TR-01",
-        }),
-        expect.objectContaining({
-          appointmentId: directCustomerUnderStaffed.id,
-          triggerCode: "TR-01",
-        }),
-      ]));
-    });
+    await reader.agent.get("/api/monitoring").expect(403);
   });
 
   it("returns one row per parked appointment and combines both triggers on under-staffed parked appointments", async () => {
@@ -324,7 +325,7 @@ describe("FT31 integration: monitoring", () => {
     expect((dispatcherResolved.body as Array<{ key: string }>).some((entry) => entry.key.startsWith("monitoring."))).toBe(false);
   });
 
-  it("recomputes monitoring live after a relevant appointment update and honors allAppointments for far-future hits", async () => {
+  it("recomputes monitoring live after appointment updates and keeps far-future conflicts in the full set", async () => {
     const admin = await createRoleAgent("ADMIN");
     const customer = await createCustomerFixture("FT31-UPDATE-CUST");
 
@@ -339,7 +340,14 @@ describe("FT31 integration: monitoring", () => {
       employeeIds: [],
     });
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toEqual([]);
+      expect(body).toEqual([
+        expect.objectContaining({
+          appointmentId: appointment.id,
+          startDate: getRelativeBerlinDate(5),
+          triggerCode: "TR-01",
+          triggerCodes: ["TR-01"],
+        }),
+      ]);
     });
 
     const detailResponse = await admin.agent.get(`/api/appointments/${appointment.id}`).expect(200);
@@ -367,12 +375,6 @@ describe("FT31 integration: monitoring", () => {
       ]);
     });
 
-    await configureMonitoring(admin.agent, {
-      allAppointments: true,
-      horizonDays: 1,
-      minimumEmployees: 1,
-    });
-
     const farFutureAppointment = await createAppointmentFixture({
       customerId: customer.id,
       startDate: getRelativeBerlinDate(40),
@@ -391,7 +393,7 @@ describe("FT31 integration: monitoring", () => {
     });
   });
 
-  it("ignores cancelled and historical parked appointments", async () => {
+  it("ignores cancelled appointments but keeps historical parked conflicts visible", async () => {
     const admin = await createRoleAgent("ADMIN");
     const customer = await createCustomerFixture("FT31-CANCEL-CUST");
     await ensureReservedCancellationTag();
@@ -425,7 +427,19 @@ describe("FT31 integration: monitoring", () => {
       .where(eq(appointments.id, historical.id));
 
     await admin.agent.get("/api/monitoring").expect(200).expect(({ body }) => {
-      expect(body).toEqual([]);
+      expect(body).toEqual([
+        expect.objectContaining({
+          appointmentId: historical.id,
+          startDate: getRelativeBerlinDate(-1),
+          tourName: "Parkplatz",
+          triggerCode: "TR-01",
+          triggerCodes: ["TR-01", "TR-02"],
+          triggerName: "Mindestzahl Mitarbeiter + Geparkt",
+        }),
+      ]);
+      expect(body).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ appointmentId: cancelled.id }),
+      ]));
     });
   });
 

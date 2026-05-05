@@ -32,6 +32,20 @@ const alertActionProps = new Map<string, Record<string, unknown>>();
 const alertCancelProps = new Map<string, Record<string, unknown>>();
 const buttonProps = new Map<string, Record<string, unknown>>();
 
+const appointmentFormStateHook = {
+  noteSuggestionDialog: 17,
+  templateNoteEditorOpen: 21,
+  templateNoteEditorId: 22,
+  templateNoteEditorVersion: 23,
+  templateNoteTitle: 24,
+  templateNoteBody: 25,
+  templateNoteCardColor: 26,
+  templateNotePrint: 27,
+  templateNoteCardColorLocked: 28,
+  draftAppointmentNotes: 40,
+  userRole: 43,
+} as const;
+
 function resetStateHooks(overrides: Record<number, unknown> = {}) {
   stateStore.length = 0;
   setterSpies.length = 0;
@@ -415,7 +429,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
   beforeEach(() => {
     Object.assign(globalThis, { React });
     resetStateHooks({
-      42: "DISPATCHER",
+      [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
     mutationOptions.length = 0;
     queryInvalidateMock.mockClear();
@@ -497,7 +511,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["/api/notes-preview"] });
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["calendarAppointments"] });
     expect(queryInvalidateMock).toHaveBeenCalledWith({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
-    expect(setterSpies[20]).not.toHaveBeenCalledWith(true);
+    expect(setterSpies[appointmentFormStateHook.templateNoteEditorOpen]).not.toHaveBeenCalledWith(true);
   });
 
   it("stores draft notes locally in create mode without calling the appointment note mutation", async () => {
@@ -520,8 +534,8 @@ describe("FT13 UI: appointment form note editor behavior", () => {
     });
 
     expect(createMutation.mutate).not.toHaveBeenCalled();
-    expect(setterSpies[39]).toHaveBeenCalledTimes(1);
-    const draftUpdater = setterSpies[39].mock.calls[0]?.[0] as ((current: Array<Record<string, unknown>>) => Array<Record<string, unknown>>);
+    expect(setterSpies[appointmentFormStateHook.draftAppointmentNotes]).toHaveBeenCalledTimes(1);
+    const draftUpdater = setterSpies[appointmentFormStateHook.draftAppointmentNotes].mock.calls[0]?.[0] as ((current: Array<Record<string, unknown>>) => Array<Record<string, unknown>>);
     const nextDrafts = draftUpdater([]);
     expect(nextDrafts).toHaveLength(1);
     expect(nextDrafts[0]).toMatchObject({
@@ -535,8 +549,8 @@ describe("FT13 UI: appointment form note editor behavior", () => {
 
   it("sets openEditorOnSuccess only for the template suggestion confirm flow", async () => {
     resetStateHooks({
-      17: { templateTitle: "Reklamation", appointmentId: 77 },
-      42: "DISPATCHER",
+      [appointmentFormStateHook.noteSuggestionDialog]: { templateTitle: "Reklamation", appointmentId: 77 },
+      [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
 
     renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
@@ -564,7 +578,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
       templateId: 5,
       openEditorOnSuccess: true,
     });
-    expect(setterSpies[17]).toHaveBeenCalledWith(null);
+    expect(setterSpies[appointmentFormStateHook.noteSuggestionDialog]).toHaveBeenCalledWith(null);
   });
 
   it("opens the template editor only when onSuccess receives openEditorOnSuccess", async () => {
@@ -601,20 +615,20 @@ describe("FT13 UI: appointment form note editor behavior", () => {
     );
     await flushMicrotasks();
 
-    expect(setterSpies[21]).toHaveBeenCalledWith(15);
-    expect(setterSpies[22]).toHaveBeenCalledWith(4);
-    expect(setterSpies[23]).toHaveBeenCalledWith("Reklamation");
-    expect(setterSpies[24]).toHaveBeenCalledWith("<p>Reklamation</p>");
-    expect(setterSpies[25]).toHaveBeenCalledWith("#22c55e");
-    expect(setterSpies[26]).toHaveBeenCalledWith(true);
-    expect(setterSpies[27]).toHaveBeenCalledWith(true);
-    expect(setterSpies[20]).toHaveBeenCalledWith(true);
+    expect(setterSpies[appointmentFormStateHook.templateNoteEditorId]).toHaveBeenCalledWith(15);
+    expect(setterSpies[appointmentFormStateHook.templateNoteEditorVersion]).toHaveBeenCalledWith(4);
+    expect(setterSpies[appointmentFormStateHook.templateNoteTitle]).toHaveBeenCalledWith("Reklamation");
+    expect(setterSpies[appointmentFormStateHook.templateNoteBody]).toHaveBeenCalledWith("<p>Reklamation</p>");
+    expect(setterSpies[appointmentFormStateHook.templateNoteCardColor]).toHaveBeenCalledWith("#22c55e");
+    expect(setterSpies[appointmentFormStateHook.templateNotePrint]).toHaveBeenCalledWith(true);
+    expect(setterSpies[appointmentFormStateHook.templateNoteCardColorLocked]).toHaveBeenCalledWith(true);
+    expect(setterSpies[appointmentFormStateHook.templateNoteEditorOpen]).toHaveBeenCalledWith(true);
   });
 
   it("closes the suggestion dialog on skip and closes the template editor on cancel", () => {
     resetStateHooks({
-      17: { templateTitle: "Reklamation", appointmentId: 77 },
-      42: "DISPATCHER",
+      [appointmentFormStateHook.noteSuggestionDialog]: { templateTitle: "Reklamation", appointmentId: 77 },
+      [appointmentFormStateHook.userRole]: "DISPATCHER",
     });
 
     renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
@@ -622,11 +636,11 @@ describe("FT13 UI: appointment form note editor behavior", () => {
     const skipAction = alertCancelProps.get("button-note-suggestion-skip");
     expect(skipAction).toBeTruthy();
     (skipAction?.onClick as (() => void))();
-    expect(setterSpies[17]).toHaveBeenCalledWith(null);
+    expect(setterSpies[appointmentFormStateHook.noteSuggestionDialog]).toHaveBeenCalledWith(null);
 
     const cancelNoteButton = buttonProps.get("button-cancel-note");
     expect(cancelNoteButton).toBeTruthy();
     (cancelNoteButton?.onClick as (() => void))();
-    expect(setterSpies[20]).toHaveBeenCalledWith(false);
+    expect(setterSpies[appointmentFormStateHook.templateNoteEditorOpen]).toHaveBeenCalledWith(false);
   });
 });

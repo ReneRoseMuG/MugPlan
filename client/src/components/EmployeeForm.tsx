@@ -11,6 +11,7 @@ import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPane
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
+import { HelpIcon } from "@/components/ui/help/help-icon";
 import { TeamInfoBadge } from "@/components/ui/team-info-badge";
 import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -63,6 +64,7 @@ interface EmployeeFormProps {
 
 type EmployeeTagDraftItem = TagRelationItem;
 type DraftEmployeeNote = Note & { templateId?: number };
+type EmployeeFormMainTab = "details" | "journal";
 type EmployeeWeekPlanItem = {
   assignmentId: number;
   tourId: number;
@@ -87,6 +89,32 @@ type EmployeeWeekPlanItem = {
     fullName: string;
   }>;
 };
+
+const EMPLOYEE_FORM_HELP_KEYS = {
+  journal: { helpKey: "employees.form.journal" },
+  details: {
+    stammdaten: { helpKey: "employees.form.stammdaten" },
+    termine: { helpKey: "employees.form.termine" },
+    abwesenheiten: { helpKey: "employees.form.abwesenheiten" },
+    wochenplanung: { helpKey: "employees.form.wochenplanung" },
+    "umsatz-uebersicht": { helpKey: "employees.form.umsatz-uebersicht" },
+    auslastung: { helpKey: "employees.form.auslastung" },
+  },
+} as const;
+
+export function resolveEmployeeFormHelpKey(params: {
+  activeMainTab: EmployeeFormMainTab;
+  activeTab: string;
+}): string {
+  if (params.activeMainTab === "journal") {
+    return EMPLOYEE_FORM_HELP_KEYS.journal.helpKey;
+  }
+
+  return (
+    EMPLOYEE_FORM_HELP_KEYS.details[params.activeTab as keyof typeof EMPLOYEE_FORM_HELP_KEYS.details]?.helpKey
+    ?? EMPLOYEE_FORM_HELP_KEYS.details.stammdaten.helpKey
+  );
+}
 
 function extractApiCode(error: unknown): string | null {
   if (!(error instanceof Error)) return null;
@@ -823,6 +851,10 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
     [employeeDetails?.employee?.fullName, formData.firstName, formData.lastName, isEditing],
   );
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
+  const employeeFormHelpKey = resolveEmployeeFormHelpKey({
+    activeMainTab: isEditing ? activeMainTab : "details",
+    activeTab,
+  });
 
   return (
     <Tabs
@@ -837,10 +869,13 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
-              <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
-                <Users className="w-6 h-6" />
-                {title}
-              </h2>
+              <div className="flex min-w-0 items-center gap-3">
+                <h2 className="text-2xl font-bold text-primary flex min-w-0 items-center gap-3">
+                  <Users className="w-6 h-6" />
+                  {title}
+                </h2>
+                <HelpIcon helpKey={employeeFormHelpKey} />
+              </div>
               <EditFormContextText>{employeeEditContext}</EditFormContextText>
             </div>
 

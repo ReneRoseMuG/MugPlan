@@ -183,6 +183,7 @@ Kalendereinträge dürfen Zusatzinformationen aus Termin, Projekt, Kunde, Tour u
 
 ## Backlogs
 
+- [FT-03: Kartenansicht (Termin- und Tourvisualisierung)](backlog/ft-03-kalenderansichten-backlog.md)
 
 ## Architektur & Kontext
 

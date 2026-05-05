@@ -65,6 +65,16 @@ async function openReports(page: Page) {
   await expect(page.getByTestId("reports-panel")).toBeVisible();
 }
 
+async function fillReportDateRange(page: Page, prefix: string, fromDate: string, toDate = fromDate) {
+  const dateToggle = page.getByTestId(`toggle-${prefix}-date`);
+  await expect(dateToggle).toBeVisible();
+  if ((await dateToggle.getAttribute("data-state")) !== "on") {
+    await dateToggle.click();
+  }
+  await page.getByTestId(`${prefix}-from-date`).fill(fromDate);
+  await page.getByTestId(`${prefix}-to-date`).fill(toDate);
+}
+
 async function openReportPopup(page: Page, testId: string) {
   const popupPromise = page.waitForEvent("popup");
   await page.getByTestId(testId).click();
@@ -187,8 +197,7 @@ test("opens the vorlaufliste both inline and in a standalone tab with real repor
   });
 
   await openReports(page);
-  await page.getByTestId("reports-vorlaufliste-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-vorlaufliste-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-vorlaufliste", inRangeDate);
   await page.getByTestId("button-reports-vorlaufliste-generate").click();
 
   const vorlauflisteTable = page.getByTestId("table-reports-vorlaufliste");
@@ -236,8 +245,7 @@ test("opens the produktionsplanung both inline and in a standalone tab with real
   });
 
   await openReports(page);
-  await page.getByTestId("reports-produktionsplanung-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-produktionsplanung-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-produktionsplanung", inRangeDate);
   await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
   const categories = page.getByTestId("reports-produktionsplanung-categories");
@@ -285,8 +293,7 @@ test("opens the auftragsliste both inline and in a standalone tab with real proj
   });
 
   await openReports(page);
-  await page.getByTestId("reports-auftragsliste-from-date").fill(inRangeDate);
-  await page.getByTestId("reports-auftragsliste-to-date").fill(inRangeDate);
+  await fillReportDateRange(page, "reports-auftragsliste", inRangeDate);
   await page.getByTestId("button-reports-auftragsliste-generate").click();
 
   const cards = page.getByTestId("reports-auftragsliste-project-cards");

@@ -12,7 +12,7 @@
  * Ziel:
  * Den echten Browser-Workflow fuer nachtraeglich aktivierte Drucknotizen im Tourenplan regressionssicher absichern.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import * as appointmentNotesService from "../../server/services/appointmentNotesService";
 import {
@@ -30,6 +30,16 @@ test.describe.configure({ mode: "serial" });
 test.beforeAll(async () => {
   await resetBrowserSuiteState();
 });
+
+async function fillTourenplanDateRange(page: Page, fromDate: string, toDate = fromDate) {
+  const dateToggle = page.getByTestId("toggle-reports-tourenplan-date");
+  await expect(dateToggle).toBeVisible();
+  if ((await dateToggle.getAttribute("data-state")) !== "on") {
+    await dateToggle.click();
+  }
+  await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
+  await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
+}
 
 test("refreshes the Tourenplan preview after enabling print on an existing appointment note", async ({ page }) => {
   const longProjectDescription = [
@@ -89,8 +99,7 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
   await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
   await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
   await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
-  await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
-  await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
+  await fillTourenplanDateRange(page, fromDate, toDate);
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 
@@ -124,8 +133,7 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
   await expect(page.getByTestId("reports-tourenplan-config-panel")).toBeVisible();
   await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
   await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
-  await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
-  await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
+  await fillTourenplanDateRange(page, fromDate, toDate);
   await page.getByTestId("button-reports-tourenplan-preview").click();
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 

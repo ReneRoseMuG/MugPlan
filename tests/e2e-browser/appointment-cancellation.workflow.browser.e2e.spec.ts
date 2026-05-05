@@ -55,6 +55,16 @@ async function openReports(page: Page) {
   await expect(page.getByTestId("reports-panel")).toBeVisible();
 }
 
+async function fillReportDateRange(page: Page, prefix: string, fromDate: string, toDate = fromDate) {
+  const dateToggle = page.getByTestId(`toggle-${prefix}-date`);
+  await expect(dateToggle).toBeVisible();
+  if ((await dateToggle.getAttribute("data-state")) !== "on") {
+    await dateToggle.click();
+  }
+  await page.getByTestId(`${prefix}-from-date`).fill(fromDate);
+  await page.getByTestId(`${prefix}-to-date`).fill(toDate);
+}
+
 async function openNewAppointmentFromProjectContext(page: Page) {
   await page.getByTestId("button-new-appointment-from-project").click();
   await expect(page.getByTestId("button-calendar-context-back")).toBeVisible();
@@ -257,8 +267,7 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await page.getByTestId("button-close-project").click();
 
   await openReports(page);
-  await page.getByTestId("reports-vorlaufliste-from-date").fill(appointmentDate);
-  await page.getByTestId("reports-vorlaufliste-to-date").fill(appointmentDate);
+  await fillReportDateRange(page, "reports-vorlaufliste", appointmentDate);
   await page.getByTestId("button-reports-vorlaufliste-generate").click();
 
   const vorlauflisteTable = page.getByTestId("table-reports-vorlaufliste");
@@ -270,8 +279,7 @@ test("runs the browser cancellation flow from regular future appointment to canc
   await expect(vorlauflisteTable).toContainText("0,00");
 
   await page.getByTestId("button-reports-back").click();
-  await page.getByTestId("reports-produktionsplanung-from-date").fill(appointmentDate);
-  await page.getByTestId("reports-produktionsplanung-to-date").fill(appointmentDate);
+  await fillReportDateRange(page, "reports-produktionsplanung", appointmentDate);
   await page.getByTestId("button-reports-produktionsplanung-generate").click();
 
   await expect(page.getByTestId("reports-produktionsplanung-overlay")).toBeVisible();

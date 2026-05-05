@@ -16,6 +16,12 @@ Diese Datei bündelt feature-übergreifende Beziehungen, bis sie je Feature voll
 - FT (26) konsumiert FT (18) für die entkoppelte Settings-Grenze, FT (20) für Report- und Preset-Rollen und FT (28) für Reporteffekte von System-Tags wie Reklamation, Storniert und Sondermaß.
 - FT (31) konsumiert FT (01), FT (04) und FT (33): Monitoring wertet Terminbestand, Parkplatz-Zuordnung, Mitarbeiterunterdeckung und Abwesenheitsfolgen aus, ohne selbst Termine zu mutieren.
 - FT (33) nutzt FT (06), wenn bestätigte reguläre Konflikttermine über den Parken-Workflow behandelt werden.
+- BL (09) Termintypen ist kanonisch unter FT (01) geführt, berührt aber FT (28) als Abgrenzung zu freien Tags und FT (06), falls Termintypen Workflow- oder Formularverhalten auslösen.
+- FT (24) Fahrzeugverwaltung ist als Backlog-Feature-Hülle angelegt und berührt voraussichtlich FT (01), FT (03), FT (04), FT (05) und FT (20), solange Fahrzeugdaten, Fahrzeugzuweisungen, Fahrzeugtermine und Rollenrechte noch nicht spezifiziert sind.
+- FT (31) Konfig Seite für Monitoring Trigger bleibt unter FT (31) geführt und berührt FT (18) für Settings-Speicherung, FT (27) für Saunamodell-Ableitung aus Auftragspositionen und BL (09), falls Trigger künftig termintypabhängig werden.
+- Die ehemalige FT (22) Kartenansicht ist als Backlog unter FT (03) zurückgestuft. Sie konsumiert Termin-, Kunden-, Projekt-, Tour- und Mitarbeiterdaten aus FT (01), FT (02), FT (04), FT (05) und FT (09), darf aber keine Termin- oder Tourlogik mutieren.
+- FT (07) E-Mail-Versand nach Backup-Lauf und Backup Cloud Sync erweitern die Backup-Folgeprozesse um nicht-kritische externe Sicherungspfade und berühren Admin-Settings, Rollenregeln aus FT (20) sowie die Abgrenzung zwischen Mailanhang und Cloud-Upload bei großen Backup-Dateien.
+- BL (08) Projekttypen ist kanonisch unter FT (02) geführt. Es grenzt strukturierte Projektkategorien von freien Tags aus FT (28) ab und berührt FT (27), weil der vorhandene stille Typ `1` aktuell das Sauna-/Artikellistenformular trägt.
 
 ## Pflege
 

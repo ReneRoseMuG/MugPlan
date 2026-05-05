@@ -132,3 +132,12 @@ export async function loginAsRole(page: Page, roleCode: BrowserRoleCode) {
 export async function loginAsReader(page: Page) {
   await loginAsRole(page, "READER");
 }
+
+export async function closeDispatcherLoginConflictsDialog(page: Page) {
+  const dialog = page.getByTestId("dialog-dispatcher-login-conflicts");
+  await dialog.waitFor({ state: "visible", timeout: 2_000 }).catch(() => undefined);
+  if (await dialog.isVisible().catch(() => false)) {
+    await page.getByTestId("button-close-dispatcher-login-conflicts").click();
+    await expect(dialog).toBeHidden();
+  }
+}

@@ -22,7 +22,7 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { closeDispatcherLoginConflictsDialog, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 type CapturedDndEvent = {
   type: string;
@@ -50,6 +50,7 @@ test("shows the concrete server validation message after dragging an appointment
   const today = getRelativeBerlinDate(0);
 
   await loginAsRole(page, "DISPATCHER");
+  await closeDispatcherLoginConflictsDialog(page);
   await page.getByTestId("nav-monatsuebersicht").click();
 
   const appointmentBar = page.getByTestId(`appointment-bar-${appointment.id}`).first();
