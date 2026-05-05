@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (05) Mitarbeiterverwaltung 19c06c719b6a45ef9b6b5da509e5b0c5.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -60,11 +57,9 @@ In der Mitarbeiterdetailansicht können dem Mitarbeiter Dokumente als Anhänge z
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
 

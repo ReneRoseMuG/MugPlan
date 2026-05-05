@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (09) Kundenverwaltung a8d8fb71a9a04a6fac413845c3d8fbad.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -68,12 +65,8 @@ In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

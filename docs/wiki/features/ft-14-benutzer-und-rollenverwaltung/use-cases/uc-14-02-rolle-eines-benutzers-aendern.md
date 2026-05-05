@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -26,7 +24,7 @@ Die Rolle eines bestehenden Benutzers ändern.
 2. Der Akteur ändert die Rolle.
 3. Der Akteur speichert.
 4. Das System prüft serverseitig die Admin-Berechtigung.
-5. Das System prüft, ob nach der Ã„nderung mindestens ein Admin verbleibt.
+5. Das System prüft, ob nach der Änderung mindestens ein Admin verbleibt.
 6. Das System persistiert die neue Rolle.
 
 ## Alternativen
@@ -38,4 +36,3 @@ Die Rolle eines bestehenden Benutzers ändern.
 ## Ergebnis
 
 Die Rolle ist aktualisiert und wirkt systemweit.
-

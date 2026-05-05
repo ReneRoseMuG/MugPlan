@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (16) Hilfetexte verwalten a8c06986b3a641d4b4d30723de4b4315.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -51,12 +48,8 @@ Der Inhalt wird als Markdown gespeichert; externe Ressourcen- oder Dateipfadabh�
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

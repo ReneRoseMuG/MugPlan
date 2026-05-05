@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (14) Benutzer- und Rollenverwaltung 9b2597a244b74023b822b2c94668ebc4.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -56,12 +53,8 @@ Der letzte aktive Admin bleibt besonders geschützt. Er darf weder entfernt noch
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

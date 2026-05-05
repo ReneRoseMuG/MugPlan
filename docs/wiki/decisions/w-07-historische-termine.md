@@ -25,11 +25,8 @@ Eine Anpassung der Spec würde den aktuellen Code nachträglich fachlich absiche
 
 Mittel. Wenn die Entscheidung falsch dokumentiert oder falsch umgesetzt wird, können Rollen unbeabsichtigt mehr oder weniger Rechte auf historische Termine erhalten. Das betrifft fachliche Korrektheit und Rollenklarheit, aber nicht breit die restliche Terminlogik.
 
-## Vorgeschlagene MaÃŸnahme
+## Vorgeschlagene Maßnahme
 
 Entscheidung treffen: Spec um Admin-Ausnahme ergänzen oder Code auf pauschale Sperre historischer Termine ändern.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52
-

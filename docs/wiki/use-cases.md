@@ -2,11 +2,8 @@
 
 Use Cases werden feature-zentriert unter `docs/wiki/features/<feature>/use-cases/` gepflegt.
 
-## Importstatus
 
-Alle aktuell identifizierten Feature-Use-Cases wurden aus lokalen Notion-Markdown-Exporten extrahiert und in eigene Dateien ?bernommen.
-
-## Importierte Use Cases
+## Use Cases
 
 - [FT (01) Use Cases](features/ft-01-kalendertermine/use-cases/ft-01-kalendertermine-use-cases.md)
 - [FT (02) Use Cases](features/ft-02-projekte/use-cases/ft-02-projekte-use-cases.md)
@@ -36,27 +33,3 @@ Alle aktuell identifizierten Feature-Use-Cases wurden aus lokalen Notion-Markdow
 ## Zielregel
 
 Jeder Use Case erh?lt eine eigene Datei, verwendet die Use-Case-Vorlage und enth?lt einen R?cklink auf sein Feature.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

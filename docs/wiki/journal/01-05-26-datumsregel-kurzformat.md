@@ -17,5 +17,3 @@ Datumsdarstellung, Projektregeln, Journal-Workflow.
 Voller Audit und voller Testlauf waren zum Zeitpunkt des Notion-Eintrags noch ausstehend.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

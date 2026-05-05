@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (18): User Preferences](../ft-18-user-preferences.md)
-- Notion-Quelle: https://app.notion.com/p/d9f4fc001e9e42cd94d6e49e6f297eb2
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -39,5 +37,4 @@ Eine persönliche Einstellung auf den systemseitig definierten Standardwert zur�
 
 ## Ergebnis
 
-Die persönliche Einstellung entspricht dem systemweit definierten Standardwert und wirkt ausschlieÃŸlich für den betreffenden Akteur.
-
+Die persönliche Einstellung entspricht dem systemweit definierten Standardwert und wirkt ausschließlich für den betreffenden Akteur.

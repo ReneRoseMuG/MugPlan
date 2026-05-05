@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (26) Auswertungen und Reports 313da094354e80b2a13ad9fdb689a254.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -230,12 +227,8 @@ Die Tourenplan-Konfiguration wird nicht mehr über `reports.tourenplan.rangeConf
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

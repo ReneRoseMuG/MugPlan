@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Alle einem Kunden eindeutig zugeordneten Notizen vollständig und konsistent ein
 
 1. Der Akteur öffnet die Detailansicht eines bestehenden Kunden.
 2. Das System prüft serverseitig die Leseberechtigung.
-3. Das System lädt ausschlieÃŸlich die Notizen, die eindeutig diesem Kunden zugeordnet sind.
+3. Das System lädt ausschließlich die Notizen, die eindeutig diesem Kunden zugeordnet sind.
 4. Das System sortiert die Notizen deterministisch:
     - Angepinnte Notizen (`is_pinned = true`) erscheinen zuerst.
     - Innerhalb gleicher Pin-Logik erfolgt die Sortierung nach `updated_at` absteigend.
@@ -34,7 +32,7 @@ Alle einem Kunden eindeutig zugeordneten Notizen vollständig und konsistent ein
     - Beschreibung (Richtext formatiert),
     - visuelle Kennzeichnung bei gesetzter `color`,
     - ggf. Pin-Symbol.
-7. Enthält der Akteur ausschlieÃŸlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
+7. Enthält der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
 
 ### Alternativabläufe
 
@@ -45,12 +43,10 @@ Alle einem Kunden eindeutig zugeordneten Notizen vollständig und konsistent ein
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Alle kundenspezifischen Notizen sind konsistent sichtbar.
-- Es werden ausschlieÃŸlich Notizen dieses Kunden angezeigt.
+- Es werden ausschließlich Notizen dieses Kunden angezeigt.
 - Die Sortierung ist deterministisch und reproduzierbar.
 - Die Anzeige verändert keine persistierten Daten und hat keine Seiteneffekte auf Projektnotizen.
-

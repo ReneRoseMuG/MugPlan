@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -27,9 +25,9 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 1. Browser A (Administrator) öffnet die Kundendetailansicht eines aktiven Kunden.
 2. Browser B (Disponent) zeigt eine Kundenliste mit diesem Kunden an.
 3. Administrator in Browser A deaktiviert den Kunden.
-4. Das System setzt `is_active = false` und persistiert die Ã„nderung.
+4. Das System setzt `is_active = false` und persistiert die Änderung.
 5. Browser B führt eine erneute Abfrage der Kundenliste aus (z. B. durch Seitenwechsel, Filterwechsel oder explizites Neuladen).
-6. Das System liefert serverseitig gefilterte Daten gemäÃŸ Rolle.
+6. Das System liefert serverseitig gefilterte Daten gemäß Rolle.
 7. Der deaktivierte Kunde erscheint nicht mehr in der Liste des Disponenten.
 
 ---
@@ -45,7 +43,7 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 
 ### Konsistenzregeln
 
-- Die Datenquelle ist ausschlieÃŸlich serverseitig maÃŸgeblich.
+- Die Datenquelle ist ausschließlich serverseitig maßgeblich.
 - Es existiert keine clientseitige Cache-Logik, die serverseitige Filter übersteuern darf.
 - Jede neue Anfrage muss den aktuellen Persistenzzustand widerspiegeln.
 - Es ist nicht erforderlich, dass andere Browser aktiv gepusht werden; Konsistenz ist spätestens bei der nächsten Serverabfrage garantiert.
@@ -54,7 +52,6 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -68,4 +65,3 @@ Nicht angegeben in der Notion-Quelle.
 - Kundenlisten sind rollenabhängig und statusabhängig konsistent.
 - Es entstehen keine dauerhaft sichtbaren veralteten Zustände.
 - Gelöschte oder deaktivierte Kunden können nicht dauerhaft angezeigt werden.
-

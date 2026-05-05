@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Die vollständige Kundendetailansicht wird angezeigt, einschlieÃŸlich aller Stammdaten, referenzierten Projekte, direkter Termine (ohne Projekt), projektgebundener Termine (indirekt über Projekte), sowie kundenbezogener Notizen und Anhänge.
+Die vollständige Kundendetailansicht wird angezeigt, einschließlich aller Stammdaten, referenzierten Projekte, direkter Termine (ohne Projekt), projektgebundener Termine (indirekt über Projekte), sowie kundenbezogener Notizen und Anhänge.
 
 ## Vorbedingungen
 
@@ -71,4 +69,3 @@ Die vollständige Kundendetailansicht wird angezeigt, einschlieÃŸlich aller St
 ## Ergebnis
 
 Die Kundendetailansicht ist vollständig und konsistent dargestellt. Es werden keine Daten verändert. Die dargestellten Daten entsprechen dem aktuellen persistenten Zustand. Alle Projekte, Direkttermine, Projekttermine, Notizen und Anhänge sind sichtbar. Disponenten sehen nur aktive Kunden; Administratoren sehen alle. Keine verwaisten oder inkonsistenten Referenzen werden angezeigt.
-

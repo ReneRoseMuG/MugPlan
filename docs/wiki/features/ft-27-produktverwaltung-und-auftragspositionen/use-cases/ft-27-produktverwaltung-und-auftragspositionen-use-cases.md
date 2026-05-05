@@ -1,6 +1,5 @@
 ﻿# FT (27) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (27): Produktverwaltung und Auftragspositionen](../ft-27-produktverwaltung-und-auftragspositionen.md) übernommen.
 
 - [UC 27/01: Produktkategorie anlegen (Admin)](uc-27-01-produktkategorie-anlegen-admin.md)
 - [UC 27/02: Produkt anlegen (Admin)](uc-27-02-produkt-anlegen-admin.md)
@@ -9,4 +8,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 27/05: Auftragsposition manuell erfassen (Disponent / Admin)](uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.md)
 - [UC 27/06: Auftragsposition bearbeiten (Disponent / Admin)](uc-27-06-auftragsposition-bearbeiten-disponent-admin.md)
 - [UC 27/07: Auftragsposition löschen (Admin)](uc-27-07-auftragsposition-loeschen-admin.md)
-

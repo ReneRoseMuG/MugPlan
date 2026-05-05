@@ -3,12 +3,9 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ziel
 
@@ -41,4 +38,3 @@ Einen neuen Hilfetext erstellen, um einen UI-Kontext erklärbar zu machen.
 ## Ergebnis
 
 Ein neuer Hilfetext ist persistent gespeichert und über seinen help_key referenzierbar. Der Hilfetext ist je nach gesetztem Status in der UI abrufbar oder nicht abrufbar.
-

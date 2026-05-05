@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -38,5 +36,4 @@ Hilfetexte anhand von Suchkriterien auffinden und zur weiteren Bearbeitung anzei
 
 ## Ergebnis
 
-Der Akteur erhält eine gefilterte und konsistente Ãœbersicht der Hilfetexte und kann einzelne Datensätze zur weiteren Bearbeitung auswählen.
-
+Der Akteur erhält eine gefilterte und konsistente Übersicht der Hilfetexte und kann einzelne Datensätze zur weiteren Bearbeitung auswählen.

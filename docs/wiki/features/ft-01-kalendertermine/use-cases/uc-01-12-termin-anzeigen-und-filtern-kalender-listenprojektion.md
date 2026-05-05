@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -33,9 +31,8 @@ Termine in Kalender- und Listenansichten anzeigen und über Filter so einschrän
 
 - Keine Treffer: Wenn im Zeitraum oder mit den gesetzten Filtern keine Termine existieren, liefert das System eine leere Liste und die Ansicht bleibt stabil bedienbar.
 - Ungültiger Zeitraum: Wenn ein ungültiger Zeitraum übergeben wird, blockiert das System die Anfrage mit einer eindeutigen Fehlermeldung und liefert keine Teilantwort.
-- Filteränderung während paralleler Ã„nderungen: Wenn sich Termine während der Nutzung durch andere Benutzer ändern, muss das System beim nächsten Laden konsistent den aktuellen Stand ausliefern.
+- Filteränderung während paralleler Änderungen: Wenn sich Termine während der Nutzung durch andere Benutzer ändern, muss das System beim nächsten Laden konsistent den aktuellen Stand ausliefern.
 
 ## Ergebnis
 
 Die Ansicht zeigt die vom System gelieferten Termine konsistent und reproduzierbar an. Die Terminmenge entspricht dem gewählten Zeitraum und den gesetzten Filtern. Alle in der Projektion angezeigten Kunden- und Projektinformationen entsprechen den aktuellen Daten. Der Kundenbezug ergibt sich direkt aus customer_id am Termin; Projektinformationen werden zusätzlich angezeigt, sofern project_id gesetzt ist.
-

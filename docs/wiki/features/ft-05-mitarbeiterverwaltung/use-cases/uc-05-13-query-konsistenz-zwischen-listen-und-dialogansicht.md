@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,9 +22,9 @@ Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter 
 ## Ablauf
 
 1. Akteur öffnet die Mitarbeiterlistenansicht.
-2. System lädt Mitarbeiterdaten gemäÃŸ Rollenregel:
+2. System lädt Mitarbeiterdaten gemäß Rollenregel:
     - Administrator erhält aktive und inaktive Mitarbeiter.
-    - Disponent erhält ausschlieÃŸlich aktive Mitarbeiter.
+    - Disponent erhält ausschließlich aktive Mitarbeiter.
 3. Akteur öffnet ein Terminformular.
 4. System lädt die Mitarbeiterauswahlliste.
 5. System wendet dieselbe Aktiv-Filterlogik an.
@@ -44,7 +42,7 @@ Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter 
 
 ## Ergebnis
 
-- Disponenten sehen in Listen- und Dialogansicht ausschlieÃŸlich aktive Mitarbeiter.
+- Disponenten sehen in Listen- und Dialogansicht ausschließlich aktive Mitarbeiter.
 - Administratoren sehen in der Stammdatenliste aktive und inaktive Mitarbeiter.
 - Dialoglisten zur Terminzuweisung enthalten niemals deaktivierte Mitarbeiter.
 - Es existiert keine Divergenz zwischen:
@@ -54,4 +52,3 @@ Sicherstellen, dass die in der Mitarbeiterliste angezeigten aktiven Mitarbeiter 
 - Integrationstests können prüfen:
     - gleiche Anzahl aktiver Mitarbeiter in Liste und Dialog
     - deaktivierter Mitarbeiter erscheint in keiner Zuweisungsauswahl.
-

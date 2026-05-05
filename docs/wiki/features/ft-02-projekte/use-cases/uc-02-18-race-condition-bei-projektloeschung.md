@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,12 +16,12 @@ Sicherstellen, dass eine Projektlöschung nicht zu inkonsistenten Zuständen fü
 
 - Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Löschrechte gemäÃŸ seiner Rolle.
+- Der Akteur besitzt Löschrechte gemäß seiner Rolle.
 - Dem Projekt sind zum Zeitpunkt der Löschprüfung keine Termine zugeordnet.
 
 ## Ablauf
 
-1. Akteur initiiert die Löschung eines Projekts gemäÃŸ UC 02/08.
+1. Akteur initiiert die Löschung eines Projekts gemäß UC 02/08.
 2. System prüft, ob dem Projekt Termine zugeordnet sind.
 3. Zwischen Prüfung und tatsächlicher Löschung wird serverseitig eine atomare Konsistenzprüfung (write-lock) durchgeführt.
 4. Falls währenddessen ein Termin für dieses Projekt angelegt wurde, erkennt das System die neue Referenz.
@@ -44,4 +42,3 @@ Es entsteht kein inkonsistenter Zustand zwischen Projekt- und Terminobjekten.
 Ein Projekt mit Terminreferenz kann nicht gelöscht werden.
 
 Die referenzielle Integrität bleibt jederzeit gewahrt.
-

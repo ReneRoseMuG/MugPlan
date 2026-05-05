@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Alle einem Termin eindeutig zugeordneten Notizen vollständig und konsistent ein
 
 1. Der Akteur öffnet einen Terminkontext (Terminformular, Kalenderansicht, Terminkarte oder Preview).
 2. Das System prüft serverseitig die Leseberechtigung.
-3. Das System lädt ausschlieÃŸlich die Notizen, die eindeutig diesem Termin zugeordnet sind.
+3. Das System lädt ausschließlich die Notizen, die eindeutig diesem Termin zugeordnet sind.
 4. Das System sortiert die Notizen deterministisch:
     - Angepinnte Notizen (`is_pinned = true`) erscheinen zuerst.
     - Innerhalb gleicher Pin-Logik erfolgt die Sortierung nach `updated_at` absteigend.
@@ -36,7 +34,7 @@ Alle einem Termin eindeutig zugeordneten Notizen vollständig und konsistent ein
     - Beschreibung (Richtext formatiert),
     - visuelle Kennzeichnung bei gesetzter `color`,
     - ggf. Pin-Symbol.
-7. Besitzt der Akteur ausschlieÃŸlich Leserechte oder ist der Termin historisch, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
+7. Besitzt der Akteur ausschließlich Leserechte oder ist der Termin historisch, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
 
 ### Alternativabläufe
 
@@ -47,13 +45,11 @@ Alle einem Termin eindeutig zugeordneten Notizen vollständig und konsistent ein
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Alle Termin-Notizen sind konsistent sichtbar.
-- Es werden ausschlieÃŸlich Notizen dieses Termins angezeigt.
+- Es werden ausschließlich Notizen dieses Termins angezeigt.
 - Die Sortierung ist deterministisch und reproduzierbar.
 - Die Darstellung passt sich dem jeweiligen Terminkontext an.
 - Die Anzeige verändert keine persistierten Daten.
-

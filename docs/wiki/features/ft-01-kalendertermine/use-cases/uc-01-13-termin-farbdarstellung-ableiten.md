@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,9 +32,8 @@ Termine in Kalender- und Listenansichten mit einer konsistent abgeleiteten Farbe
 ## Alternativen
 
 - Tour ohne Farbe: Wenn eine Tour keine gültige Farbe besitzt, muss das System eine robuste Fallback-Regel anwenden, zum Beispiel die Standardfarbe, und darf keine fehlerhafte oder leere Darstellung erzeugen.
-- Abbruch oder Blockade: Wenn eine Ã„nderung (Tour setzen oder Tour entfernen) abgebrochen oder wegen Konflikt blockiert wird, darf sich die angezeigte Farbe nicht dauerhaft ändern, weil kein persistierter Zustand entstanden ist.
+- Abbruch oder Blockade: Wenn eine Änderung (Tour setzen oder Tour entfernen) abgebrochen oder wegen Konflikt blockiert wird, darf sich die angezeigte Farbe nicht dauerhaft ändern, weil kein persistierter Zustand entstanden ist.
 
 ## Ergebnis
 
-Jeder Termin wird in allen Sichten konsistent mit der korrekten Farbe dargestellt. Termine mit Tourzuordnung nutzen die Tourfarbe, Termine ohne Tourzuordnung nutzen die Standardfarbe. Nach Ã„nderungen an der Tourzuordnung ist die Darstellung ohne Inkonsistenzen aktualisiert.
-
+Jeder Termin wird in allen Sichten konsistent mit der korrekten Farbe dargestellt. Termine mit Tourzuordnung nutzen die Tourfarbe, Termine ohne Tourzuordnung nutzen die Standardfarbe. Nach Änderungen an der Tourzuordnung ist die Darstellung ohne Inkonsistenzen aktualisiert.

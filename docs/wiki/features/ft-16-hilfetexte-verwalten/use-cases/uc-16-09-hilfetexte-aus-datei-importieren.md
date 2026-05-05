@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Admin
 
 ## Ziel
 
-Mehrere Hilfetext-Items aus einer Datei in das System übernehmen, um Hilfetexte zentral zu pflegen und auÃŸerhalb der Anwendung versionierbar bearbeiten zu können.
+Mehrere Hilfetext-Items aus einer Datei in das System übernehmen, um Hilfetexte zentral zu pflegen und außerhalb der Anwendung versionierbar bearbeiten zu können.
 
 ## Vorbedingungen
 
@@ -26,15 +24,14 @@ Der Akteur ist authentifiziert und besitzt Admin-Rechte. Zusätzlich liegt eine 
 4. Das System prüft, dass die `help_key`Werte innerhalb der Datei eindeutig sind, da pro `help_key` genau ein Hilfetext existieren darf.
 5. Das System vergleicht jedes importierte Item anhand des `help_key` mit dem bestehenden Datensatz im System.
 6. Wenn ein Datensatz bereits existiert und dessen Inhalt leer ist, überschreibt das System den Datensatz ohne weitere Rückfrage mit dem importierten Inhalt.
-7. Wenn ein Datensatz bereits existiert und dessen Inhalt nicht leer ist, fordert das System den Akteur für dieses Item zur Entscheidung auf und ermöglicht mindestens „Ãœberschreiben“ oder „Ãœberspringen“.
+7. Wenn ein Datensatz bereits existiert und dessen Inhalt nicht leer ist, fordert das System den Akteur für dieses Item zur Entscheidung auf und ermöglicht mindestens „Überschreiben“ oder „Überspringen“.
 8. Wenn zu einem `help_key` noch kein Datensatz existiert, legt das System einen neuen Hilfetext an.
-9. Der Akteur bestätigt den Importlauf und das System übernimmt die Ã„nderungen persistent.
+9. Der Akteur bestätigt den Importlauf und das System übernimmt die Änderungen persistent.
 
 ## Alternativen
 
-Wenn die Datei ungültig ist, ein Pflichtfeld fehlt oder doppelte `help_key`-Werte in der Datei vorkommen, bricht das System den Import ab und zeigt einen Validierungsfehler an. Wenn der Akteur den Vorgang abbricht, werden keine Ã„nderungen gespeichert.
+Wenn die Datei ungültig ist, ein Pflichtfeld fehlt oder doppelte `help_key`-Werte in der Datei vorkommen, bricht das System den Import ab und zeigt einen Validierungsfehler an. Wenn der Akteur den Vorgang abbricht, werden keine Änderungen gespeichert.
 
 ## Ergebnis
 
-Die Hilfetexte sind gemäÃŸ Regeln importiert. Vorhandene leere Inhalte sind still ersetzt. Bestehende befüllte Inhalte sind nur nach expliziter Entscheidung überschrieben oder übersprungen.
-
+Die Hilfetexte sind gemäß Regeln importiert. Vorhandene leere Inhalte sind still ersetzt. Bestehende befüllte Inhalte sind nur nach expliziter Entscheidung überschrieben oder übersprungen.

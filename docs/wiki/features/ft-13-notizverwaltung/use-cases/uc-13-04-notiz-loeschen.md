@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -32,7 +30,7 @@ Eine bestehende Notiz vollständig und konsistent entfernen.
 6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
+    - Übereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
 7. Stimmen die Versionsinformationen überein, löscht das System die Notiz sowie die zugehörige Parent-Relation endgültig.
 8. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
@@ -46,7 +44,6 @@ Eine bestehende Notiz vollständig und konsistent entfernen.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -54,4 +51,3 @@ Nicht angegeben in der Notion-Quelle.
 - Die Notiz erscheint in keiner Notizenliste mehr.
 - Parallele Aktionen führen nicht zu inkonsistenten Zuständen oder unbeabsichtigten Löschungen.
 - Die Konsistenz der Parent-Relation bleibt gewahrt.
-

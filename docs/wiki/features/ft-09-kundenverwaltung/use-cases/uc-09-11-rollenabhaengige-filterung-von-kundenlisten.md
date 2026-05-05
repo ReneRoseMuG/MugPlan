@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden und Disponenten ausschlieÃŸlich aktive Kunden sehen.
+Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden und Disponenten ausschließlich aktive Kunden sehen.
 
 ## Vorbedingungen
 
@@ -25,9 +23,9 @@ Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden u
 
 1. Der Akteur mit Rolle Disponent ruft die Kundenliste auf.
 2. Das System ermittelt die Rolle des Akteurs.
-3. Das System führt eine serverseitige Abfrage aus, die ausschlieÃŸlich Kunden mit `is_active = true` berücksichtigt.
+3. Das System führt eine serverseitige Abfrage aus, die ausschließlich Kunden mit `is_active = true` berücksichtigt.
 4. Das System liefert die gefilterte Liste zurück.
-5. Die UI zeigt ausschlieÃŸlich aktive Kunden an.
+5. Die UI zeigt ausschließlich aktive Kunden an.
 
 ---
 
@@ -51,7 +49,6 @@ Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden u
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -63,7 +60,6 @@ Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
-- Disponenten sehen ausschlieÃŸlich aktive Kunden.
+- Disponenten sehen ausschließlich aktive Kunden.
 - Administratoren sehen vollständige Daten.
 - Die Datenintegrität ist unabhängig vom Client garantiert.
-

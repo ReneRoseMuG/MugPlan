@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -17,7 +15,7 @@ Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt w
 ## Vorbedingungen
 
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäÃŸ Rollenkonzept.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
 
 ## Ablauf
 
@@ -36,7 +34,7 @@ Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt w
     - `is_active = true`,
     - Setzen von `created_at` und `updated_at`.
 10. Das System speichert die Vorlage persistent.
-11. Das System aktualisiert die Vorlagenliste gemäÃŸ definierter Sortierlogik.
+11. Das System aktualisiert die Vorlagenliste gemäß definierter Sortierlogik.
 
 ### Alternativabläufe
 
@@ -48,12 +46,10 @@ Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt w
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Eine neue Notizvorlage existiert persistent.
 - Die Vorlage ist aktiv (`is_active = true`) und erscheint in der Auswahlliste bei der Notizerstellung.
-- Die Kennzeichnungsfarbe ist ausschlieÃŸlich gesetzt, wenn sie durch einen Administrator definiert wurde.
+- Die Kennzeichnungsfarbe ist ausschließlich gesetzt, wenn sie durch einen Administrator definiert wurde.
 - Es entstehen keine Seiteneffekte auf bereits bestehende Notizen.
-

@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/344da094354e814a8830dab54ce60040
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (08) Journal Änderungshistorie 344da094354e814a8830dab54ce60040.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -51,12 +48,8 @@ Das Journal ist eine lesende Nachvollziehbarkeitsfunktion. Es ersetzt weder fach
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

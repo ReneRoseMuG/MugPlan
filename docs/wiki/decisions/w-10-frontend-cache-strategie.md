@@ -32,5 +32,3 @@ Mittel bis hoch. Der aktuelle Zustand kann dazu führen, dass Nutzer nach erfolg
 Gestufte Cache-Strategie einführen: zentrale Invalidierungshelfer pro Fachdomäne, volatile Listen gezielt frischer laden und statische Hilfsdaten weiter cachen.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52

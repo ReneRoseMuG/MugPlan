@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -35,4 +33,3 @@ Sicherstellen, dass beim Löschen eines Termins auch die zugeordneten Notizen en
 ## Ergebnis
 
 Der Termin ist vollständig gelöscht. Alle Notiz-Zuordnungen zum Termin sind entfernt. Falls die Notizen auch von anderen Objekten (z. B. Projekten oder Kunden) zugeordnet sind, bleiben diese Zuordnungen bestehen. Notizen, die nur diesem Termin zugeordnet waren, werden ebenfalls gelöscht, sofern die Implementierung dies vorsieht.
-

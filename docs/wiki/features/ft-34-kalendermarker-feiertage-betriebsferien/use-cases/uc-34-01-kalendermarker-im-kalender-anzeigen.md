@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -37,4 +35,3 @@ Kalenderrelevante Marker im Wochen- und Monatskalender erkennen.
 ## Ergebnis
 
 Akteur erkennt Feiertage, Betriebsfeiertage und Betriebsferien im Kalender, ohne dass Terminbedienung, Drag & Drop oder Klickverhalten blockiert werden.
-

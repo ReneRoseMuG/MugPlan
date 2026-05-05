@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -42,4 +40,3 @@ Eine neue Notiz erstellen und einem Projekt zuordnen.
 ## Ergebnis
 
 Die Notiz ist persistent gespeichert und projektbezogen referenziert.
-

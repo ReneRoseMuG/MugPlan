@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -36,4 +34,3 @@ Eine Notiz vom Termin entfernen, ohne dass dies Auswirkungen auf andere Termin-D
 ## Ergebnis
 
 Die Notiz ist vom Termin entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Termin und alle anderen Termine sind unverändert.
-

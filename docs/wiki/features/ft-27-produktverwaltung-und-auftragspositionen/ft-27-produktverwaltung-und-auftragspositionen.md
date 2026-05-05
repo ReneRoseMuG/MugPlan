@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/317da094354e8154a475eef591e57861
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (27) Produktverwaltung und Auftragspositionen 317da094354e8154a475eef591e57861.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -69,12 +66,8 @@ Auftragspositionen (`project_order_items`) werden pro Projekt verwaltet, um eine
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

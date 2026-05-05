@@ -14,9 +14,9 @@ Der Wochenkalender soll deutlich schneller starten und beim horizontalen Navigie
 
 ## Optionen
 
-- A) Status quo beibehalten: groÃŸer zusammenhängender Kalenderpfad ohne wochengenauen Cache, Performance- und Stale-Probleme nur punktuell nachziehen
+- A) Status quo beibehalten: großer zusammenhängender Kalenderpfad ohne wochengenauen Cache, Performance- und Stale-Probleme nur punktuell nachziehen
 - B) Wochenweise Frontend-Cache- und Render-Strategie einführen: sichtbare Wochen priorisiert laden, Puffer nur cachen, nicht rendern, und Aktualisierung über gezielte Query-Invalidierung steuern
-- C) GröÃŸeren Umbau mit neuer API, geänderter Persistenz oder serverseitiger Spezialisierung verfolgen
+- C) Größeren Umbau mit neuer API, geänderter Persistenz oder serverseitiger Spezialisierung verfolgen
 
 ## Auswirkungen eines Eingriffs
 
@@ -26,7 +26,7 @@ Variante B verbessert die wahrgenommene Startgeschwindigkeit des Wochenkalenders
 
 Mittel bis hoch. Wenn Query-Keys oder Invalidierungen unvollständig bleiben, können im Kalender stale Karten, doppelte Termine oder fehlende Verschiebungen zwischen Wochen sichtbar werden. Zusätzlich drohen unnötige Hintergrundrequests oder beschädigte Scroll-/Restore-Pfade, wenn Ladezustände oder Prefetches das Wochenraster destabilisieren.
 
-## Vorgeschlagene MaÃŸnahme
+## Vorgeschlagene Maßnahme
 
 Variante B als bevorzugten Pfad behandeln. Der Wochenkalender bleibt ein horizontaler Scrollcontainer, lädt aber Daten pro Woche, rendert nur das Scrollfenster und hält links und rechts einen reinen Cache-Puffer warm. Nach Mutationen werden sichtbare Wochen aktiv refetched, gepufferte Wochen über Prefix-Invalidierung und Prefetch aktualisiert. API, DB-Schema, Persistenz und Abhängigkeiten bleiben unverändert.
 
@@ -37,4 +37,3 @@ Variante B als bevorzugten Pfad behandeln. Der Wochenkalender bleibt ein horizon
 ## Quelle
 
 - Abgeleitet aus externem Planimport vom 02.05.26
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -38,4 +36,3 @@ Gesetzliche Feiertage automatisch als gespeicherte Kalendermarker bereitstellen.
 ## Ergebnis
 
 Gesetzliche Feiertage liegen als gespeicherte Kalendermarker vor. Editierte Werte bestehender Marker bleiben erhalten.
-

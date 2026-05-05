@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (28): Universelles Tagging-System](../ft-28-universelles-tagging-system.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e81279271fc1c2d18eba4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -29,11 +27,10 @@ Der Akteur sieht im Tag-Picker nur Tags, die in der jeweiligen Domäne manuell z
 ## Alternativen
 
 - Bei Kunden und Mitarbeitern werden geschützte System-Tags nicht im Picker angeboten.
-- Bei Terminen werden geschützte System-Tags nicht im Picker angeboten. **Storniert** wird ausschlieÃŸlich über den Storno-Workflow gesetzt; **Reklamation** wird ausschlieÃŸlich über die Reklamationsfunktion gesetzt oder entfernt.
-- Bei Projekten werden geschützte System-Tags nicht im Picker angeboten. **Reklamation** wird ausschlieÃŸlich über die Reklamationsfunktion gesetzt oder entfernt.
+- Bei Terminen werden geschützte System-Tags nicht im Picker angeboten. **Storniert** wird ausschließlich über den Storno-Workflow gesetzt; **Reklamation** wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.
+- Bei Projekten werden geschützte System-Tags nicht im Picker angeboten. **Reklamation** wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.
 - Wenn ein Client einen geschützten System-Tag trotzdem direkt über eine generische Tag-API zuweisen oder entfernen will, muss der Server die Mutation abweisen.
 
 ## Ergebnis
 
 Der Tag-Picker bleibt domänenspezifisch korrekt und bietet keine Systemzustände als frei pflegbare Tags an. Die fachlichen Workflows behalten die Kontrolle über geschützte System-Tags.
-

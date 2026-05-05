@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,4 +32,3 @@ Sicherstellen, dass direkte URL-Aufrufe keine unzulässigen Aktionen ermögliche
 ## Ergebnis
 
 Keine unzulässige Aktion wird ausgeführt.
-

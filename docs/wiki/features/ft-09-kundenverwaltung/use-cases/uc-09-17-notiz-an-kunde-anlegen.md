@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Einen bestehenden Kunden mit einer oder mehreren Notizen dokumentieren, um kunde
 
 - Der Kunde existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte.
+- Der Akteur besitzt Änderungsrechte.
 
 ## Ablauf
 
@@ -40,4 +38,3 @@ Einen bestehenden Kunden mit einer oder mehreren Notizen dokumentieren, um kunde
 ## Ergebnis
 
 Die Notiz ist dem Kunden zugeordnet und in der Notizenliste sichtbar. Die Notiz bleibt beim Kunden bestehen, auch wenn der Kunde später bearbeitet, sein Status geändert oder mit Anhängen ergänzt wird.
-

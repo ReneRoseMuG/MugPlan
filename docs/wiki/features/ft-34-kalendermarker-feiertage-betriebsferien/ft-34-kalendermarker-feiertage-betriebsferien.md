@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: Nicht vorhanden
-- Importquelle lokal: Nicht zutreffend
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Ziel / Zweck
 

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -19,7 +17,7 @@ Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kunde
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Anlegerechte (Disponent oder Administrator).
 - Kunde existiert und ist aktiv (Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen).
-- **Rollenbasierte Datumsbeschränkung:** Disponenten dürfen nur Termine mit Startdatum ≥ heute anlegen. Administratoren dürfen Termine mit beliebigem Startdatum anlegen — einschlieÃŸlich Datumsangaben in der Vergangenheit.
+- **Rollenbasierte Datumsbeschränkung:** Disponenten dürfen nur Termine mit Startdatum ≥ heute anlegen. Administratoren dürfen Termine mit beliebigem Startdatum anlegen — einschließlich Datumsangaben in der Vergangenheit.
 - Optional: Projekt existiert und ist einem aktiven Kunden zugeordnet.
 - Optional: Team existiert und hat mindestens einen zugeordneten Mitarbeiter.
 - Optional: Tour existiert.
@@ -36,7 +34,7 @@ Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kunde
 4. Der Akteur weist dem Termin optional eine Tour zu.
 5. Der Akteur weist dem Termin optional ein Team zu.
 6. Der Akteur weist dem Termin optional Mitarbeiter manuell zu.
-7. Das System prüft Mitarbeiter-Ãœberschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Ãœberschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Ãœberschneidungsprüfung wird bei jeder Ã„nderung der Termin-Mitarbeiterliste erneut ausgeführt.
+7. Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.
 8. Das System speichert den Termin mit `customer_id` (vom Projekt), `project_id` (vom Projekt).
 9. Das System zeigt den Termin im Kalender an.
 
@@ -48,13 +46,13 @@ Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kunde
 2. Das System setzt das Startdatum auf den angeklickten Tag.
 3. Der angeklickte „+“-Button gehörte optional zu einer Tour-Lane.
     1. Das System verknüpft den Termin mit dieser Tour. Wenn für die Kalenderwoche des Startdatums in der Tour eine Wochenplanung hinterlegt ist, zeigt das System sofort einen Vorschau-Dialog mit den geplanten Mitarbeitern und möglichen Konflikten. Nach Bestätigung werden die ausgewählten Mitarbeiter in die Mitarbeiterliste übernommen. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt leer.
-4. Der Akteur wählt einen Kunden (Pflichtfeld, Dropdown mit aktiven Kunden gemäÃŸ Rolle). Das System filtert serverseitig: Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen.
+4. Der Akteur wählt einen Kunden (Pflichtfeld, Dropdown mit aktiven Kunden gemäß Rolle). Das System filtert serverseitig: Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen.
 5. Der Akteur editiert Startdatum und optional Enddatum sowie optional eine Startuhrzeit.
 6. Der Akteur weist dem Termin optional ein Projekt zu (Kundenmismatch wird geprüft, siehe Alternativen).
 7. Der Akteur weist dem Termin optional eine Tour zu, falls nicht bereits durch Schritt 3 erfolgt (oder um die Tour zu ändern/entfernen). Siehe 3.a
 8. Der Akteur weist dem Termin optional ein Team zu.
 9. Der Akteur weist dem Termin optional Mitarbeiter manuell zu.
-10. Das System prüft Mitarbeiter-Ãœberschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Ãœberschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Ãœberschneidungsprüfung wird bei jeder Ã„nderung der Termin-Mitarbeiterliste erneut ausgeführt.
+10. Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.
 11. Das System speichert den Termin mit `customer_id` (vom Akteur gewählt), `project_id` (optional, nur wenn Kundenwerte konsistent sind).
 12. Das System zeigt den Termin im Kalender an, entweder mit Tourfarbe oder mit Standardfarbe.
 
@@ -62,7 +60,7 @@ Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kunde
 
 - **Nicht authentifiziert:** HTTP 401, keine Persistenz.
 - **Keine Berechtigung:** HTTP 403, keine Persistenz.
-- **Ãœberschneidung erkannt:** Das System blockiert den Vorgang und zeigt einen Konflikt an (HTTP 409 EMPLOYEE_OVERLAP_CONFLICT).
+- **Überschneidung erkannt:** Das System blockiert den Vorgang und zeigt einen Konflikt an (HTTP 409 EMPLOYEE_OVERLAP_CONFLICT).
 - **Abbruch:** Der Termin wird nicht gespeichert.
     - Es wird kein neuer Termin-Datensatz in der Datenbank angelegt.
     - Es werden keine neuen Einträge in der Join-Tabelle Termin–Mitarbeiter angelegt, auch dann nicht, wenn zwischenzeitlich Mitarbeiter im Formular ausgewählt wurden.
@@ -79,4 +77,3 @@ Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kunde
 Der Termin ist einem Kunden zugeordnet und im Kalender sichtbar, entweder mit Tourfarbe oder mit Standardfarbe. Der Termin ist fachlich gültig. Der Termin kann optional einem Projekt desselben Kunden zugeordnet sein. Die Mitarbeiterzuordnungen des Termins sind als Einträge in der Join-Tabelle Termin–Mitarbeiter abrufbar.
 
 Für alle dem Termin zugeordneten Mitarbeiter zeigt das Mitarbeiterformular diesen Termin in der Mitarbeiter-Terminliste. Das Kundenformular zeigt den Termin in der Terminliste des Kunden, dem der Termin zugeordnet ist. Das Projektformular zeigt den Termin in der Projekt-Terminliste (sofern der Termin einem Projekt zugeordnet ist). Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste.
-

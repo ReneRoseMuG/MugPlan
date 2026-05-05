@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,7 +32,7 @@ Alle einem Projekt eindeutig zugeordneten Notizen vollständig und konsistent ei
     - Beschreibung (Richtext formatiert),
     - visuelle Kennzeichnung bei gesetzter `color`,
     - ggf. Pin-Symbol.
-7. Die Darstellung enthält keine Bearbeitungselemente, sofern der Akteur ausschlieÃŸlich Leserechte besitzt.
+7. Die Darstellung enthält keine Bearbeitungselemente, sofern der Akteur ausschließlich Leserechte besitzt.
 
 ### Alternativabläufe
 
@@ -45,12 +43,10 @@ Alle einem Projekt eindeutig zugeordneten Notizen vollständig und konsistent ei
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Alle projektbezogenen Notizen sind konsistent sichtbar.
-- Es werden ausschlieÃŸlich Notizen dieses Projekts angezeigt.
+- Es werden ausschließlich Notizen dieses Projekts angezeigt.
 - Die Sortierung ist deterministisch und reproduzierbar.
 - Die Anzeige verändert keine persistierten Daten.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (19): Attachments](../ft-19-attachments.md)
-- Notion-Quelle: https://app.notion.com/p/0a3cbd97ab474bd68d30b0c09ed3a822
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -43,10 +41,8 @@ Ein Attachment eines Parent-Objekts (Projekt, Kunde, Mitarbeiter oder Termin) lo
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Die Datei wird lokal gespeichert.
 - Es werden keine persistenten Daten verändert.
-

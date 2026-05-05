@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Sicherstellen, dass Projektdaten in allen abhängigen Sichten konsistent und ref
 
 1. Eine abhängige Sicht (z. B. Terminliste oder Kalender) lädt ein oder mehrere Termine mit Projektbezug.
 2. System stellt sicher, dass projektrelevante Anzeigedaten nicht lokal dupliziert oder eigenständig persistiert werden.
-3. Die Sicht bezieht projektrelevante Informationen ausschlieÃŸlich aus der gültigen Projektquelle.
+3. Die Sicht bezieht projektrelevante Informationen ausschließlich aus der gültigen Projektquelle.
 4. Darstellung erfolgt konsistent mit der Projekt-Detailansicht.
 
 ## Alternativen
@@ -37,4 +35,3 @@ Sicherstellen, dass Projektdaten in allen abhängigen Sichten konsistent und ref
 Alle abhängigen Sichten zeigen identische und konsistente Projektdaten.
 
 Es existieren keine widersprüchlichen Projektrepräsentationen zwischen Detailansicht und Quersichten.
-

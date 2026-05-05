@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits e
 
 - Die Vorlage existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäÃŸ Rollenkonzept.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
 - Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
 ## Ablauf
@@ -31,7 +29,7 @@ Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits e
 6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des Versionsmerkmals.
+    - Übereinstimmung des Versionsmerkmals.
 7. Stimmen die Versionsinformationen überein, löscht das System die Vorlage endgültig aus der Persistenz.
 8. Das System aktualisiert die Vorlagenliste.
 
@@ -45,7 +43,6 @@ Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits e
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -53,4 +50,3 @@ Nicht angegeben in der Notion-Quelle.
 - Gelöschte Vorlagen erscheinen nicht mehr in der Vorlagenverwaltung und nicht in der Auswahlliste bei der Notizerstellung.
 - Bereits erstellte Notizen bleiben unverändert bestehen.
 - Es entstehen keine verwaisten Referenzen oder Seiteneffekte in bestehenden Notizen.
-

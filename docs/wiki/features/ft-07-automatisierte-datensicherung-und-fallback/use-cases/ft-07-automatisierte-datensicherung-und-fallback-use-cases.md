@@ -1,6 +1,5 @@
 ﻿# FT (07) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (07): Automatisierte Datensicherung und Fallback](../ft-07-automatisierte-datensicherung-und-fallback.md) übernommen.
 
 - [UC 07/03: PDF „Anstehende Termine“ erzeugen](uc-07-03-pdf-anstehende-termine-erzeugen.md)
 - [UC 07/05: Backup-Historie einsehen](uc-07-05-backup-historie-einsehen.md)
@@ -12,4 +11,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 07/11: Termin im CalDAV-Kalender löschen](uc-07-11-termin-im-caldav-kalender-loeschen.md)
 - [UC 07/12: DB-Dump automatisch erzeugen](uc-07-12-db-dump-automatisch-erzeugen.md)
 - [UC 07/13: DB-Dump herunterladen](uc-07-13-db-dump-herunterladen.md)
-

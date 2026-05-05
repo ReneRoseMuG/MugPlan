@@ -17,5 +17,3 @@ Kalenderanzeige, Stammdaten-Administration, Kalendermarker, Feiertage, Betriebsf
 Ein Browser-E2E-Selektorproblem in FT (02) und ein Coverage-Detailfehler wurden als offene Nacharbeit genannt.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

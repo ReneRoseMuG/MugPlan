@@ -11,7 +11,6 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Historische Quelle
 
-- Frühere Einträge wurden aus Notion übernommen: https://app.notion.com/p/352da094354e807daf21f330c3e76f6e
 
 ## Einträge
 
@@ -29,7 +28,6 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 - [03.05.26 - Kalender und Einstellungen: Feiertage und Settings-Navigation](03-05-26-feiertage-settings-navigation.md)
 - [03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar](03-05-26-wochenkalender-abwesenheitsspur.md)
 - [02.05.26 - Kalender-Refactoring umgesetzt](02-05-26-kalender-refactoring.md)
-- [02.05.26 - Wiki: Lastenheft-Import und Grundstruktur ins Repo überführt](02-05-26-wiki-lastenheft-import.md)
 - [02.05.26 - FT-34: Persistierter Feiertags-Seed und Marker-Visualisierung nachgezogen](02-05-26-ft-34-persistierter-feiertags-seed-und-marker-visualisierung.md)
 - [01.05.26 - Kalendermarker: Feiertage und Betriebsferien im Kalender](01-05-26-kalendermarker-feiertage-und-betriebsferien.md)
 - [01.05.26 - Datumsregel: Kurzformat projektweit verbindlich dokumentiert](01-05-26-datumsregel-kurzformat.md)

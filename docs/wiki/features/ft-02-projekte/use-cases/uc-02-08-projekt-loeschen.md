@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -51,4 +49,3 @@ Ein Projekt dauerhaft aus dem System entfernen, ohne fachliche Inkonsistenzen od
 ## Ergebnis
 
 Das Projekt und alle zugeordneten Notizen sowie Auftragspositionen sind physisch gelöscht. Anhang-Datensätze sind entfernt; physische Dateien verbleiben im Upload-Verzeichnis. Es existieren keine verwaisten Referenzen. Alle Projektlisten sind aktualisiert.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,13 +10,13 @@ Administrator, Disponent
 
 ## Ziel
 
-Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Ãœberschreibungen.
+Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Überschreibungen.
 
 ## Vorbedingungen
 
 - Das Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte (Disponent oder Administrator).
+- Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).
 - Das Projekt besitzt ein Versionsmerkmal (Optimistic Locking).
 
 ## Ablauf
@@ -29,22 +27,21 @@ Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Ã
     1. Das System prüft: Hat das Projekt mindestens einen Termin zugeordnet?
     2. Falls **JA:** Das System blockiert den Kundenwechsel mit Fehlermeldung. Der Kundenwert ist readonly.
     3. Falls **NEIN:** Der Akteur wählt einen neuen Kunden. Das System prüft Existenz und Aktivstatus des neuen Kunden. Das System speichert die Kundenänderung und aktualisiert den `customer_id`-Wert aller zugeordneten Termine kaskadierend.
-4. Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäÃŸ FT (28).
-5. Das System prüft das Versionsmerkmal serverseitig. Bei Ãœbereinstimmung speichert das System die Ã„nderungen und erhöht die Version.
+4. Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäß FT (28).
+5. Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.
 
 ## Alternativen
 
 - Projekt nicht vorhanden → HTTP 404.
 - Akteur nicht authentifiziert → HTTP 401.
-- Akteur ohne Ã„nderungsrechte → HTTP 403.
+- Akteur ohne Änderungsrechte → HTTP 403.
 - Projekt hat Termine → Kundenwechsel wird blockiert (HTTP 409 BUSINESS_CONFLICT).
 - Neuer Kunde existiert nicht → HTTP 422.
 - Neuer Kunde ist inaktiv → HTTP 409 INACTIVE_ENTITY_ASSIGNMENT.
 - Versionskonflikt (Optimistic Locking) → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.
-- Abbruch → keine Ã„nderung wird gespeichert.
-- Technischer Fehler → HTTP 500, keine Ã„nderung.
+- Abbruch → keine Änderung wird gespeichert.
+- Technischer Fehler → HTTP 500, keine Änderung.
 
 ## Ergebnis
 
 Das Projekt ist aktualisiert. Der Kundenwert bleibt stabil, solange das Projekt Termine besitzt. Bei einem zulässigen Kundenwechsel werden alle zugeordneten Termine auf den neuen Kunden aktualisiert. Alle abhängigen Ansichten sind konsistent.
-

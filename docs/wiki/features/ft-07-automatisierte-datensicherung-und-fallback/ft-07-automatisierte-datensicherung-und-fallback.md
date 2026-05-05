@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/8ed9ebce7bd1439592e891b51a433b8a
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (07) Automatisierte Datensicherung und Fallback 8ed9ebce7bd1439592e891b51a433b8a.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -77,12 +74,8 @@ Zusätzlich synchronisiert das System Termine mit einem externen CalDAV-Kalender
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

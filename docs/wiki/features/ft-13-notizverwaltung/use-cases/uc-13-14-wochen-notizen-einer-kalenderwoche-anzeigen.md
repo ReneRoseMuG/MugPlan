@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,7 +32,7 @@ Alle einer Kalenderwoche zugeordneten Notizen vollständig und konsistent einseh
     - Beschreibung (Richtext formatiert),
     - visuelle Kennzeichnung bei gesetzter `color`,
     - ggf. Pin-Symbol.
-7. Besitzt der Akteur ausschlieÃŸlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
+7. Besitzt der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
 
 ### Alternativabläufe
 
@@ -45,12 +43,10 @@ Alle einer Kalenderwoche zugeordneten Notizen vollständig und konsistent einseh
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Alle Wochen-Notizen dieser Kalenderwoche sind konsistent sichtbar.
-- Es werden ausschlieÃŸlich Notizen dieser Woche angezeigt.
+- Es werden ausschließlich Notizen dieser Woche angezeigt.
 - Die Sortierung ist deterministisch und reproduzierbar.
 - Die Anzeige verändert keine persistierten Daten.
-

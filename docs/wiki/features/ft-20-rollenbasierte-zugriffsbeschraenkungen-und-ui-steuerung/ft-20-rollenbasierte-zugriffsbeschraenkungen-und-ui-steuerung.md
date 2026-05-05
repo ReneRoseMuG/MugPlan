@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/f29fe0b8f4a443f982ef140a3983e737
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (20) Rollenbasierte Zugriffsbeschränkungen und  f29fe0b8f4a443f982ef140a3983e737.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -97,12 +94,8 @@ Die Oberfläche für Leser ist funktional reduziert und enthält keine aktiven B
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

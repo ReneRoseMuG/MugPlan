@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (19): Attachments](../ft-19-attachments.md)
-- Notion-Quelle: https://app.notion.com/p/0a3cbd97ab474bd68d30b0c09ed3a822
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -19,7 +17,7 @@ Ein Attachment über den Action-Button am Attachment-Badge gezielt entfernen —
 - Das Attachment existiert.
 - Das zugehörige Parent-Objekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte für das Parent-Objekt.
+- Der Akteur besitzt Änderungsrechte für das Parent-Objekt.
 
 ## Ablauf
 
@@ -36,16 +34,14 @@ Ein Attachment über den Action-Button am Attachment-Badge gezielt entfernen —
 - Akteur bricht den Dialog ab → keine Aktion, Attachment bleibt unverändert.
 - Attachment existiert nicht → System antwortet mit 404.
 - Parent-Objekt existiert nicht → System antwortet mit 404.
-- Akteur ohne Ã„nderungsrechte → System blockiert mit 403.
+- Akteur ohne Änderungsrechte → System blockiert mit 403.
 - Technischer Fehler → System antwortet mit 500, keine Teillöschung.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Bei Entkopplung: Datensatz ist entfernt, Datei bleibt im Upload-Verzeichnis erhalten.
 - Bei physischer Löschung: Datensatz und Datei sind vollständig entfernt.
 - Die Attachmentliste zeigt den aktuellen Stand konsistent an.
-

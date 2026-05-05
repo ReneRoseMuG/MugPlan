@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -23,10 +21,10 @@ Sicherstellen, dass die Löschung eines Projekts keine inkonsistenten Referenzen
 
 ## Ablauf
 
-1. Akteur löscht ein Projekt gemäÃŸ UC 02/08.
+1. Akteur löscht ein Projekt gemäß UC 02/08.
 2. System entfernt das Projekt und alle abhängigen Datensätze in einer Transaktion.
 3. System aktualisiert Projektübersichten.
-4. Offene Detailansichten schlieÃŸen sich oder wechseln in einen neutralen Zustand.
+4. Offene Detailansichten schließen sich oder wechseln in einen neutralen Zustand.
 
 ## Alternativen
 
@@ -40,4 +38,3 @@ Sicherstellen, dass die Löschung eines Projekts keine inkonsistenten Referenzen
 Es existieren keine Referenzen auf das gelöschte Projekt.
 
 Alle Sichten sind konsistent.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -52,7 +50,6 @@ Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsis
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -67,4 +64,3 @@ Nicht angegeben in der Notion-Quelle.
 - Der Aktiv-Status eines Kunden ist jederzeit eindeutig und konsistent.
 - Es existiert kein Zustand, in dem zwei widersprüchliche Statusänderungen gleichzeitig persistiert werden.
 - Optimistic Locking gilt auch für reine Statusoperationen.
-

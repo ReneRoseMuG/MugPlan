@@ -1,6 +1,5 @@
 ﻿# FT (13) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md) übernommen.
 
 - [UC 13/01: Notiz zu Projekt hinzufügen](uc-13-01-notiz-zu-projekt-hinzufuegen.md)
 - [UC 13/02: Notiz zu Kunde hinzufügen](uc-13-02-notiz-zu-kunde-hinzufuegen.md)
@@ -23,4 +22,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 13/19: Notizen eines Mitarbeiters anzeigen](uc-13-19-notizen-eines-mitarbeiters-anzeigen.md)
 - [UC 13/20: Notiz zu Termin hinzufügen](uc-13-20-notiz-zu-termin-hinzufuegen.md)
 - [UC 13/21: Notizen eines Termins anzeigen](uc-13-21-notizen-eines-termins-anzeigen.md)
-

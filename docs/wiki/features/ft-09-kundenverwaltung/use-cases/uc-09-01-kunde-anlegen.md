@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschlieÃŸend für Projektzuordnungen zur Verfügung.
+Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschließend für Projektzuordnungen zur Verfügung.
 
 ## Vorbedingungen
 
@@ -42,7 +40,7 @@ Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschlieÃ
 
 - Pflichtfeld fehlt → System antwortet mit Validierungsfehler, kein Persistieren.
 - Formale Validierung schlägt fehl → System lehnt ab und markiert Feld.
-- Dublettenprüfung schlägt an → System warnt oder blockiert gemäÃŸ Regel.
+- Dublettenprüfung schlägt an → System warnt oder blockiert gemäß Regel.
 - Technischer Fehler → System antwortet mit 500, kein Kunde wird angelegt.
 
 ## Ergebnis
@@ -54,4 +52,3 @@ Ein neuer Kunde wird mit vollständigen Stammdaten angelegt und steht anschlieÃ
     - in Projektauswahldialogen (nur für aktive Kunden),
     - in Filterkomponenten für aktive Kunden.
 - Es existieren noch keine Projekte, Termine oder Notizen für diesen Kunden.
-

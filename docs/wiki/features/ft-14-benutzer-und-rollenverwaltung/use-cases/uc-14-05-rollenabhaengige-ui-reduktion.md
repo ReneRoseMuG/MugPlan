@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Sicherstellen, dass ein Leser keine schreibenden UI-Elemente sieht.
 1. Der Akteur öffnet eine fachliche Ansicht.
 2. Das System rendert die UI rollenabhängig.
 3. Das System blendet schreibende Elemente aus.
-4. Der Akteur kann ausschlieÃŸlich lesende Aktionen durchführen.
+4. Der Akteur kann ausschließlich lesende Aktionen durchführen.
 
 ## Alternativen
 
@@ -33,4 +31,3 @@ Sicherstellen, dass ein Leser keine schreibenden UI-Elemente sieht.
 ## Ergebnis
 
 Die UI ist funktionsreduziert, ohne Datenmodelländerung.
-

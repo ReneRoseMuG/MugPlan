@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -35,7 +33,7 @@ Einen Kunden endgültig löschen, sofern keine referenzierenden Projekte existie
 4. Das System stellt fest, dass keine Projekte referenzieren.
 5. Das System löscht den Kundendatensatz.
 6. Das System löscht alle zugehörigen Notizen über CASCADE (`customer_note`).
-7. Das System entfernt alle Attachment-Referenzen zum Kunden (Dateien verbleiben gemäÃŸ globaler Regel physisch bestehen, sofern kein anderes Löschkonzept definiert ist).
+7. Das System entfernt alle Attachment-Referenzen zum Kunden (Dateien verbleiben gemäß globaler Regel physisch bestehen, sofern kein anderes Löschkonzept definiert ist).
 8. Das System bestätigt die Löschung.
 
 ---
@@ -56,4 +54,3 @@ Einen Kunden endgültig löschen, sofern keine referenzierenden Projekte existie
 - Es existieren keine verwaisten Notizen oder Attachment-Referenzen.
 - Es existieren keine Projekte oder Termine, die auf einen gelöschten Kunden verweisen.
 - Der Datenzustand bleibt konsistent.
-

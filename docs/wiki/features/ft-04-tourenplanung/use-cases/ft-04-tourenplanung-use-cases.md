@@ -1,6 +1,5 @@
 ﻿# FT (04) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (04): Tourenplanung](../ft-04-tourenplanung.md) übernommen.
 
 - [UC 04/01: Tour anlegen](uc-04-01-tour-anlegen.md)
 - [UC 04/02: Tour bearbeiten](uc-04-02-tour-bearbeiten.md)
@@ -13,4 +12,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 04/12: Kalenderwoche einer Tour anlegen](uc-04-12-kalenderwoche-einer-tour-anlegen.md)
 - [UC 04/13: Mitarbeiter einer Tour-KW zuordnen](uc-04-13-mitarbeiter-einer-tour-kw-zuordnen.md)
 - [UC 04/14: Mitarbeiter aus einer Tour-KW entfernen](uc-04-14-mitarbeiter-aus-einer-tour-kw-entfernen.md)
-

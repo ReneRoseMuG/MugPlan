@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
-- Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -21,8 +19,8 @@ Extrahierte Kundendaten im Kontext „Neues Projekt" übernehmen und einen Kunde
 
 ## Ablauf
 
-1. Der Akteur wählt die Ãœbernahme der Kundendaten.
-2. Das System führt eine Duplikatsprüfung gemäÃŸ Kundenregeln durch.
+1. Der Akteur wählt die Übernahme der Kundendaten.
+2. Das System führt eine Duplikatsprüfung gemäß Kundenregeln durch.
 3. Falls ein Duplikat gefunden wird (Kunde mit gleichen Identifikationskriterien existiert):
     - Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).
     - Das System verknüpft den aktualisierten Kunden mit dem Projekt.
@@ -34,11 +32,10 @@ Extrahierte Kundendaten im Kontext „Neues Projekt" übernehmen und einen Kunde
 
 ## Alternativen
 
-- Der Akteur bricht ab → Es erfolgt keine Kundenanlage und keine Ã„nderung der Projektzuordnung.
+- Der Akteur bricht ab → Es erfolgt keine Kundenanlage und keine Änderung der Projektzuordnung.
 - Kunde existiert bereits und alle Felder sind bereits befüllt → Das System verknüpft den bestehenden Kunden still mit dem Projekt, ohne Aktualisierungen vorzunehmen.
 - Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert.
 
 ## Ergebnis
 
 Der Projektentwurf ist mit einem Kunden verknüpft (neu angelegt oder aktualisiert). Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Alle Referenzen sind konsistent.
-

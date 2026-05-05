@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
-- Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,4 +32,3 @@ Sicherstellen, dass ungeeignete oder nicht strukturierbare Dokumente nicht zu in
 ## Ergebnis
 
 Es erfolgt keine Persistierung fachlicher Daten. Das System bleibt konsistent.
-

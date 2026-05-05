@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,8 +16,8 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 
 - Der Mitarbeiter existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte für Mitarbeiter.
-- Die hochzuladende Datei entspricht den erlaubten Formaten und GröÃŸenbeschränkungen.
+- Der Akteur besitzt Änderungsrechte für Mitarbeiter.
+- Die hochzuladende Datei entspricht den erlaubten Formaten und Größenbeschränkungen.
 
 ## Ablauf – Upload
 
@@ -28,7 +26,7 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 3. Akteur wählt eine Datei aus.
 4. System prüft:
     - Dateiformat,
-    - DateigröÃŸe,
+    - Dateigröße,
     - Authentifizierung.
 5. System speichert die Datei serverseitig.
 6. System legt einen Attachment-Datensatz mit Parent-Referenz auf den Mitarbeiter an.
@@ -44,7 +42,6 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -56,7 +53,7 @@ Nicht angegeben in der Notion-Quelle.
     
     System blockiert mit 403.
     
-- Ungültiges Dateiformat oder GröÃŸe →
+- Ungültiges Dateiformat oder Größe →
     
     System antwortet mit 400.
     
@@ -76,4 +73,3 @@ Nicht angegeben in der Notion-Quelle.
 - Anhänge existieren unabhängig von Terminzuweisungen.
 - Es erfolgt keine physische Löschung bestehender Dateien.
 - Parallele Uploads verschiedener Akteure sind zulässig und erzeugen getrennte Datensätze.
-

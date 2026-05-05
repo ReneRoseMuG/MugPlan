@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -38,4 +36,3 @@ Einen bestehenden Hilfetext dauerhaft aus dem System entfernen.
 ## Ergebnis
 
 Der Hilfetext ist nicht mehr im System vorhanden und kann über seinen help_key nicht mehr abgerufen werden.
-

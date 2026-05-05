@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/33fda094354e8029a54fc0c7a6cc1588
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (06) Automatische Regeln 33fda094354e8029a54fc0c7a6cc1588.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -47,12 +44,8 @@ Das Feature beschreibt fachliche Regeln, nicht technische Implementierungsdetail
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

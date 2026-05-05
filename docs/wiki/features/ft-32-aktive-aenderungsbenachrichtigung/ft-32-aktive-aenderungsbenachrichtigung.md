@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/337da094354e81c09d0bc94c1b789398
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (32) Aktive Änderungsbenachrichtigung 337da094354e81c09d0bc94c1b789398.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -54,12 +51,8 @@ Die Benachrichtigung ist ein Komfortmechanismus. Laufende Bearbeitungen werden n
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

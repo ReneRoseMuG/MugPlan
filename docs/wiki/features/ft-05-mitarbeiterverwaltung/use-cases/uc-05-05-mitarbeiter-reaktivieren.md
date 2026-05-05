@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -30,7 +28,7 @@ Einen zuvor deaktivierten Mitarbeiter wieder für zukünftige Dispositionsvorgä
 4. System prüft die Berechtigung.
 5. System prüft die Versionskennung.
 6. System setzt `is_active = true`.
-7. System persistiert die Ã„nderung.
+7. System persistiert die Änderung.
 8. System erhöht die Versionskennung.
 9. System aktualisiert abhängige Auswahl- und Listenansichten.
 
@@ -66,4 +64,3 @@ Einen zuvor deaktivierten Mitarbeiter wieder für zukünftige Dispositionsvorgä
     - in Dialogen zur Terminzuweisung,
     - in Filtern für aktive Mitarbeiter.
 - Es wurden keine bestehenden Termine oder Projekte verändert.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (33): Abwesenheiten über interne Personalplanung](../ft-33-abwesenheiten-ueber-interne-personalplanung.md)
-- Notion-Quelle: https://app.notion.com/p/34dda094354e81d096b0f47ea36c177e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -31,4 +29,3 @@ Versionskonflikt → System meldet Konflikt, Akteur lädt neu
 ## Ergebnis
 
 Abwesenheit ist gelöscht. Mitarbeiter ist im Zeitraum wieder verfügbar.
-

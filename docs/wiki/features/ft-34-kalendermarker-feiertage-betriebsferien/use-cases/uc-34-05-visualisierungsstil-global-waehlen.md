@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -35,4 +33,3 @@ Die Intensität der Kalendermarker-Darstellung global festlegen.
 ## Ergebnis
 
 Die Markerfarbe wird global in der gewählten Intensität dargestellt. Die fachliche Markerlogik bleibt unverändert.
-

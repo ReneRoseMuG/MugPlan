@@ -2,7 +2,6 @@
 
 ## Quelle
 
-Notion-Quelle: https://app.notion.com/p/352da094354e802f98cdf0f824251d52
 
 Backlog offener Architektur- und Design-Entscheidungen. Neue Einträge oben einfügen.
 

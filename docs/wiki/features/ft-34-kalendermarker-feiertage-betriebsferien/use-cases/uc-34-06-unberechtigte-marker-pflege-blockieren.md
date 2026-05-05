@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -25,7 +23,7 @@ Verhindern, dass nicht berechtigte Rollen Kalendermarker oder globale Marker-Set
 2. System prüft die Rolle serverseitig.
 3. System lehnt die Mutation ab.
 4. Akteur ruft den Schreibpfad für den globalen Visualisierungsstil direkt auf.
-5. System lehnt auch diese Ã„nderung serverseitig ab.
+5. System lehnt auch diese Änderung serverseitig ab.
 
 ## Alternativen
 
@@ -35,4 +33,3 @@ Verhindern, dass nicht berechtigte Rollen Kalendermarker oder globale Marker-Set
 ## Ergebnis
 
 Unberechtigte Rollen können Kalendermarker sehen, aber nicht pflegen und keine globale Marker-Darstellung ändern.
-

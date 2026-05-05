@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (27): Produktverwaltung und Auftragspositionen](../ft-27-produktverwaltung-und-auftragspositionen.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e8154a475eef591e57861
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -39,4 +37,3 @@ Eine neue Produktkategorie anlegen, um Produkte später kategorisieren zu könne
 ## Ergebnis
 
 Die Produktkategorie existiert und steht in Dropdowns beim Anlegen/Bearbeiten von Produkten zur Verfügung.<br>
-

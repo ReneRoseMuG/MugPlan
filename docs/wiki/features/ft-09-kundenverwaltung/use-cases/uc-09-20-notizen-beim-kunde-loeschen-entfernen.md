@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -39,4 +37,3 @@ Sicherstellen, dass beim Löschen eines Kunden auch die zugeordneten Notizen ent
 ## Ergebnis
 
 Der Kunde ist vollständig gelöscht. Alle Notiz-Zuordnungen zum Kunden sind entfernt. Falls die Notizen auch von anderen Objekten (z. B. Projekten) zugeordnet sind, bleiben diese Zuordnungen bestehen. Notizen, die nur diesem Kunden zugeordnet waren, werden ebenfalls gelöscht, sofern die Implementierung dies vorsieht.
-

@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (02) Projekte 30dda094354e80648c40dc62565d437e.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -93,7 +90,6 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
@@ -158,4 +154,4 @@ Nicht angegeben in der Notion-Quelle.
 - **BEHOBEN**: UC 02/06 alt beschrieb „Anhangslöschung nicht vorgesehen“ — Code und FT 19 erlauben Löschung. UC 02/06 wurde korrigiert.
 - **BEHOBEN**: `order_number` war im Feature-Dokument nicht als Pflichtfeld erwähnt, ist aber im Code 422-validiert. UC 02/01 wurde korrigiert.
 - **BEHOBEN**: Notiz-Endpunkt für Update läuft über generische `notesRoutes` (PUT), nicht über `projectNotesRoutes`. UC 02/05 dokumentiert dies jetzt.
-- **OFFEN**: UC 02/19 und UC 02/20 waren Duplikate von UC 02/12 / 02/13. Als ENTFERNT markiert, aber noch nicht physisch aus Notion gelöscht.
+- **OFFEN**: UC 02/19 und UC 02/20 waren Duplikate von UC 02/12 / 02/13 und sind als ENTFERNT markiert.

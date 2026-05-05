@@ -31,5 +31,3 @@ Mittel. Das Risiko liegt primär in UI-Regressionen, geänderten Fokus- und Öff
 Kunde und Projekt bevorzugt auf einen Haupttab `Termine` mit tabellarischer Darstellung prüfen. Die Sidebar soll danach nur noch Zusammenfassungen tragen oder entfallen.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52

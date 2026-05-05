@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (14): Benutzer- und Rollenverwaltung](../ft-14-benutzer-und-rollenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/9b2597a244b74023b822b2c94668ebc4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,5 +32,4 @@ Verhindern, dass ein Benutzer eine nicht erlaubte Mutation ausführt.
 
 ## Ergebnis
 
-Keine fachliche Ã„nderung wird persistiert.
-
+Keine fachliche Änderung wird persistiert.

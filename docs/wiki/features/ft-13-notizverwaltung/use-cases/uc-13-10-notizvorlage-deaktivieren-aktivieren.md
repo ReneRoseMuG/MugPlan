@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Den Aktivstatus einer bestehenden Notizvorlage ändern, ohne sie physisch zu lö
 
 - Die Vorlage existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäÃŸ Rollenkonzept.
+- Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.
 - Die Vorlage verfügt über ein Versionierungsmerkmal (z. B. `version` oder `updated_at`).
 
 ## Ablauf
@@ -29,22 +27,21 @@ Den Aktivstatus einer bestehenden Notizvorlage ändern, ohne sie physisch zu lö
 4. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des Versionsmerkmals.
+    - Übereinstimmung des Versionsmerkmals.
 5. Bei erfolgreicher Prüfung setzt das System das Feld `is_active` entsprechend auf TRUE oder FALSE.
 6. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
-7. Das System speichert die Ã„nderung persistent.
+7. Das System speichert die Änderung persistent.
 8. Das System aktualisiert die Vorlagenliste.
 
 ### Alternativabläufe
 
-- Der Akteur ist nicht authentifiziert → HTTP 401, keine Ã„nderung.
-- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Ã„nderung.
-- Versionskonflikt → HTTP 409 Conflict, keine Ã„nderung, Neuladen erforderlich.
-- Technischer Fehler → HTTP 500, keine Ã„nderung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Änderung.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -52,4 +49,3 @@ Nicht angegeben in der Notion-Quelle.
 - Nur Vorlagen mit `is_active = true` erscheinen in der Auswahlliste bei der Notizerstellung.
 - Bereits erstellte Notizen bleiben unverändert.
 - Es entsteht keine physische Löschung der Vorlage.
-

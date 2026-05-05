@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Eine bestehende Wochen-Notiz ändern, ohne parallele Ã„nderungen anderer Akteure still zu überschreiben.
+Eine bestehende Wochen-Notiz ändern, ohne parallele Änderungen anderer Akteure still zu überschreiben.
 
 ## Vorbedingungen
 
@@ -24,15 +22,15 @@ Eine bestehende Wochen-Notiz ändern, ohne parallele Ã„nderungen anderer Akte
 ## Ablauf
 
 1. Der Akteur öffnet die Notiz aus der Notizliste im Kalenderwochen-Kontext.
-2. Das System lädt die vollständigen Notizdaten einschlieÃŸlich des aktuellen Versionsmerkmals.
+2. Das System lädt die vollständigen Notizdaten einschließlich des aktuellen Versionsmerkmals.
 3. Der Akteur ändert Titel und/oder Beschreibung.
-4. Ã„nderungen an der Kennzeichnungsfarbe (`color`) sind nicht Bestandteil der normalen Bearbeitung durch Disponenten.
-5. Der Akteur bestätigt die Ã„nderungen.
+4. Änderungen an der Kennzeichnungsfarbe (`color`) sind nicht Bestandteil der normalen Bearbeitung durch Disponenten.
+5. Der Akteur bestätigt die Änderungen.
 6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
-7. Stimmen die Versionsinformationen überein, speichert das System die Ã„nderungen.
+    - Übereinstimmung des übermittelten Versionsmerkmals mit dem aktuellen Stand.
+7. Stimmen die Versionsinformationen überein, speichert das System die Änderungen.
 8. Das System erhöht das Versionsmerkmal und setzt `updated_at` auf den aktuellen Zeitstempel.
 9. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext.
 
@@ -41,18 +39,16 @@ Eine bestehende Wochen-Notiz ändern, ohne parallele Ã„nderungen anderer Akte
 - Pflichtfelder ungültig → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
 - Der Akteur besitzt Leser-Rolle → HTTP 403, keine Speicherung.
-- Versionskonflikt → HTTP 409 Conflict, keine Ã„nderung, Neuladen erforderlich.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
 - Abbruch durch den Akteur → Keine Persistierung.
-- Technischer Fehler → HTTP 500, keine Ã„nderung wird gespeichert.
+- Technischer Fehler → HTTP 500, keine Änderung wird gespeichert.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Die Notiz ist im Erfolgsfall mit neuer Versionsinformation gespeichert.
-- Parallele Ã„nderungen führen nicht zu stillen Ãœberschreibungen.
+- Parallele Änderungen führen nicht zu stillen Überschreibungen.
 - Die Notiz bleibt konsistent der ursprünglichen Kalenderwoche zugeordnet.
 - Es entstehen keine inkonsistenten Zwischenzustände oder Lost Updates.
-

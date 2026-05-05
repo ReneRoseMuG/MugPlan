@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -25,7 +23,7 @@ Einen bestehenden Hilfetext aktivieren oder deaktivieren, um seine Sichtbarkeit 
 1. Der Akteur öffnet die Hilfetext-Verwaltung.
 2. Der Akteur wählt einen bestehenden Hilfetext aus.
 3. Der Akteur ändert den Status auf „aktiv“ oder „inaktiv“.
-4. Der Akteur speichert die Ã„nderung.
+4. Der Akteur speichert die Änderung.
 5. Das System persistiert den neuen Status.
 
 ## Alternativen
@@ -38,4 +36,3 @@ Einen bestehenden Hilfetext aktivieren oder deaktivieren, um seine Sichtbarkeit 
 ## Ergebnis
 
 Der Hilfetext ist entsprechend dem gesetzten Status in der UI abrufbar oder nicht abrufbar. Bestehende fachliche Daten bleiben unverändert.
-

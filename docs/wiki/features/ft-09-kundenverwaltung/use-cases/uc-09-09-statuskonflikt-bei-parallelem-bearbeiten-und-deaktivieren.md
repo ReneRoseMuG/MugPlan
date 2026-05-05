@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -28,8 +26,8 @@ Sicherstellen, dass eine Kundenbearbeitung nicht erfolgreich gespeichert werden 
 2. Akteur B öffnet denselben Kunden.
 3. Akteur B löst „Deaktivieren“ aus.
 4. Das System prüft Berechtigung und Versionskennung.
-5. Das System setzt `is_active = false`, persistiert die Ã„nderung und erhöht die Versionskennung.
-6. Akteur A speichert nun seine Ã„nderungen mit veralteter Versionskennung.
+5. Das System setzt `is_active = false`, persistiert die Änderung und erhöht die Versionskennung.
+6. Akteur A speichert nun seine Änderungen mit veralteter Versionskennung.
 7. Das System prüft:
     - Versionskennung,
     - aktuellen Status (`is_active`).
@@ -48,4 +46,3 @@ Sicherstellen, dass eine Kundenbearbeitung nicht erfolgreich gespeichert werden 
 - Ein deaktivierter Kunde kann nicht unbemerkt durch parallele Bearbeitung wieder verändert werden.
 - Es entstehen keine inkonsistenten Zustände zwischen Aktiv-Status und Stammdaten.
 - Optimistic Locking wird auch bei Statusänderungen konsequent durchgesetzt.
-

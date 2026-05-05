@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Bestehende Kundendaten werden aktualisiert, ohne referenzierende Projekte oder T
 
 - Der Kunde existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte.
+- Der Akteur besitzt Änderungsrechte.
 - Eine gültige Versionskennung des Kunden liegt vor (Optimistic Locking).
 
 ## Ablauf
@@ -32,13 +30,13 @@ Bestehende Kundendaten werden aktualisiert, ohne referenzierende Projekte oder T
 3. Der Akteur startet die Funktion „Bearbeiten“.
 4. Das System zeigt ein editierbares Formular mit den aktuellen Werten.
 5. Der Akteur ändert zulässige Felder (z. B. Adresse, Telefonnummer, Kundennummer, Name).
-6. Der Akteur bestätigt die Ã„nderungen.
+6. Der Akteur bestätigt die Änderungen.
 7. Das System prüft:
     - Berechtigung,
     - Pflichtfelder,
     - formale Validierung,
     - Versionskennung (Konfliktprüfung).
-8. Bei erfolgreicher Prüfung speichert das System die Ã„nderungen.
+8. Bei erfolgreicher Prüfung speichert das System die Änderungen.
 9. Das System erhöht die Versionskennung.
 10. Das System aktualisiert abhängige Ansichten.
 
@@ -56,4 +54,3 @@ Bestehende Kundendaten werden aktualisiert, ohne referenzierende Projekte oder T
 - Bestehende Projekte und Termine referenzieren weiterhin denselben Kunden.
 - In Projektansichten, Kalender-Tooltips und Druckfunktionen erscheinen die aktualisierten Kundendaten.
 - Es werden keine Projekte, Termine oder Notizen verändert.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (20): Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung](../ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung.md)
-- Notion-Quelle: https://app.notion.com/p/f29fe0b8f4a443f982ef140a3983e737
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 

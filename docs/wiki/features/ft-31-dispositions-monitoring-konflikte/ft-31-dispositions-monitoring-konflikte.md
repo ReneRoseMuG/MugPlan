@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/322da094354e80c9af64f355f8d47b6c
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (31) Dispositions-Monitoring (Konflikte) 322da094354e80c9af64f355f8d47b6c.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -66,12 +63,8 @@ Dieser Trigger deckt folgende Unterfälle automatisch ab, ohne sie einzeln zu un
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

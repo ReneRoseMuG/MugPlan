@@ -1,6 +1,5 @@
 ﻿# FT (21) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md) übernommen.
 
 - [UC 21/01: Dokumentextraktion starten](uc-21-01-dokumentextraktion-starten.md)
 - [UC 21/02: Extrahierte Daten bestätigen](uc-21-02-extrahierte-daten-bestaetigen.md)
@@ -17,4 +16,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 21/13: Wiederholte Extraktion desselben Dokuments](uc-21-13-wiederholte-extraktion-desselben-dokuments.md)
 - [UC 21/14: Extraktion bei zwischenzeitlich gelöschtem Parent-Objekt](uc-21-14-extraktion-bei-zwischenzeitlich-geloeschtem-parent-objekt.md)
 - [UC 21/17: Extrahiertes PDF als Projekt-Attachment verknüpfen](uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.md)
-

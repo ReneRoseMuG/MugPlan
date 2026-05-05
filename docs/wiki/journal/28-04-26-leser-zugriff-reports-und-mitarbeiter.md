@@ -15,5 +15,3 @@ Die lesende Rolle darf jetzt `Reports` in der Navigation sehen und die bestehend
 Keine.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

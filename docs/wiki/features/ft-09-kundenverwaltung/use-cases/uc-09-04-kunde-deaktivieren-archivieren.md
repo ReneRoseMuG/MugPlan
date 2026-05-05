@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -30,7 +28,7 @@ Ein bestehender Kunde wird deaktiviert, sodass er nicht mehr für neue Projekte 
     - Berechtigung (Admin-Rolle),
     - Versionskennung (Optimistic Locking).
 4. Das System setzt `is_active = false`.
-5. Das System persistiert die Ã„nderung.
+5. Das System persistiert die Änderung.
 6. Das System erhöht die Versionskennung.
 7. Das System aktualisiert abhängige Listen- und Auswahlansichten.
 
@@ -58,4 +56,3 @@ Ein bestehender Kunde wird deaktiviert, sodass er nicht mehr für neue Projekte 
 - Der Kunde ist archiviert.
 - Keine Projekte, Termine, Notizen oder Anhänge werden verändert oder gelöscht.
 - Es entstehen keine verwaisten Referenzen.
-

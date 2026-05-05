@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -36,7 +34,7 @@ Einen bestehenden, nicht historischen Termin dauerhaft stornieren. Der Storno-Wo
 
 ## Alternativen
 
-- **Abbruch im Bestätigungsdialog:** Der Akteur bricht ab. Es werden keine Ã„nderungen vorgenommen; der Termin bleibt unverändert.
+- **Abbruch im Bestätigungsdialog:** Der Akteur bricht ab. Es werden keine Änderungen vorgenommen; der Termin bleibt unverändert.
 - **Termin ist historisch (nur Disponent):** Der Button „Termin stornieren“ ist für Disponenten nicht verfügbar. Das System verhindert den Aufruf serverseitig mit HTTP 409 PAST_APPOINTMENT_READONLY. Administratoren können historische Termine stornieren.
 - **Termin ist bereits storniert:** Der Button ist nicht verfügbar. Keine Aktion möglich.
 - **Termin hat kein Projekt:** Schritt 5b (Auftragswert auf 0) entfällt. Die übrigen Schritte werden vollständig ausgeführt.
@@ -45,4 +43,3 @@ Einen bestehenden, nicht historischen Termin dauerhaft stornieren. Der Storno-Wo
 ## Ergebnis
 
 Der Termin ist storniert und dauerhaft gesperrt. Er erscheint in allen Sichten weiterhin, ist aber optisch als storniert gekennzeichnet. Keine Mitarbeiter sind mehr zugeordnet; betroffene Mitarbeiter sind im Zeitraum des Termins wieder frei verfügbar. Falls ein Projekt zugeordnet war, ist dessen Auftragswert auf 0 gesetzt. Der Termin kann nicht reaktiviert, bearbeitet, verschoben oder gelöscht werden. Er geht nicht in Umsatzkalkulationen und Auftragswert-Reports ein.
-

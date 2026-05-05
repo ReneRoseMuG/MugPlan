@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Sicherstellen, dass alle einer Kalenderwoche zugeordneten Notizen in der Druckau
 ## Ablauf
 
 1. Der Akteur löst die Druckausgabe für die gewünschte Kalenderwoche aus.
-2. Das System lädt alle Druckdaten dieser Woche einschlieÃŸlich der Wochen-Notizen über `calendar_week_note`.
+2. Das System lädt alle Druckdaten dieser Woche einschließlich der Wochen-Notizen über `calendar_week_note`.
 3. Das System sortiert die Wochen-Notizen deterministisch:
     - Angepinnte Notizen zuerst,
     - danach Sortierung nach `updated_at` absteigend.
@@ -41,7 +39,6 @@ Sicherstellen, dass alle einer Kalenderwoche zugeordneten Notizen in der Druckau
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -49,4 +46,3 @@ Nicht angegeben in der Notion-Quelle.
 - Die Darstellung ist konsistent mit den übrigen Wocheninformationen in der Druckansicht.
 - Es entsteht kein neues, paralleles Drucksystem.
 - Die Druckausgabe verändert keine persistierten Daten.
-

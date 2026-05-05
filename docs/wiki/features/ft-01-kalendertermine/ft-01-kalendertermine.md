@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importquelle lokal: `C:/Users/schro/Downloads/fd760130-f46b-4dd7-ad03-a9418a06c2fc_ExportBlock-54a7010f-d9fa-4b71-bbd6-7d995c62dc71.zip`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -14,9 +11,9 @@ Dieses Feature bildet die **zentrale fachliche Grundlage der Terminplanung**.
 
 Es ermöglicht der Disposition, Termine als zeitliche Planungseinheiten **anzulegen, zu ändern, zu verschieben, zuzuweisen und zu überwachen**, immer mit fachlichem Kundenkontext. Dieser Kundenkontext kann direkt über einen Kunden oder indirekt über ein Projekt entstehen.
 
-FT (01) ist die **fachliche Quelle der Wahrheit für alle Termindaten**. Alle weiteren Features, die Termine anzeigen, auswerten, überwachen oder ausgeben, leiten ihre Informationen **ausschlieÃŸlich** aus den hier verwalteten Terminen ab.
+FT (01) ist die **fachliche Quelle der Wahrheit für alle Termindaten**. Alle weiteren Features, die Termine anzeigen, auswerten, überwachen oder ausgeben, leiten ihre Informationen **ausschließlich** aus den hier verwalteten Terminen ab.
 
-Die Mitarbeiterzuweisung an Termine unterliegt der Ãœberschneidungsprüfung, die sicherstellt, dass kein Mitarbeiter im selben Zeitraum mehreren Terminen zugewiesen ist.
+Die Mitarbeiterzuweisung an Termine unterliegt der Überschneidungsprüfung, die sicherstellt, dass kein Mitarbeiter im selben Zeitraum mehreren Terminen zugewiesen ist.
 
 ## Fachliche Beschreibung
 
@@ -28,7 +25,7 @@ Zeitangaben werden technisch als echte Zeitpunkte geführt, damit spätere Anfor
 
 Ein Termin kann optional Notizen enthalten. Notizen sind freie Texteinträge (Titel und Inhalt), die direkt am Termin hängen und für die Dokumentation von Besonderheiten, Absprachen oder Hinweisen dienen. Notizen bleiben bei Terminen bestehen, unabhängig davon, ob der Termin bearbeitet, das Projekt gewechselt, die Tour verändert oder Mitarbeiter zugewiesen oder entfernt werden. Notizen können unabhängig vom Termin gelöscht werden.
 
-Ein Termin kann storniert werden, solange er nicht in der Vergangenheit liegt — **auÃŸer durch einen Administrator, der auch historische Termine stornieren darf.** Der Storno-Workflow ist ein expliziter, nicht umkehrbarer Vorgang: Er zieht alle zugeordneten Mitarbeiter vom Termin ab, setzt den Auftragswert des zugeordneten Projekts auf 0 und markiert den Termin mit dem Tag „Storniert“. Damit wird der Termin dauerhaft gesperrt und verhält sich wie ein historischer Termin: read-only, nicht editierbar, nicht löschbar, nicht verschiebbar. Ein stornierter Termin bleibt in allen Sichten sichtbar, geht aber nicht in Umsatzkalkulationen und Reports ein, die auf dem Auftragswert basieren.
+Ein Termin kann storniert werden, solange er nicht in der Vergangenheit liegt — **außer durch einen Administrator, der auch historische Termine stornieren darf.** Der Storno-Workflow ist ein expliziter, nicht umkehrbarer Vorgang: Er zieht alle zugeordneten Mitarbeiter vom Termin ab, setzt den Auftragswert des zugeordneten Projekts auf 0 und markiert den Termin mit dem Tag „Storniert“. Damit wird der Termin dauerhaft gesperrt und verhält sich wie ein historischer Termin: read-only, nicht editierbar, nicht löschbar, nicht verschiebbar. Ein stornierter Termin bleibt in allen Sichten sichtbar, geht aber nicht in Umsatzkalkulationen und Reports ein, die auf dem Auftragswert basieren.
 
 Ein Termin kann:
 
@@ -36,15 +33,15 @@ Ein Termin kann:
 - null, einen oder mehrere Mitarbeiter zugewiesen bekommen,
 - über Teams mit Mitarbeitern belegt werden,
 - Mitarbeiter können nur einmal im Termin existieren, keine Dupletten durch Team-Zuweisung,
-- Mitarbeiter dürfen nur zugewiesen werden, wenn sich dadurch keine Ãœberschneidungen mit anderen Terminen des Mitarbeiters ergeben.
-- in verschiedenen Kalender- und Ãœbersichtsansichten dargestellt werden,
+- Mitarbeiter dürfen nur zugewiesen werden, wenn sich dadurch keine Überschneidungen mit anderen Terminen des Mitarbeiters ergeben.
+- in verschiedenen Kalender- und Übersichtsansichten dargestellt werden,
 - ohne Uhrzeit als Ganztagstermin gelten,
 - optional eine Startuhrzeit besitzen, um einen Termin innerhalb eines Tages zeitlich zu verorten.
 
 Termine können auf zwei fachlich gleichwertige Arten entstehen:
 
 - durch Anlegen eines Termins **innerhalb eines Projekts**, oder
-- durch Anlegen eines Termins **im Kalender** mit anschlieÃŸender Projektzuweisung.
+- durch Anlegen eines Termins **im Kalender** mit anschließender Projektzuweisung.
 
 Unabhängig vom Einstiegspunkt gilt:
 
@@ -54,7 +51,7 @@ Unabhängig vom Einstiegspunkt gilt:
 
 **Abgrenzung zu Kalendermarkern**
 
-Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und Betriebsferien erzeugen keine Terminobjekte, keine Kunden- oder Projektzuordnung, keine Mitarbeiterzuweisung, keine Ãœberschneidungsprüfung und keine Reportwirkung.
+Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und Betriebsferien erzeugen keine Terminobjekte, keine Kunden- oder Projektzuordnung, keine Mitarbeiterzuweisung, keine Überschneidungsprüfung und keine Reportwirkung.
 
 **Grundlegende Terminregeln**
 
@@ -87,9 +84,9 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 
 **Zuweisung einer Tour**
 
-- Das Zuweisen oder Wechseln einer Tour an einem Termin löst eine Prüfung aus, ob für die Kalenderwoche des Terminstartdatums in der (neuen) Tour eine Wochenplanung (tour_week_employees) hinterlegt ist. Wenn ja, wird dem Disponenten sofort ein Vorschau-Dialog angezeigt: welche Mitarbeiter hinzugefügt würden, welche Konflikte bestehen (Typ-2: Termin-Ãœberschneidung), welche Mitarbeiter wegen manueller oder Team-Zuweisung unverändert bleiben. Erst nach expliziter Bestätigung werden die ausgewählten Mitarbeiter in die Mitarbeiterliste des Termins übernommen. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt unverändert. Ist keine Wochenplanung hinterlegt, ändert sich die Mitarbeiterliste nicht.
+- Das Zuweisen oder Wechseln einer Tour an einem Termin löst eine Prüfung aus, ob für die Kalenderwoche des Terminstartdatums in der (neuen) Tour eine Wochenplanung (tour_week_employees) hinterlegt ist. Wenn ja, wird dem Disponenten sofort ein Vorschau-Dialog angezeigt: welche Mitarbeiter hinzugefügt würden, welche Konflikte bestehen (Typ-2: Termin-Überschneidung), welche Mitarbeiter wegen manueller oder Team-Zuweisung unverändert bleiben. Erst nach expliziter Bestätigung werden die ausgewählten Mitarbeiter in die Mitarbeiterliste des Termins übernommen. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt unverändert. Ist keine Wochenplanung hinterlegt, ändert sich die Mitarbeiterliste nicht.
 - Das Entfernen einer Tour am Termin hat keine Auswirkungen auf die Mitarbeiterliste des Termins.
-- Mitarbeiter, die manuell oder über ein Team dem Termin zugewiesen wurden, werden durch Tour-Ã„nderungen nicht automatisch entfernt. Sie erscheinen im Vorschau-Dialog als „bleibt unverändert“ mit Angabe des Herkunftsgrunds.
+- Mitarbeiter, die manuell oder über ein Team dem Termin zugewiesen wurden, werden durch Tour-Änderungen nicht automatisch entfernt. Sie erscheinen im Vorschau-Dialog als „bleibt unverändert“ mit Angabe des Herkunftsgrunds.
 - Ein Termin ohne Tour wird in einer **Standardfarbe** dargestellt.
 - Touren dienen der organisatorischen Gruppierung und visuellen Orientierung im Kalender.
 
@@ -97,14 +94,14 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 
 - Team sind **reine Eingabehilfen**.
 - Gespeichert wird am Termin **immer die konkrete Mitarbeiterliste**, niemals die Vorlage.
-- Ã„nderungen an Teams wirken **nicht rückwirkend**.
+- Änderungen an Teams wirken **nicht rückwirkend**.
 - Der Termin übernimmt die Mitarbeiter des Teams
 
 **Notizen an Terminen**
 
 - Ein Termin kann null, eine oder mehrere Notizen haben.
 - Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.
-- Notizen sind unabhängig vom Termin; Ã„nderungen am Termin (Datum, Projekt, Tour, Mitarbeiter) wirken sich nicht auf die Notizen aus.
+- Notizen sind unabhängig vom Termin; Änderungen am Termin (Datum, Projekt, Tour, Mitarbeiter) wirken sich nicht auf die Notizen aus.
 - Notizen werden nicht automatisch gelöscht, wenn ein Termin bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder der gesamte Termin gelöscht wird.
 - Eine Reklamationsnotiz kann beim Setzen des Systemzustands **Reklamation** vorgeschlagen werden. Beim Aufheben der Reklamation entscheidet der Akteur ausdrücklich, ob eine vorhandene Reklamationsnotiz entfernt oder behalten wird.
 - Wenn ein Termin gelöscht wird, werden auch seine zugeordneten Notizen entfernt.
@@ -119,7 +116,7 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 - Ein stornierter Termin ist in allen Sichten weiterhin sichtbar, jedoch optisch als storniert gekennzeichnet.
 - Der Auftragswert des zugeordneten Projekts wird auf 0 gesetzt, damit stornierte Termine nicht in Umsatzkalkulationen und Reports eingehen.
 - Hat der Termin kein Projekt (project_id = NULL), entfällt der Schritt „Auftragswert auf 0“; die übrigen Schritte bleiben unverändert.
-- Die freigegebenen Mitarbeiter sind nach dem Storno für andere Termine im selben Zeitraum wieder verfügbar (Ãœberschneidungsprüfung greift neu).
+- Die freigegebenen Mitarbeiter sind nach dem Storno für andere Termine im selben Zeitraum wieder verfügbar (Überschneidungsprüfung greift neu).
 
 ## Use Cases
 
@@ -137,7 +134,7 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 - [UC 01/12: Termin anzeigen und filtern (Kalender-/Listenprojektion)](use-cases/uc-01-12-termin-anzeigen-und-filtern-kalender-listenprojektion.md)
 - [UC 01/13: Termin-Farbdarstellung ableiten](use-cases/uc-01-13-termin-farbdarstellung-ableiten.md)
 - [UC 01/14: Historische Termine — Rollenbasiertes Verhalten](use-cases/uc-01-14-historische-termine-rollenbasiertes-verhalten.md)
-- [UC 01/15: Konsistenz bei parallelen Ã„nderungen (Optimistic Locking)](use-cases/uc-01-15-konsistenz-bei-parallelen-aenderungen-optimistic-locking.md)
+- [UC 01/15: Konsistenz bei parallelen Änderungen (Optimistic Locking)](use-cases/uc-01-15-konsistenz-bei-parallelen-aenderungen-optimistic-locking.md)
 - [UC 01/16: Termin-Join-Konsistenz und Duplikatvermeidung](use-cases/uc-01-16-termin-join-konsistenz-und-duplikatvermeidung.md)
 - [UC 01/17: Notiz an Termin anlegen](use-cases/uc-01-17-notiz-an-termin-anlegen.md)
 - [UC 01/18: Notiz am Termin bearbeiten](use-cases/uc-01-18-notiz-am-termin-bearbeiten.md)
@@ -148,7 +145,6 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
@@ -185,7 +181,7 @@ Nicht angegeben in der Notion-Quelle.
 
 - [FT-02: Projektverwaltung](https://app.notion.com/p/30dda094354e80648c40dc62565d437e) — project.customer_id wird zur Konsistenzprüfung gegen appointment.customer_id verwendet
 - [FT-04: Kalenderansicht](https://app.notion.com/p/746286ccf41d46629ec614541a871345) — Tour-Farblogik: appointment.tour_id → tours.color
-- [FT-05: Mitarbeiterverwaltung](https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5) — Mitarbeiter über appointment_employee; Inaktiv- und Ãœberschneidungsprüfung
+- [FT-05: Mitarbeiterverwaltung](https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5) — Mitarbeiter über appointment_employee; Inaktiv- und Überschneidungsprüfung
 - [FT-09: Kundenverwaltung](https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad) — customer_id NOT NULL; Inaktiv-Prüfung bei Zuweisung
 - [FT-28: Tagging](https://app.notion.com/p/317da094354e81279271fc1c2d18eba4) — Reservierte Tags (Storniert, Reklamation, Messe, Geparkt) steuern Workflow-Zustände
 - [FT-06: Automatische Regeln](../ft-06-automatische-regeln/ft-06-automatische-regeln.md) — Reklamationsworkflow setzt bzw. entfernt den Systemzustand Reklamation und steuert den optionalen Notizfluss
@@ -196,14 +192,14 @@ Nicht angegeben in der Notion-Quelle.
 - [FT-04: Kalenderansicht](https://app.notion.com/p/746286ccf41d46629ec614541a871345) — stellt Termine dar, leitet Darstellungsfarbe aus tour_id ab
 - [FT-09: Kundenverwaltung](https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad) — Kundenterminliste über appointment.customer_id
 - [FT-02: Projektverwaltung](https://app.notion.com/p/30dda094354e80648c40dc62565d437e) — Projektterminliste über appointment.project_id
-- FT-26: Reports/Vorlaufliste — liest Termine für Druckausgabe *(Notion-Link fehlt)*
+- FT-26: Reports/Vorlaufliste — liest Termine für Druckausgabe
 
-**Seiteneffekte bei Ã„nderungen:**
+**Seiteneffekte bei Änderungen:**
 
-- Ã„nderung am customer_id-Feld → FT-09-Terminliste muss neu projizieren
-- Ã„nderung an start_date/end_date-Logik → Ãœberschneidungsprüfung in FT-05 betroffen
-- Ã„nderung an der Storno-Logik → FT-28 (reservierter Tag Storniert) direkt betroffen
-- Ã„nderung am project_order.amount = 0 beim Storno → FT-02 und FT-26 (Reports) betroffen
+- Änderung am customer_id-Feld → FT-09-Terminliste muss neu projizieren
+- Änderung an start_date/end_date-Logik → Überschneidungsprüfung in FT-05 betroffen
+- Änderung an der Storno-Logik → FT-28 (reservierter Tag Storniert) direkt betroffen
+- Änderung am project_order.amount = 0 beim Storno → FT-02 und FT-26 (Reports) betroffen
 
 ## Entscheidungen & Offene Punkte
 
@@ -223,4 +219,3 @@ Nicht angegeben in der Notion-Quelle.
 | W-01 | Inaktiver Kunde | ensureActiveCustomer blockiert unabhängig von Rolle — auch Admin kann keinen inaktiven Kunden zuweisen |
 | W-07 | Historische Termine | BEHOBEN — in Spec übernommen (05.26) |
 | W-08 | Storno historisch | Admin darf auch historische Termine stornieren |
-

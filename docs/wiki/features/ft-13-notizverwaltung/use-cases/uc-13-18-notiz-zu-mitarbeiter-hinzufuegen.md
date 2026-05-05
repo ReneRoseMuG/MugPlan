@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -25,7 +23,7 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Mitarbeiter zuordnen.
 1. Der Akteur öffnet die Detailansicht eines bestehenden Mitarbeiters.
 2. Der Akteur wählt die Funktion „Notiz hinzufügen".
 3. Das System öffnet einen Richtext-Editor zur Erfassung der Notizdaten.
-4. Das System zeigt ausschlieÃŸlich aktive Notizvorlagen zur Auswahl an.
+4. Das System zeigt ausschließlich aktive Notizvorlagen zur Auswahl an.
 5. Optional wählt der Akteur eine Vorlage.
 6. Wurde eine Vorlage gewählt, übernimmt das System Titel und Inhalt in den Editor.
 7. Besitzt die gewählte Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese einmalig in die neue Notiz.
@@ -33,11 +31,11 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Mitarbeiter zuordnen.
 9. Der Akteur bestätigt die Eingabe.
 10. Das System validiert Pflichtfelder und Berechtigungen serverseitig.
 11. Das System erstellt die Notiz mit folgenden Initialwerten:
-    - Referenz ausschlieÃŸlich auf den gewählten Mitarbeiter
+    - Referenz ausschließlich auf den gewählten Mitarbeiter
     - `is_pinned = false`
     - Setzen von `created_at` und `updated_at`
 12. Das System speichert die Notiz persistent.
-13. Das System aktualisiert die Notizliste in der Mitarbeiter-Detailansicht gemäÃŸ Sortierlogik.
+13. Das System aktualisiert die Notizliste in der Mitarbeiter-Detailansicht gemäß Sortierlogik.
 
 ### Alternativabläufe
 
@@ -49,12 +47,10 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Mitarbeiter zuordnen.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Eine neue Notiz existiert persistent.
-- Die Notiz ist ausschlieÃŸlich dem Mitarbeiter zugeordnet.
+- Die Notiz ist ausschließlich dem Mitarbeiter zugeordnet.
 - Die Notiz erscheint in der Notizliste der Mitarbeiter-Detailansicht.
 - Es entstehen keine zusätzlichen Referenzen oder Seiteneffekte in anderen Domänen.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (06): Automatische Regeln](../ft-06-automatische-regeln.md)
-- Notion-Quelle: https://app.notion.com/p/33fda094354e8029a54fc0c7a6cc1588
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -32,7 +30,7 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 4. Das System prüft, ob am Termin bereits eine passende Reklamationsnotiz vorhanden ist.
 5. Wenn keine passende Notiz vorhanden ist, öffnet das System einen Vorschlagsdialog für eine Reklamationsnotiz.
 6. Bestätigt der Akteur den Vorschlag, legt das System eine Notiz aus der Reklamationsvorlage am Termin an und öffnet den Notizeditor.
-7. Ãœberspringt der Akteur den Vorschlag, bleibt die Reklamation gesetzt, ohne dass eine Notiz angelegt wird.
+7. Überspringt der Akteur den Vorschlag, bleibt die Reklamation gesetzt, ohne dass eine Notiz angelegt wird.
 
 ### Reklamation an Projekt melden
 
@@ -64,4 +62,3 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 ## Ergebnis
 
 Das betroffene Objekt besitzt oder verliert das System-Tag **Reklamation** konsistent über den fachlichen Workflow. Der optionale Notizfluss erzeugt keine unbeabsichtigten Duplikate und löscht vorhandene Dokumentation nur nach ausdrücklicher Bestätigung.
-

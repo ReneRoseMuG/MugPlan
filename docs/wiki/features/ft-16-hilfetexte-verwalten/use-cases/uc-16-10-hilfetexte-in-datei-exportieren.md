@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (16): Hilfetexte verwalten](../ft-16-hilfetexte-verwalten.md)
-- Notion-Quelle: https://app.notion.com/p/a8c06986b3a641d4b4d30723de4b4315
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Admin
 
 ## Ziel
 
-Alle Hilfetexte aus dem System in eine Datei exportieren, um sie auÃŸerhalb der Anwendung versionierbar abzulegen, zu prüfen und gezielt wieder importieren zu können.
+Alle Hilfetexte aus dem System in eine Datei exportieren, um sie außerhalb der Anwendung versionierbar abzulegen, zu prüfen und gezielt wieder importieren zu können.
 
 ## Vorbedingungen
 
@@ -31,5 +29,4 @@ Wenn keine Hilfetexte vorhanden sind, erzeugt das System eine gültige Exportdat
 
 ## Ergebnis
 
-Eine Exportdatei liegt vor, die alle Hilfetexte vollständig und konsistent enthält und als Grundlage für spätere Ã„nderungen und Re-Import geeignet ist.
-
+Eine Exportdatei liegt vor, die alle Hilfetexte vollständig und konsistent enthält und als Grundlage für spätere Änderungen und Re-Import geeignet ist.

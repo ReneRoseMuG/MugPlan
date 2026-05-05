@@ -41,5 +41,3 @@ Zuerst bestehende Kandidatenpfade ausbauen, `beforeEach`-Suiten klassifizieren u
 Diese Suiten sind wegen `beforeEach`-Reset zuerst zu prüfen. `tests/e2e-browser/tour-week-form.browser.e2e.spec.ts` bleibt vorerst Klasse A mit `per-test`; `tests/e2e-browser/settingsPage.backup.browser.e2e.spec.ts` bleibt Storage-Sonderfall.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52

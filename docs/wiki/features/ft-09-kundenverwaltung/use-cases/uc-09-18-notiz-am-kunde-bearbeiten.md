@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Titel oder Inhalt einer bestehenden Notiz ändern, um Informationen zu aktualisi
 
 - Der Kunde existiert.
 - Dem Kunden ist mindestens eine Notiz zugeordnet.
-- Der Akteur besitzt Ã„nderungsrechte.
+- Der Akteur besitzt Änderungsrechte.
 
 ## Ablauf
 
@@ -27,9 +25,9 @@ Titel oder Inhalt einer bestehenden Notiz ändern, um Informationen zu aktualisi
 3. Der Akteur wählt eine Notiz und klickt auf „Bearbeiten" oder doppelklickt die Notiz.
 4. Das System öffnet die Notiz im Bearbeitungsmodus.
 5. Der Akteur ändert Titel und/oder Inhalt.
-6. Der Akteur speichert die Ã„nderungen.
+6. Der Akteur speichert die Änderungen.
 7. Das System prüft, dass Titel und Inhalt noch vorhanden sind.
-8. Das System speichert die Ã„nderungen.
+8. Das System speichert die Änderungen.
 9. Das System aktualisiert die Anzeige der Notiz in der Notizenliste.
 
 ## Alternativen
@@ -40,4 +38,3 @@ Titel oder Inhalt einer bestehenden Notiz ändern, um Informationen zu aktualisi
 ## Ergebnis
 
 Die Notiz ist mit den geänderten Daten gespeichert. Die aktualisierte Notiz wird in der Notizenliste des Kunden angezeigt.
-

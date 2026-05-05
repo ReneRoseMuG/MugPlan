@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -37,5 +35,4 @@ Eine Notiz als wichtig markieren (anpinnen) oder diese Markierung aufheben, soda
 
 ## Ergebnis
 
-Der `is_pinned`-Wert der Notiz ist geändert. Die Notizliste ist gemäÃŸ Sortierlogik aktualisiert. Vollständige Pinning-Regeln gemäÃŸ FT (13).
-
+Der `is_pinned`-Wert der Notiz ist geändert. Die Notizliste ist gemäß Sortierlogik aktualisiert. Vollständige Pinning-Regeln gemäß FT (13).

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -54,11 +52,9 @@ Sicherstellen, dass der Kundenwert eines Projekts stabil bleibt, sobald Termine 
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -66,4 +62,3 @@ Nicht angegeben in der Notion-Quelle.
 - Alle Termine eines Projekts haben garantiert denselben Kundenwert wie das Projekt.
 - Keine verwaisten oder inkonsistenten Projekt-Termin-Kunde-Beziehungen entstehen.
 - Administratoren wissen eindeutig: Wer ein Projekt bearbeiten will, muss zuerst prüfen, ob Termine existieren.
-

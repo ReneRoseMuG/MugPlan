@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,8 +16,8 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 
 - Der Kunde existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Leserechte; für Upload zusätzlich Ã„nderungsrechte.
-- Die hochzuladende Datei entspricht erlaubten Formaten und GröÃŸenbeschränkungen.
+- Der Akteur besitzt Leserechte; für Upload zusätzlich Änderungsrechte.
+- Die hochzuladende Datei entspricht erlaubten Formaten und Größenbeschränkungen.
 
 ---
 
@@ -32,10 +30,10 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
     - Authentifizierung,
     - Berechtigung,
     - Dateiformat,
-    - DateigröÃŸe.
+    - Dateigröße.
 5. Das System speichert die Datei serverseitig unter persistentem Speichername.
 6. Das System legt einen Attachment-Datensatz mit Parent-Referenz auf den Kunden an.
-7. Das System speichert Metadaten (Originalname, MIME-Typ, GröÃŸe, Zeitstempel).
+7. Das System speichert Metadaten (Originalname, MIME-Typ, Größe, Zeitstempel).
 8. Das System aktualisiert die Anhangsliste in der UI.
 
 ---
@@ -62,7 +60,6 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -79,4 +76,3 @@ Nicht angegeben in der Notion-Quelle.
 - Die Anhangsliste zeigt alle vorhandenen Attachments konsistent an.
 - Es entstehen keine Auswirkungen auf Projekte oder Termine.
 - Es entstehen keine verwaisten Attachment-Referenzen.
-

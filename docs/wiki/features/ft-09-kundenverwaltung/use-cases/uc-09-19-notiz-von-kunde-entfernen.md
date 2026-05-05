@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Eine Notiz vom Kunden entfernen, ohne dass dies Auswirkungen auf andere Kunden-D
 
 - Der Kunde existiert.
 - Dem Kunden ist mindestens eine Notiz zugeordnet.
-- Der Akteur besitzt Ã„nderungsrechte.
+- Der Akteur besitzt Änderungsrechte.
 
 ## Ablauf
 
@@ -37,4 +35,3 @@ Eine Notiz vom Kunden entfernen, ohne dass dies Auswirkungen auf andere Kunden-D
 ## Ergebnis
 
 Die Notiz ist vom Kunden entfernt. Die Notiz selbst bleibt in der Datenbank bestehen (sofern sie nicht anderswo zugeordnet ist). Der Kunde und alle anderen Kunden sind unverändert.
-

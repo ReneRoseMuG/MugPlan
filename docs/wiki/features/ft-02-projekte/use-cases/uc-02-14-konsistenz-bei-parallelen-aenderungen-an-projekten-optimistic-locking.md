@@ -1,10 +1,8 @@
-﻿# UC 02/14: Konsistenz bei parallelen Ã„nderungen an Projekten (Optimistic Locking)
+﻿# UC 02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)
 
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Administrator, Disponent
 
 ## Ziel
 
-Sicherstellen, dass parallele Ã„nderungen an einem Projekt keine inkonsistenten Zustände oder stillen Ãœberschreibungen verursachen.
+Sicherstellen, dass parallele Änderungen an einem Projekt keine inkonsistenten Zustände oder stillen Überschreibungen verursachen.
 
 ## Vorbedingungen
 
@@ -20,7 +18,7 @@ Sicherstellen, dass parallele Ã„nderungen an einem Projekt keine inkonsistent
 - Beide Akteure sind authentifiziert.
 - Projekt wird von mindestens zwei Akteuren parallel geöffnet.
 - Projekt besitzt ein Versionsmerkmal (`version`).
-- Beide Akteure besitzen Ã„nderungsrechte.
+- Beide Akteure besitzen Änderungsrechte.
 
 ## Ablauf
 
@@ -34,15 +32,14 @@ Sicherstellen, dass parallele Ã„nderungen an einem Projekt keine inkonsistent
 ## Alternativen
 
 - Akteur nicht authentifiziert → HTTP 401.
-- Akteur ohne Ã„nderungsrechte → HTTP 403.
-- Keine parallele Ã„nderung → Speichern erfolgt regulär.
+- Akteur ohne Änderungsrechte → HTTP 403.
+- Keine parallele Änderung → Speichern erfolgt regulär.
 - Akteur B lädt das Projekt nach dem Konflikt neu → Aktuelle Version wird geladen und kann bearbeitet werden.
 
 ## Ergebnis
 
-Es kommt zu keiner stillen Ãœberschreibung von Projektdaten.
+Es kommt zu keiner stillen Überschreibung von Projektdaten.
 
 Das Projekt bleibt in einem konsistenten Zustand.
 
-Abhängige Sichten zeigen ausschlieÃŸlich den zuletzt erfolgreich gespeicherten Zustand.
-
+Abhängige Sichten zeigen ausschließlich den zuletzt erfolgreich gespeicherten Zustand.

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,8 +16,8 @@ Projektbezogene Tags über das universelle Tagging-System anpassen.
 
 - Das Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte (Disponent oder Administrator).
-- Die gewünschten Tags existieren gemäÃŸ FT (28).
+- Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).
+- Die gewünschten Tags existieren gemäß FT (28).
 - Die gewünschten Tags sind frei verwendbare Tags und keine geschützten System-Tags.
 
 ## Ablauf
@@ -32,21 +30,20 @@ Projektbezogene Tags über das universelle Tagging-System anpassen.
     - Existenz des Tags,
     - ob der Tag ein System-Tag ist (`isDefault = true`) — diese sind geschützt und können weder hinzugefügt noch entfernt werden.
 4. Das System prüft das Versionsmerkmal der Tag-Relation (bei Entfernen).
-5. Das System speichert die Ã„nderung der Tag-Zuordnung atomar.
+5. Das System speichert die Änderung der Tag-Zuordnung atomar.
 
 ## Alternativen
 
 - Projekt nicht vorhanden → HTTP 404.
 - Akteur nicht authentifiziert → HTTP 401.
-- Akteur ohne Ã„nderungsrechte (Leser) → HTTP 403.
+- Akteur ohne Änderungsrechte (Leser) → HTTP 403.
 - Tag existiert nicht → HTTP 404.
 - Tag ist ein geschützter System-Tag (`isDefault = true`) → HTTP 409 WORKFLOW_TAG_PROTECTED.
 - **Reklamation** ist ein geschützter System-Tag und wird nicht über diesen Use Case geändert. Dafür gilt UC 06/02.
 - Doppelte Tag-Zuweisung → System verhindert Mehrfacheintrag.
-- Versionskonflikt bei paralleler Tag-Ã„nderung → HTTP 409 VERSION_CONFLICT.
+- Versionskonflikt bei paralleler Tag-Änderung → HTTP 409 VERSION_CONFLICT.
 - Technischer Fehler → HTTP 500.
 
 ## Ergebnis
 
-Die frei verwendbaren projektbezogenen Tags sind aktualisiert. System-Tags bleiben von manuellen Ã„nderungen unberührt. Die Tag-Ã„nderung folgt den Regeln aus FT (28); Reklamationen folgen dem Workflow aus FT (06).
-
+Die frei verwendbaren projektbezogenen Tags sind aktualisiert. System-Tags bleiben von manuellen Änderungen unberührt. Die Tag-Änderung folgt den Regeln aus FT (28); Reklamationen folgen dem Workflow aus FT (06).

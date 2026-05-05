@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -28,9 +26,9 @@ Sicherstellen, dass bei paralleler Bearbeitung desselben Kunden keine stillen Da
 3. Beide erhalten denselben Versionsstand (z. B. `version = 5`).
 4. Akteur A ändert Kundendaten und speichert.
 5. Das System prüft die Versionskennung.
-6. Das System persistiert die Ã„nderung.
+6. Das System persistiert die Änderung.
 7. Das System erhöht die Versionskennung auf `version = 6`.
-8. Akteur B speichert nun seine Ã„nderungen mit veralteter Versionskennung (`version = 5`).
+8. Akteur B speichert nun seine Änderungen mit veralteter Versionskennung (`version = 5`).
 9. Das System prüft die Versionskennung.
 10. Das System erkennt die Abweichung.
 11. Das System blockiert den Speichervorgang mit 409 (Konflikt).
@@ -39,12 +37,11 @@ Sicherstellen, dass bei paralleler Bearbeitung desselben Kunden keine stillen Da
 ## Alternativen
 
 - Akteur B lädt vor dem Speichern neu → kein Konflikt.
-- Akteur B bricht ab → keine Ã„nderung.
+- Akteur B bricht ab → keine Änderung.
 - Technischer Fehler → System antwortet mit 500.
 
 ## Ergebnis
 
-- Es kommt zu keinem stillen Ãœberschreiben von Kundendaten.
+- Es kommt zu keinem stillen Überschreiben von Kundendaten.
 - Der zuletzt gespeicherte, valide Stand bleibt erhalten.
 - Das System garantiert Optimistic Locking für Kundenänderungen.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -26,12 +24,12 @@ Bestehende Stammdaten eines Mitarbeiters ändern, ohne Termin- oder Historienlog
 
 1. Akteur öffnet die Mitarbeiterverwaltung.
 2. Akteur wählt einen bestehenden Mitarbeiter.
-3. System lädt die aktuellen Stammdaten einschlieÃŸlich Versionskennung.
+3. System lädt die aktuellen Stammdaten einschließlich Versionskennung.
 4. Akteur ändert zulässige Felder.
-5. Akteur speichert die Ã„nderungen.
+5. Akteur speichert die Änderungen.
 6. System prüft die Versionskennung.
 7. System validiert die Eingaben.
-8. System persistiert die Ã„nderungen.
+8. System persistiert die Änderungen.
 9. System erhöht die Versionskennung.
 10. System aktualisiert alle abhängigen Anzeige- und Auswahlansichten.
 
@@ -65,4 +63,3 @@ Bestehende Stammdaten eines Mitarbeiters ändern, ohne Termin- oder Historienlog
 - Historische Termine bleiben unverändert.
 - Kalenderansichten, Kartenansichten und Terminformulare zeigen bei erneuter Abfrage die aktualisierten Mitarbeiterdaten.
 - Es entstehen keine inkonsistenten FK-Zustände.
-

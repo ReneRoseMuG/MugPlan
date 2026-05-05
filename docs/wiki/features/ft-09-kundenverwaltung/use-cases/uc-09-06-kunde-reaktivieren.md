@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -30,7 +28,7 @@ Ein deaktivierter Kunde wird wieder aktiviert, sodass er erneut für neue Projek
     - Berechtigung (Admin-Rolle),
     - Versionskennung (Optimistic Locking).
 4. Das System setzt `is_active = true`.
-5. Das System persistiert die Ã„nderung.
+5. Das System persistiert die Änderung.
 6. Das System erhöht die Versionskennung.
 7. Das System aktualisiert abhängige Listen- und Auswahlansichten.
 
@@ -41,7 +39,7 @@ Ein deaktivierter Kunde wird wieder aktiviert, sodass er erneut für neue Projek
     - in Projektauswahldialogen,
     - in Filtern für aktive Kunden.
 - Bestehende Projekte, Termine, Notizen und Anhänge bleiben unverändert.
-- Es erfolgt keine automatische Ã„nderung an Projekten oder Terminen.
+- Es erfolgt keine automatische Änderung an Projekten oder Terminen.
 
 ## Alternativen
 
@@ -56,4 +54,3 @@ Ein deaktivierter Kunde wird wieder aktiviert, sodass er erneut für neue Projek
 - `is_active = true`.
 - Der Kunde ist wieder vollständig auswählbar.
 - Keine fachlichen Seiteneffekte auf bestehende Projekte oder Termine.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -34,9 +32,8 @@ Einen bestehenden Termin einer Tour zuweisen, sodass der Termin mit der Tour ver
 
 ## Alternativen
 
-- Abbruch: Der Akteur bricht den Vorgang ab. Es werden keine Ã„nderungen gespeichert.
+- Abbruch: Der Akteur bricht den Vorgang ab. Es werden keine Änderungen gespeichert.
 
 ## Ergebnis
 
 Der Termin ist mit der Tour verknüpft. Wenn eine Wochenplanung für die betreffende KW vorhanden war, wurden die bestätigten Mitarbeiter hinzugefügt. Andernfalls bleibt die Mitarbeiterliste unverändert. Der Termin ist im Kalender sichtbar und wird mit der Tourfarbe dargestellt. Der Termin ist in der Tour-Terminliste sichtbar, sofern eine Tour-Terminliste existiert.
-

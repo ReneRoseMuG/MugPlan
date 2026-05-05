@@ -14,5 +14,3 @@ Terminlisten springen nicht mehr blind zum frühesten historischen Treffer. Stat
 Keine.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

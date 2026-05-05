@@ -14,5 +14,3 @@ Der 2FA-Loginfluss wurde gegen inkonsistente Benutzerzustände abgesichert. Zus�
 Backup-Codes sind weiterhin kein vollständiger Produktfluss.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

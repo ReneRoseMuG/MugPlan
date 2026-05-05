@@ -4,13 +4,9 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/d9f4fc001e9e42cd94d6e49e6f297eb2
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (18) User Preferences d9f4fc001e9e42cd94d6e49e6f297eb2.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Fachliche Beschreibung
 
@@ -37,12 +33,8 @@ Zu Beginn müssen mindestens die Typen Zahl, Bool (Aktivität) und Farbe unterst
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

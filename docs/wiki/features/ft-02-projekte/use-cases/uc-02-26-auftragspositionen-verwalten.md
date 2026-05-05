@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -18,7 +16,7 @@ Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen,
 
 - Das Projekt existiert.
 - Der Akteur ist authentifiziert.
-- Der Akteur besitzt Ã„nderungsrechte (Disponent oder Administrator).
+- Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).
 
 ### Ablauf — Position anlegen
 
@@ -29,7 +27,7 @@ Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen,
 ### Ablauf — Position bearbeiten
 
 1. Der Akteur wählt eine bestehende Position und ändert Felder.
-2. Das System speichert die Ã„nderung atomar.
+2. Das System speichert die Änderung atomar.
 
 ### Ablauf — Position löschen
 
@@ -38,7 +36,6 @@ Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen,
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -51,4 +48,3 @@ Nicht angegeben in der Notion-Quelle.
 ## Ergebnis
 
 Die Auftragspositionen sind persistiert und dem Projekt zugeordnet. Sie dienen der internen Dokumentation des Auftragsumfangs und sind in der Projekt-Detailansicht sichtbar.
-

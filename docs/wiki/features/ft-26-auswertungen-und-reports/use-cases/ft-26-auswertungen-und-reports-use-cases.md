@@ -1,6 +1,5 @@
 ﻿# FT (26) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (26): Auswertungen und Reports](../ft-26-auswertungen-und-reports.md) übernommen.
 
 - [UC 26/01: Vorlaufliste konfigurieren und erzeugen](uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.md)
 - [UC 26/02: Bis Datum nachträglich entfernen](uc-26-02-bis-datum-nachtraeglich-entfernen.md)
@@ -11,4 +10,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 26/07: Auftragsliste drucken](uc-26-07-auftragsliste-drucken.md)
 - [UC 26/08: Tourenplan konfigurieren und erzeugen](uc-26-08-tourenplan-konfigurieren-und-erzeugen.md)
 - [UC 26/09: Tourenplan drucken](uc-26-09-tourenplan-drucken.md)
-

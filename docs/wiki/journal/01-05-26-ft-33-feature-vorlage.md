@@ -1,4 +1,4 @@
-﻿# 01.05.26 | Lastenheft | FT-33: Vollständige Ãœberarbeitung nach Feature-Vorlage
+﻿# 01.05.26 | Lastenheft | FT-33: Vollständige Überarbeitung nach Feature-Vorlage
 
 ## Zusammenfassung
 
@@ -13,6 +13,3 @@ FT (33) wurde vollständig auf die Feature-Vorlage umgestellt. Fehlende Abschnit
 Keine.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e
-

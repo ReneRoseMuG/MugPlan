@@ -14,5 +14,3 @@ Die Journalisierung wurde auf Touren, tourbezogene Kalenderwochen und Wochenplan
 Keine.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e807daf21f330c3e76f6e

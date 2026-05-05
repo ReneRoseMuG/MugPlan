@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -37,4 +35,3 @@ Gespeicherte Kalendermarker prüfen und Betriebsfeiertage oder Betriebsferien pf
 ## Ergebnis
 
 Der gespeicherte Kalendermarker-Bestand ist aktualisiert und wird in Kalenderansichten berücksichtigt, sofern der Marker aktiv ist.
-

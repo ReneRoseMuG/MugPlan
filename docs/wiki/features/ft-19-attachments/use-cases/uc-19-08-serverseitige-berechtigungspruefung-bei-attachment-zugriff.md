@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (19): Attachments](../ft-19-attachments.md)
-- Notion-Quelle: https://app.notion.com/p/0a3cbd97ab474bd68d30b0c09ed3a822
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ System
 
 ## Ziel
 
-Sicherstellen, dass jeder Zugriff auf ein Attachment ausschlieÃŸlich auf Basis der Parent-Berechtigungen erfolgt.
+Sicherstellen, dass jeder Zugriff auf ein Attachment ausschließlich auf Basis der Parent-Berechtigungen erfolgt.
 
 ## Vorbedingungen
 
@@ -36,11 +34,9 @@ Sicherstellen, dass jeder Zugriff auf ein Attachment ausschlieÃŸlich auf Basis
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Attachment-Zugriffe sind vollständig an Parent-Berechtigungen gebunden.
 - Es existieren keine eigenständigen Attachment-Berechtigungen.
 - Direkter Zugriff auf das Upload-Verzeichnis ist nicht möglich.
-

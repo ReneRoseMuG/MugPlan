@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -30,29 +28,27 @@ Die Position einer bestehenden Notiz innerhalb der Notizenliste deterministisch 
 4. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des Versionsmerkmals.
+    - Übereinstimmung des Versionsmerkmals.
 5. Bei erfolgreicher Prüfung setzt das System `is_pinned` entsprechend auf TRUE oder FALSE.
 6. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
-7. Das System sortiert die Notizenliste neu gemäÃŸ Sortierlogik:
+7. Das System sortiert die Notizenliste neu gemäß Sortierlogik:
     - Gepinnte Notizen zuerst,
     - danach Sortierung nach `updated_at` absteigend.
 8. Das System rendert die aktualisierte Liste.
 
 ### Alternativabläufe
 
-- Der Akteur ist nicht authentifiziert → HTTP 401, keine Ã„nderung.
-- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Ã„nderung.
-- Versionskonflikt → HTTP 409 Conflict, keine Ã„nderung, Neuladen erforderlich.
-- Technischer Fehler → HTTP 500, keine Ã„nderung.
+- Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
+- Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
+- Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
+- Technischer Fehler → HTTP 500, keine Änderung.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Die Notiz ist im Erfolgsfall angepinnt oder nicht mehr angepinnt.
 - Die Sortierung der Notizenliste ist deterministisch und konsistent.
-- Parallele Ã„nderungen führen nicht zu stillen Ãœberschreibungen.
+- Parallele Änderungen führen nicht zu stillen Überschreibungen.
 - Es entstehen keine Duplikate oder inkonsistenten Sortierzustände.
-

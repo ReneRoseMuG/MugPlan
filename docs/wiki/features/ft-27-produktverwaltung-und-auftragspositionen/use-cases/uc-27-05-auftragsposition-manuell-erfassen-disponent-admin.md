@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (27): Produktverwaltung und Auftragspositionen](../ft-27-produktverwaltung-und-auftragspositionen.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e8154a475eef591e57861
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -16,7 +14,7 @@ Eine Auftragsposition unter einem Projekt mit strukturiertem Bezug zu einem Prod
 
 ## Vorbedingungen
 
-- Der Nutzer ist angemeldet und besitzt Ã„nderungsrechte.
+- Der Nutzer ist angemeldet und besitzt Änderungsrechte.
 - Das Projekt existiert.
 
 ## Ablauf
@@ -44,4 +42,3 @@ Eine Auftragsposition unter einem Projekt mit strukturiertem Bezug zu einem Prod
 ## Ergebnis
 
 Die Auftragsposition ist gespeichert und in der Artikelliste des Projekts sichtbar. Sie ist strukturiert mit einem Produkt oder einer Komponente verknüpft.
-

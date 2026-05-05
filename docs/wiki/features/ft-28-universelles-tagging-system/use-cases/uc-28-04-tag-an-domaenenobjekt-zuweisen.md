@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (28): Universelles Tagging-System](../ft-28-universelles-tagging-system.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e81279271fc1c2d18eba4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -42,4 +40,3 @@ Der Akteur weist einem Domänenobjekt einen frei verwendbaren Tag zu, um das Obj
 ## Ergebnis
 
 Das Domänenobjekt besitzt den ausgewählten frei verwendbaren Tag. Geschützte System-Tags bleiben vor manueller Zuweisung geschützt.
-

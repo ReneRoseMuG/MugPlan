@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/746286ccf41d46629ec614541a871345
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (04) Tourenplanung 746286ccf41d46629ec614541a871345.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -53,12 +50,8 @@ Eine bestehende Tour-KW-Planung kann aus der Tour-KW-Karte im Tourformular und a
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

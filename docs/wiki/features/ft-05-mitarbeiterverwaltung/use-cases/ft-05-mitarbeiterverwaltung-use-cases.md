@@ -1,6 +1,5 @@
 ﻿# FT (05) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md) übernommen.
 
 - [UC 05/01: Mitarbeiter anlegen](uc-05-01-mitarbeiter-anlegen.md)
 - [UC 05/02: Mitarbeiter bearbeiten](uc-05-02-mitarbeiter-bearbeiten.md)
@@ -16,4 +15,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 05/12: Rollenverletzung bei API-Direktzugriff](uc-05-12-rollenverletzung-bei-api-direktzugriff.md)
 - [UC 05/13: Query-Konsistenz zwischen Listen- und Dialogansicht](uc-05-13-query-konsistenz-zwischen-listen-und-dialogansicht.md)
 - [UC 05/14: Mitarbeiter aus CSV importieren](uc-05-14-mitarbeiter-aus-csv-importieren.md)
-

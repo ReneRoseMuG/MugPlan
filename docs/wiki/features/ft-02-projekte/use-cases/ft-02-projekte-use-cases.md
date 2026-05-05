@@ -1,6 +1,5 @@
 ﻿# FT (02) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (02): Projekte](../ft-02-projekte.md) übernommen.
 
 - [UC 02/01: Projekt anlegen](uc-02-01-projekt-anlegen.md)
 - [UC 02/02: Projekt bearbeiten](uc-02-02-projekt-bearbeiten.md)
@@ -11,11 +10,11 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 02/07: Projekte anzeigen (Liste)](uc-02-07-projekte-anzeigen-liste.md)
 - [UC 02/08: Projekt löschen](uc-02-08-projekt-loeschen.md)
 - [UC 02/09: Projektänderung wird in Terminansichten konsistent dargestellt](uc-02-09-projektaenderung-wird-in-terminansichten-konsistent-dargestellt.md)
-- [UC 02/10: Projekt-Tag-Ã„nderung wirkt systemweit konsistent](uc-02-10-projekt-tag-aenderung-wirkt-systemweit-konsistent.md)
+- [UC 02/10: Projekt-Tag-Änderung wirkt systemweit konsistent](uc-02-10-projekt-tag-aenderung-wirkt-systemweit-konsistent.md)
 - [UC 02/11: Projektlöschung wird systemweit korrekt verarbeitet](uc-02-11-projektloeschung-wird-systemweit-korrekt-verarbeitet.md)
 - [UC 02/12: Projekt in abhängigen Sichten anzeigen (Quersicht-Vertrag)](uc-02-12-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.md)
 - [UC 02/13: Denormalisierte Projektanzeige aktualisieren (Quersicht-Vertrag)](uc-02-13-denormalisierte-projektanzeige-aktualisieren-quer-sicht-vertrag.md)
-- [UC 02/14: Konsistenz bei parallelen Ã„nderungen an Projekten (Optimistic Locking)](uc-02-14-konsistenz-bei-parallelen-aenderungen-an-projekten-optimistic-locking.md)
+- [UC 02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)](uc-02-14-konsistenz-bei-parallelen-aenderungen-an-projekten-optimistic-locking.md)
 - [UC 02/15: Projekt-Join-Konsistenz (Projekt ↔ Tags)](uc-02-15-projekt-join-konsistenz-projekt-tags.md)
 - [UC 02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)](uc-02-16-projekt-referenz-konsistenz-projekt-kunde.md)
 - [UC 02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)](uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.md)
@@ -27,4 +26,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 02/23: Notiz anpinnen / lospinnen](uc-02-23-notiz-anpinnen-lospinnen.md)
 - [UC 02/24: Projekt aktivieren / deaktivieren](uc-02-24-projekt-aktivieren-deaktivieren.md)
 - [UC 02/26: Auftragspositionen verwalten](uc-02-26-auftragspositionen-verwalten.md)
-

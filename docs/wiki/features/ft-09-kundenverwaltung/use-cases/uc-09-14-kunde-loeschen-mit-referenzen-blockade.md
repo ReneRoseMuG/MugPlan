@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -52,4 +50,3 @@ Sicherstellen, dass ein Kunde nicht gelöscht werden kann, wenn ihm mindestens e
 - Der Kunde bleibt unverändert im System bestehen.
 - Bestehende Projekte und Termine behalten ihre Referenzen.
 - Es entstehen keine verwaisten Fremdschlüssel oder inkonsistenten Zustände.
-

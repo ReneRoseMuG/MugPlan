@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/a8d8fb71a9a04a6fac413845c3d8fbad
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -33,13 +31,13 @@ Sicherstellen, dass ein Disponent weder über direkte URL noch über manipuliert
     - Aktiv-Status des Kunden.
 3. Das System prüft serverseitig die Zugriffsberechtigung.
 4. Das System blockiert den Zugriff.
-5. Das System antwortet mit 404 oder 403 gemäÃŸ Sicherheitskonzept.
+5. Das System antwortet mit 404 oder 403 gemäß Sicherheitskonzept.
 
 ---
 
 ### Sicherheits- und Query-Regel
 
-- Die Zugriffskontrolle erfolgt ausschlieÃŸlich serverseitig.
+- Die Zugriffskontrolle erfolgt ausschließlich serverseitig.
 - Der Aktiv-Status wird vor Auslieferung des Datensatzes geprüft.
 - Es darf kein vollständiger Kundendatensatz an einen Disponenten ausgeliefert werden, wenn `is_active = false`.
 
@@ -58,4 +56,3 @@ Sicherstellen, dass ein Disponent weder über direkte URL noch über manipuliert
 - Disponenten können inaktive Kunden nicht laden oder anzeigen.
 - Administratoren behalten vollständigen Zugriff.
 - Die Zugriffskontrolle ist unabhängig von der UI durchgesetzt.
-

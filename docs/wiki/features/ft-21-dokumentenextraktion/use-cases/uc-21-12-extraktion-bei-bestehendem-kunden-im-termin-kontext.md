@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
-- Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -22,7 +20,7 @@ Sicherstellen, dass extrahierte Kundendaten im Kontext „Neuer Termin" korrekt 
 
 ## Ablauf
 
-1. Der Akteur wählt die Ãœbernahme der extrahierten Kundendaten.
+1. Der Akteur wählt die Übernahme der extrahierten Kundendaten.
 2. Das System führt eine Duplikatsprüfung durch.
 3. Falls die extrahierten Kundendaten zu dem bereits gesetzten Kunden matchen (gleiche Identifikationskriterien):
     - Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).
@@ -41,5 +39,4 @@ Sicherstellen, dass extrahierte Kundendaten im Kontext „Neuer Termin" korrekt 
 
 ## Ergebnis
 
-Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Es existieren keine stillen oder unerwarteten Ãœberschreibungen ohne explizite Bestätigung durch das System.
-
+Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Es existieren keine stillen oder unerwarteten Überschreibungen ohne explizite Bestätigung durch das System.

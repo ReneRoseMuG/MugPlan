@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (01): Kalendertermine](../ft-01-kalendertermine.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e801f97e0ef2218fbf62c
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -39,4 +37,3 @@ Einen neuen Termin mit einer oder mehreren Notizen dokumentieren, um Information
 ## Ergebnis
 
 Die Notiz ist dem Termin zugeordnet und in der Notizenliste sichtbar. Die Notiz bleibt beim Termin bestehen, auch wenn der Termin später bearbeitet wird.
-

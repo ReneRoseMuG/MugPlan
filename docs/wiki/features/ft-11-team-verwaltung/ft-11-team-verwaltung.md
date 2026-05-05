@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/614216f215f24bd98396822215195c97
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (11) Team Verwaltung 614216f215f24bd98396822215195c97.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -43,12 +40,8 @@ Teams können unabhängig von Terminen existieren. Sie dürfen ausschließlich *
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

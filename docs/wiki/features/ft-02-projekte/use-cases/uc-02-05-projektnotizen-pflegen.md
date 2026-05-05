@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -28,18 +26,17 @@ Projektbezogene Notizen anlegen oder bearbeiten, um projektspezifische Informati
 4. Wählt der Akteur eine Vorlage, übernimmt das System Titel und Inhalt. Besitzt die Vorlage eine Kennzeichnungsfarbe (`color`), wird diese einmalig übernommen.
 5. Der Akteur erfasst oder ändert Titel (Pflicht) und Beschreibung (Pflicht).
 6. Das System validiert Pflichtfelder, legt die Notiz mit `is_pinned = false` an und verknüpft sie mit dem Projekt.
-7. Das System aktualisiert die Notizliste gemäÃŸ Sortierlogik (angepinnte zuerst, dann `updated_at` absteigend).
+7. Das System aktualisiert die Notizliste gemäß Sortierlogik (angepinnte zuerst, dann `updated_at` absteigend).
 
 ### Ablauf — Notiz bearbeiten
 
 1. Der Akteur öffnet eine bestehende Notiz aus der Notizliste des Projekts.
-2. Das System lädt die Notizdaten einschlieÃŸlich Versionsmerkmal.
+2. Das System lädt die Notizdaten einschließlich Versionsmerkmal.
 3. Der Akteur ändert Titel und/oder Beschreibung.
-4. Das System prüft Versionsmerkmal serverseitig. Bei Ãœbereinstimmung speichert es die Ã„nderungen und erhöht das Versionsmerkmal.
+4. Das System prüft Versionsmerkmal serverseitig. Bei Übereinstimmung speichert es die Änderungen und erhöht das Versionsmerkmal.
 
 ## Ablauf
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Alternativen
 
@@ -48,10 +45,9 @@ Nicht angegeben in der Notion-Quelle.
 - Akteur ohne Schreibrechte → HTTP 403.
 - Pflichtfelder (Titel oder Beschreibung) fehlen → Validierungsfehler, keine Persistenz.
 - Versionskonflikt bei Bearbeitung → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.
-- Abbruch → keine Ã„nderung wird gespeichert.
+- Abbruch → keine Änderung wird gespeichert.
 - Technischer Fehler → HTTP 500.
 
 ## Ergebnis
 
-Notizen sind dem Projekt eindeutig zugeordnet und in der Notizliste sichtbar. Bestehende Beziehungen zu Kunde, Tags und Terminen bleiben unverändert. Vollständige Notiz-Regeln (Pinning, Vorlagen, `color`) gemäÃŸ FT (13).
-
+Notizen sind dem Projekt eindeutig zugeordnet und in der Notizliste sichtbar. Bestehende Beziehungen zu Kunde, Tags und Terminen bleiben unverändert. Vollständige Notiz-Regeln (Pinning, Vorlagen, `color`) gemäß FT (13).

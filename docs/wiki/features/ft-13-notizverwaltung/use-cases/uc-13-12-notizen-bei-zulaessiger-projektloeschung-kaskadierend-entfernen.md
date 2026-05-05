@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -33,7 +31,7 @@ Sicherstellen, dass bei einer fachlich zulässigen Löschung eines Projekts alle
 6. Das System prüft serverseitig:
     - Authentifizierung,
     - Berechtigung,
-    - Ãœbereinstimmung des Versionsmerkmals des Projekts,
+    - Übereinstimmung des Versionsmerkmals des Projekts,
     - weiterhin das Nichtvorhandensein verknüpfter Termine.
 7. Stimmen alle Prüfungen, löscht das System das Projekt.
 8. Das System entfernt automatisch alle Notizen, die eindeutig diesem Projekt zugeordnet sind.
@@ -51,7 +49,6 @@ Sicherstellen, dass bei einer fachlich zulässigen Löschung eines Projekts alle
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -60,4 +57,3 @@ Nicht angegeben in der Notion-Quelle.
 - Kundennotizen bleiben unverändert bestehen.
 - Es existieren keine verwaisten Notizen.
 - Die referenzielle Integrität bleibt gewahrt.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (34): Kalendermarker, Feiertage und Betriebsferien](../ft-34-kalendermarker-feiertage-betriebsferien.md)
-- Notion-Quelle: Nicht vorhanden
-- Importstatus: Neu im Repo-Wiki erfasst
 
 ## Akteur
 
@@ -37,4 +35,3 @@ Einen gespeicherten Marker zeitweise aus der Kalenderanzeige entfernen und spät
 ## Ergebnis
 
 Der Aktiv-Status steuert die Kalenderanzeige, ohne den gespeicherten Marker aus der Verwaltung zu entfernen.
-

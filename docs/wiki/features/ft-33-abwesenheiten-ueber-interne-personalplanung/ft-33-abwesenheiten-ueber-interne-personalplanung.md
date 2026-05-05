@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/34dda094354e81d096b0f47ea36c177e
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (33) Abwesenheiten über interne Personalplanung 34dda094354e81d096b0f47ea36c177e.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -94,7 +91,6 @@ Abwesenheiten bleiben außerhalb des Mitarbeiterformulars lesbar, dürfen dort a
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 

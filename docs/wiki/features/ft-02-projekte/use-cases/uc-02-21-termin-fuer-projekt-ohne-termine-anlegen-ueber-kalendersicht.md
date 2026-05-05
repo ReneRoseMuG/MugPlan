@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (02): Projekte](../ft-02-projekte.md)
-- Notion-Quelle: https://app.notion.com/p/30dda094354e80648c40dc62565d437e
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -25,7 +23,7 @@ Aus der Projektliste „Ohne Termine" direkt in die Kalenderansicht navigieren u
 
 1. Der Akteur öffnet die Projektübersicht.
 2. Der Akteur betätigt den Umschalter „Ohne Termine".
-3. Das System lädt ausschlieÃŸlich Projekte ohne Termine.
+3. Das System lädt ausschließlich Projekte ohne Termine.
 4. Das System rendert die Tabelle mit Spalten: Titel | Kunde | Auftragsnummer | (Button: „Termin planen")
 5. Der Akteur sieht für jede Zeile einen Button **„Termin planen"** (primär, grün, rechts in der Zeile).
 6. Der Akteur klickt auf den Button „Termin planen" für ein Projekt seiner Wahl.
@@ -46,7 +44,7 @@ Aus der Projektliste „Ohne Termine" direkt in die Kalenderansicht navigieren u
     - Notizen hinzufügen
     - Weitere optionale Felder ausfüllen
 13. Der Akteur klickt **„Speichern"** (oder „Termin anlegen").
-14. Das System validiert das Formular gemäÃŸ den Regeln aus FT (05) oder dem Termin-Domänenmodell.
+14. Das System validiert das Formular gemäß den Regeln aus FT (05) oder dem Termin-Domänenmodell.
 15. Das System persistiert den Termin mit allen Feldern.
 16. Das System aktualisiert die Projekt-Referenz: Das Projekt ist nun mit einem Termin verknüpft.
 17. Das System kehrt **automatisch zur Projektliste zurück**.
@@ -59,14 +57,14 @@ Aus der Projektliste „Ohne Termine" direkt in die Kalenderansicht navigieren u
 
 **Alternative A – Kalenderwahl wird abgebrochen:**
 
-- Der Akteur schlieÃŸt die Kalenderansicht, ohne einen Tag zu klicken.
+- Der Akteur schließt die Kalenderansicht, ohne einen Tag zu klicken.
 - Das System kehrt zur Projektliste „Ohne Termine" zurück.
 - Das Projekt bleibt unverändert in der Liste.
 
 **Alternative B – Terminformular wird abgebrochen:**
 
 - Der Akteur öffnet das Terminformular, ändert Werte, bricht aber ab, ohne zu speichern.
-- Das System schlieÃŸt das Formular.
+- Das System schließt das Formular.
 - Das System kehrt zur Kalenderansicht zurück (optional) oder zur Projektliste.
 - Das Projekt bleibt unverändert in der Liste „Ohne Termine".
 
@@ -104,7 +102,7 @@ Aus der Projektliste „Ohne Termine" direkt in die Kalenderansicht navigieren u
 
 - Während der Akteur im Terminformular war, hat ein anderer Akteur das Projekt bearbeitet (z. B. Titel geändert).
 - Das System kann optional:
-    - Die neuen Projektdaten automatisch ins Formular einflieÃŸen lassen (optimistisch), oder
+    - Die neuen Projektdaten automatisch ins Formular einfließen lassen (optimistisch), oder
     - Den Akteur warnen und zum Neuladen auffordern (pessimistisch).
 - Diese Entscheidung hängt von der allgemeinen Versionierungs-Strategie ab (siehe FT 02 UC 02/09).
 
@@ -118,4 +116,3 @@ Aus der Projektliste „Ohne Termine" direkt in die Kalenderansicht navigieren u
 - Alle Projekt-Details (Kunde, Beschreibung, Anhänge, Notizen) bleiben unverändert.
 - Der Termin ist in allen Terminansichten (Kalender, Tabelle, etc.) sichtbar.
 - Es existiert keine widersprüchliche oder verwaiste Referenz zwischen Projekt und Termin.
-

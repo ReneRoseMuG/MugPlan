@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/317da094354e81279271fc1c2d18eba4
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (28) Universelles Tagging-System 317da094354e81279271fc1c2d18eba4.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -46,12 +43,8 @@ Welche System-Tags im Tag-Picker einer Domäne erscheinen, ist pro Domäne gereg
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
-- Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -21,7 +19,7 @@ Sicherstellen, dass eine laufende Extraktion nicht zu inkonsistenten Referenzen 
 
 ## Ablauf
 
-1. Der Akteur bestätigt im Extraktionsdialog die Ãœbernahme der Daten.
+1. Der Akteur bestätigt im Extraktionsdialog die Übernahme der Daten.
 2. Das System prüft vor Persistierung die Existenz des referenzierten Parent-Objekts.
 3. Das System erkennt, dass das Parent-Objekt nicht mehr existiert.
 4. Das System bricht den Vorgang ab.
@@ -29,9 +27,8 @@ Sicherstellen, dass eine laufende Extraktion nicht zu inkonsistenten Referenzen 
 
 ## Alternativen
 
-- Das Parent-Objekt existiert, aber wurde verändert → Das System prüft Versionsinformationen und behandelt einen Konflikt gemäÃŸ den jeweiligen Domänenregeln.
+- Das Parent-Objekt existiert, aber wurde verändert → Das System prüft Versionsinformationen und behandelt einen Konflikt gemäß den jeweiligen Domänenregeln.
 
 ## Ergebnis
 
 Es werden keine Daten mit ungültigen oder nicht existierenden Referenzen gespeichert. Die Systemkonsistenz bleibt gewahrt.
-

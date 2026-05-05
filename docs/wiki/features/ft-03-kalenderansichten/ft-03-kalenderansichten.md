@@ -4,9 +4,6 @@
 
 - Status: Abgeschlossen
 - Typ: Feature
-- Notion-Quelle: https://app.notion.com/p/7833e4ee2b524bbb9ccaf45e9e807a98
-- Importquelle lokal: `C:/Users/schro/Desktop/FT (03) Kalenderansichten 7833e4ee2b524bbb9ccaf45e9e807a98.md`
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Ziel / Zweck
 
@@ -184,12 +181,8 @@ Kalendereinträge dürfen Zusatzinformationen aus Termin, Projekt, Kunde, Tour u
 
 ## Backlogs
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Architektur & Kontext
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Entscheidungen & Offene Punkte
-
-Nicht angegeben in der Notion-Quelle.

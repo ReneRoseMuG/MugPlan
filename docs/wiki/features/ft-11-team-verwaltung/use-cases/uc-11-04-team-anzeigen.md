@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (11): Team Verwaltung](../ft-11-team-verwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/614216f215f24bd98396822215195c97
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -12,7 +10,7 @@ Disponent
 
 ## Ziel
 
-Eine Ãœbersicht über vorhandene Teams und deren Zusammensetzung erhalten.
+Eine Übersicht über vorhandene Teams und deren Zusammensetzung erhalten.
 
 ## Vorbedingungen
 
@@ -36,9 +34,7 @@ Der Akteur ruft die Teamübersicht auf oder wählt ein Team aus.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Die Zusammensetzung der Teams ist vollständig und konsistent sichtbar.
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -27,7 +25,7 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Termin zuordnen.
 1. Der Akteur öffnet den Termin im Terminformular.
 2. Der Akteur navigiert zum Bereich „Notizen" und wählt „Notiz hinzufügen".
 3. Das System öffnet einen Richtext-Editor zur Erfassung der Notizdaten.
-4. Das System zeigt ausschlieÃŸlich aktive Notizvorlagen zur Auswahl an.
+4. Das System zeigt ausschließlich aktive Notizvorlagen zur Auswahl an.
 5. Optional wählt der Akteur eine Vorlage.
 6. Wurde eine Vorlage gewählt, übernimmt das System Titel und Inhalt in den Editor.
 7. Besitzt die gewählte Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese einmalig in die neue Notiz.
@@ -36,11 +34,11 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Termin zuordnen.
 10. Das System validiert Pflichtfelder und Berechtigungen serverseitig.
 11. Das System prüft, dass der Termin nicht historisch ist.
 12. Das System erstellt die Notiz mit folgenden Initialwerten:
-    - Referenz ausschlieÃŸlich auf den Termin
+    - Referenz ausschließlich auf den Termin
     - `is_pinned = false`
     - Setzen von `created_at` und `updated_at`
 13. Das System speichert die Notiz persistent.
-14. Das System aktualisiert die Notizliste im Terminformular und in allen Terminkontexten gemäÃŸ Sortierlogik.
+14. Das System aktualisiert die Notizliste im Terminformular und in allen Terminkontexten gemäß Sortierlogik.
 
 ### Alternativabläufe
 
@@ -53,12 +51,10 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Termin zuordnen.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Eine neue Notiz existiert persistent.
-- Die Notiz ist ausschlieÃŸlich dem Termin zugeordnet.
+- Die Notiz ist ausschließlich dem Termin zugeordnet.
 - Die Notiz erscheint in der Notizliste im Terminformular und in allen Terminkontexten (Kalenderansichten, Terminkarten, Previews).
 - Es entstehen keine zusätzlichen Referenzen oder Seiteneffekte in anderen Domänen.
-

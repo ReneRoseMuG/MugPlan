@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (19): Attachments](../ft-19-attachments.md)
-- Notion-Quelle: https://app.notion.com/p/0a3cbd97ab474bd68d30b0c09ed3a822
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -27,7 +25,7 @@ Alle einem Parent-Objekt (Projekt, Kunde, Mitarbeiter oder Termin) zugeordneten 
 3. Das System lädt alle dem Parent-Objekt zugeordneten Attachments.
 4. Das System liefert für jedes Attachment mindestens:
     - Originaldateiname,
-    - DateigröÃŸe,
+    - Dateigröße,
     - MIME-Typ,
     - Erstellungszeitpunkt.
 5. Das System zeigt die strukturierte Liste in der UI an.
@@ -41,10 +39,8 @@ Alle einem Parent-Objekt (Projekt, Kunde, Mitarbeiter oder Termin) zugeordneten 
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Alle vorhandenen Attachments sind vollständig und konsistent sichtbar.
 - Es werden keine Daten verändert.
-

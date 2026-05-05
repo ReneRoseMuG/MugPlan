@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -37,11 +35,10 @@ Der Nutzer wählt einen Mitarbeiter zur Anzeige aus.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
-Die Stammdaten des Mitarbeiters sowie eine vollständige Ãœbersicht aller zugeordneten Termine sind sichtbar.
+Die Stammdaten des Mitarbeiters sowie eine vollständige Übersicht aller zugeordneten Termine sind sichtbar.
 
 Die Terminliste bildet die Einsatzhistorie des Mitarbeiters ab.
 
@@ -51,4 +48,3 @@ Die Terminliste bildet die Einsatzhistorie des Mitarbeiters ab.
 - Terminbezeichnung
 - Zugeordnete Tour
 - Zugeordneter Kunde
-

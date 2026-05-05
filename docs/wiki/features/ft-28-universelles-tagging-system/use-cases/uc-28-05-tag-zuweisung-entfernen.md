@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (28): Universelles Tagging-System](../ft-28-universelles-tagging-system.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e81279271fc1c2d18eba4
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -41,4 +39,3 @@ Der Akteur entfernt einen frei verwendbaren Tag von einem Domänenobjekt.
 ## Ergebnis
 
 Das Domänenobjekt verliert den frei verwendbaren Tag. Geschützte System-Tags bleiben vor manueller Entfernung geschützt.
-

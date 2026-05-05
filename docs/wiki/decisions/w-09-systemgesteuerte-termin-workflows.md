@@ -31,5 +31,3 @@ Mittel. Der Bereich berührt mehrere systemgesteuerte Fachflows und damit zentra
 Einen kleinen gemeinsamen serverseitigen Workflow-Kern für wiederkehrende Termin-/Tag-Muster prüfen. Eine große generische Regel-Engine vorerst vermeiden.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52

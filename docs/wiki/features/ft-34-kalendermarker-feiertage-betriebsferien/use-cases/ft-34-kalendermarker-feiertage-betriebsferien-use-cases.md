@@ -8,4 +8,3 @@ Diese Use Cases wurden neu im Repo-Wiki für [FT (34): Kalendermarker, Feiertage
 - [UC 34/04: Marker deaktivieren und reaktivieren](uc-34-04-marker-deaktivieren-und-reaktivieren.md)
 - [UC 34/05: Visualisierungsstil global wählen](uc-34-05-visualisierungsstil-global-waehlen.md)
 - [UC 34/06: Unberechtigte Marker-Pflege blockieren](uc-34-06-unberechtigte-marker-pflege-blockieren.md)
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (27): Produktverwaltung und Auftragspositionen](../ft-27-produktverwaltung-und-auftragspositionen.md)
-- Notion-Quelle: https://app.notion.com/p/317da094354e8154a475eef591e57861
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -38,4 +36,3 @@ Eine neue Komponente (Bauteil) in den Katalog aufnehmen.<br>
 ## Ergebnis
 
 Die Komponente existiert und steht für Auftragspositionen zur Verfügung.<br>
-

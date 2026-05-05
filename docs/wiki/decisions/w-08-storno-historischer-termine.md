@@ -25,11 +25,8 @@ Eine Anpassung der Spec würde das bestehende Admin-Verhalten fachlich legitimie
 
 Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu führen, dass Admins Termine unzulässig stornieren oder eine fachlich gewollte Ausnahme verlieren. Das Risiko liegt in Rollen- und Fachregelabweichungen, nicht in einer breiten technischen Instabilität.
 
-## Vorgeschlagene MaÃŸnahme
+## Vorgeschlagene Maßnahme
 
 Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschränken.
 
 ## Quelle
-
-https://app.notion.com/p/352da094354e802f98cdf0f824251d52
-

@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (21): Dokumentenextraktion](../ft-21-dokumentenextraktion.md)
-- Notion-Quelle: https://app.notion.com/p/7f1c87cde87a4ab98db0469dd0af81c1
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -24,7 +22,7 @@ Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_at
 ## Ablauf
 
 1. Das System hat ein neues Projekt erfolgreich persistiert (UC 21/09 oder UC 21/10)
-2. Das System greift auf das extrahierte PDF zu (Dateiname und DateigröÃŸe sind bekannt)
+2. Das System greift auf das extrahierte PDF zu (Dateiname und Dateigröße sind bekannt)
 3. Das System führt eine Duplikat-Prüfung durch:
     - Query `customer_attachment`: Existiert ein Eintrag mit gleichem `original_filename`?
     - Query `project_attachment`: Existiert ein Eintrag mit gleichem `original_filename`?
@@ -38,7 +36,7 @@ Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_at
     - `original_filename`: Dateiname des PDF (z.B. „Auftrag_12345.pdf")
     - `persistent_filename`: Eindeutig generiert vom System (FT (19))
     - `mime_type`: „application/pdf"
-    - `file_size`: GröÃŸe in Bytes
+    - `file_size`: Größe in Bytes
     - `created_at`: Jetzt
 9. Das System zeigt Erfolgs-Meldung: „Projekt angelegt und Dokument verknüpft."
 
@@ -52,4 +50,3 @@ Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_at
 ## Ergebnis
 
 Das extrahierte PDF ist als `project_attachment` des neu angelegten Projekts persistiert. `original_filename` und Metadaten sind korrekt gespeichert. Das Attachment ist im Projekt-Sidebar abrufbar (Phase 1: Projektformular – Attachment Panel). Es entstehen keine doppelten Attachments (Duplikat-Prüfung aktiv). Administrator hat volle Kontrolle über Duplikat-Entscheidungen.
-

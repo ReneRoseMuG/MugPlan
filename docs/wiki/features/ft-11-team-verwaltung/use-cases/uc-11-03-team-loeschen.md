@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (11): Team Verwaltung](../ft-11-team-verwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/614216f215f24bd98396822215195c97
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -42,11 +40,9 @@ Der Akteur wählt ein Team zum Löschen aus.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
 - Das Team existiert nicht mehr.
 - Alle ehemals zugeordneten Mitarbeiter besitzen `team_id = null`.
 - Kein verwaister Zustand entsteht.
-

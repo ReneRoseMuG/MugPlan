@@ -1,6 +1,5 @@
 ﻿# FT (09) Use Cases
 
-Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für [FT (09): Kundenverwaltung](../ft-09-kundenverwaltung.md) übernommen.
 
 - [UC 09/01: Kunde anlegen](uc-09-01-kunde-anlegen.md)
 - [UC 09/02: Kunde bearbeiten](uc-09-02-kunde-bearbeiten.md)
@@ -21,4 +20,3 @@ Diese Use Cases wurden vollständig aus dem lokalen Notion-Markdown-Export für 
 - [UC 09/18: Notiz am Kunde bearbeiten](uc-09-18-notiz-am-kunde-bearbeiten.md)
 - [UC 09/19: Notiz von Kunde entfernen](uc-09-19-notiz-von-kunde-entfernen.md)
 - [UC 09/20: Notizen beim Kunde-Löschen entfernen](uc-09-20-notizen-beim-kunde-loeschen-entfernen.md)
-

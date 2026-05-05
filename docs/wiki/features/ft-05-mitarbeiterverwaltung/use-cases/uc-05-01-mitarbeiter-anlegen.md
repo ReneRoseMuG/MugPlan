@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (05): Mitarbeiterverwaltung](../ft-05-mitarbeiterverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/19c06c719b6a45ef9b6b5da509e5b0c5
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -54,7 +52,7 @@ Einen neuen Mitarbeiter als aktive Stammdatenressource im System anlegen.
 ## Ergebnis
 
 - Ein neuer Mitarbeiterdatensatz existiert persistent in der Datenbank.
-- Der Mitarbeiter besitzt standardmäÃŸig `is_active = true`.
+- Der Mitarbeiter besitzt standardmäßig `is_active = true`.
 - Der Mitarbeiter erscheint:
     - in der Mitarbeiterlistenansicht (Board und Tabelle),
     - in Dialoglisten zur Mitarbeiterzuweisung,
@@ -63,4 +61,3 @@ Einen neuen Mitarbeiter als aktive Stammdatenressource im System anlegen.
 - Es existieren keine impliziten Beziehungen zu Terminen, Touren oder Teams.
 - Die Terminübersicht des Mitarbeiters ist initial leer.
 - Es wurden keine bestehenden Termine oder Projekte verändert.
-

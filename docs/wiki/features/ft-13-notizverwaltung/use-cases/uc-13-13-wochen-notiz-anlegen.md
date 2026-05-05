@@ -3,8 +3,6 @@
 ## Metadaten
 
 - Feature: [FT (13): Notizverwaltung](../ft-13-notizverwaltung.md)
-- Notion-Quelle: https://app.notion.com/p/876216f2188c4fc58fcc65152f783906
-- Importstatus: Vollständig aus lokalem Notion-Markdown-Export übernommen
 
 ## Akteur
 
@@ -25,7 +23,7 @@ Eine neue Notiz erstellen und einer Kalenderwoche eindeutig zuordnen.
 1. Der Akteur öffnet den Kalenderwochen-Kontext der gewünschten Woche.
 2. Der Akteur wählt die Funktion „Notiz hinzufügen".
 3. Das System öffnet einen Richtext-Editor zur Erfassung der Notizdaten.
-4. Das System zeigt ausschlieÃŸlich aktive Notizvorlagen zur Auswahl an.
+4. Das System zeigt ausschließlich aktive Notizvorlagen zur Auswahl an.
 5. Optional wählt der Akteur eine Vorlage.
 6. Wurde eine Vorlage gewählt, übernimmt das System Titel und Inhalt in den Editor.
 7. Besitzt die gewählte Vorlage eine Kennzeichnungsfarbe (`color`), übernimmt das System diese einmalig in die neue Notiz.
@@ -37,7 +35,7 @@ Eine neue Notiz erstellen und einer Kalenderwoche eindeutig zuordnen.
     - `is_pinned = false`
     - Setzen von `created_at` und `updated_at`
 12. Das System speichert die Notiz und den Eintrag in `calendar_week_note` persistent.
-13. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext gemäÃŸ Sortierlogik.
+13. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext gemäß Sortierlogik.
 
 ### Alternativabläufe
 
@@ -49,7 +47,6 @@ Eine neue Notiz erstellen und einer Kalenderwoche eindeutig zuordnen.
 
 ## Alternativen
 
-Nicht angegeben in der Notion-Quelle.
 
 ## Ergebnis
 
@@ -57,4 +54,3 @@ Nicht angegeben in der Notion-Quelle.
 - Die Notiz ist über `calendar_week_note` eindeutig der Kalenderwoche zugeordnet.
 - Die Notiz erscheint in der Notizliste des Kalenderwochen-Kontexts.
 - Es entstehen keine Referenzen oder Seiteneffekte in anderen Domänen.
-
