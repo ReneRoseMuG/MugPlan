@@ -3,6 +3,7 @@ import type { Tag } from "@shared/schema";
 
 import {
   buildCategoryLayoutBlocks,
+  CATEGORY_LAYOUT_CATEGORY_SPAN_CLASS_BY_COLUMNS,
   CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS,
   distributeSortedItemsIntoColumns,
   type CategoryLayoutConfig,
@@ -71,10 +72,13 @@ function renderCategoryLayoutSection(
             {layoutBlocks.map((block, blockIndex) => (
               <div
                 key={`layout-block-${blockIndex}`}
-                className="space-y-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4"
+                className="grid grid-cols-3 gap-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4"
               >
                 {block.categories.map(({ group, columns }) => (
-                  <div key={group.categoryId} className="rounded-lg border border-slate-300 bg-white p-4">
+                  <div
+                    key={group.categoryId}
+                    className={cn("rounded-lg border border-slate-300 bg-white p-4", CATEGORY_LAYOUT_CATEGORY_SPAN_CLASS_BY_COLUMNS[columns])}
+                  >
                     <h4 className="text-sm font-semibold text-slate-900">{group.categoryName}</h4>
                     <div className={cn("mt-3 grid gap-3 text-xs text-slate-700", CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS[columns])}>
                       {distributeSortedItemsIntoColumns(group.items, columns, (item) => item.itemName).map((columnItems, columnIndex) => (

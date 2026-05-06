@@ -19,6 +19,7 @@ type ReportPresetControlsProps = {
   defaultName: string;
   onApplyPreset: (preset: ReportPreset) => void;
   testIdPrefix: string;
+  disabled?: boolean;
 };
 
 type ReportPresetListResponse = {
@@ -52,6 +53,7 @@ export function ReportPresetControls({
   defaultName,
   onApplyPreset,
   testIdPrefix,
+  disabled = false,
 }: ReportPresetControlsProps) {
   const queryClient = useQueryClient();
   const [presetName, setPresetName] = React.useState(defaultName);
@@ -112,6 +114,7 @@ export function ReportPresetControls({
         <select
           value={selectedPresetId}
           onChange={(event) => setSelectedPresetId(event.target.value)}
+          disabled={disabled}
           className="h-8 min-w-[180px] rounded-md border border-slate-200 bg-white px-2 text-xs"
           data-testid={`${testIdPrefix}-preset-select`}
         >
@@ -126,7 +129,7 @@ export function ReportPresetControls({
           type="button"
           variant="outline"
           size="sm"
-          disabled={!selectedPreset}
+          disabled={disabled || !selectedPreset}
           onClick={() => selectedPreset && onApplyPreset(selectedPreset)}
           data-testid={`${testIdPrefix}-preset-apply`}
         >
@@ -137,7 +140,7 @@ export function ReportPresetControls({
           type="button"
           variant="outline"
           size="sm"
-          disabled={!canDeleteSelected || isDeleting}
+          disabled={disabled || !canDeleteSelected || isDeleting}
           onClick={() => deleteMutation.mutate()}
           data-testid={`${testIdPrefix}-preset-delete`}
         >
@@ -149,6 +152,7 @@ export function ReportPresetControls({
         <input
           value={presetName}
           onChange={(event) => setPresetName(event.target.value)}
+          disabled={disabled}
           className="h-8 min-w-[180px] rounded-md border border-slate-200 bg-white px-2 text-xs"
           data-testid={`${testIdPrefix}-preset-name`}
         />
@@ -156,6 +160,7 @@ export function ReportPresetControls({
           <select
             value={scope}
             onChange={(event) => setScope(event.target.value === "GLOBAL" ? "GLOBAL" : "USER")}
+            disabled={disabled}
             className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs"
             data-testid={`${testIdPrefix}-preset-scope`}
           >
@@ -168,6 +173,7 @@ export function ReportPresetControls({
             type="checkbox"
             checked={actions.includes("GENERATE_REPORT")}
             onChange={(event) => setActions(event.target.checked ? ["GENERATE_REPORT"] : [])}
+            disabled={disabled}
             data-testid={`${testIdPrefix}-preset-action-generate`}
           />
           Öffnen
@@ -176,7 +182,7 @@ export function ReportPresetControls({
           type="button"
           variant="outline"
           size="sm"
-          disabled={isSaving}
+          disabled={disabled || isSaving}
           onClick={() => saveMutation.mutate()}
           data-testid={`${testIdPrefix}-preset-save`}
         >

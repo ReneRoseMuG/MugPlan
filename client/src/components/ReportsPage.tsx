@@ -54,6 +54,7 @@ import {
 import {
   buildCategoryLayoutBlocks,
   CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS,
+  CATEGORY_LAYOUT_RESPONSIVE_CATEGORY_SPAN_CLASS_BY_COLUMNS,
   distributeSortedItemsIntoColumns,
   getCategoryLayoutIds,
   orderCategoriesByLayout,
@@ -231,6 +232,7 @@ const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
 const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 const AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX = 920;
+const REPORT_PRESETS_TEMPORARILY_DISABLED = true;
 function toTestIdToken(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
 }
@@ -457,11 +459,15 @@ function renderGroupedCategoryList(
     ? layoutBlocks.map((block, blockIndex) => (
       <div
         key={`${testIdPrefix}-block-${blockIndex}`}
-        className="space-y-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4 shadow-sm"
+        className="grid grid-cols-1 gap-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4 shadow-sm md:grid-cols-3"
         data-testid={`${testIdPrefix}-block-${blockIndex}`}
       >
         {block.categories.map(({ group, columns }) => (
-          <div key={group.categoryId} className="rounded-lg border border-slate-300 bg-white p-4 shadow-sm" data-testid={`${testIdPrefix}-category-${group.categoryId}`}>
+          <div
+            key={group.categoryId}
+            className={cn("rounded-lg border border-slate-300 bg-white p-4 shadow-sm", CATEGORY_LAYOUT_RESPONSIVE_CATEGORY_SPAN_CLASS_BY_COLUMNS[columns])}
+            data-testid={`${testIdPrefix}-category-${group.categoryId}`}
+          >
             <h5 className="text-sm font-semibold text-slate-900">{group.categoryName}</h5>
             <div className={cn("mt-3 grid gap-3", CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS[columns])}>
               {distributeSortedItemsIntoColumns(group.items, columns, (item) => item.itemName).map((columnItems, columnIndex) => (
@@ -1626,6 +1632,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       defaultName="Vorlaufliste Preset"
                       onApplyPreset={applyVorlauflistePreset}
                       testIdPrefix="reports-vorlaufliste"
+                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
                     />
                   )}
                   footer={(
@@ -1720,6 +1727,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       defaultName="Produktionsplanung Preset"
                       onApplyPreset={applyProduktionsplanungPreset}
                       testIdPrefix="reports-produktionsplanung"
+                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
                     />
                   )}
                   footer={(
@@ -1932,6 +1940,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       defaultName="Auftragsliste Preset"
                       onApplyPreset={applyAuftragslistePreset}
                       testIdPrefix="reports-auftragsliste"
+                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
                     />
                   )}
                   footer={(

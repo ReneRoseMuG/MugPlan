@@ -7,6 +7,7 @@ Dieses Wiki ist die repo-geführte fachliche Quelle für Lastenheft, Use Cases, 
 - [Features](features/README.md)
 - [Use Cases](use-cases.md)
 - [Backlog](backlog.md)
+- [Aufgaben](tasks/README.md)
 - [Querbeziehungen](relations.md)
 - [Journal](journal/README.md)
 - [Entscheidungen](decisions/README.md)

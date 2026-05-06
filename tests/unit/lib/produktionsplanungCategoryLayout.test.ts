@@ -14,7 +14,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { distributeSortedItemsIntoColumns } from "../../../client/src/lib/produktionsplanung-category-layout";
+import {
+  buildCategoryLayoutBlocks,
+  distributeSortedItemsIntoColumns,
+} from "../../../client/src/lib/produktionsplanung-category-layout";
 
 describe("produktionsplanung category layout helpers", () => {
   it("sorts the full list alphabetically before it fills multiple columns", () => {
@@ -36,6 +39,37 @@ describe("produktionsplanung category layout helpers", () => {
       [{ itemName: "Alpha" }, { itemName: "Bravo" }, { itemName: "Charlie" }],
       [{ itemName: "Delta" }, { itemName: "Echo" }],
       [{ itemName: "Foxtrot" }, { itemName: "Zulu" }],
+    ]);
+  });
+
+  it("keeps multiple categories in one block with their own column weights", () => {
+    const blocks = buildCategoryLayoutBlocks(
+      [
+        { categoryId: 11, categoryName: "Kategorie Eins" },
+        { categoryId: 12, categoryName: "Kategorie Zwei" },
+        { categoryId: 21, categoryName: "Kategorie Drei" },
+      ],
+      [
+        { categoryId: 11, block: 1, columns: 1 },
+        { categoryId: 12, block: 1, columns: 2 },
+        { categoryId: 21, block: 2, columns: 3 },
+      ],
+    );
+
+    expect(blocks).toEqual([
+      {
+        block: 1,
+        categories: [
+          { columns: 1, group: { categoryId: 11, categoryName: "Kategorie Eins" } },
+          { columns: 2, group: { categoryId: 12, categoryName: "Kategorie Zwei" } },
+        ],
+      },
+      {
+        block: 2,
+        categories: [
+          { columns: 3, group: { categoryId: 21, categoryName: "Kategorie Drei" } },
+        ],
+      },
     ]);
   });
 });

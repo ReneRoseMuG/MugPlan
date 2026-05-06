@@ -75,6 +75,11 @@ const asciiUmlautAllowlist = new Set([
   "enue",
   "glue",
   "issue",
+  "aktuell",
+  "aktueller",
+  "manuell",
+  "manuelle",
+  "manuelles",
   "Mauer",
   "Mueller",
   "neuem",
@@ -87,6 +92,7 @@ const asciiUmlautAllowlist = new Set([
   "Neues",
   "neues",
   "query",
+  "Quelle",
   "Query",
   "queue",
   "request",
@@ -94,12 +100,20 @@ const asciiUmlautAllowlist = new Set([
   "rescue",
   "revenue",
   "Steuer",
+  "steuert",
+  "steuern",
+  "steuernden",
   "technique",
   "Touren",
   "touren",
   "true",
   "unique",
+  "umzubauen",
   "value",
+  "visuell",
+  "visuelles",
+  "wochengenaue",
+  "wochengenauen",
   "zuerst",
 ]);
 
@@ -325,7 +339,11 @@ function scanMarkdownAsciiUmlauts(lineText, filePath, lineNumber) {
     return findings;
   }
 
-  findings.push(...scanAsciiUmlautsInText(lineText, filePath, lineNumber));
+  const humanText = lineText
+    .replace(/`[^`]*`/g, "")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1");
+
+  findings.push(...scanAsciiUmlautsInText(humanText, filePath, lineNumber));
 
   return findings;
 }

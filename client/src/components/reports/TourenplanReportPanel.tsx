@@ -60,6 +60,8 @@ type TourenplanSectionRequestData = {
   appointmentItems: TourenplanAppointmentListItem[];
 };
 
+const REPORT_PRESETS_TEMPORARILY_DISABLED = true;
+
 function parseDateOnlyInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return null;
@@ -590,6 +592,7 @@ export function TourenplanReportPanel({
             defaultName="Tourenplan Preset"
             onApplyPreset={applyPreset}
             testIdPrefix="reports-tourenplan"
+            disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
           />
         )}
         footer={(

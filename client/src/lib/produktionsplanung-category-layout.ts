@@ -24,6 +24,18 @@ export const CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS: Record<CategoryLayoutColumns
   3: "grid-cols-3",
 };
 
+export const CATEGORY_LAYOUT_CATEGORY_SPAN_CLASS_BY_COLUMNS: Record<CategoryLayoutColumns, string> = {
+  1: "col-span-1",
+  2: "col-span-2",
+  3: "col-span-3",
+};
+
+export const CATEGORY_LAYOUT_RESPONSIVE_CATEGORY_SPAN_CLASS_BY_COLUMNS: Record<CategoryLayoutColumns, string> = {
+  1: "md:col-span-1",
+  2: "md:col-span-2",
+  3: "md:col-span-3",
+};
+
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value > 0;
 }

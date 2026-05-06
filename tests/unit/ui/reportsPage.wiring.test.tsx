@@ -46,7 +46,7 @@ vi.mock("@tanstack/react-query", () => ({
 
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => (
-    <button type="button" data-testid={String(props["data-testid"] ?? "")}>{children}</button>
+    <button type="button" data-testid={String(props["data-testid"] ?? "")} disabled={Boolean(props.disabled)}>{children}</button>
   ),
 }));
 
@@ -541,5 +541,55 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).not.toContain("dialog-reports-produktionsplanung-category-layout");
     expect(html).toContain("reports-produktionsplanung-layout-warning");
     expect(html).toContain("Kategorie-Layout noch nicht konfiguriert.");
+  });
+
+  it("renders production planning categories side by side when they share a block", () => {
+    useSettingsMock.mockReturnValue({
+      settingsByKey: new Map<string, { resolvedValue: unknown; resolvedScope?: string }>([
+        ["reports.categoryLayout", {
+          resolvedValue: [
+            { categoryId: 1, block: 1, columns: 1 },
+            { categoryId: 2, block: 1, columns: 2 },
+          ],
+        }],
+      ]),
+      isSaving: false,
+      setSetting: vi.fn().mockResolvedValue(undefined),
+    });
+    installReportsPageQueryMock({
+      "reports-produktionsplanung": {
+        data: {
+          productCategoryGroups: [
+            {
+              categoryId: 1,
+              categoryName: "Fass Saunen",
+              items: [{ itemName: "Sauna Alpha", totalQuantity: 1 }],
+            },
+          ],
+          componentCategoryGroups: [
+            {
+              categoryId: 2,
+              categoryName: "Fenster",
+              items: [
+                { itemName: "Fenster Breit", totalQuantity: 2 },
+                { itemName: "Fenster Schmal", totalQuantity: 3 },
+              ],
+            },
+          ],
+          projectRows: [],
+        },
+        isLoading: false,
+      },
+    });
+
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("reports-produktionsplanung-categories-block-0");
+    expect(html).toContain("reports-produktionsplanung-categories-category-1");
+    expect(html).toContain("reports-produktionsplanung-categories-category-2");
+    expect(html).toContain("md:grid-cols-3");
+    expect(html).toContain("md:col-span-1");
+    expect(html).toContain("md:col-span-2");
+    expect(html).toContain("reports-produktionsplanung-categories-category-2-column-1");
   });
 });

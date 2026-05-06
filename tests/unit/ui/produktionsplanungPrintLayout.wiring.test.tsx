@@ -32,8 +32,8 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
           { id: 20, name: "Fenster" },
         ]}
         layoutConfig={[
-          { categoryId: 10, block: 1, columns: 3 },
-          { categoryId: 20, block: 2, columns: 1 },
+          { categoryId: 10, block: 1, columns: 1 },
+          { categoryId: 20, block: 1, columns: 2 },
         ]}
         data={{
           productCategoryGroups: [
@@ -51,7 +51,10 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
             {
               categoryId: 20,
               categoryName: "Fenster",
-              items: [{ itemName: "Fenster Breit", totalQuantity: 3 }],
+              items: [
+                { itemName: "Fenster Breit", totalQuantity: 3 },
+                { itemName: "Fenster Schmal", totalQuantity: 2 },
+              ],
             },
           ],
           projectRows: [
@@ -111,6 +114,11 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("Sauna Beta");
     expect(html).toContain("Fenster");
     expect(html).toContain("Fenster Breit");
+    expect(html).toContain("Fenster Schmal");
+    expect(html).toContain("grid grid-cols-3 gap-4");
+    expect(html).toContain("col-span-1");
+    expect(html).toContain("col-span-2");
+    expect(html).toContain("grid-cols-2");
     expect(html).toContain("Max Muster");
     expect(html).toContain("Notizen 3");
     expect(html).toContain("Anhänge 1");
