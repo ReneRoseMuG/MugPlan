@@ -14,6 +14,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [06.05.26 - FT-07: Dump- und Import-Hardening](06-05-26-ft07-dump-import-hardening.md)
 - [06.05.26 - FT-03/FT-04: Sticky-Absence und Tour-KW-Karten](06-05-26-wochenkalender-sticky-absence-tour-kw.md)
 - [06.05.26 - Staged-Encoding-Guard](06-05-26-staged-encoding-guard.md)
 - [05.05.26 - Bulk-Import und PDF-Mining entfernt](05-05-26-bulk-import-pdf-mining-entfernen.md)

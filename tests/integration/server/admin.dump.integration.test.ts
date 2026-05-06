@@ -7,7 +7,7 @@
  * - POST /api/admin/dumps/import spielt einen erzeugten Dump als echten Roundtrip wieder ein.
  * - Ein älterer Dump mit fehlenden neuen Tabellen kann weiterhin importiert werden.
  * - Touren, Wochenplanung und weitere zentrale Fachdaten werden nach dem Reimport korrekt wiederhergestellt.
- * - Ausgeschlossene Tabellen wie users/roles bleiben vom Import unberührt.
+ * - users werden per roleCode übertragen; roles bleiben als Seed-Tabelle ausgeschlossen.
  * - Admin-Endpunkte lehnen ungültige Dumps und Nicht-Admins korrekt ab.
  *
  * Fehlerfälle:
@@ -20,15 +20,18 @@
  * Ziel:
  * Den Dump-/Import-Flow end-to-end gegen die echte Testdatenbank absichern und
  * nachweisen, dass ein erzeugter Dump denselben erlaubten Datenbestand zuverlässig
- * wiederherstellt, ohne ausgeschlossene Tabellen in Scope zu ziehen.
+ * wiederherstellt, ohne Seed-Tabellen in Scope zu ziehen.
  */
 import archiver from "archiver";
+import fs from "fs";
 import request from "supertest";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { count, eq } from "drizzle-orm";
 import type express from "express";
 import * as schema from "@shared/schema";
 import { db } from "../../../server/db";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import {
   DUMP_FORMAT_VERSION,
   DUMP_TABLE_KEYS,
@@ -47,6 +50,7 @@ import {
 } from "../../helpers/testDataFactory";
 
 let app: express.Express;
+let dumpTestUserCounter = 0;
 
 function binaryParser(
   res: NodeJS.ReadableStream & { setEncoding(encoding: BufferEncoding): void },
@@ -125,6 +129,47 @@ function applyDumpImport(
 async function getRowCount(table: any): Promise<number> {
   const rows = await db.select({ value: count() }).from(table);
   return Number(rows[0]?.value ?? 0);
+}
+
+function nextDumpTestToken(prefix: string): string {
+  dumpTestUserCounter += 1;
+  return `${prefix}-${Date.now()}-${dumpTestUserCounter}`;
+}
+
+async function getRoleIdByCode(roleCode: "ADMIN" | "DISPATCHER" | "READER"): Promise<number> {
+  const [row] = await db
+    .select({ id: schema.roles.id })
+    .from(schema.roles)
+    .where(eq(schema.roles.code, roleCode))
+    .limit(1);
+  if (!row) {
+    throw new Error(`Role ${roleCode} not found`);
+  }
+  return Number(row.id);
+}
+
+async function getUserWithRoleById(userId: number) {
+  const [row] = await db
+    .select({
+      id: schema.users.id,
+      username: schema.users.username,
+      email: schema.users.email,
+      passwordHash: schema.users.passwordHash,
+      twoFactorSecretEncrypted: schema.users.twoFactorSecretEncrypted,
+      twoFactorBackupCodesReserved: schema.users.twoFactorBackupCodesReserved,
+      firstName: schema.users.firstName,
+      lastName: schema.users.lastName,
+      fullName: schema.users.fullName,
+      roleId: schema.users.roleId,
+      roleCode: schema.roles.code,
+      isActive: schema.users.isActive,
+      version: schema.users.version,
+    })
+    .from(schema.users)
+    .leftJoin(schema.roles, eq(schema.users.roleId, schema.roles.id))
+    .where(eq(schema.users.id, userId))
+    .limit(1);
+  return row ?? null;
 }
 
 async function collectSnapshot() {
@@ -255,6 +300,9 @@ describe("POST /api/admin/dumps/create und Download", () => {
     expect(dumpData.tables["tours"].length).toBeGreaterThan(0);
     expect(dumpData.tables["teams"].length).toBeGreaterThan(0);
     expect(dumpData.tables["tourWeekEmployees"].length).toBeGreaterThan(0);
+    expect(dumpData.tables["users"].length).toBeGreaterThan(0);
+    expect(dumpData.tables["users"][0]).toHaveProperty("roleCode");
+    expect(dumpData.tables["users"][0]).not.toHaveProperty("roleId");
     expect(manifest.formatVersion).toBe(DUMP_FORMAT_VERSION);
     expect(manifest.dumpId).toContain("dump_");
     expect(Object.keys(manifest.tables).sort()).toEqual([...DUMP_TABLE_KEYS].sort());
@@ -349,6 +397,184 @@ describe("POST /api/admin/dumps/import", () => {
     expect(removedExtraWeekAssignment).toHaveLength(0);
   });
 
+  it("stellt Benutzerfelder und Rollenmapping per roleCode im echten Roundtrip wieder her", async () => {
+    const admin = await loginAdminAgent(app);
+    const token = nextDumpTestToken("dump-user-roundtrip");
+    const passwordHash = await hashPassword(`${token}-password`);
+    const createdUser = await createUser({
+      username: token,
+      email: `${token}@example.test`,
+      firstName: "Dump",
+      lastName: "Benutzer",
+      passwordHash,
+      roleCode: "DISPATCHER",
+    });
+    await db
+      .update(schema.users)
+      .set({
+        twoFactorSecretEncrypted: `encrypted-secret-${token}`,
+        twoFactorBackupCodesReserved: `reserved-codes-${token}`,
+        isActive: false,
+        version: 4,
+      })
+      .where(eq(schema.users.id, createdUser.id));
+
+    const beforeUser = await getUserWithRoleById(createdUser.id);
+    expect(beforeUser).toMatchObject({
+      username: token,
+      email: `${token}@example.test`,
+      passwordHash,
+      twoFactorSecretEncrypted: `encrypted-secret-${token}`,
+      twoFactorBackupCodesReserved: `reserved-codes-${token}`,
+      roleCode: "DISPATCHER",
+      isActive: false,
+      version: 4,
+    });
+
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+    const dumpBuffer = downloadResponse.body as Buffer;
+
+    const readerRoleId = await getRoleIdByCode("READER");
+    await db
+      .update(schema.users)
+      .set({
+        passwordHash: "mutated-password-hash",
+        twoFactorSecretEncrypted: null,
+        twoFactorBackupCodesReserved: null,
+        firstName: "Mutiert",
+        lastName: "Benutzer",
+        fullName: "Mutiert Benutzer",
+        roleId: readerRoleId,
+        isActive: true,
+        version: 9,
+      })
+      .where(eq(schema.users.id, createdUser.id));
+
+    const mutatedUser = await getUserWithRoleById(createdUser.id);
+    expect(mutatedUser).toMatchObject({
+      passwordHash: "mutated-password-hash",
+      roleCode: "READER",
+      isActive: true,
+      version: 9,
+    });
+
+    const previewResponse = await previewDumpImport(admin, dumpBuffer).expect(200);
+    const importResponse = await applyDumpImport(admin, dumpBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(200);
+    expect(importResponse.body.verificationPassed).toBe(true);
+
+    const restoredUser = await getUserWithRoleById(createdUser.id);
+    expect(restoredUser).toMatchObject({
+      username: beforeUser!.username,
+      email: beforeUser!.email,
+      passwordHash: beforeUser!.passwordHash,
+      twoFactorSecretEncrypted: beforeUser!.twoFactorSecretEncrypted,
+      twoFactorBackupCodesReserved: beforeUser!.twoFactorBackupCodesReserved,
+      firstName: beforeUser!.firstName,
+      lastName: beforeUser!.lastName,
+      fullName: beforeUser!.fullName,
+      roleCode: "DISPATCHER",
+      isActive: false,
+      version: 4,
+    });
+    expect(restoredUser?.roleId).toBe(await getRoleIdByCode("DISPATCHER"));
+  });
+
+  it("rollt einen Apply-Fehler durch unbekannten User-roleCode vollständig zurück", async () => {
+    const admin = await loginAdminAgent(app);
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      tables: Record<string, Array<Record<string, unknown>>>;
+    };
+    expect(dumpData.tables["users"].length).toBeGreaterThan(0);
+    dumpData.tables["users"][0].roleCode = "UNKNOWN_ROLE";
+    const badRoleZipBuffer = await buildZipFromDataJson(dumpData);
+
+    const extraTour = await createTourFixture("#bb2244");
+    const snapshotBeforeApply = await collectSnapshot();
+
+    const previewResponse = await previewDumpImport(admin, badRoleZipBuffer).expect(200);
+    expect(previewResponse.body.transferReadiness).toBe("warning");
+    const response = await applyDumpImport(admin, badRoleZipBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    });
+    expect(response.status).toBe(500);
+    expect(String(response.body.message)).toContain("unbekannte Rolle");
+
+    const snapshotAfterApply = await collectSnapshot();
+    expect(snapshotAfterApply).toEqual(snapshotBeforeApply);
+    const [preservedExtraTour] = await db.select().from(schema.tours).where(eq(schema.tours.id, extraTour.id));
+    expect(preservedExtraTour).toBeTruthy();
+  });
+
+  it("blockiert widersprüchliche Manifest-Counts und Upload-Summen vor dem Apply", async () => {
+    const admin = await loginAdminAgent(app);
+    const createResponse = await admin.post("/api/admin/dumps/create").expect(200);
+    const dumpFilename = createResponse.body.filename as string;
+    const downloadResponse = await admin
+      .get(`/api/admin/dumps/${encodeURIComponent(dumpFilename)}/download`)
+      .buffer(true)
+      .parse(binaryParser)
+      .expect(200);
+    const dumpData = await parseDumpDataJson(downloadResponse.body as Buffer) as {
+      formatVersion: number;
+      exportedAt: string;
+      dumpId?: string;
+      tables: Record<string, unknown[]>;
+    };
+    const manifest = await parseDumpManifest(downloadResponse.body as Buffer) as {
+      dumpId: string;
+      formatVersion: number;
+      exportedAt: string;
+      schemaRevision: string;
+      tables: Record<string, { rowCount: number; sha256: string }>;
+      uploads: {
+        fileCount: number;
+        totalBytes: number;
+        sha256: string;
+        files: Array<{ relativePath: string; sizeBytes: number; sha256: string }>;
+      };
+    };
+    manifest.tables["tours"].rowCount += 1;
+    manifest.tables["tours"].sha256 = "invalid-table-hash";
+    manifest.uploads.fileCount += 1;
+    manifest.uploads.sha256 = "invalid-upload-hash";
+    const blockedZipBuffer = await buildZipFromDumpArtifacts(dumpData, manifest);
+
+    const previewResponse = await previewDumpImport(admin, blockedZipBuffer).expect(200);
+    expect(previewResponse.body.transferReadiness).toBe("blocked");
+    expect(previewResponse.body.blockingIssues).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Manifest-Count"),
+        expect.stringContaining("Manifest-Hash"),
+        expect.stringContaining("Manifest-Uploadanzahl"),
+        expect.stringContaining("Manifest-Uploadhash"),
+      ]),
+    );
+
+    await applyDumpImport(admin, blockedZipBuffer, {
+      fileHash: String(previewResponse.body.fileHash),
+      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+    }).expect(422);
+  });
+
   it("akzeptiert Alt-Dumps mit fehlenden neuen Tabellen und ignoriert unbekannte Tabellen", async () => {
     const admin = await loginAdminAgent(app);
 
@@ -385,7 +611,7 @@ describe("POST /api/admin/dumps/import", () => {
     delete dumpData.tables["employeeAttachments"];
     delete dumpData.tables["employeeTags"];
     delete dumpData.tables["tourWeekEmployees"];
-    dumpData.tables["users"] = [];
+    delete dumpData.tables["users"];
 
     const legacyZipBuffer = await buildZipFromDataJson(dumpData);
 
@@ -544,10 +770,28 @@ describe("POST /api/admin/dumps/import", () => {
     const legacyZipBuffer = await buildZipFromDataJson(dumpData);
 
     const previewResponse = await previewDumpImport(admin, legacyZipBuffer).expect(200);
-    await applyDumpImport(admin, legacyZipBuffer, {
-      fileHash: String(previewResponse.body.fileHash),
-      confirmationPhrase: String(previewResponse.body.confirmationPhrase),
-    }).expect(200);
+    const originalRenameSync = fs.renameSync;
+    const renameSpy = vi.spyOn(fs, "renameSync").mockImplementation((oldPath, newPath) => {
+      if (
+        typeof oldPath === "string"
+        && typeof newPath === "string"
+        && oldPath.includes("mugplan-dump-import-")
+      ) {
+        const error = new Error("EXDEV: cross-device link not permitted");
+        Object.assign(error, { code: "EXDEV" });
+        throw error;
+      }
+      return originalRenameSync(oldPath, newPath);
+    });
+
+    try {
+      await applyDumpImport(admin, legacyZipBuffer, {
+        fileHash: String(previewResponse.body.fileHash),
+        confirmationPhrase: String(previewResponse.body.confirmationPhrase),
+      }).expect(200);
+    } finally {
+      renameSpy.mockRestore();
+    }
 
     const [restoredAttachment] = await db
       .select()

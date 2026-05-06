@@ -11,3 +11,4 @@
 - [UC 07/11: Termin im CalDAV-Kalender löschen](uc-07-11-termin-im-caldav-kalender-loeschen.md)
 - [UC 07/12: DB-Dump automatisch erzeugen](uc-07-12-db-dump-automatisch-erzeugen.md)
 - [UC 07/13: DB-Dump herunterladen](uc-07-13-db-dump-herunterladen.md)
+- [UC 07/14: DB-Dump importieren](uc-07-14-db-dump-importieren.md)
