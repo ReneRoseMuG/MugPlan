@@ -126,6 +126,8 @@ Termin-Notizen können im Wochenkalender dauerhaft sichtbar gemacht werden. Ange
 
 Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Neben dem Hinzufügen einzelner Tour-KW-Mitarbeiter kann die Tour-KW-Planung direkt auf die Termine der jeweiligen Tour und Kalenderwoche angewendet werden. Diese Aktion nutzt dieselbe Vorschau-/Bestätigungslogik wie die Tour-KW-Planung und speichert keine getrennte Mitarbeiterplanung. Änderungen aus der Terminkarte verwenden ebenfalls die bestehende Vorschau-/Bestätigungslogik.
 
+Tour-KW-Personalkarten werden nur für regulär planbare Tour-Lanes angezeigt. Für die Gruppe **Ohne Tour** sowie für die Systemtouren **Abwesenheiten** und **Parkplatz** wird keine Tour-KW-Karte, kein Mitarbeiterplanungsmenü und keine Anwenden-Aktion angezeigt. Diese Lanes können weiterhin Termine oder passive Informationen zeigen, sie sind aber keine Basis für Tour-KW-Mitarbeiterplanung.
+
 Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist dauerhaft sichtbar, liegt direkt unter dem Tageskopf und ist vollständig passiv. Sie bietet keine Pflege von Abwesenheiten an.
 
 #### Kachelmodus

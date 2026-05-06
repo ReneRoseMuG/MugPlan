@@ -28,6 +28,7 @@ export type UserSettingKey =
   | "cardListColumns"
   | "calendar.weekLanes.isCollapsed"
   | "calendar.weekLanes.expandedLaneId"
+  | "calendar.weekAbsenceLane.collapsed"
   | "tourWeekPlanning.weekLanes.isCollapsed"
   | "tourWeekPlanning.weekLanes.expandedLaneId"
   | "calendar.weekTileBodyMode"
@@ -55,6 +56,7 @@ type UserSettingValueByKey = {
   cardListColumns: number;
   "calendar.weekLanes.isCollapsed": boolean;
   "calendar.weekLanes.expandedLaneId": string;
+  "calendar.weekAbsenceLane.collapsed": boolean;
   "tourWeekPlanning.weekLanes.isCollapsed": boolean;
   "tourWeekPlanning.weekLanes.expandedLaneId": string;
   "calendar.weekTileBodyMode": "collapsed" | "semiexpanded" | "expanded";
@@ -146,7 +148,11 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
     if (key === "toastDesktopPosition") {
       return resolveToastDesktopPosition(setting?.resolvedValue) as UserSettingValueByKey[K];
     }
-    if (key === "calendar.weekLanes.isCollapsed" || key === "tourWeekPlanning.weekLanes.isCollapsed") {
+    if (
+      key === "calendar.weekLanes.isCollapsed"
+      || key === "calendar.weekAbsenceLane.collapsed"
+      || key === "tourWeekPlanning.weekLanes.isCollapsed"
+    ) {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
     }
     if (key === "backup_enabled") {

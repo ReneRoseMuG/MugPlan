@@ -17,6 +17,7 @@ Tour-KW-Planungen über mehrere Kalenderwochen als Matrix einsehen und zulässig
 - Der Akteur ist authentifiziert.
 - Es existieren planbare Touren.
 - Für schreibende Aktionen besitzt der Akteur Administrator- oder Disponentenrechte.
+- Im Tourformular wird der Tab **Wochenplanung** nur für regulär planbare Touren angeboten. Für die Systemtouren **Parkplatz** und **Abwesenheiten** bleibt der Tab unsichtbar.
 
 ## Ablauf
 
@@ -33,6 +34,7 @@ Tour-KW-Planungen über mehrere Kalenderwochen als Matrix einsehen und zulässig
 - Leser öffnet die Ansicht: System zeigt die Lesesicht ohne schreibende Aktionen.
 - Vergangene Tour-KW: System zeigt die Kachel schreibgeschützt; direkte Mutationen werden serverseitig abgelehnt.
 - Blockierte Tour-KW: System verhindert Mitarbeiteränderungen und Anwenden-Aktionen, bis die Woche freigegeben wird.
+- Parkplatz- oder Abwesenheiten-Tour im Tourformular: System zeigt keinen Tab **Wochenplanung** und keine Tour-KW-Karten.
 - Konflikte beim Anwenden: System zeigt die bestehende Vorschau; konfliktbehaftete Termine bleiben deaktiviert und werden nicht mutiert.
 
 ## Ergebnis

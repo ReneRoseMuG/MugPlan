@@ -6,7 +6,7 @@
  * - Im Create-Modus bleiben Tabs, Farbauswahl und Footer sichtbar, aber kein Mitgliederbereich.
  * - Im Edit-Modus bleibt die Delete-Aktion erhalten und bestehende Wochenplanung wird ueber die Abfrage gerendert.
  * - Der Wochenplan-Mitarbeiterpicker bleibt im Tourformular als bulk-faehiger Listen-/Board-Picker verdrahtet.
- * - Die System-Tour `Parkplatz` zeigt statt leerer KW-Karten einen expliziten Hinweiszustand.
+ * - Fachlich nicht planbare System-Touren zeigen keinen Wochenplanungs-Tab.
  * - Tabs und Stammdatenbereich bleiben im Hauptformular gleich breit.
  *
  * Fehlerfaelle:
@@ -14,7 +14,7 @@
  * - Erwartete Tour-Elemente wie Tabs, Save/Cancel oder Wochenplanung verschwinden nach dem Shell-Umbau.
  * - Die Delete-Aktion geht im Edit-Modus verloren.
  * - Der KW-Picker verliert die Listenansicht oder die Sammelauswahl-Verdrahtung.
- * - Die Parkplatz-Tour wirkt mit leerer Wochenliste wie ein Lade- oder Datenfehler.
+ * - Fachlich nicht planbare System-Touren wirken mit leerer Wochenliste wie ein Lade- oder Datenfehler.
  * - Der Stammdatenbereich wird schmaler als die Tab-Leiste gerendert.
  *
  * Ziel:
@@ -306,7 +306,7 @@ describe("FT04 tour form shell layout integration", () => {
     expect(journalRecordsCalls).toHaveLength(0);
   });
 
-  it("shows an explicit unsupported hint instead of week planning cards for Parkplatz", () => {
+  it("hides the week planning tab for Parkplatz", () => {
     const markup = renderToStaticMarkup(
       <TourEditForm
         tour={{ ...tourFixture, name: "Parkplatz" }}
@@ -317,12 +317,29 @@ describe("FT04 tour form shell layout integration", () => {
       />,
     );
 
-    expect(markup).toContain("panel-tour-week-planning-unsupported");
-    expect(markup).toContain("text-tour-week-planning-unsupported");
-    expect(markup).toContain("Die Parkplatz-Tour");
+    expect(markup).not.toContain("tab-tour-wochenplanung");
+    expect(markup).not.toContain("panel-tour-week-planning-unsupported");
+    expect(markup).not.toContain("text-tour-week-planning-unsupported");
     expect(markup).not.toContain("card-tour-week-2099-6");
     expect(markup).not.toContain("button-add-tour-week-member-2099-6");
     expect(markup).not.toContain("button-tour-week-menu-2099-6");
+    expect(markup).not.toContain("toggle-tour-week-picker");
+  });
+
+  it("hides the week planning tab for Abwesenheiten", () => {
+    const markup = renderToStaticMarkup(
+      <TourEditForm
+        tour={{ ...tourFixture, name: "Abwesenheiten" }}
+        allEmployees={[]}
+        onSubmit={noop}
+        isSaving={false}
+        onCancel={() => undefined}
+      />,
+    );
+
+    expect(markup).not.toContain("tab-tour-wochenplanung");
+    expect(markup).not.toContain("grid-tour-week-planning");
+    expect(markup).not.toContain("card-tour-week-2099-6");
     expect(markup).not.toContain("toggle-tour-week-picker");
   });
 

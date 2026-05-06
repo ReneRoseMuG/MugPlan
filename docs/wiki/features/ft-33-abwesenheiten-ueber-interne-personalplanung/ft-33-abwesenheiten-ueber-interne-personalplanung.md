@@ -79,6 +79,8 @@ Wenn der Mitarbeiter in einer vom Abwesenheitszeitraum betroffenen Tour-KW-Planu
 
 Für die Systemtour **Abwesenheiten** darf keine automatische Mitarbeiterübernahme aus der Tour- oder Kalenderwochenplanung ausgeführt werden.
 
+Im Tourformular wird für die Systemtour **Abwesenheiten** kein Tab **Wochenplanung** angeboten. Im Wochenkalender erhält die Abwesenheiten-Lane keine Tour-KW-Personalkarte in der Personalspalte. Abwesenheiten werden über den dedizierten Abwesenheitsflow und die passive Abwesenheitsanzeige sichtbar, nicht über reguläre Tour-KW-Mitarbeiterplanung.
+
 Tour-KW-Sperren der Systemtour **Abwesenheiten** blockieren den dedizierten Abwesenheitsflow nicht. Abwesenheiten sind keine reguläre Tourenplanung und dürfen deshalb nicht durch Wochenplanungssperren dieser Systemtour verhindert werden.
 
 **R-05 Tag-Wechsel kontrolliert**
