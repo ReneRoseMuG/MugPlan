@@ -373,6 +373,15 @@ export const userSettingsRegistry = {
     placeholderWhitelist: [],
     validate: (value: unknown): value is string => typeof value === "string",
   },
+  calendarWeekAbsenceLaneCollapsed: {
+    key: "calendar.weekAbsenceLane.collapsed",
+    label: "Wochenansicht Abwesenheitsspur kollabiert",
+    description: "Regelt persönlich, ob im Wochenkalender nur der Abwesenheiten-Header sichtbar ist.",
+    type: "boolean",
+    defaultValue: false,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
   tourWeekPlanningLanesIsCollapsed: {
     key: "tourWeekPlanning.weekLanes.isCollapsed",
     label: "Tour-KW-Planung Lanes kollabiert",

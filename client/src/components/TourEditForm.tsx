@@ -36,6 +36,7 @@ import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
 import { useSetting } from "@/hooks/useSettings";
 import { useToast } from "@/hooks/use-toast";
 import { formatDisplayDate } from "@/lib/date-display-format";
+import { isAbsenceTourName } from "@shared/absenceAppointments";
 import type { Tour, Employee } from "@shared/schema";
 
 type TourWeekEmployeeMember = {
@@ -48,6 +49,10 @@ const normalizeTourName = (value: string | null | undefined) => (value ?? "").tr
 
 function isParkplatzTourName(value: string | null | undefined): boolean {
   return normalizeTourName(value) === normalizeTourName("Parkplatz");
+}
+
+function isUnsupportedWeekPlanningTourName(value: string | null | undefined): boolean {
+  return isParkplatzTourName(value) || isAbsenceTourName(value);
 }
 
 type TourWeekEmployeesWeek = {
@@ -125,7 +130,7 @@ export function TourEditForm({
   const { toast } = useToast();
   const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
   const [userRole] = useState(readStoredUserRole);
-  const isWeekPlanningSupported = !isCreate && !isParkplatzTourName(tour?.name);
+  const isWeekPlanningSupported = !isCreate && !isUnsupportedWeekPlanningTourName(tour?.name);
   const canAccessJournal = userRole === "ADMIN" || userRole === "DISPATCHER" || userRole === "DISPONENT";
   const showJournalTab = !isCreate && tour?.id != null && canAccessJournal;
   const nextEditableWeek = useMemo(() => {
@@ -165,6 +170,12 @@ export function TourEditForm({
     if (!mainContainer) return;
     mainContainer.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [activeTab]);
+
+  useEffect(() => {
+    if (isWeekPlanningSupported || activeTab !== "wochenplanung") return;
+    setActiveTab("stammdaten");
+    setWeekPickerOpen(false);
+  }, [activeTab, isWeekPlanningSupported]);
 
   const { data: allWeeks = [] } = useQuery<TourWeekEmployeesWeek[]>({
     queryKey: [`/api/tours/${tour?.id}/week-employees`],
@@ -464,7 +475,7 @@ export function TourEditForm({
           <TabsList>
             <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
             <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
-            {!isCreate ? (
+            {isWeekPlanningSupported ? (
               <TabsTrigger value="wochenplanung" data-testid="tab-tour-wochenplanung">Wochenplanung</TabsTrigger>
             ) : null}
           </TabsList>
@@ -520,20 +531,9 @@ export function TourEditForm({
             />
           </TabsContent>
 
-          {!isCreate ? (
+          {isWeekPlanningSupported ? (
             <TabsContent value="wochenplanung" className="mt-0 w-full flex-none">
-              {!isWeekPlanningSupported ? (
-                <div
-                  className="sub-panel mx-auto w-full max-w-[760px] space-y-3"
-                  data-testid="panel-tour-week-planning-unsupported"
-                >
-                  <h3 className="text-base font-semibold text-slate-900">Keine Wochenplanung für diese Tour</h3>
-                  <p className="text-sm text-slate-600" data-testid="text-tour-week-planning-unsupported">
-                    Die Parkplatz-Tour unterstützt keine Mitarbeiter-Planung. Die Parkplatz-Tour ist Zwischenspeicher und dient nicht der konkreten Terminplanung.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
+              <div className="grid auto-rows-max content-start items-start gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="grid-tour-week-planning">
                 {allWeeks.map((week) => (
                   <TourWeekCard
                     key={`${week.isoYear}-${week.isoWeek}`}
@@ -660,8 +660,7 @@ export function TourEditForm({
                     </div>
                   </TourWeekCard>
                 ))}
-                </div>
-              )}
+              </div>
             </TabsContent>
           ) : null}
         </Tabs>

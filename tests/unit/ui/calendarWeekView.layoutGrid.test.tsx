@@ -415,6 +415,9 @@ describe("CalendarWeekView layout grid regression", () => {
     );
 
     expect(html).toContain('data-testid="week-absence-row-header-2026-04-20"');
+    expect(html).toContain('data-testid="button-week-absence-row-toggle-2026-04-20"');
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toContain("top:60px");
     expect(html).toContain("Abwesenheiten");
     expect(html).toContain("background-color:#64748B");
     expect(html).toContain("h-5");
@@ -423,6 +426,33 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-render-mode="standard"');
     expect(html).toContain('data-show-preview="true"');
     expect(html).toContain('data-show-avatar="false"');
+  });
+
+  it("renders the absence strip collapsed with only the sticky header visible", () => {
+    const weekStart = new Date("2026-04-20T00:00:00Z");
+    const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+    const absenceEmployeesByDate = new Map<string, CalendarAppointment["employees"]>([
+      ["2026-04-20", [{ id: 31, firstName: "Mira", lastName: "Urlaub", fullName: "Mira Urlaub" }]],
+    ]);
+
+    const html = renderToStaticMarkup(
+      <CalendarWeekAbsenceRow
+        weekKey="2026-04-20"
+        days={days}
+        absenceEmployeesByDate={absenceEmployeesByDate}
+        absenceTourColor="#64748B"
+        weekDayGridTemplate="1fr 1fr 1fr 1fr 1fr 0.33fr 0.33fr"
+        stickyTopPx={84}
+        isCollapsed
+      />,
+    );
+
+    expect(html).toContain('data-testid="week-absence-row-header-2026-04-20"');
+    expect(html).toContain('data-testid="button-week-absence-row-toggle-2026-04-20"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain("top:84px");
+    expect(html).not.toContain('data-testid="week-absence-cell-2026-04-20"');
+    expect(html).not.toContain('data-testid="week-absence-employee-2026-04-20-31"');
   });
 
   it("renders one shared week body marker column instead of lane-specific holiday dividers", () => {
@@ -508,9 +538,13 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-testid="week-personnel-card-wrapper-tour-7"');
     expect(html).toContain('class="absolute inset-0 z-10 min-w-0 p-2 " style="width:100%;height:100%;box-sizing:border-box" data-testid="week-personnel-card-wrapper-tour-7"');
     expect(html).toContain('data-testid="week-personnel-card-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-header-tour-7"');
     expect(html).toContain('data-testid="week-personnel-card-menu-trigger-tour-7"');
+    expect(html).toContain('data-testid="week-personnel-card-footer-tour-7"');
     expect(html).toContain('data-testid="week-personnel-card-notes-tour-7"');
     expect(html).toContain("background-color:rgba(34, 85, 136, 0.1)");
+    expect(html).toContain("min-h-8 w-full shrink-0 items-center justify-end");
+    expect(html).toContain("mt-auto flex min-h-7 w-full shrink-0 items-center justify-between border-t");
     expect(html).toContain("notes-2");
     expect(html).toContain('data-testid="button-week-personnel-column-toggle-tour-7"');
     expect(html).toContain('data-testid="week-personnel-column-tour-unassigned"');
@@ -519,6 +553,12 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain('data-testid="week-personnel-column-header-tour-8"');
     expect(html).toContain('data-testid="week-personnel-column-tour-9"');
     expect(html).toContain('data-testid="week-personnel-column-header-tour-9"');
+    expect(html).not.toContain('data-testid="week-personnel-card-wrapper-tour-unassigned"');
+    expect(html).not.toContain('data-testid="week-personnel-card-tour-unassigned"');
+    expect(html).not.toContain('data-testid="week-personnel-card-wrapper-tour-8"');
+    expect(html).not.toContain('data-testid="week-personnel-card-tour-8"');
+    expect(html).not.toContain('data-testid="week-personnel-card-wrapper-tour-9"');
+    expect(html).not.toContain('data-testid="week-personnel-card-tour-9"');
     expect(html).toContain("&lt;&lt;&lt;");
     expect(html).toContain('data-testid="week-personnel-employee-tour-7-31"');
     expect(html).toContain('data-render-mode="standard"');

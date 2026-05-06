@@ -14,7 +14,7 @@ import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
-import { ListChecks, Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
+import { ChevronDown, ChevronRight, ListChecks, Lock, LockOpen, MoreVertical, StickyNote } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
@@ -354,6 +354,9 @@ export function CalendarWeekAbsenceRow({
   absenceTourColor,
   weekDayGridTemplate,
   personnelColumnWidth,
+  stickyTopPx = 60,
+  isCollapsed = false,
+  onCollapsedChange,
 }: {
   weekKey: string;
   days: Date[];
@@ -361,60 +364,76 @@ export function CalendarWeekAbsenceRow({
   absenceTourColor: string;
   weekDayGridTemplate: string;
   personnelColumnWidth?: string | null;
+  stickyTopPx?: number;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }) {
   const rowGridTemplate = personnelColumnWidth ? `${personnelColumnWidth} ${weekDayGridTemplate}` : weekDayGridTemplate;
   return (
     <div
-      className="sticky top-[3.75rem] z-10 border-b border-border/30 bg-slate-50"
+      className="sticky z-20 border-b border-border/30 bg-slate-50"
+      style={{ top: `${stickyTopPx}px` }}
       data-testid={`week-absence-row-${weekKey}`}
     >
       <div
-        className="flex h-5 items-center px-2 text-[11px] font-semibold uppercase tracking-wide text-white"
+        className="flex h-5 items-center gap-1 px-2 text-[11px] font-semibold uppercase tracking-wide text-white"
         style={{ backgroundColor: absenceTourColor }}
         data-testid={`week-absence-row-header-${weekKey}`}
       >
-        Abwesenheiten
+        <button
+          type="button"
+          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/80"
+          onClick={() => onCollapsedChange?.(!isCollapsed)}
+          data-testid={`button-week-absence-row-toggle-${weekKey}`}
+          aria-label={isCollapsed ? "Abwesenheitsspur erweitern" : "Abwesenheitsspur kollabieren"}
+          aria-expanded={!isCollapsed}
+        >
+          {isCollapsed ? <ChevronRight className="h-3 w-3" aria-hidden /> : <ChevronDown className="h-3 w-3" aria-hidden />}
+        </button>
+        <span>Abwesenheiten</span>
       </div>
-      <div
-        className="grid divide-x divide-border/30"
-        style={{ gridTemplateColumns: rowGridTemplate }}
-      >
-        {personnelColumnWidth ? (
-          <div className="min-h-12 bg-slate-100/80" data-testid={`week-absence-personnel-spacer-${weekKey}`} />
-        ) : null}
-        {days.map((day) => {
-          const dayKey = format(day, "yyyy-MM-dd");
-          const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
-          const visibleEmployees = absentEmployees.slice(0, 4);
-          const overflowCount = Math.max(0, absentEmployees.length - visibleEmployees.length);
-          return (
-            <div key={`week-absence-cell-${dayKey}`} className="min-h-12 overflow-hidden px-2 py-1" data-testid={`week-absence-cell-${dayKey}`}>
-              <div className="flex flex-wrap items-center justify-start gap-1">
-                {visibleEmployees.map((employee) => (
-                  <EmployeeInfoBadge
-                    key={`absence-${dayKey}-${employee.id}`}
-                    id={employee.id}
-                    firstName={employee.firstName}
-                    lastName={employee.lastName}
-                    fullName={employee.fullName}
-                    renderMode="standard"
-                    size="sm"
-                    action="none"
-                    showAvatar={false}
-                    showPreview
-                    testId={`week-absence-employee-${dayKey}-${employee.id}`}
-                  />
-                ))}
-                {overflowCount > 0 ? (
-                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`week-absence-overflow-${dayKey}`}>
-                    +{overflowCount}
-                  </span>
-                ) : null}
+      {!isCollapsed ? (
+        <div
+          className="grid divide-x divide-border/30"
+          style={{ gridTemplateColumns: rowGridTemplate }}
+        >
+          {personnelColumnWidth ? (
+            <div className="min-h-12 bg-slate-100/80" data-testid={`week-absence-personnel-spacer-${weekKey}`} />
+          ) : null}
+          {days.map((day) => {
+            const dayKey = format(day, "yyyy-MM-dd");
+            const absentEmployees = absenceEmployeesByDate.get(dayKey) ?? [];
+            const visibleEmployees = absentEmployees.slice(0, 4);
+            const overflowCount = Math.max(0, absentEmployees.length - visibleEmployees.length);
+            return (
+              <div key={`week-absence-cell-${dayKey}`} className="min-h-12 overflow-hidden px-2 py-1" data-testid={`week-absence-cell-${dayKey}`}>
+                <div className="flex flex-wrap items-center justify-start gap-1">
+                  {visibleEmployees.map((employee) => (
+                    <EmployeeInfoBadge
+                      key={`absence-${dayKey}-${employee.id}`}
+                      id={employee.id}
+                      firstName={employee.firstName}
+                      lastName={employee.lastName}
+                      fullName={employee.fullName}
+                      renderMode="standard"
+                      size="sm"
+                      action="none"
+                      showAvatar={false}
+                      showPreview
+                      testId={`week-absence-employee-${dayKey}-${employee.id}`}
+                    />
+                  ))}
+                  {overflowCount > 0 ? (
+                    <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700" data-testid={`week-absence-overflow-${dayKey}`}>
+                      +{overflowCount}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -490,12 +509,14 @@ export function CalendarWeekView({
   const cardHeightByLaneRef = useRef<Map<string, number>>(new Map());
   const projectStatusHeightByWeekRef = useRef<Map<string, number>>(new Map());
   const firstWeekdayHeaderRef = useRef<HTMLDivElement | null>(null);
+  const weekHeaderRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const horizontalScrollContainerRef = useRef<HTMLDivElement | null>(null);
   const weekSectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const weekScrollContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const weekPersonnelBadgeMeasurementRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
+  const [weekHeaderHeightsByWeek, setWeekHeaderHeightsByWeek] = useState<Record<string, number>>({});
   const [measuredPersonnelColumnWidthsByWeek, setMeasuredPersonnelColumnWidthsByWeek] = useState<Record<string, string>>({});
   const [measuredPersonnelBadgeWidthsByWeek, setMeasuredPersonnelBadgeWidthsByWeek] = useState<Record<string, string>>({});
   const { toast } = useToast();
@@ -512,6 +533,7 @@ export function CalendarWeekView({
   const persistedPersonnelColumnVisible = useSetting("calendar.weekPersonnelColumn.visible");
   const persistedWeekInlineNotesVisible = useSetting("calendar.weekInlineNotes.visible");
   const persistedPersonnelColumnCollapsed = useSetting("calendar.weekPersonnelColumn.collapsed");
+  const persistedAbsenceLaneCollapsed = useSetting("calendar.weekAbsenceLane.collapsed");
   const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
   const isAdmin = userRole === "ADMIN";
   const canWriteNotes = userRole !== "READER";
@@ -525,6 +547,7 @@ export function CalendarWeekView({
   const showPersonnelColumn = Boolean(persistedPersonnelColumnVisible);
   const showAppointmentNotesInline = Boolean(persistedWeekInlineNotesVisible);
   const isPersonnelColumnCollapsed = persistedPersonnelColumnCollapsed !== false;
+  const isAbsenceLaneCollapsed = Boolean(persistedAbsenceLaneCollapsed);
   const persistedExpandedLaneId = normalizeExpandedLaneId(persistedExpandedLaneIdRaw ?? "");
   const canManageAppointmentTags = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
   const canManageWeekPlanning = !isReaderCalendarReadOnly && (userRole === "ADMIN" || userRole === "DISPATCHER");
@@ -559,6 +582,19 @@ export function CalendarWeekView({
   useEffect(() => {
     setVisibleWeekStart(baseWeekStart);
   }, [baseWeekStart]);
+
+  const measureWeekHeaderHeight = (weekKey: string, node: HTMLDivElement) => {
+    const heightPx = Math.round(node.getBoundingClientRect().height);
+    if (heightPx <= 0) return;
+
+    setWeekHeaderHeightsByWeek((currentHeights) => {
+      if (currentHeights[weekKey] === heightPx) return currentHeights;
+      return {
+        ...currentHeights,
+        [weekKey]: heightPx,
+      };
+    });
+  };
 
   useEffect(() => {
     const node = firstWeekdayHeaderRef.current;
@@ -725,6 +761,15 @@ export function CalendarWeekView({
     return result;
   }, [calendarMarkers, stripFromDate, stripToDate]);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      for (const [weekKey, headerNode] of Array.from(weekHeaderRefs.current.entries())) {
+        measureWeekHeaderHeight(weekKey, headerNode);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [calendarMarkersByDate, markerVisualizationStyle, scrollResetKey, showPersonnelColumn]);
+
   const absenceEmployeesByDate = useMemo(() => {
     const result = new Map<string, CalendarAppointment["employees"]>();
     for (const appointment of appointments) {
@@ -788,6 +833,21 @@ export function CalendarWeekView({
       console.error(`${logPrefix} personnel column collapse persist failed`, error);
       toast({
         title: "Personalspalte konnte nicht gespeichert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    });
+  };
+
+  const setAbsenceLaneCollapsed = (collapsed: boolean) => {
+    void setSetting({
+      key: "calendar.weekAbsenceLane.collapsed",
+      scopeType: "USER",
+      value: collapsed,
+    }).catch((error) => {
+      console.error(`${logPrefix} absence lane collapse persist failed`, error);
+      toast({
+        title: "Abwesenheitsspur konnte nicht gespeichert werden",
         description: "Bitte erneut versuchen.",
         variant: "destructive",
       });
@@ -2088,7 +2148,19 @@ export function CalendarWeekView({
                   }}
                   className="h-full flex flex-col overflow-y-auto"
                 >
-                  <div className="sticky top-0 z-20 grid divide-x divide-border/30 border-b border-border/30 bg-background" style={{ gridTemplateColumns: weekFullGridTemplate }}>
+                  {/* Sticky stacking: day header z-30, absence lane z-20, lane content z-10, marker background z-0. */}
+                  <div
+                    ref={(node) => {
+                      if (node) {
+                        weekHeaderRefs.current.set(weekKey, node);
+                        window.requestAnimationFrame(() => measureWeekHeaderHeight(weekKey, node));
+                      } else {
+                        weekHeaderRefs.current.delete(weekKey);
+                      }
+                    }}
+                    className="sticky top-0 z-30 grid divide-x divide-border/30 border-b border-border/30 bg-background"
+                    style={{ gridTemplateColumns: weekFullGridTemplate }}
+                  >
                     {personnelColumnWidth ? (
                       <div
                         className="flex min-h-0 items-center justify-center bg-slate-100/80 px-1 py-1.5"
@@ -2166,11 +2238,14 @@ export function CalendarWeekView({
                     absenceTourColor={absenceTourColor}
                     weekDayGridTemplate={weekDayGridTemplate}
                     personnelColumnWidth={personnelColumnWidth}
+                    stickyTopPx={weekHeaderHeightsByWeek[weekKey] ?? 60}
+                    isCollapsed={isAbsenceLaneCollapsed}
+                    onCollapsedChange={setAbsenceLaneCollapsed}
                   />
 
-                  <div className="relative pb-3">
+                  <div className="relative z-0 pb-3">
                     <div
-                      className="pointer-events-none absolute inset-0 grid"
+                      className="pointer-events-none absolute inset-0 z-0 grid"
                       style={{ gridTemplateColumns: weekFullGridTemplate }}
                       aria-hidden
                     >
@@ -2374,6 +2449,7 @@ export function CalendarWeekView({
                                   data-testid={`week-personnel-column-background-${tourLane.laneKey}`}
                                   aria-hidden
                                 />
+                                {canPlanLaneWeekPersonnel ? (
                                 <div
                                   className={`absolute inset-0 z-10 min-w-0 p-2 ${
                                     isPersonnelColumnCollapsed ? "flex justify-center" : ""
@@ -2387,46 +2463,53 @@ export function CalendarWeekView({
                                 >
                                   <div
                                     className={`relative flex h-full min-w-0 flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm ${
-                                      isPersonnelColumnCollapsed ? "items-center gap-1 px-1 py-1" : "gap-2 px-1.5 pb-1.5 pt-8"
+                                      isPersonnelColumnCollapsed ? "items-center gap-1 px-1 py-1" : ""
                                     }`}
                                     data-testid={`week-personnel-card-${tourLane.laneKey}`}
                                   >
-                                  {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel ? (
-                                    <div className="absolute right-1 top-1 flex items-center gap-1">
-                                      {canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
-                                        <>
-                                    <button
-                                      type="button"
-                                      className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-100"
-                                      onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
-                                      data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
-                                      aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
-                                    >
-                                      +
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-100 disabled:opacity-50"
-                                      onClick={() => {
-                                        void openApplyWeekPlanningDialog({
-                                          tourId: tourLane.tourId!,
-                                          isoYear,
-                                          isoWeek,
-                                          employeeIds: laneWeekEmployees.map((employee) => employee.id),
-                                        });
+                                  {!isPersonnelColumnCollapsed ? (
+                                    <div
+                                      className="flex min-h-8 w-full shrink-0 items-center justify-end gap-1 border-b px-1.5 py-1"
+                                      style={{
+                                        backgroundColor: tourWeekPlanningFooterStyle.backgroundColor,
+                                        borderColor: tourWeekPlanningFooterStyle.borderColor,
                                       }}
-                                      disabled={laneWeekEmployees.length === 0 || previewAddWeekEmployeeMutation.isPending || executeAddWeekEmployeeMutation.isPending}
-                                      data-testid={`button-apply-week-personnel-${tourLane.laneKey}`}
-                                      aria-label="Tour-KW-Planung auf Termine anwenden"
+                                      data-testid={`week-personnel-card-header-${tourLane.laneKey}`}
                                     >
-                                      <ListChecks className="h-3.5 w-3.5" />
-                                    </button>
+                                      {canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-sm font-bold text-slate-700 shadow-sm hover:bg-white"
+                                            onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
+                                            data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
+                                            aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
+                                          >
+                                            +
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm hover:bg-white disabled:opacity-50"
+                                            onClick={() => {
+                                              void openApplyWeekPlanningDialog({
+                                                tourId: tourLane.tourId!,
+                                                isoYear,
+                                                isoWeek,
+                                                employeeIds: laneWeekEmployees.map((employee) => employee.id),
+                                              });
+                                            }}
+                                            disabled={laneWeekEmployees.length === 0 || previewAddWeekEmployeeMutation.isPending || executeAddWeekEmployeeMutation.isPending}
+                                            data-testid={`button-apply-week-personnel-${tourLane.laneKey}`}
+                                            aria-label="Tour-KW-Planung auf Termine anwenden"
+                                          >
+                                            <ListChecks className="h-3.5 w-3.5" />
+                                          </button>
                                         </>
                                       ) : null}
-                                      {weekPlanningMenu}
+                                      {canPlanLaneWeekPersonnel ? weekPlanningMenu : null}
                                     </div>
                                   ) : null}
-                                  <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "space-y-1"}>
+                                  <div className={isPersonnelColumnCollapsed ? "flex flex-col items-center gap-1" : "min-h-0 flex-1 space-y-1 overflow-y-auto px-1.5 py-2"}>
                                     {laneWeekEmployees.length > 0 ? laneWeekEmployees.map((employee) => (
                                       <span
                                         key={`week-personnel-${tourLane.laneKey}-${employee.id}`}
@@ -2458,10 +2541,11 @@ export function CalendarWeekView({
                                       <span className="text-center text-[10px] italic text-slate-400">Keine MA</span>
                                     )}
                                   </div>
-                                  {!isPersonnelColumnCollapsed && canPlanLaneWeekPersonnel ? (
+                                  {!isPersonnelColumnCollapsed ? (
                                     <div
-                                      className="mt-auto flex min-h-7 items-center justify-between rounded-md border px-1 py-1"
+                                      className="mt-auto flex min-h-7 w-full shrink-0 items-center justify-between border-t px-1.5 py-1"
                                       style={tourWeekPlanningFooterStyle}
+                                      data-testid={`week-personnel-card-footer-${tourLane.laneKey}`}
                                     >
                                       <TourWeekNotesHoverPreview
                                         tourId={tourLane.tourId!}
@@ -2475,6 +2559,7 @@ export function CalendarWeekView({
                                   ) : null}
                                   </div>
                                 </div>
+                                ) : null}
                               </div>
                             </div>
                           ) : null}
