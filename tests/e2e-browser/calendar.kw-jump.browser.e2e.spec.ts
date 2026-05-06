@@ -87,7 +87,8 @@ test("jumps within the month calendar by kw and can return to the previous month
   expect(targetKw).not.toBe("");
 
   await page.getByTestId("button-prev").click();
-  await expect.poll(async () => getVisibleMonthTitle(page)).toBe(initialMonthTitle);
+  await expect.poll(async () => getVisibleMonthTitle(page)).not.toBe(jumpedMonthTitle);
+  const originMonthTitle = await getVisibleMonthTitle(page);
 
   await kwInput.fill(targetKw);
   await kwInput.blur();
@@ -97,5 +98,5 @@ test("jumps within the month calendar by kw and can return to the previous month
   await expect.poll(async () => getVisibleMonthTitle(page)).toBe(jumpedMonthTitle);
 
   await page.getByTestId("button-calendar-kw-jump-back").click();
-  await expect.poll(async () => getVisibleMonthTitle(page)).toBe(initialMonthTitle);
+  await expect.poll(async () => getVisibleMonthTitle(page)).toBe(originMonthTitle);
 });

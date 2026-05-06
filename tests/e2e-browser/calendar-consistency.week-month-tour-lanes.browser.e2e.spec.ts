@@ -89,6 +89,7 @@ async function navigateToMonthContaining(page: Page, dateString: string) {
 }
 
 async function getBox(locator: Locator) {
+  await expect(locator).toBeVisible();
   const box = await locator.boundingBox();
   expect(box).not.toBeNull();
   return box!;
@@ -126,6 +127,10 @@ test("keeps month bars on separate slot heights for different tours and separate
   const earlyBarBox = await getBox(page.locator(`[data-testid="month-compact-bar-${fixture.sameDayEarlyA.id}"]`).first());
   const noonBarBox = await getBox(page.locator(`[data-testid="month-compact-bar-${fixture.sameDayNoonB.id}"]`).first());
   expect(Math.abs(earlyBarBox.y - noonBarBox.y)).toBeGreaterThan(6);
+
+  const overlapDate = toDateKey(fixture.overlappingMultiDay1.startDate);
+  await navigateToMonthContaining(page, overlapDate);
+  await page.locator(`[data-testid="month-sheet-day-${overlapDate}"][data-month-scope="current"]`).scrollIntoViewIfNeeded();
 
   const overlapOneBox = await getBox(page.locator(`[data-testid="month-compact-bar-${fixture.overlappingMultiDay1.id}"]`).first());
   const overlapTwoBox = await getBox(page.locator(`[data-testid="month-compact-bar-${fixture.overlappingMultiDay2.id}"]`).first());

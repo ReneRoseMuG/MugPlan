@@ -159,6 +159,10 @@ function buildQueryResult(queryKey: unknown) {
     };
   }
 
+  if (Array.isArray(queryKey) && queryKey[0] === "/api/help-texts") {
+    return { data: null, isLoading: false, isError: false, error: null };
+  }
+
   if (Array.isArray(queryKey) && queryKey[0] === "/api/employees") {
     return { data: [], isLoading: false, error: null };
   }

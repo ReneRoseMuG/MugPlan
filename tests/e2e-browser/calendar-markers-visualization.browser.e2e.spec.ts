@@ -66,8 +66,36 @@ async function expectWeekHolidayVisible(page: Page, expectedName: string) {
   }
 }
 
+async function getVisibleMonthKey(page: Page) {
+  const testId = await page.locator('section[data-testid^="month-sheet-"]').first().getAttribute("data-testid");
+  if (!testId) {
+    throw new Error("No visible month sheet found.");
+  }
+  return testId.replace("month-sheet-", "");
+}
+
+async function navigateStandaloneMonthToDate(page: Page, dateKey: string) {
+  await page.goto("/standalone/calendar/month");
+  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
+
+  for (let step = 0; step < 20; step += 1) {
+    const day = page.locator(`[data-testid="month-sheet-day-${dateKey}"][data-month-scope="current"]`);
+    if (await day.count()) {
+      await expect(day).toBeVisible();
+      return;
+    }
+
+    const visibleMonth = (await getVisibleMonthKey(page)).slice(0, 7);
+    const targetMonth = dateKey.slice(0, 7);
+    await page.getByTestId(targetMonth < visibleMonth ? "button-prev" : "button-next").click();
+  }
+
+  throw new Error(`Month containing ${dateKey} was not reachable within 20 steps.`);
+}
+
 async function forceMarkerWidthAndExpectVariant(page: Page, dateKey: string, widthPx: number, variant: "full" | "ft" | "icon") {
   const marker = page.getByTestId(`calendar-marker-header-${dateKey}`);
+  await expect(marker).toBeVisible();
   await marker.evaluate((node, width) => {
     (node as HTMLDivElement).style.width = `${String(width)}px`;
   }, widthPx);
@@ -104,7 +132,7 @@ test("Admin bearbeitet, deaktiviert und reaktiviert gesiedete Feiertage mit Kale
 
   await expectWeekHolidayVisible(page, "Maifeiertag Browser");
 
-  await page.goto("/standalone/calendar/month");
+  await navigateStandaloneMonthToDate(page, "2026-05-01");
   const monthMarker = page.getByTestId("calendar-marker-header-2026-05-01");
   await expect.poll(async () => monthMarker.getAttribute("data-marker-header-variant")).toBe("ft");
   await monthMarker.hover();
@@ -139,8 +167,7 @@ test("Adaptive Feiertagsanzeige schaltet zwischen Volltext, FT und Icon mit Hove
   await loginAsAdmin(page);
   await ensureHolidaySeed(page);
 
-  await page.goto("/standalone/calendar/month");
-  await expect(page.getByTestId("month-sheet-day-2026-05-01")).toBeVisible();
+  await navigateStandaloneMonthToDate(page, "2026-05-01");
 
   const marker = page.getByTestId("calendar-marker-header-2026-05-01");
   await forceMarkerWidthAndExpectVariant(page, "2026-05-01", 180, "full");
