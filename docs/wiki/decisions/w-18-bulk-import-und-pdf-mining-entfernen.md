@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: Abgeschlossen
 - Priorität: Mittel
 - Feature: Bulk-Import, PDF-Mining, FT-21 Dokumentenextraktion
 - Entdeckt: 05.05.26
@@ -98,7 +98,14 @@ Als Verifikation gelten mindestens:
 - verbleibende Unit- und Integration-Tests
 - gezielte Prüfung der FT-21-Extraktions-Tests, insbesondere Parser-, Extractor- und Document-Processing-Tests
 
+## Umsetzung
+
+Abgeschlossen am 05.05.26. Der Auftragslog `logs/2026-05-05_bulk-import-pdf-mining-entfernen.md` dokumentiert die Entfernung der Bulk-Import- und Admin-PDF-Mining-Routen, Services, Contracts, Client-Artefakte und Tests. `ProjectDuplicateResolutionDialog` sowie `isOrderNumberAlreadyImported` blieben bewusst erhalten, weil sie weiterhin von FT-21 beziehungsweise Projekt-/Terminformularen genutzt werden.
+
+Nach der Entfernung sind die Bulk-/PDF-Mining-Endpunkte serverseitig nicht mehr registriert. FT-21-Dokumentenextraktion und die bestehende Projekt-Duplikatprüfung blieben laut Log unverändert.
+
 ## Quelle
 
 - Auftragsdatei vom 05.05.26: `C:\Users\r.rose\Downloads\codex-auftrag-bulk-import-remove.md`
 - Gezielte Wiki-Kontextprüfung vom 05.05.26: `docs/wiki/decisions/README.md`, `docs/wiki/decisions/w-17-system-dump-benutzer-und-rollen.md`, `docs/wiki/features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md`
+- Umsetzungslog vom 05.05.26: `logs/2026-05-05_bulk-import-pdf-mining-entfernen.md`

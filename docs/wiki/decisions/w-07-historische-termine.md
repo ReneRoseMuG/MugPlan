@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: Abgeschlossen
 - Priorität: Mittel
 - Feature: [FT (01): Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Entdeckt: 01.05.26
@@ -28,5 +28,9 @@ Mittel. Wenn die Entscheidung falsch dokumentiert oder falsch umgesetzt wird, k�
 ## Vorgeschlagene Maßnahme
 
 Entscheidung treffen: Spec um Admin-Ausnahme ergänzen oder Code auf pauschale Sperre historischer Termine ändern.
+
+## Umsetzung
+
+Abgeschlossen durch Variante A. Der Log `logs/2026-04-30_admin-historische-termine.md` dokumentiert die fachliche Entscheidung: `ADMIN` darf historische Termin-Mutationen ausführen, `DISPONENT` bleibt für historische Termine gesperrt und `LESER` bleibt readonly. `docs/wiki/features/ft-01-kalendertermine/use-cases/uc-01-14-historische-termine-rollenbasiertes-verhalten.md` beschreibt diese Rollenregel inzwischen ausdrücklich.
 
 ## Quelle
