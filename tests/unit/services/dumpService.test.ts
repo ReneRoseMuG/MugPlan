@@ -2,7 +2,6 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - importDump ist in der Produktionsumgebung verboten.
  * - Nicht-Admin-Rollen erhalten für alle Dump-Operationen einen 403-Fehler.
  * - Ungültige oder Path-Traversal-Dateinamen werden mit 422 abgelehnt.
  * - Fehlende Dump-Dateien werden mit 404 beantwortet.
@@ -14,7 +13,6 @@
  * - Unbekannte Tabellen werden ignoriert und geloggt.
  *
  * Fehlerfälle:
- * - importDump in production → 403 FORBIDDEN
  * - Nicht-Admin → 403 FORBIDDEN
  * - Dateiname mit Path-Traversal → 422 VALIDATION_ERROR
  * - Dump ohne formatVersion/tables → 422 VALIDATION_ERROR
@@ -90,7 +88,6 @@ import {
   DUMP_FORMAT_VERSION,
   DUMP_TABLE_KEYS,
   EXCLUDED_DUMP_TABLE_KEYS,
-  importDump,
   isDumpServiceError,
   listDumps,
   previewDumpImport,
@@ -149,8 +146,8 @@ describe("dumpService – Zugriffskontrolle", () => {
     );
   });
 
-  it("importDump: LESER erhält 403", async () => {
-    await expect(importDump(readerCtx, Buffer.from(""))).rejects.toSatisfy(
+  it("previewDumpImport: LESER erhält 403", async () => {
+    await expect(previewDumpImport(readerCtx, Buffer.from(""))).rejects.toSatisfy(
       (error: unknown) => isDumpServiceError(error) && error.status === 403,
     );
   });
@@ -278,41 +275,15 @@ describe("dumpService preview/apply safety", () => {
   });
 });
 
-describe("dumpService – Environment-Guard", () => {
-  afterEach(() => {
-    vi.mocked(getRuntimeMode).mockReturnValue("development");
-    vi.mocked(getRuntimeConfig).mockReturnValue({
-      mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
-      allowedDatabases: ["mugplan_test"],
-      allowedHosts: ["localhost"],
-    });
-  });
-
-  it("importDump: wirft 403 wenn Laufzeitmodus production ist", async () => {
-    vi.mocked(getRuntimeMode).mockReturnValue("production");
-    await expect(importDump(adminCtx, Buffer.from("test"))).rejects.toSatisfy(
-      (error: unknown) => isDumpServiceError(error) && error.status === 403 && error.code === "FORBIDDEN",
-    );
-  });
-
-  it("importDump: scheitert in development am ZIP-Parsing statt am Environment-Guard", async () => {
-    vi.mocked(getRuntimeMode).mockReturnValue("development");
-    await expect(importDump(adminCtx, Buffer.from("not-a-zip"))).rejects.toSatisfy(
-      (error: unknown) => isDumpServiceError(error) && error.code !== "FORBIDDEN",
-    );
-  });
-});
-
 describe("dumpService – Tabellenvertrag", () => {
   it("enthält tours im erlaubten Dump-Satz", () => {
     expect(DUMP_TABLE_KEYS).toContain("tours");
     expect(DUMP_TABLE_KEYS).toContain("tourWeekEmployees");
   });
 
-  it("schließt users und roles explizit aus", () => {
-    expect(EXCLUDED_DUMP_TABLE_KEYS).toContain("users");
+  it("nimmt users auf und hält roles als Seed-Tabelle außerhalb des Dumps", () => {
+    expect(DUMP_TABLE_KEYS).toContain("users");
     expect(EXCLUDED_DUMP_TABLE_KEYS).toContain("roles");
-    expect(DUMP_TABLE_KEYS).not.toContain("users");
     expect(DUMP_TABLE_KEYS).not.toContain("roles");
   });
 });
@@ -352,12 +323,18 @@ describe("dumpService – Dateinamen-Validierung", () => {
 
 describe("dumpService – Dump-Formatvalidierung", () => {
   beforeEach(() => {
+    vi.mocked(getRuntimeMode).mockReturnValue("development");
+    vi.mocked(getRuntimeConfig).mockReturnValue({
+      mysqlDatabaseUrl: "mysql://root:root@localhost:3306/mugplan_test",
+      allowedDatabases: ["mugplan_test"],
+      allowedHosts: ["localhost"],
+    });
     vi.mocked(logError).mockReset();
   });
 
   it("lehnt ZIP ohne versioniertes Format ab", async () => {
     const zipBuffer = await buildZipFromDataJson({});
-    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
+    await expect(previewDumpImport(adminCtx, zipBuffer)).rejects.toSatisfy(
       (error: unknown) =>
         isDumpServiceError(error) &&
         error.status === 422 &&
@@ -371,19 +348,18 @@ describe("dumpService – Dump-Formatvalidierung", () => {
       exportedAt: new Date().toISOString(),
       tables: {
         ...Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
-        users: [],
+        roles: [],
       },
     });
 
-    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
-      tablesRestored: 0,
-      uploadsRestored: false,
+    await expect(previewDumpImport(adminCtx, zipBuffer)).resolves.toMatchObject({
+      transferReadiness: "warning",
     });
     expect(logError).toHaveBeenCalledTimes(1);
     expect(logError).toHaveBeenCalledWith(
       "parseDumpPayload: unbekannte Tabellen im Dump ignoriert",
       expect.objectContaining({
-        unknownKeys: ["users"],
+        unknownKeys: ["roles"],
       }),
     );
   });
@@ -396,9 +372,8 @@ describe("dumpService – Dump-Formatvalidierung", () => {
       tables: partialTables,
     });
 
-    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
-      tablesRestored: 0,
-      uploadsRestored: false,
+    await expect(previewDumpImport(adminCtx, zipBuffer)).resolves.toMatchObject({
+      transferReadiness: "warning",
     });
     expect(logError).not.toHaveBeenCalled();
   });
@@ -413,7 +388,7 @@ describe("dumpService – Dump-Formatvalidierung", () => {
       },
     });
 
-    await expect(importDump(adminCtx, zipBuffer)).rejects.toSatisfy(
+    await expect(previewDumpImport(adminCtx, zipBuffer)).rejects.toSatisfy(
       (error: unknown) =>
         isDumpServiceError(error) &&
         error.status === 422 &&
@@ -421,42 +396,4 @@ describe("dumpService – Dump-Formatvalidierung", () => {
     );
   });
 
-  it("fällt beim Upload-Restore bei EXDEV von rename auf copy zurück", async () => {
-    const originalRenameSync = fs.renameSync;
-    const renameSpy = vi.spyOn(fs, "renameSync").mockImplementation((oldPath, newPath) => {
-      if (
-        typeof oldPath === "string"
-        && typeof newPath === "string"
-        && oldPath.includes("mugplan-dump-import-")
-        && newPath === path.join(tempRoot, "uploads")
-      ) {
-        const error = new Error("EXDEV: cross-device link not permitted");
-        Object.assign(error, { code: "EXDEV" });
-        throw error;
-      }
-      return originalRenameSync(oldPath, newPath);
-    });
-
-    const zipBuffer = await new Promise<Buffer>((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const archive = archiver("zip");
-      archive.on("data", (chunk: Buffer) => chunks.push(chunk));
-      archive.on("end", () => resolve(Buffer.concat(chunks)));
-      archive.on("error", reject);
-      archive.append(JSON.stringify({
-        formatVersion: DUMP_FORMAT_VERSION,
-        exportedAt: new Date().toISOString(),
-        tables: Object.fromEntries(DUMP_TABLE_KEYS.map((key) => [key, []])),
-      }), { name: "data.json" });
-      archive.append("upload-content", { name: "uploads/example.txt" });
-      void archive.finalize();
-    });
-
-    await expect(importDump(adminCtx, zipBuffer)).resolves.toMatchObject({
-      uploadsRestored: true,
-    });
-    expect(fs.readFileSync(path.join(tempRoot, "uploads", "example.txt"), "utf8")).toBe("upload-content");
-
-    renameSpy.mockRestore();
-  });
 });

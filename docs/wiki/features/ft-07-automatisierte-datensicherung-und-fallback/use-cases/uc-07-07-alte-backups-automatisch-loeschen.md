@@ -12,17 +12,14 @@ System (Scheduler)
 
 Speicherbereinigung gemäß Retention-Regel.
 
-Vorbedingungen:
+## Vorbedingungen
 
 - Scheduler-Lauf wird ausgeführt.
 
-## Vorbedingungen
-
-
 ## Ablauf
 
-- System prüft gespeicherte Dateien.
-- Dateien älter als 30 Tage werden gelöscht.
+- System prüft gespeicherte Backup-Dateien, manuelle Dump-Dateien und Dump-Transfer-Tagesverzeichnisse.
+- Dateien beziehungsweise Tagesverzeichnisse älter als 30 Tage werden gelöscht.
 - Löschvorgang wird protokolliert.
 
 ## Alternativen

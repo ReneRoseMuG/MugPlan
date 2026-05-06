@@ -5,7 +5,7 @@ import crypto from "crypto";
 import archiver from "archiver";
 import unzipper from "unzipper";
 import { drizzle } from "drizzle-orm/mysql2";
-import { count, getTableColumns, getTableName } from "drizzle-orm";
+import { count, eq, getTableColumns, getTableName } from "drizzle-orm";
 import * as schema from "@shared/schema";
 import { db, pool } from "../db";
 import { getRuntimeConfig, getRuntimeMode } from "../config/runtimeEnv";
@@ -121,13 +121,15 @@ const DUMP_TABLE_ENTRIES = [
   { key: "employeeTags", table: schema.employeeTags },
   { key: "calendarWeekNotes", table: schema.calendarWeekNotes },
   { key: "calendarSyncLog", table: schema.calendarSyncLog },
+  // DESIGN NOTE: Dumps contain sensitive auth data in `users` (password hashes and 2FA state).
+  // `roles` stay seed-owned system data; users are exported with roleCode and mapped on import.
+  { key: "users", table: schema.users },
   { key: "userSettingsValue", table: schema.userSettingsValue },
   { key: "backupLog", table: schema.backupLog },
 ] as const;
 
 export const DUMP_TABLE_KEYS = DUMP_TABLE_ENTRIES.map((entry) => entry.key);
 export const EXCLUDED_DUMP_TABLE_KEYS = [
-  "users",
   "roles",
 ] as const;
 
@@ -145,6 +147,7 @@ type DumpPayload = {
   exportedAt: string;
   dumpId?: string;
   tables: Record<DumpTableKey, unknown[]>;
+  missingTableKeys: DumpTableKey[];
 };
 
 type DumpTableManifestEntry = {
@@ -345,6 +348,7 @@ function buildDumpPayload(
     exportedAt,
     dumpId,
     tables: tableRows,
+    missingTableKeys: [],
   };
 }
 
@@ -399,8 +403,13 @@ function parseDumpPayload(raw: unknown): DumpPayload {
   }
 
   const tables = {} as Record<DumpTableKey, unknown[]>;
+  const missingTableKeys: DumpTableKey[] = [];
   for (const key of DUMP_TABLE_KEYS) {
-    const rows = key in candidate.tables ? candidate.tables[key] : [];
+    const hasRows = key in candidate.tables;
+    const rows = hasRows ? candidate.tables[key] : [];
+    if (!hasRows) {
+      missingTableKeys.push(key);
+    }
     if (!Array.isArray(rows)) {
       throw new DumpServiceError(`Tabelle '${key}' hat kein gültiges Array-Format`, 422, "VALIDATION_ERROR");
     }
@@ -414,6 +423,7 @@ function parseDumpPayload(raw: unknown): DumpPayload {
       ? candidate.dumpId
       : undefined,
     tables,
+    missingTableKeys,
   };
 }
 
@@ -568,6 +578,86 @@ function buildUploadsStageDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), "mugplan-dump-import-"));
 }
 
+type UserDumpRow = Omit<typeof schema.users.$inferSelect, "roleId"> & {
+  roleCode: string | null;
+};
+
+function isUserDumpTableKey(key: DumpTableKey): boolean {
+  return key === "users";
+}
+
+async function collectUserDumpRows(): Promise<UserDumpRow[]> {
+  const rows = await db
+    .select({
+      id: schema.users.id,
+      username: schema.users.username,
+      email: schema.users.email,
+      passwordHash: schema.users.passwordHash,
+      twoFactorSecretEncrypted: schema.users.twoFactorSecretEncrypted,
+      twoFactorBackupCodesReserved: schema.users.twoFactorBackupCodesReserved,
+      firstName: schema.users.firstName,
+      lastName: schema.users.lastName,
+      fullName: schema.users.fullName,
+      roleCode: schema.roles.code,
+      isActive: schema.users.isActive,
+      version: schema.users.version,
+      lastLoginAt: schema.users.lastLoginAt,
+      createdBy: schema.users.createdBy,
+      createdAt: schema.users.createdAt,
+      updatedAt: schema.users.updatedAt,
+    })
+    .from(schema.users)
+    .leftJoin(schema.roles, eq(schema.users.roleId, schema.roles.id));
+
+  return rows;
+}
+
+async function resolveRoleIdsByCode(connDb: ReturnType<typeof drizzle>): Promise<Map<string, number>> {
+  const roleRows = await connDb
+    .select({ id: schema.roles.id, code: schema.roles.code })
+    .from(schema.roles);
+  return new Map(roleRows.map((row) => [row.code, Number(row.id)]));
+}
+
+async function mapUserDumpRowsForImport(
+  rows: unknown[],
+  connDb: ReturnType<typeof drizzle>,
+): Promise<Array<typeof schema.users.$inferInsert>> {
+  const roleIdsByCode = await resolveRoleIdsByCode(connDb);
+  return rows.map((row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      throw new DumpServiceError("Tabelle 'users' enthält einen ungültigen Benutzer-Datensatz", 422, "VALIDATION_ERROR");
+    }
+
+    const candidate = row as Record<string, unknown>;
+    const roleCode = typeof candidate.roleCode === "string" ? candidate.roleCode.trim().toUpperCase() : "";
+    const roleId = roleIdsByCode.get(roleCode);
+    if (!roleId) {
+      throw new DumpServiceError(`Benutzer-Dump referenziert unbekannte Rolle '${roleCode || "unknown"}'`, 422, "VALIDATION_ERROR");
+    }
+
+    const { roleCode: _roleCode, roleId: _legacyRoleId, ...userRow } = candidate;
+    return {
+      ...userRow,
+      roleId,
+    } as typeof schema.users.$inferInsert;
+  });
+}
+
+async function normalizeImportedRows(
+  entry: (typeof DUMP_TABLE_ENTRIES)[number],
+  rows: unknown[],
+  connDb: ReturnType<typeof drizzle>,
+): Promise<unknown[]> {
+  if (isUserDumpTableKey(entry.key)) {
+    return mapUserDumpRowsForImport(rows, connDb);
+  }
+  if (ATTACHMENT_DUMP_TABLE_KEYS.has(entry.key)) {
+    return normalizeImportedAttachmentRows(rows);
+  }
+  return rows;
+}
+
 async function normalizeImportedAttachmentRows(rows: unknown[]): Promise<unknown[]> {
   return Promise.all(rows.map(async (row) => {
     if (!row || typeof row !== "object" || Array.isArray(row)) {
@@ -594,15 +684,21 @@ async function stageUploads(directory: unzipper.CentralDirectory): Promise<{ sta
   }
 
   const stageDir = buildUploadsStageDir();
-  for (const file of uploadFiles) {
-    const relativePath = file.path.slice("uploads/".length);
-    if (!relativePath || relativePath.includes("..")) {
-      throw new DumpServiceError("Ungültiger Upload-Pfad im Dump", 422, "VALIDATION_ERROR");
+  try {
+    for (const file of uploadFiles) {
+      const relativePath = file.path.slice("uploads/".length);
+      const targetPath = path.resolve(stageDir, relativePath);
+      const stageRoot = stageDir.endsWith(path.sep) ? stageDir : `${stageDir}${path.sep}`;
+      if (!relativePath || !targetPath.startsWith(stageRoot)) {
+        throw new DumpServiceError("Ungültiger Upload-Pfad im Dump", 422, "VALIDATION_ERROR");
+      }
+      fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+      const content = await file.buffer();
+      fs.writeFileSync(targetPath, content);
     }
-    const targetPath = path.join(stageDir, relativePath);
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    const content = await file.buffer();
-    fs.writeFileSync(targetPath, content);
+  } catch (error) {
+    cleanupStageDir(stageDir);
+    throw error;
   }
 
   return { stageDir, hasUploads: true };
@@ -661,6 +757,22 @@ async function restoreUploadsFromStage(stageDir: string | null): Promise<boolean
   }
 }
 
+async function restoreForeignKeyChecksAndRelease(conn: any, suppressError = false): Promise<void> {
+  try {
+    await conn.execute("SET FOREIGN_KEY_CHECKS=1");
+    conn.release();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    logError("dumpService: FOREIGN_KEY_CHECKS konnte nicht reaktiviert werden", { detail });
+    if (typeof conn.destroy === "function") {
+      conn.destroy();
+    }
+    if (!suppressError) {
+      throw new DumpServiceError(`Foreign-Key-Checks konnten nicht reaktiviert werden: ${detail}`, 500, "INTERNAL_ERROR");
+    }
+  }
+}
+
 function deriveTargetDatabaseName(): string {
   return parseDatabaseLogInfo(getRuntimeConfig().mysqlDatabaseUrl).dbName;
 }
@@ -696,7 +808,9 @@ function deriveLegacyDumpId(payload: DumpPayload, fileHash: string): string {
 async function collectDumpTableRows(): Promise<Record<DumpTableKey, unknown[]>> {
   const tableRows = {} as Record<DumpTableKey, unknown[]>;
   for (const entry of DUMP_TABLE_ENTRIES) {
-    tableRows[entry.key] = await db.select().from(entry.table as AnyTable);
+    tableRows[entry.key] = isUserDumpTableKey(entry.key)
+      ? await collectUserDumpRows()
+      : await db.select().from(entry.table as AnyTable);
   }
   return tableRows;
 }
@@ -857,11 +971,16 @@ async function inspectDumpArchive(fileBuffer: Buffer): Promise<DumpImportPreview
   };
 }
 
-async function buildVerifiedTables(expectedTables: TableSummary[]): Promise<DumpImportApplyResult["verifiedTables"]> {
+async function buildVerifiedTables(
+  expectedTables: TableSummary[],
+  skippedTableKeys: Set<DumpTableKey> = new Set(),
+): Promise<DumpImportApplyResult["verifiedTables"]> {
   return Promise.all(DUMP_TABLE_ENTRIES.map(async (entry) => {
     const actual = await db.select({ value: count() }).from(entry.table as AnyTable);
     const actualRowCount = Number(actual[0]?.value ?? 0);
-    const expected = expectedTables.find((item) => item.key === entry.key)?.rowCount ?? 0;
+    const expected = skippedTableKeys.has(entry.key)
+      ? actualRowCount
+      : expectedTables.find((item) => item.key === entry.key)?.rowCount ?? 0;
     return {
       key: entry.key,
       expectedRowCount: expected,
@@ -1044,6 +1163,9 @@ export async function applyDumpImport(
     sha256Matches: false,
   };
   let journalPath = path.resolve(transferRun.transferDir, "journal.json");
+  const skippedTableKeys = new Set<DumpTableKey>(
+    preview.payload.missingTableKeys.filter((key) => key === "users"),
+  );
 
   try {
     incomingDumpPath = await writeDumpTransferBinaryArtifact(transferRun.transferDir, "incoming-dump.zip", params.fileBuffer);
@@ -1053,6 +1175,7 @@ export async function applyDumpImport(
 
     const { stageDir, hasUploads } = await stageUploads(preview.directory);
     const conn = await pool.getConnection();
+    let databaseErrorOccurred = false;
     try {
       await conn.execute("SET FOREIGN_KEY_CHECKS=0");
       await conn.beginTransaction();
@@ -1061,14 +1184,18 @@ export async function applyDumpImport(
       const connDb = drizzle(conn as any, { schema, mode: "default" });
 
       for (const entry of [...DUMP_TABLE_ENTRIES].reverse()) {
+        if (skippedTableKeys.has(entry.key)) {
+          continue;
+        }
         await conn.execute(`DELETE FROM \`${getTableName(entry.table)}\``);
       }
 
       for (const entry of DUMP_TABLE_ENTRIES) {
+        if (skippedTableKeys.has(entry.key)) {
+          continue;
+        }
         const rawRows = preview.payload.tables[entry.key];
-        const rows = ATTACHMENT_DUMP_TABLE_KEYS.has(entry.key)
-          ? await normalizeImportedAttachmentRows(rawRows)
-          : rawRows;
+        const rows = await normalizeImportedRows(entry, rawRows, connDb);
         if (rows.length === 0) {
           continue;
         }
@@ -1084,6 +1211,7 @@ export async function applyDumpImport(
 
       await conn.commit();
     } catch (error) {
+      databaseErrorOccurred = true;
       await conn.rollback();
       const detail = error instanceof Error ? error.message : String(error);
       logError("applyDumpImport: Datenbankfehler", {
@@ -1092,10 +1220,14 @@ export async function applyDumpImport(
       });
       throw new DumpServiceError(`Datenbankfehler beim Import: ${detail}`, 500, "INTERNAL_ERROR");
     } finally {
-      await conn.execute("SET FOREIGN_KEY_CHECKS=1");
-      conn.release();
+      await restoreForeignKeyChecksAndRelease(conn, databaseErrorOccurred);
     }
 
+    // DESIGN NOTE: Database commit and upload restore cannot be atomic together.
+    // At this point the DB transaction is committed. If the upload swap fails,
+    // restoreUploadsFromStage attempts to restore the previous upload directory from
+    // its filesystem backup; if that rollback also fails, the journal records the
+    // partial state so an operator can reconcile DB and uploads manually.
     try {
       uploadsRestored = await restoreUploadsFromStage(stageDir);
     } catch (error) {
@@ -1109,7 +1241,7 @@ export async function applyDumpImport(
       }
     }
 
-    verifiedTables = await buildVerifiedTables(preview.expectedTables);
+    verifiedTables = await buildVerifiedTables(preview.expectedTables, skippedTableKeys);
     verifiedUploads = await buildVerifiedUploads(preview.expectedUploads);
 
     const blockingIssues = [
@@ -1195,112 +1327,6 @@ export async function applyDumpImport(
       throw error;
     }
     throw new DumpServiceError("Import fehlgeschlagen", 500, "INTERNAL_ERROR");
-  }
-}
-
-export async function importDump(
-  context: RequestContext,
-  fileBuffer: Buffer,
-): Promise<{ tablesRestored: number; uploadsRestored: boolean; durationMs: number }> {
-  requireAdmin(context);
-
-  const mode = getRuntimeMode();
-  if (mode === "production") {
-    throw new DumpServiceError("Import ist in der Produktionsumgebung nicht erlaubt", 403, "FORBIDDEN");
-  }
-
-  const startMs = Date.now();
-  let directory: unzipper.CentralDirectory;
-  try {
-    directory = await unzipper.Open.buffer(fileBuffer);
-  } catch {
-    throw new DumpServiceError("Ungültige oder beschädigte ZIP-Datei", 422, "VALIDATION_ERROR");
-  }
-
-  const dataFile = directory.files.find((file) => file.path === "data.json");
-  if (!dataFile) {
-    throw new DumpServiceError("ZIP enthält keine data.json", 422, "VALIDATION_ERROR");
-  }
-
-  let payload: DumpPayload;
-  try {
-    const parsed = JSON.parse((await dataFile.buffer()).toString("utf-8")) as unknown;
-    payload = parseDumpPayload(parsed);
-  } catch (error) {
-    if (isDumpServiceError(error)) throw error;
-    const message = error instanceof Error ? error.message : "Ungültiges JSON in data.json";
-    throw new DumpServiceError(message, 422, "VALIDATION_ERROR");
-  }
-
-  const { stageDir, hasUploads } = await stageUploads(directory);
-  await assertSafeImportTarget();
-
-  const conn = await pool.getConnection();
-  let tablesRestored = 0;
-  try {
-    await conn.execute("SET FOREIGN_KEY_CHECKS=0");
-    await conn.beginTransaction();
-    await assertSqlDatabaseIdentity(conn, assertSafeAdminDestructiveOperationTarget({
-      mode,
-      databaseUrl: getRuntimeConfig().mysqlDatabaseUrl,
-      allowedDatabases: getRuntimeConfig().allowedDatabases,
-      allowedHosts: getRuntimeConfig().allowedHosts,
-    }).dbName);
-
-    const connDb = drizzle(conn as any, { schema, mode: "default" });
-
-    for (const entry of [...DUMP_TABLE_ENTRIES].reverse()) {
-      await conn.execute(`DELETE FROM \`${getTableName(entry.table)}\``);
-    }
-
-    for (const entry of DUMP_TABLE_ENTRIES) {
-      const rawRows = payload.tables[entry.key];
-      const rows = ATTACHMENT_DUMP_TABLE_KEYS.has(entry.key)
-        ? await normalizeImportedAttachmentRows(rawRows)
-        : rawRows;
-      if (rows.length === 0) {
-        continue;
-      }
-
-      const coercedRows = coerceRowDates(entry.table, rows);
-      const batchSize = 500;
-      for (let index = 0; index < coercedRows.length; index += batchSize) {
-        const batch = coercedRows.slice(index, index + batchSize);
-        await connDb.insert(entry.table as AnyTable).values(batch as any[]);
-      }
-      tablesRestored += 1;
-    }
-
-    await conn.commit();
-  } catch (error) {
-    await conn.rollback();
-    const detail = error instanceof Error ? error.message : String(error);
-    logError("importDump: Datenbankfehler", {
-      detail,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    throw new DumpServiceError(`Datenbankfehler beim Import: ${detail}`, 500, "INTERNAL_ERROR");
-  } finally {
-    await conn.execute("SET FOREIGN_KEY_CHECKS=1");
-    conn.release();
-  }
-
-  try {
-    const uploadsRestored = await restoreUploadsFromStage(stageDir);
-    return {
-      tablesRestored,
-      uploadsRestored,
-      durationMs: Date.now() - startMs,
-    };
-  } catch (error) {
-    cleanupStageDir(stageDir);
-    const detail = error instanceof Error ? error.message : String(error);
-    logError("importDump: Upload-Wiederherstellung fehlgeschlagen", { detail });
-    throw new DumpServiceError(`Upload-Wiederherstellung fehlgeschlagen: ${detail}`, 500, "INTERNAL_ERROR");
-  } finally {
-    if (!hasUploads) {
-      cleanupStageDir(stageDir);
-    }
   }
 }
 

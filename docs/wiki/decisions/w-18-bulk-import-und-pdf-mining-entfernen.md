@@ -107,5 +107,5 @@ Nach der Entfernung sind die Bulk-/PDF-Mining-Endpunkte serverseitig nicht mehr 
 ## Quelle
 
 - Auftragsdatei vom 05.05.26: `C:\Users\r.rose\Downloads\codex-auftrag-bulk-import-remove.md`
-- Gezielte Wiki-Kontextprüfung vom 05.05.26: `docs/wiki/decisions/README.md`, `docs/wiki/decisions/w-17-system-dump-benutzer-und-rollen.md`, `docs/wiki/features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md`
+- Gezielte Wiki-Kontextprüfung vom 05.05.26: `docs/wiki/decisions/README.md`, FT-21-Dokumentenextraktion und damals noch offene Dump-Entscheidungen
 - Umsetzungslog vom 05.05.26: `logs/2026-05-05_bulk-import-pdf-mining-entfernen.md`

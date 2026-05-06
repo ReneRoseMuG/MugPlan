@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import fs from "fs";
-import { parseMultipartFile, parseMultipartForm } from "../lib/multipart";
+import { parseMultipartForm } from "../lib/multipart";
 import * as dumpService from "../services/dumpService";
 
 const MAX_DUMP_IMPORT_BYTES = 500 * 1024 * 1024; // 500 MB
@@ -153,37 +153,6 @@ export async function applyDumpImport(req: Request, res: Response, next: NextFun
       confirmationPhrase,
       productionConfirmationText,
     });
-    res.json(payload);
-  } catch (error) {
-    if (dumpService.isDumpServiceError(error)) {
-      res.status(error.status).json({ code: error.code, message: error.message });
-      return;
-    }
-    next(error);
-  }
-}
-
-export async function importDump(req: Request, res: Response, next: NextFunction): Promise<void> {
-  try {
-    const roleKey = getRoleKeyFromRequest(req);
-    if (!roleKey) {
-      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
-      return;
-    }
-
-    let fileBuffer: Buffer;
-    try {
-      const file = await parseMultipartFile(req, {
-        fieldName: "file",
-        maxSizeBytes: MAX_DUMP_IMPORT_BYTES,
-      });
-      fileBuffer = file.buffer;
-    } catch {
-      res.status(422).json({ code: "VALIDATION_ERROR" });
-      return;
-    }
-
-    const payload = await dumpService.importDump({ roleKey }, fileBuffer);
     res.json(payload);
   } catch (error) {
     if (dumpService.isDumpServiceError(error)) {
