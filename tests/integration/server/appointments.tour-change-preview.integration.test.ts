@@ -18,10 +18,13 @@ import type express from "express";
 import type { SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
+import { eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
-import { tourWeekEmployees } from "../../../shared/schema";
-import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
+import { appointments, tourWeekEmployees } from "../../../shared/schema";
+import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import {
   createAppointmentFixture,
   createEmployeeFixture,
@@ -31,6 +34,7 @@ import {
 } from "../../helpers/testDataFactory";
 
 let app: express.Express;
+let roleAgentCounter = 1;
 
 beforeAll(async () => {
   app = await createApiTestApp();
@@ -38,6 +42,22 @@ beforeAll(async () => {
 
 async function loginAdmin(): Promise<SuperAgentTest> {
   return loginAdminAgent(app);
+}
+
+async function loginRole(roleCode: "DISPATCHER" | "READER"): Promise<SuperAgentTest> {
+  const token = `tcp-${roleCode.toLowerCase()}-${roleAgentCounter}`;
+  roleAgentCounter += 1;
+  const username = `test-${token}`;
+  const password = `${token}-password`;
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "TourChange",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+  return loginAgent(app, { username, password });
 }
 
 function resolveNextEditableWeek() {
@@ -156,5 +176,62 @@ describe("FT04 integration: appointment tour change preview", () => {
           }),
         ]);
       });
+  });
+
+  it("blocks readers and dispatcher previews for historical regular appointments server-side", async () => {
+    const admin = await loginAdmin();
+    const dispatcher = await loginRole("DISPATCHER");
+    const reader = await loginRole("READER");
+    const project = await createProjectFixture({ prefix: "FT04-TCP-ROLE" });
+    const tour = await createTourFixture("#0f766e");
+    const historicalAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: "2099-01-03",
+      tourId: tour.id,
+      employeeIds: [],
+    });
+    await db
+      .update(appointments)
+      .set({ startDate: "2000-01-03", endDate: null })
+      .where(eq(appointments.id, historicalAppointment.id));
+
+    await reader
+      .post(`/api/appointments/${historicalAppointment.id}/tour-change-preview`)
+      .send({
+        newTourId: tour.id,
+        newStartDate: "2000-01-04",
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [],
+      })
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ code: "FORBIDDEN" });
+      });
+
+    await dispatcher
+      .post(`/api/appointments/${historicalAppointment.id}/tour-change-preview`)
+      .send({
+        newTourId: tour.id,
+        newStartDate: "2000-01-04",
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [],
+      })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ code: "PAST_APPOINTMENT_READONLY" });
+      });
+
+    await admin
+      .post(`/api/appointments/${historicalAppointment.id}/tour-change-preview`)
+      .send({
+        newTourId: tour.id,
+        newStartDate: "2000-01-04",
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [],
+      })
+      .expect(200);
   });
 });

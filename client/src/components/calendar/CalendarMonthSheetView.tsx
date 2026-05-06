@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,13 @@ import {
   useCalendarBlockedTourWeeks,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
+import {
+  formatCalendarMoveDate,
+  isRegularCalendarMoveTarget,
+  toCalendarMoveSelection,
+  type CalendarMoveRequest,
+  type CalendarMoveSelection,
+} from "@/lib/calendar-move";
 import { useCalendarMarkers, type CalendarMarker } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
@@ -79,6 +86,9 @@ type CalendarMonthSheetViewProps = {
   onNextWeek?: () => void;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
+  selectedMoveAppointment?: CalendarMoveSelection | null;
+  onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
+  onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   onFooterActionChange?: (action: ReactNode | null) => void;
 };
 
@@ -95,6 +105,8 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
+const MOVE_SELECTION_LONG_PRESS_MS = 650;
+const MOVE_SELECTION_POINTER_TOLERANCE_PX = 8;
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
@@ -151,10 +163,20 @@ export function CalendarMonthSheetView({
   onNextWeek,
   onNewAppointment,
   onOpenAppointment,
+  selectedMoveAppointment,
+  onSelectMoveAppointment,
+  onRequestMoveAppointment,
   onFooterActionChange,
 }: CalendarMonthSheetViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
+  const moveSelectionLongPressRef = useRef<{
+    appointmentId: number;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    timer: number;
+  } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const userRole = useMemo(() => getStoredUserRole(), []);
@@ -314,7 +336,59 @@ export function CalendarMonthSheetView({
     onOpenAppointment?.(appointmentId, { scrollLeft: getCurrentScrollLeft() });
   };
 
+  const clearMoveSelectionLongPress = () => {
+    const current = moveSelectionLongPressRef.current;
+    if (!current) return;
+    window.clearTimeout(current.timer);
+    moveSelectionLongPressRef.current = null;
+  };
+
+  useEffect(() => clearMoveSelectionLongPress, []);
+
+  const handleMoveSelectionPointerDown = (
+    event: React.PointerEvent,
+    appointment: CalendarAppointment,
+    canSelectForMove: boolean,
+  ) => {
+    if (!canSelectForMove || !onSelectMoveAppointment || event.button !== 0) return;
+    clearMoveSelectionLongPress();
+    const selection = toCalendarMoveSelection(appointment);
+    const timer = window.setTimeout(() => {
+      moveSelectionLongPressRef.current = null;
+      onSelectMoveAppointment(selection);
+    }, MOVE_SELECTION_LONG_PRESS_MS);
+    moveSelectionLongPressRef.current = {
+      appointmentId: appointment.id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      timer,
+    };
+  };
+
+  const handleMoveSelectionPointerMove = (event: React.PointerEvent) => {
+    const current = moveSelectionLongPressRef.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    const deltaX = Math.abs(event.clientX - current.startX);
+    const deltaY = Math.abs(event.clientY - current.startY);
+    if (deltaX > MOVE_SELECTION_POINTER_TOLERANCE_PX || deltaY > MOVE_SELECTION_POINTER_TOLERANCE_PX) {
+      clearMoveSelectionLongPress();
+    }
+  };
+
+  const buildMoveSelectionPointerHandlers = (appointment: CalendarAppointment, canSelectForMove: boolean) => (
+    canSelectForMove
+      ? {
+          onPointerDown: (event: React.PointerEvent) => handleMoveSelectionPointerDown(event, appointment, canSelectForMove),
+          onPointerMove: handleMoveSelectionPointerMove,
+          onPointerUp: clearMoveSelectionLongPress,
+          onPointerCancel: clearMoveSelectionLongPress,
+        }
+      : {}
+  );
+
   const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
+    clearMoveSelectionLongPress();
     setDraggedAppointmentId(appointmentId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(appointmentId));
@@ -388,7 +462,12 @@ export function CalendarMonthSheetView({
     return true;
   };
 
-  const handleDrop = async (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => {
+  const handleDrop = async (
+    event: React.DragEvent,
+    targetDate: Date,
+    targetTourId?: number | null,
+    targetTourName?: string | null,
+  ) => {
     if (isReaderCalendarReadOnly || absenceVisibility === "absences") {
       event.preventDefault();
       setDraggedAppointmentId(null);
@@ -402,12 +481,25 @@ export function CalendarMonthSheetView({
     const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
 
+    const resolvedTargetTourId = targetTourId !== undefined ? targetTourId : appointment.tourId ?? null;
+    const resolvedTargetTourName = targetTourId !== undefined ? targetTourName ?? null : appointment.tourName ?? null;
+
+    if (!isRegularCalendarMoveTarget(resolvedTargetTourId, resolvedTargetTourName)) {
+      toast({
+        title: "Ziel nicht erlaubt",
+        description: "Termine können nur in reguläre Touren eingefügt oder verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const appointmentStart = parseISO(appointment.startDate);
     const isHistoricalParkplatz = isHistoricalParkplatzAppointment(appointment);
 
-    if (appointmentStart < today && !isHistoricalParkplatz) {
+    if (appointmentStart < today && !isAdmin && !isHistoricalParkplatz) {
       toast({
         title: "Verschieben nicht erlaubt",
         description: "Vergangene Termine können nicht per Drag & Drop verschoben werden.",
@@ -417,7 +509,7 @@ export function CalendarMonthSheetView({
       return;
     }
 
-    if (targetDate < today && !isHistoricalParkplatz) {
+    if (targetDate < today && !isAdmin && !isHistoricalParkplatz) {
       toast({
         title: "Verschieben nicht erlaubt",
         description: "Ein Termin kann nicht in die Vergangenheit verschoben werden.",
@@ -447,7 +539,7 @@ export function CalendarMonthSheetView({
     }
 
     if (isBlockedTourWeekSlot({
-      tourId: targetTourId,
+      tourId: resolvedTargetTourId,
       weekDate: targetDate,
       blockedTourWeekKeys,
     })) {
@@ -465,17 +557,27 @@ export function CalendarMonthSheetView({
     const newEndDate = durationDays > 0 ? format(addDays(targetDate, durationDays), "yyyy-MM-dd") : null;
 
     try {
-      await persistDropMutation({
-        appointmentId,
-        version: appointment.version,
-        projectId: appointment.projectId,
-        customerId: appointment.customer.id,
-        tourId: targetTourId !== undefined ? targetTourId : appointment.tourId ?? null,
-        startDate: newStartDate,
-        endDate: newEndDate,
-        startTime: appointment.startTime ?? null,
-        employeeIds: appointment.employees.map((employee) => employee.id),
-      });
+      if (onRequestMoveAppointment) {
+        await onRequestMoveAppointment({
+          appointment: toCalendarMoveSelection(appointment),
+          targetStartDate: newStartDate,
+          targetTourId: resolvedTargetTourId,
+          targetTourName: resolvedTargetTourName,
+          mode: "drag",
+        });
+      } else {
+        await persistDropMutation({
+          appointmentId,
+          version: appointment.version,
+          projectId: appointment.projectId,
+          customerId: appointment.customer.id,
+          tourId: resolvedTargetTourId,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          startTime: appointment.startTime ?? null,
+          employeeIds: appointment.employees.map((employee) => employee.id),
+        });
+      }
     } catch (err) {
       console.error(`${logPrefix} drop error`, err);
       toast({
@@ -515,6 +617,7 @@ export function CalendarMonthSheetView({
           berlinToday={berlinToday}
           isAdmin={isAdmin}
           readOnly={isReaderCalendarReadOnly || absenceVisibility === "absences"}
+          selectedMoveAppointment={selectedMoveAppointment}
           showMonthHeader={showMonthHeader}
           headerAction={headerAction}
           draggedAppointmentId={draggedAppointmentId}
@@ -528,6 +631,8 @@ export function CalendarMonthSheetView({
           onAppointmentClick={handleAppointmentClick}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          buildMoveSelectionPointerHandlers={buildMoveSelectionPointerHandlers}
+          onRequestMoveAppointment={onRequestMoveAppointment}
           weekDays={weekDays}
           onPreviousWeek={onPreviousWeek}
           onNextWeek={onNextWeek}
@@ -600,6 +705,7 @@ function MonthSheetSection({
   berlinToday,
   isAdmin,
   readOnly,
+  selectedMoveAppointment,
   showMonthHeader,
   headerAction,
   draggedAppointmentId,
@@ -609,6 +715,8 @@ function MonthSheetSection({
   onAppointmentClick,
   onDragStart,
   onDragEnd,
+  buildMoveSelectionPointerHandlers,
+  onRequestMoveAppointment,
   weekDays,
   onPreviousWeek,
   onNextWeek,
@@ -626,15 +734,26 @@ function MonthSheetSection({
   berlinToday: string;
   isAdmin: boolean;
   readOnly: boolean;
+  selectedMoveAppointment?: CalendarMoveSelection | null;
   showMonthHeader: boolean;
   headerAction?: ReactNode;
   draggedAppointmentId: number | null;
   getSlotBarPosition: (startIndex: number, endIndex: number) => { left: string; width: string };
-  onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => Promise<void>;
+  onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null, targetTourName?: string | null) => Promise<void>;
   onNewAppointment: (dateKey: string) => void;
   onAppointmentClick: (appointmentId: number) => void;
   onDragStart: (event: React.DragEvent, appointmentId: number) => void;
   onDragEnd: () => void;
+  buildMoveSelectionPointerHandlers: (
+    appointment: CalendarAppointment,
+    canSelectForMove: boolean,
+  ) => {
+    onPointerDown?: (event: React.PointerEvent) => void;
+    onPointerMove?: (event: React.PointerEvent) => void;
+    onPointerUp?: () => void;
+    onPointerCancel?: () => void;
+  };
+  onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   weekDays: string[];
   onPreviousWeek?: () => void;
   onNextWeek?: () => void;
@@ -813,6 +932,12 @@ function MonthSheetSection({
                               weekDate: week.weekStart,
                               blockedTourWeekKeys,
                             });
+                            const canUseMoveTarget = selectedMoveAppointment != null
+                              && !readOnly
+                              && !isSlotBlocked
+                              && day.dateKey >= berlinToday
+                              && isRegularCalendarMoveTarget(slot.tourId, slot.label)
+                              && Boolean(onRequestMoveAppointment);
 
                             return (
                               <div
@@ -827,10 +952,10 @@ function MonthSheetSection({
                                   ),
                                 }}
                                 className="relative w-full"
-                                onDragOver={readOnly ? undefined : (event) => event.preventDefault()}
-                                onDrop={readOnly ? undefined : (event) => {
+                                onDragOver={readOnly || isSlotBlocked || !isRegularCalendarMoveTarget(slot.tourId, slot.label) ? undefined : (event) => event.preventDefault()}
+                                onDrop={readOnly || isSlotBlocked || !isRegularCalendarMoveTarget(slot.tourId, slot.label) ? undefined : (event) => {
                                   event.stopPropagation();
-                                  void onDrop(event, day.date, slot.tourId);
+                                  void onDrop(event, day.date, slot.tourId, slot.label);
                                 }}
                               >
                                 {isSlotBlocked ? (
@@ -840,6 +965,27 @@ function MonthSheetSection({
                                     data-testid={`month-sheet-slot-overlay-${day.dateKey}-${slot.tourId ?? "unassigned"}`}
                                     aria-hidden
                                   />
+                                ) : null}
+                                {canUseMoveTarget && selectedMoveAppointment && isRegularCalendarMoveTarget(slot.tourId, slot.label) ? (
+                                  <button
+                                    type="button"
+                                    className="absolute right-1 top-1 z-10 rounded border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 shadow-sm hover:bg-amber-100"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      if (!isRegularCalendarMoveTarget(slot.tourId, slot.label)) return;
+                                      void onRequestMoveAppointment?.({
+                                        appointment: selectedMoveAppointment,
+                                        targetStartDate: day.dateKey,
+                                        targetTourId: slot.tourId,
+                                        targetTourName: slot.label,
+                                        mode: "insert",
+                                      });
+                                    }}
+                                    data-testid={`button-insert-selected-appointment-month-sheet-${day.dateKey}-${slot.tourId}`}
+                                    title={`Markierten Termin am ${formatCalendarMoveDate(day.dateKey)} einfügen`}
+                                  >
+                                    Einfügen
+                                  </button>
                                 ) : null}
                                 <div style={{ height: `${MONTH_SLOT_SEPARATOR_HEIGHT_PX}px` }} className="w-full" />
                               </div>
@@ -891,6 +1037,7 @@ function MonthSheetSection({
                           weekDate: week.weekStart,
                           blockedTourWeekKeys,
                         });
+                        const canSelectForMove = canDrag && !isSlotBlocked;
 
                         return (
                           <div
@@ -933,6 +1080,7 @@ function MonthSheetSection({
                                 conflictColor={conflictMeta?.color}
                                 isLocked={isLocked}
                                 isDragging={draggedAppointmentId === appointment.id}
+                                isMoveSelected={selectedMoveAppointment?.id === appointment.id}
                                 isBlocked={isSlotBlocked}
                                 allowHistoricalActions={isAdmin}
                                 onDoubleClick={
@@ -945,6 +1093,7 @@ function MonthSheetSection({
                                 }
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
+                                {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
                               />
                             )}
                           </div>
@@ -1031,11 +1180,16 @@ function MonthCompactBarWithMenu({
   conflictColor,
   isLocked,
   isDragging,
+  isMoveSelected = false,
   isBlocked = false,
   allowHistoricalActions = false,
   onDoubleClick,
   onDragStart,
   onDragEnd,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
 }: {
   appointment: CalendarAppointment;
   readOnly?: boolean;
@@ -1045,11 +1199,16 @@ function MonthCompactBarWithMenu({
   conflictColor?: string;
   isLocked?: boolean;
   isDragging?: boolean;
+  isMoveSelected?: boolean;
   isBlocked?: boolean;
   allowHistoricalActions?: boolean;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
+  onPointerDown?: (event: React.PointerEvent) => void;
+  onPointerMove?: (event: React.PointerEvent) => void;
+  onPointerUp?: (event: React.PointerEvent) => void;
+  onPointerCancel?: (event: React.PointerEvent) => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1235,11 +1394,16 @@ function MonthCompactBarWithMenu({
         showPopover={true}
         isLocked={isLocked}
         isDragging={isDragging}
+        isMoveSelected={isMoveSelected}
         isBlocked={isBlocked}
         menuSlot={menuSlot}
         onDoubleClick={onDoubleClick}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       />
       <AppointmentCancelConfirmDialog
         open={cancelConfirmOpen}

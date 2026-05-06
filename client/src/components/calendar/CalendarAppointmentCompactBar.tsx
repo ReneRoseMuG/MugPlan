@@ -21,12 +21,18 @@ type CompactBarProps = {
   showPopover?: boolean;
   isLocked?: boolean;
   isDragging?: boolean;
+  isMoveSelected?: boolean;
   isBlocked?: boolean;
   positionStyle?: React.CSSProperties;
   menuSlot?: React.ReactNode;
   onDoubleClick?: () => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
+  onPointerDown?: (event: React.PointerEvent) => void;
+  onPointerMove?: (event: React.PointerEvent) => void;
+  onPointerUp?: (event: React.PointerEvent) => void;
+  onPointerCancel?: (event: React.PointerEvent) => void;
+  onContextMenu?: (event: React.MouseEvent) => void;
   onDragOver?: (event: React.DragEvent) => void;
   onDrop?: (event: React.DragEvent) => void;
 };
@@ -41,12 +47,18 @@ export function CalendarAppointmentCompactBar({
   showPopover = isFirstDay,
   isLocked,
   isDragging,
+  isMoveSelected = false,
   isBlocked = false,
   positionStyle,
   menuSlot,
   onDoubleClick,
   onDragStart,
   onDragEnd,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  onContextMenu,
   onDragOver,
   onDrop,
 }: CompactBarProps) {
@@ -74,7 +86,7 @@ export function CalendarAppointmentCompactBar({
 
   const barBody = (
     <div
-      className={`relative ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""} ${isCancelled ? "saturate-50" : ""}`}
+      className={`relative rounded ${isDragging ? "opacity-50" : ""} ${isLocked ? "cursor-not-allowed opacity-80" : ""} ${isCancelled ? "saturate-50" : ""} ${isMoveSelected ? "ring-2 ring-amber-500 ring-offset-1" : ""}`}
       style={positionStyle}
       onDoubleClick={onDoubleClick}
       onDragOver={onDragOver}
@@ -82,7 +94,13 @@ export function CalendarAppointmentCompactBar({
       draggable={Boolean(onDragStart)}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={onContextMenu}
       aria-disabled={isLocked}
+      data-move-selected={isMoveSelected ? "true" : undefined}
       data-testid={`appointment-bar-${appointment.id}`}
     >
       {isConflict ? (

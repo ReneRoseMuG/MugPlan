@@ -68,6 +68,14 @@ vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: vi.fn() }),
 }));
 
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  };
+});
+
 vi.mock("@/hooks/useSettings", () => ({
   useSettings: () => ({ setSetting: vi.fn() }),
   useSetting: (key: string) => {
@@ -82,7 +90,7 @@ vi.mock("@/hooks/useSettings", () => ({
   },
 }));
 
-import { buildWeekNavigationRestoreRequest, CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
+import { buildWeekNavigationRestoreRequest, CalendarMoveSelectionCard, CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
 
 describe("FT29 UI: calendar workspace week/month wiring", () => {
   beforeEach(() => {
@@ -123,6 +131,9 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.restoreRequest).toEqual({ scrollLeft: 144, scrollTop: 55 });
     expect(props?.weekTileBodyMode).toBe("collapsed");
     expect(props?.weekLanesCollapsed).toBe(false);
+    expect(props?.selectedMoveAppointment).toBeNull();
+    expect(props?.onSelectMoveAppointment).toEqual(expect.any(Function));
+    expect(props?.onRequestMoveAppointment).toEqual(expect.any(Function));
     expect(props?.conflictHighlightActive).toBe(false);
     expect(props?.conflictAppointmentMap).toBeInstanceOf(Map);
     expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string; color: string }>).get(91)).toEqual({
@@ -197,6 +208,9 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.visibleWeekCount).toBe(6);
     expect(props?.showMonthHeader).toBe(true);
     expect(props?.headerAction).toBeTruthy();
+    expect(props?.selectedMoveAppointment).toBeNull();
+    expect(props?.onSelectMoveAppointment).toEqual(expect.any(Function));
+    expect(props?.onRequestMoveAppointment).toEqual(expect.any(Function));
     expect(props?.onPreviousWeek).toEqual(expect.any(Function));
     expect(props?.onNextWeek).toEqual(expect.any(Function));
     expect(markup).not.toContain("calendar-absence-mode-toggle");
@@ -297,7 +311,42 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     expect(weekProps?.readOnly).toBe(true);
     expect(weekProps?.onNewAppointment).toBeUndefined();
+    expect(weekProps?.onSelectMoveAppointment).toBeUndefined();
+    expect(weekProps?.onRequestMoveAppointment).toBeUndefined();
     expect(monthSheetProps?.readOnly).toBe(true);
     expect(monthSheetProps?.onNewAppointment).toBeUndefined();
+    expect(monthSheetProps?.onSelectMoveAppointment).toBeUndefined();
+    expect(monthSheetProps?.onRequestMoveAppointment).toBeUndefined();
+  });
+
+  it("renders a prominent selected move appointment card with clear action", () => {
+    const markup = renderToStaticMarkup(
+      <CalendarMoveSelectionCard
+        selection={{
+          id: 77,
+          version: 2,
+          projectId: 99,
+          projectName: "A-08 Projekt",
+          customerId: 33,
+          customerName: "Meisel Testkunde",
+          customerNumber: "K-33",
+          startDate: "2099-01-12",
+          endDate: null,
+          startTime: null,
+          tourId: 5,
+          tourName: "Tour Alpha",
+          employeeIds: [1, 2],
+          isCancelled: false,
+          isLocked: false,
+        }}
+        onClear={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("calendar-move-selection-card");
+    expect(markup).toContain("Termin zum Verschieben selektiert");
+    expect(markup).toContain("A-08 Projekt");
+    expect(markup).toContain("12.01.99");
+    expect(markup).toContain("button-clear-calendar-move-selection");
   });
 });

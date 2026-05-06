@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: abgeschlossen
 - Priorität: Hoch
 - Typ: Implementierung
 - Erstellt: 06.05.26
@@ -111,7 +111,7 @@ Technische Durchsetzung muss serverseitig erfolgen. UI-Sperren, ausgeblendete Ei
 
 ## Abschluss
 
-- Abgeschlossen am: offen
-- Ergebnis: offen
-- Verifikation: offen
-- Folgeaufgaben: offen
+- Abgeschlossen am: 06.05.26
+- Ergebnis: Termine können per längerem Linksklick als Verschiebeauswahl markiert werden. Ein Rechtsklick im Kalenderbereich hebt die Auswahl auf. Am oberen Rand des App-Screens erscheint eine deutlich sichtbare Karte mit Hinweis auf den selektierten Termin und Aufheben-Aktion. In Wochen- und Monatsansicht können markierte Termine in reguläre Tour-Ziele eingefügt werden; die Mutation nutzt denselben Preview-, Bestätigungs- und PATCH-Pfad wie A-07.
+- Verifikation: `npm run typecheck`; `npm run test:unit -- tests/unit/ui/calendarMove.helpers.test.ts tests/unit/ui/calendarWorkspace.viewSwitch.wiring.test.tsx tests/unit/ui/calendarDragDrop.regular-draggable.wiring.test.tsx`; `npm run test:integration -- tests/integration/server/appointments.tour-change-preview.integration.test.ts --reporter=verbose`; `npm run check`.
+- Folgeaufgaben: Keine A-08-Blocker im aktuell beauftragten Zuschnitt. Die ursprüngliche Escape-/Click-Away-Deselektion wurde nicht umgesetzt, weil der Auftrag die Deselektion ausdrücklich per Rechtsklick festgelegt hat.

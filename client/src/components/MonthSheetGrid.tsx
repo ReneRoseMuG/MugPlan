@@ -1,4 +1,5 @@
 import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheetView";
+import type { CalendarMoveRequest, CalendarMoveSelection } from "@/lib/calendar-move";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import type { ReactNode } from "react";
 
@@ -16,6 +17,9 @@ interface MonthSheetGridProps {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
+  selectedMoveAppointment?: CalendarMoveSelection | null;
+  onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
+  onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   onFooterActionChange?: (action: ReactNode | null) => void;
 }
 
@@ -33,6 +37,9 @@ export function MonthSheetGrid({
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
   onOpenAppointment,
+  selectedMoveAppointment,
+  onSelectMoveAppointment,
+  onRequestMoveAppointment,
   onFooterActionChange,
 }: MonthSheetGridProps) {
   return (
@@ -50,6 +57,9 @@ export function MonthSheetGrid({
       conflictAppointmentMap={conflictAppointmentMap}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
+      selectedMoveAppointment={selectedMoveAppointment}
+      onSelectMoveAppointment={onSelectMoveAppointment}
+      onRequestMoveAppointment={onRequestMoveAppointment}
       onFooterActionChange={onFooterActionChange}
     />
   );

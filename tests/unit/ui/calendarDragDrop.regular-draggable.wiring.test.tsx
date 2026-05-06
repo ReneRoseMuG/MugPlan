@@ -16,7 +16,7 @@
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 
 const compactBarCalls: Array<Record<string, unknown>> = [];
@@ -194,7 +194,13 @@ describe("calendar drag and drop regular draggable wiring", () => {
         return 0;
       },
       cancelAnimationFrame: () => undefined,
+      setTimeout: globalThis.setTimeout,
+      clearTimeout: globalThis.clearTimeout,
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("keeps month-sheet appointments draggable and writes the appointment id into dataTransfer", async () => {
@@ -250,5 +256,65 @@ describe("calendar drag and drop regular draggable wiring", () => {
 
     const weekPanel = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 52);
     expect(typeof weekPanel?.onDragStart).toBe("function");
+  });
+
+  it("marks month-sheet appointments for move after a long left pointer press", async () => {
+    vi.useFakeTimers();
+    Object.assign(window, { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout });
+    const onSelectMoveAppointment = vi.fn();
+    configureDefaults([
+      createAppointment({ id: 61, startDate: "2099-07-01" }),
+    ]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2099-07-01T00:00:00Z")}
+        onSelectMoveAppointment={onSelectMoveAppointment}
+      />,
+    );
+
+    const monthBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 61);
+    expect(typeof monthBar?.onPointerDown).toBe("function");
+
+    (monthBar?.onPointerDown as (event: { button: number; pointerId: number; clientX: number; clientY: number }) => void)({
+      button: 0,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    vi.advanceTimersByTime(650);
+
+    expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 61, tourId: 7 }));
+  });
+
+  it("marks week-view appointments for move after a long left pointer press", async () => {
+    vi.useFakeTimers();
+    Object.assign(window, { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout });
+    const onSelectMoveAppointment = vi.fn();
+    configureDefaults([
+      createAppointment({ id: 62, startDate: "2099-07-01", endDate: null }),
+    ]);
+
+    const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
+    renderToStaticMarkup(
+      <CalendarWeekView
+        currentDate={new Date("2099-07-01T00:00:00Z")}
+        onSelectMoveAppointment={onSelectMoveAppointment}
+      />,
+    );
+
+    const weekPanel = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 62);
+    expect(typeof weekPanel?.onPointerDown).toBe("function");
+
+    (weekPanel?.onPointerDown as (event: { button: number; pointerId: number; clientX: number; clientY: number }) => void)({
+      button: 0,
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    vi.advanceTimersByTime(650);
+
+    expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 62, tourId: 7 }));
   });
 });

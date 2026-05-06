@@ -1842,7 +1842,7 @@ export const api = {
       responses: {
         200: appointmentWeekEmployeePreviewResponseSchema,
         404: errorSchemas.notFound,
-        409: z.object({ code: z.literal("PAST_APPOINTMENT_READONLY") }),
+        409: z.object({ code: z.enum(["PAST_APPOINTMENT_READONLY", "PAST_WEEK_READONLY", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },

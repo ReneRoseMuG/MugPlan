@@ -24,6 +24,13 @@ import {
   useCalendarWeekLaneEmployeePreviews,
   type CalendarAppointment,
 } from "@/lib/calendar-appointments";
+import {
+  formatCalendarMoveDate,
+  isRegularCalendarMoveTarget,
+  toCalendarMoveSelection,
+  type CalendarMoveRequest,
+  type CalendarMoveSelection,
+} from "@/lib/calendar-move";
 import { useCalendarMarkers } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
 import { apiRequest } from "@/lib/queryClient";
@@ -94,6 +101,9 @@ type CalendarWeekViewProps = {
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  selectedMoveAppointment?: CalendarMoveSelection | null;
+  onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
+  onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   restoreRequest?: WeekViewRestoreRequest | null;
   onRestoreApplied?: () => void;
   onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
@@ -191,6 +201,8 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
 const MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX = 180;
+const MOVE_SELECTION_LONG_PRESS_MS = 650;
+const MOVE_SELECTION_POINTER_TOLERANCE_PX = 8;
 
 function usesCompactDayWidthForCalendarMarker(marker: { type: string }): boolean {
   return marker.type === "public_holiday" || marker.type === "company_holiday";
@@ -451,6 +463,9 @@ export function CalendarWeekView({
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
+  selectedMoveAppointment,
+  onSelectMoveAppointment,
+  onRequestMoveAppointment,
   restoreRequest,
   onRestoreApplied,
   onViewportChange,
@@ -515,6 +530,13 @@ export function CalendarWeekView({
   const weekScrollContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const weekPersonnelBadgeMeasurementRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
+  const moveSelectionLongPressRef = useRef<{
+    appointmentId: number;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    timer: number;
+  } | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
   const [weekHeaderHeightsByWeek, setWeekHeaderHeightsByWeek] = useState<Record<string, number>>({});
   const [measuredPersonnelColumnWidthsByWeek, setMeasuredPersonnelColumnWidthsByWeek] = useState<Record<string, string>>({});
@@ -1264,7 +1286,59 @@ export function CalendarWeekView({
     onOpenAppointment?.(appointmentId, { scrollLeft: weekScrollLeft, scrollTop: weekScrollTop });
   };
 
+  const clearMoveSelectionLongPress = () => {
+    const current = moveSelectionLongPressRef.current;
+    if (!current) return;
+    window.clearTimeout(current.timer);
+    moveSelectionLongPressRef.current = null;
+  };
+
+  useEffect(() => clearMoveSelectionLongPress, []);
+
+  const handleMoveSelectionPointerDown = (
+    event: React.PointerEvent,
+    appointment: CalendarAppointment,
+    canSelectForMove: boolean,
+  ) => {
+    if (!canSelectForMove || !onSelectMoveAppointment || event.button !== 0) return;
+    clearMoveSelectionLongPress();
+    const selection = toCalendarMoveSelection(appointment);
+    const timer = window.setTimeout(() => {
+      moveSelectionLongPressRef.current = null;
+      onSelectMoveAppointment(selection);
+    }, MOVE_SELECTION_LONG_PRESS_MS);
+    moveSelectionLongPressRef.current = {
+      appointmentId: appointment.id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      timer,
+    };
+  };
+
+  const handleMoveSelectionPointerMove = (event: React.PointerEvent) => {
+    const current = moveSelectionLongPressRef.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    const deltaX = Math.abs(event.clientX - current.startX);
+    const deltaY = Math.abs(event.clientY - current.startY);
+    if (deltaX > MOVE_SELECTION_POINTER_TOLERANCE_PX || deltaY > MOVE_SELECTION_POINTER_TOLERANCE_PX) {
+      clearMoveSelectionLongPress();
+    }
+  };
+
+  const buildMoveSelectionPointerHandlers = (appointment: CalendarAppointment, canSelectForMove: boolean) => (
+    canSelectForMove
+      ? {
+          onPointerDown: (event: React.PointerEvent) => handleMoveSelectionPointerDown(event, appointment, canSelectForMove),
+          onPointerMove: handleMoveSelectionPointerMove,
+          onPointerUp: clearMoveSelectionLongPress,
+          onPointerCancel: clearMoveSelectionLongPress,
+        }
+      : {}
+  );
+
   const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
+    clearMoveSelectionLongPress();
     setDraggedAppointmentId(appointmentId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(appointmentId));
@@ -1746,7 +1820,12 @@ export function CalendarWeekView({
     return true;
   };
 
-  const handleDrop = async (event: React.DragEvent, targetDate: Date) => {
+  const handleDrop = async (
+    event: React.DragEvent,
+    targetDate: Date,
+    targetTourId: number | null,
+    targetTourName: string | null,
+  ) => {
     if (isReaderCalendarReadOnly) {
       event.preventDefault();
       setDraggedAppointmentId(null);
@@ -1760,12 +1839,22 @@ export function CalendarWeekView({
     const appointment = appointmentsById.get(appointmentId);
     if (!appointment) return;
 
+    if (!isRegularCalendarMoveTarget(targetTourId, targetTourName)) {
+      toast({
+        title: "Ziel nicht erlaubt",
+        description: "Termine können nur in reguläre Touren eingefügt oder verschoben werden.",
+        variant: "destructive",
+      });
+      setDraggedAppointmentId(null);
+      return;
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const appointmentStart = parseISO(appointment.startDate);
     const isHistoricalParkplatz = isHistoricalParkplatzAppointment(appointment);
 
-    if (appointmentStart < today && !isHistoricalParkplatz) {
+    if (appointmentStart < today && !isAdmin && !isHistoricalParkplatz) {
       console.info(`${logPrefix} drop blocked: past source`, { appointmentId, startDate: appointment.startDate });
       toast({
         title: "Verschieben nicht erlaubt",
@@ -1776,7 +1865,7 @@ export function CalendarWeekView({
       return;
     }
 
-    if (targetDate < today && !isHistoricalParkplatz) {
+    if (targetDate < today && !isAdmin && !isHistoricalParkplatz) {
       console.info(`${logPrefix} drop blocked: past target`, { appointmentId, targetDate: format(targetDate, "yyyy-MM-dd") });
       toast({
         title: "Verschieben nicht erlaubt",
@@ -1820,17 +1909,27 @@ export function CalendarWeekView({
     });
 
     try {
-      await persistDropMutation({
-        appointmentId,
-        version: appointment.version,
-        projectId: appointment.projectId,
-        customerId: appointment.customer.id,
-        tourId: appointment.tourId ?? null,
-        startDate: newStartDate,
-        endDate: newEndDate,
-        startTime: appointment.startTime ?? null,
-        employeeIds: appointment.employees.map((employee) => employee.id),
-      });
+      if (onRequestMoveAppointment) {
+        await onRequestMoveAppointment({
+          appointment: toCalendarMoveSelection(appointment),
+          targetStartDate: newStartDate,
+          targetTourId,
+          targetTourName,
+          mode: "drag",
+        });
+      } else {
+        await persistDropMutation({
+          appointmentId,
+          version: appointment.version,
+          projectId: appointment.projectId,
+          customerId: appointment.customer.id,
+          tourId: targetTourId,
+          startDate: newStartDate,
+          endDate: newEndDate,
+          startTime: appointment.startTime ?? null,
+          employeeIds: appointment.employees.map((employee) => employee.id),
+        });
+      }
     } catch (err) {
       console.error(`${logPrefix} drop error`, err);
       toast({
@@ -2603,6 +2702,11 @@ export function CalendarWeekView({
                                     weekEmployees: [],
                                     additionalDayEmployees: [],
                                   };
+                              const canUseMoveTarget = selectedMoveAppointment != null
+                                && !isLaneBlocked
+                                && isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label)
+                                && Boolean(onRequestMoveAppointment);
+                              const canShowDayAction = !isReaderCalendarReadOnly && !isAbsenceLane && dayBucket.dateKey >= berlinToday;
 
                               return (
                                 <HoverPreview
@@ -2645,28 +2749,74 @@ export function CalendarWeekView({
                                     ) : (
                                       <span className="ml-auto" />
                                     )}
-                                    {!isReaderCalendarReadOnly && !isAbsenceLane && dayBucket.dateKey >= berlinToday ? (
-                                      <button
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
-                                          const scrollTop = weekScrollContainerRefs.current.get(weekKey)?.scrollTop ?? null;
-                                          console.info(`${logPrefix} new appointment click`, {
-                                            date: dayBucket.dateKey,
-                                            tourId: tourLane.tourId,
-                                            laneKey: tourLane.laneKey,
-                                            scrollLeft,
-                                            scrollTop,
-                                          });
-                                          onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
-                                        }}
-                                        className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
-                                        style={{ color: "#ffffff" }}
-                                        data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
-                                        title={`Neuer Termin am ${dayBucket.dateKey}`}
-                                      >
-                                        +
-                                      </button>
+                                    {canShowDayAction ? (
+                                      canUseMoveTarget ? (
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <button
+                                              type="button"
+                                              onClick={(event) => event.stopPropagation()}
+                                              className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                              style={{ color: "#ffffff" }}
+                                              data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                              title={`Aktionen am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
+                                            >
+                                              +
+                                            </button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
+                                                const scrollTop = weekScrollContainerRefs.current.get(weekKey)?.scrollTop ?? null;
+                                                onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
+                                              }}
+                                            >
+                                              Neuer Termin
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                if (!selectedMoveAppointment || !isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label)) return;
+                                                void onRequestMoveAppointment?.({
+                                                  appointment: selectedMoveAppointment,
+                                                  targetStartDate: dayBucket.dateKey,
+                                                  targetTourId: tourLane.tourId,
+                                                  targetTourName: tourLane.label,
+                                                  mode: "insert",
+                                                });
+                                              }}
+                                              data-testid={`button-insert-selected-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                            >
+                                              Markierten Termin einfügen
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      ) : (
+                                        <button
+                                          type="button"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            const scrollLeft = horizontalScrollContainerRef.current?.scrollLeft ?? null;
+                                            const scrollTop = weekScrollContainerRefs.current.get(weekKey)?.scrollTop ?? null;
+                                            console.info(`${logPrefix} new appointment click`, {
+                                              date: dayBucket.dateKey,
+                                              tourId: tourLane.tourId,
+                                              laneKey: tourLane.laneKey,
+                                              scrollLeft,
+                                              scrollTop,
+                                            });
+                                            onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
+                                          }}
+                                          className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                          style={{ color: "#ffffff" }}
+                                          data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
+                                          title={`Neuer Termin am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
+                                        >
+                                          +
+                                        </button>
+                                      )
                                     ) : null}
                                   </div>
                                 </HoverPreview>
@@ -2710,7 +2860,11 @@ export function CalendarWeekView({
                                 aria-hidden
                               />
                             ) : null}
-                            {hasLaneContent && draggedAppointmentId !== null && !isReaderCalendarReadOnly && !isAbsenceLane ? (
+                            {hasLaneContent
+                            && draggedAppointmentId !== null
+                            && !isReaderCalendarReadOnly
+                            && !isLaneBlocked
+                            && isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label) ? (
                               <div
                                 className="absolute inset-0 grid z-20"
                                 style={{ gridTemplateColumns: weekDayGridTemplate }}
@@ -2721,7 +2875,7 @@ export function CalendarWeekView({
                                     className="h-full"
                                     onDragOver={(event) => event.preventDefault()}
                                     onDrop={(event) => {
-                                      void handleDrop(event, day);
+                                      void handleDrop(event, day, tourLane.tourId, tourLane.label);
                                     }}
                                     data-testid={`week-day-drop-overlay-${format(day, "yyyy-MM-dd")}-lane-${tourLane.laneKey}`}
                                   />
@@ -2751,6 +2905,7 @@ export function CalendarWeekView({
                                 && !isAbsenceLane
                                 && !isSegmentLocked
                                 && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canSelectForMove = canDragSegment && Boolean(onSelectMoveAppointment);
                               const canEditAppointmentTags = canManageAppointmentTags
                                 && !isAbsenceLane
                                 && !appointment.isCancelled
@@ -2790,6 +2945,7 @@ export function CalendarWeekView({
                                     onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
+                                    isMoveSelected={selectedMoveAppointment?.id === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
                                     isConflict={isConflict}
@@ -2805,6 +2961,7 @@ export function CalendarWeekView({
                                     }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                    {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                     onMouseLeave={() =>
                                       setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
@@ -2836,6 +2993,7 @@ export function CalendarWeekView({
                                 && !isAbsenceLane
                                 && !isSegmentLocked
                                 && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                              const canSelectForMove = canDragSegment && Boolean(onSelectMoveAppointment);
                               const canEditAppointmentTags = canManageAppointmentTags
                                 && !isAbsenceLane
                                 && !appointment.isCancelled
@@ -2883,6 +3041,7 @@ export function CalendarWeekView({
                                             WEEK_CARD_FOOTER_SAFE_SPACE_PX,
                                           )}
                                     isDragging={draggedAppointmentId === appointment.id}
+                                    isMoveSelected={selectedMoveAppointment?.id === appointment.id}
                                     isLocked={isSegmentLocked}
                                     highlighted={isHighlighted}
                                     isConflict={isConflict}
@@ -2898,6 +3057,7 @@ export function CalendarWeekView({
                                     }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                    {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                     onMouseLeave={() =>
                                       setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
@@ -2920,10 +3080,18 @@ export function CalendarWeekView({
                                     width: "100%",
                                     boxSizing: "border-box",
                                   }}
-                                  onDragOver={isAbsenceLane ? undefined : (event) => event.preventDefault()}
-                                  onDrop={isAbsenceLane ? undefined : (event) => {
-                                    void handleDrop(event, day);
-                                  }}
+                                  onDragOver={
+                                    isLaneBlocked || !isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label)
+                                      ? undefined
+                                      : (event) => event.preventDefault()
+                                  }
+                                  onDrop={
+                                    isLaneBlocked || !isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label)
+                                      ? undefined
+                                      : (event) => {
+                                          void handleDrop(event, day, tourLane.tourId, tourLane.label);
+                                        }
+                                  }
                                   data-testid={`week-day-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                 >
                                   {laneRenderData.singleDayOverflowByBucket[dayIdx].map((appointmentId, stackIndex) => {
@@ -2939,6 +3107,7 @@ export function CalendarWeekView({
                                       && !isAbsenceLane
                                       && !isSegmentLocked
                                       && (!isHistoricalSource || isAdmin || isHistoricalParkplatzAppointment(appointment));
+                                    const canSelectForMove = canDragSegment && Boolean(onSelectMoveAppointment);
                                     const canEditAppointmentTags = canManageAppointmentTags
                                       && !isAbsenceLane
                                       && !appointment.isCancelled
@@ -2981,6 +3150,7 @@ export function CalendarWeekView({
                                                   WEEK_CARD_FOOTER_SAFE_SPACE_PX,
                                                 )}
                                           isDragging={draggedAppointmentId === appointment.id}
+                                          isMoveSelected={selectedMoveAppointment?.id === appointment.id}
                                           isLocked={isSegmentLocked}
                                           highlighted={isHighlighted}
                                         isConflict={isConflict}
@@ -2996,6 +3166,7 @@ export function CalendarWeekView({
                                         }
                                         onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                         onDragEnd={canDragSegment ? handleDragEnd : undefined}
+                                          {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
                                           onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                           onMouseLeave={() =>
                                             setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))

@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: abgeschlossen
 - Priorität: Hoch
 - Typ: Implementierung
 - Erstellt: 06.05.26
@@ -104,7 +104,7 @@ Technische Durchsetzung muss serverseitig erfolgen. Eine UI-Blockade oder fehlen
 
 ## Abschluss
 
-- Abgeschlossen am: offen
-- Ergebnis: offen
-- Verifikation: offen
-- Folgeaufgaben: offen
+- Abgeschlossen am: 06.05.26
+- Ergebnis: Tourwechsel per Drag & Drop läuft im Wochenkalender über reguläre Tour-Lanes und nutzt denselben Kalender-Move-Pfad wie Mark-and-Insert. "Ohne Tour", "Parkplatz" und Abwesenheiten sind als Ziel ausgeschlossen. Tour-/KW-Wechsel öffnen den bestehenden Mitarbeiter-Vorschau- und Bestätigungspfad; gleiche Tour mit Datumswechsel bleibt über denselben PATCH-Pfad abgesichert.
+- Verifikation: `npm run typecheck`; `npm run test:unit -- tests/unit/ui/calendarMove.helpers.test.ts tests/unit/ui/calendarWorkspace.viewSwitch.wiring.test.tsx tests/unit/ui/calendarDragDrop.regular-draggable.wiring.test.tsx`; `npm run test:integration -- tests/integration/server/appointments.tour-change-preview.integration.test.ts --reporter=verbose`; `npm run check`.
+- Folgeaufgaben: Keine A-07-Blocker. A-09 bleibt als separate Aufgabe für eine mögliche gemeinsame Dialog-Basiskomponente offen.

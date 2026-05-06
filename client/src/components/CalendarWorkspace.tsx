@@ -1,7 +1,8 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addWeeks, format, getISOWeek, startOfISOWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
 import {
@@ -13,16 +14,48 @@ import {
 } from "@/components/calendar/monthSheetModel";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
 import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
+import { refreshMonitoringWithNotification } from "@/lib/monitoring";
+import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import {
+  buildEmployeeIdsFromPreviewSelection,
+  formatCalendarMoveDate,
+  getCalendarMoveSelectionTitle,
+  getDefaultPreviewSelection,
+  isRegularCalendarMoveTarget,
+  type AppointmentWeekEmployeePreviewResponse,
+  type CalendarMoveRequest,
+  type CalendarMoveSelection,
+} from "@/lib/calendar-move";
 import type { WeekViewRestoreRequest } from "@/pages/Home";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 type CalendarAbsenceMode = "planning" | "absences";
+
+type PendingCalendarMove = {
+  request: CalendarMoveRequest;
+  targetEndDate: string | null;
+  preview: AppointmentWeekEmployeePreviewResponse | null;
+  selectedIds: number[];
+  resolutionMode: "additive" | "replace";
+};
 
 type OpenAppointmentContext = {
   initialDate?: string;
@@ -110,6 +143,40 @@ export function buildWeekNavigationRestoreRequest(
   };
 }
 
+export function CalendarMoveSelectionCard({
+  selection,
+  onClear,
+}: {
+  selection: CalendarMoveSelection;
+  onClear: () => void;
+}) {
+  const title = getCalendarMoveSelectionTitle(selection);
+  return (
+    <div
+      className="flex flex-shrink-0 items-center justify-between gap-4 border-b-2 border-amber-500 bg-amber-100 px-6 py-3 text-amber-950 shadow-sm"
+      data-testid="calendar-move-selection-card"
+    >
+      <div className="min-w-0">
+        <div className="text-sm font-bold">Termin zum Verschieben selektiert</div>
+        <div className="truncate text-sm">
+          {title} - {formatCalendarMoveDate(selection.startDate)}
+          {selection.tourName ? ` - ${selection.tourName}` : ""}
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="shrink-0 border-amber-500 bg-white text-amber-950 hover:bg-amber-50"
+        onClick={onClear}
+        data-testid="button-clear-calendar-move-selection"
+      >
+        Aufheben
+      </Button>
+    </div>
+  );
+}
+
 export function CalendarWorkspace({
   mode,
   activeView,
@@ -127,6 +194,7 @@ export function CalendarWorkspace({
   onRestoreApplied,
 }: CalendarWorkspaceProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { setSetting } = useSettings();
   const isKwJumpEnabled = activeView === "week" || activeView === "month" || activeView === "monthSheet";
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
@@ -134,6 +202,9 @@ export function CalendarWorkspace({
   const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
   const [calendarAbsenceMode, setCalendarAbsenceMode] = useState<CalendarAbsenceMode>("planning");
   const [footerAction, setFooterAction] = useState<ReactNode | null>(null);
+  const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
+  const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
+  const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
   );
@@ -285,6 +356,191 @@ export function CalendarWorkspace({
     onDateChange(subWeeks(normalizeMonthWindowStart(currentDate), 1));
   };
 
+  const buildTargetEndDate = (appointment: CalendarMoveSelection, targetStartDate: string) => {
+    if (!appointment.endDate) return null;
+    const durationDays = differenceInCalendarDays(parseISO(appointment.endDate), parseISO(appointment.startDate));
+    return durationDays > 0 ? format(addDays(parseISO(targetStartDate), durationDays), "yyyy-MM-dd") : null;
+  };
+
+  const buildMoveErrorMessage = (payload: { code?: string; message?: string } | null, fallback: string) => {
+    if (payload?.code === "VERSION_CONFLICT") return "Termin wurde zwischenzeitlich geändert. Bitte neu laden.";
+    if (payload?.code === "PAST_APPOINTMENT_READONLY" || payload?.code === "PAST_WEEK_READONLY") return "Termin ist gesperrt.";
+    if (payload?.code === "CANCELLED_APPOINTMENT_READONLY") return "Stornierte Termine können nicht verschoben werden.";
+    if (payload?.code === "EMPLOYEE_OVERLAP_CONFLICT") return payload.message ?? "Mitarbeiterüberschneidung beim Verschieben.";
+    if (payload?.code === "BUSINESS_CONFLICT" || payload?.code === "VALIDATION_ERROR") return payload.message ?? fallback;
+    return payload?.message ?? fallback;
+  };
+
+  const fetchCalendarMovePreview = async (
+    request: CalendarMoveRequest,
+    targetEndDate: string | null,
+  ): Promise<AppointmentWeekEmployeePreviewResponse> => {
+    const response = await fetch(`/api/appointments/${request.appointment.id}/tour-change-preview`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        newTourId: request.targetTourId,
+        newStartDate: request.targetStartDate,
+        newEndDate: targetEndDate,
+        newStartTime: request.appointment.startTime,
+        currentEmployeeIds: request.appointment.employeeIds,
+      }),
+    });
+    const payload = await response.json().catch(() => null) as (AppointmentWeekEmployeePreviewResponse & { code?: string; message?: string }) | null;
+    if (!response.ok) {
+      throw new Error(buildMoveErrorMessage(payload, "Mitarbeitervorschau konnte nicht geladen werden."));
+    }
+    return payload as AppointmentWeekEmployeePreviewResponse;
+  };
+
+  const executeCalendarMove = async (
+    request: CalendarMoveRequest,
+    targetEndDate: string | null,
+    employeeIds: number[],
+  ) => {
+    setIsCalendarMoveSubmitting(true);
+    try {
+      const response = await fetch(`/api/appointments/${request.appointment.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          version: request.appointment.version,
+          projectId: request.appointment.projectId,
+          customerId: request.appointment.customerId,
+          tourId: request.targetTourId,
+          startDate: request.targetStartDate,
+          endDate: targetEndDate,
+          startTime: request.appointment.startTime,
+          employeeIds,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as { code?: string; message?: string } | null;
+      if (!response.ok) {
+        throw new Error(buildMoveErrorMessage(payload, "Termin konnte nicht verschoben werden."));
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarBlockedTourWeeks"] });
+      await refreshMonitoringWithNotification(toast);
+      setPendingCalendarMove(null);
+      setSelectedMoveAppointment((current) => current?.id === request.appointment.id ? null : current);
+      toast({ title: "Termin verschoben" });
+    } catch (error) {
+      toast({
+        title: "Verschieben fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCalendarMoveSubmitting(false);
+    }
+  };
+
+  const requestCalendarMove = async (request: CalendarMoveRequest) => {
+    if (isReaderCalendarReadOnly) {
+      toast({ title: "Keine Berechtigung", description: "Leser dürfen Termine nicht verschieben.", variant: "destructive" });
+      return;
+    }
+    if (!isRegularCalendarMoveTarget(request.targetTourId, request.targetTourName)) {
+      toast({
+        title: "Ziel nicht erlaubt",
+        description: "Termine können nur in reguläre Touren eingefügt oder verschoben werden.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (request.appointment.isCancelled) {
+      toast({ title: "Termin ist storniert", description: "Stornierte Termine können nicht verschoben werden.", variant: "destructive" });
+      return;
+    }
+    if (request.appointment.isLocked && userRole !== "ADMIN") {
+      toast({ title: "Termin ist gesperrt", description: "Nur Admins dürfen gesperrte Termine ändern.", variant: "destructive" });
+      return;
+    }
+
+    const today = getBerlinTodayDateString();
+    if (userRole !== "ADMIN" && (request.appointment.startDate < today || request.targetStartDate < today)) {
+      toast({
+        title: "Verschieben nicht erlaubt",
+        description: "Vergangene Termine können nicht durch Disponenten verschoben werden.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const targetEndDate = buildTargetEndDate(request.appointment, request.targetStartDate);
+    const sameTarget = request.appointment.startDate === request.targetStartDate
+      && (request.appointment.endDate ?? null) === targetEndDate
+      && request.appointment.tourId === request.targetTourId;
+    if (sameTarget) {
+      toast({ title: "Keine Änderung", description: "Der Termin liegt bereits auf diesem Ziel." });
+      return;
+    }
+
+    const sourceWeekKey = `${getISOWeekYear(parseISO(request.appointment.startDate))}-${getISOWeek(parseISO(request.appointment.startDate))}`;
+    const targetWeekKey = `${getISOWeekYear(parseISO(request.targetStartDate))}-${getISOWeek(parseISO(request.targetStartDate))}`;
+    const needsPreview = request.appointment.tourId !== request.targetTourId || sourceWeekKey !== targetWeekKey;
+
+    try {
+      if (needsPreview) {
+        const preview = await fetchCalendarMovePreview(request, targetEndDate);
+        setPendingCalendarMove({
+          request,
+          targetEndDate,
+          preview,
+          selectedIds: getDefaultPreviewSelection(preview),
+          resolutionMode: "additive",
+        });
+        return;
+      }
+
+      if (request.mode === "insert") {
+        setPendingCalendarMove({
+          request,
+          targetEndDate,
+          preview: null,
+          selectedIds: [],
+          resolutionMode: "additive",
+        });
+        return;
+      }
+
+      await executeCalendarMove(request, targetEndDate, request.appointment.employeeIds);
+    } catch (error) {
+      toast({
+        title: "Verschieben nicht möglich",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmPendingCalendarMove = async () => {
+    if (!pendingCalendarMove) return;
+    const employeeIds = pendingCalendarMove.preview
+      ? buildEmployeeIdsFromPreviewSelection(
+          pendingCalendarMove.preview,
+          pendingCalendarMove.selectedIds,
+          pendingCalendarMove.resolutionMode,
+        )
+      : pendingCalendarMove.request.appointment.employeeIds;
+    await executeCalendarMove(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
+  };
+
+  const handleSelectMoveAppointment = (appointment: CalendarMoveSelection) => {
+    if (isReaderCalendarReadOnly) return;
+    setSelectedMoveAppointment(appointment);
+  };
+
+  const handleCalendarContextMenu = (event: MouseEvent) => {
+    if (!selectedMoveAppointment) return;
+    event.preventDefault();
+    setSelectedMoveAppointment(null);
+  };
+
   const calendarAbsenceModeToggle = (
     <div className="inline-flex rounded-md border border-border bg-background p-0.5" data-testid="calendar-absence-mode-toggle">
       <button
@@ -336,6 +592,9 @@ export function CalendarWorkspace({
               weekScrollTop: options?.scrollTop ?? null,
             });
           }}
+          selectedMoveAppointment={selectedMoveAppointment}
+          onSelectMoveAppointment={isReaderCalendarReadOnly ? undefined : handleSelectMoveAppointment}
+          onRequestMoveAppointment={isReaderCalendarReadOnly ? undefined : requestCalendarMove}
           restoreRequest={restoreRequest ?? localWeekRestoreRequest}
           onRestoreApplied={() => {
             setLocalWeekRestoreRequest(null);
@@ -377,6 +636,9 @@ export function CalendarWorkspace({
                 returnView: activeView,
               });
             }}
+            selectedMoveAppointment={selectedMoveAppointment}
+            onSelectMoveAppointment={isReaderCalendarReadOnly || calendarAbsenceMode === "absences" ? undefined : handleSelectMoveAppointment}
+            onRequestMoveAppointment={isReaderCalendarReadOnly || calendarAbsenceMode === "absences" ? undefined : requestCalendarMove}
             onFooterActionChange={setFooterAction}
           />
         </div>
@@ -385,7 +647,7 @@ export function CalendarWorkspace({
   };
 
   return (
-    <div className="h-full bg-white overflow-hidden flex flex-col">
+    <div className="h-full bg-white overflow-hidden flex flex-col" onContextMenu={handleCalendarContextMenu}>
       {mode === "contextual" ? (
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
@@ -425,6 +687,13 @@ export function CalendarWorkspace({
             </button>
           </div>
         </div>
+      ) : null}
+
+      {selectedMoveAppointment ? (
+        <CalendarMoveSelectionCard
+          selection={selectedMoveAppointment}
+          onClear={() => setSelectedMoveAppointment(null)}
+        />
       ) : null}
 
       <div className="flex-1 min-h-0 grid grid-cols-[28px_minmax(0,1fr)_28px]">
@@ -484,6 +753,65 @@ export function CalendarWorkspace({
           />
         </div>
       )}
+      {pendingCalendarMove?.preview ? (
+        <TourEmployeeCascadeDialog
+          variant="appointment"
+          open
+          title="Termin verschieben"
+          description="Wählen Sie aus, welche Mitarbeiter aus der Ziel-Tour-KW in den Termin übernommen werden."
+          previewItems={pendingCalendarMove.preview.items}
+          selectedIds={pendingCalendarMove.selectedIds}
+          resolutionMode={pendingCalendarMove.resolutionMode}
+          showResolutionMode
+          isSubmitting={isCalendarMoveSubmitting}
+          confirmLabel="Termin verschieben"
+          onSelectedIdsChange={(selectedIds) => {
+            setPendingCalendarMove((current) => current ? { ...current, selectedIds } : current);
+          }}
+          onResolutionModeChange={(resolutionMode) => {
+            setPendingCalendarMove((current) => current ? { ...current, resolutionMode } : current);
+          }}
+          onConfirm={() => {
+            void confirmPendingCalendarMove();
+          }}
+          onClose={() => {
+            if (!isCalendarMoveSubmitting) setPendingCalendarMove(null);
+          }}
+        />
+      ) : null}
+      <AlertDialog
+        open={pendingCalendarMove !== null && pendingCalendarMove.preview === null}
+        onOpenChange={(open) => {
+          if (!open && !isCalendarMoveSubmitting) setPendingCalendarMove(null);
+        }}
+      >
+        <AlertDialogContent data-testid="dialog-calendar-move-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin verschieben?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingCalendarMove ? (
+                <>
+                  Der markierte Termin wird nach {pendingCalendarMove.request.targetTourName ?? "Ziel-Tour"} am{" "}
+                  {formatCalendarMoveDate(pendingCalendarMove.request.targetStartDate)} verschoben.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCalendarMoveSubmitting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isCalendarMoveSubmitting}
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmPendingCalendarMove();
+              }}
+              data-testid="button-calendar-move-confirm"
+            >
+              {isCalendarMoveSubmitting ? "Verschieben..." : "Verschieben"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

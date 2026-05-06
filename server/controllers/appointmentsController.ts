@@ -214,7 +214,7 @@ export async function previewAppointmentTourChange(req: Request, res: Response, 
 
     const appointmentId = Number(req.params.id);
     const input = api.appointments.tourChangePreview.input.parse(req.body);
-    const preview = await appointmentsService.previewAppointmentTourChange(appointmentId, input);
+    const preview = await appointmentsService.previewAppointmentTourChange(appointmentId, input, roleKey);
     res.json(preview);
   } catch (err) {
     if (err instanceof ZodError) {

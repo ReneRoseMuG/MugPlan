@@ -61,6 +61,8 @@ const mojibakePatterns = [
   { label: "mojibake-visible-smart-quote", regex: /â[€™œ”“”„…–—]/g },
 ];
 
+// Bestätigte positive Treffer: Diese Wörter sind legitime Schreibungen
+// und keine Umlaut-Ersatzformen.
 const asciiUmlautAllowlist = new Set([
   "Aue",
   "aue",
@@ -92,6 +94,7 @@ const asciiUmlautAllowlist = new Set([
   "Neues",
   "neues",
   "query",
+  "Quell",
   "Quelle",
   "Query",
   "queue",
@@ -110,6 +113,7 @@ const asciiUmlautAllowlist = new Set([
   "unique",
   "umzubauen",
   "value",
+  "visuelle",
   "visuell",
   "visuelles",
   "wochengenaue",

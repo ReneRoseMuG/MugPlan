@@ -2,6 +2,7 @@ import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import type { ReactNode } from "react";
 import type { CalendarNavCommand, WeekViewRestoreRequest } from "@/pages/Home";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
+import type { CalendarMoveRequest, CalendarMoveSelection } from "@/lib/calendar-move";
 
 interface WeekGridProps {
   currentDate: Date;
@@ -16,6 +17,9 @@ interface WeekGridProps {
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  selectedMoveAppointment?: CalendarMoveSelection | null;
+  onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
+  onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   restoreRequest?: WeekViewRestoreRequest | null;
   onRestoreApplied?: () => void;
   onViewportChange?: (viewport: { scrollLeft: number; scrollTop: number }) => void;
@@ -35,6 +39,9 @@ export function WeekGrid({
   onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
+  selectedMoveAppointment,
+  onSelectMoveAppointment,
+  onRequestMoveAppointment,
   restoreRequest,
   onRestoreApplied,
   onViewportChange,
@@ -55,6 +62,9 @@ export function WeekGrid({
         onVisibleDateChange={onVisibleDateChange}
         onNewAppointment={onNewAppointment}
         onOpenAppointment={onOpenAppointment}
+        selectedMoveAppointment={selectedMoveAppointment}
+        onSelectMoveAppointment={onSelectMoveAppointment}
+        onRequestMoveAppointment={onRequestMoveAppointment}
         restoreRequest={restoreRequest}
         onRestoreApplied={onRestoreApplied}
         onViewportChange={onViewportChange}

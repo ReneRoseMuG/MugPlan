@@ -31,13 +31,12 @@ Dieser Bereich führt umsetzbare Wiki- und Code-Aufgaben, die aus Analysen, Ents
 - [A-04 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen](a-04-ft01-ft04-ft33-testabdeckung-uc-luecken.md)
 - [A-05 - FT-26 Reports: verbleibende Testabdeckung schließen](a-05-ft26-reports-testabdeckung.md)
 - [A-06 - FT-03 Monatsübersicht mit KW-Navigation und gleitendem Fenster](a-06-ft03-kalender-kw-navigation.md)
-- [A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender](a-07-ft03-dnd-tourwechsel.md)
-- [A-08 - FT-03 Termin markieren und per Einfügen verschieben](a-08-ft03-mark-and-insert.md)
 - [A-09 - FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](a-09-ft04-dialog-basiskomponente.md)
 
 ## Abgeschlossen
 
-Noch keine abgeschlossenen Aufgaben in diesem Aufgabenbereich.
+- [A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender](a-07-ft03-dnd-tourwechsel.md)
+- [A-08 - FT-03 Termin markieren und per Einfügen verschieben](a-08-ft03-mark-and-insert.md)
 
 ## Aus Decisions übertragene Punkte
 

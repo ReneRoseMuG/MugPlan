@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CSSProperties, DragEvent } from "react";
+import type { CSSProperties, DragEvent, MouseEvent, PointerEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
@@ -112,6 +112,7 @@ type CalendarWeekSpanningTileProps = {
   containerRef?: React.Ref<HTMLDivElement>;
   style?: CSSProperties;
   isDragging?: boolean;
+  isMoveSelected?: boolean;
   isLocked?: boolean;
   highlighted?: boolean;
   isConflict?: boolean;
@@ -122,6 +123,11 @@ type CalendarWeekSpanningTileProps = {
   onDragEnd?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onPointerDown?: (event: PointerEvent) => void;
+  onPointerMove?: (event: PointerEvent) => void;
+  onPointerUp?: (event: PointerEvent) => void;
+  onPointerCancel?: (event: PointerEvent) => void;
+  onContextMenu?: (event: MouseEvent) => void;
   onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   showInlineNotes?: boolean;
   onCreateAppointmentNote?: (appointmentId: number) => void;
@@ -146,6 +152,7 @@ export function CalendarWeekSpanningTile({
   containerRef,
   style,
   isDragging,
+  isMoveSelected = false,
   isLocked,
   highlighted = false,
   isConflict = false,
@@ -156,6 +163,11 @@ export function CalendarWeekSpanningTile({
   onDragEnd,
   onMouseEnter,
   onMouseLeave,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  onContextMenu,
   onTagMutationEvents,
   showInlineNotes = false,
   onCreateAppointmentNote,
@@ -711,7 +723,7 @@ export function CalendarWeekSpanningTile({
   return (
   <>
     <div
-      className={`group/calendar-card relative grid w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative grid w-full min-w-0 overflow-hidden rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""} ${isMoveSelected ? "ring-4 ring-amber-500 ring-offset-2 shadow-lg" : ""}`}
       style={{
         gridTemplateColumns: `repeat(${Math.max(1, spanColumns)}, minmax(0, 1fr))`,
         gridTemplateRows: "auto 1fr",
@@ -729,8 +741,14 @@ export function CalendarWeekSpanningTile({
       onDragEnd={canDrag ? onDragEnd : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={onContextMenu}
       ref={containerRef}
       aria-disabled={isLocked}
+      data-move-selected={isMoveSelected ? "true" : undefined}
       data-testid={testId ?? `week-spanning-tile-${appointment.id}`}
     >
       <div

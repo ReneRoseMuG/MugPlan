@@ -2316,8 +2316,9 @@ export async function previewAppointmentTourChange(
     newEndDate?: string | null;
     newStartTime?: string | null;
   },
+  roleKey: CanonicalRoleKey,
 ) {
-  return tourWeekEmployeesService.previewAppointmentTourChange(appointmentId, params);
+  return tourWeekEmployeesService.previewAppointmentTourChange(appointmentId, params, roleKey);
 }
 
 export function isAppointmentError(err: unknown): err is AppointmentError {

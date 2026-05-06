@@ -15,6 +15,7 @@ type WeekEmployeeConflictCode =
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
   | "BUSINESS_CONFLICT"
+  | "PAST_APPOINTMENT_READONLY"
   | "PAST_WEEK_READONLY";
 
 type WeekExecuteSkipReason =
@@ -1056,17 +1057,22 @@ export async function previewAppointmentTourChange(
     newStartTime?: string | null;
     currentEmployeeIds?: number[];
   },
+  roleKey?: WeekPlanningRoleKey,
 ) {
   const appointment = await appointmentsRepository.getAppointmentWithEmployees(appointmentId);
   if (!appointment) {
     throw new TourWeekEmployeesError(404, "NOT_FOUND", "Termin nicht gefunden");
   }
 
-  if (toDateOnlyString(appointment.startDate) && toDateOnlyString(appointment.startDate)! < getBerlinTodayDateString()) {
+  const today = getBerlinTodayDateString();
+  if (toDateOnlyString(appointment.startDate) && toDateOnlyString(appointment.startDate)! < today && roleKey !== "ADMIN") {
     const parkplatzTourId = await getParkplatzTourId();
     if (appointment.tourId !== parkplatzTourId) {
-      throw new TourWeekEmployeesError(409, "PAST_WEEK_READONLY", "Historische Termine können nicht über Wochenplanung umgestellt werden");
+      throw new TourWeekEmployeesError(409, "PAST_APPOINTMENT_READONLY", "Historische Termine können nicht über Wochenplanung umgestellt werden");
     }
+  }
+  if (params.newStartDate < today && roleKey !== "ADMIN") {
+    throw new TourWeekEmployeesError(409, "PAST_APPOINTMENT_READONLY", "Historische Termine können nicht über Wochenplanung umgestellt werden");
   }
 
   let nextTourSupportsWeekPlanning = true;

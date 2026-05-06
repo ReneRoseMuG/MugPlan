@@ -103,6 +103,7 @@ export function CalendarWeekAppointmentPanel({
   weekTileBodyMode = "semiexpanded",
   onDoubleClick,
   isDragging,
+  isMoveSelected = false,
   onDragStart,
   onDragEnd,
   isLocked,
@@ -113,6 +114,11 @@ export function CalendarWeekAppointmentPanel({
   conflictColor,
   onMouseEnter,
   onMouseLeave,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
+  onContextMenu,
   onTagMutationEvents,
   segment = "start",
   context = "default",
@@ -136,6 +142,7 @@ export function CalendarWeekAppointmentPanel({
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   onDoubleClick?: () => void;
   isDragging?: boolean;
+  isMoveSelected?: boolean;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
   isLocked?: boolean;
@@ -146,6 +153,11 @@ export function CalendarWeekAppointmentPanel({
   conflictColor?: string;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
+  onPointerDown?: (event: React.PointerEvent) => void;
+  onPointerMove?: (event: React.PointerEvent) => void;
+  onPointerUp?: (event: React.PointerEvent) => void;
+  onPointerCancel?: (event: React.PointerEvent) => void;
+  onContextMenu?: (event: React.MouseEvent) => void;
   onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   segment?: "start" | "continuation";
   context?: "default" | "week-calendar";
@@ -646,7 +658,7 @@ export function CalendarWeekAppointmentPanel({
   return (
   <>
     <div
-      className={`group/calendar-card relative w-full min-w-0 ${maxHeightPx != null ? "overflow-x-hidden overflow-y-auto" : "overflow-hidden"} rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""}`}
+      className={`group/calendar-card relative w-full min-w-0 ${maxHeightPx != null ? "overflow-x-hidden overflow-y-auto" : "overflow-hidden"} rounded-lg border shadow-sm transition ${highlightClass} ${interactiveClass} ${isDragging ? "opacity-50" : ""} ${isMoveSelected ? "ring-4 ring-amber-500 ring-offset-2 shadow-lg" : ""}`}
       ref={containerRef}
       onDoubleClick={interactive ? onDoubleClick : undefined}
       draggable={canDrag}
@@ -654,7 +666,13 @@ export function CalendarWeekAppointmentPanel({
       onDragEnd={canDrag ? onDragEnd : undefined}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onContextMenu={onContextMenu}
       aria-disabled={isLocked}
+      data-move-selected={isMoveSelected ? "true" : undefined}
       data-testid={testId ?? `week-appointment-panel-${appointment.id}`}
       style={{
         borderColor: highlighted ? undefined : borderColor,

@@ -14,6 +14,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [06.05.26 - A-07/A-08: Termine markieren und verschieben](06-05-26-a07-a08-kalender-verschieben.md)
 - [06.05.26 - A6: Monatsübersicht mit KW-Navigation](06-05-26-a6-monatsuebersicht-kw-navigation.md)
 - [06.05.26 - FT-26/FT-03: Reportlayout, Preset-Sperre und offene Aufgabe](06-05-26-report-layout-presets-ft03-task.md)
 - [06.05.26 - FT-07: Dump- und Import-Hardening](06-05-26-ft07-dump-import-hardening.md)
