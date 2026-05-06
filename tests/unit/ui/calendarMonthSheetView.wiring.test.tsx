@@ -200,7 +200,69 @@ describe("calendar month sheet view wiring", () => {
     );
 
     expect(markup).toContain('data-testid="month-sheet-weeks-scroll-2026-03-01"');
+    expect(markup).toContain("flex-1 grid overflow-hidden");
+    expect(markup).not.toContain("overflow-y-auto");
     expect(markup).toContain("month-sheet-week-number-2026-03-01-2026-03-30");
+  });
+
+  it("bindet eine Header-Aktion in dieselbe Zeile wie den Blatt-Titel ein", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2026-03-15T00:00:00Z")}
+        headerAction={<div data-testid="month-sheet-header-action">Aktion</div>}
+      />,
+    );
+
+    expect(markup).toContain('data-testid="month-sheet-title-2026-03-01"');
+    expect(markup).toContain('data-testid="month-sheet-header-action"');
+    expect(markup).toContain("flex items-center justify-between gap-4 border-b");
+  });
+
+  it("loads appointments, blocked weeks and markers for the full fixed window", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView currentDate={new Date("2026-03-18T00:00:00Z")} visibleWeekCount={6} />,
+    );
+
+    expect(markup).toContain('data-testid="month-sheet-2026-03-16"');
+    expect(markup).toContain('data-visible-start="2026-03-16"');
+    expect(markup).toContain('data-visible-end="2026-04-26"');
+    expect(markup).toContain("März - April 2026");
+    expect(useCalendarAppointmentsMock).toHaveBeenLastCalledWith(expect.objectContaining({
+      fromDate: "2026-03-16",
+      toDate: "2026-04-26",
+    }));
+    expect(useCalendarBlockedTourWeeksMock).toHaveBeenLastCalledWith({
+      fromDate: "2026-03-16",
+      toDate: "2026-04-26",
+    });
+    expect(useQueryMock).toHaveBeenCalledWith(expect.objectContaining({
+      queryKey: ["calendarMarkers", "2026-03-16", "2026-04-26", "DISPATCHER"],
+    }));
+  });
+
+  it("renders full-width week step controls when the parent provides navigation callbacks", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2026-03-18T00:00:00Z")}
+        visibleWeekCount={6}
+        onPreviousWeek={() => undefined}
+        onNextWeek={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain('data-testid="button-calendar-week-window-prev"');
+    expect(markup).toContain('data-testid="button-calendar-week-window-next"');
+    expect(markup).toContain("1 Woche zurück");
+    expect(markup).toContain("1 Woche vor");
   });
 
   it("marks adjacent-month days separately from current-month days in the rendered month sheet", async () => {

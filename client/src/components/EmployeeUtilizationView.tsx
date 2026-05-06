@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { addMonths, getISOWeek, parseISO, startOfISOWeek, subMonths } from "date-fns";
+import { addWeeks, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { CalendarMonthSheetView } from "@/components/calendar/CalendarMonthSheetView";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import {
+  getNextMonthWindowStart,
+  getPreviousMonthWindowStart,
+  normalizeMonthWindowStart,
+} from "@/components/calendar/monthSheetModel";
 
 type EmployeeUtilizationViewProps = {
   employeeId: number;
@@ -62,8 +67,8 @@ export function EmployeeUtilizationView({
       return;
     }
 
-    setJumpBackDate(currentDate);
-    setCurrentDate(targetDate);
+    setJumpBackDate(normalizeMonthWindowStart(currentDate));
+    setCurrentDate(normalizeMonthWindowStart(targetDate));
     setKwInputValue(String(parsedKw));
     setKwJumpError(false);
   };
@@ -71,13 +76,25 @@ export function EmployeeUtilizationView({
   const prev = () => {
     setJumpBackDate(null);
     setKwJumpError(false);
-    setCurrentDate((value) => subMonths(value, 1));
+    setCurrentDate((value) => getPreviousMonthWindowStart(value));
   };
 
   const next = () => {
     setJumpBackDate(null);
     setKwJumpError(false);
-    setCurrentDate((value) => addMonths(value, 1));
+    setCurrentDate((value) => getNextMonthWindowStart(value));
+  };
+
+  const prevWeek = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    setCurrentDate((value) => subWeeks(normalizeMonthWindowStart(value), 1));
+  };
+
+  const nextWeek = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    setCurrentDate((value) => addWeeks(normalizeMonthWindowStart(value), 1));
   };
 
   return (
@@ -102,6 +119,8 @@ export function EmployeeUtilizationView({
             readOnly={true}
             absenceVisibility="include"
             visibleWeekCount={4}
+            onPreviousWeek={prevWeek}
+            onNextWeek={nextWeek}
             onOpenAppointment={
               onOpenAppointment
                 ? (appointmentId) => onOpenAppointment(appointmentId)
@@ -142,7 +161,7 @@ export function EmployeeUtilizationView({
           onKwJumpBack={() => {
             if (!jumpBackDate) return;
             setKwInputValue(String(getISOWeek(jumpBackDate)));
-            setCurrentDate(jumpBackDate);
+            setCurrentDate(normalizeMonthWindowStart(jumpBackDate));
             setJumpBackDate(null);
             setKwJumpError(false);
           }}

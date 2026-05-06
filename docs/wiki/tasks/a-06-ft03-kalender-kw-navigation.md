@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: Abgeschlossen
 - Priorität: Hoch
 - Typ: Implementierung
 - Erstellt: 06.05.26
@@ -76,12 +76,13 @@ Die Aufgabe darf Rollen-, Termin-, Tour-, Drag-and-Drop- und Sperrregeln nicht v
 
 ## Blocker und offene Fragen
 
-- Konkreter Persistenzmechanismus für `windowStart` ist anhand der bestehenden Architektur zu wählen.
-- Konkrete Fenstergröße ist anhand des bestehenden Monatsübersicht-Layouts festzulegen.
+- Keine offenen Blocker.
+- Der Persistenzmechanismus wurde ohne neue Server-API umgesetzt: `windowStart` wird als URL-Parameter geteilt und lokal als Fallback gespeichert.
+- Die globale Monatsübersicht nutzt ein konstantes 6-Wochen-Fenster; die Mitarbeiter-Auslastung nutzt weiter ihr bestehendes 4-Wochen-Fenster mit derselben Montag-Normalisierung.
 
 ## Abschluss
 
-- Abgeschlossen am: offen
-- Ergebnis: offen
-- Verifikation: offen
-- Folgeaufgaben: offen
+- Abgeschlossen am: 06.05.26
+- Ergebnis: Monatsübersicht und Mitarbeiter-Auslastung nutzen `windowStart` als montagsnormalisierten Fensterstart. Die seitlichen Rand-Schaltflächen springen monatlich auf den Wochenbeginn des Zielmonats; die angehefteten Blatt-Schaltflächen über und unter dem Kalenderblatt verschieben um jeweils eine Woche. Der Terminplanung-/Abwesenheiten-Toggle sitzt im Blattkopf in derselben Zeile wie die Beschriftung; das Monatsblatt nutzt keinen inneren vertikalen Scrollbereich. Termine, blockierte Tourwochen und FT-34-Kalendermarker laden den vollständigen sichtbaren Zeitraum.
+- Verifikation: Unit-Tests für Window-Modell, Query-Ladefenster, Workspace- und Auslastungs-Wiring sowie Browser-E2E für Monatsnavigation, KW-/Datums-Konsistenz, Reload und Terminpersistenz erfolgreich ausgeführt.
+- Folgeaufgaben: Keine unmittelbaren Folgeaufgaben.

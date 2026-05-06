@@ -191,8 +191,15 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
 
     expect(markup).toContain("month-sheet-grid-marker");
     expect(markup).not.toContain("week-grid-marker");
+    expect(markup).not.toContain("calendar-month-navigation");
 
     const props = monthSheetGridCalls.at(-1);
+    expect(props?.visibleWeekCount).toBe(6);
+    expect(props?.showMonthHeader).toBe(true);
+    expect(props?.headerAction).toBeTruthy();
+    expect(props?.onPreviousWeek).toEqual(expect.any(Function));
+    expect(props?.onNextWeek).toEqual(expect.any(Function));
+    expect(markup).not.toContain("calendar-absence-mode-toggle");
     expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string }>).get(91)?.triggerCode).toBe("TR-01");
     (props?.onNewAppointment as (date: string) => void)("2099-01-12");
     (props?.onOpenAppointment as (appointmentId: number) => void)(601);

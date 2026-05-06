@@ -6,7 +6,12 @@ interface MonthSheetGridProps {
   currentDate: Date;
   employeeFilterId?: number | null;
   readOnly?: boolean;
+  visibleWeekCount?: number;
+  showMonthHeader?: boolean;
+  headerAction?: ReactNode;
   absenceVisibility?: "planning" | "absences" | "include";
+  onPreviousWeek?: () => void;
+  onNextWeek?: () => void;
   conflictHighlightActive?: boolean;
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
@@ -18,7 +23,12 @@ export function MonthSheetGrid({
   currentDate,
   employeeFilterId,
   readOnly = false,
+  visibleWeekCount,
+  showMonthHeader,
+  headerAction,
   absenceVisibility = "planning",
+  onPreviousWeek,
+  onNextWeek,
   conflictHighlightActive = false,
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
@@ -30,7 +40,12 @@ export function MonthSheetGrid({
       currentDate={currentDate}
       employeeFilterId={employeeFilterId}
       readOnly={readOnly}
+      visibleWeekCount={visibleWeekCount}
+      showMonthHeader={showMonthHeader}
+      headerAction={headerAction}
       absenceVisibility={absenceVisibility}
+      onPreviousWeek={onPreviousWeek}
+      onNextWeek={onNextWeek}
       conflictHighlightActive={conflictHighlightActive}
       conflictAppointmentMap={conflictAppointmentMap}
       onNewAppointment={onNewAppointment}

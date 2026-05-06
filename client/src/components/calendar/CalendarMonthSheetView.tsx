@@ -33,7 +33,7 @@ import {
   MONTH_SLOT_SEPARATOR_HEIGHT_PX,
   type MonthWeekRowLayout,
 } from "./monthLaneState";
-import { buildFixedWeekMatrix, buildMonthSheetMatrix, type MonthSheetMatrix } from "./monthSheetModel";
+import { buildMonthSheetMatrix, buildMonthWindowMatrix, type MonthSheetMatrix } from "./monthSheetModel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,7 +57,7 @@ import {
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
-import { Ban, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
+import { Ban, ChevronDown, ChevronUp, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
@@ -72,7 +72,11 @@ type CalendarMonthSheetViewProps = {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   readOnly?: boolean;
   visibleWeekCount?: number;
+  showMonthHeader?: boolean;
+  headerAction?: ReactNode;
   absenceVisibility?: "planning" | "absences" | "include";
+  onPreviousWeek?: () => void;
+  onNextWeek?: () => void;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
   onFooterActionChange?: (action: ReactNode | null) => void;
@@ -140,7 +144,11 @@ export function CalendarMonthSheetView({
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   readOnly = false,
   visibleWeekCount,
+  showMonthHeader = true,
+  headerAction,
   absenceVisibility = "planning",
+  onPreviousWeek,
+  onNextWeek,
   onNewAppointment,
   onOpenAppointment,
   onFooterActionChange,
@@ -181,7 +189,7 @@ export function CalendarMonthSheetView({
 
   const month = useMemo(
     () => visibleWeekCount !== undefined
-      ? buildFixedWeekMatrix(startOfISOWeek(currentDate), visibleWeekCount)
+      ? buildMonthWindowMatrix(startOfISOWeek(currentDate), visibleWeekCount)
       : buildMonthSheetMatrix(currentDate.getFullYear(), currentDate.getMonth() + 1),
     [currentDate, visibleWeekCount],
   );
@@ -507,7 +515,8 @@ export function CalendarMonthSheetView({
           berlinToday={berlinToday}
           isAdmin={isAdmin}
           readOnly={isReaderCalendarReadOnly || absenceVisibility === "absences"}
-          showMonthHeader={visibleWeekCount === undefined}
+          showMonthHeader={showMonthHeader}
+          headerAction={headerAction}
           draggedAppointmentId={draggedAppointmentId}
           getSlotBarPosition={getSlotBarPosition}
           onDrop={handleDrop}
@@ -520,6 +529,8 @@ export function CalendarMonthSheetView({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           weekDays={weekDays}
+          onPreviousWeek={onPreviousWeek}
+          onNextWeek={onNextWeek}
         />
       </div>
       <PrintPreviewDialog
@@ -590,6 +601,7 @@ function MonthSheetSection({
   isAdmin,
   readOnly,
   showMonthHeader,
+  headerAction,
   draggedAppointmentId,
   getSlotBarPosition,
   onDrop,
@@ -598,6 +610,8 @@ function MonthSheetSection({
   onDragStart,
   onDragEnd,
   weekDays,
+  onPreviousWeek,
+  onNextWeek,
 }: {
   month: MonthSheetMatrix;
   weekData: Map<string, MonthSheetRenderWeek>;
@@ -613,6 +627,7 @@ function MonthSheetSection({
   isAdmin: boolean;
   readOnly: boolean;
   showMonthHeader: boolean;
+  headerAction?: ReactNode;
   draggedAppointmentId: number | null;
   getSlotBarPosition: (startIndex: number, endIndex: number) => { left: string; width: string };
   onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null) => Promise<void>;
@@ -621,19 +636,47 @@ function MonthSheetSection({
   onDragStart: (event: React.DragEvent, appointmentId: number) => void;
   onDragEnd: () => void;
   weekDays: string[];
+  onPreviousWeek?: () => void;
+  onNextWeek?: () => void;
 }) {
+  const weekStepButtonClassName =
+    "inline-flex h-9 w-full items-center justify-center gap-2 border-y border-amber-200 bg-amber-50 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
+
   return (
     <section
       className="h-full min-w-full w-full border-r border-border/30 last:border-r-0"
       data-testid={`month-sheet-${month.monthKey}`}
+      data-visible-start={format(month.visibleStart, "yyyy-MM-dd")}
+      data-visible-end={format(month.visibleEnd, "yyyy-MM-dd")}
     >
       <div className="flex h-full flex-col">
-        {showMonthHeader ? (
-          <div className="border-b border-border/40 bg-muted/20 px-6 py-3">
-            <span className="text-sm font-semibold tracking-wide text-primary" data-testid={`month-sheet-title-${month.monthKey}`}>
-              {format(month.monthStart, "MMMM yyyy", { locale: de })}
-            </span>
+        {showMonthHeader || headerAction ? (
+          <div className="flex items-center justify-between gap-4 border-b border-border/40 bg-muted/20 px-6 py-2.5">
+            {showMonthHeader ? (
+              <span className="min-w-0 truncate text-sm font-semibold tracking-wide text-primary" data-testid={`month-sheet-title-${month.monthKey}`}>
+                {formatMonthSheetHeaderTitle(month)}
+              </span>
+            ) : (
+              <span />
+            )}
+            {headerAction ? (
+              <div className="shrink-0">
+                {headerAction}
+              </div>
+            ) : null}
           </div>
+        ) : null}
+
+        {onPreviousWeek ? (
+          <button
+            type="button"
+            onClick={onPreviousWeek}
+            className={weekStepButtonClassName}
+            data-testid="button-calendar-week-window-prev"
+          >
+            <ChevronUp className="h-4 w-4" aria-hidden="true" />
+            1 Woche zurück
+          </button>
         ) : null}
 
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
@@ -651,7 +694,7 @@ function MonthSheetSection({
         </div>
 
         <div
-          className="flex-1 grid overflow-y-auto overflow-x-hidden"
+          className="flex-1 grid overflow-hidden"
           data-testid={`month-sheet-weeks-scroll-${month.monthKey}`}
           style={{
             gridTemplateRows: month.weeks
@@ -914,6 +957,18 @@ function MonthSheetSection({
             );
           })}
         </div>
+
+        {onNextWeek ? (
+          <button
+            type="button"
+            onClick={onNextWeek}
+            className={weekStepButtonClassName}
+            data-testid="button-calendar-week-window-next"
+          >
+            1 Woche vor
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -946,6 +1001,26 @@ const parseMonthErrorPayload = (rawBody: string): { message?: string; code?: str
     return null;
   }
 };
+
+function formatMonthSheetHeaderTitle(month: MonthSheetMatrix): string {
+  if (!month.isWindow) {
+    return format(month.monthStart, "MMMM yyyy", { locale: de });
+  }
+
+  const visibleStartMonth = format(month.visibleStart, "yyyy-MM");
+  const visibleEndMonth = format(month.visibleEnd, "yyyy-MM");
+  if (visibleStartMonth === visibleEndMonth) {
+    return format(month.visibleStart, "MMMM yyyy", { locale: de });
+  }
+
+  const visibleStartYear = format(month.visibleStart, "yyyy");
+  const visibleEndYear = format(month.visibleEnd, "yyyy");
+  if (visibleStartYear === visibleEndYear) {
+    return `${format(month.visibleStart, "MMMM", { locale: de })} - ${format(month.visibleEnd, "MMMM yyyy", { locale: de })}`;
+  }
+
+  return `${format(month.visibleStart, "MMMM yyyy", { locale: de })} - ${format(month.visibleEnd, "MMMM yyyy", { locale: de })}`;
+}
 
 function MonthCompactBarWithMenu({
   appointment,

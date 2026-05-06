@@ -18,7 +18,7 @@
  * Die sichtbare Vollstaendigkeit und die Monatsabgrenzung der Monatsbalken browserseitig absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { addMonths, endOfMonth, format, parseISO, startOfMonth } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 import { getAppointmentEndDate } from "../../client/src/lib/calendar-utils";
 import { createCalendarConsistencyFixture } from "../helpers/calendarConsistencyFixtures";
@@ -45,6 +45,16 @@ async function getVisibleMonthKey(page: Page) {
   return testId.replace("month-sheet-", "");
 }
 
+async function getVisibleWindowRange(page: Page) {
+  const sheet = page.locator('section[data-testid^="month-sheet-"]').first();
+  const fromDate = await sheet.getAttribute("data-visible-start");
+  const toDate = await sheet.getAttribute("data-visible-end");
+  if (!fromDate || !toDate) {
+    throw new Error("No visible month window range found.");
+  }
+  return { fromDate, toDate };
+}
+
 async function navigateToMonthContaining(page: Page, dateString: string) {
   await page.getByTestId("nav-monatsuebersicht").click();
 
@@ -63,29 +73,42 @@ async function navigateToMonthContaining(page: Page, dateString: string) {
   throw new Error(`Month containing ${dateString} was not reachable within 20 steps.`);
 }
 
-function overlapsMonth(appointment: { startDate: Date | string; endDate: Date | string | null }, monthDate: string) {
-  const monthStart = startOfMonth(parseISO(monthDate));
-  const monthEnd = endOfMonth(monthStart);
+async function readAppointmentDates(page: Page, appointmentId: number) {
+  const response = await page.request.get(`/api/appointments/${appointmentId}`);
+  expect(response.ok()).toBe(true);
+  const body = await response.json() as { startDate?: string; endDate?: string | null };
+  return {
+    startDate: body.startDate,
+    endDate: body.endDate ?? null,
+  };
+}
+
+function overlapsDateRange(
+  appointment: { startDate: Date | string; endDate: Date | string | null },
+  fromDate: string,
+  toDate: string,
+) {
+  const rangeStart = parseISO(fromDate);
+  const rangeEnd = parseISO(toDate);
   const appointmentStart = parseISO(toDateKey(appointment.startDate));
   const appointmentEnd = parseISO(toDateKey(getAppointmentEndDate(appointment as never)));
-  return appointmentStart <= monthEnd && appointmentEnd >= monthStart;
+  return appointmentStart <= rangeEnd && appointmentEnd >= rangeStart;
 }
 
 test("shows all expected appointments for the anchor month and excludes a next-month-only appointment", async ({ page }) => {
   await loginAsAdmin(page);
 
   const anchorDate = toDateKey(fixture.sameDayEarlyA.startDate);
-  const anchorMonthKey = anchorDate.slice(0, 7);
-  const farNextMonthKey = format(addMonths(parseISO(`${anchorMonthKey}-01`), 2), "yyyy-MM");
-  const nextMonthOnly = fixture.allAppointments.find(
-    (appointment) => toDateKey(appointment.startDate).slice(0, 7) >= farNextMonthKey && !overlapsMonth(appointment, anchorDate),
-  );
 
   await navigateToMonthContaining(page, anchorDate);
+  const visibleRange = await getVisibleWindowRange(page);
 
   const expectedIds = fixture.allAppointments
-    .filter((appointment) => overlapsMonth(appointment, anchorDate))
+    .filter((appointment) => overlapsDateRange(appointment, visibleRange.fromDate, visibleRange.toDate))
     .map((appointment) => appointment.id);
+  const nextMonthOnly = fixture.allAppointments.find(
+    (appointment) => !overlapsDateRange(appointment, visibleRange.fromDate, visibleRange.toDate),
+  );
 
   for (const id of expectedIds) {
     await expect(page.locator(`[data-testid="month-compact-bar-${id}"]`).first()).toBeVisible();
@@ -103,14 +126,14 @@ test("shows the cross-month span in both affected months and excludes a previous
 
   const startMonthDate = toDateKey(fixture.crossWeekSpan.startDate);
   const endMonthDate = toDateKey(fixture.crossWeekSpan.endDate ?? fixture.crossWeekSpan.startDate);
-  const endMonthKey = endMonthDate.slice(0, 7);
-  const farOtherMonthKey = format(addMonths(parseISO(`${endMonthKey}-01`), 2), "yyyy-MM");
-  const otherMonthOnly = fixture.allAppointments.find(
-    (appointment) => toDateKey(appointment.startDate).slice(0, 7) >= farOtherMonthKey && !overlapsMonth(appointment, endMonthDate),
-  );
 
   await navigateToMonthContaining(page, startMonthDate);
   await expect(page.locator(`[data-testid="month-compact-bar-${fixture.crossWeekSpan.id}"]`).first()).toBeVisible();
+
+  const startVisibleRange = await getVisibleWindowRange(page);
+  const otherMonthOnly = fixture.allAppointments.find(
+    (appointment) => !overlapsDateRange(appointment, startVisibleRange.fromDate, startVisibleRange.toDate),
+  );
 
   if (!otherMonthOnly) {
     throw new Error("No other-month-only appointment available for exclusion assertion.");
@@ -119,4 +142,30 @@ test("shows the cross-month span in both affected months and excludes a previous
 
   await navigateToMonthContaining(page, endMonthDate);
   await expect(page.locator(`[data-testid="month-compact-bar-${fixture.crossWeekSpan.id}"]`).first()).toBeVisible();
+});
+
+test("keeps persisted appointment dates stable while the sliding month window moves and reloads", async ({ page }) => {
+  await loginAsAdmin(page);
+
+  const appointment = fixture.crossWeekSpan;
+  const startDate = toDateKey(appointment.startDate);
+  const endDate = toDateKey(appointment.endDate ?? appointment.startDate);
+  const beforeNavigation = await readAppointmentDates(page, appointment.id);
+
+  await navigateToMonthContaining(page, startDate);
+  await expect(page.getByTestId(`month-sheet-day-${startDate}`)).toBeVisible();
+  await expect(page.locator(`[data-testid="month-compact-bar-${appointment.id}"]`).first()).toBeVisible();
+
+  await page.getByTestId("button-next").click();
+  await page.getByTestId("button-prev").click();
+  await page.reload();
+  await page.getByTestId("nav-monatsuebersicht").click();
+  await expect(page.getByTestId("month-sheet-container")).toBeVisible();
+
+  const afterReload = await readAppointmentDates(page, appointment.id);
+  expect(afterReload).toEqual(beforeNavigation);
+
+  await navigateToMonthContaining(page, endDate);
+  await expect(page.getByTestId(`month-sheet-day-${endDate}`)).toBeVisible();
+  await expect(page.locator(`[data-testid="month-compact-bar-${appointment.id}"]`).first()).toBeVisible();
 });

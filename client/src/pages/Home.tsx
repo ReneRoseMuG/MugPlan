@@ -84,7 +84,7 @@ export type WeekViewRestoreRequest = {
   focusAppointmentId?: number | null;
 };
 
-type CalendarWorkspaceView = "week" | "month";
+type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 
 type ReturnContext = {
   targetView: ViewType;

@@ -56,6 +56,8 @@ describe("EmployeeUtilizationView: Wiring", () => {
 
     expect(html).toContain('data-testid="button-prev"');
     expect(html).toContain('data-testid="button-next"');
+    expect(html).not.toContain("button-employee-utilization-month-prev");
+    expect(html).not.toContain("button-employee-utilization-month-next");
     expect(html).not.toContain("button-utilization-earlier");
     expect(html).not.toContain("button-utilization-later");
     expect(html).not.toContain("button-utilization-today");
@@ -83,6 +85,8 @@ describe("EmployeeUtilizationView: Wiring", () => {
     expect(call?.readOnly).toBe(true);
     expect(call?.visibleWeekCount).toBe(4);
     expect(call?.employeeFilterId).toBe(42);
+    expect(call?.onPreviousWeek).toEqual(expect.any(Function));
+    expect(call?.onNextWeek).toEqual(expect.any(Function));
   });
 
   it("resets the current date to the current week when the employee changes", () => {

@@ -18,7 +18,13 @@
  */
 import { describe, expect, it } from "vitest";
 import { format } from "date-fns";
-import { buildMonthSheetMatrix } from "../../../client/src/components/calendar/monthSheetModel";
+import {
+  buildMonthSheetMatrix,
+  buildMonthWindowMatrix,
+  getNextMonthWindowStart,
+  getPreviousMonthWindowStart,
+  parseMonthWindowStart,
+} from "../../../client/src/components/calendar/monthSheetModel";
 
 function toDateKeys(matrix: ReturnType<typeof buildMonthSheetMatrix>) {
   return matrix.weeks.flatMap((week) => week.days.map((day) => day.dateKey));
@@ -98,5 +104,29 @@ describe("month sheet model rules", () => {
 
     expect(flaggedDays).toHaveLength(1);
     expect(flaggedDays[0].dateKey).toBe(todayKey);
+  });
+
+  it("builds a normalized six-week window from the controlling window start", () => {
+    const matrix = buildMonthWindowMatrix(new Date("2026-03-18T12:00:00"), 6);
+
+    expect(format(matrix.visibleStart, "yyyy-MM-dd")).toBe("2026-03-16");
+    expect(format(matrix.visibleEnd, "yyyy-MM-dd")).toBe("2026-04-26");
+    expect(matrix.weeks).toHaveLength(6);
+    expect(matrix.weeks.map((week) => week.weekNumber)).toEqual([12, 13, 14, 15, 16, 17]);
+    expect(matrix.weeks.flatMap((week) => week.days).every((day) => day.isCurrentMonth)).toBe(true);
+  });
+
+  it("snaps month jumps to the week start of the target month without getting stuck on equal snaps", () => {
+    expect(format(getNextMonthWindowStart(new Date("2026-03-16T00:00:00")), "yyyy-MM-dd")).toBe("2026-03-30");
+    expect(format(getNextMonthWindowStart(new Date("2026-03-30T00:00:00")), "yyyy-MM-dd")).toBe("2026-04-27");
+    expect(format(getPreviousMonthWindowStart(new Date("2026-03-30T00:00:00")), "yyyy-MM-dd")).toBe("2026-02-23");
+  });
+
+  it("normalizes persisted window start input and falls back for invalid input", () => {
+    const fallback = new Date("2026-04-16T00:00:00");
+
+    expect(format(parseMonthWindowStart("2026-04-03", fallback), "yyyy-MM-dd")).toBe("2026-03-30");
+    expect(format(parseMonthWindowStart("ungueltig", fallback), "yyyy-MM-dd")).toBe("2026-04-13");
+    expect(format(parseMonthWindowStart(null, fallback), "yyyy-MM-dd")).toBe("2026-04-13");
   });
 });

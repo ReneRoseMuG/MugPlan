@@ -1,9 +1,16 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addMonths, addWeeks, getISOWeek, startOfISOWeek, subMonths, subWeeks } from "date-fns";
+import { addWeeks, format, getISOWeek, startOfISOWeek, subWeeks } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { MonthSheetGrid } from "@/components/MonthSheetGrid";
 import { WeekGrid } from "@/components/WeekGrid";
+import {
+  getNextMonthWindowStart,
+  getPreviousMonthWindowStart,
+  MONTH_SHEET_WINDOW_WEEK_COUNT,
+  normalizeMonthWindowStart,
+  parseMonthWindowStart,
+} from "@/components/calendar/monthSheetModel";
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
@@ -46,6 +53,49 @@ interface CalendarWorkspaceProps {
 
 const calendarPagingButtonClassName =
   "h-full w-7 border-amber-200 bg-amber-50 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 hover:text-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
+const MONTH_WINDOW_URL_PARAM = "windowStart";
+const MONTH_WINDOW_STORAGE_KEY = "calendar.month.windowStart";
+
+function isMonthWindowView(activeView: CalendarWorkspaceView): boolean {
+  return activeView === "month" || activeView === "monthSheet";
+}
+
+function formatMonthWindowStart(value: Date): string {
+  return format(normalizeMonthWindowStart(value), "yyyy-MM-dd");
+}
+
+function readStoredMonthWindowStart(fallbackDate: Date): Date {
+  if (typeof window === "undefined") {
+    return normalizeMonthWindowStart(fallbackDate);
+  }
+
+  const urlValue = typeof window.location?.search === "string"
+    ? new URLSearchParams(window.location.search).get(MONTH_WINDOW_URL_PARAM)
+    : null;
+  if (urlValue !== null) {
+    return parseMonthWindowStart(urlValue, new Date());
+  }
+
+  const storedValue = window.localStorage?.getItem(MONTH_WINDOW_STORAGE_KEY);
+  return parseMonthWindowStart(storedValue, fallbackDate);
+}
+
+function persistMonthWindowStart(value: Date) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const dateKey = formatMonthWindowStart(value);
+  window.localStorage?.setItem(MONTH_WINDOW_STORAGE_KEY, dateKey);
+
+  if (typeof window.location?.href !== "string" || typeof window.history?.replaceState !== "function") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set(MONTH_WINDOW_URL_PARAM, dateKey);
+  window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+}
 
 export function buildWeekNavigationRestoreRequest(
   activeView: CalendarWorkspaceView,
@@ -89,6 +139,7 @@ export function CalendarWorkspace({
   );
   const [kwJumpError, setKwJumpError] = useState(false);
   const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
+  const monthWindowRestoreAppliedRef = useRef(false);
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
   const userRole = getStoredUserRole();
@@ -109,10 +160,35 @@ export function CalendarWorkspace({
     setJumpBackDate(null);
     setLocalWeekRestoreRequest(null);
     setKwJumpError(false);
+    if (mode !== "global" || !isMonthWindowView(activeView)) {
+      monthWindowRestoreAppliedRef.current = false;
+    }
     if (!isKwJumpEnabled) {
       setKwInputValue("");
     }
-  }, [activeView, isKwJumpEnabled]);
+  }, [activeView, isKwJumpEnabled, mode]);
+
+  useEffect(() => {
+    if (mode !== "global" || !isMonthWindowView(activeView) || monthWindowRestoreAppliedRef.current) {
+      return;
+    }
+
+    monthWindowRestoreAppliedRef.current = true;
+    const restoredWindowStart = readStoredMonthWindowStart(currentDate);
+    if (restoredWindowStart.getTime() !== normalizeMonthWindowStart(currentDate).getTime()) {
+      onDateChange(restoredWindowStart);
+      return;
+    }
+
+    persistMonthWindowStart(restoredWindowStart);
+  }, [activeView, currentDate, mode, onDateChange]);
+
+  useEffect(() => {
+    if (mode !== "global" || !isMonthWindowView(activeView) || !monthWindowRestoreAppliedRef.current) {
+      return;
+    }
+    persistMonthWindowStart(currentDate);
+  }, [activeView, currentDate, mode]);
 
   useEffect(() => {
     if (!isKwJumpEnabled) {
@@ -150,8 +226,8 @@ export function CalendarWorkspace({
         return;
       }
       rememberWeekViewportForNextNavigation();
-      setJumpBackDate(currentDate);
-      onDateChange(targetDate);
+      setJumpBackDate(isMonthWindowView(activeView) ? normalizeMonthWindowStart(currentDate) : currentDate);
+      onDateChange(isMonthWindowView(activeView) ? normalizeMonthWindowStart(targetDate) : targetDate);
       setKwInputValue(String(parsedKw));
       setKwJumpError(false);
       return;
@@ -178,8 +254,8 @@ export function CalendarWorkspace({
   const next = () => {
     setJumpBackDate(null);
     setKwJumpError(false);
-    if (activeView === "month" || activeView === "monthSheet") {
-      onDateChange(addMonths(currentDate, 1));
+    if (isMonthWindowView(activeView)) {
+      onDateChange(getNextMonthWindowStart(currentDate));
       return;
     }
     rememberWeekViewportForNextNavigation();
@@ -189,13 +265,46 @@ export function CalendarWorkspace({
   const prev = () => {
     setJumpBackDate(null);
     setKwJumpError(false);
-    if (activeView === "month" || activeView === "monthSheet") {
-      onDateChange(subMonths(currentDate, 1));
+    if (isMonthWindowView(activeView)) {
+      onDateChange(getPreviousMonthWindowStart(currentDate));
       return;
     }
     rememberWeekViewportForNextNavigation();
     onDateChange(subWeeks(currentDate, 1));
   };
+
+  const nextWeekWindow = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    onDateChange(addWeeks(normalizeMonthWindowStart(currentDate), 1));
+  };
+
+  const prevWeekWindow = () => {
+    setJumpBackDate(null);
+    setKwJumpError(false);
+    onDateChange(subWeeks(normalizeMonthWindowStart(currentDate), 1));
+  };
+
+  const calendarAbsenceModeToggle = (
+    <div className="inline-flex rounded-md border border-border bg-background p-0.5" data-testid="calendar-absence-mode-toggle">
+      <button
+        type="button"
+        onClick={() => setCalendarAbsenceMode("planning")}
+        className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "planning" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        data-testid="button-calendar-planning-mode"
+      >
+        Terminplanung
+      </button>
+      <button
+        type="button"
+        onClick={() => setCalendarAbsenceMode("absences")}
+        className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "absences" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        data-testid="button-calendar-absence-mode"
+      >
+        Abwesenheiten
+      </button>
+    </div>
+  );
 
   const renderContent = () => {
     if (activeView === "week") {
@@ -242,30 +351,15 @@ export function CalendarWorkspace({
 
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <div className="flex items-center justify-end border-b border-border/40 bg-card px-3 py-2">
-          <div className="inline-flex rounded-md border border-border bg-background p-0.5" data-testid="calendar-absence-mode-toggle">
-            <button
-              type="button"
-              onClick={() => setCalendarAbsenceMode("planning")}
-              className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "planning" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              data-testid="button-calendar-planning-mode"
-            >
-              Terminplanung
-            </button>
-            <button
-              type="button"
-              onClick={() => setCalendarAbsenceMode("absences")}
-              className={`px-3 py-1.5 text-sm font-medium ${calendarAbsenceMode === "absences" ? "rounded bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              data-testid="button-calendar-absence-mode"
-            >
-              Abwesenheiten
-            </button>
-          </div>
-        </div>
         <div className="min-h-0 flex-1">
           <MonthSheetGrid
             currentDate={currentDate}
             employeeFilterId={employeeFilterId}
+            visibleWeekCount={MONTH_SHEET_WINDOW_WEEK_COUNT}
+            showMonthHeader
+            headerAction={calendarAbsenceModeToggle}
+            onPreviousWeek={prevWeekWindow}
+            onNextWeek={nextWeekWindow}
             readOnly={isReaderCalendarReadOnly || calendarAbsenceMode === "absences"}
             absenceVisibility={calendarAbsenceMode}
             conflictHighlightActive={conflictHighlightActive}
@@ -382,7 +476,7 @@ export function CalendarWorkspace({
               if (!jumpBackDate) return;
               rememberWeekViewportForNextNavigation();
               setKwInputValue(String(getISOWeek(jumpBackDate)));
-              onDateChange(jumpBackDate);
+              onDateChange(isMonthWindowView(activeView) ? normalizeMonthWindowStart(jumpBackDate) : jumpBackDate);
               setJumpBackDate(null);
               setKwJumpError(false);
             }}
