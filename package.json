@@ -26,6 +26,7 @@
     "secrets": "powershell -NoProfile -ExecutionPolicy Bypass -File script/run-gitleaks.ps1 detect --source . --no-git",
     "review": "npm run typecheck && npm run lint && npm run audit && npm run secrets",
     "check:encoding": "tsx script/check-frontend-encoding.ts",
+    "check:encoding:staged": "node scripts/check-staged-encoding.mjs",
     "check:encoding:frontend": "npm run check:encoding",
     "lint:encoding": "node scripts/check-encoding.mjs",
     "check:destructive-inventory": "tsx script/check-destructive-inventory.ts",
