@@ -247,6 +247,9 @@ Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journalei
 `account`  
 Codex prüft ausschließlich lokal die aktuell gespeicherte Codex-ChatGPT-Anmeldung in `$env:USERPROFILE\.codex\auth.json`, dekodiert nur die nicht-geheimen Claims aus dem vorhandenen Token und gibt E-Mail-Adresse, Plan-Typ, Organisationen und den Änderungszeitpunkt der Auth-Datei aus. Token-, Secret-, Session- und Refresh-Werte dürfen dabei nicht ausgegeben werden. Fehlt die Datei oder sind die Claims nicht lesbar, dokumentiert Codex den Blocker kurz und nimmt keine weiteren Änderungen vor.
 
+`repo update`  
+Codex führt ausschließlich serielle Git-Kommandos aus. Zuerst wird das lokale Repository mit `git fetch --all --prune` aktualisiert. Danach prüft Codex die lokalen Branches und fragt ausdrücklich nach, ob alle lokalen Branches, deren Remote-Gegenstück oder Upstream nach dem Fetch vorhanden ist, seriell mit `git pull --ff-only` aktualisiert werden sollen. Ohne diese Bestätigung werden keine Pulls ausgeführt. Vor einem Pull-Lauf muss Codex prüfen, ob der Arbeitsbaum sauber ist; bei uncommitteten Änderungen, Divergenzen, Pull-Konflikten oder nicht fast-forward-fähigen Branches bricht Codex den Pull-Teil kontrolliert ab und dokumentiert den Blocker. Anschließend gibt Codex einen Repo-Aktivitätsreport aus: aktuellster Remote-Branch nach letztem Commit, Zeitpunkt des letzten Commits, soweit zuverlässig verfügbarer Push-Zeitpunkt oder andernfalls der Hinweis, dass normales Git den tatsächlichen Push-Zeitpunkt nicht zuverlässig lokal speichert, sowie eine Liste aller lokalen Branches ohne vorhandenes Remote-Gegenstück oder Upstream.
+
 `docs-sync`  
 Codex prüft `docs/architecture.md`, `docs/implementation.md`, `architecture-index.md` und `implementation-index.md` auf Aktualität im Kontext des erledigten Auftrags und aktualisiert sie bei Bedarf gezielt.
 
