@@ -14,6 +14,7 @@ Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträg
 
 ## Einträge
 
+- [06.05.26 - Staged-Encoding-Guard](06-05-26-staged-encoding-guard.md)
 - [05.05.26 - Bulk-Import und PDF-Mining entfernt](05-05-26-bulk-import-pdf-mining-entfernen.md)
 - [05.05.26 - FT-02: Projekt-Hover-Preview-Höhe](05-05-26-projekt-hover-preview-hoehe.md)
 - [05.05.26 - FT-04: Wochenkalender Tour-KW-Breite](05-05-26-wochenkalender-tour-kw-breite.md)

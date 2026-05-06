@@ -2,11 +2,12 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: Abgeschlossen
 - Priorität: Hoch
 - Feature: Repo-weite Text-, Encoding- und Qualitätsabsicherung
 - Entdeckt: 02.05.26
 - Art: Technische Schuld
+- Abgeschlossen: 06.05.26
 
 ## Befund
 
@@ -29,6 +30,12 @@ Mittel. Ohne Härtung können neue Mojibake-Fälle weiter in Code, UI, Templates
 ## Vorgeschlagene Maßnahme
 
 Variante B als bevorzugten Pfad behandeln. Zuerst reale Eintrittspfade identifizieren, dann eine kleine UTF-8-Grundlage für Editor/Repo und relevante I/O härten und schließlich einen klaren Guard gegen ungültiges UTF-8 oder typische Mojibake-Muster in geänderten Textdateien ergänzen. Keine DB-Zeichensatzmigration, keine großflächige Umkodierung.
+
+## Umsetzung
+
+Am 06.05.26 wurde Variante B umgesetzt. Ergänzt wurden ein Staged-Encoding-Guard, ein versionierter Pre-Commit-Hook und ein npm-Skript für die lokale Ausführung. Der Guard prüft gestagte Textdateien auf gültiges UTF-8 und neu hinzugefügte Diff-Zeilen auf typische Mojibake-Muster sowie offensichtliche ASCII-Umlaut-Umschreibungen in menschenlesbaren Textbereichen. `save` wurde so dokumentiert, dass Encoding-/Mojibake-Blocker vor dem Commit gemeldet werden und eine Bereinigung nur nach ausdrücklicher Bestätigung erfolgt.
+
+Die Lösung nutzt ausschließlich lokale Git- und npm-Mechanismen. Es wurden keine GitHub-Dienste, keine DB-Zeichensatzmigration und keine großflächige Umkodierung eingeführt.
 
 ## Quelle
 
