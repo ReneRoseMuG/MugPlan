@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Kalender/Touren/Abwesenheiten
 - Typ: Testabdeckung
 - Erstellt: 06.05.26
 - Quelle: [W-19 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken](../decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md)
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 

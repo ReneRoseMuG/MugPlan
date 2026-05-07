@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Mittel
+- Dringlichkeit: Mittel
+- Thema: Frontend-Build
 - Typ: Analyse
 - Erstellt: 06.05.26
 - Quelle: [W-15 - Chunk-Size-Warnungen strategisch behandeln](../decisions/w-15-chunk-size-warnungen.md)
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 

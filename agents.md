@@ -235,11 +235,14 @@ Codex führt den vollen Testlauf gemäß Abschnitt 12 als reinen Report-Auftrag 
 `testsuite`  
 Codex erstellt für die aktuell bearbeitete Aufgabe bzw. die letzte Session eine vollständige, fachlich belastbare Testsuite gemäß Abschnitt 11.1a. Dazu gehören Pflichtanalyse des aktuellen Arbeitskontexts, Ergänzung realistisch belastbarer Tests über mehrere Testebenen, serielle Ausführung der relevanten Testbefehle und ein Abschlussbericht mit Abdeckung, verwendeten Daten, verbleibenden Lücken sowie erfolgreichen und fehlgeschlagenen Kommandos.
 
+`Tasks?`
+Codex liest `docs/wiki/tasks/README.md` sowie bei Bedarf die dort verlinkten offenen Aufgabendateien und gibt ausschließlich die offenen, in Bearbeitung befindlichen oder blockierten Aufgaben aus. Die Ausgabe wird nach Dringlichkeit (`Hoch`, `Mittel`, `Niedrig`), danach nach Thema und danach nach Aufgaben-ID sortiert. Abgeschlossene oder verworfene Aufgaben aus `docs/wiki/tasks/closed/` werden nicht ausgegeben. Die Antwort enthält keine Struktur-, Pflege- oder Organisationshinweise.
+
 `save`  
 Codex führt ausschließlich seriell `git add`, `git commit` und `git push` für alle offenen Änderungen des aktuellen Arbeitsstands aus. Vor dem Commit darf ein lokaler Encoding-/Mojibake-Staged-Guard laufen. Findet dieser Guard falsch kodierte Umlaute, Mojibake-Artefakte oder andere blockierende Encoding-Fälle, wird kein Commit erstellt. Codex dokumentiert die gemeldeten Fundstellen und fragt ausdrücklich, ob die gefundenen Encoding-/Mojibake-Fälle bereinigt werden sollen. Ohne diese Bestätigung nimmt Codex keine inhaltliche Bereinigung vor. Nach bestätigter Bereinigung führt Codex den Guard erneut aus und setzt `save` nur fort, wenn der Guard sauber ist. Falls Commit oder Push durch Konflikte, fehlende Inhalte oder andere Git-Blocker nicht sauber möglich sind, bricht Codex kontrolliert ab und dokumentiert den Grund.
 
 `log <kurztitel>`  
-Codex erstellt das Auftragslog gemäß Abschnitt 14.2 unter `logs/<yyyy-mm-dd>_<kurztitel>.md`.
+Legacy-Alias für `journal`. Codex erstellt keinen neuen Eintrag unter `logs/`, sondern einen Journaleintrag gemäß Abschnitt 14.2a. Der Ordner `logs/` bleibt nur historischer Altbestand.
 
 `journal`  
 Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag im Repo-Wiki unter `docs/wiki/journal/` gemäß Abschnitt 14.2a und ergänzt den Eintrag oben in `docs/wiki/journal/README.md`. Für sichtbare Datumsangaben gilt zwingend das Kurzformat `dd.MM.yy`.
@@ -731,11 +734,13 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 - Jeder fehlgeschlagene Test wird mit Datei, Testname, Fehlertyp und einer Einschätzung der Auswirkung aufgeführt.
 - Bei **nein**: kein Testlauf.
 
-### 14.2 Log schreiben
+### 14.2 Log-Historie
 
 > „Soll ich ein Log für diesen Auftrag schreiben?"
 
-- Bei **ja**: neue Markdown-Datei unter `logs/<yyyy-mm-dd>_<kurztitel>.md` mit Zweck, Scope, technischen Entscheidungen, betroffenen Dateien, Hinweisen zum Testen und bekannten Einschränkungen.
+- Seit 07.05.26 werden keine neuen Auftragslogs unter `logs/` erstellt.
+- Bei **ja** oder Kurzkommando `log <kurztitel>`: Journaleintrag gemäß Abschnitt 14.2a erstellen.
+- Der Ordner `logs/` bleibt als historischer Altbestand erhalten und darf bei älteren Recherchen gelesen werden.
 - Bei **nein**: keine Dokumentationsdatei.
 
 ### 14.2a Journal im Repo-Wiki schreiben
@@ -776,6 +781,14 @@ Codex prüft das Ergebnis explizit gegen:
 Codex nennt konkret, welche Stellen geprüft wurden und ob es bekannte Abweichungen gibt. Bei Abweichungen werden konkrete Korrekturen vorgeschlagen.
 
 Eine Aufgabe gilt als abgeschlossen, wenn das fachliche Ziel umgesetzt, alle Verbote eingehalten und die geforderte Dokumentation vollständig vorliegt. Kann eine Aufgabe nur teilweise umgesetzt werden, gilt sie als abgeschlossen, sofern der Abbruchgrund sauber dokumentiert ist.
+
+Wenn eine Wiki-Aufgabe aus `docs/wiki/tasks/` abgeschlossen, verworfen oder kontrolliert teilabgeschlossen ist, führt Codex zusätzlich die Aufgabenpflege aus:
+
+1. Status, Abschlussdatum, Ergebnis, Verifikation und Folgeaufgaben in der Aufgabendatei aktualisieren.
+2. Passenden Journaleintrag erstellen oder bestehenden Journaleintrag im Feld `Journal` verlinken.
+3. Aufgabe aus `docs/wiki/tasks/README.md` entfernen.
+4. Aufgabendatei nach `docs/wiki/tasks/closed/` verschieben.
+5. Relative Links auf die verschobene Aufgabe aktualisieren.
 
 Für Schemaänderungen reicht eine reine Code-Implementierung dafür nicht aus. Fehlt die erfolgreiche Migration mindestens auf Dev und Test oder liegt ein erkennbarer Schema-Mismatch in Test-/E2E-Umgebungen vor, darf Codex den Auftrag nicht als fachlich umgesetzt melden, sondern nur als blockiert oder teilweise umgesetzt mit eindeutig benanntem Migrationsblocker.
 

@@ -38,9 +38,9 @@ Jede Backlog-Datei verwendet diese Abschnitte:
 
 ## Aufgaben-Vorlage
 
-Umsetzbare Aufgaben werden unter `docs/wiki/tasks/` geführt. Jede Aufgabe verwendet die feste Vorlage aus [Aufgaben-Template](tasks/template.md) und enthält mindestens:
+Umsetzbare Aufgaben werden unter `docs/wiki/tasks/` geführt. Die lesbare Übersicht unter [Aufgaben](tasks/README.md) enthält nur offene Aufgaben. Pflege- und Strukturregeln stehen unter [Aufgabenpflege](tasks/meta/README.md). Jede Aufgabe verwendet die feste Vorlage aus [Aufgaben-Template](tasks/template.md) und enthält mindestens:
 
-- Metadaten mit Status, Priorität, Typ, Quelle und Verantwortlichkeit
+- Metadaten mit Status, Dringlichkeit, Thema, Typ, Quelle, Verantwortlichkeit und Journalbezug
 - Beziehungen zu Features, Use Cases, Entscheidungen und weiteren Bezügen
 - Ziel
 - Ausgangslage
@@ -49,6 +49,12 @@ Umsetzbare Aufgaben werden unter `docs/wiki/tasks/` geführt. Jede Aufgabe verwe
 - Anhänge
 - Blocker und offene Fragen
 - Abschluss
+
+Abgeschlossene oder verworfene Aufgaben werden aus der offenen Übersicht entfernt und nach `docs/wiki/tasks/closed/` verschoben.
+
+## Journal-Vorlage
+
+Das Wiki-Journal unter `docs/wiki/journal/` ersetzt ab 07.05.26 neue Auftragslogs. Pflegehinweise stehen unter [Journalpflege](journal/meta/README.md). Der Ordner `logs/` bleibt historischer Altbestand.
 
 Architektur- und Designentscheidungen bleiben unter `docs/wiki/decisions/`. Eine Decision wird erst dann als Aufgabe übertragen, wenn ein konkreter Umsetzungspfad oder eine nachverfolgbare Arbeitsliste vorliegt.
 

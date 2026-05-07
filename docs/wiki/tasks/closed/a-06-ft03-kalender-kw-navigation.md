@@ -1,22 +1,24 @@
-# A-06 - FT-03 Monatsübersicht mit KW-Navigation und gleitendem Fenster
+﻿# A-06 - FT-03 Monatsübersicht mit KW-Navigation und gleitendem Fenster
 
 ## Metadaten
 
 - Status: Abgeschlossen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Kalender
 - Typ: Implementierung
 - Erstellt: 06.05.26
 - Quelle: `C:\Users\r.rose\Downloads\codex-auftrag-ft03-kalender-kw-navigation.md`
 - Verantwortlich: offen
+- Journal: [06.05.26 - A6: Monatsübersicht mit KW-Navigation](../../journal/06-05-26-a6-monatsuebersicht-kw-navigation.md)
 
 ## Beziehungen
 
 - Features:
-  - [FT (03): Kalenderansichten](../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
+  - [FT (03): Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
 - Use Cases:
-  - [UC 03/02 - Zeitraum wechseln](../features/ft-03-kalenderansichten/use-cases/uc-03-02-zeitraum-wechseln.md)
-  - [UC 03/05 - Monatsübersicht anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-05-monatsuebersicht-anzeigen.md)
-  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
+  - [UC 03/02 - Zeitraum wechseln](../../features/ft-03-kalenderansichten/use-cases/uc-03-02-zeitraum-wechseln.md)
+  - [UC 03/05 - Monatsübersicht anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-05-monatsuebersicht-anzeigen.md)
+  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
 - Entscheidungen:
   - Keine direkte Decision verknüpft.
 - Weitere Bezüge:

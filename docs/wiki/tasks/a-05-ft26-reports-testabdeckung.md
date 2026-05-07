@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Mittel
+- Dringlichkeit: Mittel
+- Thema: Reports
 - Typ: Testabdeckung
 - Erstellt: 06.05.26
 - Quelle: [W-21 - FT-26 Reports: verbleibende Testabdeckung](../decisions/w-21-ft26-reports-testabdeckung.md)
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 

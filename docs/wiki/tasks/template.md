@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Niedrig | Mittel | Hoch
+- Dringlichkeit: Niedrig | Mittel | Hoch
+- Thema: Kurzer Themenname
 - Typ: Dokumentation | Testabdeckung | Implementierung | Analyse | Refactoring | Infrastruktur
 - Erstellt: dd.MM.yy
 - Quelle: Link oder kurzer Herkunftshinweis
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 
@@ -19,6 +21,7 @@
   - [W-XX - Entscheidungstitel](../decisions/...)
 - Weitere Bezüge:
   - [Relations](../relations.md)
+  - [Journal](../journal/README.md)
 
 ## Ziel
 

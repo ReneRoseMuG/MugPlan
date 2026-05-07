@@ -1,16 +1,6 @@
 # Journal
 
-Das Journal dokumentiert Änderungen an Lastenheft und Codebase. Neuere Einträge stehen oben.
-
-## Pflege
-
-- Neue Journaleinträge werden als Markdown-Dateien in diesem Verzeichnis gepflegt.
-- Neue Einträge werden oben unter `## Einträge` verlinkt.
-- Umfangreiche Aufgaben, Refactorings und mehrschichtige Implementierungen erhalten einen eigenen Journaleintrag.
-- Sichtbare Datumsangaben verwenden das Kurzformat `dd.MM.yy`.
-
-## Historische Quelle
-
+Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise noch unter `logs/`; ab dem 07.05.26 übernimmt dieses Journal die Protokollebene.
 
 ## Einträge
 

@@ -1,18 +1,20 @@
-# A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender
+﻿# A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender
 
 ## Metadaten
 
 - Status: abgeschlossen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Kalender-Move-Dialoge
 - Typ: Implementierung
 - Erstellt: 06.05.26
 - Quelle: `C:\Users\r.rose\Downloads\codex-auftrag-ft03-dnd-tourwechsel.md`
 - Verantwortlich: offen
+- Journal: [06.05.26 - A-07/A-08: Termine markieren und verschieben](../../journal/06-05-26-a07-a08-kalender-verschieben.md)
 
 ## Beziehungen
 
 - Features:
-  - [FT (03): Kalenderansichten](../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
+  - [FT (03): Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
   - FT-04 Tourenplanung
   - FT-01 Kalendertermine
 - Use Cases:
@@ -20,9 +22,9 @@
   - UC 01/05 - Tour einem Termin zuweisen
   - UC 01/15 - Optimistic Locking bei paralleler Bearbeitung
   - UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
-  - [UC 03/01 - Wochenkalender anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-01-wochenkalender-anzeigen.md)
-  - [UC 03/04 - Tour-Lanes aufklappen oder zuklappen](../features/ft-03-kalenderansichten/use-cases/uc-03-04-tour-lanes-aufklappen-oder-zuklappen.md)
-  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
+  - [UC 03/01 - Wochenkalender anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-01-wochenkalender-anzeigen.md)
+  - [UC 03/04 - Tour-Lanes aufklappen oder zuklappen](../../features/ft-03-kalenderansichten/use-cases/uc-03-04-tour-lanes-aufklappen-oder-zuklappen.md)
+  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
 - Entscheidungen:
   - Keine direkte Decision verknüpft.
 - Weitere Bezüge:

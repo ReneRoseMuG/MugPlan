@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Mittel
+- Dringlichkeit: Mittel
+- Thema: Testinfrastruktur
 - Typ: Infrastruktur
 - Erstellt: 06.05.26
 - Quelle: [W-16 - Stryker Test Runner isoliert einführen](../decisions/w-16-stryker-test-runner.md)
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 

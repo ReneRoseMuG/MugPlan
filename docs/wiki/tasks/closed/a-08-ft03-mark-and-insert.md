@@ -1,28 +1,30 @@
-# A-08 - FT-03 Termin markieren und per Einfügen verschieben
+﻿# A-08 - FT-03 Termin markieren und per Einfügen verschieben
 
 ## Metadaten
 
 - Status: abgeschlossen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Kalender-Move-Dialoge
 - Typ: Implementierung
 - Erstellt: 06.05.26
 - Quelle: `C:\Users\r.rose\Downloads\codex-auftrag-ft03-mark-and-insert.md`
 - Verantwortlich: offen
+- Journal: [06.05.26 - A-07/A-08: Termine markieren und verschieben](../../journal/06-05-26-a07-a08-kalender-verschieben.md)
 
 ## Beziehungen
 
 - Features:
-  - [FT (03): Kalenderansichten](../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
+  - [FT (03): Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
   - FT-01 Kalendertermine
   - FT-04 Tourenplanung
 - Use Cases:
   - UC 01/03 - Termin verschieben
   - UC 01/05 - Tour einem Termin zuweisen
   - UC 01/15 - Optimistic Locking bei paralleler Bearbeitung
-  - [UC 03/01 - Wochenkalender anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-01-wochenkalender-anzeigen.md)
-  - [UC 03/02 - Zeitraum wechseln](../features/ft-03-kalenderansichten/use-cases/uc-03-02-zeitraum-wechseln.md)
-  - [UC 03/05 - Monatsübersicht anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-05-monatsuebersicht-anzeigen.md)
-  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
+  - [UC 03/01 - Wochenkalender anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-01-wochenkalender-anzeigen.md)
+  - [UC 03/02 - Zeitraum wechseln](../../features/ft-03-kalenderansichten/use-cases/uc-03-02-zeitraum-wechseln.md)
+  - [UC 03/05 - Monatsübersicht anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-05-monatsuebersicht-anzeigen.md)
+  - [UC 03/06 - Auslastungsansicht eines Mitarbeiters anzeigen](../../features/ft-03-kalenderansichten/use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.md)
 - Entscheidungen:
   - Keine direkte Decision verknüpft.
 - Weitere Bezüge:

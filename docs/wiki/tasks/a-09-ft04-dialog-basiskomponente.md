@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Dialoge
 - Typ: Implementierung
 - Erstellt: 06.05.26
 - Quelle: `C:\Users\r.rose\Downloads\codex-auftrag-ft04-dialog-basiskomponente.md`
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 
@@ -23,8 +25,10 @@
 - Entscheidungen:
   - Keine direkte Decision verknüpft.
 - Weitere Bezüge:
-  - [A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender](a-07-ft03-dnd-tourwechsel.md)
-  - [A-08 - FT-03 Termin markieren und per Einfügen verschieben](a-08-ft03-mark-and-insert.md)
+  - [A-10 - FT-04 mehrstufiger Tour-KW-Dialog](a-10-ft04-multistep-tour-kw-dialog.md)
+  - [A-12 - Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](a-12-termin-tour-kw-mutationsdialoge.md)
+  - [A-07 - FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender](closed/a-07-ft03-dnd-tourwechsel.md)
+  - [A-08 - FT-03 Termin markieren und per Einfügen verschieben](closed/a-08-ft03-mark-and-insert.md)
 
 ## Ziel
 

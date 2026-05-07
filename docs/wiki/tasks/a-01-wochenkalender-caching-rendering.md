@@ -3,11 +3,13 @@
 ## Metadaten
 
 - Status: offen
-- Priorität: Hoch
+- Dringlichkeit: Hoch
+- Thema: Kalender-Performance
 - Typ: Implementierung
 - Erstellt: 06.05.26
 - Quelle: [W-13-Plan](../decisions/w-13-plan-wochenkalender-caching-und-render-strategie.md), [W-13-Entscheidung](../decisions/w-13-wochenkalender-caching-und-render-strategie.md)
 - Verantwortlich: offen
+- Journal: offen
 
 ## Beziehungen
 
