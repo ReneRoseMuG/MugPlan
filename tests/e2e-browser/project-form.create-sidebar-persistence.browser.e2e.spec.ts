@@ -204,6 +204,40 @@ test("persists Reklamation workflow from the new project form with a template no
   }).toContain(MANAGED_COMPLAINT_TAG_NAME);
 });
 
+test("does not reopen the Reklamation note suggestion on new project save after skip", async ({ page }) => {
+  const customer = await createCustomerFixture("FT02-CREATE-REKLAMATION-SKIP");
+
+  await openNewProject(page);
+  await expect(page.getByTestId("project-form-functions-panel")).toBeVisible();
+  await expect(page.getByTestId("button-set-project-reklamation")).toBeVisible();
+
+  await page.getByTestId("input-project-name").fill("FT02 Browser Projekt Reklamation Skip");
+  await page.getByTestId("input-project-order-number").fill("RKL-PRJ-SKIP-01");
+  await openCustomerPickerAndSelect(page, customer.customerNumber);
+
+  await page.getByTestId("button-set-project-reklamation").click();
+  await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/projects"
+  ));
+  await page.getByTestId("button-save-project").click();
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+  const createdProject = await createdProjectResponse.json() as { id: number };
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => readProjectTagNames(page, createdProject.id)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, createdProject.id);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+});
+
 test("persists tag, note and project attachment from the new project form and restores them on reopen", async ({ page }) => {
   const customer = await createCustomerFixture("FT02-CREATE-SIDEBAR");
   const tag = await createTagFixture("FT02-PROJECT-CREATE-TAG");

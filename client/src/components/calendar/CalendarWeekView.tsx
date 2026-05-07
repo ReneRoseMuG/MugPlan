@@ -478,6 +478,7 @@ export function CalendarWeekView({
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; appointmentId: number; noteId: number; noteVersion: number } | null>(null);
+  const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
   const [workflowNoteEditorOpen, setWorkflowNoteEditorOpen] = useState(false);
   const [workflowNoteEditorAppointmentId, setWorkflowNoteEditorAppointmentId] = useState<number | null>(null);
   const [workflowNoteEditorId, setWorkflowNoteEditorId] = useState<number | null>(null);
@@ -1672,6 +1673,31 @@ export function CalendarWeekView({
     },
   });
 
+  const getWorkflowNoteSuggestionKey = (appointmentId: number, templateTitle: string) =>
+    `${appointmentId}:${normalizeWorkflowNoteTitle(templateTitle)}`;
+
+  const openWorkflowNoteSuggestionDialog = (appointmentId: number, templateTitle: string) => {
+    const suggestionKey = getWorkflowNoteSuggestionKey(appointmentId, templateTitle);
+    if (workflowNoteSuggestionSeenRef.current.has(suggestionKey)) {
+      return false;
+    }
+    workflowNoteSuggestionSeenRef.current.add(suggestionKey);
+    setNoteSuggestionDialog({
+      templateTitle,
+      appointmentId,
+    });
+    return true;
+  };
+
+  const clearWorkflowNoteSuggestionSeen = (appointmentId: number, templateTitle: string) => {
+    workflowNoteSuggestionSeenRef.current.delete(getWorkflowNoteSuggestionKey(appointmentId, templateTitle));
+  };
+
+  const resolveWorkflowTemplateTitleForTag = (tagName: string) => {
+    const action = computeTagAddedAction(tagName, null, []);
+    return action.kind === "show_note_suggestion_dialog" ? action.templateTitle : null;
+  };
+
   const applyDropMutationEvents = (params: {
     appointmentId: number;
     mutationEvents: AppointmentMutationEvent[] | undefined;
@@ -1693,12 +1719,14 @@ export function CalendarWeekView({
           params.notes.map((note) => ({ title: note.title })),
         );
         if (action.kind === "show_note_suggestion_dialog") {
-          setNoteSuggestionDialog({
-            templateTitle: action.templateTitle,
-            appointmentId: params.appointmentId,
-          });
+          openWorkflowNoteSuggestionDialog(params.appointmentId, action.templateTitle);
         }
         continue;
+      }
+
+      const removedTemplateTitle = resolveWorkflowTemplateTitleForTag(event.tagName);
+      if (removedTemplateTitle) {
+        clearWorkflowNoteSuggestionSeen(params.appointmentId, removedTemplateTitle);
       }
 
       const action = computeTagRemovedAction(

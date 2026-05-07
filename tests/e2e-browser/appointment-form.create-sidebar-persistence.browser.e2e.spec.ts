@@ -381,6 +381,29 @@ test("persists Reklamation workflow from the new appointment form with a templat
   }).toContain(MANAGED_COMPLAINT_TAG_NAME);
 });
 
+test("does not reopen the Reklamation note suggestion on new appointment save after skip", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT01-CREATE-REKLAMATION-SKIP", targetDayOffset: 5 });
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await selectProjectWithoutAppointments(page, fixture);
+  await expect(page.getByTestId("button-set-appointment-reklamation")).toBeVisible();
+
+  await page.getByTestId("button-set-appointment-reklamation").click();
+  await expect(page.getByTestId("button-remove-appointment-reklamation")).toBeVisible();
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await expect.poll(async () => readAppointmentTagNames(page, createdAppointmentId)).toContain(MANAGED_COMPLAINT_TAG_NAME);
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, createdAppointmentId);
+    return notes.some((note) => note.title === MANAGED_COMPLAINT_TAG_NAME);
+  }).toBe(false);
+});
+
 test("persists tag, note and appointment attachment from the new appointment form and restores them on reopen", async ({ page }) => {
   const customer = await createCustomerFixture("FT01-CREATE-SIDEBAR");
   const tag = await createTagFixture("FT01-CREATE-TAG");

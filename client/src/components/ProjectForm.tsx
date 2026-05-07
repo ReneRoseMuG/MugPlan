@@ -202,6 +202,7 @@ export function ProjectForm({
   const hydratedEditProjectFormIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
+  const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
   const [userRole] = useState(() => getStoredUserRole());
   const isAdmin = userRole === "ADMIN";
   const isReader = isReaderRole(userRole);
@@ -265,6 +266,18 @@ export function ProjectForm({
     queryKey: ["/api/note-templates"],
     queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
+  const clearWorkflowNoteSuggestionSeen = (templateTitle: string) => {
+    workflowNoteSuggestionSeenRef.current.delete(normalizeWorkflowNoteTitle(templateTitle));
+  };
+  const openWorkflowNoteSuggestionDialog = (templateTitle: string) => {
+    const suggestionKey = normalizeWorkflowNoteTitle(templateTitle);
+    if (workflowNoteSuggestionSeenRef.current.has(suggestionKey)) {
+      return false;
+    }
+    workflowNoteSuggestionSeenRef.current.add(suggestionKey);
+    setNoteSuggestionDialog({ templateTitle });
+    return true;
+  };
 
   // Fetch customers for selection
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -896,6 +909,7 @@ export function ProjectForm({
 
   const removeDraftProjectReklamation = () => {
     setDraftProjectTags((current) => current.filter((entry) => !isManagedComplaintTagName(entry.tag.name)));
+    clearWorkflowNoteSuggestionSeen("Reklamation");
     openProjectNoteRemovalForTag("Reklamation");
   };
 
@@ -995,7 +1009,7 @@ export function ProjectForm({
       visibleProjectNotes.map((note) => ({ title: note.title })),
     );
     if (action.kind === "show_note_suggestion_dialog") {
-      setNoteSuggestionDialog({ templateTitle: action.templateTitle });
+      openWorkflowNoteSuggestionDialog(action.templateTitle);
     }
   };
 
@@ -1007,6 +1021,7 @@ export function ProjectForm({
     if (action.kind !== "show_note_removal_dialog") {
       return;
     }
+    clearWorkflowNoteSuggestionSeen(action.templateTitle);
 
     const matchingNote = visibleProjectNotes.find((note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(action.templateTitle));
     if (!matchingNote || !Number.isInteger(matchingNote.version) || matchingNote.version < 1) {
@@ -1157,7 +1172,11 @@ export function ProjectForm({
         version: item.relationVersion,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, item) => {
+      const removedTemplate = computeTagAddedAction(item.tag.name, null, []);
+      if (removedTemplate.kind === "show_note_suggestion_dialog") {
+        clearWorkflowNoteSuggestionSeen(removedTemplate.templateTitle);
+      }
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId] });
       void invalidateProjectQueries();
@@ -1185,6 +1204,7 @@ export function ProjectForm({
       if (action === "set") {
         openProjectNoteSuggestionForTag("Reklamation");
       } else {
+        clearWorkflowNoteSuggestionSeen("Reklamation");
         openProjectNoteRemovalForTag("Reklamation");
       }
       void queryClient.invalidateQueries({ queryKey: ['/api/projects', effectiveProjectId, 'tags'] });

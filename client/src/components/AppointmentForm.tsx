@@ -527,6 +527,7 @@ export function AppointmentForm({
   const hydratedEditAppointmentIdRef = useRef<number | null>(null);
   const draftNoteIdRef = useRef(-1);
   const draftAttachmentIdRef = useRef(-1);
+  const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
 
   const matchesAttachmentFileSignature = (attachment: PendingAppointmentAttachmentItem, file: File) =>
     attachment.originalName === file.name &&
@@ -661,6 +662,21 @@ export function AppointmentForm({
     queryKey: ["/api/note-templates"],
     queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
+  const clearWorkflowNoteSuggestionSeen = (templateTitle: string) => {
+    workflowNoteSuggestionSeenRef.current.delete(normalizeWorkflowNoteTitle(templateTitle));
+  };
+  const openWorkflowNoteSuggestionDialog = (
+    templateTitle: string,
+    targetAppointmentId: number | null,
+  ) => {
+    const suggestionKey = normalizeWorkflowNoteTitle(templateTitle);
+    if (workflowNoteSuggestionSeenRef.current.has(suggestionKey)) {
+      return false;
+    }
+    workflowNoteSuggestionSeenRef.current.add(suggestionKey);
+    setNoteSuggestionDialog({ templateTitle, appointmentId: targetAppointmentId });
+    return true;
+  };
   const createSidebarDraftSignature = useMemo(
     () => JSON.stringify({
       tagIds: draftAppointmentTags.map((item) => item.tag.id).sort((a, b) => a - b),
@@ -687,7 +703,7 @@ export function AppointmentForm({
       onSuccess: async (_data, { tagName }) => {
         const action = computeTagAddedAction(tagName, appointmentId, visibleAppointmentNotes.map((n) => ({ title: n.title })));
         if (action.kind === "show_note_suggestion_dialog") {
-          setNoteSuggestionDialog({ templateTitle: action.templateTitle, appointmentId: appointmentId! });
+          openWorkflowNoteSuggestionDialog(action.templateTitle, appointmentId!);
         }
         await queryClient.invalidateQueries({ queryKey: ["/api/appointments", appointmentId, "tags"] });
         await invalidateRelatedAppointmentQueries(selectedProjectId);
@@ -701,6 +717,10 @@ export function AppointmentForm({
       await apiRequest("DELETE", `/api/appointments/${appointmentId}/tags/${item.tag.id}`, { version: item.relationVersion });
     },
     onSuccess: async (_data, item) => {
+      const removedTemplate = computeTagAddedAction(item.tag.name, null, []);
+      if (removedTemplate.kind === "show_note_suggestion_dialog") {
+        clearWorkflowNoteSuggestionSeen(removedTemplate.templateTitle);
+      }
       const action = computeTagRemovedAction(item.tag.name, visibleAppointmentNotes.map((n) => ({ title: n.title })));
       if (action.kind === "show_note_removal_dialog") {
         openNoteRemovalDialogForTemplate(action.templateTitle, visibleAppointmentNotes);
@@ -856,8 +876,11 @@ export function AppointmentForm({
       );
       return response.json() as Promise<{ kind: "updated" | "noop"; mutationEvents?: AppointmentMutationEvent[] }>;
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, variables) => {
       if (!appointmentId) return;
+      if (variables.action === "remove") {
+        clearWorkflowNoteSuggestionSeen("Reklamation");
+      }
       const openedDialog = applyAppointmentMutationEvents({
         mutationEvents: result.mutationEvents,
         targetAppointmentId: appointmentId,
@@ -1294,12 +1317,13 @@ export function AppointmentForm({
       visibleAppointmentNotes.map((note) => ({ title: note.title })),
     );
     if (action.kind === "show_note_suggestion_dialog") {
-      setNoteSuggestionDialog({ templateTitle: action.templateTitle, appointmentId: null });
+      openWorkflowNoteSuggestionDialog(action.templateTitle, null);
     }
   };
 
   const removeDraftAppointmentReklamation = () => {
     setDraftAppointmentTags((current) => current.filter((entry) => !isManagedComplaintTagName(entry.tag.name)));
+    clearWorkflowNoteSuggestionSeen("Reklamation");
     const action = computeTagRemovedAction(
       "Reklamation",
       visibleAppointmentNotes.map((note) => ({ title: note.title })),
@@ -2180,11 +2204,10 @@ export function AppointmentForm({
           params.notes.map((note) => ({ title: note.title })),
         );
         if (action.kind === "show_note_suggestion_dialog") {
-          setNoteSuggestionDialog({
-            templateTitle: action.templateTitle,
-            appointmentId: params.targetAppointmentId,
-          });
-          openedDialog = true;
+          openedDialog = openWorkflowNoteSuggestionDialog(
+            action.templateTitle,
+            params.targetAppointmentId,
+          ) || openedDialog;
         }
         continue;
       }
@@ -2194,6 +2217,7 @@ export function AppointmentForm({
         params.notes.map((note) => ({ title: note.title })),
       );
       if (action.kind === "show_note_removal_dialog") {
+        clearWorkflowNoteSuggestionSeen(action.templateTitle);
         openNoteRemovalDialogForTemplate(action.templateTitle, params.notes);
         openedDialog = true;
       }

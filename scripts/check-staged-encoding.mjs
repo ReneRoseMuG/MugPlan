@@ -356,6 +356,10 @@ function scanCodeAsciiUmlauts(lineText, filePath, lineNumber) {
   const findings = [];
 
   for (const segment of extractCodeSegments(lineText)) {
+    if (isTestNameSegment(filePath, lineText, segment.text, segment.kind)) {
+      continue;
+    }
+
     if (!isRelevantCodeSegment(segment.text, segment.kind)) {
       continue;
     }
@@ -365,6 +369,20 @@ function scanCodeAsciiUmlauts(lineText, filePath, lineNumber) {
   }
 
   return findings;
+}
+
+function isTestNameSegment(filePath, lineText, segmentText, kind) {
+  if (kind !== "string" || !filePath.startsWith("tests/")) {
+    return false;
+  }
+
+  const segmentIndex = lineText.indexOf(segmentText);
+  if (segmentIndex < 0) {
+    return false;
+  }
+
+  const prefix = lineText.slice(0, segmentIndex);
+  return /(?:^|[^\w$])(?:test|it|describe)(?:\.[A-Za-z_$][\w$]*)*(?:\([^)]*\))?\s*\($/.test(prefix);
 }
 
 function scanAsciiUmlauts(lineText, filePath, lineNumber) {
