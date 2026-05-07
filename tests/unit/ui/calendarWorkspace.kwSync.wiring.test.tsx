@@ -14,6 +14,7 @@
  * Die sichtbare KW-Synchronisation zwischen CalendarWorkspace und Filter-Panel fuer Woche und Monat absichern.
  */
 import React from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,6 +55,23 @@ vi.mock("@/hooks/useSettings", () => ({
 
 import { CalendarWorkspace } from "../../../client/src/components/CalendarWorkspace";
 
+type CalendarWorkspaceProps = React.ComponentProps<typeof CalendarWorkspace>;
+
+function renderCalendarWorkspace(props: CalendarWorkspaceProps) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return renderToStaticMarkup(
+    <QueryClientProvider client={queryClient}>
+      <CalendarWorkspace {...props} />
+    </QueryClientProvider>,
+  );
+}
+
 describe("CalendarWorkspace - kw sync wiring", () => {
   beforeEach(() => {
     filterPanelCalls.length = 0;
@@ -66,18 +84,16 @@ describe("CalendarWorkspace - kw sync wiring", () => {
   });
 
   it("preloads the current iso week into the kw input in week mode", () => {
-    renderToStaticMarkup(
-      <CalendarWorkspace
-        mode="global"
-        activeView="week"
-        currentDate={new Date("2026-03-30T00:00:00Z")}
-        employeeFilterId={null}
-        onEmployeeFilterChange={() => undefined}
-        onViewChange={() => undefined}
-        onDateChange={() => undefined}
-        onOpenAppointmentForm={() => undefined}
-      />,
-    );
+    renderCalendarWorkspace({
+      mode: "global",
+      activeView: "week",
+      currentDate: new Date("2026-03-30T00:00:00Z"),
+      employeeFilterId: null,
+      onEmployeeFilterChange: () => undefined,
+      onViewChange: () => undefined,
+      onDateChange: () => undefined,
+      onOpenAppointmentForm: () => undefined,
+    });
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
     expect(filterPanelCalls.at(-1)?.showKwJump).toBe(true);
@@ -85,48 +101,42 @@ describe("CalendarWorkspace - kw sync wiring", () => {
   });
 
   it("updates the kw input when the visible week changes", () => {
-    renderToStaticMarkup(
-      <CalendarWorkspace
-        mode="global"
-        activeView="week"
-        currentDate={new Date("2026-03-30T00:00:00Z")}
-        employeeFilterId={null}
-        onEmployeeFilterChange={() => undefined}
-        onViewChange={() => undefined}
-        onDateChange={() => undefined}
-        onOpenAppointmentForm={() => undefined}
-      />,
-    );
+    renderCalendarWorkspace({
+      mode: "global",
+      activeView: "week",
+      currentDate: new Date("2026-03-30T00:00:00Z"),
+      employeeFilterId: null,
+      onEmployeeFilterChange: () => undefined,
+      onViewChange: () => undefined,
+      onDateChange: () => undefined,
+      onOpenAppointmentForm: () => undefined,
+    });
 
-    renderToStaticMarkup(
-      <CalendarWorkspace
-        mode="global"
-        activeView="week"
-        currentDate={new Date("2026-04-06T00:00:00Z")}
-        employeeFilterId={null}
-        onEmployeeFilterChange={() => undefined}
-        onViewChange={() => undefined}
-        onDateChange={() => undefined}
-        onOpenAppointmentForm={() => undefined}
-      />,
-    );
+    renderCalendarWorkspace({
+      mode: "global",
+      activeView: "week",
+      currentDate: new Date("2026-04-06T00:00:00Z"),
+      employeeFilterId: null,
+      onEmployeeFilterChange: () => undefined,
+      onViewChange: () => undefined,
+      onDateChange: () => undefined,
+      onOpenAppointmentForm: () => undefined,
+    });
 
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("15");
   });
 
   it("passes kw jump controls in month mode with the visible iso week", () => {
-    renderToStaticMarkup(
-      <CalendarWorkspace
-        mode="global"
-        activeView="month"
-        currentDate={new Date("2026-03-30T00:00:00Z")}
-        employeeFilterId={null}
-        onEmployeeFilterChange={() => undefined}
-        onViewChange={() => undefined}
-        onDateChange={() => undefined}
-        onOpenAppointmentForm={() => undefined}
-      />,
-    );
+    renderCalendarWorkspace({
+      mode: "global",
+      activeView: "month",
+      currentDate: new Date("2026-03-30T00:00:00Z"),
+      employeeFilterId: null,
+      onEmployeeFilterChange: () => undefined,
+      onViewChange: () => undefined,
+      onDateChange: () => undefined,
+      onOpenAppointmentForm: () => undefined,
+    });
 
     expect(filterPanelCalls.at(-1)?.showKwJump).toBe(true);
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");

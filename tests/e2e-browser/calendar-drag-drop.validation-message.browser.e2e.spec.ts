@@ -20,6 +20,7 @@ import { expect, test } from "@playwright/test";
 import {
   createAppointmentFixture,
   createProjectFixture,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { closeDispatcherLoginConflictsDialog, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -42,10 +43,12 @@ test("shows the concrete server validation message after dragging an appointment
   });
 
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-DRAGDROP" });
+  const tour = await createTourFixture("#0f766e");
   const appointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: getRelativeBerlinDate(1),
     startTime: "00:00:00",
+    tourId: tour.id,
   });
   const today = getRelativeBerlinDate(0);
 
@@ -130,6 +133,6 @@ test("shows the concrete server validation message after dragging an appointment
 
   await expect(appointmentBar).toBeVisible();
 
-  await expect(page.getByText("Fehler beim Verschieben", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Verschieben fehlgeschlagen", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Startzeit liegt in der Vergangenheit", { exact: true }).first()).toBeVisible();
 });

@@ -18,6 +18,7 @@ import { expect, test } from "@playwright/test";
 import {
   createAppointmentFixture,
   createProjectFixture,
+  createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
@@ -42,11 +43,13 @@ test.beforeAll(async () => {
 
 test("moves a regular future appointment onto another future day in the month sheet", async ({ page }) => {
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-MONTH-DND" });
+  const tour = await createTourFixture("#0f766e");
   const sourceDate = getRelativeBerlinDate(2);
-  const targetDate = getRelativeBerlinDate(4);
+  const targetDate = getRelativeBerlinDate(3);
   const appointment = await createAppointmentFixture({
     projectId: project.id,
     startDate: sourceDate,
+    tourId: tour.id,
   });
 
   await loginAsAdmin(page);

@@ -31,7 +31,7 @@ test("dispatches a week-view drop with appointment data and persists the new tar
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-WEEK-DROP" });
   const tour = await createTourFixture("#0f766e");
   const sourceDate = getRelativeBerlinDate(2);
-  const targetDate = getRelativeBerlinDate(4);
+  const targetDate = getRelativeBerlinDate(3);
 
   await createAppointmentFixture({
     projectId: project.id,

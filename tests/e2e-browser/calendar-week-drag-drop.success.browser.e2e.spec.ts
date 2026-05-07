@@ -45,7 +45,7 @@ test("moves a regular future appointment onto another future day in the week vie
   const project = await createProjectFixture({ prefix: "FT01-BROWSER-WEEK-DND" });
   const tour = await createTourFixture("#0f766e");
   const sourceDate = getRelativeBerlinDate(2);
-  const targetDate = getRelativeBerlinDate(4);
+  const targetDate = getRelativeBerlinDate(3);
 
   await createAppointmentFixture({
     projectId: project.id,
