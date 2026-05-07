@@ -106,7 +106,7 @@ function NoteCard({
           {note.title}
         </h4>
         <span
-          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}
+          className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-semibold text-white"
           data-testid={`badge-note-print-${note.id}`}
         >
           {note.print ? "Drucken" : "Nicht drucken"}
@@ -288,7 +288,7 @@ export function NotesSection({
           setDialogOpen(true);
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100dvw-2rem)] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <StickyNote className="h-5 w-5" />

@@ -56,7 +56,7 @@ function NotesSection({
                 style={{ color: noteTextColors.primary }}
               >
                 <span>{note.title}</span>
-                <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${note.print ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-600"}`}>
+                <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-[9px] text-white">
                   {note.print ? "D" : "N"}
                 </span>
               </div>

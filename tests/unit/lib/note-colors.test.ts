@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getReadableNoteTextColors, shouldUseLightNoteText } from "../../../client/src/lib/note-colors";
 
 describe("note color contrast", () => {
-  it("uses dark text on light note backgrounds", () => {
-    expect(shouldUseLightNoteText("#f8fafc")).toBe(false);
+  it("uses fixed white text on light note backgrounds", () => {
+    expect(shouldUseLightNoteText("#f8fafc")).toBe(true);
     expect(getReadableNoteTextColors("#fef3c7")).toMatchObject({
-      primary: "#0f172a",
-      isLight: false,
+      primary: "#ffffff",
+      isLight: true,
     });
   });
 
@@ -26,13 +26,17 @@ describe("note color contrast", () => {
     });
   });
 
-  it("falls back to dark text for missing or invalid colors", () => {
-    expect(shouldUseLightNoteText(null)).toBe(false);
-    expect(shouldUseLightNoteText("not-a-color")).toBe(false);
+  it("keeps white text for missing or invalid colors", () => {
+    expect(shouldUseLightNoteText(null)).toBe(true);
+    expect(shouldUseLightNoteText("not-a-color")).toBe(true);
+    expect(getReadableNoteTextColors(null)).toMatchObject({
+      primary: "#ffffff",
+      isLight: true,
+    });
   });
 
-  it("supports short hex colors", () => {
+  it("ignores short hex colors and keeps white text", () => {
     expect(shouldUseLightNoteText("#000")).toBe(true);
-    expect(shouldUseLightNoteText("#fff")).toBe(false);
+    expect(shouldUseLightNoteText("#fff")).toBe(true);
   });
 });

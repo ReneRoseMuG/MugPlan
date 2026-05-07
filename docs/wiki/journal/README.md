@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [07.05.26 - FT-03/FT-13: Terminkachel-Notizen editierbar und Editor bedienbar](07-05-26-terminkachel-notizen-editor.md)
 - [07.05.26 - FT-06/FT-13: Reklamation-Notizflow ohne Doppelvorschlag](07-05-26-reklamation-notizflow.md)
 - [06.05.26 - A-07/A-08: Termine markieren und verschieben](06-05-26-a07-a08-kalender-verschieben.md)
 - [06.05.26 - A6: Monatsübersicht mit KW-Navigation](06-05-26-a6-monatsuebersicht-kw-navigation.md)

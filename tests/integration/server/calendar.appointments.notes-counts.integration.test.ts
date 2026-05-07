@@ -109,23 +109,25 @@ async function createCustomerNote(agent: SuperAgentTest, customerId: number, tit
 }
 
 async function createProjectNote(agent: SuperAgentTest, projectId: number, title: string) {
-  await agent
+  const response = await agent
     .post(`/api/projects/${projectId}/notes`)
     .send({
       title,
       body: `<p>${title}</p>`,
     })
     .expect(201);
+  return response.body as { id: number; version: number };
 }
 
 async function createAppointmentNote(agent: SuperAgentTest, appointmentId: number, title: string) {
-  await agent
+  const response = await agent
     .post(`/api/appointments/${appointmentId}/notes`)
     .send({
       title,
       body: `<p>${title}</p>`,
     })
     .expect(201);
+  return response.body as { id: number; version: number };
 }
 
 describe("FT03 integration: calendar appointments note counts", () => {
@@ -182,8 +184,8 @@ describe("FT03 integration: calendar appointments note counts", () => {
     const appointmentId = await createAppointment(project, "2098-08-10", "Preview-1");
 
     await createCustomerNote(admin, customer.id, "Kunde Preview nur Zähler");
-    await createProjectNote(admin, project.id, "Projekt Preview Inline");
-    await createAppointmentNote(admin, appointmentId, "Termin Preview Inline");
+    const projectNote = await createProjectNote(admin, project.id, "Projekt Preview Inline");
+    const appointmentNote = await createAppointmentNote(admin, appointmentId, "Termin Preview Inline");
 
     const response = await admin
       .get(
@@ -199,12 +201,16 @@ describe("FT03 integration: calendar appointments note counts", () => {
       appointmentNotesCount: 1,
       appointmentNotesPreview: [
         expect.objectContaining({
+          version: appointmentNote.version,
+          cardColorLocked: false,
           title: "Termin Preview Inline",
           body: "<p>Termin Preview Inline</p>",
         }),
       ],
       projectNotesPreview: [
         expect.objectContaining({
+          version: projectNote.version,
+          cardColorLocked: false,
           title: "Projekt Preview Inline",
           body: "<p>Projekt Preview Inline</p>",
         }),

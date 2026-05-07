@@ -45,8 +45,7 @@ import {
 } from "./weekAppointmentCardStyles";
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
-import { stripHtmlToText } from "@/lib/printText";
-import { getReadableNoteTextColors } from "@/lib/note-colors";
+import { CalendarWeekInlineNotes, type CalendarWeekInlineNote } from "./CalendarWeekInlineNotes";
 
 export const WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX = WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX;
 
@@ -130,7 +129,10 @@ type CalendarWeekSpanningTileProps = {
   onContextMenu?: (event: MouseEvent) => void;
   onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   showInlineNotes?: boolean;
+  canManageInlineNotes?: boolean;
   onCreateAppointmentNote?: (appointmentId: number) => void;
+  onEditInlineNote?: (note: CalendarWeekInlineNote) => void;
+  onDeleteInlineNote?: (note: CalendarWeekInlineNote) => void;
   onAssignAppointmentEmployees?: (appointmentId: number) => void;
   onRemoveAppointmentEmployee?: (appointmentId: number, employeeId: number) => void;
   testId?: string;
@@ -170,7 +172,10 @@ export function CalendarWeekSpanningTile({
   onContextMenu,
   onTagMutationEvents,
   showInlineNotes = false,
+  canManageInlineNotes = false,
   onCreateAppointmentNote,
+  onEditInlineNote,
+  onDeleteInlineNote,
   onAssignAppointmentEmployees,
   onRemoveAppointmentEmployee,
   testId,
@@ -524,10 +529,22 @@ export function CalendarWeekSpanningTile({
     : "min-h-0 h-full w-full";
   const inlineNotes = showInlineNotes
     ? [
-        ...(appointment.appointmentNotesPreview ?? []),
-        ...(appointment.projectNotesPreview ?? []),
+        ...(appointment.appointmentNotesPreview ?? []).map((note): CalendarWeekInlineNote => ({
+          ...note,
+          sourceType: "appointment",
+          parentId: appointment.id,
+        })),
+        ...(appointment.projectNotesPreview ?? []).map((note): CalendarWeekInlineNote => ({
+          ...note,
+          sourceType: "project",
+          parentId: appointment.projectId ?? 0,
+        })).filter((note) => note.parentId > 0),
       ]
     : [];
+  const canMutateInlineNotes = interactive
+    && canManageInlineNotes
+    && !isReadOnlyActionView
+    && !isPastStartDate(appointment.startDate);
   const contentGridTemplateRows = isCompactPanelMode
     ? "2rem 2rem"
     : `${effectiveCustomerMode === "expanded" ? "6.5rem" : "2rem"} minmax(0, 1fr)`;
@@ -818,33 +835,14 @@ export function CalendarWeekSpanningTile({
         {bodyContent}
       </div>
     </div>
-    {inlineNotes.length > 0 ? (
-      <div className="mt-1 space-y-1" data-testid={`week-spanning-tile-inline-notes-${appointment.id}`}>
-        {inlineNotes.map((note) => {
-          const noteText = stripHtmlToText(note.body);
-          const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#f8fafc");
-          return (
-            <div
-              key={note.id}
-              className="rounded-md border px-2 py-1 text-[10px] leading-snug shadow-sm"
-              style={{
-                backgroundColor: note.cardColor ?? "#f8fafc",
-                borderColor: "rgba(15,23,42,0.14)",
-                color: noteTextColors.primary,
-              }}
-              data-testid={`week-spanning-tile-inline-note-${appointment.id}-${note.id}`}
-            >
-              <div className="flex min-w-0 items-center gap-1">
-                <span className="min-w-0 truncate font-semibold">{note.title}</span>
-              </div>
-              {noteText ? (
-                <div className="mt-0.5 line-clamp-2" style={{ color: noteTextColors.secondary }}>{noteText}</div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    ) : null}
+    <CalendarWeekInlineNotes
+      appointmentId={appointment.id}
+      notes={inlineNotes}
+      testIdBase="week-spanning-tile"
+      canMutate={canMutateInlineNotes}
+      onEditNote={onEditInlineNote}
+      onDeleteNote={onDeleteInlineNote}
+    />
     <AppointmentCancelConfirmDialog
       open={cancelConfirmOpen}
       onOpenChange={setCancelConfirmOpen}

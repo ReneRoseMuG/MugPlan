@@ -44,18 +44,22 @@ export type CalendarAppointment = {
   appointmentNotesCount: number;
   appointmentNotesPreview?: {
     id: number;
+    version: number;
     title: string;
     body: string;
     cardColor: string | null;
+    cardColorLocked: boolean;
     isPinned: boolean;
     print: boolean;
     updatedAt: string;
   }[];
   projectNotesPreview?: {
     id: number;
+    version: number;
     title: string;
     body: string;
     cardColor: string | null;
+    cardColorLocked: boolean;
     isPinned: boolean;
     print: boolean;
     updatedAt: string;

@@ -298,7 +298,7 @@ export function CalendarWeekAppointmentTagPicker({
           setEditorOpen(open);
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100dvw-2rem)] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Notiz bearbeiten</DialogTitle>
             <EditFormContextText>{noteTitle.trim() || null}</EditFormContextText>

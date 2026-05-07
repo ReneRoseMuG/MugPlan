@@ -4,9 +4,9 @@ import * as appointmentsService from "./appointmentsService";
 
 export class NotesError extends Error {
   status: number;
-  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY";
+  code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY" | "PAST_APPOINTMENT_READONLY";
 
-  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY") {
+  constructor(status: number, code: "VERSION_CONFLICT" | "NOT_FOUND" | "VALIDATION_ERROR" | "ABSENCE_APPOINTMENT_READONLY" | "PAST_APPOINTMENT_READONLY") {
     super(code);
     this.status = status;
     this.code = code;
@@ -22,8 +22,9 @@ async function assertNoteMutationAllowed(noteId: number): Promise<void> {
   if (appointmentId == null) {
     return;
   }
-  if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
-    throw new NotesError(409, "ABSENCE_APPOINTMENT_READONLY");
+  const readOnlyCode = await appointmentsService.getAppointmentNoteMutationReadOnlyCode(appointmentId);
+  if (readOnlyCode) {
+    throw new NotesError(409, readOnlyCode);
   }
 }
 
@@ -129,8 +130,9 @@ export async function deleteAppointmentScopedNote(appointmentId: number, noteId:
   if (!Number.isInteger(version) || version < 1) {
     throw new NotesError(422, "VALIDATION_ERROR");
   }
-  if (await appointmentsService.isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmentId)) {
-    throw new NotesError(409, "ABSENCE_APPOINTMENT_READONLY");
+  const readOnlyCode = await appointmentsService.getAppointmentNoteMutationReadOnlyCode(appointmentId);
+  if (readOnlyCode) {
+    throw new NotesError(409, readOnlyCode);
   }
   const result = await notesRepository.deleteAppointmentScopedNoteWithVersion(appointmentId, noteId, version);
   if (result.kind === "not_found") {

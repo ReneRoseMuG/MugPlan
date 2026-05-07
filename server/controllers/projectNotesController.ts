@@ -7,6 +7,10 @@ import { buildNoteMessage } from "../lib/journalMessages";
 import { getRequestActor } from "../lib/requestActor";
 import * as journalService from "../services/journalService";
 
+function canMutateProjectNotes(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listProjectNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const projectId = Number(req.params.projectId);
@@ -19,6 +23,10 @@ export async function listProjectNotes(req: Request, res: Response, next: NextFu
 
 export async function createProjectNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateProjectNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const projectId = Number(req.params.projectId);
     const input = api.projectNotes.create.input.parse(req.body);
     const note = await projectNotesService.createProjectNote(projectId, input);
@@ -59,6 +67,10 @@ export async function createProjectNote(req: Request, res: Response, next: NextF
 
 export async function deleteProjectNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateProjectNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.projectNotes.delete.input.parse(req.body);
     const projectId = Number(req.params.projectId);
     const noteId = Number(req.params.noteId);

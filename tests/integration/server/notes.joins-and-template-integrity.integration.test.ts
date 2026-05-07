@@ -30,6 +30,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import { db } from "../../../server/db";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import { customerNotes, customers, noteTemplates, notes, projectNotes, projects } from "@shared/schema";
 
 let app: express.Express;
@@ -55,6 +57,26 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
   await agent
     .post("/api/auth/login")
     .send({ username: "test-admin", password: "test-admin-password" })
+    .expect(200);
+  return agent;
+}
+
+async function loginReaderAgent(): Promise<SuperAgentTest> {
+  const username = nextId("NOTE-READER");
+  const password = "note-reader-password";
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "Note",
+    lastName: "Reader",
+    passwordHash: await hashPassword(password),
+    roleCode: "READER",
+  });
+
+  const agent = request.agent(app);
+  await agent
+    .post("/api/auth/login")
+    .send({ username, password })
     .expect(200);
   return agent;
 }
@@ -220,6 +242,53 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
     expect(updated?.body).toBe("<p>Nachher</p>");
     expect(updated?.cardColor).toBe("#0ea5e9");
     expect(updated?.print).toBe(true);
+  });
+
+  it("blocks reader role from customer/project note mutations and generic note edits", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await loginReaderAgent();
+    const customerId = await createCustomer(admin, "ROLE-BLOCK");
+    const projectId = await createProject(admin, customerId, "ROLE-BLOCK");
+
+    const customerNote = await admin
+      .post(`/api/customers/${customerId}/notes`)
+      .send({ title: "Kundennotiz Rolle", body: "<p>Kunde</p>" })
+      .expect(201);
+    const projectNote = await admin
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Projektnotiz Rolle", body: "<p>Projekt</p>" })
+      .expect(201);
+
+    await reader
+      .post(`/api/customers/${customerId}/notes`)
+      .send({ title: "Nicht erlaubt", body: "<p>Nein</p>" })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .post(`/api/projects/${projectId}/notes`)
+      .send({ title: "Nicht erlaubt", body: "<p>Nein</p>" })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .put(`/api/notes/${projectNote.body.id}`)
+      .send({ title: "Nicht erlaubt", body: "<p>Nein</p>", version: projectNote.body.version })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .patch(`/api/notes/${projectNote.body.id}/pin`)
+      .send({ isPinned: true, version: projectNote.body.version })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .delete(`/api/customers/${customerId}/notes/${customerNote.body.id}`)
+      .send({ version: customerNote.body.version })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .delete(`/api/projects/${projectId}/notes/${projectNote.body.id}`)
+      .send({ version: projectNote.body.version })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
   });
 
   it("persists free customer and project note cardColor/print on create", async () => {

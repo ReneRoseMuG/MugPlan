@@ -517,6 +517,76 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain('data-testid="week-spanning-tile-assign-employees-42"');
   });
 
+  it("adds inline note edit and delete affordances only for editable week cards", () => {
+    const appointment = createAppointment({
+      appointmentNotesPreview: [{
+        id: 501,
+        version: 3,
+        title: "Terminnotiz",
+        body: "<p>Termintext</p>",
+        cardColor: "#225588",
+        cardColorLocked: false,
+        isPinned: false,
+        print: true,
+        updatedAt: "2099-03-01T08:00:00.000Z",
+      }],
+      projectNotesPreview: [{
+        id: 502,
+        version: 4,
+        title: "Projektnotiz",
+        body: "<p>Projekttext</p>",
+        cardColor: "#aa3355",
+        cardColorLocked: true,
+        isPinned: false,
+        print: false,
+        updatedAt: "2099-03-01T09:00:00.000Z",
+      }],
+    });
+    const onEditInlineNote = vi.fn();
+    const onDeleteInlineNote = vi.fn();
+
+    const editableHtml = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          showInlineNotes
+          canManageInlineNotes
+          onEditInlineNote={onEditInlineNote}
+          onDeleteInlineNote={onDeleteInlineNote}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          showInlineNotes
+          canManageInlineNotes
+          onEditInlineNote={onEditInlineNote}
+          onDeleteInlineNote={onDeleteInlineNote}
+        />
+      </>,
+    );
+
+    expect(editableHtml).toContain('data-testid="week-appointment-inline-note-delete-42-appointment-501"');
+    expect(editableHtml).toContain('data-testid="week-appointment-inline-note-delete-42-project-502"');
+    expect(editableHtml).toContain('data-testid="week-spanning-tile-inline-note-delete-42-appointment-501"');
+    expect(editableHtml).toContain('data-testid="week-spanning-tile-inline-note-delete-42-project-502"');
+    expect(editableHtml).toContain("cursor-pointer");
+    expect(editableHtml).toContain("color:#ffffff");
+
+    const readOnlyHtml = renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={appointment}
+        context="week-calendar"
+        showInlineNotes
+      />,
+    );
+
+    expect(readOnlyHtml).toContain('data-testid="week-appointment-inline-note-42-501"');
+    expect(readOnlyHtml).not.toContain("inline-note-delete");
+  });
+
   it("adds employee remove actions only to editable week card badges", () => {
     const appointment = createAppointment();
     const onRemoveAppointmentEmployee = vi.fn();

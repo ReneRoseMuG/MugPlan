@@ -87,6 +87,7 @@ import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
+import type { CalendarWeekInlineNote, CalendarWeekInlineNoteSource } from "./CalendarWeekInlineNotes";
 
 type CalendarWeekViewProps = {
   currentDate: Date;
@@ -481,6 +482,8 @@ export function CalendarWeekView({
   const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
   const [workflowNoteEditorOpen, setWorkflowNoteEditorOpen] = useState(false);
   const [workflowNoteEditorAppointmentId, setWorkflowNoteEditorAppointmentId] = useState<number | null>(null);
+  const [workflowNoteEditorSourceType, setWorkflowNoteEditorSourceType] = useState<CalendarWeekInlineNoteSource>("appointment");
+  const [workflowNoteEditorParentId, setWorkflowNoteEditorParentId] = useState<number | null>(null);
   const [workflowNoteEditorId, setWorkflowNoteEditorId] = useState<number | null>(null);
   const [workflowNoteEditorVersion, setWorkflowNoteEditorVersion] = useState<number>(1);
   const [workflowNoteTitle, setWorkflowNoteTitle] = useState("");
@@ -1348,6 +1351,8 @@ export function CalendarWeekView({
 
   const openNewAppointmentNoteEditor = (appointmentId: number) => {
     setWorkflowNoteEditorAppointmentId(appointmentId);
+    setWorkflowNoteEditorSourceType("appointment");
+    setWorkflowNoteEditorParentId(appointmentId);
     setWorkflowNoteEditorId(null);
     setWorkflowNoteEditorVersion(1);
     setWorkflowNoteTitle("");
@@ -1355,6 +1360,20 @@ export function CalendarWeekView({
     setWorkflowNoteCardColor("#f8fafc");
     setWorkflowNotePrint(false);
     setWorkflowNoteCardColorLocked(false);
+    setWorkflowNoteEditorOpen(true);
+  };
+
+  const openInlineNoteEditor = (note: CalendarWeekInlineNote) => {
+    setWorkflowNoteEditorAppointmentId(note.sourceType === "appointment" ? note.parentId : null);
+    setWorkflowNoteEditorSourceType(note.sourceType);
+    setWorkflowNoteEditorParentId(note.parentId);
+    setWorkflowNoteEditorId(note.id);
+    setWorkflowNoteEditorVersion(note.version);
+    setWorkflowNoteTitle(note.title);
+    setWorkflowNoteBody(note.body ?? "");
+    setWorkflowNoteCardColor(note.cardColor ?? "#f8fafc");
+    setWorkflowNotePrint(note.print);
+    setWorkflowNoteCardColorLocked(note.cardColorLocked);
     setWorkflowNoteEditorOpen(true);
   };
 
@@ -1586,6 +1605,22 @@ export function CalendarWeekView({
     return response.json() as Promise<Array<{ id: number; version: number; title: string }>>;
   };
 
+  const invalidateInlineNoteQueries = async (
+    sourceType: CalendarWeekInlineNoteSource,
+    parentId: number | null,
+  ) => {
+    if (sourceType === "appointment" && parentId) {
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", parentId, "notes"] });
+    }
+    if (sourceType === "project" && parentId) {
+      await queryClient.invalidateQueries({ queryKey: ["/api/projects", parentId, "notes"] });
+    }
+    await queryClient.invalidateQueries({ queryKey: ["/api/notes-preview"] });
+    await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+    await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
+    await refreshMonitoringWithNotification(toast);
+  };
+
   const createAppointmentNoteMutation = useMutation({
     mutationFn: async ({ appointmentId, title, body, cardColor, print, templateId }: {
       appointmentId: number;
@@ -1608,6 +1643,8 @@ export function CalendarWeekView({
     onSuccess: async (createdNote, variables) => {
       if (variables.openEditorOnSuccess) {
         setWorkflowNoteEditorAppointmentId(variables.appointmentId);
+        setWorkflowNoteEditorSourceType("appointment");
+        setWorkflowNoteEditorParentId(variables.appointmentId);
         setWorkflowNoteEditorId(createdNote.id);
         setWorkflowNoteEditorVersion(createdNote.version);
         setWorkflowNoteTitle(createdNote.title);
@@ -1617,9 +1654,7 @@ export function CalendarWeekView({
         setWorkflowNoteCardColorLocked(createdNote.cardColorLocked);
         setWorkflowNoteEditorOpen(true);
       }
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", variables.appointmentId, "notes"] });
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-      await refreshMonitoringWithNotification(toast);
+      await invalidateInlineNoteQueries("appointment", variables.appointmentId);
     },
     onError: (error: Error) => {
       toast({ title: "Notiz konnte nicht erstellt werden", description: error.message, variant: "destructive" });
@@ -1648,11 +1683,7 @@ export function CalendarWeekView({
     onSuccess: async (updatedNote) => {
       setWorkflowNoteEditorVersion(updatedNote.version);
       setWorkflowNoteEditorOpen(false);
-      if (workflowNoteEditorAppointmentId) {
-        await queryClient.invalidateQueries({ queryKey: ["/api/appointments", workflowNoteEditorAppointmentId, "notes"] });
-      }
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-      await refreshMonitoringWithNotification(toast);
+      await invalidateInlineNoteQueries(workflowNoteEditorSourceType, workflowNoteEditorParentId);
     },
     onError: (error: Error) => {
       toast({ title: "Notiz konnte nicht aktualisiert werden", description: error.message, variant: "destructive" });
@@ -1664,14 +1695,35 @@ export function CalendarWeekView({
       await apiRequest("DELETE", `/api/appointments/${appointmentId}/notes/${noteId}`, { version });
     },
     onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", variables.appointmentId, "notes"] });
-      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
-      await refreshMonitoringWithNotification(toast);
+      await invalidateInlineNoteQueries("appointment", variables.appointmentId);
     },
     onError: (error: Error) => {
       toast({ title: "Notiz konnte nicht gelöscht werden", description: error.message, variant: "destructive" });
     },
   });
+
+  const deleteInlineNoteMutation = useMutation({
+    mutationFn: async (note: CalendarWeekInlineNote) => {
+      if (note.sourceType === "appointment") {
+        await apiRequest("DELETE", `/api/appointments/${note.parentId}/notes/${note.id}`, { version: note.version });
+        return note;
+      }
+      await apiRequest("DELETE", `/api/projects/${note.parentId}/notes/${note.id}`, { version: note.version });
+      return note;
+    },
+    onSuccess: async (_data, note) => {
+      await invalidateInlineNoteQueries(note.sourceType, note.parentId);
+    },
+    onError: (error: Error) => {
+      toast({ title: "Notiz konnte nicht gelöscht werden", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const handleDeleteInlineNote = (note: CalendarWeekInlineNote) => {
+    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich löschen?`)) {
+      deleteInlineNoteMutation.mutate(note);
+    }
+  };
 
   const getWorkflowNoteSuggestionKey = (appointmentId: number, templateTitle: string) =>
     `${appointmentId}:${normalizeWorkflowNoteTitle(templateTitle)}`;
@@ -2968,7 +3020,10 @@ export function CalendarWeekView({
                                     interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     showInlineNotes={showAppointmentNotesInline}
+                                    canManageInlineNotes={canWriteNotes}
                                     onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                    onEditInlineNote={canWriteNotes ? openInlineNoteEditor : undefined}
+                                    onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                     style={{ width: "100%" }}
@@ -3056,7 +3111,10 @@ export function CalendarWeekView({
                                     interactive={!isAbsenceLane}
                                     onTagMutationEvents={handleAppointmentTagMutationEvents}
                                     showInlineNotes={showAppointmentNotesInline}
+                                    canManageInlineNotes={canWriteNotes}
                                     onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                    onEditInlineNote={canWriteNotes ? openInlineNoteEditor : undefined}
+                                    onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
@@ -3165,7 +3223,10 @@ export function CalendarWeekView({
                                         interactive={!isAbsenceLane}
                                         onTagMutationEvents={handleAppointmentTagMutationEvents}
                                         showInlineNotes={showAppointmentNotesInline}
+                                        canManageInlineNotes={canWriteNotes}
                                         onCreateAppointmentNote={canWriteNotes ? openNewAppointmentNoteEditor : undefined}
+                                        onEditInlineNote={canWriteNotes ? openInlineNoteEditor : undefined}
+                                        onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                         onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                         onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
@@ -3388,7 +3449,7 @@ export function CalendarWeekView({
         }}
       />
       <Dialog open={workflowNoteEditorOpen} onOpenChange={setWorkflowNoteEditorOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100dvw-2rem)] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{workflowNoteEditorId ? "Notiz bearbeiten" : "Neue Notiz anlegen"}</DialogTitle>
             <EditFormContextText>{workflowNoteTitle.trim() || null}</EditFormContextText>

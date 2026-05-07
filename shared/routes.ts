@@ -739,9 +739,11 @@ const calendarTourPostalPlanDaySchema = z.object({
 
 const calendarAppointmentNotePreviewSchema = z.object({
   id: z.number().int().positive(),
+  version: z.number().int().min(1),
   title: z.string(),
   body: z.string(),
   cardColor: z.string().nullable(),
+  cardColorLocked: z.boolean(),
   isPinned: z.boolean(),
   print: z.boolean(),
   updatedAt: z.string(),

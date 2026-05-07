@@ -7,6 +7,10 @@ import { buildNoteMessage } from "../lib/journalMessages";
 import { getRequestActor } from "../lib/requestActor";
 import * as journalService from "../services/journalService";
 
+function canMutateCustomerNotes(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listCustomerNotes(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const customerId = Number(req.params.customerId);
@@ -23,6 +27,10 @@ export async function listCustomerNotes(req: Request, res: Response, next: NextF
 
 export async function createCustomerNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateCustomerNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const customerId = Number(req.params.customerId);
     const input = api.customerNotes.create.input.parse(req.body);
     const note = await customerNotesService.createCustomerNote(customerId, input);
@@ -63,6 +71,10 @@ export async function createCustomerNote(req: Request, res: Response, next: Next
 
 export async function deleteCustomerNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateCustomerNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.customerNotes.delete.input.parse(req.body);
     const customerId = Number(req.params.customerId);
     const noteId = Number(req.params.noteId);

@@ -45,8 +45,7 @@ import {
 import { CalendarWeekAppointmentTagPicker } from "./CalendarWeekAppointmentTagPicker";
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
-import { stripHtmlToText } from "@/lib/printText";
-import { getReadableNoteTextColors } from "@/lib/note-colors";
+import { CalendarWeekInlineNotes, type CalendarWeekInlineNote } from "./CalendarWeekInlineNotes";
 
 export const MIN_WEEK_CARD_HEIGHT_PX = 240;
 export const DEFAULT_CONTINUATION_HEIGHT_PX = MIN_WEEK_CARD_HEIGHT_PX;
@@ -134,7 +133,10 @@ export function CalendarWeekAppointmentPanel({
   testId,
   maxHeightPx,
   showInlineNotes = false,
+  canManageInlineNotes = false,
   onCreateAppointmentNote,
+  onEditInlineNote,
+  onDeleteInlineNote,
   onAssignAppointmentEmployees,
   onRemoveAppointmentEmployee,
 }: {
@@ -173,7 +175,10 @@ export function CalendarWeekAppointmentPanel({
   testId?: string;
   maxHeightPx?: number | null;
   showInlineNotes?: boolean;
+  canManageInlineNotes?: boolean;
   onCreateAppointmentNote?: (appointmentId: number) => void;
+  onEditInlineNote?: (note: CalendarWeekInlineNote) => void;
+  onDeleteInlineNote?: (note: CalendarWeekInlineNote) => void;
   onAssignAppointmentEmployees?: (appointmentId: number) => void;
   onRemoveAppointmentEmployee?: (appointmentId: number, employeeId: number) => void;
 }) {
@@ -191,10 +196,22 @@ export function CalendarWeekAppointmentPanel({
   const isReadOnlyActionView = isHistoricalReadOnly || appointment.isCancelled || isLocked === true;
   const inlineNotes = showInlineNotes
     ? [
-        ...(appointment.appointmentNotesPreview ?? []),
-        ...(appointment.projectNotesPreview ?? []),
+        ...(appointment.appointmentNotesPreview ?? []).map((note): CalendarWeekInlineNote => ({
+          ...note,
+          sourceType: "appointment",
+          parentId: appointment.id,
+        })),
+        ...(appointment.projectNotesPreview ?? []).map((note): CalendarWeekInlineNote => ({
+          ...note,
+          sourceType: "project",
+          parentId: appointment.projectId ?? 0,
+        })).filter((note) => note.parentId > 0),
       ]
     : [];
+  const canMutateInlineNotes = interactive
+    && canManageInlineNotes
+    && !isReadOnlyActionView
+    && !isPastStartDate(appointment.startDate);
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -777,33 +794,14 @@ export function CalendarWeekAppointmentPanel({
         />
       )}
     </div>
-    {inlineNotes.length > 0 ? (
-      <div className="mt-1 space-y-1" data-testid={`week-appointment-inline-notes-${appointment.id}`}>
-        {inlineNotes.map((note) => {
-          const noteText = stripHtmlToText(note.body);
-          const noteTextColors = getReadableNoteTextColors(note.cardColor ?? "#f8fafc");
-          return (
-            <div
-              key={note.id}
-              className="rounded-md border px-2 py-1 text-[10px] leading-snug shadow-sm"
-              style={{
-                backgroundColor: note.cardColor ?? "#f8fafc",
-                borderColor: "rgba(15,23,42,0.14)",
-                color: noteTextColors.primary,
-              }}
-              data-testid={`week-appointment-inline-note-${appointment.id}-${note.id}`}
-            >
-              <div className="flex min-w-0 items-center gap-1">
-                <span className="min-w-0 truncate font-semibold">{note.title}</span>
-              </div>
-              {noteText ? (
-                <div className="mt-0.5 line-clamp-2" style={{ color: noteTextColors.secondary }}>{noteText}</div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-    ) : null}
+    <CalendarWeekInlineNotes
+      appointmentId={appointment.id}
+      notes={inlineNotes}
+      testIdBase="week-appointment"
+      canMutate={canMutateInlineNotes}
+      onEditNote={onEditInlineNote}
+      onDeleteNote={onDeleteInlineNote}
+    />
     <AppointmentCancelConfirmDialog
       open={cancelConfirmOpen}
       onOpenChange={setCancelConfirmOpen}

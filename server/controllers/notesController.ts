@@ -5,8 +5,16 @@ import * as notesService from "../services/notesService";
 import { getRequestActor } from "../lib/requestActor";
 import * as journalService from "../services/journalService";
 
+function canMutateNotes(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function updateNote(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const noteId = Number(req.params.noteId);
     const input = api.notes.update.input.parse(req.body);
     const previousNote = await notesService.getNote(noteId);
@@ -46,6 +54,10 @@ export async function updateNote(req: Request, res: Response, next: NextFunction
 
 export async function toggleNotePin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateNotes(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const noteId = Number(req.params.noteId);
     const input = api.notes.togglePin.input.parse(req.body);
     const previousNote = await notesService.getNote(noteId);

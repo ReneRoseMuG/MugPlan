@@ -636,6 +636,22 @@ export async function isAbsenceAppointmentReadOnlyOutsideEmployeeForm(appointmen
   return isAbsenceAppointmentByContext({ appointmentId, appointment });
 }
 
+export async function getAppointmentNoteMutationReadOnlyCode(
+  appointmentId: number,
+): Promise<"PAST_APPOINTMENT_READONLY" | "ABSENCE_APPOINTMENT_READONLY" | null> {
+  const appointment = await appointmentsRepository.getAppointment(appointmentId);
+  if (!appointment) {
+    return null;
+  }
+  if (isStartDateLocked(appointment.startDate)) {
+    return "PAST_APPOINTMENT_READONLY";
+  }
+  if (await isAbsenceAppointmentByContext({ appointmentId, appointment })) {
+    return "ABSENCE_APPOINTMENT_READONLY";
+  }
+  return null;
+}
+
 export async function createAppointment(
   data: {
     projectId?: number | null;
@@ -1280,9 +1296,11 @@ export async function listCalendarAppointments({
         ? {
             appointmentNotesPreview: (appointmentNotesByAppointmentId.get(row.appointment.id) ?? []).map((note: Note) => ({
               id: note.id,
+              version: note.version,
               title: note.title,
               body: note.body,
               cardColor: note.cardColor ?? null,
+              cardColorLocked: note.cardColorLocked,
               isPinned: note.isPinned,
               print: note.print,
               updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt),
@@ -1293,9 +1311,11 @@ export async function listCalendarAppointments({
         ? {
             projectNotesPreview: (projectNotesByProjectId.get(projectId) ?? []).map((note: Note) => ({
               id: note.id,
+              version: note.version,
               title: note.title,
               body: note.body,
               cardColor: note.cardColor ?? null,
+              cardColorLocked: note.cardColorLocked,
               isPinned: note.isPinned,
               print: note.print,
               updatedAt: note.updatedAt instanceof Date ? note.updatedAt.toISOString() : String(note.updatedAt),
