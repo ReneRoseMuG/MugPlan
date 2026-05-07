@@ -25,6 +25,12 @@
 | [A-01 - Wochenkalender schneller starten, cachen, rendern und aktuell halten](a-01-wochenkalender-caching-rendering.md) | offen | Kalender-Performance | Implementierung |
 | [A-04 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen](a-04-ft01-ft04-ft33-testabdeckung-uc-luecken.md) | offen | Kalender/Touren/Abwesenheiten | Testabdeckung |
 
+### Reports
+
+| Aufgabe | Status | Thema | Typ |
+|---|---|---|---|
+| [A-15 - FT-26 gemeinsame Print-Basiskomponente für Kartenreports](a-15-ft26-report-print-basiskomponente.md) | offen | Reports | Refactoring |
+
 ## Mittel
 
 ### Qualitätssicherung
