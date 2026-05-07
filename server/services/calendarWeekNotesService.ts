@@ -28,7 +28,6 @@ export async function createCalendarWeekNote(
       throw new Error("Note template not found");
     }
     noteData.cardColor = template.cardColor ?? null;
-    noteData.print = template.print;
     noteData.cardColorLocked = template.cardColor !== null;
   }
 

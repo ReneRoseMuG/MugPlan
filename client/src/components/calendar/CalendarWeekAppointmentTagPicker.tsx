@@ -50,7 +50,7 @@ export function CalendarWeekAppointmentTagPicker({
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
   const [noteCardColor, setNoteCardColor] = useState<string>("#f8fafc");
-  const [notePrint, setNotePrint] = useState(false);
+  const [notePrint, setNotePrint] = useState(true);
   const [cardColorLocked, setCardColorLocked] = useState(false);
 
   const appointmentNotesQueryKey = ["/api/appointments", appointmentId, "notes"] as const;

@@ -2,14 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Terminnotizen uebernehmen cardColor und print aus Vorlagen.
+ * - Terminnotizen übernehmen cardColor aus Vorlagen und behalten den Druck-Default.
  * - Template-geerbte Kartenfarben bleiben beim Update serverseitig gesperrt.
  * - Freie Terminnotizen koennen cardColor und print selbst aendern.
  * - Normale Terminbearbeitungen lassen bestehende Terminnotizen unveraendert bestehen.
  * - Das Loeschen eines Termins raeumt dessen Terminnotiz-Bezuege auf.
  *
  * Fehlerfaelle:
- * - Vorlagenwerte werden beim Terminnotiz-Create nicht vererbt.
+ * - Vorlagenfarbe wird beim Terminnotiz-Create nicht vererbt.
  * - Update kann template-geerbte Kartenfarbe unzulaessig ueberschreiben.
  * - Ein Termin-Patch verliert Terminnotizen still als Nebeneffekt.
  * - Beim Terminloeschen bleiben Appointment-Notiz-Joins fuer den geloeschten Termin bestehen.
@@ -103,7 +103,7 @@ async function createAppointmentBundle() {
 }
 
 describe("FT13 integration: appointment notes cardColor/print", () => {
-  it("inherits template cardColor and print for appointment notes", async () => {
+  it("inherits template cardColor and keeps print default for appointment notes", async () => {
     const agent = await loginAdminAgent();
     const appointmentId = await createAppointmentFixture();
 
@@ -122,7 +122,7 @@ describe("FT13 integration: appointment notes cardColor/print", () => {
       templateId: template.body.id,
     }).expect(201).expect((res) => {
       expect(res.body.cardColor).toBe("#14b8a6");
-      expect(res.body.print).toBe(false);
+      expect(res.body.print).toBe(true);
       expect(res.body.cardColorLocked).toBe(true);
     });
   });

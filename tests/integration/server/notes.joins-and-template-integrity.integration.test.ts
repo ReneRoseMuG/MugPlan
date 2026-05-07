@@ -167,7 +167,7 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
 
     const noteId = Number(createRes.body.id);
     expect(createRes.body.cardColor).toBe("#22c55e");
-    expect(createRes.body.print).toBe(false);
+    expect(createRes.body.print).toBe(true);
     expect(createRes.body.cardColorLocked).toBe(true);
 
     const customerJoin = await db

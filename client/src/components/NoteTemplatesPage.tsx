@@ -90,7 +90,7 @@ export function NoteTemplatesPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formBody, setFormBody] = useState("");
   const [formCardColor, setFormCardColor] = useState(fallbackCardColor);
-  const [formPrint, setFormPrint] = useState(false);
+  const [formPrint, setFormPrint] = useState(true);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
   const templateEditContext = editingTemplate
@@ -170,7 +170,7 @@ export function NoteTemplatesPage() {
     setFormTitle("");
     setFormBody("");
     setFormCardColor(fallbackCardColor);
-    setFormPrint(false);
+    setFormPrint(true);
     setFormSortOrder(0);
     setFormIsActive(true);
     setDialogOpen(true);
@@ -193,7 +193,7 @@ export function NoteTemplatesPage() {
     setFormTitle("");
     setFormBody("");
     setFormCardColor(fallbackCardColor);
-    setFormPrint(false);
+    setFormPrint(true);
     setFormSortOrder(0);
     setFormIsActive(true);
   };

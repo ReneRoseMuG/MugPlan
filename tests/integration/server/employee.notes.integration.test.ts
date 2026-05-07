@@ -5,12 +5,12 @@
  * Use Case: Mitarbeiter-Notizen lesen und im Mitarbeiterformular verwalten
  *
  * Abgedeckte Regeln:
- * - Mitarbeiter-Notizen koennen gelistet, angelegt und scoped geloescht werden.
- * - Notiz-Create uebernimmt Vorlagenfarbe/-print auch im Mitarbeiterkontext.
+ * - Mitarbeiter-Notizen können gelistet, angelegt und scoped gelöscht werden.
+ * - Notiz-Create übernimmt Vorlagenfarbe und behält den Druck-Default auch im Mitarbeiterkontext.
  * - Allgemeine Notiz-Update- und Pin-Endpunkte wirken auf Mitarbeiter-Notizen.
  * - Leserrolle darf Mitarbeiter-Notizen nicht mutieren.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Unbekannter Mitarbeiter liefert 404.
  * - Stale Note-Version liefert 409 VERSION_CONFLICT beim Loeschen.
  * - Leserrolle wird fuer Schreibzugriffe mit 403 blockiert.
@@ -162,7 +162,7 @@ describe("FT05+/FT13 integration: employee notes", () => {
       .expect(201);
 
     expect(created.body.cardColor).toBe("#1d4ed8");
-    expect(created.body.print).toBe(false);
+    expect(created.body.print).toBe(true);
     expect(created.body.cardColorLocked).toBe(true);
 
     const updated = await admin

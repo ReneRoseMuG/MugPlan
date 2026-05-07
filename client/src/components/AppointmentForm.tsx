@@ -507,7 +507,7 @@ export function AppointmentForm({
   const [templateNoteTitle, setTemplateNoteTitle] = useState("");
   const [templateNoteBody, setTemplateNoteBody] = useState("");
   const [templateNoteCardColor, setTemplateNoteCardColor] = useState("#f8fafc");
-  const [templateNotePrint, setTemplateNotePrint] = useState(false);
+  const [templateNotePrint, setTemplateNotePrint] = useState(true);
   const [templateNoteCardColorLocked, setTemplateNoteCardColorLocked] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
@@ -2259,7 +2259,7 @@ export function AppointmentForm({
         title: template.title,
         body: template.body,
         cardColor: template.cardColor,
-        print: template.print,
+        print: true,
         templateId: template.id,
         openEditorOnSuccess: true,
       });

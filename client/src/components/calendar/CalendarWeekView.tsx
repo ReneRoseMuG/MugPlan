@@ -489,7 +489,7 @@ export function CalendarWeekView({
   const [workflowNoteTitle, setWorkflowNoteTitle] = useState("");
   const [workflowNoteBody, setWorkflowNoteBody] = useState("");
   const [workflowNoteCardColor, setWorkflowNoteCardColor] = useState<string>("#f8fafc");
-  const [workflowNotePrint, setWorkflowNotePrint] = useState(false);
+  const [workflowNotePrint, setWorkflowNotePrint] = useState(true);
   const [workflowNoteCardColorLocked, setWorkflowNoteCardColorLocked] = useState(false);
   const [weekPrintPreviewOpen, setWeekPrintPreviewOpen] = useState(false);
   const [weekPrintPageIndex, setWeekPrintPageIndex] = useState(0);
@@ -1358,23 +1358,68 @@ export function CalendarWeekView({
     setWorkflowNoteTitle("");
     setWorkflowNoteBody("");
     setWorkflowNoteCardColor("#f8fafc");
-    setWorkflowNotePrint(false);
+    setWorkflowNotePrint(true);
     setWorkflowNoteCardColorLocked(false);
     setWorkflowNoteEditorOpen(true);
   };
 
-  const openInlineNoteEditor = (note: CalendarWeekInlineNote) => {
+  const hasUsableInlineNoteVersion = (note: CalendarWeekInlineNote): boolean =>
+    Number.isInteger(note.version) && note.version >= 1;
+
+  const getInlineNoteListUrl = (note: CalendarWeekInlineNote): string => {
+    if (note.parentId < 1) {
+      throw new Error("Notizkontext konnte nicht bestimmt werden.");
+    }
+    if (note.sourceType === "appointment") {
+      return `/api/appointments/${note.parentId}/notes`;
+    }
+    return `/api/projects/${note.parentId}/notes`;
+  };
+
+  const loadInlineNote = async (note: CalendarWeekInlineNote): Promise<Note> => {
+    const response = await fetch(getInlineNoteListUrl(note), { credentials: "include" });
+    if (!response.ok) {
+      throw new Error("Notiz konnte nicht geladen werden.");
+    }
+    const notes = await response.json() as Note[];
+    const freshNote = notes.find((item) => item.id === note.id);
+    if (!freshNote) {
+      throw new Error("Notiz wurde nicht gefunden.");
+    }
+    return freshNote;
+  };
+
+  const applyInlineNoteEditorState = (note: CalendarWeekInlineNote, freshNote?: Note) => {
     setWorkflowNoteEditorAppointmentId(note.sourceType === "appointment" ? note.parentId : null);
     setWorkflowNoteEditorSourceType(note.sourceType);
     setWorkflowNoteEditorParentId(note.parentId);
     setWorkflowNoteEditorId(note.id);
-    setWorkflowNoteEditorVersion(note.version);
-    setWorkflowNoteTitle(note.title);
-    setWorkflowNoteBody(note.body ?? "");
-    setWorkflowNoteCardColor(note.cardColor ?? "#f8fafc");
-    setWorkflowNotePrint(note.print);
-    setWorkflowNoteCardColorLocked(note.cardColorLocked);
+    setWorkflowNoteEditorVersion(freshNote?.version ?? note.version);
+    setWorkflowNoteTitle(freshNote?.title ?? note.title);
+    setWorkflowNoteBody(freshNote?.body ?? note.body ?? "");
+    setWorkflowNoteCardColor(freshNote?.cardColor ?? note.cardColor ?? "#f8fafc");
+    setWorkflowNotePrint(freshNote?.print ?? note.print);
+    setWorkflowNoteCardColorLocked(freshNote?.cardColorLocked ?? note.cardColorLocked);
     setWorkflowNoteEditorOpen(true);
+  };
+
+  const openInlineNoteEditor = (note: CalendarWeekInlineNote) => {
+    if (hasUsableInlineNoteVersion(note)) {
+      applyInlineNoteEditorState(note);
+      return;
+    }
+    void (async () => {
+      try {
+        const freshNote = await loadInlineNote(note);
+        applyInlineNoteEditorState(note, freshNote);
+      } catch (error) {
+        toast({
+          title: "Notiz konnte nicht geladen werden",
+          description: error instanceof Error ? error.message : "Bitte Ansicht aktualisieren und erneut versuchen.",
+          variant: "destructive",
+        });
+      }
+    })();
   };
 
   const openAppointmentEmployeeAssignmentDialog = async (appointmentId: number) => {
@@ -1704,11 +1749,14 @@ export function CalendarWeekView({
 
   const deleteInlineNoteMutation = useMutation({
     mutationFn: async (note: CalendarWeekInlineNote) => {
+      const version = hasUsableInlineNoteVersion(note)
+        ? note.version
+        : (await loadInlineNote(note)).version;
       if (note.sourceType === "appointment") {
-        await apiRequest("DELETE", `/api/appointments/${note.parentId}/notes/${note.id}`, { version: note.version });
+        await apiRequest("DELETE", `/api/appointments/${note.parentId}/notes/${note.id}`, { version });
         return note;
       }
-      await apiRequest("DELETE", `/api/projects/${note.parentId}/notes/${note.id}`, { version: note.version });
+      await apiRequest("DELETE", `/api/projects/${note.parentId}/notes/${note.id}`, { version });
       return note;
     },
     onSuccess: async (_data, note) => {

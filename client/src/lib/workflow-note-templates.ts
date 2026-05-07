@@ -25,7 +25,7 @@ export function buildWorkflowNoteDraft(template: NoteTemplate): WorkflowNoteDraf
     title: template.title,
     body: template.body,
     cardColor: template.cardColor,
-    print: template.print,
+    print: true,
     templateId: template.id,
   };
 }

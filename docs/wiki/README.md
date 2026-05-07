@@ -6,6 +6,7 @@
 - [Use Cases](use-cases.md)
 - [Backlog](backlog.md)
 - [Aufgaben](tasks/README.md)
+- [Dialoge und Meldungen](dialoge-und-meldungen-pfade.md)
 - [Querbeziehungen](relations.md)
 - [Journal](journal/README.md)
 - [Entscheidungen](decisions/README.md)
