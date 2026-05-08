@@ -82,6 +82,18 @@ async function fetchAppointmentEmployeeIds(page: Page, appointmentId: number) {
   return body.employees.map((employee) => employee.id).sort((left, right) => left - right);
 }
 
+async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ id: number; title: string; body: string }>> {
+  const response = await page.request.get(`/api/appointments/${appointmentId}/notes`);
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return response.json() as Promise<Array<{ id: number; title: string; body: string }>>;
+}
+
+async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ id: number; title: string; body: string }>> {
+  const response = await page.request.get(`/api/projects/${projectId}/notes`);
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return response.json() as Promise<Array<{ id: number; title: string; body: string }>>;
+}
+
 test("Tour-KW-Planungen sind zwischen Tour-Formular und Wochenkalender bidirektional sichtbar", async ({ page }) => {
   const targetWeek = resolveTargetWeek();
   const firstTour = await createTourFixture("#0f766e");
@@ -484,4 +496,77 @@ test("Notizen-Toggle hängt Termin- und Projektnotizen direkt an die Terminkarte
   await expect(inlineNotes).toContainText("Termin Browser Inline");
   await expect(inlineNotes.getByText("Projekt", { exact: true })).toHaveCount(0);
   await expect(inlineNotes).toContainText("Projekt Browser Inline");
+});
+
+test("Inline-Notizen an der Terminkarte lassen sich bearbeiten und löschen", async ({ page }) => {
+  const targetWeek = resolveTargetWeek();
+  const tour = await createTourFixture("#225588");
+  const project = await createProjectFixture({ prefix: "BWE-INLINE-ACTION" });
+  const appointmentId = await createRawAppointmentFixture({
+    projectId: project.id,
+    startDate: targetWeek.weekMidDate,
+    title: "BWE Inline Aktion Termin",
+    tourId: tour.id,
+    employeeIds: [],
+  });
+
+  await loginAsAdmin(page);
+  const appointmentNoteResponse = await page.request.post(`/api/appointments/${appointmentId}/notes`, {
+    data: {
+      title: "Termin Browser Bearbeiten",
+      body: "<p>Termin Browser Bearbeiten Text</p>",
+      cardColor: "#2563eb",
+    },
+  });
+  expect(appointmentNoteResponse.ok(), await appointmentNoteResponse.text()).toBeTruthy();
+  const appointmentNote = await appointmentNoteResponse.json() as { id: number };
+
+  const projectNoteResponse = await page.request.post(`/api/projects/${project.id}/notes`, {
+    data: {
+      title: "Projekt Browser Löschen",
+      body: "<p>Projekt Browser Löschen Text</p>",
+      cardColor: "#16a34a",
+    },
+  });
+  expect(projectNoteResponse.ok(), await projectNoteResponse.text()).toBeTruthy();
+  const projectNote = await projectNoteResponse.json() as { id: number };
+
+  await openStandaloneWeek(page, targetWeek);
+  await page.getByTestId("switch-week-inline-notes").click();
+
+  const appointmentInlineNote = page.getByTestId(`week-appointment-inline-note-${appointmentId}-${appointmentNote.id}`);
+  await expect(appointmentInlineNote).toBeVisible();
+  await appointmentInlineNote.dblclick();
+  await expect(page.getByTestId("input-note-title")).toHaveValue("Termin Browser Bearbeiten");
+  await page.getByTestId("input-note-title").fill("Termin Browser Bearbeitet");
+  const updateResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PUT"
+    && new URL(response.url()).pathname === `/api/notes/${appointmentNote.id}`
+  ));
+  await page.getByTestId("button-save-note").click();
+  const updateResponse = await updateResponsePromise;
+  expect(updateResponse.ok(), await updateResponse.text()).toBeTruthy();
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+  await expect(page.getByTestId(`week-appointment-inline-notes-${appointmentId}`)).toContainText("Termin Browser Bearbeitet");
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, appointmentId);
+    return notes.find((note) => note.id === appointmentNote.id)?.title;
+  }).toBe("Termin Browser Bearbeitet");
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Projekt Browser Löschen");
+    await dialog.accept();
+  });
+  const deleteResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "DELETE"
+    && new URL(response.url()).pathname === `/api/projects/${project.id}/notes/${projectNote.id}`
+  ));
+  await page.getByTestId(`week-appointment-inline-note-delete-${appointmentId}-project-${projectNote.id}`).click();
+  const deleteResponse = await deleteResponsePromise;
+  expect(deleteResponse.ok()).toBeTruthy();
+  await expect(page.getByTestId(`week-appointment-inline-note-${appointmentId}-${projectNote.id}`)).toHaveCount(0);
+  await expect.poll(async () => {
+    const notes = await readProjectNotes(page, project.id);
+    return notes.some((note) => note.id === projectNote.id);
+  }).toBe(false);
 });

@@ -372,7 +372,7 @@ export function paginateTourenplanWeekGroups(params: {
   tourName: string;
   weeks: TourenplanWeekGroup[];
   pageCapacityPx: number;
-  cardHeights: Record<number, number>;
+  cardHeights: Record<string, number>;
   startPageNumber?: number;
 }): TourenplanPrintPageData[] {
   const pages: TourenplanPrintPageData[] = [];
@@ -452,7 +452,7 @@ export function paginateTourenplanWeekGroups(params: {
 export function paginateTourenplanPrintSections(params: {
   sections: TourenplanPrintSection[];
   pageCapacityPx: number;
-  cardHeights: Record<number, number>;
+  cardHeights: Record<string, number>;
 }): TourenplanPrintPageData[] {
   const pages: TourenplanPrintPageData[] = [];
 

@@ -127,6 +127,11 @@ const asciiUmlautAllowlist = new Set([
   "zuerst",
 ]);
 
+const asciiUmlautAllowedStemPatterns = [
+  /^[Qq]uell[A-Za-zÄÖÜäöüß]*$/,
+  /^[Ss]teuer[A-Za-zÄÖÜäöüß]*$/,
+];
+
 const asciiUmlautPattern = /\b[A-Za-zÄÖÜäöüß]*(?:ae|oe|ue)[A-Za-zÄÖÜäöüß]*\b/g;
 const codeTextSegmentPattern =
   /\/\*[\s\S]*?\*\/|\/\/.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`/gm;
@@ -320,7 +325,10 @@ function scanAsciiUmlautsInText(text, filePath, lineNumber) {
 
   for (const match of text.matchAll(asciiUmlautPattern)) {
     const matchText = match[0];
-    if (asciiUmlautAllowlist.has(matchText)) {
+    if (
+      asciiUmlautAllowlist.has(matchText) ||
+      asciiUmlautAllowedStemPatterns.some((pattern) => pattern.test(matchText))
+    ) {
       continue;
     }
 

@@ -29,6 +29,11 @@ import {
   type CategoryLayoutCategoryOption,
 } from "@/components/reports/ProduktionsplanungCategoryLayoutEditor";
 import { ProduktionsplanungPrintLayout, type ProduktionsplanungPrintCategory } from "@/components/reports/ProduktionsplanungPrintLayout";
+import {
+  areMeasuredPrintCardMeasurementsEqual,
+  MeasuredPrintCardMeasurement,
+  type MeasuredPrintCardMeasurementResult,
+} from "@/components/print/MeasuredPrintCardMeasurement";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
@@ -62,7 +67,10 @@ import {
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
-import { paginateAuftragslistePrintPages } from "@/lib/auftragsliste-print-model";
+import {
+  paginateAuftragslistePrintPages,
+  paginateMeasuredAuftragslistePrintPages,
+} from "@/lib/auftragsliste-print-model";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 import {
@@ -674,6 +682,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [isAuftragslisteSaunaModelPopoverOpen, setIsAuftragslisteSaunaModelPopoverOpen] = useState(false);
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
   const [activeAuftragslistePrintPageIndex, setActiveAuftragslistePrintPageIndex] = useState(0);
+  const [auftragslistePaginationMeasurement, setAuftragslistePaginationMeasurement] = useState<MeasuredPrintCardMeasurementResult | null>(null);
   const hasAppliedStandaloneLaunchRef = useRef(false);
 
   useEffect(() => {
@@ -1144,10 +1153,12 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   useEffect(() => {
     if (!isAuftragslistePrintPreviewOpen) {
       setActiveAuftragslistePrintPageIndex(0);
+      setAuftragslistePaginationMeasurement(null);
       return;
     }
     setActiveAuftragslistePrintPageIndex(0);
-  }, [auftragslisteData, isAuftragslistePrintPreviewOpen]);
+    setAuftragslistePaginationMeasurement(null);
+  }, [auftragslisteData, effectiveAuftragslisteCategories, isAuftragslistePrintPreviewOpen]);
 
   const resolvePersistedColumnWidth = (columnId: string, defaultWidth: number, minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH) => {
     if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) {
@@ -1301,10 +1312,29 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     rowsPerPage: VORLAUFLISTE_PRINT_ROWS_PER_PAGE,
     availableWidthPx: VORLAUFLISTE_PRINT_WIDTH_PX,
   }), [vorlauflistePrintColumns, vorlauflistePrintPreviewData]);
-  const auftragslistePrintPages = useMemo(
-    () => paginateAuftragslistePrintPages(auftragslisteData?.items ?? [], AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX),
-    [auftragslisteData?.items],
+  const auftragslisteItems = useMemo(() => auftragslisteData?.items ?? [], [auftragslisteData?.items]);
+  const estimatedAuftragslistePrintPages = useMemo(
+    () => paginateAuftragslistePrintPages(auftragslisteItems, AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX),
+    [auftragslisteItems],
   );
+  const measuredAuftragslistePrintPages = useMemo(
+    () => auftragslistePaginationMeasurement
+      ? paginateMeasuredAuftragslistePrintPages(
+          auftragslisteItems,
+          auftragslistePaginationMeasurement.pageCapacityPx,
+          auftragslistePaginationMeasurement.cardHeights,
+        )
+      : [],
+    [auftragslisteItems, auftragslistePaginationMeasurement],
+  );
+  const auftragslistePrintPages = useMemo(
+    () => (typeof window === "undefined" ? estimatedAuftragslistePrintPages : measuredAuftragslistePrintPages),
+    [estimatedAuftragslistePrintPages, measuredAuftragslistePrintPages],
+  );
+  const isAuftragslistePaginationMeasuring = typeof window !== "undefined"
+    && isAuftragslistePrintPreviewOpen
+    && auftragslisteItems.length > 0
+    && auftragslistePaginationMeasurement === null;
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
@@ -2318,6 +2348,50 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               </div>
             </div>
 
+            {isAuftragslistePrintPreviewOpen && auftragslisteItems.length > 0 ? (
+              <MeasuredPrintCardMeasurement
+                items={auftragslisteItems}
+                getItemKey={(row) => row.projectId}
+                measurementKey={auftragslisteRangeMetaLabel}
+                testId="auftragsliste-print-measurement"
+                renderCard={(row) => (
+                  <AuftragslisteProjectCard
+                    row={row}
+                    categories={effectiveAuftragslisteCategories}
+                    hideFooterBadges
+                  />
+                )}
+                renderMeasurementLayout={({ contentRef, cards }) => (
+                  <PrintPageShell
+                    orientation="portrait"
+                    paddingMm={10}
+                    footer={<PrintSlimFooter pageNumber={1} />}
+                  >
+                    <PrintSlimHeader
+                      label="Auftragsliste"
+                      context={
+                        submittedFilters?.toDate
+                          ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
+                          : formatDate(submittedFilters?.fromDate ?? null)
+                      }
+                    />
+                    <div ref={contentRef} className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        {cards}
+                      </div>
+                    </div>
+                  </PrintPageShell>
+                )}
+                onMeasured={(nextMeasurement) => {
+                  setAuftragslistePaginationMeasurement((currentMeasurement) => (
+                    areMeasuredPrintCardMeasurementsEqual(currentMeasurement, nextMeasurement)
+                      ? currentMeasurement
+                      : nextMeasurement
+                  ));
+                }}
+              />
+            ) : null}
+
             <PrintPreviewDialog
               open={isAuftragslistePrintPreviewOpen}
               onOpenChange={setIsAuftragslistePrintPreviewOpen}
@@ -2361,6 +2435,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   </div>
                 </PrintPageShell>
               )}
+              loadingState={isAuftragslisteLoading || isAuftragslistePaginationMeasuring ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
             />
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProduktionsplanungLayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-produktionsplanung-overlay">

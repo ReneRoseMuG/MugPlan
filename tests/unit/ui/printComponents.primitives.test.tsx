@@ -22,6 +22,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { PrintAppointmentSlot } from "../../../client/src/components/print/PrintAppointmentSlot";
 import { PrintDayColumn } from "../../../client/src/components/print/PrintDayColumn";
+import { MeasuredPrintCardMeasurement } from "../../../client/src/components/print/MeasuredPrintCardMeasurement";
 import { PrintDocumentRoot } from "../../../client/src/components/print/PrintDocumentRoot";
 import { PrintPageShell } from "../../../client/src/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "../../../client/src/components/print/PrintPreviewDialog";
@@ -228,6 +229,29 @@ describe("generisches Print-System", () => {
 
     expect(html).not.toContain('aria-hidden="true" data-testid="print-document-root"');
     expect(html).not.toContain("A4 landscape");
+  });
+
+  it("MeasuredPrintCardMeasurement rendert eine offscreen Messansicht mit stabilen Karten-Keys", () => {
+    const html = renderToStaticMarkup(
+      <MeasuredPrintCardMeasurement
+        items={[{ id: 1, title: "Karte Alpha" }]}
+        getItemKey={(item) => item.id}
+        renderCard={(item) => <div>{item.title}</div>}
+        onMeasured={() => undefined}
+        renderMeasurementLayout={({ contentRef, cards }) => (
+          <PrintPageShell orientation="portrait">
+            <div ref={contentRef}>
+              {cards}
+            </div>
+          </PrintPageShell>
+        )}
+      />,
+    );
+
+    expect(html).toContain("measured-print-card-measurement");
+    expect(html).toContain("left-[-10000px]");
+    expect(html).toContain('data-print-card-measurement-key="1"');
+    expect(html).toContain("Karte Alpha");
   });
 
   it("PrintPreviewDialog hebt den dedizierten Druckroot im Print-CSS aus dem Offscreen-Modus", () => {

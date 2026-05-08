@@ -13,7 +13,11 @@
  * Die clientseitige Seitenaufteilung der Auftragslisten-Druckvorschau isoliert regressionssicher absichern.
  */
 import { describe, expect, it } from "vitest";
-import { estimateAuftragslisteCardHeight, paginateAuftragslistePrintPages } from "../../../client/src/lib/auftragsliste-print-model";
+import {
+  estimateAuftragslisteCardHeight,
+  paginateAuftragslistePrintPages,
+  paginateMeasuredAuftragslistePrintPages,
+} from "../../../client/src/lib/auftragsliste-print-model";
 import type { ReportAuftragslisteProjectRow } from "../../../shared/routes";
 
 function buildRow(projectId: number, description = ""): ReportAuftragslisteProjectRow {
@@ -66,5 +70,24 @@ describe("auftragsliste print model", () => {
     const pages = paginateAuftragslistePrintPages([], 920);
 
     expect(pages).toEqual([{ pageNumber: 1, items: [] }]);
+  });
+
+  it("uses measured card heights for the browser print path", () => {
+    const rows = [
+      buildRow(1, "kurz"),
+      buildRow(2, "kurz"),
+      buildRow(3, "kurz"),
+    ];
+
+    const pages = paginateMeasuredAuftragslistePrintPages(rows, 300, {
+      1: 120,
+      2: 160,
+      3: 90,
+    });
+
+    expect(pages.map((page) => page.items.map((item) => item.projectId))).toEqual([
+      [1, 2],
+      [3],
+    ]);
   });
 });

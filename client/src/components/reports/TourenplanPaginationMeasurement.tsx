@@ -1,4 +1,5 @@
 import React from "react";
+import { MeasuredPrintCardMeasurement } from "@/components/print/MeasuredPrintCardMeasurement";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppointmentCard";
@@ -7,9 +8,7 @@ import type {
   TourenplanOrientation,
   TourenplanPrintSection,
   TourenplanPrintMode,
-} from "@/components/reports/tourenplan-model";
-import {
-  TOURENPLAN_WEEK_SECTION_GAP_PX,
+  TourenplanResolvedAppointment,
 } from "@/components/reports/tourenplan-model";
 
 type TourenplanPaginationMeasurementProps = {
@@ -18,10 +17,15 @@ type TourenplanPaginationMeasurementProps = {
   fontSize: TourenplanFontSize;
   orientation: TourenplanOrientation;
   useShortCodes: boolean;
-  onMeasured: (measurement: { pageCapacityPx: number; cardHeights: Record<number, number> }) => void;
+  onMeasured: (measurement: { pageCapacityPx: number; cardHeights: Record<string, number> }) => void;
 };
 
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? React.useEffect : React.useLayoutEffect;
+type TourenplanMeasurementItem = {
+  sectionKey: string;
+  weekIndex: number;
+  appointmentIndex: number;
+  appointment: TourenplanResolvedAppointment;
+};
 
 export function TourenplanPaginationMeasurement({
   sections,
@@ -31,87 +35,63 @@ export function TourenplanPaginationMeasurement({
   useShortCodes,
   onMeasured,
 }: TourenplanPaginationMeasurementProps) {
-  const pageContentRef = React.useRef<HTMLDivElement | null>(null);
-  const cardNodesRef = React.useRef(new Map<number, HTMLDivElement | null>());
-
-  const registerCardNode = React.useCallback((appointmentId: number) => (node: HTMLDivElement | null) => {
-    cardNodesRef.current.set(appointmentId, node);
-  }, []);
-
-  useIsomorphicLayoutEffect(() => {
-    const pageContentNode = pageContentRef.current;
-    if (!pageContentNode || sections.length === 0) {
-      return;
-    }
-
-    const cardHeights: Record<number, number> = {};
-    for (const section of sections) {
-      for (const week of section.weeks) {
-        for (const appointment of week.appointments) {
-          const node = cardNodesRef.current.get(appointment.id);
-          if (!node) {
-            return;
-          }
-          cardHeights[appointment.id] = Math.ceil(node.getBoundingClientRect().height);
-        }
-      }
-    }
-
-    onMeasured({
-      pageCapacityPx: Math.floor(pageContentNode.getBoundingClientRect().height),
-      cardHeights,
-    });
-  }, [fontSize, onMeasured, orientation, printMode, sections, useShortCodes]);
+  const measurementItems = React.useMemo<TourenplanMeasurementItem[]>(
+    () => sections.flatMap((section) =>
+      section.weeks.flatMap((week, weekIndex) =>
+        week.appointments.map((appointment, appointmentIndex) => ({
+          sectionKey: section.sectionKey,
+          weekIndex,
+          appointmentIndex,
+          appointment,
+        })),
+      ),
+    ),
+    [sections],
+  );
 
   return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none fixed left-[-10000px] top-0 opacity-0"
-      data-testid="tourenplan-pagination-measurement"
-    >
-      <PrintPageShell
-        orientation={orientation}
-        paddingMm={10}
-        pageGapClassName="gap-2.5"
-        contentGapClassName="gap-2"
-        footer={<PrintSlimFooter pageNumber={1} />}
-      >
-        <div className="flex min-h-0 flex-1 flex-col gap-2">
-          <header className="border-b border-slate-200 pb-1 text-[10px] font-medium text-slate-500">
-            {sections[0]?.tourName ?? "Tourenplan"}
-          </header>
+    <MeasuredPrintCardMeasurement
+      items={measurementItems}
+      getItemKey={(item) => item.appointment.id}
+      measurementKey={`${printMode}-${fontSize}-${orientation}-${useShortCodes ? "short" : "full"}`}
+      onMeasured={onMeasured}
+      testId="tourenplan-pagination-measurement"
+      getCardWrapperClassName={(item) => {
+        if (item.weekIndex > 0 && item.appointmentIndex === 0) {
+          return "mt-[22px]";
+        }
+        return item.appointmentIndex > 0 ? "mt-1.5" : undefined;
+      }}
+      renderCard={(item) => (
+        <TourenplanAppointmentCard
+          appointment={item.appointment}
+          printMode={printMode}
+          fontSize={fontSize}
+          useShortCodes={useShortCodes}
+        />
+      )}
+      renderMeasurementLayout={({ contentRef, cards }) => (
+        <PrintPageShell
+          orientation={orientation}
+          paddingMm={10}
+          pageGapClassName="gap-2.5"
+          contentGapClassName="gap-2"
+          footer={<PrintSlimFooter pageNumber={1} />}
+        >
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <header className="border-b border-slate-200 pb-1 text-[10px] font-medium text-slate-500">
+              {sections[0]?.tourName ?? "Tourenplan"}
+            </header>
 
-          <div ref={pageContentRef} className="flex min-h-0 flex-1 gap-0">
-            <aside className="mr-2.5 w-7 shrink-0" />
-
-            <div className="flex min-h-0 flex-1 flex-col">
-              {sections.map((section) => (
-                <React.Fragment key={section.sectionKey}>
-                  {section.weeks.map((week, weekIndex) => (
-                    <React.Fragment key={`${section.sectionKey}-${week.weekStart}-${weekIndex}`}>
-                      {week.appointments.map((appointment, appointmentIndex) => (
-                        <div
-                          key={appointment.id}
-                          ref={registerCardNode(appointment.id)}
-                          className={appointmentIndex > 0 ? "mt-1.5" : undefined}
-                        >
-                          <TourenplanAppointmentCard
-                            appointment={appointment}
-                            printMode={printMode}
-                            fontSize={fontSize}
-                            useShortCodes={useShortCodes}
-                          />
-                        </div>
-                      ))}
-                      {weekIndex < section.weeks.length - 1 ? <div style={{ height: `${TOURENPLAN_WEEK_SECTION_GAP_PX}px` }} /> : null}
-                    </React.Fragment>
-                  ))}
-                </React.Fragment>
-              ))}
+            <div ref={contentRef} className="flex min-h-0 flex-1 gap-0">
+              <aside className="mr-2.5 w-7 shrink-0" />
+              <div className="flex min-h-0 flex-1 flex-col">
+                {cards}
+              </div>
             </div>
           </div>
-        </div>
-      </PrintPageShell>
-    </div>
+        </PrintPageShell>
+      )}
+    />
   );
 }

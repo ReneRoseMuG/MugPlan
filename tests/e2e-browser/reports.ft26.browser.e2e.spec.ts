@@ -743,3 +743,78 @@ test("resolves competing Auftragsliste highlight tags consistently in overlay an
   await expect(printedMesseCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MESSE_TAG_NAME);
   await expect(printedMirroredCard).toHaveAttribute("data-report-dominant-tag", MANAGED_MIRRORED_TAG_NAME);
 });
+
+test("paginiert lange Auftragslisten-Karten im Print-Root ohne Seitenkanten-Ueberlauf", async ({ page }) => {
+  const reportDate = getRelativeBerlinDate(45);
+  const longDescription = Array.from({ length: 10 }, (_, index) =>
+    `Druckbeschreibung ${index + 1} mit langen Projekt-, Montage- und Kundenhinweisen für die gemessene Auftragslistenkarte.`,
+  ).join(" ");
+  const projects: Array<Awaited<ReturnType<typeof createBrowserReportProjectFixture>>> = [];
+
+  for (let index = 0; index < 5; index += 1) {
+    projects.push(await createBrowserReportProjectFixture({
+      prefix: `AL-PRINT-LONG-${index + 1}`,
+      appointmentDates: [reportDate],
+      amount: `${12000 + index}.00`,
+      descriptionMd: `<p>${longDescription}</p>`,
+      articleValues: {
+        sauna: { name: `Print Sauna Lang ${index + 1}`, shortCode: `PS${index + 1}` },
+        door: { name: `Print Tür Lang ${index + 1}`, shortCode: `PT${index + 1}` },
+        window: { name: `Print Fenster Lang ${index + 1}`, shortCode: `PF${index + 1}` },
+        oven: { name: `Print Ofen Lang ${index + 1}`, shortCode: `PO${index + 1}` },
+        control: { name: `Print Steuerung Lang ${index + 1}`, shortCode: `PC${index + 1}` },
+      },
+    }));
+  }
+
+  await openReports(page);
+  await fillReportDateRange(page, "reports-auftragsliste", reportDate);
+  await clearSelectedAuftragslisteTagFilters(page);
+  await clearSelectedAuftragslisteSaunaModels(page);
+  await page.getByTestId("button-reports-auftragsliste-generate").click();
+
+  const cards = page.getByTestId("reports-auftragsliste-project-cards").locator("article[data-testid^='reports-auftragsliste-project-card-']");
+  await expect(cards).toHaveCount(projects.length);
+
+  await page.getByTestId("button-reports-auftragsliste-print-preview").click();
+  await expect(page.getByTestId("dialog-auftragsliste-print-preview")).toBeVisible();
+
+  const printRoot = page.locator('[data-testid="print-document-root"]');
+  const printPages = printRoot.locator('[data-testid^="auftragsliste-print-page-"][data-print-orientation="portrait"]');
+  await expect.poll(async () => printPages.count()).toBeGreaterThan(1);
+
+  const projectIds = projects.map((entry) => entry.project.id);
+  const layoutResult = await printRoot.evaluate((root, ids) => {
+    const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-testid^="auftragsliste-print-page-"][data-print-orientation="portrait"]'));
+    const seenIds: number[] = [];
+    const overflowingCards: string[] = [];
+
+    for (const pageNode of pages) {
+      const pageRect = pageNode.getBoundingClientRect();
+      const cardsOnPage = Array.from(pageNode.querySelectorAll<HTMLElement>("article[data-testid^='reports-auftragsliste-project-card-']"));
+      for (const card of cardsOnPage) {
+        const testId = card.getAttribute("data-testid") ?? "";
+        const match = testId.match(/reports-auftragsliste-project-card-(\d+)/);
+        if (match?.[1]) {
+          seenIds.push(Number(match[1]));
+        }
+        const cardRect = card.getBoundingClientRect();
+        if (cardRect.top < pageRect.top - 1 || cardRect.bottom > pageRect.bottom + 1) {
+          overflowingCards.push(testId);
+        }
+      }
+    }
+
+    return {
+      pageCount: pages.length,
+      missingIds: ids.filter((id) => !seenIds.includes(id)),
+      duplicateIds: seenIds.filter((id, index) => seenIds.indexOf(id) !== index),
+      overflowingCards,
+    };
+  }, projectIds);
+
+  expect(layoutResult.pageCount).toBeGreaterThan(1);
+  expect(layoutResult.missingIds).toEqual([]);
+  expect(layoutResult.duplicateIds).toEqual([]);
+  expect(layoutResult.overflowingCards).toEqual([]);
+});

@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [08.05.26 - FT-26/FT-03/FT-13: Report-Druckmessung und Inline-Notizen-E2E](08-05-26-ft26-report-druckmessung-inline-notizen.md)
 - [07.05.26 - FT-03/FT-13: Terminkachel-Notizen editierbar und Editor bedienbar](07-05-26-terminkachel-notizen-editor.md)
 - [07.05.26 - FT-06/FT-13: Reklamation-Notizflow ohne Doppelvorschlag](07-05-26-reklamation-notizflow.md)
 - [06.05.26 - A-07/A-08: Termine markieren und verschieben](06-05-26-a07-a08-kalender-verschieben.md)

@@ -383,7 +383,7 @@ export function TourenplanReportPanel({
   );
   const [paginationMeasurement, setPaginationMeasurement] = React.useState<{
     pageCapacityPx: number;
-    cardHeights: Record<number, number>;
+    cardHeights: Record<string, number>;
   } | null>(null);
 
   React.useEffect(() => {

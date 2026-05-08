@@ -247,6 +247,9 @@ Legacy-Alias für `journal`. Codex erstellt keinen neuen Eintrag unter `logs/`, 
 `journal`  
 Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag im Repo-Wiki unter `docs/wiki/journal/` gemäß Abschnitt 14.2a und ergänzt den Eintrag oben in `docs/wiki/journal/README.md`. Für sichtbare Datumsangaben gilt zwingend das Kurzformat `dd.MM.yy`.
 
+`rückblick <datum|gestern|heute>`
+Codex erstellt einen reinen Informationsbericht über die Arbeiten des angegebenen Tages gemäß Abschnitt 14.2b. Primäre Quelle ist das Repo-Wiki-Journal unter `docs/wiki/journal/` inklusive `docs/wiki/journal/README.md`. Wenn dort keine ausreichenden Informationen vorhanden sind, darf Codex ergänzend die lokale Git-Historie, vorhandene Testausgaben und belegbare lokale Arbeitsartefakte des angegebenen Tages auswerten. Codex nimmt dabei keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor und schreibt keine neuen Dateien.
+
 `account`  
 Codex prüft ausschließlich lokal die aktuell gespeicherte Codex-ChatGPT-Anmeldung in `$env:USERPROFILE\.codex\auth.json`, dekodiert nur die nicht-geheimen Claims aus dem vorhandenen Token und gibt E-Mail-Adresse, Plan-Typ, Organisationen und den Änderungszeitpunkt der Auth-Datei aus. Token-, Secret-, Session- und Refresh-Werte dürfen dabei nicht ausgegeben werden. Fehlt die Datei oder sind die Claims nicht lesbar, dokumentiert Codex den Blocker kurz und nimmt keine weiteren Änderungen vor.
 
@@ -762,6 +765,23 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
   - Tests / Verifikation
   - Offene Punkte
 - Wenn für einzelne Pflichtpunkte keine belastbaren Informationen vorliegen, benennt Codex dies ausdrücklich knapp statt Inhalte zu ergänzen oder zu vermuten.
+
+### 14.2b Tagesrückblick
+
+Das Kurzkommando `rückblick <datum|gestern|heute>` dient dazu, den Nutzer über die Arbeiten eines Tages zu informieren.
+
+Pflichtablauf:
+
+1. Codex löst relative Angaben wie `gestern` oder `heute` anhand des aktuellen Datums und der aktuellen Zeitzone in ein konkretes Datum im Format `dd.MM.yy` auf.
+2. Codex liest zuerst `docs/wiki/journal/README.md` und die relevanten Einträge unter `docs/wiki/journal/`.
+3. Wenn das Wiki-Journal für den gewünschten Tag keine ausreichende Grundlage bietet, wertet Codex ergänzend die lokale Git-Historie, vorhandene Testausgaben und belegbare lokale Arbeitsartefakte des Tages aus.
+4. Codex nimmt keine Änderungen vor und schreibt keine neuen Dateien.
+5. Der Bericht nennt knapp:
+   - erledigte Arbeiten,
+   - betroffene Bereiche,
+   - Tests oder Verifikationen,
+   - offene Punkte,
+   - Quellenlage und Lücken, falls das Journal unvollständig ist.
 
 ### 14.3 Architekturdokumentation aktualisieren
 

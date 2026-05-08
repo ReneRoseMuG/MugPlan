@@ -1,4 +1,8 @@
 import type { ReportAuftragslisteProjectRow } from "@shared/routes";
+import {
+  paginateMeasuredPrintCards,
+  type MeasuredPrintCardHeights,
+} from "@/lib/measured-print-pages";
 
 export type AuftragslistePrintPage = {
   pageNumber: number;
@@ -8,7 +12,7 @@ export type AuftragslistePrintPage = {
 const BASE_CARD_HEIGHT_PX = 160;
 const ARTICLE_LINE_HEIGHT_PX = 12;
 const DESCRIPTION_LINE_HEIGHT_PX = 12;
-const ROW_GAP_PX = 16;
+export const AUFTRAGSLISTE_PRINT_CARD_GAP_PX = 16;
 
 function estimateDescriptionLines(value: string | null): number {
   if (!value || value.trim().length === 0) return 0;
@@ -42,12 +46,12 @@ export function paginateAuftragslistePrintPages(
 
   for (const item of items) {
     const cardHeight = estimateAuftragslisteCardHeight(item);
-    const nextHeight = currentHeight === 0 ? cardHeight : currentHeight + ROW_GAP_PX + cardHeight;
+    const nextHeight = currentHeight === 0 ? cardHeight : currentHeight + AUFTRAGSLISTE_PRINT_CARD_GAP_PX + cardHeight;
     if (currentHeight > 0 && nextHeight > availableHeightPx) {
       flushPage();
     }
     currentItems.push(item);
-    currentHeight = currentHeight === 0 ? cardHeight : currentHeight + ROW_GAP_PX + cardHeight;
+    currentHeight = currentHeight === 0 ? cardHeight : currentHeight + AUFTRAGSLISTE_PRINT_CARD_GAP_PX + cardHeight;
   }
   flushPage();
 
@@ -56,4 +60,18 @@ export function paginateAuftragslistePrintPages(
   }
 
   return pages;
+}
+
+export function paginateMeasuredAuftragslistePrintPages(
+  items: ReportAuftragslisteProjectRow[],
+  pageCapacityPx: number,
+  cardHeights: MeasuredPrintCardHeights,
+): AuftragslistePrintPage[] {
+  return paginateMeasuredPrintCards({
+    items,
+    pageCapacityPx,
+    cardHeights,
+    getItemKey: (item) => item.projectId,
+    itemGapPx: AUFTRAGSLISTE_PRINT_CARD_GAP_PX,
+  });
 }
