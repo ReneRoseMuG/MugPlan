@@ -52,8 +52,9 @@ Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |
 | A-33 | [Feature-Testabdeckung und UC-Lücken koordinieren](feature-testabdeckung-uc-luecken-koordinieren.md) | Planung | `offen` |
+| A-39 | [FT-02 Projekte: Test-Lücken schließen](ft02-projekte-testluecken-schliessen.md) | Testabdeckung | `offen` |
 
-Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Feature-Testabdeckung. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Feature-Testabdeckung. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 
 
 ### Formularansichten

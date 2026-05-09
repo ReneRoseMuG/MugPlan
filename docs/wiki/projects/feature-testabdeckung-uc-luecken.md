@@ -21,6 +21,7 @@ Das Projekt soll Feature-Testlücken sichtbar bündeln und priorisieren, ohne be
 ## Einzelaufgaben
 
 - [FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen](../tasks/ft01-ft04-ft33-testabdeckung-uc-luecken.md)
+- [FT-02 Projekte: Test-Lücken schließen](../tasks/ft02-projekte-testluecken-schliessen.md)
 - [FT-19 Attachment-Testlücken schließen](../tasks/ft19-attachment-testluecken.md)
 - [FT-26 Reports: verbleibende Testabdeckung schließen](../tasks/ft26-reports-testabdeckung.md)
 - [FT-34 Kalendermarker: Testlücken schließen](../tasks/ft34-kalendermarker-testluecken.md)

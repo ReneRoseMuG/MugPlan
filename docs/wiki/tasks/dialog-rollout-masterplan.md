@@ -10,39 +10,29 @@ Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument
 
 ## Ziel
 
-Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und verweist auf die vorhandenen Aufgaben FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente bis FT-26 gemeinsame Print-Basiskomponente für Kartenreports. Die Umsetzung soll Benutzerkommunikation über Bestätigungen, Entscheidungsdialoge und dauerhafte Inline-Meldungen vereinheitlichen, ohne Toasts als eigenes Rollout-Ziel zu behandeln. Besonders komplexe Termin-, Tour- und KW-Mutationen werden als eigener Teilbereich geführt, damit sie nicht mit einfacheren Domain-Dialogen vermischt werden. Serverregeln zu Rollen, Sperren, Versionen und Mitarbeiterkonflikten bleiben dabei maßgeblich.
+Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument für Projekt P-01. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und verweist auf die operative Projektseite mit vollständiger Reihenfolge, Testsuite und Protokollierungsregeln. Besonders komplexe Termin-, Tour- und KW-Mutationen werden bewusst an das Ende gestellt, damit sie nicht mit einfacheren Domain-Dialogen vermischt werden.
 
 ## Ausgangslage
 
-Der Strategieplan vom 08.05.26 liegt als Export unter dem Namen PLAN_Dialoge.md vor. Zusätzlich existieren FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente bis FT-26 gemeinsame Print-Basiskomponente für Kartenreports als verwandte Einzelaufgaben, die bisher nicht über eine gemeinsame Rollout-Struktur verbunden sind. Die Inventurdatei `docs/wiki/tasks/a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md` enthält die erste Gruppierung relevanter Dialog-, Bestätigungs- und Meldungspfade.
+Der Strategieplan vom 08.05.26 liegt als Export unter dem Namen PLAN_Dialoge.md vor. Zusätzlich existieren einzelne Dialog-Aufgaben, die über Projekt P-01 in eine fachlich sinnvolle Reihenfolge gebracht wurden. Die Inventurdatei `docs/wiki/tasks/a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md` enthält die erste Gruppierung relevanter Dialog-, Bestätigungs- und Meldungspfade.
 
 ## Umfang
 
-- Zur Master-Task gehören die Pflege der Teilbereichsliste, der Statusüberblick, die statische Inventur und die Verweise auf zugehörige Task-Dateien. Nicht Teil dieser Aufgabe sind UI-Komponenten, API-Änderungen, Schemaänderungen oder konkrete Dialogimplementierungen.
-- 0: Statische Inventur: (in dieser Datei, Abschnitt unten): offen
-- 1: Fehler-Normalisierung: [fehler-normalisierung.md](fehler-normalisierung.md): offen
-- 2: Basiskomponenten: [dialog-basiskomponenten.md](dialog-basiskomponenten.md): offen
-- 3: Tour-KW / Termin-Mutationen: [tour-kw-termin-mutationsdialoge.md](tour-kw-termin-mutationsdialoge.md): offen
-- 4: Termine und Kalenderdialoge: [termine-und-kalenderdialoge.md](termine-und-kalenderdialoge.md): offen
-- 5: Projekte und Dokumentextraktion: [projekte-und-dokumentextraktion-dialoge.md](projekte-und-dokumentextraktion-dialoge.md): offen
-- 6: Kunden: [kunden-dialoge.md](kunden-dialoge.md): offen
-- 7: Mitarbeiter: [mitarbeiter-dialoge.md](mitarbeiter-dialoge.md): offen
-- 8: Teams: [teams-dialoge.md](teams-dialoge.md): offen
-- 9: Notizen: [notizen-dialoge.md](notizen-dialoge.md): offen
-- 10: Stammdaten, Produkte und Komponenten: [stammdaten-produkte-komponenten-dialoge.md](stammdaten-produkte-komponenten-dialoge.md): offen
-- 11: Benutzer und Sicherheit: [benutzer-und-sicherheit-dialoge.md](benutzer-und-sicherheit-dialoge.md): offen
-- 12: Tags: [tags-dialoge.md](tags-dialoge.md): offen
-- 13: Reports und Druck: [reports-und-druck-dialoge.md](reports-und-druck-dialoge.md): offen
-- 14: Hilfetexte, Import und Export: [hilfetexte-import-export-dialoge.md](hilfetexte-import-export-dialoge.md): offen
-- 15: Einstellungen, Monitoring und Admin: [einstellungen-monitoring-admin-dialoge.md](einstellungen-monitoring-admin-dialoge.md): offen
-- (wird durch Teilbereich 0 befüllt)
+- Zur Master-Task gehören die Pflege der P01-Reihenfolge, der Statusüberblick, die statische Inventur und die Verweise auf zugehörige Task-Dateien. Nicht Teil dieser Aufgabe sind UI-Komponenten, API-Änderungen, Schemaänderungen oder konkrete Dialogimplementierungen.
+- Die vollständige Ausführungsreihenfolge und Testsuite steht auf der Projektseite [Dialog-Rollout](../projects/dialog-rollout.md).
+- Die Grundlagenreihenfolge lautet: [Fehler-Normalisierung](fehler-normalisierung.md), [Dialog-Basiskomponenten](dialog-basiskomponenten.md), [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md), [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md).
+- Danach folgen einfache und mittlere Domain-Aufgaben: [Teams-Dialoge](teams-dialoge.md), [Stammdaten-, Produkte- und Komponenten-Dialoge](stammdaten-produkte-komponenten-dialoge.md), [Tags-Dialoge](tags-dialoge.md), [Hilfetexte-, Import- und Export-Dialoge](hilfetexte-import-export-dialoge.md), [Einstellungen-, Monitoring- und Admin-Dialoge](einstellungen-monitoring-admin-dialoge.md), [Reports- und Druck-Dialoge](reports-und-druck-dialoge.md), [Kunden-Dialoge](kunden-dialoge.md), [Mitarbeiter-Dialoge](mitarbeiter-dialoge.md), [Notizen-Dialoge](notizen-dialoge.md), [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md), [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md).
+- Zum Schluss folgen die komplexen Tour-KW-, Termin- und Kalenderaufgaben: [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md), [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md), [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md), [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md), [Termine- und Kalenderdialoge](termine-und-kalenderdialoge.md).
+- Jede Teilaufgabe muss nach erfolgreicher Umsetzung Tests, manuelle App-Prüfung, Journaleintrag, Aufgabenverlinkung und Wiki-Build dokumentieren.
 
 ## Umsetzungshinweise
 
-- Die Reihenfolge bleibt: statische Inventur, Fehler-Normalisierung, Basiskomponenten, Tour-KW/Termin-Mutationen, danach Domain-Objekte.
+- Die Reihenfolge ist absichtlich gegenüber der ersten Stufung korrigiert: Grundlagen zuerst, einfache Domain-Objekte danach, Tour-KW-, Termin- und Kalenderpfade zuletzt.
 - Generische Dialograhmen und wiederverwendbare Auswahlrahmen gehören zu Dialog-Basiskomponenten; Domain-Tasks führen fachliche Nutzungsstellen.
 - Tour-KW und komplexe Termin-Mutationen bleiben in Tour-KW- und Termin-Mutationsdialoge, auch wenn einzelne Komponenten zusätzlich in Domain-Tasks als angrenzende Kommunikation auftauchen.
-- Rollenverhalten wird in dieser Strukturaufgabe nicht geändert. Spätere Umsetzungen müssen ADMIN, DISPONENT und LESER ausdrücklich prüfen und serverseitige Guards beibehalten.
+- Die Testsuite folgt der Hybrid-Strategie: gezielte vollständige Suite je Teilaufgabe, voller Testlauf zusätzlich nach den Hochrisiko-Meilensteinen Tour-KW- und Termin-Mutationsdialoge sowie Termine- und Kalenderdialoge.
+- Rollenverhalten wird in dieser Strukturaufgabe nicht geändert. Spätere Umsetzungen müssen `ADMIN`, `DISPONENT` und `READER` beziehungsweise `LESER` ausdrücklich prüfen und serverseitige Guards beibehalten.
+- Nach jeder abgeschlossenen Teilaufgabe wird ein Journaleintrag erstellt, in der Aufgabe verlinkt und durch `node scripts/build-wiki-site.mjs` in die generierte Wiki-Ausgabe übernommen.
 - Folgende Punkte sind vor der Delegation einzelner Teilbereiche zu klären.
 - Notiz-Pflichtentscheidung beim Verschieben: Komfortmerkmal oder blockierender Dialog-Schritt? (FT-01 sagt: Notizen bleiben immer erhalten.)
 - Schritt 4 des Gesamtplans muss aufgeteilt werden: erst Preview-Contract-Erweiterung (Server), dann Verschiebe-Dialog (Client).

@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 35,
-      "generated_count": 35,
+      "source_count": 36,
+      "generated_count": 36,
       "warnings": 0,
       "errors": 0
     },
@@ -1389,6 +1389,15 @@
         "title": "FT-07 DB-Dry-Run für Dump-Import vorbereiten",
         "source": "tasks/ft07-db-dry-run-dump-import-vorbereiten.md",
         "output": "projekt/aufgaben/ft07-db-dry-run-dump-import-vorbereiten.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "A-39",
+        "title": "FT-02 Projekte: Test-Lücken schließen",
+        "source": "tasks/ft02-projekte-testluecken-schliessen.md",
+        "output": "projekt/aufgaben/ft02-projekte-testluecken-schliessen.html",
         "ok": true,
         "warnings": [],
         "errors": []

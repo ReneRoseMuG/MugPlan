@@ -429,7 +429,7 @@ function layout({ outputRel, title, screenLabel, current, breadcrumbs, body }) {
   const indexHref = relLink(outputRel, "index.html");
   const nav = [
     {
-      title: "Projekt",
+      title: "Projekte",
       links: [
         ["Projekte", "projekt/projekte.html", "projekte"],
         ["Aufgaben", "projekt/aufgaben.html", "aufgaben"],
@@ -737,7 +737,7 @@ function renderEntityPage(entity, sources) {
             : entity.kind === "nfr"
               ? "nfrs"
               : "journal";
-  const area = current === "journal" ? "Verwaltung" : ["projekte", "aufgaben"].includes(current) ? "Projekt" : "Lastenheft";
+  const area = current === "journal" ? "Verwaltung" : ["projekte", "aufgaben"].includes(current) ? "Projekte" : "Lastenheft";
   const areaHref = current === "journal" ? "verwaltung/journal.html" : ["projekte", "aufgaben"].includes(current) ? "projekt/projekte.html" : "lastenheft/features.html";
   const breadcrumbs = [
     { label: "MugPlan Wiki", href: "index.html" },
@@ -871,7 +871,7 @@ function card(entity, fromOutputRel) {
 }
 
 function tablePage({ outputRel, title, current, lead, rows, columns }) {
-  const area = current === "journal" ? "Verwaltung" : ["projekte", "aufgaben"].includes(current) ? "Projekt" : "Lastenheft";
+  const area = current === "journal" ? "Verwaltung" : ["projekte", "aufgaben"].includes(current) ? "Projekte" : "Lastenheft";
   const body = `<h1 class="wiki-h1"${headingIconAttr(current)}>${escapeHtml(title)}</h1>
     <p class="wiki-lead">${escapeHtml(lead)}</p>
     <table class="wiki-table">
@@ -904,7 +904,7 @@ function renderIndex(sources, index) {
     <section class="wiki-cards" aria-label="Bereiche">
       <article class="wiki-card">
         <h2 class="wiki-card__title"><a href="${relLink(outputRel, "projekt/projekte.html")}">Projekte</a></h2>
-        <p class="wiki-card__desc">Projektklammern, offene Aufgaben und Decision-Folgearbeiten.</p>
+        <p class="wiki-card__desc">Thematisch verwandte Aufgabensammlungen mit Masteraufgaben, Einzelaufgaben und Arbeitsständen.</p>
         <ul class="wiki-card__links">
           <li><a href="${relLink(outputRel, "projekt/projekte.html")}">Projekte <span class="wiki-card__count">${sources.projects.length}</span></a></li>
           <li><a href="${relLink(outputRel, "projekt/aufgaben.html")}">Aufgaben <span class="wiki-card__count">${sources.tasks.length}</span></a></li>
@@ -949,7 +949,7 @@ function renderOverviewPages(sources) {
     outputRel: "projekt/projekte.html",
     title: "Projekte",
     current: "projekte",
-    lead: "Projektklammern für größere Arbeitsstränge, jeweils mit Masteraufgabe und zugeordneten Einzelaufgaben.",
+    lead: "Thematisch verwandte Aufgabensammlungen für größere Arbeitsstränge, jeweils mit Masteraufgabe und zugeordneten Einzelaufgaben.",
     rows: sources.projects,
     columns: [
       { label: "ID", render: (row) => entityLink(row, "projekt/projekte.html", row.id) },
