@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-09/10">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-09/10 Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)</span></nav>
+        <h1 class="wiki-h1">UC-09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-09</span></div>
+    <p class="wiki-lead">Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsistenten Aktiv-Zustände entstehen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-09-kundenverwaltung.html">FT (09): Kundenverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsistenten Aktiv-Zustände entstehen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Kunde existiert.</li><li>Zwei Administratoren sind gleichzeitig authentifiziert.</li><li>Beide Administratoren laden denselben Kunden mit identischer Versionskennung.</li><li>Der Kunde befindet sich in einem definierten Ausgangszustand (<code>is_active = true</code> oder <code>false</code>).</li></ul>
+<hr>
+<h3 class="wiki-h3">Ablauf – Beispiel: paralleles Deaktivieren</h3>
+<ol><li>Administrator A öffnet die Detailansicht eines aktiven Kunden.</li><li>Administrator B öffnet denselben Kunden.</li><li>Administrator A löst „Deaktivieren“ aus.</li><li>Das System prüft Berechtigung und Versionskennung.</li><li>Das System setzt <code>is_active = false</code>, persistiert und erhöht die Versionskennung.</li><li>Administrator B löst ebenfalls „Deaktivieren“ aus.</li><li>Das System prüft die Versionskennung.</li><li>Das System erkennt die veraltete Version.</li><li>Das System antwortet mit 409 (Konflikt).</li></ol>
+<hr>
+<h3 class="wiki-h3">Ablauf – Beispiel: Deaktivieren vs. Reaktivieren</h3>
+<ol><li>Administrator A öffnet einen aktiven Kunden.</li><li>Administrator B öffnet denselben Kunden.</li><li>Administrator A deaktiviert den Kunden.</li><li>Das System persistiert <code>is_active = false</code> und erhöht die Versionskennung.</li><li>Administrator B versucht, den Kunden zu reaktivieren (auf Basis veralteter Version).</li><li>Das System prüft die Versionskennung.</li><li>Das System erkennt den Konflikt.</li><li>Das System blockiert mit 409.</li></ol>
+<hr>
+<h2 class="wiki-h2">Ablauf</h2>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Einer der Administratoren lädt vor dem Statuswechsel neu → kein Konflikt.</li><li>Ein Statuswechsel wird vor dem parallelen Zugriff vollständig abgeschlossen → der zweite Vorgang wird mit aktuellem Status geprüft und ggf. als „keine Zustandsänderung“ behandelt.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Der Aktiv-Status eines Kunden ist jederzeit eindeutig und konsistent.</li><li>Es existiert kein Zustand, in dem zwei widersprüchliche Statusänderungen gleichzeitig persistiert werden.</li><li>Optimistic Locking gilt auch für reine Statusoperationen.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-09-kundenverwaltung.html">FT-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

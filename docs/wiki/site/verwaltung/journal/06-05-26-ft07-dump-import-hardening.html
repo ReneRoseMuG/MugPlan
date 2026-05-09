@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-05-26-ft07-dump-import-hardening: 06.05.26 | Refactoring | FT-07: Dump- und Import-Hardening · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 06-05-26-ft07-dump-import-hardening">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">06-05-26-ft07-dump-import-hardening 06.05.26 | Refactoring | FT-07: Dump- und Import-Hardening</span></nav>
+        <h1 class="wiki-h1">06-05-26-ft07-dump-import-hardening: 06.05.26 | Refactoring | FT-07: Dump- und Import-Hardening</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>06.05.26</div>
+    <p class="wiki-lead">Der FT-07 Dump-/Importpfad wurde gehärtet und fachlich nachdokumentiert. Dumps enthalten nun Benutzerkonten mit Auth-Feldern; Rollen bleiben seed-geführte Systemdaten und werden über roleCode gemappt.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der FT-07 Dump-/Importpfad wurde gehärtet und fachlich nachdokumentiert. Dumps enthalten nun Benutzerkonten mit Auth-Feldern; Rollen bleiben seed-geführte Systemdaten und werden über <code>roleCode</code> gemappt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtiges Backend-Refactoring mit ergänzender Testabdeckung und Wiki-Dokumentation. Es wurden keine Datenbankmigrationen und keine UI-Änderungen eingeführt.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-07: Automatisierte Datensicherung und Fallback</li><li>W-22: Echter DB-Dry-Run für Dump-Import als offener Folgepunkt</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>users</code> wurde in den Dump-Vertrag aufgenommen.</li><li><code>roles</code> bleibt außerhalb des Dumps; beim Import werden Benutzerrollen über <code>roleCode</code> auf lokale Seed-Rollen gemappt.</li><li>Legacy-Dumps ohne <code>users</code> bleiben tolerant importierbar.</li><li>Der veraltete Legacy-Servicepfad <code>importDump</code> wurde entfernt.</li><li>Upload-Staging und Foreign-Key-Check-Cleanup wurden gehärtet.</li><li>Retention umfasst jetzt auch manuelle Dump-Dateien und Dump-Transfer-Tagesverzeichnisse.</li><li>Die erledigten Decisions W-17 und W-20 wurden aus dem Decision-Wiki entfernt.</li><li>W-22 dokumentiert den späteren echten DB-Dry-Run gegen isolierte Zusatzdatenbanken.</li><li>Die FT-07-Wiki-Seite und die Use Cases UC 07/07, UC 07/12 und UC 07/13 wurden aktualisiert; UC 07/14 für DB-Dump-Import wurde ergänzt.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Dump-Erzeugung, Download, Preview, Apply und Löschung bleiben ausschließlich Admin-Funktionen. Die Absicherung bleibt serverseitig. Es wurde keine Rollenbeschränkung erweitert oder gelockert.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/admin.dump.integration.test.ts</code></li><li><code>npm run test:unit -- tests/unit/services/dumpService.test.ts tests/unit/services/backupRetentionService.test.ts</code></li></ul>
+<p>Die neuen Integrationstests prüfen echte DB-Pfade für Benutzer-Roundtrip, Rollenmapping per <code>roleCode</code>, Rollback bei unbekannter Rolle und blockierende Manifest-Mismatches.</p>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Ein echter DB-Dry-Run ist noch nicht implementiert. Dafür werden isolierte Zusatzdatenbanken und eigene Safety-Guards benötigt.</li><li>Der aktuelle Branch <code>refactor-dump-service</code> ist noch nicht committed.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../../lastenheft/use-cases/uc-07-07-alte-backups-automatisch-loeschen.html">UC-07/07</a><a href="../../lastenheft/use-cases/uc-07-12-db-dump-automatisch-erzeugen.html">UC-07/12</a><a href="../../lastenheft/use-cases/uc-07-13-db-dump-herunterladen.html">UC-07/13</a><a href="../../lastenheft/use-cases/uc-07-14-db-dump-importieren.html">UC-07/14</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

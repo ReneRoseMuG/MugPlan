@@ -1,0 +1,294 @@
+{
+  "_meta": {
+    "version": "3.0",
+    "beschreibung": "Zentraler redaktioneller Relationsindex der MuGPlan Wiki. Alle Pfade sind relativ zu docs/wiki/.",
+    "aktualisiert": "2026-05-09"
+  },
+  "status": [
+    {
+      "id": "status-geplant",
+      "label": "geplant",
+      "sortierung": 10
+    },
+    {
+      "id": "status-offen",
+      "label": "offen",
+      "sortierung": 20
+    },
+    {
+      "id": "status-in-bearbeitung",
+      "label": "in Bearbeitung",
+      "sortierung": 30
+    },
+    {
+      "id": "status-blockiert",
+      "label": "blockiert",
+      "sortierung": 40
+    },
+    {
+      "id": "status-abgeschlossen",
+      "label": "Abgeschlossen",
+      "sortierung": 90
+    },
+    {
+      "id": "status-entfernt",
+      "label": "Entfernt",
+      "sortierung": 99
+    }
+  ],
+  "dringlichkeiten": [
+    {
+      "id": "prio-hoch",
+      "label": "Hoch",
+      "sortierung": 10
+    },
+    {
+      "id": "prio-mittel",
+      "label": "Mittel",
+      "sortierung": 20
+    },
+    {
+      "id": "prio-niedrig",
+      "label": "Niedrig",
+      "sortierung": 30
+    }
+  ],
+  "aufgaben_status": [
+    {
+      "id": "task-status-offen",
+      "label": "offen",
+      "sortierung": 10
+    },
+    {
+      "id": "task-status-in-bearbeitung",
+      "label": "in Bearbeitung",
+      "sortierung": 20
+    },
+    {
+      "id": "task-status-blockiert",
+      "label": "blockiert",
+      "sortierung": 30
+    },
+    {
+      "id": "task-status-abgeschlossen",
+      "label": "abgeschlossen",
+      "sortierung": 90
+    },
+    {
+      "id": "task-status-verworfen",
+      "label": "verworfen",
+      "sortierung": 99
+    }
+  ],
+  "aufgabentypen": [
+    {
+      "id": "task-type-analyse",
+      "label": "Analyse",
+      "sortierung": 10
+    },
+    {
+      "id": "task-type-dokumentation",
+      "label": "Dokumentation",
+      "sortierung": 20
+    },
+    {
+      "id": "task-type-implementierung",
+      "label": "Implementierung",
+      "sortierung": 30
+    },
+    {
+      "id": "task-type-infrastruktur",
+      "label": "Infrastruktur",
+      "sortierung": 40
+    },
+    {
+      "id": "task-type-planung",
+      "label": "Planung",
+      "sortierung": 50
+    },
+    {
+      "id": "task-type-refactoring",
+      "label": "Refactoring",
+      "sortierung": 60
+    },
+    {
+      "id": "task-type-testabdeckung",
+      "label": "Testabdeckung",
+      "sortierung": 70
+    }
+  ],
+  "aufgabenthemen": [
+    {
+      "id": "task-topic-attachments",
+      "label": "Attachments",
+      "sortierung": 10
+    },
+    {
+      "id": "task-topic-datensicherung",
+      "label": "Datensicherung",
+      "sortierung": 20
+    },
+    {
+      "id": "task-topic-dialoge",
+      "label": "Dialoge",
+      "sortierung": 30
+    },
+    {
+      "id": "task-topic-feature-testabdeckung",
+      "label": "Feature-Testabdeckung",
+      "sortierung": 40
+    },
+    {
+      "id": "task-topic-formularansichten",
+      "label": "Formularansichten",
+      "sortierung": 50
+    },
+    {
+      "id": "task-topic-frontend-build",
+      "label": "Frontend-Build",
+      "sortierung": 60
+    },
+    {
+      "id": "task-topic-frontend-cache",
+      "label": "Frontend-Cache",
+      "sortierung": 70
+    },
+    {
+      "id": "task-topic-kalender-touren-abwesenheiten",
+      "label": "Kalender/Touren/Abwesenheiten",
+      "sortierung": 80
+    },
+    {
+      "id": "task-topic-kalendermarker-feiertage",
+      "label": "Kalendermarker / Feiertage",
+      "sortierung": 90
+    },
+    {
+      "id": "task-topic-kalender-performance",
+      "label": "Kalender-Performance",
+      "sortierung": 100
+    },
+    {
+      "id": "task-topic-reports",
+      "label": "Reports",
+      "sortierung": 110
+    },
+    {
+      "id": "task-topic-termin-workflows",
+      "label": "Termin-Workflows",
+      "sortierung": 120
+    },
+    {
+      "id": "task-topic-testinfrastruktur",
+      "label": "Testinfrastruktur",
+      "sortierung": 130
+    }
+  ],
+  "entscheidungsstatus": [
+    {
+      "id": "decision-status-offen",
+      "label": "offen",
+      "sortierung": 10
+    },
+    {
+      "id": "decision-status-zurueckgestellt",
+      "label": "zurückgestellt",
+      "sortierung": 20
+    },
+    {
+      "id": "decision-status-entschieden",
+      "label": "entschieden",
+      "sortierung": 30
+    },
+    {
+      "id": "decision-status-erledigt",
+      "label": "erledigt",
+      "sortierung": 90
+    }
+  ],
+  "entscheidungsarten": [
+    {
+      "id": "decision-type-widerspruch-code-spec",
+      "label": "Widerspruch Code ↔ Spec",
+      "sortierung": 10
+    },
+    {
+      "id": "decision-type-architektur-refaktoring",
+      "label": "Architektur-Refaktoring",
+      "sortierung": 20
+    },
+    {
+      "id": "decision-type-design-entscheidung",
+      "label": "Design-Entscheidung",
+      "sortierung": 30
+    },
+    {
+      "id": "decision-type-technische-schuld",
+      "label": "Technische Schuld",
+      "sortierung": 40
+    }
+  ],
+  "projekte": [
+    {
+      "id": "P-01",
+      "datei": "projects/dialog-rollout.md",
+      "titel": "Dialog-Rollout",
+      "status_id": "task-status-in-bearbeitung",
+      "dringlichkeit_id": "prio-hoch",
+      "master_task": "tasks/dialog-rollout-masterplan.md",
+      "aufgaben": [
+        "tasks/fehler-normalisierung.md",
+        "tasks/dialog-basiskomponenten.md",
+        "tasks/ft04-dialog-basiskomponente.md",
+        "tasks/mitarbeiter-auswahl-dialogstruktur.md",
+        "tasks/teams-dialoge.md",
+        "tasks/stammdaten-produkte-komponenten-dialoge.md",
+        "tasks/tags-dialoge.md",
+        "tasks/hilfetexte-import-export-dialoge.md",
+        "tasks/einstellungen-monitoring-admin-dialoge.md",
+        "tasks/reports-und-druck-dialoge.md",
+        "tasks/kunden-dialoge.md",
+        "tasks/mitarbeiter-dialoge.md",
+        "tasks/notizen-dialoge.md",
+        "tasks/projekte-und-dokumentextraktion-dialoge.md",
+        "tasks/benutzer-und-sicherheit-dialoge.md",
+        "tasks/termin-tour-kw-mutationsdialoge.md",
+        "tasks/tour-kw-termin-mutationsdialoge.md",
+        "tasks/ft04-multistep-tour-kw-dialog.md",
+        "tasks/ft04-multiselect-kw-planung-wochenkalender.md",
+        "tasks/termine-und-kalenderdialoge.md"
+      ],
+      "entscheidungen": []
+    },
+    {
+      "id": "P-02",
+      "datei": "projects/feature-testabdeckung-uc-luecken.md",
+      "titel": "Feature-Testabdeckung und UC-Lücken",
+      "status_id": "task-status-offen",
+      "dringlichkeit_id": "prio-hoch",
+      "master_task": "tasks/feature-testabdeckung-uc-luecken-koordinieren.md",
+      "aufgaben": [
+        "tasks/ft01-ft04-ft33-testabdeckung-uc-luecken.md",
+        "tasks/ft02-projekte-testluecken-schliessen.md",
+        "tasks/ft19-attachment-testluecken.md",
+        "tasks/ft26-reports-testabdeckung.md",
+        "tasks/ft34-kalendermarker-testluecken.md"
+      ],
+      "entscheidungen": [
+        "decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md",
+        "decisions/w-21-ft26-reports-testabdeckung.md"
+      ]
+    }
+  ],
+  "nfrs": [
+    {
+      "id": "NFR-01",
+      "datei": "nfrs/nfr-01-multi-user-konsistenz.md",
+      "titel": "Multi-User-Konsistenz",
+      "status_id": "status-abgeschlossen",
+      "kategorie": "Konsistenz",
+      "beschreibung": "Parallele Nutzung durch mehrere Benutzer oder Browser-Sessions muss deterministisch konsistent bleiben.",
+      "notion_url": "https://www.notion.so/313da094354e810db445c5ffe0c054f9"
+    }
+  ]
+}

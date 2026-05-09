@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-24: Fahrzeugverwaltung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-24">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-24 Fahrzeugverwaltung</span></nav>
+        <h1 class="wiki-h1">FT-24: Fahrzeugverwaltung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--neutral">Backlog / nicht spezifiziert</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature-Hülle</span></div>
+    <p class="wiki-lead">Dieses Feature bündelt Anforderungen zur Verwaltung von Fahrzeugen im Planungsprozess.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Backlog / nicht spezifiziert</li><li>Typ: Feature-Hülle</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature bündelt Anforderungen zur Verwaltung von Fahrzeugen im Planungsprozess.</p>
+<p>Die lokale Feature-Hülle hält das aus Notion übernommene Backlog-Item sichtbar, bis die fachlichen Anforderungen ausreichend geklärt sind, um daraus Use Cases, Regeln und technische Umsetzungspfade abzuleiten.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Fahrzeuge sollen künftig als eigene Planungsressourcen betrachtet werden können. Das bisher bekannte Backlog beschreibt die Zuweisung von Fahrzeugen zu Touren oder Mitarbeitern sowie die Verwaltung fahrzeugbezogener Termine wie TÜV und Reifenwechsel.</p>
+<p>Ob Fahrzeuge als Stammdatenobjekte, als disponierbare Ressourcen, als Terminbezug oder als Kombination daraus modelliert werden, ist noch offen.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Fahrzeugverwaltung ist fachlich noch nicht spezifiziert.</li><li>Fahrzeugzuweisungen dürfen bestehende Termin-, Touren- und Mitarbeiterregeln nicht stillschweigend umgehen.</li><li>Fahrzeugtermine sind von regulären Kundenterminen und Kalendermarkern abzugrenzen.</li><li>Rollen, Sichtbarkeit und Mutationsrechte für Fahrzeuge, Fahrzeugzuweisungen und Fahrzeugtermine sind vor Umsetzung ausdrücklich zu klären.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<p>Noch keine Use Cases angelegt.</p>
+<h2 class="wiki-h2">Backlogs</h2>
+<ul><li><a href="../backlogs/ft-24-fahrzeugverwaltung-backlog.html">BL (07): Fahrzeugverwaltung</a></li></ul>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<p>Noch nicht spezifiziert.</p>
+<p>Mögliche fachliche Berührungspunkte:</p>
+<ul><li>FT (01): Kalendertermine</li><li>FT (03): Kalenderansichten</li><li>FT (04): Tourenplanung</li><li>FT (05): Mitarbeiterverwaltung</li><li>FT (20): Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung</li></ul>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<ul><li>Soll ein Fahrzeug ein eigenes Stammdatenobjekt werden?</li><li>Wird ein Fahrzeug einer Tour, einem Mitarbeiter, einem Termin oder mehreren dieser Objekte zugeordnet?</li><li>Wie werden fahrzeugbezogene Termine wie TÜV und Reifenwechsel fachlich von Kunden- und Planungsterminen getrennt?</li><li>Welche Rollen dürfen Fahrzeuge sehen, anlegen, bearbeiten, löschen und zuweisen?</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-24-fahrzeugverwaltung-backlog.html">BL-24</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BL-03: FT (03) Backlog · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html" class="is-active">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Backlogs BL-03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../backlogs.html">Backlogs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">BL-03 FT (03) Backlog</span></nav>
+        <h1 class="wiki-h1">BL-03: FT (03) Backlog</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-03</span></div>
+    <p class="wiki-lead">Quelle: https://www.notion.so/33bda094354e8148b4e2e6f00241a41a</p>
+    <h2 class="wiki-h2">FT-03: Kartenansicht (Termin- und Tourvisualisierung)</h2>
+<p>Quelle: https://www.notion.so/33bda094354e8148b4e2e6f00241a41a</p>
+<p>Status: Backlog / nicht begonnen</p>
+<p>Herkunft: ehemaliges FT-22, fachlich zu FT (03): Kalenderansichten zurückgestuft.</p>
+<h3 class="wiki-h3">Ziel / Zweck</h3>
+<p>Die bestehende Kalenderansicht soll um eine räumliche Visualisierungsebene erweitert werden.</p>
+<p>Termine und Touren sollen auf einer Kartenansicht dargestellt werden, damit geografische Zusammenhänge, räumliche Ballungen und Tourverteilungen besser erkennbar sind. Die Kartenansicht dient ausschließlich der visuellen Orientierung und verändert keine fachlichen Daten.</p>
+<h3 class="wiki-h3">Fachliche Beschreibung</h3>
+<p>Die Kartenansicht stellt Termine als Marker auf einer OpenStreetMap-basierten Karte dar. Grundlage der Positionierung ist die Adresse des dem Termin zugeordneten Kunden.</p>
+<p>Die Adresse soll serverseitig zur Laufzeit geokodiert werden. Die ermittelten Koordinaten werden nach aktuellem Backlog-Stand nicht persistent gespeichert, sondern nur für die Darstellung verwendet.</p>
+<p>Die Darstellung berücksichtigt folgende fachliche Beziehungen:</p>
+<ul><li>Termin -&gt; Projekt -&gt; Kunde -&gt; Adresse</li><li>Termin -&gt; Tour -&gt; Tourfarbe</li><li>Termin -&gt; Mitarbeiter</li></ul>
+<p>Marker übernehmen die Farbe der zugeordneten Tour. Termine ohne Tour werden in einer neutralen Standardfarbe dargestellt. Mehrere Termine an derselben Adresse können als überlagerte Marker oder als Cluster-Marker erscheinen.</p>
+<p>Die Kartenansicht soll dieselben Filtermechanismen wie Kalender- und Terminlistenansicht verwenden. Angezeigt werden ausschließlich die aktuell gefilterten Termine.</p>
+<h3 class="wiki-h3">Regeln &amp; Randbedingungen</h3>
+<ul><li>Die Kartenansicht ist rein lesend.</li><li>Über die Kartenansicht können keine Termine erstellt, bearbeitet oder gelöscht werden.</li><li>Es findet keine Routenberechnung statt.</li><li>Es findet keine Entfernungsberechnung statt.</li><li>Es findet keine Optimierung oder Bewertung von Touren statt.</li><li>Geokodierung erfolgt ausschließlich serverseitig.</li><li>Kundendaten werden nicht persistent verändert.</li><li>Fehlgeschlagene Geokodierung darf nicht zu Datenverlust führen.</li><li>Termine ohne erfolgreich ermittelbare Koordinaten werden nicht angezeigt oder klar als nicht lokalisierbar gekennzeichnet.</li><li>Rollen und Sichtbarkeit sind vor Umsetzung serverseitig zu klären; eine reine UI-Sichtbarkeit reicht nicht aus.</li></ul>
+<h3 class="wiki-h3">Erwartete Darstellung</h3>
+<p>Jeder Termin wird als Marker dargestellt. Ein Tooltip oder Popup soll mindestens folgende Informationen anzeigen:</p>
+<ul><li>Kundennummer</li><li>Kundenname</li><li>Postleitzahl</li><li>Projekttitel</li><li>Terminzeitraum</li><li>Zugeordnete Tour</li><li>Zugeordnete Mitarbeiter</li></ul>
+<p>Die Karte ist verschiebbar, zoombar und frei navigierbar. Die initiale Ansicht orientiert sich an der geografischen Mitte der angezeigten Termine oder an einem definierten Standardbereich.</p>
+<h3 class="wiki-h3">Zurückgestellte Use Cases aus Notion</h3>
+<p>Die folgenden Use Cases stammen aus dem zurückgestuften Notion-Feature und bleiben als Backlog-Hinweis erhalten, ohne bereits als lokale Use-Case-Dateien geführt zu werden:</p>
+<ul><li>Kartenansicht anzeigen</li><li>Kartenansicht nach Tour filtern</li><li>Marker-Details anzeigen</li></ul>
+<h3 class="wiki-h3">Offene Klärungen</h3>
+<ul><li>Welche Rollen dürfen die Kartenansicht sehen?</li><li>Welche Daten dürfen im Marker-Popup je Rolle angezeigt werden?</li><li>Welcher Geokodierungsdienst ist zulässig und wie werden Datenschutz, Rate Limits und Fehlerfälle behandelt?</li><li>Sollen Koordinaten bewusst nicht gespeichert bleiben oder ist später ein Cache erforderlich?</li><li>Wie werden nicht lokalisierbare Termine in der Oberfläche sichtbar gemacht?</li><li>Wie verhält sich die Kartenansicht zu Druckansichten und Reports aus FT (26)?</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-03-kalenderansichten.html">FT-03</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

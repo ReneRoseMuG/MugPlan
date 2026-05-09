@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/15: Konsistenz bei parallelen Änderungen (Optimistic Locking) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/15">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/15 Konsistenz bei parallelen Änderungen (Optimistic Locking)</span></nav>
+        <h1 class="wiki-h1">UC-01/15: Konsistenz bei parallelen Änderungen (Optimistic Locking)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Verhindern, dass parallele Bearbeitungen am selben Termin zu Lost Updates führen. Wenn zwei Benutzer denselben Termin bearbeiten, darf eine spätere Speicherung nicht stillschweigend frühere Änderungen überschreiben. Stattdessen muss das System Versionskonflikte erkennen, die Spei</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Verhindern, dass parallele Bearbeitungen am selben Termin zu Lost Updates führen. Wenn zwei Benutzer denselben Termin bearbeiten, darf eine spätere Speicherung nicht stillschweigend frühere Änderungen überschreiben. Stattdessen muss das System Versionskonflikte erkennen, die Speicherung blockieren und den Benutzer so informieren, dass er den aktuellen Stand neu laden und seine Änderungen bewusst erneut anwenden kann.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Das System verwendet eine Versionsinformation für Termine, mit der Änderungen gegen parallele Updates abgesichert werden.</li><li>Zwei Benutzer können gleichzeitig auf denselben Termin zugreifen.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Benutzer A öffnet einen bestehenden Termin im Terminformular.</li><li>Benutzer B öffnet denselben Termin im Terminformular, ohne von der Bearbeitung von Benutzer A zu wissen.</li><li>Benutzer A ändert den Termin und speichert.</li><li>Das System speichert die Änderungen von Benutzer A und erhöht die Versionsinformation des Termins.</li><li>Benutzer B ändert den Termin auf Basis seines nun veralteten Stands und versucht zu speichern.</li><li>Das System erkennt anhand der Versionsinformation, dass der Stand von Benutzer B veraltet ist, und blockiert die Speicherung mit einem Versionskonflikt.</li><li>Das System informiert Benutzer B eindeutig über den Konflikt und bietet einen Weg an, den Termin neu zu laden.</li><li>Benutzer B lädt den aktuellen Stand und entscheidet anschließend bewusst, ob und wie er seine Änderungen erneut anwenden möchte.</li><li>Benutzer B speichert erneut, diesmal auf Basis der aktuellen Version.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Konflikt beim Löschen: Wenn Benutzer B versucht zu löschen, während Benutzer A den Termin geändert hat, muss das System den Löschvorgang ebenfalls über einen Versionskonflikt blockieren, sodass keine unbeabsichtigte Löschung eines inzwischen geänderten Stands erfolgt.</li><li>Konflikt bei Mitarbeiterzuordnungen: Wenn Benutzer A die Mitarbeiterliste geändert hat und Benutzer B parallel ebenfalls Änderungen an Mitarbeiterzuordnungen vornimmt, muss der Versionskonflikt ebenfalls greifen, sodass keine Join-Änderungen verloren gehen oder teilweise überschrieben werden.</li><li>Abbruch: Benutzer B bricht nach Konfliktmeldung ab. Dann bleibt der Termin im Stand von Benutzer A erhalten.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Parallele Änderungen führen nicht zu stillen Überschreibungen. Stattdessen wird ein Versionskonflikt erkannt und die zweite Speicherung blockiert, bis der Benutzer auf Basis des aktuellen Stands erneut speichert. Der Termin und die Join-Tabelle Termin–Mitarbeiter bleiben konsistent, ohne Lost Updates und ohne Teilzustände.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

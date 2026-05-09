@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-projekt-hover-preview-hoehe: 05.05.26 | UI-Fix | FT-02: Projekt-Hover-Preview-Höhe · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-projekt-hover-preview-hoehe">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-projekt-hover-preview-hoehe 05.05.26 | UI-Fix | FT-02: Projekt-Hover-Preview-Höhe</span></nav>
+        <h1 class="wiki-h1">05-05-26-projekt-hover-preview-hoehe: 05.05.26 | UI-Fix | FT-02: Projekt-Hover-Preview-Höhe</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Die Projekt-Hover-Preview in der Projekt-Tabellenansicht wird wieder ohne festen Scrollcontainer angezeigt. Das Project Panel innerhalb der Preview ist in diesem Tabellenkontext vollständig expandiert.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Projekt-Hover-Preview in der Projekt-Tabellenansicht wird wieder ohne festen Scrollcontainer angezeigt. Das Project Panel innerhalb der Preview ist in diesem Tabellenkontext vollständig expandiert.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Kleiner lokaler UI-Fix in der bestehenden Projektlisten- und Preview-Struktur. Es wurden keine Backend-Contracts, Datenmodelle, API-Endpunkte, Persistenzpfade oder Rollenregeln geändert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-02: Projekte</li><li>Projektliste: Tabellenansicht und Hover-Preview</li></ul>
+<p>Ein belastbarer Notion-Link wurde im Auftrag nicht verwendet.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Die Projekt-Tabellenpreview gibt in <code>ProjectsPage</code> jetzt explizit <code>maxHeight: null</code> und <code>scrollY: &quot;visible&quot;</code> an, damit <code>TableView</code> keinen festen Preview-Scrollcontainer setzt.</li><li><code>ProjectEntityCard</code> kann das Project Panel je Kontext kompakt oder vollständig expandiert rendern.</li><li><code>ProjectTableHoverPreview</code> fordert für die Projekt-Tabellenansicht das vollständig expandierte Project Panel an.</li><li>Die vorhandenen Unit-Tests wurden erweitert, damit Preview-Optionen und nicht-kompaktes Project Panel regressionssicher geprüft werden.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Keine Änderung an Rollen oder Berechtigungen.</p>
+<ul><li>Sichtbarkeit und Bedienbarkeit der Projektliste bleiben unverändert.</li><li>Die Änderung betrifft ausschließlich Layout und Höhe der bestehenden Tabellen-Hover-Preview.</li><li>Es wurden keine Endpunkte, Mutationen, Deep Links oder Berechtigungsprüfungen geändert.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/ui/projectsTable.preview.test.tsx tests/unit/ui/tableEntityCardPreviews.render.test.tsx tests/unit/ui/projectInfoPanel.render.test.tsx</code></li><li><code>npm run typecheck</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein Browser-Screenshot wurde nachgezogen.</li><li>Die Ursache wurde als indirekte UI-Regression aus der generischen Tabellen-Preview-Verdrahtung eingegrenzt.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

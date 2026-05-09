@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03-05-26-wochenkalender-abwesenheitsspur: 03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 03-05-26-wochenkalender-abwesenheitsspur">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">03-05-26-wochenkalender-abwesenheitsspur 03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar</span></nav>
+        <h1 class="wiki-h1">03-05-26-wochenkalender-abwesenheitsspur: 03.05.26 - Wochenkalender: Abwesenheitsspur dauerhaft sichtbar</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>03.05.26</div>
+    <p class="wiki-lead">Die schmale Abwesenheitsspur im Wochenkalender ist jetzt dauerhaft sichtbar. Der bisherige Toggle wurde entfernt, die Spur erhielt einen kompakten Header in der Farbe der Tour Abwesenheiten, und Abwesenheiten am Wochenende verbreitern die Wochenendspalten nicht mehr.</p>
+    <h2 class="wiki-h2">Kurzfassung</h2>
+<p>Die schmale Abwesenheitsspur im Wochenkalender ist jetzt dauerhaft sichtbar. Der bisherige Toggle wurde entfernt, die Spur erhielt einen kompakten Header in der Farbe der Tour <code>Abwesenheiten</code>, und Abwesenheiten am Wochenende verbreitern die Wochenendspalten nicht mehr.</p>
+<h2 class="wiki-h2">Änderungen</h2>
+<ul><li>Wochenkalender:</li><li>Abwesenheitsspur rendert immer direkt unter dem Tageskopf.</li><li>Toggle für die optionale Anzeige der Spur entfernt.</li><li>Spur-Header mit Label <code>Abwesenheiten</code> ergänzt.</li><li>Wochenendspalten werden nur noch durch reguläre Termine verbreitert, nicht durch reine Abwesenheiten.</li><li>Mitarbeiter-Badges:</li><li>Standard-Badges in Wochen-Terminkarten rendern ohne farbige Avatar-Kreise.</li><li>Standard-Badges in der Abwesenheitsspur rendern ebenfalls ohne farbige Avatar-Kreise.</li><li>Kompakt-Badges bleiben unverändert.</li></ul>
+<h2 class="wiki-h2">Hinweise</h2>
+<p>Die Änderung betrifft ausschließlich bestehende UI-Darstellung. Es wurden keine Rollen, Mutationen, Endpunkte, Datenbankstrukturen oder serverseitigen Berechtigungsregeln verändert.</p>
+<p>Erfolgreich geprüft wurden die relevanten Unit-Tests für Wochenkalender-Header, Wochenkalender-Layout, Wochen-Terminkarten und Personen-Badges sowie <code>npm run typecheck</code>.</p>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

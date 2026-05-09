@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-04: FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-04">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-04 FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen</span></nav>
+        <h1 class="wiki-h1">A-04: FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Kalender/Touren/Abwesenheiten</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Testabdeckung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>06.05.26</div>
+    <p class="wiki-lead">Die priorisierten Use-Case-Lücken und relevanten Testlücken für FT-01, FT-04 und FT-33 sollen fachlich belastbar geschlossen werden.</p>
+    <p>Die priorisierten Use-Case-Lücken und relevanten Testlücken für FT-01, FT-04 und FT-33 sollen fachlich belastbar geschlossen werden. W-19 beschreibt bereits eine konkrete Reihenfolge: zuerst FT-04-Use-Cases vervollständigen, danach priorisierte FT-01-, FT-04- und FT-33-Testlücken prüfen und ergänzen. Damit ist der Punkt besser als Aufgabe denn als Decision aufgehoben.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Kalender/Touren/Abwesenheiten</td><td>Testabdeckung</td><td>06.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die priorisierten Use-Case-Lücken und relevanten Testlücken für FT-01, FT-04 und FT-33 sollen fachlich belastbar geschlossen werden.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>W-19 beschreibt bereits eine konkrete Reihenfolge: zuerst FT-04-Use-Cases vervollständigen, danach priorisierte FT-01-, FT-04- und FT-33-Testlücken prüfen und ergänzen. Damit ist der Punkt besser als Aufgabe denn als Decision aufgehoben.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören die Ausarbeitung von UC 04/12, UC 04/13 und UC 04/14, die Ergänzung oder bewusste Einordnung von UC 04/03 sowie priorisierte Tests zu historischen Storno-Aktionen, Tour-Preview-Abbruch, 4-KW-Matrix und Abwesenheitsdarstellungen.</li><li>Nicht Teil der Aufgabe ist die stillschweigende fachliche Umdeutung von Code-Spec-Widersprüchen. Solche Widersprüche müssen als eigene Decision oder Blocker behandelt werden.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Rollenfälle müssen ausdrücklich mit Sichtbarkeit, erlaubter Aktion und serverseitiger Durchsetzung beschrieben oder getestet werden.</li><li>Reine UI-Sichtbarkeit reicht nicht als Berechtigungsnachweis.</li><li>FT-01 enthält bekannte Spannungen bei historischen Terminen und inaktiven Kunden.</li><li>FT-33 muss Leser-Blockaden sowie Admin-/Disponent-Flows sauber abgrenzen.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Der Spec-Code-Widerspruch zu Admin-Zugriff auf inaktive Kunden darf nicht im Rahmen dieser Aufgabe ohne Entscheidung umgedeutet werden.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: FT-01 Kalendertermine · FT-04 Tourenplanung · FT-33 Abwesenheiten</li><li>Use Cases: UC 04/12 · UC 04/13 · UC 04/14 · Fehlender oder anders einzuordnender UC 04/03</li><li>Entscheidungen: <a href="../../../decisions/w-08-storno-historischer-termine.md">W-08 - Storno historischer Termine</a> · <a href="../../../decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md">W-19 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Projekte</div><div class="wiki-relations__val"><a href="../projekte/feature-testabdeckung-uc-luecken.html">P-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

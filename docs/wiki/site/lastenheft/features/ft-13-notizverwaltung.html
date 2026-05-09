@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-13: Notizverwaltung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-13">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-13 Notizverwaltung</span></nav>
+        <h1 class="wiki-h1">FT-13: Notizverwaltung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature ermöglicht die Verwaltung von Notizen als eigenständige Domainobjekte, die Projekten, Kunden oder Kalenderwochen zugeordnet werden können. Notizen dienen der Dokumentation zusätzlicher Informationen, Hinweise oder Besonderheiten, die im Kontext eines Projekts, Kund</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature ermöglicht die Verwaltung von Notizen als eigenständige Domainobjekte, die Projekten, Kunden oder Kalenderwochen zugeordnet werden können. Notizen dienen der Dokumentation zusätzlicher Informationen, Hinweise oder Besonderheiten, die im Kontext eines Projekts, Kunden, Mitarbeiters, Termins oder einer Kalenderwoche relevant sind.</p>
+<p>Zusätzlich bietet das Feature vordefinierte Notizvorlagen als Eingabehilfe sowie die Möglichkeit, wichtige Notizen anzupinnen, damit diese stets oben in der Notizliste erscheinen.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Notizen sind eigenständige Textobjekte mit Titel, formatierbarer Beschreibung und Zeitstempeln für Erstellung und letzte Bearbeitung. Sie werden über Relationstabellen Projekten, Kunden, Mitarbeitern, Terminen oder Kalenderwochen zugeordnet und ermöglichen eine flexible Dokumentation ohne strukturelle Abhängigkeiten.</p>
+<p>Eine Notiz gehört immer genau einem Parent-Objekt (Projekt, Kunde, Mitarbeiter, Termin oder Kalenderwoche). Eine Notiz existiert nie unabhängig – sie wird immer im Kontext ihres Parents erstellt, verwaltet und gelöscht.</p>
+<p>Notizen werden in den Detailansichten von Projekt, Kunde und Mitarbeiter, im Terminformular und in allen Terminkontexten (Kalenderansichten, Terminkarten, Previews) sowie im Kalenderwochen-Kontext als vertikale Kärtchenliste dargestellt. Die Bearbeitung erfolgt über einen schwebenden Richtext-Editor, der Textformatierung sowie Text- und Hintergrundfarben unterstützt.</p>
+<p><strong>Angepinnte Notizen</strong> werden in der Liste immer zuerst angezeigt, unabhängig von Erstellungs- oder Änderungsdatum. Innerhalb der gepinnten und nicht-gepinnten Gruppen erfolgt die Sortierung nach Änderungsdatum (neueste zuerst).</p>
+<p><strong>Notizvorlagen</strong> sind vordefinierte Textbausteine, die beim Erstellen einer neuen Notiz als Ausgangspunkt gewählt werden können. Vorlagen werden zentral in den Stammdaten verwaltet und stehen bei der Notizerstellung als Auswahlliste zur Verfügung. Die Vorlage wird beim Erstellen in die neue Notiz kopiert – danach besteht keine Verbindung mehr zwischen Vorlage und Notiz.</p>
+<p>Notizen haben keine fachliche Wirkung auf Termine, Status oder Planungslogik. Sie dienen ausschließlich der Information und Dokumentation. Das Löschen einer Notiz erfolgt direkt über die Detailansicht des zugehörigen Parents und ist endgültig.</p>
+<p><strong>Neu: Kennzeichnungsfarbe für Notizvorlagen (optional, Admin-only).</strong> Notizvorlagen können optional eine zusätzliche Eigenschaft <code>color</code> besitzen, die eine fachliche Kennzeichnung darstellt und nicht mit Text- oder Hintergrundfarben innerhalb des Richtext-Inhalts zu verwechseln ist. Wenn einer Notizvorlage eine Fahrzuweisung gegeben wird, kann dadurch eine <code>color</code> vergeben werden. Wird anschließend eine Notiz aus dieser Vorlage erzeugt, wird diese <code>color</code> beim Erstellen auf die neue Notiz übertragen. Daraus folgt, dass <code>color</code> als administrativ gepflegte Eigenschaft zu behandeln ist, die nur durch Administratoren gesetzt oder geändert werden darf.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<p><strong>Allgemeine Regeln für Notizen</strong></p>
+<ul><li>Eine Notiz ist ein eigenständiges Domainobjekt mit eigener ID.</li><li>Eine Notiz gehört immer genau einem Parent-Objekt (Projekt, Kunde, Mitarbeiter, Termin oder Kalenderwoche).</li><li>Eine Notiz kann nie ohne Parent-Zuordnung existieren.</li><li>Pflichtfelder einer Notiz:</li><li>Titel (Text)</li><li>Beschreibung (formatierter Text)</li><li>Automatisch gepflegte Felder:</li><li>created_at (Erstellungszeitpunkt)</li><li>updated_at (letzter Bearbeitungszeitpunkt)</li><li>Eine Notiz wird über Relationstabellen verknüpft mit:</li><li>genau 1 Projekt (über <code>project_note</code>) ODER</li><li>genau 1 Kunde (über <code>customer_note</code>) ODER</li><li>genau 1 Mitarbeiter (über <code>employee_note</code>) ODER</li><li>genau 1 Termin (über <code>appointment_note</code>) ODER</li><li>genau 1 Kalenderwoche (über <code>calendar_week_note</code>)</li><li>Das Löschen einer Notiz ist endgültig und entfernt automatisch die zugehörige Relation (CASCADE).</li><li>Das Löschen eines Projekts, Kunden oder Termins entfernt automatisch alle zugehörigen Notizen und deren Relationen (CASCADE). Mitarbeiter können nicht gelöscht werden; eine Kaskadenregel für Mitarbeiter-Notizen ist daher nicht erforderlich. Kalenderwochen-Notizen werden nicht kaskadierend gelöscht, da keine eigene <code>calendar_week</code>-Tabelle existiert.</li><li>Notizen werden ausschließlich in den Detailansichten von Projekt, Kunde und Mitarbeiter, im Terminformular und in allen Terminkontexten (Kalenderansichten, Terminkarten, Previews) sowie im Kalenderwochen-Kontext verwaltet.</li><li>Es gibt keine separate Notizverwaltung in der Navigation.</li><li>Notizen haben keine Versionierung oder Historie.</li><li>Notizen sind rein informativ und haben keine Auswirkung auf Terminplanung oder Geschäftslogik.</li></ul>
+<p><strong>Regeln für angepinnte Notizen</strong></p>
+<ul><li>Eine Notiz kann über das Feld <code>is_pinned</code> als angepinnt markiert werden.</li><li>Angepinnte Notizen erscheinen in der Notizliste immer vor nicht-angepinnten Notizen.</li><li>Innerhalb der gepinnten Gruppe erfolgt die Sortierung nach <code>updated_at</code> absteigend.</li><li>Innerhalb der nicht-gepinnten Gruppe erfolgt die Sortierung ebenfalls nach <code>updated_at</code> absteigend.</li><li>Das Pinning kann jederzeit aktiviert oder deaktiviert werden.</li></ul>
+<p><strong>Regeln für Notizvorlagen</strong></p>
+<ul><li>Notizvorlagen sind eigenständige Stammdatenobjekte mit Titel und vordefiniertem Inhalt.</li><li>Vorlagen existieren unabhängig von Projekten und Kunden.</li><li>Vorlagen werden in einem eigenen Stammdatenbereich verwaltet (z.B. unter Einstellungen oder Stammdaten).</li><li>Beim Erstellen einer Notiz kann optional eine Vorlage ausgewählt werden.</li><li>Bei Auswahl einer Vorlage werden Titel und Beschreibung in den Editor kopiert.</li><li>Nach dem Kopieren besteht keine Verbindung zwischen Vorlage und erstellter Notiz.</li><li>Änderungen an einer Vorlage wirken sich nicht auf bereits erstellte Notizen aus.</li><li>Vorlagen können eine Sortierreihenfolge haben, um die Anzeige in der Auswahlliste zu steuern.</li><li>Vorlagen können deaktiviert werden, ohne sie zu löschen.</li></ul>
+<p><strong>Neu: Regeln zur Kennzeichnungsfarbe (<code>color</code>)</strong></p>
+<ul><li>Notizvorlagen können optional eine Kennzeichnungsfarbe <code>color</code> besitzen.</li><li><code>color</code> ist eine Admin-only Eigenschaft und darf nur von Administratoren gesetzt oder geändert werden.</li><li>Wenn einer Notizvorlage eine Fahrzuweisung gegeben wird, kann dadurch eine <code>color</code> vergeben werden.</li><li>Wird eine Notiz aus einer Vorlage erstellt, wird <code>color</code> beim Erstellen der Notiz in die Notiz übernommen, sofern die Vorlage eine <code>color</code> besitzt.</li><li>Die Übernahme der <code>color</code> ist einmalig beim Erstellen; spätere Änderungen an der Vorlagen-<code>color</code> verändern bereits erstellte Notizen nicht automatisch.</li><li><code>color</code> ist fachliche Kennzeichnung und unabhängig von Richtext-Formatierungen (Text-/Hintergrundfarben) im Feld <code>body</code>.</li></ul>
+<p><strong>Regeln für Kalenderwochen-Notizen</strong></p>
+<ul><li>Kalenderwochen-Notizen werden über die Tabelle <code>calendar_week_note</code> zugeordnet.</li><li>Eine Kalenderwoche wird eindeutig identifiziert über <code>year_number</code> (Jahr) und <code>week_number</code> (ISO-Kalenderwochennummer gemäß ISO 8601).</li><li>Es existiert keine eigene Tabelle <code>calendar_week</code>. Die Woche ist ausschließlich durch das Wertepaar (<code>year_number</code>, <code>week_number</code>) definiert.</li><li>Mehrere Notizen pro Kalenderwoche sind erlaubt.</li><li>Eine Notiz kann nicht mehrfach an dieselbe Kalenderwoche gebunden werden (Unique Constraint auf <code>note_id</code> + <code>year_number</code> + <code>week_number</code>).</li><li>Gültige Wochennummern liegen im Bereich 1–53 (ISO 8601).</li><li>Leser dürfen Kalenderwochen-Notizen nicht anlegen, bearbeiten oder löschen.</li><li>Disponenten und Administratoren dürfen Kalenderwochen-Notizen anlegen, bearbeiten und löschen.</li><li>Kalenderwochen-Notizen erscheinen in der Druckausgabe der jeweiligen Kalenderwoche.</li><li>Bestehende Notizvorlagen stehen auch für Kalenderwochen-Notizen zur Verfügung.</li><li>Das Pinning (<code>is_pinned</code>) gilt auch für Kalenderwochen-Notizen und folgt derselben Sortierlogik wie bei Projekt- und Kundennotizen.</li></ul>
+<p><strong>Regeln für Mitarbeiter-Notizen</strong></p>
+<ul><li>Mitarbeiter-Notizen werden über die Tabelle <code>employee_note</code> zugeordnet.</li><li>Alle Rollen (Leser, Disponent, Administrator) dürfen Mitarbeiter-Notizen lesen.</li><li>Disponenten und Administratoren dürfen Mitarbeiter-Notizen anlegen, bearbeiten und löschen.</li><li>Mitarbeiter-Notizen erscheinen ausschließlich in der Mitarbeiter-Detailansicht.</li><li>Da Mitarbeiter nicht gelöscht werden können, entsteht keine Kaskadenregel für Mitarbeiter-Notizen.</li><li>Pinning, Vorlagen und <code>color</code>-Übernahme gelten analog zu Projekt- und Kundennotizen.</li></ul>
+<p><strong>Regeln für Termin-Notizen</strong></p>
+<ul><li>Termin-Notizen werden über die Tabelle <code>appointment_note</code> zugeordnet.</li><li>Alle Rollen (Leser, Disponent, Administrator) dürfen Termin-Notizen lesen.</li><li>Disponenten und Administratoren dürfen Termin-Notizen anlegen, bearbeiten und löschen.</li><li>Termin-Notizen erscheinen in allen Terminkontexten: Terminformular, Kalenderansichten, Terminkarten und Previews.</li><li>Das Löschen eines Termins entfernt kaskadierend alle zugehörigen Termin-Notizen (CASCADE).</li><li>Historische Termine sind read-only; Notizen an historischen Terminen können weder angelegt noch bearbeitet noch gelöscht werden.</li><li>Pinning, Vorlagen und <code>color</code>-Übernahme gelten analog zu Projekt- und Kundennotizen.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-13-01-notiz-zu-projekt-hinzufuegen.html">UC 13/01: Notiz zu Projekt hinzufügen</a></li><li><a href="../use-cases/uc-13-02-notiz-zu-kunde-hinzufuegen.html">UC 13/02: Notiz zu Kunde hinzufügen</a></li><li><a href="../use-cases/uc-13-03-notiz-bearbeiten.html">UC 13/03: Notiz bearbeiten</a></li><li><a href="../use-cases/uc-13-04-notiz-loeschen.html">UC 13/04: Notiz löschen</a></li><li><a href="../use-cases/uc-13-05-notizen-eines-projekts-anzeigen.html">UC 13/05: Notizen eines Projekts anzeigen</a></li><li><a href="../use-cases/uc-13-06-notizen-eines-kunden-anzeigen.html">UC 13/06: Notizen eines Kunden anzeigen</a></li><li><a href="../use-cases/uc-13-07-notiz-anpinnen-pinning-aufheben.html">UC 13/07: Notiz anpinnen / Pinning aufheben</a></li><li><a href="../use-cases/uc-13-08-notizvorlage-erstellen.html">UC 13/08: Notizvorlage erstellen</a></li><li><a href="../use-cases/uc-13-09-notizvorlage-bearbeiten.html">UC 13/09: Notizvorlage bearbeiten</a></li><li><a href="../use-cases/uc-13-10-notizvorlage-deaktivieren-aktivieren.html">UC 13/10: Notizvorlage deaktivieren/aktivieren</a></li><li><a href="../use-cases/uc-13-11-notizvorlage-loeschen.html">UC 13/11: Notizvorlage löschen</a></li><li><a href="../use-cases/uc-13-12-notizen-bei-zulaessiger-projektloeschung-kaskadierend-entfernen.html">UC 13/12: Notizen bei zulässiger Projektlöschung kaskadierend entfernen</a></li><li><a href="../use-cases/uc-13-13-wochen-notiz-anlegen.html">UC 13/13: Wochen-Notiz anlegen</a></li><li><a href="../use-cases/uc-13-14-wochen-notizen-einer-kalenderwoche-anzeigen.html">UC 13/14: Wochen-Notizen einer Kalenderwoche anzeigen</a></li><li><a href="../use-cases/uc-13-15-wochen-notiz-bearbeiten.html">UC 13/15: Wochen-Notiz bearbeiten</a></li><li><a href="../use-cases/uc-13-16-wochen-notiz-loeschen.html">UC 13/16: Wochen-Notiz löschen</a></li><li><a href="../use-cases/uc-13-17-wochen-notizen-in-druckausgabe-der-kalenderwoche-ausgeben.html">UC 13/17: Wochen-Notizen in Druckausgabe der Kalenderwoche ausgeben</a></li><li><a href="../use-cases/uc-13-18-notiz-zu-mitarbeiter-hinzufuegen.html">UC 13/18: Notiz zu Mitarbeiter hinzufügen</a></li><li><a href="../use-cases/uc-13-19-notizen-eines-mitarbeiters-anzeigen.html">UC 13/19: Notizen eines Mitarbeiters anzeigen</a></li><li><a href="../use-cases/uc-13-20-notiz-zu-termin-hinzufuegen.html">UC 13/20: Notiz zu Termin hinzufügen</a></li><li><a href="../use-cases/uc-13-21-notizen-eines-termins-anzeigen.html">UC 13/21: Notizen eines Termins anzeigen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-13-01-notiz-zu-projekt-hinzufuegen.html">UC-13/01</a><a href="../use-cases/uc-13-02-notiz-zu-kunde-hinzufuegen.html">UC-13/02</a><a href="../use-cases/uc-13-03-notiz-bearbeiten.html">UC-13/03</a><a href="../use-cases/uc-13-04-notiz-loeschen.html">UC-13/04</a><a href="../use-cases/uc-13-05-notizen-eines-projekts-anzeigen.html">UC-13/05</a><a href="../use-cases/uc-13-06-notizen-eines-kunden-anzeigen.html">UC-13/06</a><a href="../use-cases/uc-13-07-notiz-anpinnen-pinning-aufheben.html">UC-13/07</a><a href="../use-cases/uc-13-08-notizvorlage-erstellen.html">UC-13/08</a><a href="../use-cases/uc-13-09-notizvorlage-bearbeiten.html">UC-13/09</a><a href="../use-cases/uc-13-10-notizvorlage-deaktivieren-aktivieren.html">UC-13/10</a><a href="../use-cases/uc-13-11-notizvorlage-loeschen.html">UC-13/11</a><a href="../use-cases/uc-13-12-notizen-bei-zulaessiger-projektloeschung-kaskadierend-entfernen.html">UC-13/12</a><a href="../use-cases/uc-13-13-wochen-notiz-anlegen.html">UC-13/13</a><a href="../use-cases/uc-13-14-wochen-notizen-einer-kalenderwoche-anzeigen.html">UC-13/14</a><a href="../use-cases/uc-13-15-wochen-notiz-bearbeiten.html">UC-13/15</a><a href="../use-cases/uc-13-16-wochen-notiz-loeschen.html">UC-13/16</a><a href="../use-cases/uc-13-17-wochen-notizen-in-druckausgabe-der-kalenderwoche-ausgeben.html">UC-13/17</a><a href="../use-cases/uc-13-18-notiz-zu-mitarbeiter-hinzufuegen.html">UC-13/18</a><a href="../use-cases/uc-13-19-notizen-eines-mitarbeiters-anzeigen.html">UC-13/19</a><a href="../use-cases/uc-13-20-notiz-zu-termin-hinzufuegen.html">UC-13/20</a><a href="../use-cases/uc-13-21-notizen-eines-termins-anzeigen.html">UC-13/21</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-13-notizverwaltung-backlog.html">BL-13</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-31: Dispositions-Monitoring (Konflikte) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-31">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-31 Dispositions-Monitoring (Konflikte)</span></nav>
+        <h1 class="wiki-h1">FT-31: Dispositions-Monitoring (Konflikte)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature stellt dem Disponenten beim Login eine automatisch berechnete Übersicht über dispositorisch problematische Termine bereit. Ziel ist es, Ressourcenprobleme im Terminbestand frühzeitig sichtbar zu machen, ohne den Disponenten zur sofortigen Reaktion zu zwingen. Das F</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses  Feature stellt dem Disponenten beim Login eine automatisch berechnete Übersicht über dispositorisch problematische Termine bereit. Ziel ist es, Ressourcenprobleme im Terminbestand frühzeitig sichtbar zu machen, ohne den Disponenten zur sofortigen Reaktion zu zwingen. Das Feature schafft die organisatorische Grundlage dafür, dass Abwesenheiten und Unterbesetzungen kontrolliert und bewusst bearbeitet werden können auch wenn die Ursache bereits Tage zuvor bekannt war.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Das Monitoring ist keine eigenständige Planungsfunktion, sondern eine Auswertungsschicht über den vorhandenen Termindaten. Es berechnet zum Zeitpunkt des Logins eines Disponenten und beim Aufruf der Monitoring-Ansicht, welche Termine eine oder mehrere konfigurierte Triggerbedingungen erfüllen. Das Ergebnis ist eine priorisierte Liste problematischer Termine, die dem Disponenten unmittelbar nach dem Login angezeigt werden kann.</p>
+<p>Das  Monitoring speichert keine Ergebnisse. Jede Berechnung erfolgt frisch zum Loginzeitpunkt auf Basis der aktuellen Termindaten. Es gibt keine Differenzberechnung gegenüber dem Vortag und keine Eskalationslogik.</p>
+<p>Die Anzeige erfolgt auf zwei Ebenen gleichzeitig: als Hinweis beim Login sowie als dauerhaft sichtbarer Counter am Navigationspunkt „Monitoring&quot;. Der Counter zeigt jederzeit die aktuelle Anzahl problematischer Termine, sobald der Disponent die Monitoring-Ansicht aufruft oder aktualisiert. Der Login-Hinweis ist als Konfliktdialog mit getrennten Bereichen für die relevanten Konfliktarten aufgebaut. Leser haben keinen Zugriff auf das Monitoring. Die Konfiguration der Trigger ist ausschließlich Admins vorbehalten.</p>
+<h3 class="wiki-h3">Konfiguration</h3>
+<p>Die Trigger-Konfiguration wird systemweit einmalig durch einen Administrator gepflegt. Sie umfasst pro Trigger:</p>
+<ul><li><strong>Aktiv / Inaktiv</strong> — ein deaktivierter Trigger wird bei der Berechnung nicht berücksichtigt</li><li><strong>Vorlaufhorizont in Tagen</strong> — nur Termine innerhalb der nächsten N Tage ab heute werden geprüft</li><li><strong>Triggerbedingung</strong> — die fachliche Regel, die einen Termin als problematisch klassifiziert</li></ul>
+<p>Zum aktuellen Stand werden mehrere Triggerarten ausgewertet. Die Login-Anzeige kann eine kleinere operative Menge zeigen als die Monitoring-Gesamtansicht, die vollständige Konfliktmenge bleibt aber in der Monitoring-Ansicht verfügbar.</p>
+<h3 class="wiki-h3">Trigger TR-01: Ressourcenunterschreitung</h3>
+<p>Ein Termin gilt als problematisch, wenn die Anzahl der ihm zugewiesenen Mitarbeiter kleiner ist als der konfigurierte Mindestwert.</p>
+<p>Konfigurierbare Parameter:</p>
+<ul><li><strong>Mindestzahl Mitarbeiter</strong> — ganzzahliger Wert &gt;= 1</li><li><strong>Vorlaufhorizont</strong> — Anzahl Tage ab heute</li></ul>
+<p>Dieser Trigger deckt folgende Unterfälle automatisch ab, ohne sie einzeln zu unterscheiden:</p>
+<ul><li>Termin ohne Mitarbeiter</li><li>Termin mit zu wenigen Mitarbeitern</li><li>Termin, bei dem ein Mitarbeiter nach Abwesenheitseintrag entfernt wurde und kein Ersatz zugewiesen ist</li><li>Termine mit Storniert System Tag werden ignoriert</li></ul>
+<h3 class="wiki-h3">Trigger TR-02: Termin auf Parkplatz</h3>
+<p>Ein Termin gilt als problematisch, wenn er auf der Systemtour <strong>Parkplatz</strong> liegt. Dieser Trigger macht bewusst geparkte oder durch Folgeworkflows geparkte Termine sichtbar, damit sie später erneut disponiert werden können.</p>
+<p>Für den Login-Dialog werden Parkplatztermine vollständig berücksichtigt. Dadurch bleiben auch ältere noch nicht aufgelöste Parkplatzfälle sichtbar. Für reine Ressourcenunterschreitung kann weiterhin eine operative Login-Menge verwendet werden, damit der Dialog nicht durch entfernte Zeiträume dominiert wird.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Das Monitoring wird ausschließlich für Benutzer mit der Rolle Disponent oder Administrator ausgeführt.</li><li>Die Berechnung erfolgt beim Login und bei explizitem Aufruf der Monitoring-Ansicht.</li><li>Die Monitoring-Ansicht zeigt die vollständige aktuelle Konfliktmenge der aktiven Trigger. Einzelne Login-Dialogbereiche dürfen fachlich enger gefasst sein, etwa auf aktuelle ISO-KW plus zwei Wochen für Ressourcenunterschreitung.</li><li>Der Counter am Navigationspunkt „Monitoring&quot; zeigt die Anzahl der aktuell problematischen Termine gemäß aller aktiven Trigger.</li><li>Der Disponent kann die Login-Meldung wegklicken ohne zu handeln. Die Termine bleiben weiterhin im Monitoring sichtbar.</li><li>Die Konfiguration der Trigger ist ausschließlich Admins vorbehalten.</li><li>Trigger können deaktiviert werden, ohne gelöscht zu werden.</li><li>Eine Änderung der Konfiguration wirkt sich erst bei der nächsten Berechnung aus.</li><li>Termine mit Storniert-Tag bleiben aus Monitoring-Konflikten ausgeschlossen.</li><li>Parkplatztermine und Termine ohne ausreichende Mitarbeiter werden im Login-Dialog getrennt dargestellt, damit der Akteur die Art des Problems sofort erkennt.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-31-01-monitoring-hinweis-beim-login.html">UC 31/01: Monitoring-Hinweis beim Login</a></li><li><a href="../use-cases/uc-31-02-monitoring-ansicht-aufrufen.html">UC 31/02: Monitoring-Ansicht aufrufen</a></li><li><a href="../use-cases/uc-31-03-trigger-konfigurieren.html">UC 31/03: Trigger konfigurieren</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<ul><li><a href="../backlogs/ft-31-dispositions-monitoring-konflikte-backlog.html">FT (31): Konfig Seite für Monitoring Trigger</a></li></ul>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-31-01-monitoring-hinweis-beim-login.html">UC-31/01</a><a href="../use-cases/uc-31-02-monitoring-ansicht-aufrufen.html">UC-31/02</a><a href="../use-cases/uc-31-03-trigger-konfigurieren.html">UC-31/03</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-31-dispositions-monitoring-konflikte-backlog.html">BL-31</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

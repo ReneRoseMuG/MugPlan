@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-11/02: Team bearbeiten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-11/02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-11/02 Team bearbeiten</span></nav>
+        <h1 class="wiki-h1">UC-11/02: Team bearbeiten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-11</span></div>
+    <p class="wiki-lead">Ein bestehendes Team anpassen, indem Mitarbeiter hinzugefügt oder entfernt werden.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-11-team-verwaltung.html">FT (11): Team Verwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Ein bestehendes Team anpassen, indem Mitarbeiter hinzugefügt oder entfernt werden.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Das Team existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt die Berechtigung zur Teambearbeitung.</li><li>Das Team besitzt eine gültige Versionskennung.</li></ul>
+<h3 class="wiki-h3">Auslöser</h3>
+<p>Der Akteur öffnet ein bestehendes Team zur Bearbeitung.</p>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Das System lädt Teamdaten inklusive aktueller Versionskennung.</li><li>Das System lädt als auswählbare Mitarbeiter:</li></ol>
+<ul><li>alle aktiven Mitarbeiter ohne Teamzuordnung (<code>team_id = null</code>),</li><li>alle aktiven Mitarbeiter, die bereits diesem Team zugeordnet sind.</li></ul>
+<ol><li>Der Akteur verändert die Mitarbeiterliste.</li><li>Der Akteur bestätigt die Änderungen.</li><li>Das System prüft serverseitig:</li></ol>
+<ul><li>Versionskennung ist unverändert.</li><li>Jeder neu hinzugefügte Mitarbeiter existiert.</li><li>Jeder neu hinzugefügte Mitarbeiter ist aktiv.</li><li>Kein neu hinzugefügter Mitarbeiter ist einem anderen Team zugeordnet.</li></ul>
+<ol><li>Das System entfernt <code>team_id</code> bei Mitarbeitern, die aus dem Team entfernt wurden.</li><li>Das System setzt <code>team_id</code> bei neu hinzugefügten Mitarbeitern auf die Team-ID.</li><li>Das System erhöht die Versionskennung des Teams.</li><li>Das System persistiert die Änderungen atomar.</li></ol>
+<h3 class="wiki-h3">Alternativabläufe</h3>
+<ul><li>Versionskennung hat sich zwischenzeitlich geändert → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Ein neu hinzugefügter Mitarbeiter wurde parallel einem anderen Team zugeordnet → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Abbruch durch den Akteur → Keine Persistierung.</li><li>Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.</li></ul>
+<h2 class="wiki-h2">Alternativen</h2>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Die Mitarbeiterliste des Teams ist aktualisiert.</li><li>Kein Mitarbeiter ist mehreren Teams zugeordnet.</li><li>Die Team-Version ist erhöht.</li><li>Der Datenzustand ist konsistent.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-11-team-verwaltung.html">FT-11</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

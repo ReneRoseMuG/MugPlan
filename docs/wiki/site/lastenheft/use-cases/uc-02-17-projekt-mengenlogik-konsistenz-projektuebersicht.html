@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/17">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/17 Projekt-Mengenlogik-Konsistenz (Projektübersicht)</span></nav>
+        <h1 class="wiki-h1">UC-02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Sicherstellen, dass die Projektübersicht die fachlich definierten Grundmengen korrekt und disjunkt darstellt.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent, Leser</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass die Projektübersicht die fachlich definierten Grundmengen korrekt und disjunkt darstellt.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt mindestens Leserechte gemäß seiner Rolle.</li><li>Projekte sind im System vorhanden.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur öffnet die Projektübersicht.</li><li>System lädt standardmäßig die Grundmenge „Aktuelle Projekte“ (mindestens ein Termin mit Startdatum ≥ heute).</li><li>System berücksichtigt ausschließlich Projekte, die mindestens einen Termin mit Startdatum ≥ heute besitzen.</li><li>Akteur kann auf die Grundmenge „Ohne Termine“ umschalten.</li><li>System lädt ausschließlich Projekte ohne zugeordnete Termine.</li><li>Filter (z. B. Titel, Status) wirken ausschließlich innerhalb der jeweils geladenen Grundmenge.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Leserechte → HTTP 403.</li><li>Projekt besitzt ausschließlich vergangene Termine → Projekt erscheint nicht in „Aktuelle Projekte“.</li><li>Projekt besitzt vergangene und zukünftige Termine → Projekt erscheint in „Aktuelle Projekte“.</li><li>Projekt besitzt keine Termine → Projekt erscheint nur in „Ohne Termine“.</li><li>Keine Projekte in der gewählten Grundmenge → System zeigt eine leere Liste.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Grundmengen „Aktuelle Projekte“ und „Ohne Termine“ sind disjunkt.</p>
+<p>Filter verändern nicht die zugrunde liegende Grundmenge.</p>
+<p>Die Projektübersicht ist fachlich konsistent und nachvollziehbar.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

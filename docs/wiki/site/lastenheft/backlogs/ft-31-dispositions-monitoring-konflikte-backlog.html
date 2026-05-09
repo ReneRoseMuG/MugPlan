@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BL-31: FT (31) Backlog · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html" class="is-active">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Backlogs BL-31">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../backlogs.html">Backlogs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">BL-31 FT (31) Backlog</span></nav>
+        <h1 class="wiki-h1">BL-31: FT (31) Backlog</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-31</span></div>
+    <p class="wiki-lead">Quelle: https://www.notion.so/346da094354e803e8680f64af993bde7</p>
+    <h2 class="wiki-h2">FT (31): Konfig Seite für Monitoring Trigger</h2>
+<p>Quelle: https://www.notion.so/346da094354e803e8680f64af993bde7</p>
+<p>Status: Backlog / nicht begonnen</p>
+<h3 class="wiki-h3">Ziel / Zweck</h3>
+<p>Für das Dispositions-Monitoring soll eine eigene Admin-Einstellungsseite entstehen, auf der Monitoring-Trigger konfiguriert werden können.</p>
+<h3 class="wiki-h3">Fachliche Beschreibung</h3>
+<p>Die Trigger-Konfiguration soll fachliche Monitoring-Regeln steuerbar machen, ohne die Monitoring-Auswertung selbst als Planungsfunktion zu verändern. Das Backlog-Item beschreibt insbesondere folgende Triggerbereiche:</p>
+<ul><li>TR-01 Mindestbesetzung: zunächst sinnvoll als einfache Mindestzahl, perspektivisch bei eingeführten Termintypen auch typabhängig.</li><li>TR-02 Termin geparkt: aktuell über die eine Parkplatz-Tour abgedeckt, perspektivisch relevant, falls weitere Touren außerhalb der Terminplanung entstehen.</li><li>TR-03 Überlanger Termin: Termine oberhalb einer konfigurierbaren Maximaldauer sollen als möglicher Planungsfehler sichtbar werden.</li><li>TR-04 Terminlänge nach Saunamodell: je Saunamodell soll eine Mindestbauzeit geprüft werden.</li></ul>
+<h3 class="wiki-h3">Untergeordnete Backlog-Items</h3>
+<h4 class="wiki-h3">Trigger Termin Überlänge</h4>
+<p>Quelle: https://www.notion.so/342da094354e805dbecfcc756810c95a</p>
+<p>Status: Backlog / nicht begonnen</p>
+<p>Das untergeordnete Item ist in Notion noch inhaltlich leer. Der fachliche Bezug ergibt sich aus TR-03 des Hauptitems: Termine sollen eine konfigurierte Maximaldauer nicht überschreiten, weil eine Überschreitung auf einen Planungsfehler hindeuten kann.</p>
+<h4 class="wiki-h3">Trigger Aufbauzeitdauer unterschritten</h4>
+<p>Quelle: https://www.notion.so/337da094354e808fbc87ee1bb6db871d</p>
+<p>Status: Backlog / nicht begonnen</p>
+<p>Ein Termin gilt als problematisch, wenn die geplante Termindauer kürzer ist als die für das erkannte Saunamodell hinterlegte Mindestaufbauzeit. Das System soll dafür die Artikelliste des zugeordneten Projekts analysieren, daraus das Saunamodell ableiten und die Termindauer mit der konfigurierten Mindestaufbauzeit vergleichen.</p>
+<p>Konfigurierbare Parameter:</p>
+<ul><li>Aktiv / Inaktiv</li><li>Vorlaufhorizont in Tagen</li><li>Mindestaufbauzeiten pro Modell</li></ul>
+<p>Abgrenzungen:</p>
+<ul><li>Termine ohne Projekt werden ignoriert.</li><li>Projekte ohne erkennbares Saunamodell in der Artikelliste werden ignoriert.</li><li>Termine mit System-Tag „Storniert“ werden ignoriert.</li><li>Termine ohne Uhrzeit werden ignoriert, weil keine Dauer berechnet werden kann.</li></ul>
+<h3 class="wiki-h3">Regeln &amp; Randbedingungen</h3>
+<ul><li>Trigger-Konfiguration ist ausschließlich Admins vorbehalten.</li><li>Monitoring-Ergebnisse bleiben für Disponenten und Administratoren relevant; Leser haben keinen Zugriff.</li><li>Eine reine UI-Ausblendung reicht für die spätere Umsetzung nicht aus. Konfiguration und Monitoring-Zugriff müssen serverseitig rollenbeschränkt sein.</li><li>Änderungen an Trigger-Konfigurationen dürfen bestehende Monitoring-Regeln nicht stillschweigend verändern.</li><li>Typabhängige Trigger hängen fachlich von BL (09): Termintypen / Terminkategorisierung ab.</li><li>Modellabhängige Mindestaufbauzeiten berühren FT (27): Produktverwaltung und Auftragspositionen, weil das Saunamodell aus Artikeln bzw. Produktkategorien abgeleitet werden soll.</li><li>Die Speicherung von Trigger-Konfigurationen berührt voraussichtlich FT (18): User Preferences bzw. globale Settings und muss dort sauber abgegrenzt werden.</li></ul>
+<h3 class="wiki-h3">Offene Klärungen</h3>
+<ul><li>Welche Triggerparameter sollen sofort konfigurierbar sein und welche bleiben zunächst fest verdrahtet?</li><li>Werden Triggerwerte global oder je organisatorischem Kontext gespeichert?</li><li>Wie werden ungültige oder unvollständige Trigger-Konfigurationen validiert?</li><li>Welche Produktkategorien und Modelle zählen verbindlich als Saunamodell?</li><li>Wie wird eine Termindauer berechnet, wenn Start- oder Endzeit fehlen?</li><li>Welche konkreten Rollen dürfen Monitoring sehen, Trigger konfigurieren und Konfigurationsänderungen auslösen?</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-31-dispositions-monitoring-konflikte.html">FT-31</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

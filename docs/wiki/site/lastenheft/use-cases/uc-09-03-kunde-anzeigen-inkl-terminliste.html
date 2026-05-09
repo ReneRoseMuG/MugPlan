@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-09/03: Kunde anzeigen (inkl. Terminliste) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-09/03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-09/03 Kunde anzeigen (inkl. Terminliste)</span></nav>
+        <h1 class="wiki-h1">UC-09/03: Kunde anzeigen (inkl. Terminliste)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-09</span></div>
+    <p class="wiki-lead">Die vollständige Kundendetailansicht wird angezeigt, einschließlich aller Stammdaten, referenzierten Projekte, direkter Termine (ohne Projekt), projektgebundener Termine (indirekt über Projekte), sowie kundenbezogener Notizen und Anhänge.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-09-kundenverwaltung.html">FT (09): Kundenverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die vollständige Kundendetailansicht wird angezeigt, einschließlich aller Stammdaten, referenzierten Projekte, direkter Termine (ohne Projekt), projektgebundener Termine (indirekt über Projekte), sowie kundenbezogener Notizen und Anhänge.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Kunde existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Leseberechtigung.</li><li>Der Kunde ist aktiv, <strong>ODER</strong> der Akteur ist Administrator (Administratoren können auch inaktive Kunden sehen).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur wählt einen Kunden aus einer Liste oder über eine Suche.</li><li>Das System prüft:</li><li>Existiert der Kunde?</li><li>Hat der Akteur Leseberechtigung? (Disponenten sehen nur aktive Kunden; Administratoren sehen alle.)</li><li>Falls Checks nicht bestanden: System antwortet mit 404 oder 403.</li><li>Das System lädt den Kundendatensatz (Stammdaten: Name, Kundennummer, Adresse, Telefon).</li><li>Das System lädt alle dem Kunden direkt zugeordneten <strong>Projekte</strong>.</li><li>Das System zeigt die Projektliste an.</li><li>Das System lädt alle dem Kunden zugeordneten <strong>Direkttermine</strong> (Termine ohne Projekt, direkt diesem Kunden zugeordnet).</li><li>Das System zeigt diese als separate Liste „Direkte Termine&quot; an.</li><li>Jeder Direkttermin zeigt: Datum, Uhrzeit (falls vorhanden), Mitarbeiter, Tour (falls zugeordnet).</li><li>Das System lädt alle dem Kunden zugeordneten <strong>Projekttermine</strong> (Termine, die über Projekte diesem Kunden zugeordnet sind).</li><li>Das System kann diese optional nach Projekt gruppieren oder als unified Liste zeigen.</li><li>Jeder Projekttermin zeigt: Datum, Uhrzeit (falls vorhanden), Projekt, Mitarbeiter, Tour (falls zugeordnet).</li><li>Das System lädt alle kundenbezogenen <strong>Notizen</strong>.</li><li>Das System zeigt die Notizenliste an.</li><li>Das System lädt alle kundenbezogenen <strong>Anhänge</strong>.</li><li>Das System zeigt die Anhangsliste an mit Dateinamen und Upload-Zeitstempel.</li><li>Das System zeigt die Kundendetailansicht mit folgenden Bereichen:</li><li><strong>Stammdaten</strong> (Name, Kundennummer, Adresse, Telefon, Status aktiv/inaktiv)</li><li><strong>Projektliste</strong> (alle dem Kunden zugeordneten Projekte)</li><li><strong>Direkte Termine</strong> (Termine ohne Projekt, direkt diesem Kunden zugeordnet)</li><li><strong>Projekttermine</strong> (Termine über Projekte, optional nach Projekt gruppiert)</li><li><strong>Notizenliste</strong> (alle kundenbezogenen Notizen)</li><li><strong>Anhangsliste</strong> (alle kundenbezogenen Anhänge)</li></ol>
+<h3 class="wiki-h3"><strong>Anzeige- und Query-Regeln</strong></h3>
+<ul><li><strong>Rollenabhängige Filterung:</strong> Disponenten erhalten nur aktive Kunden. Administratoren können aktive und inaktive Kunden sehen. Ein Disponent, der einen inaktiven Kunden direkt ansteuert, wird blockiert.</li><li><strong>Terminlisten-Ableitungslogik:</strong> Das System lädt Direkttermine (Termin ohne Projekt, zum Kunden gehörend) und Projekttermine (Termin mit Projekt, Projekt zum Kunden gehörend) separat und zeigt beide an.</li><li><strong>Notizen:</strong> Kundenbezogen und projektunabhängig.</li><li><strong>Anhänge:</strong> Kundenbezogen und projektunabhängig.</li><li><strong>Konsistenzgarantie:</strong> Alle Termine, egal ob direkt oder indirekt, gehören zum gleichen Kunden.</li></ul>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Kunde existiert nicht:</strong> System antwortet mit 404.</li><li><strong>Akteur ohne Leseberechtigung:</strong> System blockiert mit 403.</li><li><strong>Kunde ist inaktiv, Akteur ist Disponent:</strong> System blockiert mit 403 oder 404.</li><li><strong>Keine Projekte vorhanden:</strong> Projektliste ist leer oder wird ausgeblendet.</li><li><strong>Keine Direkttermine vorhanden:</strong> Bereich „Direkte Termine&quot; ist leer oder wird ausgeblendet.</li><li><strong>Keine Projekttermine vorhanden:</strong> Bereich „Projekttermine&quot; ist leer oder wird ausgeblendet.</li><li><strong>Keine Notizen vorhanden:</strong> Notizenliste ist leer oder wird ausgeblendet.</li><li><strong>Keine Anhänge vorhanden:</strong> Anhangsliste ist leer oder wird ausgeblendet.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Kundendetailansicht ist vollständig und konsistent dargestellt. Es werden keine Daten verändert. Die dargestellten Daten entsprechen dem aktuellen persistenten Zustand. Alle Projekte, Direkttermine, Projekttermine, Notizen und Anhänge sind sichtbar. Disponenten sehen nur aktive Kunden; Administratoren sehen alle. Keine verwaisten oder inkonsistenten Referenzen werden angezeigt.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-09-kundenverwaltung.html">FT-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

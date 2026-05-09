@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-08: Journal / Änderungshistorie · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-08">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-08 Journal / Änderungshistorie</span></nav>
+        <h1 class="wiki-h1">FT-08: Journal / Änderungshistorie</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature stellt eine lesbare, filterbare und kontextbezogene Änderungshistorie für fachlich relevante Daten bereit. Angemeldete Benutzer mit Leseberechtigung sollen nachvollziehen können, welche Änderungen an Kunden, Projekten, Terminen, Touren und tourbezogenen Kalenderwoc</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature stellt eine lesbare, filterbare und kontextbezogene Änderungshistorie für fachlich relevante Daten bereit. Angemeldete Benutzer mit Leseberechtigung sollen nachvollziehen können, welche Änderungen an Kunden, Projekten, Terminen, Touren und tourbezogenen Kalenderwochen vorgenommen wurden, von wem sie ausgelöst wurden und in welchem fachlichen Zusammenhang sie stehen.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Das System protokolliert fachlich relevante Mutationen append-only in einer Journal-Struktur. Jeder Journal-Eintrag enthält mindestens den betroffenen fachlichen Datensatz, die ausgeführte Operation, den Akteur, einen Zeitstempel sowie eine lesbare Änderungsnachricht. Zusätzlich werden explizite Kontextbezüge gespeichert, damit ein Journal-Eintrag nicht nur global, sondern auch in fachlich verwandten Detailansichten sichtbar gemacht werden kann.</p>
+<p>Zu diesen Kontexten gehören neben Self-, Parent- und Owner-Bezügen auch Tour-Kontexte und tourbezogene Kalenderwochen-Kontexte. Dadurch können Änderungen an Touren, Wochenplanung, Mitarbeiterkaskaden und Tour-KW-Notizen sowohl im globalen Journal als auch in den passenden Detailjournalen sichtbar werden, ohne doppelte Facheinträge zu erzeugen.</p>
+<p>Das Feature stellt zwei Oberflächen bereit. Erstens eine globale Journal-Ansicht in der Anwendung, in der Journal-Einträge gefiltert, durchsucht und seitenweise gelesen werden können. Zweitens einen kontextbezogenen Journal-Tab in den Detailformularen bestehender Datensätze, über den nur die fachlich zugehörigen Journal-Einträge angezeigt werden.</p>
+<p>Das Journal ist eine lesende Nachvollziehbarkeitsfunktion. Es ersetzt weder fachliche Validierung noch Konflikterkennung beim Speichern. Es ergänzt die aktive Änderungsbenachrichtigung aus FT (32) um eine historische und filterbare Lesesicht.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Journal-Einträge sind append-only. Bereits geschriebene Einträge werden nicht editiert oder gelöscht.</li><li>Das Schreiben von Journal-Einträgen erfolgt best effort. Eine fachliche Mutation darf nicht allein wegen eines Journal-Fehlers scheitern.</li><li>Innerhalb eines einzelnen Journal-Schreibvorgangs werden Haupteintrag und Kontextzuordnungen atomar gespeichert.</li><li>Jeder Journal-Eintrag besitzt mindestens einen Self-Kontext zum direkt betroffenen Datensatz.</li><li>Parent- und Owner-Kontexte werden zusätzlich abgeleitet, damit zusammenhängende Änderungen in übergeordneten Detailjournalen sichtbar sind.</li><li>Tour- und Kalenderwochen-Kontexte dürfen zusätzlich abgeleitet werden, wenn Änderungen fachlich sowohl einer Tour als auch einer tourbezogenen Kalenderwoche zugeordnet sind.</li><li>Journal-Leserechte bestehen nur für Administratoren und Disponenten.</li><li>Der Journal-Tab in Detailformularen ist nur bei bereits existierenden Datensätzen sichtbar.</li><li>Die globale Journal-Ansicht und die Detailjournale zeigen ausschließlich gelesene Historie. Es gibt dort keine Schreib- oder Korrekturfunktion.</li><li>Journal-Einträge sollen in einer für Disponenten verständlichen Sprache dargestellt werden. Technische Rohwerte sind nur Rückfallebene.</li><li>Die Journal-Ansicht arbeitet paginiert und standardmäßig absteigend nach Zeitstempel.</li></ul>
+<h2 class="wiki-h2">Abhängigkeiten</h2>
+<ul><li>FT (32): Aktive Änderungsbenachrichtigung – fachlich verwandt, aber getrennte Funktion. FT (32) informiert aktiv über Änderungen; FT (08) macht Änderungen historisch lesbar.</li><li>NFR (01): Multi-User-Konsistenz – definiert den Rahmen für konkurrierende Änderungen und deren Absicherung beim Speichern.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-08-01-globales-journal-oeffnen.html">UC 08/01: Globales Journal öffnen</a></li><li><a href="../use-cases/uc-08-02-journal-filtern-und-durchsuchen.html">UC 08/02: Journal filtern und durchsuchen</a></li><li><a href="../use-cases/uc-08-03-kontextbezogenes-journal-in-einem-detailformular-lesen.html">UC 08/03: Kontextbezogenes Journal in einem Detailformular lesen</a></li><li><a href="../use-cases/uc-08-04-fachliche-aenderung-erzeugt-journal-eintrag.html">UC 08/04: Fachliche Änderung erzeugt Journal-Eintrag</a></li><li><a href="../use-cases/uc-08-05-journal-ohne-leseberechtigung-nicht-oeffnen.html">UC 08/05: Journal ohne Leseberechtigung nicht öffnen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-08-01-globales-journal-oeffnen.html">UC-08/01</a><a href="../use-cases/uc-08-02-journal-filtern-und-durchsuchen.html">UC-08/02</a><a href="../use-cases/uc-08-03-kontextbezogenes-journal-in-einem-detailformular-lesen.html">UC-08/03</a><a href="../use-cases/uc-08-04-fachliche-aenderung-erzeugt-journal-eintrag.html">UC-08/04</a><a href="../use-cases/uc-08-05-journal-ohne-leseberechtigung-nicht-oeffnen.html">UC-08/05</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-08-journal-aenderungshistorie-backlog.html">BL-08</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

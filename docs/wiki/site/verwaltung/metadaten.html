@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metadaten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekt/projekte.html">Projekte</a></li><li><a href="../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../lastenheft/features.html">Features</a></li><li><a href="../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="journal.html">Journal</a></li><li><a href="metadaten.html" class="is-active">Metadaten</a></li><li><a href="../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Metadaten">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">Metadaten</span></nav>
+        <h1 class="wiki-h1" data-icon="metadaten">Metadaten</h1>
+    <p class="wiki-lead">Redaktionell gepflegte Klassifikatoren und Indexeinträge aus <code>docs/wiki/data/wiki-index.json</code>.</p>
+    <div class="wiki-meta"><span class="wiki-meta__label">Indexstand</span>09.05.26<span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Version</span>3.0</div>
+    <h2 class="wiki-h2">Status</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">status-geplant</td><td><span class="wiki-badge wiki-badge--offen">geplant</span></td><td>10</td></tr><tr><td class="wiki-table__id">status-offen</td><td><span class="wiki-badge wiki-badge--offen">offen</span></td><td>20</td></tr><tr><td class="wiki-table__id">status-in-bearbeitung</td><td><span class="wiki-badge wiki-badge--bearbeitung">in Bearbeitung</span></td><td>30</td></tr><tr><td class="wiki-table__id">status-blockiert</td><td><span class="wiki-badge wiki-badge--blockiert">blockiert</span></td><td>40</td></tr><tr><td class="wiki-table__id">status-abgeschlossen</td><td><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span></td><td>90</td></tr><tr><td class="wiki-table__id">status-entfernt</td><td><span class="wiki-badge wiki-badge--neutral">Entfernt</span></td><td>99</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Dringlichkeiten</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">prio-hoch</td><td><span class="wiki-badge wiki-badge--neutral">Hoch</span></td><td>10</td></tr><tr><td class="wiki-table__id">prio-mittel</td><td><span class="wiki-badge wiki-badge--neutral">Mittel</span></td><td>20</td></tr><tr><td class="wiki-table__id">prio-niedrig</td><td><span class="wiki-badge wiki-badge--neutral">Niedrig</span></td><td>30</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Aufgabenstatus</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">task-status-offen</td><td><span class="wiki-badge wiki-badge--offen">offen</span></td><td>10</td></tr><tr><td class="wiki-table__id">task-status-in-bearbeitung</td><td><span class="wiki-badge wiki-badge--bearbeitung">in Bearbeitung</span></td><td>20</td></tr><tr><td class="wiki-table__id">task-status-blockiert</td><td><span class="wiki-badge wiki-badge--blockiert">blockiert</span></td><td>30</td></tr><tr><td class="wiki-table__id">task-status-abgeschlossen</td><td><span class="wiki-badge wiki-badge--abgeschlossen">abgeschlossen</span></td><td>90</td></tr><tr><td class="wiki-table__id">task-status-verworfen</td><td><span class="wiki-badge wiki-badge--neutral">verworfen</span></td><td>99</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Aufgabentypen</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">task-type-analyse</td><td><span class="wiki-badge wiki-badge--neutral">Analyse</span></td><td>10</td></tr><tr><td class="wiki-table__id">task-type-dokumentation</td><td><span class="wiki-badge wiki-badge--neutral">Dokumentation</span></td><td>20</td></tr><tr><td class="wiki-table__id">task-type-implementierung</td><td><span class="wiki-badge wiki-badge--neutral">Implementierung</span></td><td>30</td></tr><tr><td class="wiki-table__id">task-type-infrastruktur</td><td><span class="wiki-badge wiki-badge--neutral">Infrastruktur</span></td><td>40</td></tr><tr><td class="wiki-table__id">task-type-planung</td><td><span class="wiki-badge wiki-badge--neutral">Planung</span></td><td>50</td></tr><tr><td class="wiki-table__id">task-type-refactoring</td><td><span class="wiki-badge wiki-badge--neutral">Refactoring</span></td><td>60</td></tr><tr><td class="wiki-table__id">task-type-testabdeckung</td><td><span class="wiki-badge wiki-badge--neutral">Testabdeckung</span></td><td>70</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Aufgabenthemen</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">task-topic-attachments</td><td>Attachments</td><td>10</td></tr><tr><td class="wiki-table__id">task-topic-datensicherung</td><td>Datensicherung</td><td>20</td></tr><tr><td class="wiki-table__id">task-topic-dialoge</td><td>Dialoge</td><td>30</td></tr><tr><td class="wiki-table__id">task-topic-feature-testabdeckung</td><td>Feature-Testabdeckung</td><td>40</td></tr><tr><td class="wiki-table__id">task-topic-formularansichten</td><td>Formularansichten</td><td>50</td></tr><tr><td class="wiki-table__id">task-topic-frontend-build</td><td>Frontend-Build</td><td>60</td></tr><tr><td class="wiki-table__id">task-topic-frontend-cache</td><td>Frontend-Cache</td><td>70</td></tr><tr><td class="wiki-table__id">task-topic-kalender-touren-abwesenheiten</td><td>Kalender/Touren/Abwesenheiten</td><td>80</td></tr><tr><td class="wiki-table__id">task-topic-kalendermarker-feiertage</td><td>Kalendermarker / Feiertage</td><td>90</td></tr><tr><td class="wiki-table__id">task-topic-kalender-performance</td><td>Kalender-Performance</td><td>100</td></tr><tr><td class="wiki-table__id">task-topic-reports</td><td>Reports</td><td>110</td></tr><tr><td class="wiki-table__id">task-topic-termin-workflows</td><td>Termin-Workflows</td><td>120</td></tr><tr><td class="wiki-table__id">task-topic-testinfrastruktur</td><td>Testinfrastruktur</td><td>130</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Decision-Status</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">decision-status-offen</td><td><span class="wiki-badge wiki-badge--offen">offen</span></td><td>10</td></tr><tr><td class="wiki-table__id">decision-status-zurueckgestellt</td><td><span class="wiki-badge wiki-badge--neutral">zurückgestellt</span></td><td>20</td></tr><tr><td class="wiki-table__id">decision-status-entschieden</td><td><span class="wiki-badge wiki-badge--neutral">entschieden</span></td><td>30</td></tr><tr><td class="wiki-table__id">decision-status-erledigt</td><td><span class="wiki-badge wiki-badge--neutral">erledigt</span></td><td>90</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Decision-Arten</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Label</th><th>Sortierung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">decision-type-widerspruch-code-spec</td><td>Widerspruch Code ↔ Spec</td><td>10</td></tr><tr><td class="wiki-table__id">decision-type-architektur-refaktoring</td><td>Architektur-Refaktoring</td><td>20</td></tr><tr><td class="wiki-table__id">decision-type-design-entscheidung</td><td>Design-Entscheidung</td><td>30</td></tr><tr><td class="wiki-table__id">decision-type-technische-schuld</td><td>Technische Schuld</td><td>40</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">Projektindex</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Titel</th><th>Status</th><th>Aufgaben</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">P-01</td><td>Dialog-Rollout</td><td><span class="wiki-badge wiki-badge--bearbeitung">in Bearbeitung</span></td><td>20</td></tr><tr><td class="wiki-table__id">P-02</td><td>Feature-Testabdeckung und UC-Lücken</td><td><span class="wiki-badge wiki-badge--offen">offen</span></td><td>5</td></tr></tbody>
+    </table>
+    <h2 class="wiki-h2">NFR-Index</h2>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Titel</th><th>Kategorie</th><th>Beschreibung</th></tr></thead>
+      <tbody><tr><td class="wiki-table__id">NFR-01</td><td>Multi-User-Konsistenz</td><td><span class="wiki-badge wiki-badge--neutral">Konsistenz</span></td><td>Parallele Nutzung durch mehrere Benutzer oder Browser-Sessions muss deterministisch konsistent bleiben.</td></tr></tbody>
+    </table>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

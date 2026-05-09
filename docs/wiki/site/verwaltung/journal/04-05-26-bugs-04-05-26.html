@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-bugs-04-05-26: 04.05.26 | Änderung | Bugs: Abwesenheiten, Monitoring, KW-Feld und Admin-Correction-Workflows · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-bugs-04-05-26">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-bugs-04-05-26 04.05.26 | Änderung | Bugs: Abwesenheiten, Monitoring, KW-Feld und Admin-Correction-Workflows</span></nav>
+        <h1 class="wiki-h1">04-05-26-bugs-04-05-26: 04.05.26 | Änderung | Bugs: Abwesenheiten, Monitoring, KW-Feld und Admin-Correction-Workflows</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">Die Notion-Aufgabe Bugs 04.05.26 wurde als mehrschichtiges Bugfix-Paket umgesetzt. Abwesenheiten können bei kollidierenden regulären Terminen jetzt kontrolliert gespeichert werden: Der Server meldet die Konflikttermine zurück, und nach Bestätigung werden diese Termine über den be</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Notion-Aufgabe <code>Bugs 04.05.26</code> wurde als mehrschichtiges Bugfix-Paket umgesetzt. Abwesenheiten können bei kollidierenden regulären Terminen jetzt kontrolliert gespeichert werden: Der Server meldet die Konflikttermine zurück, und nach Bestätigung werden diese Termine über den bestehenden Parken-Workflow geparkt, bevor die Abwesenheit gespeichert wird.</p>
+<p>Zusätzlich wurde Monitoring auf die vollständige Konfliktmenge umgestellt. Dispatcher sehen nach Login oder Sessionstart einmalig einen Konfliktdialog mit Tabs für Termine ohne Mitarbeiter und Termine auf Parkplatz. Das Projektfeld <code>Geplante Kalenderwoche</code> bleibt ohne DB-Änderung auf 10 Zeichen begrenzt. Admin-Correction-Workflows können in Produktion nur laufen, wenn der konkrete Workflow dafür freigegeben ist.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Backend-Contract und Service-Logik für Abwesenheitsmutationen erweitert.</li><li>Bestehenden Parken-Workflow in den Abwesenheitsspeicherpfad eingebunden.</li><li>Monitoring-Abfrage und Monitoring-Sichtbarkeit angepasst.</li><li>Dispatcher-Login-Konfliktdialog im Home-Flow ergänzt.</li><li>Projektformular und Projektcontroller für die bestehende <code>planned_week</code>-Grenze geschärft.</li><li>Correction-Workflow-Safety und Admin-Middleware für explizit freigegebene Produktionsworkflows angepasst.</li><li>Unit- und Integrationstests für die kritischen Pfade ergänzt.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>Notion-Aufgabe: https://www.notion.so/Bugs-04-Mai-356da094354e80cc8c5ae424c4b5fd62?source=copy_link</li><li>FT-31 / Monitoring: lokale Feature- und Implementierungskontexte wurden für Monitoring und Auth-Payload herangezogen.</li><li>FT-33 / Abwesenheiten: lokale Feature- und Implementierungskontexte wurden für den Abwesenheits-Terminworkflow herangezogen.</li><li>Admin-Correction-Workflow: bestehender Sauna-Projekttitel-Workflow und Safety-Gates wurden angepasst.</li></ul>
+<p>Weitere Notion-Featureseiten wurden in dieser Umsetzung nicht vollständig neu ausgewertet; die konkrete Bugfix-Liste und der bestätigte Plan waren die maßgebliche Grundlage.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>shared/routes.ts</code> akzeptiert bei Abwesenheits-Create und -Update optionale bestätigte Parktermine mit <code>appointmentId</code> und <code>version</code>.</li><li><code>employeeAppointmentAbsencesService</code> ermittelt reguläre Terminüberschneidungen, fordert ohne passende Bestätigung Parkfreigabe an und parkt bestätigte Termine transaktional.</li><li><code>EmployeeAppointmentAbsencesPanel</code> zeigt bei <code>ABSENCE_OVERLAP_REQUIRES_PARKING</code> einen Bestätigungsdialog und sendet danach die bestätigten Terminversionen.</li><li><code>appointmentsRepository.listAppointmentsForMonitoring</code> und <code>monitoringService</code> liefern die vollständige Monitoring-Konfliktmenge ohne Zukunftsfilter.</li><li>Monitoring ist für <code>ADMIN</code> und <code>DISPONENT</code> verfügbar; Leser werden server- und clientseitig ausgeschlossen.</li><li><code>Home</code> öffnet für Dispatcher einmalig den Konfliktdialog nach Monitoring-Load.</li><li><code>client/src/lib/dispatcher-login-conflicts.ts</code> trennt die Login-Dialog-Mengen: TR-01 nur aktuelle ISO-KW plus zwei Wochen, TR-02 vollständig.</li><li><code>ProjectOrderForm</code> begrenzt <code>plannedWeek</code> per <code>maxLength={10}</code>; <code>ProjectForm</code> meldet zu lange Eingaben vor dem Speichern.</li><li><code>projectsController</code> liefert für direkte API-Aufrufe bei zu langem <code>plannedWeek</code> eine verständliche <code>VALIDATION_ERROR</code>-Antwort.</li><li><code>script/correction-workflows/safety.ts</code> erlaubt Produktion nur über <code>allowedRuntimeModes</code>; <code>project-title-sauna-model</code> enthält nun <code>production</code>.</li><li><code>adminMaintenancePolicy</code> lässt Correction-Workflow-Apply in Produktion nur durch die sichere DB-Allowlist-Prüfung laufen.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/lib/dispatcherLoginConflicts.test.ts tests/unit/lib/monitoringSummary.fullCount.test.ts tests/unit/ui/sidebar.behavior.test.tsx tests/unit/auth/monitoringSummary.test.ts tests/unit/ui/home.behavior.test.tsx tests/unit/invariants/adminMaintenancePolicy.dumpImportSafety.test.ts</code></li><li><code>npm run test:unit -- tests/unit/script/correctionWorkflowSafety.test.ts</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/employeeAppointmentAbsences.integration.test.ts</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/admin.correction-workflow.integration.test.ts</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/ft02.full-uc-coverage.integration.test.ts</code></li><li><code>npm run typecheck</code></li><li><code>git diff --check</code></li></ul>
+<p><code>npm run check</code> wurde ausgeführt, scheitert aber nach erfolgreichen <code>check:encoding</code>, <code>check:destructive-inventory</code> und <code>tsc</code> am bestehenden Encoding-Lint-Treffer <code>client/src/components/TourEmployeeCascadeDialog.tsx:108 manuell</code>. Diese Datei wurde in diesem Auftrag nicht geändert.</p>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Browser-E2E wurde für dieses Paket nicht ausgeführt.</li><li>Der bestehende <code>npm run check</code>-Blocker in <code>TourEmployeeCascadeDialog.tsx</code> sollte separat bewertet werden, weil der Treffer ein korrektes deutsches Wort ist.</li><li>Im Worktree lagen bereits weitere, nicht zu diesem Bugfix-Paket gehörende Änderungen vor; sie wurden nicht verändert oder bereinigt.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

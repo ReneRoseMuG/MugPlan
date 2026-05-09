@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-16/09: Hilfetexte aus Datei importieren · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-16/09">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-16/09 Hilfetexte aus Datei importieren</span></nav>
+        <h1 class="wiki-h1">UC-16/09: Hilfetexte aus Datei importieren</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-16</span></div>
+    <p class="wiki-lead">Mehrere Hilfetext-Items aus einer Datei in das System übernehmen, um Hilfetexte zentral zu pflegen und außerhalb der Anwendung versionierbar bearbeiten zu können.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-16-hilfetexte-verwalten.html">FT (16): Hilfetexte verwalten</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Admin</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Mehrere Hilfetext-Items aus einer Datei in das System übernehmen, um Hilfetexte zentral zu pflegen und außerhalb der Anwendung versionierbar bearbeiten zu können.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<p>Der Akteur ist authentifiziert und besitzt Admin-Rechte. Zusätzlich liegt eine Importdatei vor, die eine Menge von Hilfetext-Items enthält, wobei jedes Item mindestens einen eindeutigen <code>help_key</code> sowie einen Inhalt in dem im System definierten Format enthält.</p>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Hilfetext-Verwaltung und startet die Funktion „Hilfetexte importieren“.</li><li>Das System öffnet einen Dialog zur Dateiauswahl und der Akteur wählt die Importdatei aus.</li><li>Das System liest die Datei ein und validiert, dass die Datei syntaktisch korrekt ist und dass jedes Item einen <code>help_key</code> besitzt.</li><li>Das System prüft, dass die <code>help_key</code>Werte innerhalb der Datei eindeutig sind, da pro <code>help_key</code> genau ein Hilfetext existieren darf.</li><li>Das System vergleicht jedes importierte Item anhand des <code>help_key</code> mit dem bestehenden Datensatz im System.</li><li>Wenn ein Datensatz bereits existiert und dessen Inhalt leer ist, überschreibt das System den Datensatz ohne weitere Rückfrage mit dem importierten Inhalt.</li><li>Wenn ein Datensatz bereits existiert und dessen Inhalt nicht leer ist, fordert das System den Akteur für dieses Item zur Entscheidung auf und ermöglicht mindestens „Überschreiben“ oder „Überspringen“.</li><li>Wenn zu einem <code>help_key</code> noch kein Datensatz existiert, legt das System einen neuen Hilfetext an.</li><li>Der Akteur bestätigt den Importlauf und das System übernimmt die Änderungen persistent.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<p>Wenn die Datei ungültig ist, ein Pflichtfeld fehlt oder doppelte <code>help_key</code>-Werte in der Datei vorkommen, bricht das System den Import ab und zeigt einen Validierungsfehler an. Wenn der Akteur den Vorgang abbricht, werden keine Änderungen gespeichert.</p>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Hilfetexte sind gemäß Regeln importiert. Vorhandene leere Inhalte sind still ersetzt. Bestehende befüllte Inhalte sind nur nach expliziter Entscheidung überschrieben oder übersprungen.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-16-hilfetexte-verwalten.html">FT-16</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-21/13: Wiederholte Extraktion desselben Dokuments · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-21/13">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/13 Wiederholte Extraktion desselben Dokuments</span></nav>
+        <h1 class="wiki-h1">UC-21/13: Wiederholte Extraktion desselben Dokuments</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-21</span></div>
+    <p class="wiki-lead">Sicherstellen, dass die wiederholte Extraktion desselben Attachments keine inkonsistenten oder doppelten Stammdaten erzeugt.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-21-dokumentenextraktion.html">FT (21): Dokumentenextraktion</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass die wiederholte Extraktion desselben Attachments keine inkonsistenten oder doppelten Stammdaten erzeugt.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Attachment wurde bereits extrahiert.</li><li>Es wurden noch keine oder bereits bestätigte Daten aus diesem Dokument übernommen.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur startet erneut die Funktion „Dokument extrahieren&quot; für dasselbe Attachment.</li><li>Das System führt die regelbasierte Parsing-Analyse erneut vollständig aus.</li><li>Das System prüft, ob eine Auftragsnummer im extrahierten Text identifiziert wurde.</li><li>Falls eine Auftragsnummer vorhanden ist: Das System prüft, ob diese bereits in der Datenbank existiert.</li><li>Falls die Auftragsnummer bereits existiert: Das System bricht den Prozess ab und zeigt eine Fehlermeldung an (z. B. „Auftrag mit dieser Nummer bereits vorhanden. Weitere Verarbeitung nicht möglich.&quot;).</li><li>Falls die Auftragsnummer nicht existiert oder nicht vorhanden ist: Das System führt die Validierung durch und erzeugt einen neuen, unabhängigen Extraktionsvorschlag.</li><li>Der Akteur bestätigt oder verwirft den neuen Vorschlag.</li><li>Bei Bestätigung führt das System reguläre Duplikats- und Validierungsprüfungen durch und persistiert die Daten gemäß den bestehenden Domänenregeln.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Akteur verwirft den neuen Vorschlag → Keine Änderung an bestehenden Daten.</li><li>Auftragsnummer existiert bereits (Wiederholung desselben Dokuments) → Das System bricht ab. Der Akteur kann das Dokument mit geänderter Auftragsnummer erneut extrahieren oder die bestehenden Daten manuell aktualisieren.</li><li>Duplikatsprüfung verhindert eine doppelte Kunden- oder Projektanlage → Das System aktualisiert bestehende Datensätze still gemäß UC 21/07 und UC 21/08, oder verweist auf bestehende Datensätze.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Es entstehen keine automatischen Dubletten. Die Auftragsnummer-Eindeutigkeit ist gewährleistet. Jede Persistierung erfolgt ausschließlich nach expliziter Bestätigung des Akteurs und unter Anwendung der bestehenden Domänenregeln (einschließlich still erfolgender Kundenaktualisierungen).</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-21-dokumentenextraktion.html">FT-21</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

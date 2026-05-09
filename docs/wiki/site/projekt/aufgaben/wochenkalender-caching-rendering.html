@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-01: Wochenkalender schneller starten, cachen, rendern und aktuell halten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-01 Wochenkalender schneller starten, cachen, rendern und aktuell halten</span></nav>
+        <h1 class="wiki-h1">A-01: Wochenkalender schneller starten, cachen, rendern und aktuell halten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Kalender-Performance</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Implementierung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>06.05.26</div>
+    <p class="wiki-lead">Der Wochenkalender soll schneller starten, sichtbare Wochen priorisiert laden, zusätzliche Wochen nur im Cache vorhalten und nach Mutationen zuverlässig aktuell werden.</p>
+    <p>Der Wochenkalender soll schneller starten, sichtbare Wochen priorisiert laden, zusätzliche Wochen nur im Cache vorhalten und nach Mutationen zuverlässig aktuell werden. Der vorliegende Plan beschreibt bereits eine konkrete wochengenaue Cache-, Prefetch-, Invalidierungs- und Renderstrategie. Damit ist der Punkt nicht mehr nur eine Entscheidung, sondern ein nachverfolgbares Umsetzungspaket.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Kalender-Performance</td><td>Implementierung</td><td>06.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Wochenkalender soll schneller starten, sichtbare Wochen priorisiert laden, zusätzliche Wochen nur im Cache vorhalten und nach Mutationen zuverlässig aktuell werden.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Der vorliegende Plan beschreibt bereits eine konkrete wochengenaue Cache-, Prefetch-, Invalidierungs- und Renderstrategie. Damit ist der Punkt nicht mehr nur eine Entscheidung, sondern ein nachverfolgbares Umsetzungspaket.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören die Umsetzung der wochengenauen Query-Keys, die Priorisierung sichtbarer Wochen, der reine Cache-Puffer links und rechts des Scrollfensters, begrenztes Rendering sowie gezielte Invalidierung nach Termin-, Projekt-, Kunden-, Tag-, Notiz-, Attachment-, Tour- und Wochenplanungsänderungen.</li><li>Nicht Teil der Aufgabe sind neue API-Endpunkte, DB-Schemaänderungen, Persistenzänderungen oder neue Abhängigkeiten.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Render-/Scrollfenster bleibt von Cache-Puffer getrennt.</li><li>Cache-Puffer ist Datenvorrat und wird nicht zusätzlich gerendert.</li><li>Unsichere Mutationsergebnisse müssen konservativ den gesamten <code>calendarAppointments</code>-Prefix invalidieren.</li><li>Rollen- und Sichtbarkeitsregeln bleiben serverseitig unverändert; die Aufgabe darf keine Kalenderdaten für unzulässige Rollen sichtbar machen.</li><li>Erwartete Prüfungen sind Unit-Tests für Fensterberechnung, Query-Keys und Invalidierung sowie relevante Browser-E2E-Szenarien für KW-Sprung, Scrollverhalten und Terminänderungen.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Relevante Use Cases sind vor Umsetzung gezielt zu verlinken.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: —</li><li>Entscheidungen: —</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

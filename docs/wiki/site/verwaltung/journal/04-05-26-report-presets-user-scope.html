@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-report-presets-user-scope: 04.05.26 | Änderung | FT-26: Report-Presets mit User-Scope · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-report-presets-user-scope">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-report-presets-user-scope 04.05.26 | Änderung | FT-26: Report-Presets mit User-Scope</span></nav>
+        <h1 class="wiki-h1">04-05-26-report-presets-user-scope: 04.05.26 | Änderung | FT-26: Report-Presets mit User-Scope</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">FT-26 wurde um Report-Presets erweitert. Benutzer können unabhängig von ihrer Rolle eigene USER-Presets für Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan speichern, anwenden und löschen. Admins können zusätzlich GLOBAL-Presets bereitstellen, die für alle Report-R</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>FT-26 wurde um Report-Presets erweitert. Benutzer können unabhängig von ihrer Rolle eigene USER-Presets für Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan speichern, anwenden und löschen. Admins können zusätzlich GLOBAL-Presets bereitstellen, die für alle Report-Rollen sichtbar sind.</p>
+<p>Die bisherige stille Persistenz reportbezogener User-Settings wurde entfernt. Erhalten bleibt nur <code>reports.categoryLayout</code> als globale Admin-Konfiguration für das Produktionsplanungs-Layout; dieses Layout kann zusätzlich Bestandteil eines Produktionsplanung-Presets sein.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Wiki und Use Cases zu FT-26 aktualisiert.</li><li>Backend-Infrastruktur für Report-Presets ergänzt.</li><li>Frontend-Steuerung zum Speichern, Anwenden und Löschen von Presets ergänzt.</li><li>Alte reportbezogene Settings aus Registry, Service-Normalisierung, Hook-Nutzung und Tests entfernt.</li><li>Produktionsplanung-Projektkacheln werden nur noch durch Sondermaß-Tags ausgelöst.</li><li>Pro Report wurde eine Integrationstest-Abdeckung ergänzt, die Presets gegen echte Reportdaten ausführt.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26: Auswertungen und Reports</a></li><li><a href="../../lastenheft/use-cases/uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.html">UC-26-01: Vorlaufliste konfigurieren und erzeugen</a></li><li><a href="../../lastenheft/use-cases/uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.html">UC-26-03: Produktionsplanung konfigurieren und erzeugen</a></li><li><a href="../../lastenheft/use-cases/uc-26-06-auftragsliste-konfigurieren-und-erzeugen.html">UC-26-06: Auftragsliste konfigurieren und erzeugen</a></li><li><a href="../../lastenheft/use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.html">UC-26-08: Tourenplan konfigurieren und erzeugen</a></li><li><a href="../../lastenheft/use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.html">UC-26-10: Report-Preset speichern und ausführen</a></li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Reports und Presets sind für <code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code> verfügbar.</li><li>Alle Rollen dürfen eigene USER-Presets verwalten.</li><li>Nur <code>ADMIN</code> darf GLOBAL-Presets schreiben oder löschen.</li><li>Die globale Produktionsplanungs-Layoutpersistenz bleibt adminseitig.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/services/reportConfigsService.test.ts tests/unit/settings/reportSettings.persistenceRemoval.test.ts tests/unit/ui/reportsPage.behavior.test.tsx tests/unit/ui/reportsPage.wiring.test.tsx tests/unit/ui/tourenplanReportPanel.smoke.test.tsx</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/userSettings.reportPersistenceRemoval.integration.test.ts</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/reportConfigs.presets.integration.test.ts tests/integration/server/reportConfigs.reportEffects.integration.test.ts tests/integration/server/userSettings.reportPersistenceRemoval.integration.test.ts tests/integration/server/reports.produktionsplanung.integration.test.ts tests/integration/server/reports.produktionsplanung.projectRowsConsistency.integration.test.ts</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Ein kompletter E2E-Browserlauf wurde nicht ausgeführt.</li><li><code>npm run check</code> bleibt wegen einer bekannten unabhängigen Encoding-Lint-Meldung in <code>TourEmployeeCascadeDialog.tsx</code> separat zu behandeln.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../../lastenheft/use-cases/uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.html">UC-26/01</a><a href="../../lastenheft/use-cases/uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.html">UC-26/03</a><a href="../../lastenheft/use-cases/uc-26-06-auftragsliste-konfigurieren-und-erzeugen.html">UC-26/06</a><a href="../../lastenheft/use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.html">UC-26/08</a><a href="../../lastenheft/use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.html">UC-26/10</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

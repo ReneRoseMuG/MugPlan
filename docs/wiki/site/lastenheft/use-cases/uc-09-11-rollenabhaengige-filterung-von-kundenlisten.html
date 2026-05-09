@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-09/11: Rollenabhängige Filterung von Kundenlisten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-09/11">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-09/11 Rollenabhängige Filterung von Kundenlisten</span></nav>
+        <h1 class="wiki-h1">UC-09/11: Rollenabhängige Filterung von Kundenlisten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-09</span></div>
+    <p class="wiki-lead">Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden und Disponenten ausschließlich aktive Kunden sehen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-09-kundenverwaltung.html">FT (09): Kundenverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden und Disponenten ausschließlich aktive Kunden sehen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Mindestens ein aktiver oder inaktiver Kunde existiert.</li></ul>
+<hr>
+<h3 class="wiki-h3">Ablauf – Disponent</h3>
+<ol><li>Der Akteur mit Rolle Disponent ruft die Kundenliste auf.</li><li>Das System ermittelt die Rolle des Akteurs.</li><li>Das System führt eine serverseitige Abfrage aus, die ausschließlich Kunden mit <code>is_active = true</code> berücksichtigt.</li><li>Das System liefert die gefilterte Liste zurück.</li><li>Die UI zeigt ausschließlich aktive Kunden an.</li></ol>
+<hr>
+<h3 class="wiki-h3">Ablauf – Administrator</h3>
+<ol><li>Der Akteur mit Rolle Administrator ruft die Kundenliste auf.</li><li>Das System erkennt die Rolle Administrator.</li><li>Das System führt eine Abfrage ohne Aktiv-Filter aus oder ermöglicht eine explizite Filterauswahl.</li><li>Das System liefert aktive und inaktive Kunden zurück.</li><li>Die UI kennzeichnet inaktive Kunden eindeutig.</li></ol>
+<hr>
+<h3 class="wiki-h3">Query-Vertrag</h3>
+<ul><li>Die Filterung erfolgt serverseitig.</li><li>Ein Disponent kann durch Manipulation der UI oder Query-Parameter keine inaktiven Kunden erhalten.</li><li>Die API muss rollenabhängig prüfen und darf sich nicht auf clientseitige Filter verlassen.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ablauf</h2>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Keine Kunden vorhanden → System liefert leere Liste.</li><li>Akteur nicht authentifiziert → System antwortet mit 401.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Disponenten sehen ausschließlich aktive Kunden.</li><li>Administratoren sehen vollständige Daten.</li><li>Die Datenintegrität ist unabhängig vom Client garantiert.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-09-kundenverwaltung.html">FT-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

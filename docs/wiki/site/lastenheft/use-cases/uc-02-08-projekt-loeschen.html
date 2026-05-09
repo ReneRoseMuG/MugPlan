@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/08: Projekt löschen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/08">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/08 Projekt löschen</span></nav>
+        <h1 class="wiki-h1">UC-02/08: Projekt löschen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Ein Projekt dauerhaft aus dem System entfernen, ohne fachliche Inkonsistenzen oder verwaiste Referenzen zu hinterlassen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Ein Projekt dauerhaft aus dem System entfernen, ohne fachliche Inkonsistenzen oder verwaiste Referenzen zu hinterlassen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Das Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Löschrechte (Disponent oder Administrator).</li><li>Dem Projekt sind <strong>keine Termine zugeordnet</strong> (zwingende Vorbedingung).</li><li>Das Projekt besitzt ein Versionsmerkmal.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet das Projekt und wählt „Projekt löschen&quot;.</li><li>Das System prüft die Berechtigung des Akteurs.</li><li>Das System prüft, ob dem Projekt Termine zugeordnet sind.</li><li>Falls <strong>JA:</strong> Das System blockiert die Löschung mit HTTP 409 BUSINESS_CONFLICT. Das Projekt bleibt vollständig erhalten.</li><li>Falls <strong>NEIN:</strong> Fortfahren mit Schritt 4.</li><li>Das System setzt eine atomare Versionsverriegelung (write-lock) auf dem Projekt-Datensatz mit dem erwarteten Versionsmerkmal.</li><li>Das System führt innerhalb einer Transaktion durch:</li><li>Alle projektbezogenen Tag-Zuordnungen werden entfernt.</li><li>Alle projektbezogenen Notizen und deren Relationen werden physisch gelöscht (Cascade).</li><li>Alle Anhang-Datensätze des Projekts werden entfernt (physische Dateien verbleiben im Upload-Verzeichnis).</li><li>Alle Auftragspositionen (<code>project_order_items</code>) werden gelöscht.</li><li>Der Projekt-Datensatz wird gelöscht.</li><li>Das System bestätigt die erfolgreiche Löschung und aktualisiert alle Projektlisten.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Projekt nicht vorhanden → HTTP 404.</li><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Löschrechte → HTTP 403.</li><li>Projekt besitzt Termine → HTTP 409 BUSINESS_CONFLICT, kein Teilzustand entsteht.</li><li>Versionskonflikt (Optimistic Locking) → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.</li><li>Race Condition (Termin wird parallel angelegt) → atomare Prüfung erkennt neue Referenz → HTTP 409, Löschung wird abgebrochen.</li><li>Technischer Fehler → HTTP 500, das Projekt bleibt vollständig erhalten, keine Teillöschung.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Das Projekt und alle zugeordneten Notizen sowie Auftragspositionen sind physisch gelöscht. Anhang-Datensätze sind entfernt; physische Dateien verbleiben im Upload-Verzeichnis. Es existieren keine verwaisten Referenzen. Alle Projektlisten sind aktualisiert.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

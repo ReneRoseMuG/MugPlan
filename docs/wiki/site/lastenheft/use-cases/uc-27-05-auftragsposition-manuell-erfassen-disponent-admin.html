@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-27/05: Auftragsposition manuell erfassen (Disponent / Admin) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-27/05">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-27/05 Auftragsposition manuell erfassen (Disponent / Admin)</span></nav>
+        <h1 class="wiki-h1">UC-27/05: Auftragsposition manuell erfassen (Disponent / Admin)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-27</span></div>
+    <p class="wiki-lead">Eine Auftragsposition unter einem Projekt mit strukturiertem Bezug zu einem Produkt oder einer Komponente (optional mit freier Beschreibung) erfassen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-27-produktverwaltung-und-auftragspositionen.html">FT (27): Produktverwaltung und Auftragspositionen</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Eine Auftragsposition unter einem Projekt mit strukturiertem Bezug zu einem Produkt oder einer Komponente (optional mit freier Beschreibung) erfassen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Nutzer ist angemeldet und besitzt Änderungsrechte.</li><li>Das Projekt existiert.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Nutzer öffnet ein Projekt.</li><li>Der Nutzer öffnet die Artikelliste des Projekts.</li><li>Der Nutzer klickt auf „+ Position hinzufügen&quot;.</li><li>Das System öffnet ein Eingabeformular für eine neue Auftragsposition.</li><li>Der Nutzer wählt optional ein Produkt aus einem Dropdown (alle aktiven Produkte).</li><li>Der Nutzer wählt optional eine Komponente aus einem Dropdown (alle aktiven Komponenten, unabhängig vom gewählten Produkt).</li><li>Der Nutzer gibt optional eine freie Beschreibung ein.</li><li>Der Nutzer gibt die Menge ein (Pflichtfeld, Zahl &gt; 0).</li><li>Der Nutzer speichert die Position.</li><li>Das System validiert: Mindestens eines von (product_id, component_id) muss gesetzt sein.</li><li>Das System validiert: quantity &gt; 0.</li><li>Das System persistiert die Position mit project_id.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Nutzer gibt weder Produkt noch Komponente an → Validierungsfehler.</li><li>Menge ist ≤ 0 oder nicht numerisch → Validierungsfehler.</li><li>Inaktive Produkte oder Komponenten → werden aus den Dropdowns herausgefiltert.</li><li>Der Nutzer bricht ab → Keine Position wird gespeichert.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Auftragsposition ist gespeichert und in der Artikelliste des Projekts sichtbar. Sie ist strukturiert mit einem Produkt oder einer Komponente verknüpft.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-27-produktverwaltung-und-auftragspositionen.html">FT-27</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

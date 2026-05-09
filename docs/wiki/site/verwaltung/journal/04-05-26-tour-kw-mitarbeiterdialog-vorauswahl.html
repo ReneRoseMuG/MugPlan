@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-tour-kw-mitarbeiterdialog-vorauswahl: 04.05.26 | Änderung | Kalender/Tour-KW: Mitarbeiterdialog und Anwenden-Flow · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-tour-kw-mitarbeiterdialog-vorauswahl">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-tour-kw-mitarbeiterdialog-vorauswahl 04.05.26 | Änderung | Kalender/Tour-KW: Mitarbeiterdialog und Anwenden-Flow</span></nav>
+        <h1 class="wiki-h1">04-05-26-tour-kw-mitarbeiterdialog-vorauswahl: 04.05.26 | Änderung | Kalender/Tour-KW: Mitarbeiterdialog und Anwenden-Flow</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">Die Wochenkalender- und Tour-KW-Mitarbeiterlogik wurde in dieser Session erweitert und anschließend korrigiert. Tour-KW-Planungen können jetzt aus der Wochenkalender-Tour-KW-Spalte und aus den Tour-KW-Karten im Tourformular auf die Termine der passenden Tour/KW angewendet werden.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Wochenkalender- und Tour-KW-Mitarbeiterlogik wurde in dieser Session erweitert und anschließend korrigiert. Tour-KW-Planungen können jetzt aus der Wochenkalender-Tour-KW-Spalte und aus den Tour-KW-Karten im Tourformular auf die Termine der passenden Tour/KW angewendet werden. Die Terminkarten-Funktion <code>Mitarbeiter hinzufügen</code> zeigt bei vorhandener Tour-KW-Planung einen kombinierten Dialog aus Tour-KW-Mitarbeitern und weiteren konfliktfrei zuweisbaren Mitarbeitern.</p>
+<p>Die Nachkorrektur stellt sicher, dass im Dialog nicht alle konfliktfreien Mitarbeiter vorausgewählt sind. Initial markiert werden nur konfliktfrei übernehmbare Tour-KW-Mitarbeiter, die noch nicht am Termin hängen. Die konfliktfreie Restmenge bleibt sichtbar, aber nicht ausgewählt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Frontend-Verhalten im Wochenkalender korrigiert.</li><li>Bestehenden Tour-KW-Anwenden-Flow sichtbar in Wochenkalender und Tourformular angebunden.</li><li>Backend-Preview kompatibel um Quellenangaben und konfliktfreie Restmenge erweitert.</li><li>Tests für Preview, Dialoggruppierung und Vorauswahl ergänzt.</li><li>Wiki-Hauptseiten zu Kalenderansichten und Tourenplanung aktualisiert.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-01-kalendertermine.html">FT-01: Kalendertermine</a></li><li><a href="../../lastenheft/features/ft-03-kalenderansichten.html">FT-03: Kalenderansichten</a></li><li><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04: Tourenplanung</a></li></ul>
+<p>Notion-Featureseiten wurden in dieser Session nicht erneut herangezogen, weil die lokalen Wiki-Featureseiten für die konkrete Dokumentationsprüfung ausreichten.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Der Terminkarten-Dialog <code>Mitarbeiter hinzufügen</code> unterscheidet zwischen Tour-KW-Mitarbeitern und weiteren konfliktfrei zuweisbaren Mitarbeitern.</li><li>Ohne Tour-KW-Planung oder bei leerer Planung wird nur die konfliktfreie Mitarbeitermenge angezeigt.</li><li>Die Initialauswahl markiert nur noch auswählbare Tour-KW-Mitarbeiter mit Status <code>will_add</code>.</li><li>Die Anwenden-Aktion nutzt die bestehenden Vorschau-/Bestätigungsflüsse und führt keine neue Rollen- oder Konfliktlogik ein.</li><li>FT-03 dokumentiert das kombinierte Dialogverhalten und die neue Anwenden-Aktion in der Wochenansicht.</li><li>FT-04 dokumentiert das Anwenden einer bestehenden Tour-KW-Planung aus Wochenkalender und Tourformular.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm exec tsc</code></li><li><code>npm run test:unit -- tests/unit/ui/tourEmployeeCascadeDialog.wiring.test.tsx --reporter=verbose</code></li><li>Safety-Gate für <code>.env.test</code>, <code>NODE_ENV=test</code>, <code>MUGPLAN_MODE=test</code>, Test-Datenbank-Allowlist und Test-Host-Allowlist</li><li><code>npm run test:integration -- tests/integration/server/tourWeekEmployees.integration.test.ts --reporter=verbose</code></li><li><code>npm run test:unit -- tests/unit/ui/tourEditForm.layoutShellIntegration.test.tsx --reporter=verbose</code></li><li><code>npm run test:unit -- tests/unit/ui/calendarWeekView.layoutGrid.test.tsx --reporter=verbose</code></li><li><code>npm run test:unit -- tests/unit/ui/calendarWeekView.compactHeader.test.ts --reporter=verbose</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Ein vollständiger Browser-E2E-Lauf wurde für diese Session nicht ausgeführt.</li><li>Der detaillierte Use Case <code>UC 01/08</code> wurde geprüft, aber nicht geändert; die relevante Fachregel steht in den Feature-Hauptseiten.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../../lastenheft/use-cases/uc-01-08-mitarbeiter-einem-termin-zuweisen.html">UC-01/08</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

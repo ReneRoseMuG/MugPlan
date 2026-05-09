@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-16: Dialog-Rollout-Masterplan · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-16">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-16 Dialog-Rollout-Masterplan</span></nav>
+        <h1 class="wiki-h1">A-16: Dialog-Rollout-Masterplan</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--bearbeitung">in Bearbeitung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Dialoge</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Planung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>08.05.26</div>
+    <p class="wiki-lead">Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument für Projekt P-01. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und verweist auf die operative Projektseite mit vollständiger Reihenfolge, Testsuite und Protokollier</p>
+    <p>Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und koordiniert die verwandten Einzelaufgaben. Die Umsetzung soll Benutzerkommunikation über Bestätigungen, Entscheidungsdialoge und dauerhafte Inline-Meldungen vereinheitlichen, ohne Toasts als eigenes Rollout-Ziel zu behandeln.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>in Bearbeitung</code></td><td>Hoch</td><td>Dialoge</td><td>Planung</td><td>08.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument für Projekt P-01. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und verweist auf die operative Projektseite mit vollständiger Reihenfolge, Testsuite und Protokollierungsregeln. Besonders komplexe Termin-, Tour- und KW-Mutationen werden bewusst an das Ende gestellt, damit sie nicht mit einfacheren Domain-Dialogen vermischt werden.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Der Strategieplan vom 08.05.26 liegt als Export unter dem Namen PLAN_Dialoge.md vor. Zusätzlich existieren einzelne Dialog-Aufgaben, die über Projekt P-01 in eine fachlich sinnvolle Reihenfolge gebracht wurden. Die Inventurdatei <code>docs/wiki/tasks/a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md</code> enthält die erste Gruppierung relevanter Dialog-, Bestätigungs- und Meldungspfade.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Master-Task gehören die Pflege der P01-Reihenfolge, der Statusüberblick, die statische Inventur und die Verweise auf zugehörige Task-Dateien. Nicht Teil dieser Aufgabe sind UI-Komponenten, API-Änderungen, Schemaänderungen oder konkrete Dialogimplementierungen.</li><li>Die vollständige Ausführungsreihenfolge und Testsuite steht auf der Projektseite <a href="../projekte/dialog-rollout.html">Dialog-Rollout</a>.</li><li>Die Grundlagenreihenfolge lautet: <a href="fehler-normalisierung.html">Fehler-Normalisierung</a>, <a href="dialog-basiskomponenten.html">Dialog-Basiskomponenten</a>, <a href="ft04-dialog-basiskomponente.html">FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</a>, <a href="mitarbeiter-auswahl-dialogstruktur.html">Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren</a>.</li><li>Danach folgen einfache und mittlere Domain-Aufgaben: <a href="teams-dialoge.html">Teams-Dialoge</a>, <a href="stammdaten-produkte-komponenten-dialoge.html">Stammdaten-, Produkte- und Komponenten-Dialoge</a>, <a href="tags-dialoge.html">Tags-Dialoge</a>, <a href="hilfetexte-import-export-dialoge.html">Hilfetexte-, Import- und Export-Dialoge</a>, <a href="einstellungen-monitoring-admin-dialoge.html">Einstellungen-, Monitoring- und Admin-Dialoge</a>, <a href="reports-und-druck-dialoge.html">Reports- und Druck-Dialoge</a>, <a href="kunden-dialoge.html">Kunden-Dialoge</a>, <a href="mitarbeiter-dialoge.html">Mitarbeiter-Dialoge</a>, <a href="notizen-dialoge.html">Notizen-Dialoge</a>, <a href="projekte-und-dokumentextraktion-dialoge.html">Projekte- und Dokumentextraktion-Dialoge</a>, <a href="benutzer-und-sicherheit-dialoge.html">Benutzer- und Sicherheitsdialoge</a>.</li><li>Zum Schluss folgen die komplexen Tour-KW-, Termin- und Kalenderaufgaben: <a href="termin-tour-kw-mutationsdialoge.html">Termin- und Tour-KW-Mutationsdialoge vereinheitlichen</a>, <a href="tour-kw-termin-mutationsdialoge.html">Tour-KW- und Termin-Mutationsdialoge</a>, <a href="ft04-multistep-tour-kw-dialog.html">FT-04 mehrstufiger Tour-KW-Dialog</a>, <a href="ft04-multiselect-kw-planung-wochenkalender.html">FT-04 Multiselect für KW-Planung im Wochenkalender</a>, <a href="termine-und-kalenderdialoge.html">Termine- und Kalenderdialoge</a>.</li><li>Jede Teilaufgabe muss nach erfolgreicher Umsetzung Tests, manuelle App-Prüfung, Journaleintrag, Aufgabenverlinkung und Wiki-Build dokumentieren.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Die Reihenfolge ist absichtlich gegenüber der ersten Stufung korrigiert: Grundlagen zuerst, einfache Domain-Objekte danach, Tour-KW-, Termin- und Kalenderpfade zuletzt.</li><li>Generische Dialograhmen und wiederverwendbare Auswahlrahmen gehören zu Dialog-Basiskomponenten; Domain-Tasks führen fachliche Nutzungsstellen.</li><li>Tour-KW und komplexe Termin-Mutationen bleiben in Tour-KW- und Termin-Mutationsdialoge, auch wenn einzelne Komponenten zusätzlich in Domain-Tasks als angrenzende Kommunikation auftauchen.</li><li>Die Testsuite folgt der Hybrid-Strategie: gezielte vollständige Suite je Teilaufgabe, voller Testlauf zusätzlich nach den Hochrisiko-Meilensteinen Tour-KW- und Termin-Mutationsdialoge sowie Termine- und Kalenderdialoge.</li><li>Rollenverhalten wird in dieser Strukturaufgabe nicht geändert. Spätere Umsetzungen müssen <code>ADMIN</code>, <code>DISPONENT</code> und <code>READER</code> beziehungsweise <code>LESER</code> ausdrücklich prüfen und serverseitige Guards beibehalten.</li><li>Nach jeder abgeschlossenen Teilaufgabe wird ein Journaleintrag erstellt, in der Aufgabe verlinkt und durch <code>node scripts/build-wiki-site.mjs</code> in die generierte Wiki-Ausgabe übernommen.</li><li>Folgende Punkte sind vor der Delegation einzelner Teilbereiche zu klären.</li><li>Notiz-Pflichtentscheidung beim Verschieben: Komfortmerkmal oder blockierender Dialog-Schritt? (FT-01 sagt: Notizen bleiben immer erhalten.)</li><li>Schritt 4 des Gesamtplans muss aufgeteilt werden: erst Preview-Contract-Erweiterung (Server), dann Verschiebe-Dialog (Client).</li><li>Fehlerzustand nach partieller Execute-Ausführung im Stepper: Was sieht der Nutzer, was kann er tun?</li><li>Commit-Zeitpunkt in FT-04 mehrstufiger Tour-KW-Dialog nachtragen: Mutationen erst nach finaler Gesamtbestätigung, seriell über bestehende Execute-Endpunkte.</li><li>Die abgeschlossenen Vorarbeiten zu Drag &amp; Drop und Mark &amp; Insert müssen auf ihren Integrationsstatus geprüft werden: Läuft der Verschiebevorgang bereits über den Preview-Pfad?</li><li>### 08.05.26 — Anlage</li><li>Masterplan angelegt auf Basis von PLAN_Dialoge.md (Upload 08.05.26) und Planprüfung durch Claude.</li><li>Teilbereiche 0–3 als Stubs erzeugt. Domain-Objekte (4–N) werden nach statischer Inventur ergänzt.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Die offenen Entscheidungen in diesem Dokument müssen vor der Delegation der betroffenen Umsetzungsschritte geklärt werden.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: <a href="../../lastenheft/features/ft-01-kalendertermine.html">FT-01 - Kalendertermine</a> · <a href="../../lastenheft/features/ft-03-kalenderansichten.html">FT-03 - Kalenderansichten</a> · <a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04 - Tourenplanung</a></li><li>Entscheidungen: —</li><li>Weitere Bezüge: <a href="../projekte/dialog-rollout.html">Dialog-Rollout</a> · <a href="ft04-dialog-basiskomponente.html">FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</a> · <a href="ft04-multistep-tour-kw-dialog.html">FT-04 mehrstufiger Tour-KW-Dialog</a> · <a href="ft19-attachment-testluecken.html">FT-19 Attachment-Testlücken</a> · <a href="termin-tour-kw-mutationsdialoge.html">Termin- und Tour-KW-Mutationsdialoge vereinheitlichen</a> · <a href="ft04-multiselect-kw-planung-wochenkalender.html">FT-04 Multiselect KW-Planung Wochenkalender</a> · <a href="mitarbeiter-auswahl-dialogstruktur.html">Mitarbeiter-Auswahl-Dialogstruktur</a> · <a href="ft26-report-print-basiskomponente.html">FT-26 Report-Print-Basiskomponente</a> · <a href="../../../tasks/a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md">Dialoge und Meldungen - Pfade</a> · <a href="../../../relations.md">Relations</a> · <a href="../../verwaltung/journal.html">Journal</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Projekte</div><div class="wiki-relations__val"><a href="../projekte/dialog-rollout.html">P-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

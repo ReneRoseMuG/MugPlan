@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-05: Mitarbeiterverwaltung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-05">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-05 Mitarbeiterverwaltung</span></nav>
+        <h1 class="wiki-h1">FT-05: Mitarbeiterverwaltung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature dient der zentralen Verwaltung von Mitarbeitern als ausführende Ressourcen für Termine. Ziel ist es, Mitarbeiter als Stammdaten zu pflegen und ihre Einsätze über Termine hinweg nachvollziehbar darzustellen, ohne Terminplanung und Ressourcendarstellung fachlich zu v</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature dient der zentralen Verwaltung von Mitarbeitern als ausführende Ressourcen für Termine. Ziel ist es, Mitarbeiter als Stammdaten zu pflegen und ihre Einsätze über Termine hinweg nachvollziehbar darzustellen, ohne Terminplanung und Ressourcendarstellung fachlich zu vermischen. Dazu gehören neben der Stammdatenpflege auch mitarbeiterbezogene Lese- und Spezialansichten im Formular.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Die Mitarbeiterverwaltung stellt Funktionen zum Anlegen, Bearbeiten und Anzeigen von Mitarbeitern bereit. Mitarbeiter können unabhängig von Terminen existieren und werden im Rahmen der Terminvergabe optional Terminen zugewiesen. Die Zuweisung selbst erfolgt nicht innerhalb dieses Features, sondern im Kontext der Terminplanung.</p>
+<p>Disponenten erhalten serverseitig nur aktive Mitarbeiter und können Mitarbeiter damit nur aus dem aktiven Bestand auswählen. Die Verwaltung von aktiven und inaktiven Mitarbeitern (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation.</p>
+<p>Das physische Löschen von Mitarbeitern ist eine Admin-Funktion. Dispatcher bzw. Disponenten und Leser werden serverseitig blockiert. Eine Löschung ist nur zulässig, wenn keine Terminreferenzen mehr bestehen.</p>
+<h3 class="wiki-h3">Stammdaten</h3>
+<p>Der Tab <strong>Stammdaten</strong> enthält die direkten Mitarbeiterdaten. Dazu gehören Identitäts- und Kontaktdaten, Tour- und Teambezüge sowie der Aktivstatus. In der Mitarbeiterdetailansicht können dem Mitarbeiter außerdem Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen; die übergreifenden Anhangsregeln liegen in <a href="ft-19-attachments.html">FT (19)</a>.</p>
+<h3 class="wiki-h3">Mitarbeiter Termine</h3>
+<p>Der Tab <strong>Termine</strong> zeigt die Einsatzhistorie des Mitarbeiters. Quelle ist ausschließlich die aktuelle Relation zwischen Termin und Mitarbeiter; es gibt keine separate Mitarbeiter-Termin-Historie in diesem Feature. Angezeigt werden Termine, denen der Mitarbeiter aktuell oder in der Vergangenheit zugewiesen war. Änderungen an zukünftigen Terminen wirken sich unmittelbar auf diese Liste aus. Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf der Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen. Die Terminanlage, Terminbearbeitung und Mitarbeiterzuweisung selbst gehören fachlich zu <a href="ft-01-kalendertermine.html">FT (01)</a>.</p>
+<h3 class="wiki-h3">Abwesenheiten</h3>
+<p>Der Tab <strong>Abwesenheiten</strong> ist der dedizierte Mitarbeiterpfad für Abwesenheiten. Darüber werden Abwesenheiten als spezialisierter Terminworkflow aus <a href="ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT (33)</a> angelegt, bearbeitet und gelöscht. Der Mitarbeiterbereich ist damit der einzige reguläre Mutationspfad für Abwesenheiten; außerhalb dieses Pfads bleiben Abwesenheiten lesbar, dürfen aber nicht über generische Terminaktionen verändert werden.</p>
+<h3 class="wiki-h3">Wochenplanung</h3>
+<p>Der Tab <strong>Wochenplanung</strong> zeigt Tour-Kalenderwochen, in denen der Mitarbeiter eingeplant ist. Quelle sind die Tour-KW-Mitarbeiterzuordnungen aus der Tourenplanung, nicht die Terminliste des Mitarbeiters. Der Tab dient der Einordnung, in welchen Tourwochen der Mitarbeiter als Ressource vorgesehen ist; fachliche Regeln, Sperren und Mutationen der Tour-KW-Planung liegen in <a href="ft-04-tourenplanung.html">FT (04)</a>.</p>
+<h3 class="wiki-h3">Umsatzübersicht</h3>
+<p>Der Tab <strong>Umsatz Übersicht</strong> ist eine rein lesende Auswertung bereits vorhandener Mitarbeitertermine. Die Übersicht aggregiert die qualifizierten Termine serverseitig auf ISO-Wochenebene und zeigt pro Woche Anzahl der gewerteten Aufträge, Umsatzsumme und eine Hover-Preview der enthaltenen Termine. Der Kalenderwochenfilter im Tabellenfuß ist nur eine Oberflächenfunktion zur Eingrenzung der angezeigten Wochenzeilen; er ist keine fachliche Berechnungsregel und verändert die serverseitige Grundmenge nicht. Es gibt aus der Umsatzübersicht keine Export-, Schreib- oder Folgeaktionen.</p>
+<p>In die Umsatzübersicht gehen nur Termine ein, die alle folgenden Bedingungen erfüllen:</p>
+<ul><li>Der Termin ist dem betrachteten Mitarbeiter über die Termin-Mitarbeiter-Relation zugeordnet.</li><li>Der Termin ist einem Projekt zugeordnet; reine Kundentermine ohne Projekt werden nicht gewertet.</li><li>Zum Projekt existiert ein Auftrag mit einer nicht leeren, als Betrag lesbaren Auftragssumme.</li><li>Der Termin trägt nicht den geschützten Systemzustand <strong>Storniert</strong>.</li><li>Weder der Termin noch das zugeordnete Projekt tragen den geschützten Systemzustand <strong>Reklamation</strong>.</li></ul>
+<p>Stornierte und reklamierte Termine werden vor der Deduplizierung ausgeschlossen. Mehrere verbleibende Termine mit derselben Auftragsnummer werden für die Umsatzberechnung global dedupliziert. Gewertet wird dann nur der früheste qualifizierte Termin nach Datum, Startzeit und Termin-ID. Die Umsatzsumme einer Woche ist die Summe der Auftragssummen der nach diesen Regeln ausgewählten Termine. Die Storno-, Reklamations- und Systemtag-Regeln liegen in <a href="ft-01-kalendertermine.html">FT (01)</a>, <a href="ft-06-automatische-regeln.html">FT (06)</a> und <a href="ft-28-universelles-tagging-system.html">FT (28)</a>; Projekt- und Auftragsdaten gehören zu <a href="ft-02-projekte.html">FT (02)</a>.</p>
+<h3 class="wiki-h3">Auslastung</h3>
+<p>Der Tab <strong>Auslastung</strong> zeigt die Belegung eines einzelnen Mitarbeiters in einer read-only Kalenderansicht. Die Darstellung nutzt dieselbe fachliche Termingrundlage wie die Kalenderansichten und dient der schnellen Einschätzung der geplanten Auslastung. Aus dieser Ansicht heraus werden keine Termine erzeugt, verschoben oder bearbeitet. Die zugehörige Kalenderlogik ist in <a href="ft-03-kalenderansichten.html">FT (03)</a> beschrieben.</p>
+<h3 class="wiki-h3">Journal</h3>
+<p>Der Tab <strong>Journal</strong> zeigt die Änderungshistorie des Mitarbeiterdatensatzes. Er ist eine lesende Nachvollziehbarkeitsfunktion und ersetzt keine fachliche Validierung beim Speichern. Die übergreifenden Regeln für Journal-Einträge, Kontextbezüge und Leserechte sind in <a href="ft-08-journal-aenderungshistorie.html">FT (08)</a> dokumentiert.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Mitarbeiter können unabhängig von Terminen existieren.</li><li>Die Zuweisung eines Mitarbeiters zu einem Termin ist optional.</li><li>Ein Mitarbeiter kann einem oder mehreren Terminen zugewiesen sein.</li><li>Disponenten erhalten serverseitig nur aktive Mitarbeiter zur Auswahl.</li><li>Mitarbeiter dürfen nur durch Administratoren gelöscht werden und nur dann, wenn keine Terminreferenzen bestehen.</li><li>Die Terminliste eines Mitarbeiters wird ausschließlich aus den aktuellen Termindaten abgeleitet.</li><li>Vergangene Termine sind read-only und dürfen nicht verändert werden.</li><li>Wird ein Mitarbeiter vor Durchführung eines Termins ersetzt, darf dieser Termin nicht mehr in der Terminliste des abgelösten Mitarbeiters erscheinen.</li><li>Es dürfen keine widersprüchlichen Zustände entstehen, bei denen ein Mitarbeiter als zugewiesen gilt, ohne dass ein entsprechender Termin existiert.</li><li>Mitarbeiter existieren unabhängig von Tour-Zugehörigkeit und Team-Zugehörigkeit. Löschungen von Tour oder Team wirken sich nur auf die FK-Eigenschaften des Mitarbeiters aus (Setzen auf NULL).</li><li>Abwesenheiten eines Mitarbeiters werden ausschließlich über den dedizierten Mitarbeiter-Tab gepflegt und nicht über generische Terminmutationen.</li><li>Die Umsatzübersicht ist rein lesend. Sie dient der Bewertung bereits geplanter oder historischer Umsätze eines Mitarbeiters und eröffnet keine Schreibpfade.</li><li>Mitarbeiteranhänge sind mitarbeiterbezogen und unabhängig von Terminen; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-05-01-mitarbeiter-anlegen.html">UC 05/01: Mitarbeiter anlegen</a></li><li><a href="../use-cases/uc-05-02-mitarbeiter-bearbeiten.html">UC 05/02: Mitarbeiter bearbeiten</a></li><li><a href="../use-cases/uc-05-03-mitarbeiter-termine-anzeigen.html">UC 05/03: Mitarbeiter-Termine anzeigen</a></li><li><a href="../use-cases/uc-05-04-mitarbeiter-deaktivieren.html">UC 05/04: Mitarbeiter deaktivieren</a></li><li><a href="../use-cases/uc-05-05-mitarbeiter-reaktivieren.html">UC 05/05: Mitarbeiter reaktivieren</a></li><li><a href="../use-cases/uc-05-06-mitarbeiteranhaenge-verwalten.html">UC 05/06: Mitarbeiteranhänge verwalten</a></li><li><a href="../use-cases/uc-05-07-mitarbeiter-anzeigen.html">UC 05/07: Mitarbeiter anzeigen</a></li><li><a href="../use-cases/uc-05-08-versionskonflikt-bei-paralleler-mitarbeiterbearbeitung.html">UC 05/08: Versionskonflikt bei paralleler Mitarbeiterbearbeitung</a></li><li><a href="../use-cases/uc-05-09-konflikt-bei-paralleler-deaktivierung-und-terminzuweisung.html">UC 05/09: Konflikt bei paralleler Deaktivierung und Terminzuweisung</a></li><li><a href="../use-cases/uc-05-10-loeschversuch-bei-bestehenden-terminreferenzen.html">UC 05/10: Löschversuch bei bestehenden Terminreferenzen</a></li><li><a href="../use-cases/uc-05-11-konflikt-bei-paralleler-reaktivierung-und-bearbeitung.html">UC 05/11: Konflikt bei paralleler Reaktivierung und Bearbeitung</a></li><li><a href="../use-cases/uc-05-12-rollenverletzung-bei-api-direktzugriff.html">UC 05/12: Rollenverletzung bei API-Direktzugriff</a></li><li><a href="../use-cases/uc-05-13-query-konsistenz-zwischen-listen-und-dialogansicht.html">UC 05/13: Query-Konsistenz zwischen Listen- und Dialogansicht</a></li><li><a href="../use-cases/uc-05-14-mitarbeiter-aus-csv-importieren.html">UC 05/14: Mitarbeiter aus CSV importieren</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<p>Die im Mitarbeiterformular eingebundenen Querschnittsbereiche verweisen auf ihre fachlichen Hauptfeatures. Eigene zusätzliche FT-05-Use-Case-Dateien für Umsatzübersicht, Wochenplanung, Auslastung und Journal sind im aktuellen Stand nicht separat ergänzt.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-05-01-mitarbeiter-anlegen.html">UC-05/01</a><a href="../use-cases/uc-05-02-mitarbeiter-bearbeiten.html">UC-05/02</a><a href="../use-cases/uc-05-03-mitarbeiter-termine-anzeigen.html">UC-05/03</a><a href="../use-cases/uc-05-04-mitarbeiter-deaktivieren.html">UC-05/04</a><a href="../use-cases/uc-05-05-mitarbeiter-reaktivieren.html">UC-05/05</a><a href="../use-cases/uc-05-06-mitarbeiteranhaenge-verwalten.html">UC-05/06</a><a href="../use-cases/uc-05-07-mitarbeiter-anzeigen.html">UC-05/07</a><a href="../use-cases/uc-05-08-versionskonflikt-bei-paralleler-mitarbeiterbearbeitung.html">UC-05/08</a><a href="../use-cases/uc-05-09-konflikt-bei-paralleler-deaktivierung-und-terminzuweisung.html">UC-05/09</a><a href="../use-cases/uc-05-10-loeschversuch-bei-bestehenden-terminreferenzen.html">UC-05/10</a><a href="../use-cases/uc-05-11-konflikt-bei-paralleler-reaktivierung-und-bearbeitung.html">UC-05/11</a><a href="../use-cases/uc-05-12-rollenverletzung-bei-api-direktzugriff.html">UC-05/12</a><a href="../use-cases/uc-05-13-query-konsistenz-zwischen-listen-und-dialogansicht.html">UC-05/13</a><a href="../use-cases/uc-05-14-mitarbeiter-aus-csv-importieren.html">UC-05/14</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-05-mitarbeiterverwaltung-backlog.html">BL-05</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

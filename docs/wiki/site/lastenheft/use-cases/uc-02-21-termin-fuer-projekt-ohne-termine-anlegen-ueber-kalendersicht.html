@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/21: Termin für Projekt ohne Termine anlegen (über Kalendersicht) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/21">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/21 Termin für Projekt ohne Termine anlegen (über Kalendersicht)</span></nav>
+        <h1 class="wiki-h1">UC-02/21: Termin für Projekt ohne Termine anlegen (über Kalendersicht)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Aus der Projektliste „Ohne Termine&quot; direkt in die Kalenderansicht navigieren und einen Termin mit Projekt-Vorbefüllung anzulegen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Aus der Projektliste „Ohne Termine&quot; direkt in die Kalenderansicht navigieren und einen Termin mit Projekt-Vorbefüllung anzulegen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Projektliste wird in Ansicht „Ohne Termine&quot; angezeigt</li><li>Projekt hat keine zugeordneten Termine</li><li>Akteur besitzt Berechtigung zur Terminanlage</li><li>Der Akteur ist authentifiziert</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Projektübersicht.</li><li>Der Akteur betätigt den Umschalter „Ohne Termine&quot;.</li><li>Das System lädt ausschließlich Projekte ohne Termine.</li><li>Das System rendert die Tabelle mit Spalten: Titel | Kunde | Auftragsnummer | (Button: „Termin planen&quot;)</li><li>Der Akteur sieht für jede Zeile einen Button <strong>„Termin planen&quot;</strong> (primär, grün, rechts in der Zeile).</li><li>Der Akteur klickt auf den Button „Termin planen&quot; für ein Projekt seiner Wahl.</li><li>Das System speichert die <strong>Projekt-ID</strong> im Client-Kontext (URL-Parameter oder Session-Storage).</li><li>Das System lädt die <strong>wöchentliche Kalenderansicht</strong> (FT 03 – Kalenderansichten) in den Vordergrund.</li><li>Der Akteur betrachtet die Wochenansicht und identifiziert einen gewünschten Tag.</li><li>Der Akteur klickt auf einen <strong>Wochentag</strong> (oder eine freie Zeitslot an diesem Tag).</li><li>Das System öffnet das <strong>Terminformular</strong> (Terminanlage-Dialog oder -Seite) mit folgender Vorbefüllung:</li></ol>
+<ul><li><code>project_id</code>: Aus der Projektliste (Schritt 6)</li><li><code>customer_id</code>: Vom Projekt abgeleitet</li><li><code>project_title</code>: Optional vom Projekttitel</li><li><code>project_description</code>: Vom Projekt (Beschreibung / Artikelliste)</li><li><code>start_date</code>: Vom Kalender-Klick (nur das Datum, z. B. 15.03.26)</li><li>Weitere Felder (Mitarbeiter, Notizen, Durationen, etc.): Leer oder mit Applikations-Defaults</li></ul>
+<ol><li>Der Akteur bearbeitet das Terminformular nach Bedarf:</li></ol>
+<ul><li>Zeit eingeben oder korrigieren (expliziter Klick auf „Startzeit&quot; demaskiert das Eingabefeld)</li><li>Mitarbeiter zuordnen</li><li>Notizen hinzufügen</li><li>Weitere optionale Felder ausfüllen</li></ul>
+<ol><li>Der Akteur klickt <strong>„Speichern&quot;</strong> (oder „Termin anlegen&quot;).</li><li>Das System validiert das Formular gemäß den Regeln aus FT (05) oder dem Termin-Domänenmodell.</li><li>Das System persistiert den Termin mit allen Feldern.</li><li>Das System aktualisiert die Projekt-Referenz: Das Projekt ist nun mit einem Termin verknüpft.</li><li>Das System kehrt <strong>automatisch zur Projektliste zurück</strong>.</li><li>Das System lädt die Projektliste neu.</li><li>Das gerade bearbeitete Projekt verschwindet aus der Ansicht „Ohne Termine&quot; (weil es jetzt einen Termin besitzt).</li><li>Das System bleibt in der Ansicht „Ohne Termine&quot;, zeigt aber nur noch die verbleibenden Projekte ohne Termine an.</li><li>Der Akteur kann den Prozess für weitere Projekte wiederholen (Schritt 5–20).</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<p><strong>Alternative A – Kalenderwahl wird abgebrochen:</strong></p>
+<ul><li>Der Akteur schließt die Kalenderansicht, ohne einen Tag zu klicken.</li><li>Das System kehrt zur Projektliste „Ohne Termine&quot; zurück.</li><li>Das Projekt bleibt unverändert in der Liste.</li></ul>
+<p><strong>Alternative B – Terminformular wird abgebrochen:</strong></p>
+<ul><li>Der Akteur öffnet das Terminformular, ändert Werte, bricht aber ab, ohne zu speichern.</li><li>Das System schließt das Formular.</li><li>Das System kehrt zur Kalenderansicht zurück (optional) oder zur Projektliste.</li><li>Das Projekt bleibt unverändert in der Liste „Ohne Termine&quot;.</li></ul>
+<p><strong>Alternative C – Validierungsfehler beim Speichern:</strong></p>
+<ul><li>Der Akteur versucht, das Formular zu speichern, aber ein Pflichtfeld ist nicht gefüllt.</li><li>Das System zeigt eine Fehlermeldung und markiert das betroffene Feld.</li><li>Das Formular bleibt offen, der Akteur kann den Fehler korrigieren.</li><li>Das Projekt bleibt unverändert in der Liste.</li></ul>
+<p><strong>Alternative D – Technischer Fehler während Persistierung:</strong></p>
+<ul><li>Beim Speichern des Termins tritt ein Fehler auf (z. B. Datenbankfehler).</li><li>Das System zeigt eine Fehlermeldung.</li><li>Das System kehrt zum Terminformular zurück (oder zur Kalenderansicht).</li><li>Das Projekt bleibt unverändert in der Liste „Ohne Termine&quot;.</li></ul>
+<p><strong>Alternative E – Projekt wurde zwischenzeitlich gelöscht:</strong></p>
+<ul><li>Der Akteur war in der Kalenderansicht, während ein anderer Akteur das Projekt löschte.</li><li>Das System erkennt beim Speichern des Termins, dass das Projekt nicht mehr existiert.</li><li>Das System blockiert mit einer Fehlermeldung (z. B. 409 Conflict oder 404 Not Found).</li><li>Das System kehrt zur Projektliste zurück.</li></ul>
+<p><strong>Alternative F – Projekt wurde zwischenzeitlich mit einem Termin versehen:</strong></p>
+<ul><li>Der Akteur war lange in der Kalenderansicht inaktiv.</li><li>Ein anderer Akteur hat dem gleichen Projekt einen Termin zugeordnet.</li><li>Das System erkennt beim Speichern, dass das Projekt bereits einen Termin hat.</li><li>Das System blockiert mit einer Fehlermeldung (z. B. 409 Conflict).</li><li>Das System informiert den Akteur.</li><li>Das System kehrt zur Projektliste zurück, wo das Projekt nicht mehr in „Ohne Termine&quot; sichtbar ist.</li></ul>
+<p><strong>Alternative G – Projekt hat sich geändert:</strong></p>
+<ul><li>Während der Akteur im Terminformular war, hat ein anderer Akteur das Projekt bearbeitet (z. B. Titel geändert).</li><li>Das System kann optional:</li><li>Die neuen Projektdaten automatisch ins Formular einfließen lassen (optimistisch), oder</li><li>Den Akteur warnen und zum Neuladen auffordern (pessimistisch).</li><li>Diese Entscheidung hängt von der allgemeinen Versionierungs-Strategie ab (siehe FT 02 UC 02/09).</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Ein neuer Termin ist persistent angelegt.</li><li>Der Termin ist dem Projekt zugeordnet.</li><li>Das Projekt ist mit mindestens einem Termin verknüpft.</li><li>Das Projekt verschwindet aus der Ansicht „Ohne Termine&quot;.</li><li>Das Projekt kann nun in „Aktuelle Projekte&quot; sichtbar sein (sofern der Termin-Startdatum ≥ heute ist).</li><li>Alle Projekt-Details (Kunde, Beschreibung, Anhänge, Notizen) bleiben unverändert.</li><li>Der Termin ist in allen Terminansichten (Kalender, Tabelle, etc.) sichtbar.</li><li>Es existiert keine widersprüchliche oder verwaiste Referenz zwischen Projekt und Termin.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

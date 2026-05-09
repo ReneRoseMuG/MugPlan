@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-15: FT-26 gemeinsame Print-Basiskomponente für Kartenreports · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-15">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-15 FT-26 gemeinsame Print-Basiskomponente für Kartenreports</span></nav>
+        <h1 class="wiki-h1">A-15: FT-26 gemeinsame Print-Basiskomponente für Kartenreports</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Reports</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Refactoring</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>07.05.26</div>
+    <p class="wiki-lead">Die Kartenreports in FT-26 sollen eine gemeinsame Print-Basis für gemessene Seitenaufteilung erhalten. Auftragskarten und Tourenplan-Karten dürfen im Druck nicht am unteren Seitenrand abgeschnitten werden. Die App-Druckvorschau, die Browser-Druckvorschau und das reale Druckergebn</p>
+    <p>Die Kartenreports in FT-26 sollen eine gemeinsame Print-Basis für gemessene Seitenaufteilung erhalten. Auftragskarten und Tourenplan-Karten dürfen im Druck nicht am unteren Seitenrand abgeschnitten werden. Die App-Druckvorschau, die Browser-Druckvorschau und das reale Druckergebnis sollen bei Standard-Skalierung in der Seitenaufteilung übereinstimmen. Der konkrete Fehlerfall ist die Auftragsliste: Die Druckvorschau wirkt zunächst korrekt, im realen Druck werden aber mehrere Auftragskarten unten abgeschnitten. Nach.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Reports</td><td>Refactoring</td><td>07.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die Kartenreports in FT-26 sollen eine gemeinsame Print-Basis für gemessene Seitenaufteilung erhalten. Auftragskarten und Tourenplan-Karten dürfen im Druck nicht am unteren Seitenrand abgeschnitten werden. Die App-Druckvorschau, die Browser-Druckvorschau und das reale Druckergebnis sollen bei Standard-Skalierung in der Seitenaufteilung übereinstimmen. Der konkrete Fehlerfall ist die Auftragsliste: Die Druckvorschau wirkt zunächst korrekt, im realen Druck werden aber mehrere Auftragskarten unten abgeschnitten. Nach Änderungen an Skalierungsoptionen im Browser-Druckdialog kann die Vorschau zusätzlich verrutschen und stellt sich nicht zuverlässig wieder her.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Der Tourenplan nutzt bereits eine robuste Messlogik. Er rendert eine Messansicht, liest verfügbare Seitenhöhe und Kartenhöhen über echte DOM-Maße aus und paginiert danach. Die Auftragsliste nutzt dagegen feste Schätzwerte für Seitenhöhe und Kartenhöhe. Dadurch können echte Zeilenumbrüche, Footer, Tags, lange Kunden- oder Projektnamen, Artikelwerte, Beschreibungen und druckerspezifischer Reflow zu höheren Karten führen als die Paginierung erwartet. Die feste A4-Seite schneidet überlaufende Inhalte anschließend ab. Dieses Verhalten ist kein Backend-Reportproblem. Der Fix gehört in die Frontend-Print-Infrastruktur und die kartenspezifische Report-Paginierung.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören:</li><li>eine gemeinsame, reportunabhängige Print-Mess- und Paginierungsbasis für Kartenreports entwerfen und umsetzen</li><li>bestehendes Tourenplan-Messprinzip in eine wiederverwendbare Print-Komponente oder Hook-Struktur überführen</li><li>Auftragsliste auf gemessene Kartenhöhen und gemessene Seitenkapazität umstellen</li><li>sicherstellen, dass jede Karte vollständig auf einer Druckseite bleibt oder vollständig auf die nächste Seite verschoben wird</li><li>Auftragslisten-Druckvorschau nach Öffnen, Schließen, Datenwechsel und erneutem Öffnen neu und stabil messen</li><li>vorhandenes A4-Seitenmodell über <code>PrintPageShell</code> weiterverwenden</li><li>bestehende Filter, Kategorien, Tag-Logik, Presets und Reportdaten unverändert lassen</li><li>Nicht Teil der Aufgabe sind:</li><li>neue API-Endpunkte</li><li>Änderungen an Backend-Reportdaten, Contracts oder Datenbank-Schema</li><li>freie Neugestaltung der Auftragskarten oder Tourenplan-Karten</li><li>Änderung der fachlichen Filterlogik der Auftragsliste</li><li>Änderung der Rollen- oder Berechtigungslogik</li><li>Workarounds über Browser-Druckdialog-Anweisungen statt robuster App-Paginierung</li><li>Die Auftragsliste paginiert im Browser auf Basis gemessener Kartenhöhen.</li><li>Keine Auftragskarte wird innerhalb der App-Druckseiten am unteren Seitenrand abgeschnitten.</li><li>Die Auftragslisten-Druckvorschau wird nach erneutem Öffnen sauber neu aufgebaut.</li><li>Tourenplan und Auftragsliste nutzen für die Karten-Seitenaufteilung dieselbe technische Print-Basis oder einen klar begründeten gemeinsamen Hook.</li><li>Backend-Contracts, Report-Endpunkte, DB-Schema, Filterlogik und Rollenlogik bleiben unverändert.</li><li>Die relevanten Unit- und Browser-E2E-Tests laufen erfolgreich oder ein technischer Blocker ist konkret dokumentiert.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Relevante Dateien und Einstiegspunkte:</li><li><code>client/src/components/print/PrintPageShell.tsx</code></li><li><code>client/src/components/print/PrintDocumentRoot.tsx</code></li><li><code>client/src/components/print/PrintPreviewDialog.tsx</code></li><li><code>client/src/components/reports/TourenplanPaginationMeasurement.tsx</code></li><li><code>client/src/components/reports/TourenplanReportPanel.tsx</code></li><li><code>client/src/components/reports/AuftragslistePrintLayout.tsx</code></li><li><code>client/src/components/reports/AuftragslisteProjectCard.tsx</code></li><li><code>client/src/components/ReportsPage.tsx</code></li><li><code>client/src/lib/auftragsliste-print-model.ts</code></li><li>Technischer Zielzuschnitt:</li><li>Die gemeinsame Basis soll nicht die fachlichen Karten vereinheitlichen. Tourenplan-Karten und Auftragslisten-Karten bleiben eigene Komponenten.</li><li>Der gemeinsame Nenner ist die Print-Garantie: Karten werden mit echtem Layout gemessen, seitenweise gruppiert und nicht über Seitenränder gebrochen.</li><li>Die neue Basis kann als <code>MeasuredPrintCardPages</code>-Komponente, Hook oder kleine Komponentenfamilie unter <code>client/src/components/print/</code> entstehen, sofern sie bestehende Print-Komponenten nutzt und keine neue UI-Infrastruktur einführt.</li><li>Die Messansicht muss dieselben Kartenkomponenten, Breiten, Abstände, Fonts, Header/Footer-Reservierung und Page-Shell-Bedingungen verwenden wie der echte Print-Root.</li><li>Eine reine CSS-Lösung mit <code>break-inside: avoid</code> reicht nicht aus, weil die App bereits vor dem Browserdruck konkrete Seiten rendert und dafür die korrekte Gruppierung kennen muss.</li><li>Feste Schätzwerte für die Auftragslisten-Höhe dürfen höchstens als technischer Fallback bleiben, nicht als Hauptpfad im Browser.</li><li>Betroffene Rollen sind <code>ADMIN</code>, <code>DISPONENT</code> und <code>READER</code> beziehungsweise fachlich <code>LESER</code>.</li><li>Erlaubte Sichtbarkeit: Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und drucken, soweit sie die bestehenden Report-Endpunkte serverseitig lesen dürfen.</li><li>Erlaubte Aktionen: Druckvorschau öffnen und Drucken bleiben lokale Lese- und Browseraktionen. Es werden keine Mutationen eingeführt.</li><li>Technische Durchsetzung: Reportdaten werden weiterhin über die bestehenden serverseitigen Report-Endpunkte geladen. Die serverseitige Rollenprüfung in <code>reportsService</code> bleibt maßgeblich. UI-Sichtbarkeit ersetzt keine Backend-Prüfung.</li><li>Die Aufgabe darf keine neuen Daten sichtbar machen, keine Rollen erweitern, keine Preset-Rechte ändern und keine direkte Druckaktion als serverseitige Mutation einführen.</li><li>Unit-Tests für die gemeinsame Karten-Paginierung mit gemessenen Kartenhöhen, Seitenkapazität, Lücken zwischen Karten und leerer Ausgabe</li><li>Unit- oder Wiring-Tests, die belegen, dass die Auftragsliste die gemeinsame Print-Basis nutzt und keine feste Hauptpfad-Schätzung mehr verwendet</li><li>Regressionstest für lange Auftragskarten mit Artikeln, Beschreibung, Tags, langen Kunden- und Projektnamen über mehrere Seiten</li><li>Browser-E2E für Auftragsliste: Druckvorschau öffnen, mehrere Seiten prüfen, Print-Root enthält alle Karten, keine Karte wird über eine Seitenkante gruppiert</li><li>Bestehende Tourenplan-Drucktests müssen grün bleiben oder fachlich sauber auf die neue Basis angepasst werden</li><li>Bei sichtbaren Datumsänderungen muss der projektweite Datumsformat-Suchlauf aus <code>agents.md</code> ausgeführt und verbleibende Treffer abgegrenzt werden</li><li>Relevante Testbereiche:</li><li><code>tests/unit/lib/auftragsliste-print-model.test.ts</code></li><li><code>tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx</code></li><li><code>tests/unit/ui/printComponents.primitives.test.tsx</code></li><li>Tourenplan-Wiring- und Drucktests im Bereich <code>tests/unit/ui/</code></li><li><code>tests/e2e-browser/reports.ft26.browser.e2e.spec.ts</code></li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Es ist zu prüfen, ob die gemeinsame Basis zuerst nur für Tourenplan und Auftragsliste eingeführt wird oder ob Vorlaufliste/Produktionsplanung bewusst außerhalb bleiben, weil sie keine vergleichbaren Kartenreports sind.</li><li>Browser-Druckdialog-Skalierungen sind nicht zuverlässig direkt aus der App beobachtbar. Die Aufgabe soll die App-seitige Seitenbildung stabilisieren, aber keine vollständige Kontrolle über nachträgliche Druckertreiber-Skalierung versprechen.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: —</li><li>Entscheidungen: —</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

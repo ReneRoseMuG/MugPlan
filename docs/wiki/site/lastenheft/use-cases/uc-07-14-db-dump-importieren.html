@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-07/14: DB-Dump importieren · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-07/14">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-07/14 DB-Dump importieren</span></nav>
+        <h1 class="wiki-h1">UC-07/14: DB-Dump importieren</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-07</span></div>
+    <p class="wiki-lead">Einen vorhandenen DB-Dump nach Vorprüfung kontrolliert in die Zielinstanz importieren.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-07-automatisierte-datensicherung-und-fallback.html">FT (07): Automatisierte Datensicherung und Fallback</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen vorhandenen DB-Dump nach Vorprüfung kontrolliert in die Zielinstanz importieren.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Administrator ist angemeldet.</li><li>Dump-ZIP liegt vor.</li><li>Zielumgebung erfüllt die konfigurierten Datenbank-Sicherheitsregeln.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ul><li>Administrator lädt das Dump-ZIP zur Preview hoch.</li><li>System prüft ZIP, <code>data.json</code>, optionales <code>manifest.json</code>, Tabellen- und Upload-Prüfsummen sowie blockierende Sicherheitsregeln.</li><li>System zeigt Importbereitschaft, Warnungen, Blocker und Sicherheitsbestätigung an.</li><li>Administrator bestätigt den Import mit der erwarteten Sicherheitsphrase.</li><li>System legt vor dem Import ein Zielbackup und Transfer-Artefakte an.</li><li>System importiert Tabellen und Anhänge, mappt <code>users.roleCode</code> auf lokale Systemrollen und verifiziert Tabellen- und Upload-Ergebnis.</li></ul>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Nicht-Admin ruft Preview oder Apply auf → Zugriff wird serverseitig verweigert.</li><li>Dump ist beschädigt oder unvollständig → Preview beziehungsweise Apply bricht mit fachlichem Fehler ab.</li><li>Manifest-Prüfsummen widersprechen dem ZIP-Inhalt → Import wird blockiert.</li><li>Benutzer referenzieren eine unbekannte Rolle → Apply bricht ab und die Datenbanktransaktion wird zurückgerollt.</li><li>Legacy-Dump ohne <code>users</code> → Import bleibt tolerant; lokale Benutzer werden nicht gelöscht.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Dump ist importiert und verifiziert oder der Import wurde ohne Teilübernahme blockiert. Ein echter DB-Dry-Run vor dem Apply ist als offene Erweiterung dokumentiert, aber noch nicht Bestandteil dieses Use Cases.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-07-automatisierte-datensicherung-und-fallback.html">FT-07</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

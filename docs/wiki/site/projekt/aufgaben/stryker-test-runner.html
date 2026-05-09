@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-03: Stryker Test Runner isoliert einführen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-03 Stryker Test Runner isoliert einführen</span></nav>
+        <h1 class="wiki-h1">A-03: Stryker Test Runner isoliert einführen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Mittel</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Testinfrastruktur</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Infrastruktur</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>06.05.26</div>
+    <p class="wiki-lead">StrykerJS soll als bewusst manuell startbarer lokaler Mutation-Testlauf mit eigener Konfiguration, eigenem npm-Skript und kleinem Startbereich eingeführt werden.</p>
+    <p>StrykerJS soll als bewusst manuell startbarer lokaler Mutation-Testlauf mit eigener Konfiguration, eigenem npm-Skript und kleinem Startbereich eingeführt werden. W-16 beschreibt keinen offenen Produktentscheid mehr, sondern einen eng begrenzten Infrastrukturauftrag: Mutation Testing isoliert einführen, ohne bestehende Audit-, Check-, Build- oder normale Testläufe zu verändern.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Mittel</td><td>Testinfrastruktur</td><td>Infrastruktur</td><td>06.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>StrykerJS soll als bewusst manuell startbarer lokaler Mutation-Testlauf mit eigener Konfiguration, eigenem npm-Skript und kleinem Startbereich eingeführt werden.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>W-16 beschreibt keinen offenen Produktentscheid mehr, sondern einen eng begrenzten Infrastrukturauftrag: Mutation Testing isoliert einführen, ohne bestehende Audit-, Check-, Build- oder normale Testläufe zu verändern.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören Analyse des genutzten Test-Runners, Auswahl eines kleinen ersten Mutationsbereichs, Stryker-Konfiguration, dediziertes manuelles Skript und optional eine klar benannte VS-Code-Task.</li><li>Nicht Teil der Aufgabe ist die Kopplung an CI, Audit, Check, Build oder normale Test-Runs.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Bestehende Testarchitektur semantisch unverändert lassen.</li><li>Mutationsfläche klein halten.</li><li>Keine produktive Fachlogik ändern.</li><li>Neue Dependencies oder Tooling-Änderungen brauchen im konkreten Umsetzungsauftrag ausdrückliche Freigabe.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Konkreter erster Mutationsbereich ist vor Umsetzung anhand der aktuellen Teststruktur festzulegen.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: —</li><li>Entscheidungen: —</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

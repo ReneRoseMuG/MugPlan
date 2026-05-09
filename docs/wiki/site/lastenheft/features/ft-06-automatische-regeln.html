@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-06: Automatische Regeln · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-06">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-06 Automatische Regeln</span></nav>
+        <h1 class="wiki-h1">FT-06: Automatische Regeln</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature führt ein zentrales fachliches Regelwerk ein, das in definierten Situationen automatisch auf Änderungen im Planungsprozess reagiert. Das Regelwerk unterstützt Disponenten durch Hinweise, Bestätigungsentscheidungen und automatische Folgeaktionen. Es dient dazu, wied</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature führt ein zentrales fachliches Regelwerk ein, das in definierten Situationen automatisch auf Änderungen im Planungsprozess reagiert. Das Regelwerk unterstützt Disponenten durch Hinweise, Bestätigungsentscheidungen und automatische Folgeaktionen. Es dient dazu, wiederkehrende fachliche Abläufe einheitlich, nachvollziehbar und ohne widersprüchliches Verhalten in der gesamten Anwendung abzubilden.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Automatische Regeln greifen bei ausgewählten fachlichen Ereignissen, insbesondere beim Speichern von Projekten und Terminen, beim Setzen fachlich relevanter Tags sowie bei Änderungen der Tourzuordnung von Terminen. Das System reagiert dabei mit Hinweisen, vorgeschlagenen Folgeaktionen oder stillen automatischen Nachführungen, wenn dies fachlich erforderlich ist.</p>
+<p>Ein Schwerpunkt des Features liegt auf einheitlichen Folgeaktionen für Systemzustände wie <strong>Storniert</strong> und <strong>Geparkt</strong>. Diese Zustände dürfen nicht wie gewöhnliche frei verfügbare Tags behandelt werden, sondern folgen eigenen fachlichen Regeln. Der Zustand <strong>Geparkt</strong> ist an die Systemtour <strong>Parkplatz</strong> gekoppelt. Zusätzlich umfasst das Feature automatische Folgebeziehungen zwischen bestimmten Touren, Tags und Notizvorlagen, zum Beispiel im Umfeld von <strong>Messe</strong> und <strong>Reklamation</strong>.</p>
+<p>Der Zustand <strong>Reklamation</strong> wird als geschützter Systemzustand behandelt. Er wird nicht über den generischen Tag-Picker gesetzt oder entfernt, sondern über explizite Reklamationsfunktionen am Termin oder am Projekt. Diese Funktionen setzen bzw. entfernen das System-Tag <strong>Reklamation</strong> und können anschließend einen optionalen Notizfluss starten. Beim Setzen wird eine Reklamationsnotiz aus der passenden Notizvorlage vorgeschlagen, sofern noch keine passende Notiz vorhanden ist. Beim Aufheben einer Reklamation kann eine vorhandene Reklamationsnotiz auf Wunsch entfernt oder bewusst beibehalten werden. In Create-Formularen kann die Reklamation als Draft vorbereitet werden; technisch wird sie erst nach erfolgreicher Anlage über die dedizierte Reklamationsfunktion persistiert.</p>
+<p>Das Feature beschreibt fachliche Regeln, nicht technische Implementierungsdetails. Maßgeblich ist, dass dieselbe fachliche Situation überall in der Anwendung zu demselben Ergebnis führt, unabhängig davon, an welcher Oberfläche sie ausgelöst wurde.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Automatische Regeln gelten systemweit einheitlich für alle fachlich gleichartigen Bearbeitungssituationen.</li><li>Das Regelwerk unterstützt den Bearbeitungsfluss durch Hinweise, Bestätigungen und automatische Folgeaktionen, ersetzt aber keine fachlichen Pflichtprüfungen anderer Features.</li><li>Die Entscheidung des Akteurs bei einem Hinweis oder Vorschlag betrifft nur die angebotene Folgeaktion. Die zugrunde liegende Primäraktion bleibt davon getrennt zu betrachten.</li><li>Systemzustände und Systemobjekte unterliegen besonderen Schutzregeln und dürfen nicht wie frei bearbeitbare Standardobjekte behandelt werden.</li><li>Automatisch erzeugte Folgeobjekte, insbesondere Notizen aus Vorlagen, dürfen nicht unbegrenzt dupliziert werden.</li><li>Reklamationsnotizen werden nur vorgeschlagen. Die Reklamation selbst wird unabhängig davon gesetzt oder aufgehoben, ob der Akteur die Notiz anlegt, überspringt, löscht oder behält.</li><li>Im Create-Modus dürfen Reklamations-Drafts nicht über generische Tag-Persistenz gespeichert werden. Nach erfolgreicher Anlage des Projekts oder Termins muss der dedizierte Reklamationspfad verwendet werden.</li><li>Für Reklamationen darf pro Objekt kein unbeabsichtigter Notizduplikatfluss entstehen. Existiert bereits eine passende Reklamationsnotiz, wird kein weiterer Vorschlag geöffnet.</li><li>Beim Aufheben einer Reklamation wird eine vorhandene Reklamationsnotiz nicht stillschweigend gelöscht. Der Akteur entscheidet explizit, ob die Notiz entfernt oder als Dokumentation behalten wird.</li><li>Die Systemtour <strong>Parkplatz</strong> ist von der Wochenplanung ausgeschlossen.</li><li>Automatische Folgeänderungen müssen fachlich konsistent sein und dürfen keine widersprüchlichen Zustände hinterlassen.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-06-00-termin-stornieren.html">UC 06/00: Termin stornieren</a></li><li><a href="../use-cases/uc-06-01-tag-anmerkungen-bei-projektbeschreibung-automatisch-setzen.html">UC 06/01: Tag Anmerkungen bei Projektbeschreibung automatisch setzen</a></li><li><a href="../use-cases/uc-06-02-reklamationsnotiz-bei-reklamation-vorschlagen.html">UC 06/02: Reklamationsnotiz bei Reklamation vorschlagen</a></li><li><a href="../use-cases/uc-06-03-messe-workflow-bei-zuordnung-zur-tour-messe.html">UC 06/03: Messe-Workflow bei Zuordnung zur Tour Messe</a></li><li><a href="../use-cases/uc-06-04-termin-auf-parkplatz-setzen.html">UC 06/04: Termin auf Parkplatz setzen</a></li><li><a href="../use-cases/uc-06-05-wochenplanung-fuer-parkplatz-sperren.html">UC 06/05: Wochenplanung für Parkplatz sperren</a></li><li><a href="../use-cases/uc-06-06-zustand-geparkt-bei-wechsel-weg-von-parkplatz-automatisch-entfernen.html">UC 06/06: Zustand Geparkt bei Wechsel weg von Parkplatz automatisch entfernen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-06-00-termin-stornieren.html">UC-06/00</a><a href="../use-cases/uc-06-01-tag-anmerkungen-bei-projektbeschreibung-automatisch-setzen.html">UC-06/01</a><a href="../use-cases/uc-06-02-reklamationsnotiz-bei-reklamation-vorschlagen.html">UC-06/02</a><a href="../use-cases/uc-06-03-messe-workflow-bei-zuordnung-zur-tour-messe.html">UC-06/03</a><a href="../use-cases/uc-06-04-termin-auf-parkplatz-setzen.html">UC-06/04</a><a href="../use-cases/uc-06-05-wochenplanung-fuer-parkplatz-sperren.html">UC-06/05</a><a href="../use-cases/uc-06-06-zustand-geparkt-bei-wechsel-weg-von-parkplatz-automatisch-entfernen.html">UC-06/06</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-06-automatische-regeln-backlog.html">BL-06</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

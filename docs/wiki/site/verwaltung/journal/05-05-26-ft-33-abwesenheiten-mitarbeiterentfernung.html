@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-ft-33-abwesenheiten-mitarbeiterentfernung: 05.05.26 | Korrektur | FT-33: Abwesenheiten entfernen Mitarbeiter aus kollidierenden Terminen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-ft-33-abwesenheiten-mitarbeiterentfernung">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-ft-33-abwesenheiten-mitarbeiterentfernung 05.05.26 | Korrektur | FT-33: Abwesenheiten entfernen Mitarbeiter aus kollidierenden Terminen</span></nav>
+        <h1 class="wiki-h1">05-05-26-ft-33-abwesenheiten-mitarbeiterentfernung: 05.05.26 | Korrektur | FT-33: Abwesenheiten entfernen Mitarbeiter aus kollidierenden Terminen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Der Kollisionsfall beim Anlegen oder Bearbeiten von Abwesenheiten wurde fachlich korrigiert. Kollidiert eine Abwesenheit mit bestehenden regulären Terminen desselben Mitarbeiters, werden diese Termine nach Bestätigung nicht mehr auf den Parkplatz verschoben. Stattdessen wird nur </p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Kollisionsfall beim Anlegen oder Bearbeiten von Abwesenheiten wurde fachlich korrigiert. Kollidiert eine Abwesenheit mit bestehenden regulären Terminen desselben Mitarbeiters, werden diese Termine nach Bestätigung nicht mehr auf den Parkplatz verschoben. Stattdessen wird nur der betroffene Mitarbeiter aus den Terminen entfernt; die Termine selbst behalten Tour, Tags, Projekt, Kunde und Terminzeitraum.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtige Korrektur in bestehender Struktur. Betroffen sind Service-Logik, API-Contract, Controller-Fehlerpayload, Bestätigungsdialog im Mitarbeiterformular, Integrationstests und FT-33-Dokumentation. Es wurden keine neuen Endpunkte, keine neuen Rollenregeln und keine DB-Schemaänderungen eingeführt.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT (33): Abwesenheiten über interne Personalplanung</li><li>FT (01): Kalendertermine, Mitarbeiterzuordnung</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Der Abwesenheitsservice entfernt bei bestätigten Kollisionen gezielt die Mitarbeiterzuordnung aus regulären Terminen.</li><li>Die alte Parkplatz-Abhängigkeit im FT-33-Konfliktpfad wurde entfernt.</li><li>Der Fehlercode lautet nun <code>ABSENCE_OVERLAP_REQUIRES_EMPLOYEE_REMOVAL</code>.</li><li>Bestätigungen werden über <code>confirmedEmployeeRemovalAppointments</code> übertragen.</li><li>Konfliktlisten werden als <code>employeeRemovalConflicts</code> zurückgegeben.</li><li>Die UI-Meldung beschreibt die tatsächliche Aktion: Mitarbeiter entfernen, Termine nicht umplatzieren.</li><li>Die Integrationstests prüfen, dass der Termin nicht auf den Parkplatz verschoben und nicht mit <code>Geparkt</code> getaggt wird.</li><li>Die FT-33-Feature- und Use-Case-Texte wurden auf den korrigierten Ablauf gebracht.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Die Änderung weitet keine Rechte aus. Abwesenheitsmutationen bleiben serverseitig auf <code>ADMIN</code> und <code>DISPONENT</code> beschränkt. <code>LESER</code> behalten die reine Lesesicht. Die Bestätigung im Frontend ersetzt keine Berechtigung; die serverseitige Prüfung und die Terminversionen bleiben maßgeblich.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npx cross-env NODE_ENV=test MUGPLAN_MODE=test vitest run --config vitest.workspace.ts --project integration --reporter=verbose tests/integration/server/employeeAppointmentAbsences.integration.test.ts</code></li><li><code>npm run check</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein zusätzlicher Browser-E2E-Lauf.</li><li>Im Arbeitsstand lagen bereits weitere Wiki-Änderungen außerhalb dieser Korrektur. Sie wurden nicht inhaltlich bewertet.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT-33</a><a href="../../lastenheft/features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

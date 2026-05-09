@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/21: Termin anlegen – Nur mit Kunde, ohne Projekt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/21">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/21 Termin anlegen – Nur mit Kunde, ohne Projekt</span></nav>
+        <h1 class="wiki-h1">UC-01/21: Termin anlegen – Nur mit Kunde, ohne Projekt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Einen neuen Termin direkt für einen Kunden anlegen, ohne ein Projekt zu wählen. Dieser Termin ist organisatorisch einem Kunden zugeordnet, aber keinem spezifischen Projekt. Dies ist eine vereinfachte Terminanlage für Ad-hoc-Aufträge oder Kundenaktivitäten ohne formales Projektkon</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen neuen Termin direkt für einen Kunden anlegen, ohne ein Projekt zu wählen. Dieser Termin ist organisatorisch einem Kunden zugeordnet, aber keinem spezifischen Projekt. Dies ist eine vereinfachte Terminanlage für Ad-hoc-Aufträge oder Kundenaktivitäten ohne formales Projektkontext.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Kunde existiert und ist aktiv (oder Admin kann auch inaktive sehen).</li><li>Disponent/Administrator hat Berechtigung zur Terminanlage.</li><li>Optional: Team existiert und hat mindestens einen zugeordneten Mitarbeiter.</li><li>Optional: Tour existiert.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur klickt im Kalender auf einen „+&quot;-Button (Termin anlegen). Das System öffnet das Terminformular.</li><li>Das System setzt das Startdatum auf den angeklickten Tag.</li><li>Der angeklickte „+“-Button gehörte optional zu einer Tour-Lane.</li><li>Das System verknüpft den Termin mit dieser Tour. Wenn für die Kalenderwoche des Startdatums in der Tour eine Wochenplanung hinterlegt ist, zeigt das System sofort einen Vorschau-Dialog mit den geplanten Mitarbeitern und möglichen Konflikten. Nach Bestätigung werden die ausgewählten Mitarbeiter in die Mitarbeiterliste übernommen. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt leer.</li><li>Der Akteur wählt einen Kunden (Pflichtfeld, Dropdown mit aktiven Kunden gemäß Rolle). Das System filtert serverseitig: Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen.</li><li>Der Akteur editiert Startdatum und optional Enddatum sowie optional eine Startuhrzeit.</li><li>Der Akteur weist dem Termin optional eine Tour zu, falls nicht bereits durch Schritt 3 erfolgt (oder um die Tour zu ändern/entfernen). Siehe 3.a.</li><li>Der Akteur weist dem Termin optional ein Team zu.</li><li>Der Akteur weist dem Termin optional Mitarbeiter manuell zu.</li><li>Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.</li><li>Das System speichert den Termin mit <code>customer_id</code> (vom Akteur gewählt), <code>project_id = NULL</code>.</li><li>Das System zeigt den Termin im Kalender an, entweder mit Tourfarbe (falls zugeordnet) oder mit Standardfarbe.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Überschneidung erkannt:</strong> Das System blockiert den Vorgang und zeigt einen Konflikt an.</li><li><strong>Abbruch:</strong> Der Termin wird nicht gespeichert.</li><li>Es wird kein neuer Termin-Datensatz in der Datenbank angelegt.</li><li>Es werden keine neuen Einträge in der Join-Tabelle Termin–Mitarbeiter angelegt, auch dann nicht, wenn zwischenzeitlich Mitarbeiter im Formular ausgewählt wurden.</li><li><strong>Speichern ohne Kundenzuordnung:</strong> Der Akteur versucht zu speichern, ohne dass ein Kunde zugeordnet ist. Das System blockiert den Vorgang und zeigt eine eindeutige Fehlermeldung an, zum Beispiel: „Kunde erforderlich – Termin kann nicht ohne Kundenkontext gespeichert werden.&quot;</li><li><strong>Kunde ist inaktiv:</strong> Falls Akteur einen inaktiven Kunden auswählen versucht und Disponent ist, wird das blockiert (serverseitige Filterung zeigt ihn nicht im Dropdown). Administratoren können inaktive Kunden auswählen.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin existiert persistent, ist einem Kunden zugeordnet, ist keinem Projekt zugeordnet (<code>project_id = NULL</code>). Der Termin ist im Kalender sichtbar (mit Standard- oder Tourfarbe, je nach Tourzuordnung). Der Termin ist fachlich gültig und vollständig. Die Mitarbeiterzuordnungen des Termins sind als Einträge in der Join-Tabelle Termin–Mitarbeiter abrufbar.</p>
+<p>Der Termin erscheint in der Kundenterminliste (in FT 09: Kundenverwaltung unter „Direkte Termine“). Der Termin erscheint nicht in einer Projektterminliste, da kein Projekt zugeordnet ist. Für alle dem Termin zugeordneten Mitarbeiter zeigt das Mitarbeiterformular diesen Termin in der Mitarbeiter-Terminliste. Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

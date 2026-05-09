@@ -1,27 +1,12 @@
-# A-XX - Kurztitel
+# Kurztitel
 
-## Metadaten
+Zwei bis drei Sätze beschreiben, was die Aufgabe ist und warum sie existiert.
 
-- Status: offen
-- Dringlichkeit: Niedrig | Mittel | Hoch
-- Thema: Kurzer Themenname
-- Typ: Dokumentation | Testabdeckung | Implementierung | Analyse | Refactoring | Infrastruktur
-- Erstellt: dd.MM.yy
-- Quelle: Link oder kurzer Herkunftshinweis
-- Verantwortlich: offen
-- Journal: offen
+| Status | Dringlichkeit | Thema | Typ | Erstellt |
+| :--- | :--- | :--- | :--- | :--- |
+| `offen` | Mittel | Kurzer Themenname | Planung | dd.MM.yy |
 
-## Beziehungen
-
-- Features:
-  - [FT-XX - Featuretitel](../features/...)
-- Use Cases:
-  - [UC XX/YY - Use-Case-Titel](../features/...)
-- Entscheidungen:
-  - [W-XX - Entscheidungstitel](../decisions/...)
-- Weitere Bezüge:
-  - [Relations](../relations.md)
-  - [Journal](../journal/README.md)
+---
 
 ## Ziel
 
@@ -33,26 +18,24 @@ Beschreiben, welcher Befund, welche Lücke oder welcher Folgeauftrag zur Aufgabe
 
 ## Umfang
 
-Benennen, was zur Aufgabe gehört und welche Bereiche ausdrücklich nicht Teil der Aufgabe sind.
+- Benennen, was zur Aufgabe gehört.
+- Benennen, welche Bereiche ausdrücklich nicht Teil der Aufgabe sind.
 
 ## Umsetzungshinweise
 
-- Relevante Dateien, Module oder Wiki-Seiten
-- Zu beachtende Fachregeln
-- Zu beachtende Rollen- und Sicherheitsgrenzen
-- Erwartete Tests oder Prüfungen
-
-## Anhänge
-
-- Keine Anhänge.
+- Relevante Dateien, Module oder Wiki-Seiten.
+- Zu beachtende Fachregeln.
+- Zu beachtende Rollen- und Sicherheitsgrenzen.
+- Erwartete Tests oder Prüfungen.
 
 ## Blocker und offene Fragen
 
 - Keine bekannt.
 
-## Abschluss
+---
 
-- Abgeschlossen am: offen
-- Ergebnis: offen
-- Verifikation: offen
-- Folgeaufgaben: offen
+## Beziehungen
+
+- Features: —
+- Use Cases: —
+- Entscheidungen: —

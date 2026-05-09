@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>03-05-26-feiertage-settings-navigation: 03.05.26 | Änderung | Kalender und Einstellungen: Feiertage und Settings-Navigation · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 03-05-26-feiertage-settings-navigation">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">03-05-26-feiertage-settings-navigation 03.05.26 | Änderung | Kalender und Einstellungen: Feiertage und Settings-Navigation</span></nav>
+        <h1 class="wiki-h1">03-05-26-feiertage-settings-navigation: 03.05.26 | Änderung | Kalender und Einstellungen: Feiertage und Settings-Navigation</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>03.05.26</div>
+    <p class="wiki-lead">Feiertage und Betriebsfeiertage verhalten sich im Wochenkalender jetzt bei der Spaltenbreite wie Wochenendtage: Sie sind standardmäßig schmal und verbreitern sich nur, wenn reguläre Termine auf dem Tag liegen. Zusätzlich wurde die Feiertagsverwaltung für Disponenten in den Einste</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Feiertage und Betriebsfeiertage verhalten sich im Wochenkalender jetzt bei der Spaltenbreite wie Wochenendtage: Sie sind standardmäßig schmal und verbreitern sich nur, wenn reguläre Termine auf dem Tag liegen. Zusätzlich wurde die Feiertagsverwaltung für Disponenten in den Einstellungen verfügbar gemacht und die Settings-Navigation optisch sowie sprachlich vereinheitlicht.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Kalender-Layoutlogik</li><li>Rollenabgesicherte Settings-Navigation</li><li>Kalendermarker-Pflege</li><li>UI-Polish in der Settings-Subnavigation</li><li>Test- und Dokumentationsnachzug</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-03 Kalenderansichten</li><li>Kalendermarker / Feiertage und Betriebsferien</li><li>Einstellungen / Admin- und Disponenten-Konfiguration</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>public_holiday</code> und <code>company_holiday</code> nutzen im Wochenkalender die kompakte Tagesbreite wie Wochenendtage.</li><li>Reguläre Termine verbreitern Feiertags- und Betriebsfeiertagsspalten weiterhin auf normale Wochentagsbreite.</li><li>Reine Abwesenheiten verbreitern diese Spalten nicht.</li><li>Disponenten erhalten in den Einstellungen einen Navigationspunkt <code>Feiertage</code>.</li><li>Kalendermarker-Pflege und Marker-Visualisierung sind serverseitig für <code>ADMIN</code> und <code>DISPONENT</code> abgesichert.</li><li>Der Settings-Bereich heißt rollenübergreifend <code>Einstellungen</code> statt teils <code>Meine Einstellungen</code>.</li><li>Die Settings-Subnavigation hat Icons für Oberfläche, Feiertage, Kalender, Sicherheit und Backup &amp; Dump.</li><li>Architektur-, Implementierungs- und Testmatrix-Dokumentation wurden gezielt aktualisiert.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/ui/calendarWeekView.layoutGrid.test.tsx</code></li><li><code>npm run test:unit -- tests/unit/ui/settingsPage.behavior.test.tsx tests/unit/ui/settingsPage.navigation.test.tsx</code></li><li><code>npm run test:integration -- tests/integration/server/calendarMarkers.integration.test.ts --reporter=verbose</code></li><li><code>npm run test:unit -- tests/unit/ui/settingsPage.behavior.test.tsx tests/unit/ui/settingsPage.navigation.test.tsx tests/unit/ui/sidebar.behavior.test.tsx</code></li><li><code>npm run typecheck</code></li><li><code>git diff --check</code></li></ul>
+<h2 class="wiki-h2">Hinweise</h2>
+<p>Es wurden keine Datenbankmigrationen und keine neuen API-Contracts erstellt. Die Rollenänderung betrifft ausschließlich die bestehende Kalendermarker-Pflege und wurde serverseitig abgesichert.</p>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

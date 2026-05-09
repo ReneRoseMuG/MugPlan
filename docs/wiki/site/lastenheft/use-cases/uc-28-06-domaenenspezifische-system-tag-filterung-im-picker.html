@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-28/06: Domänenspezifische System-Tag-Filterung im Picker · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-28/06">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-28/06 Domänenspezifische System-Tag-Filterung im Picker</span></nav>
+        <h1 class="wiki-h1">UC-28/06: Domänenspezifische System-Tag-Filterung im Picker</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-28</span></div>
+    <p class="wiki-lead">Der Akteur sieht im Tag-Picker nur Tags, die in der jeweiligen Domäne manuell zugewiesen werden dürfen. Geschützte System-Tags werden nicht als frei auswählbare Tags angeboten.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-28-universelles-tagging-system.html">FT (28): Universelles Tagging-System</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator oder Disponent.</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Akteur sieht im Tag-Picker nur Tags, die in der jeweiligen Domäne manuell zugewiesen werden dürfen. Geschützte System-Tags werden nicht als frei auswählbare Tags angeboten.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Es existieren frei verwendbare Tags und geschützte System-Tags.</li><li>Das System kennt die Domäne, für die der Tag-Katalog geladen wird.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet den Tag-Picker für Kunde, Mitarbeiter, Termin oder Projekt.</li><li>Das System lädt den Tag-Katalog mit Domänenbezug.</li><li>Das System filtert geschützte System-Tags serverseitig aus dem Picker.</li><li>Der Akteur sieht nur Tags, die in dieser Domäne manuell zuweisbar sind.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Bei Kunden und Mitarbeitern werden geschützte System-Tags nicht im Picker angeboten.</li><li>Bei Terminen werden geschützte System-Tags nicht im Picker angeboten. <strong>Storniert</strong> wird ausschließlich über den Storno-Workflow gesetzt; <strong>Reklamation</strong> wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.</li><li>Bei Projekten werden geschützte System-Tags nicht im Picker angeboten. <strong>Reklamation</strong> wird ausschließlich über die Reklamationsfunktion gesetzt oder entfernt.</li><li>Wenn ein Client einen geschützten System-Tag trotzdem direkt über eine generische Tag-API zuweisen oder entfernen will, muss der Server die Mutation abweisen.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Tag-Picker bleibt domänenspezifisch korrekt und bietet keine Systemzustände als frei pflegbare Tags an. Die fachlichen Workflows behalten die Kontrolle über geschützte System-Tags.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-28-universelles-tagging-system.html">FT-28</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

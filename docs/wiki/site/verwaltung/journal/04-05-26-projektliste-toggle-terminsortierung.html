@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-projektliste-toggle-terminsortierung: 04.05.26 | Änderung | FT-02 Projektverwaltung: Projektliste-Toggles und Terminsortierung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-projektliste-toggle-terminsortierung">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-projektliste-toggle-terminsortierung 04.05.26 | Änderung | FT-02 Projektverwaltung: Projektliste-Toggles und Terminsortierung</span></nav>
+        <h1 class="wiki-h1">04-05-26-projektliste-toggle-terminsortierung: 04.05.26 | Änderung | FT-02 Projektverwaltung: Projektliste-Toggles und Terminsortierung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">Die Projektliste wurde in der Bedienung leicht gestrafft. Die Scope-Toggles zeigen jetzt die kurzen Beschriftungen Alle, Geplante und Ohne Termin. Zusätzlich ist die vorhandene Tabellenspalte Nächster Termin sortierbar.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Projektliste wurde in der Bedienung leicht gestrafft. Die Scope-Toggles zeigen jetzt die kurzen Beschriftungen <code>Alle</code>, <code>Geplante</code> und <code>Ohne Termin</code>. Zusätzlich ist die vorhandene Tabellenspalte <code>Nächster Termin</code> sortierbar.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Frontend-UI in der Projektliste angepasst.</li><li>Clientseitige Sortierlogik der Projekttabelle erweitert.</li><li>Bestehende Unit-Tests für Filterpanel und Projekttabelle angepasst und ergänzt.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-02-projekte.html">FT-02: Projekte</a></li></ul>
+<p>Notion-Featureseiten wurden für diese kleine UI-Nachkorrektur nicht herangezogen, weil der Auftrag direkt auf bestehendes sichtbares Verhalten in der Projektliste zielte und die lokalen Code- und Teststellen eindeutig waren.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Im Projektfilter wurden die Toggle-Texte gekürzt:</li><li><code>Alle</code></li><li><code>Geplante</code></li><li><code>Ohne Termin</code></li><li><code>ProjectSortKey</code> wurde um <code>nextAppointment</code> erweitert.</li><li>Der Tabellenkopf <code>Nächster Termin</code> nutzt jetzt den bestehenden Sortierkopf mit Sortiericon.</li><li>Die Sortierung verwendet Datum und Stunde des nächsten Termins.</li><li>Projekte ohne nächsten Termin bleiben bei der Terminsortierung am Ende.</li><li>Backend, API-Contracts, Persistenz und Rollenlogik bleiben unverändert.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/ui/projectFilterPanel.layout.wiring.test.tsx tests/unit/ui/projectsPage.orderNumberWiring.test.tsx</code></li><li><code>npm run lint</code></li><li><code>git diff --check</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Für die Terminsortierung wurde kein eigener Browser-E2E ergänzt. Die Sortierlogik ist über Unit-Tests abgesichert.</li><li>Der Arbeitsbaum enthält weitere offene Änderungen aus vorherigen Aufgaben, die nicht Teil dieser Journalnotiz sind.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

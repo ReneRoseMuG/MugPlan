@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-32: Aktive Änderungsbenachrichtigung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-32">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-32 Aktive Änderungsbenachrichtigung</span></nav>
+        <h1 class="wiki-h1">FT-32: Aktive Änderungsbenachrichtigung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature stellt sicher, dass angemeldete Benutzer proaktiv informiert werden, wenn Daten, die sie gerade betrachten oder bearbeiten, durch einen anderen Benutzer verändert wurden. Es ergänzt das in NFR (01) beschriebene Optimistic Locking um eine aktive, nicht-blockierende </p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature stellt sicher, dass angemeldete Benutzer proaktiv informiert werden, wenn Daten, die sie gerade betrachten oder bearbeiten, durch einen anderen Benutzer verändert wurden. Es ergänzt das in NFR (01) beschriebene Optimistic Locking um eine aktive, nicht-blockierende Benachrichtigungskomponente.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Das System baut für jede angemeldete Session eine persistente Server-Push-Verbindung (SSE) auf. Sobald eine mutierende Operation erfolgreich abgeschlossen wird, sendet der Server ein Ereignis an alle anderen verbundenen Sessions.</p>
+<p>Der Client wertet eingehende Ereignisse aus und setzt bei Eingang einer relevanten Fremdänderung einen globalen Status „Updates verfügbar“. Die Benachrichtigung wird als globaler, nicht-blockierender und länger sichtbarer Toast dargestellt. Der Toast enthält keinen eigenen Aktualisieren-Button, sondern verweist auf die zentrale Funktion „Neu laden“ in der Hauptnavigation.</p>
+<p>Die Aktualisierung erfolgt bewusst zentral über die Hauptnavigation. Wird „Neu laden“ ausgelöst, sollen alle offenen, refresh-fähigen Ansichten der aktuellen Session aktualisiert werden. Dazu zählen die Hauptansicht und zusätzlich geöffnete Tabs innerhalb derselben App-Session.</p>
+<p>Die Funktion „Neu laden“ darf nur ausgelöst werden, wenn in der aktuellen Session kein Edit-Form geöffnet ist. Solange ein Edit-Form geöffnet ist, ist die zentrale Aktualisierung gesperrt.</p>
+<p>Mehrere eingehende Fremdänderungen führen nicht zu einer Kette einzelner Meldungen. Solange der Status „Updates verfügbar“ aktiv ist, bleibt der Toast sichtbar und weitere Ereignisse halten diesen Zustand lediglich aufrecht.</p>
+<p>Die Benachrichtigung ist ein Komfortmechanismus. Laufende Bearbeitungen werden nicht automatisch überschrieben. Der Versionskonflikt beim Speichern gemäß NFR (01) Abschnitt 3.5 bleibt die harte, nicht umgehbare Absicherung.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Die auslösende Session erhält keine Benachrichtigung über ihre eigenen Änderungen.</li><li>Die Benachrichtigung ist nicht-blockierend: laufende Bearbeitungen werden nicht automatisch überschrieben.</li><li>Die Benachrichtigung wird als globaler, länger sichtbarer Toast dargestellt.</li><li>Mehrere eingehende Fremdänderungen erzeugen keine gestapelten Einzelmeldungen, sondern halten lediglich den Status „Updates verfügbar“ aktiv.</li><li>Die Aktualisierung erfolgt zentral über die Funktion „Neu laden“ in der Hauptnavigation.</li><li>Die Funktion „Neu laden“ aktualisiert alle offenen, refresh-fähigen Ansichten der aktuellen Session, einschließlich Hauptansicht und geöffneter Tabs.</li><li>Die Funktion „Neu laden“ darf nur verfügbar oder ausführbar sein, wenn in der aktuellen Session kein Edit-Form geöffnet ist.</li><li>Solange ein Edit-Form geöffnet ist, ist die zentrale Aktualisierung gesperrt.</li><li>Ansichten mit offenem Bearbeitungszustand oder ungespeicherten Änderungen dürfen durch die globale Aktualisierung nicht still überschrieben werden.</li><li>Bei Verbindungsunterbrechung liefert der Server beim Reconnect alle verpassten Ereignisse nach (Last-Event-ID-Mechanismus).</li><li>Das <code>change_log</code> dient sowohl als Auslöser für SSE-Ereignisse als auch als Lückenfüller nach Verbindungsunterbrechungen.</li><li>Alle mutierenden Operationen auf Kernentitäten lösen einen <code>change_log</code>-Eintrag aus. Lesevorgänge werden nicht geloggt.</li></ul>
+<h2 class="wiki-h2">Abhängigkeiten</h2>
+<ul><li>NFR (01): Multi-User-Konsistenz – definiert den technischen Rahmen (Abschnitt 3.5)</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-32-01-sse-verbindung-aufbauen.html">UC 32/01: SSE-Verbindung aufbauen</a></li><li><a href="../use-cases/uc-32-02-aenderungsereignis-empfangen-und-hinweis-anzeigen.html">UC 32/02: Änderungsereignis empfangen und Hinweis anzeigen</a></li><li><a href="../use-cases/uc-32-03-verbindung-nach-unterbrechung-wiederherstellen.html">UC 32/03: Verbindung nach Unterbrechung wiederherstellen</a></li><li><a href="../use-cases/uc-32-04-session-ende-verbindung-schliessen.html">UC 32/04: Session-Ende – Verbindung schließen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-32-01-sse-verbindung-aufbauen.html">UC-32/01</a><a href="../use-cases/uc-32-02-aenderungsereignis-empfangen-und-hinweis-anzeigen.html">UC-32/02</a><a href="../use-cases/uc-32-03-verbindung-nach-unterbrechung-wiederherstellen.html">UC-32/03</a><a href="../use-cases/uc-32-04-session-ende-verbindung-schliessen.html">UC-32/04</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-32-aktive-aenderungsbenachrichtigung-backlog.html">BL-32</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

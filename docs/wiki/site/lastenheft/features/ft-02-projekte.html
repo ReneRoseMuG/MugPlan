@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-02: Projekte · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-02 Projekte</span></nav>
+        <h1 class="wiki-h1">FT-02: Projekte</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature ermöglicht der Disposition, **Projekte als zentrale fachliche Einheit** anzulegen, zu pflegen und in ihrem Lebenszyklus zu steuern.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature ermöglicht der Disposition, <strong>Projekte als zentrale fachliche Einheit</strong> anzulegen, zu pflegen und in ihrem Lebenszyklus zu steuern.</p>
+<p>Ein Projekt bildet den fachlichen Rahmen für alle zugehörigen Termine und bündelt alle projektbezogenen Informationen wie Beschreibung, Tags, Notizen und Anhänge.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Ein Projekt repräsentiert einen Auftrag oder Vorgang (z. B. Aufbau, Service, Nachbesserung).</p>
+<p>Es ist immer genau <strong>einem Kunden</strong> zugeordnet. Projektbezogene fachliche Markierungen werden nicht mehr über einen eigenen Projektstatus gepflegt, sondern über das universelle Tagging-System abgebildet.</p>
+<p>Alle fachlichen Informationen, die <strong>nicht terminspezifisch</strong> sind, werden am Projekt gepflegt:</p>
+<ul><li>eine ausführliche Projektbeschreibung (formatierter Text, z. B. Markdown),</li><li>optionale Notizen (als eigenständiges Domainobjekt),</li><li>projektbezogene Anhänge (z. B. Auftrag, Auftragsbestätigung, Pläne, Fotos).</li></ul>
+<p>Ein Projekt kann <strong>ohne Termine</strong> existieren.</p>
+<p>Termine können <strong>innerhalb eines Projekts</strong> angelegt werden. Termine Können auch im Kalender angelegt werden, wo dann die Projektzuordnung erfolgt.</p>
+<p>Projekt-Details sind immer <strong>projektweit gültig</strong> und gelten automatisch für alle zugehörigen Termine. Aus Termin- oder Kalenderansichten können Projekt-Details eingesehen, jedoch nicht zwingend dort bearbeitet werden.</p>
+<p>In der Projektliste wird standardmäßig nur die für die Disposition relevante Arbeitsmenge angezeigt. Unter „Aktuelle Projekte“ versteht das System Projekte, die mindestens einen Termin besitzen, dessen Startdatum heute oder in der Zukunft liegt. Projekte ohne Termine sind im Standardfall bewusst ausgeblendet, weil sie nicht disponierbar sind. Über eine explizite Umschaltoption kann die Liste stattdessen auf „Projekte ohne Termine“ umgestellt werden; in diesem Modus werden ausschließlich Projekte angezeigt, die keinen Termin besitzen. Zusätzliche Filter wie Titel- oder Tagfilter wirken immer nur auf die jeweils geladene Projektmenge und definieren nicht die Grundmenge.</p>
+<p>Der Projektfilter enthält zusätzlich einen Artikellistenfilter. Er basiert auf den strukturierten Auftragspositionen (<code>project_order_items</code>) und ermöglicht das Filtern nach konkreten Sauna-Produkten sowie Komponenten aus den festen Artikellisten-Kategorien, zum Beispiel Ofen, Fenster, Dach oder Tür. Innerhalb einer Kategorie gilt ODER, zwischen mehreren Kategorien gilt UND. Der Filter ist lesend und verändert weder Projekt noch Stammdaten.</p>
+<p>Die Projektliste zeigt den nächsten Termin direkt in der Projektkarte bzw. Tabellenzeile. Bei Projekten mit mehreren Terminen wird der nächste Termin ab heute verwendet. Die Tabellenspalte <strong>Nächster Termin</strong> ist sortierbar; Projekte ohne nächsten Termin bleiben bei dieser Sortierung am Ende.</p>
+<p>Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifische Informationen, Absprachen oder Besonderheiten dokumentieren. Jede Notiz besteht aus einem Titel und einem Inhalt und ist dauerhaft dem Projekt zugeordnet. Ein Projekt kann mehrere Notizen enthalten. Notizen sind unabhängig von Terminplanungen, Tag-Änderungen oder Kundenanpassungen – sie bleiben bestehen und können jederzeit ergänzt oder überarbeitet werden. Notizen sind für alle zum Projekt gehörenden Termine verfügbar und können optional in Druckausgaben oder Exportformaten mitgeführt werden.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Ein Projekt ist immer genau <strong>einem Kunden</strong> zugeordnet.</li><li>Ein Projekt kann projektbezogene Tags besitzen.</li><li>Projektbezogene Markierungen werden über das universelle Tagging-System gepflegt.</li><li>System-Tags und fachlich geschützte Tags werden gemäß FT (28) verwaltet.</li><li>Der Systemzustand <strong>Reklamation</strong> wird nicht über die generische Projekt-Tag-Pflege gesetzt oder entfernt, sondern über den Reklamationsworkflow aus FT (06). Dieser Workflow setzt bzw. entfernt das geschützte System-Tag <strong>Reklamation</strong> und kann optional eine Projektnotiz aus der Reklamationsvorlage vorschlagen.</li><li>Wird im Projektformular das Artikellistenfeld <strong>Sauna</strong> auf ein anderes Modell geändert, kann das System anbieten, den Projektnamen auf den Namen des gewählten Sauna-Modells zu setzen. Bei Ablehnung bleibt der bestehende Projektname unverändert. Beim erneuten Auswählen desselben Modells erfolgt keine Rückfrage.</li><li>Ein Projekt kann ohne Termine existieren.</li><li>Projekt-Details (Beschreibung, Notizen, Anhänge) gehören <strong>ausschließlich</strong> zum Projekt, nicht zum Termin.</li><li>Notizen sind optional und frei pflegbar.</li><li>Anhänge sind optional; ein Projekt kann mehrere Anhänge besitzen.</li><li>Anhänge sind dauerhaft dem Projekt zugeordnet.</li><li>Das physische Löschen eines Projekts ist nur zulässig, wenn keine Termine existieren.</li></ul>
+<p><strong>Notizen an Projekten</strong></p>
+<ul><li>Ein Projekt kann null, eine oder mehrere Notizen haben.</li><li>Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.</li><li>Notizen sind unabhängig vom Projekt; Änderungen am Projekt (Kundenänderung, Tag-Änderung, Anhänge) wirken sich nicht auf die Notizen aus.</li><li>Notizen werden nicht automatisch gelöscht, wenn ein Projekt bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder das gesamte Projekt gelöscht wird.</li><li>Eine Reklamationsnotiz kann beim Setzen des Systemzustands <strong>Reklamation</strong> vorgeschlagen werden. Beim Aufheben der Reklamation entscheidet der Akteur ausdrücklich, ob eine vorhandene Reklamationsnotiz entfernt oder behalten wird.</li><li>Wenn ein Projekt gelöscht wird, werden auch seine zugeordneten Notizen entfernt.</li><li>Notizen sind für alle zugehörigen Termine sichtbar, sofern das Termindetail oder die Projektreferenz angezeigt wird.</li><li>Notizen können optional in Druckausgaben, CSV-Exporten oder anderen Exportformaten mitgeführt werden, sofern das jeweilige Feature dies vorsieht.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-02-01-projekt-anlegen.html">UC 02/01: Projekt anlegen</a></li><li><a href="../use-cases/uc-02-02-projekt-bearbeiten.html">UC 02/02: Projekt bearbeiten</a></li><li><a href="../use-cases/uc-02-03-projekt-anzeigen.html">UC 02/03: Projekt anzeigen</a></li><li><a href="../use-cases/uc-02-04-projekt-tags-aendern.html">UC 02/04: Projekt-Tags ändern</a></li><li><a href="../use-cases/uc-02-05-projektnotizen-pflegen.html">UC 02/05: Projektnotizen pflegen</a></li><li><a href="../use-cases/uc-02-06-projektanhaenge-verwalten.html">UC 02/06: Projektanhänge verwalten</a></li><li><a href="../use-cases/uc-02-07-projekte-anzeigen-liste.html">UC 02/07: Projekte anzeigen (Liste)</a></li><li><a href="../use-cases/uc-02-08-projekt-loeschen.html">UC 02/08: Projekt löschen</a></li><li><a href="../use-cases/uc-02-09-projektaenderung-wird-in-terminansichten-konsistent-dargestellt.html">UC 02/09: Projektänderung wird in Terminansichten konsistent dargestellt</a></li><li><a href="../use-cases/uc-02-10-projekt-tag-aenderung-wirkt-systemweit-konsistent.html">UC 02/10: Projekt-Tag-Änderung wirkt systemweit konsistent</a></li><li><a href="../use-cases/uc-02-11-projektloeschung-wird-systemweit-korrekt-verarbeitet.html">UC 02/11: Projektlöschung wird systemweit korrekt verarbeitet</a></li><li><a href="../use-cases/uc-02-12-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.html">UC 02/12: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)</a></li><li><a href="../use-cases/uc-02-13-denormalisierte-projektanzeige-aktualisieren-quer-sicht-vertrag.html">UC 02/13: Denormalisierte Projektanzeige aktualisieren (Quer­sicht-Vertrag)</a></li><li><a href="../use-cases/uc-02-14-konsistenz-bei-parallelen-aenderungen-an-projekten-optimistic-locking.html">UC 02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)</a></li><li><a href="../use-cases/uc-02-15-projekt-join-konsistenz-projekt-tags.html">UC 02/15: Projekt-Join-Konsistenz (Projekt ↔ Tags)</a></li><li><a href="../use-cases/uc-02-16-projekt-referenz-konsistenz-projekt-kunde.html">UC 02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)</a></li><li><a href="../use-cases/uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.html">UC 02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)</a></li><li><a href="../use-cases/uc-02-18-race-condition-bei-projektloeschung.html">UC 02/18: Race Condition bei Projektlöschung</a></li><li><a href="../use-cases/uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.html">UC 02/19: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)</a></li><li><a href="../use-cases/uc-02-20-entfernt-duplikat-von-uc-02-13.html">UC 02/20: ENTFERNT — Duplikat von UC 02/13</a></li><li><a href="../use-cases/uc-02-21-termin-fuer-projekt-ohne-termine-anlegen-ueber-kalendersicht.html">UC 02/21: Termin für Projekt ohne Termine anlegen (über Kalendersicht)</a></li><li><a href="../use-cases/uc-02-22-notiz-von-projekt-entfernen.html">UC 02/22: Notiz von Projekt entfernen</a></li><li><a href="../use-cases/uc-02-23-notiz-anpinnen-lospinnen.html">UC 02/23: Notiz anpinnen / lospinnen</a></li><li><a href="../use-cases/uc-02-24-projekt-aktivieren-deaktivieren.html">UC 02/24: Projekt aktivieren / deaktivieren</a></li><li><a href="../use-cases/uc-02-26-auftragspositionen-verwalten.html">UC 02/26: Auftragspositionen verwalten</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<ul><li><a href="../backlogs/ft-02-projekte-backlog.html">BL (08): Projekttypen / Projektkategorisierung</a></li></ul>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h3 class="wiki-h3">Betroffene Schema-Objekte</h3>
+<p><strong>Primäre Tabelle(n)</strong></p>
+<ul><li><code>projects</code> — <code>id</code>, <code>title</code>, <code>description</code>, <code>order_number</code> (NOT NULL), <code>customer_id</code> (FK → customers, NOT NULL), <code>is_active</code>, <code>version</code> (Optimistic Locking), <code>created_at</code>, <code>updated_at</code></li><li><code>notes</code> — <code>id</code>, <code>title</code>, <code>body</code>, <code>is_pinned</code>, <code>color</code>, <code>version</code>, <code>created_at</code>, <code>updated_at</code></li><li><code>project_attachments</code> — <code>id</code>, <code>project_id</code> (FK → projects), <code>original_name</code>, <code>storage_name</code>, <code>mime_type</code>, <code>size</code>, <code>created_at</code></li></ul>
+<p><strong>Beteiligte Join-Tabellen</strong></p>
+<ul><li><code>project_notes</code> — <code>project_id</code> × <code>note_id</code> (1:n, Notiz gehört genau einem Projekt)</li><li><code>tag_relations</code> — <code>entity_type = 'project'</code>, <code>entity_id</code>, <code>tag_id</code>, <code>version</code></li><li><code>project_order_items</code> — <code>id</code>, <code>project_id</code>, Bezeichnung, Menge, Einheit</li></ul>
+<p><strong>Kritische Felder</strong> <em>(mit Nullable-Hinweis)</em></p>
+<ul><li><code>order_number</code> — NOT NULL, Pflichtfeld bei Anlage (422 wenn leer)</li><li><code>customer_id</code> — NOT NULL, readonly wenn Termine existieren</li><li><code>version</code> — NOT NULL, Optimistic Locking auf <code>projects</code> und <code>tag_relations</code></li><li><code>is_active</code> — default TRUE, steuert Sichtbarkeit in Standardliste</li></ul>
+<h3 class="wiki-h3">Verwandte Features &amp; Abhängigkeiten</h3>
+<p><strong>Dieses Feature konsumiert (abhängig von):</strong></p>
+<ul><li>FT (09) Kundenverwaltung — Kunde muss existieren und aktiv sein; <code>customer_id</code> wird referenziert</li><li>FT (13) Notizverwaltung — Notiz-Domainobjekt, Vorlagen, Pinning, Versioning, Sortierlogik</li><li>FT (19) Attachments — Upload-, Download- und Löschworkflow für Anhänge</li><li>FT (28) Tagging — universelles Tagging-System, System-Tags, Versioning der Tag-Relationen</li></ul>
+<p><strong>Dieses Feature wird konsumiert von:</strong></p>
+<ul><li>FT (01) Kalendertermine — Termin referenziert <code>project_id</code> und erbt <code>customer_id</code> vom Projekt</li><li>FT (03) Kalenderansichten — Projektdaten werden in Termin-Karten angezeigt</li><li>FT (06) Druckfunktionen — Projektnotizen können in Druckausgaben mitgeführt werden</li></ul>
+<p><strong>Seiteneffekte bei Änderungen:</strong></p>
+<ul><li>Kundenwechsel am Projekt → kaskadierendes Update auf <code>appointments.customer_id</code> für alle Termine des Projekts</li><li>Projektlöschung → Cascade auf <code>project_notes</code>, <code>notes</code>, <code>project_attachments</code>, <code>project_order_items</code>, <code>tag_relations</code></li><li>Physische Dateien bei Projektlöschung → verbleiben im Upload-Verzeichnis (kein automatisches Aufräumen)</li></ul>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<h3 class="wiki-h3">Offene Fragen</h3>
+<ul><li>Sollen inaktive Projekte (<code>is_active = false</code>) in der Kalenderansicht noch sichtbar sein, wenn ihre Termine noch laufen?</li><li>Soll bei Projektlöschung eine Bereinigung verwaister physischer Anhang-Dateien erfolgen (Cleanup-Job)?</li><li>Sollen Auftragspositionen in Druckausgaben (FT 06) erscheinen?</li></ul>
+<h3 class="wiki-h3">Entscheidungslog</h3>
+<ul><li><strong>2025</strong>: Projektstatus wird nicht mehr als eigenständiges Feld gepflegt, sondern über das universelle Tagging-System (FT 28) abgebildet. Grund: Flexibilität bei fachlichen Markierungen.</li><li><strong>2025</strong>: Physische Projektlöschung statt Soft-Delete. Grund: Datenhygiene, kein archivierter Altbestand in der Standardliste.</li><li><strong>2026 (Review)</strong>: Anhangslöschung in FT 02 freigegeben, da FT 19 explizit einen zweistufigen Löschworkflow vorsieht. UC 02/06 entsprechend korrigiert.</li></ul>
+<h3 class="wiki-h3">Bekannte Abweichungen Code ↔ Spec</h3>
+<ul><li><strong>BEHOBEN</strong>: UC 02/06 alt beschrieb „Anhangslöschung nicht vorgesehen“ — Code und FT 19 erlauben Löschung. UC 02/06 wurde korrigiert.</li><li><strong>BEHOBEN</strong>: <code>order_number</code> war im Feature-Dokument nicht als Pflichtfeld erwähnt, ist aber im Code 422-validiert. UC 02/01 wurde korrigiert.</li><li><strong>BEHOBEN</strong>: Notiz-Endpunkt für Update läuft über generische <code>notesRoutes</code> (PUT), nicht über <code>projectNotesRoutes</code>. UC 02/05 dokumentiert dies jetzt.</li><li><strong>OFFEN</strong>: UC 02/19 und UC 02/20 waren Duplikate von UC 02/12 / 02/13 und sind als ENTFERNT markiert.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-02-01-projekt-anlegen.html">UC-02/01</a><a href="../use-cases/uc-02-02-projekt-bearbeiten.html">UC-02/02</a><a href="../use-cases/uc-02-03-projekt-anzeigen.html">UC-02/03</a><a href="../use-cases/uc-02-04-projekt-tags-aendern.html">UC-02/04</a><a href="../use-cases/uc-02-05-projektnotizen-pflegen.html">UC-02/05</a><a href="../use-cases/uc-02-06-projektanhaenge-verwalten.html">UC-02/06</a><a href="../use-cases/uc-02-07-projekte-anzeigen-liste.html">UC-02/07</a><a href="../use-cases/uc-02-08-projekt-loeschen.html">UC-02/08</a><a href="../use-cases/uc-02-09-projektaenderung-wird-in-terminansichten-konsistent-dargestellt.html">UC-02/09</a><a href="../use-cases/uc-02-10-projekt-tag-aenderung-wirkt-systemweit-konsistent.html">UC-02/10</a><a href="../use-cases/uc-02-11-projektloeschung-wird-systemweit-korrekt-verarbeitet.html">UC-02/11</a><a href="../use-cases/uc-02-12-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.html">UC-02/12</a><a href="../use-cases/uc-02-13-denormalisierte-projektanzeige-aktualisieren-quer-sicht-vertrag.html">UC-02/13</a><a href="../use-cases/uc-02-14-konsistenz-bei-parallelen-aenderungen-an-projekten-optimistic-locking.html">UC-02/14</a><a href="../use-cases/uc-02-15-projekt-join-konsistenz-projekt-tags.html">UC-02/15</a><a href="../use-cases/uc-02-16-projekt-referenz-konsistenz-projekt-kunde.html">UC-02/16</a><a href="../use-cases/uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.html">UC-02/17</a><a href="../use-cases/uc-02-18-race-condition-bei-projektloeschung.html">UC-02/18</a><a href="../use-cases/uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.html">UC-02/19</a><a href="../use-cases/uc-02-20-entfernt-duplikat-von-uc-02-13.html">UC-02/20</a><a href="../use-cases/uc-02-21-termin-fuer-projekt-ohne-termine-anlegen-ueber-kalendersicht.html">UC-02/21</a><a href="../use-cases/uc-02-22-notiz-von-projekt-entfernen.html">UC-02/22</a><a href="../use-cases/uc-02-23-notiz-anpinnen-lospinnen.html">UC-02/23</a><a href="../use-cases/uc-02-24-projekt-aktivieren-deaktivieren.html">UC-02/24</a><a href="../use-cases/uc-02-26-auftragspositionen-verwalten.html">UC-02/26</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-02-projekte-backlog.html">BL-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

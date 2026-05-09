@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MugPlan Wiki · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="projekt/projekte.html">Projekte</a></li><li><a href="projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="lastenheft/features.html">Features</a></li><li><a href="lastenheft/use-cases.html">Use Cases</a></li><li><a href="lastenheft/backlogs.html">Backlogs</a></li><li><a href="lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="verwaltung/journal.html">Journal</a></li><li><a href="verwaltung/metadaten.html">Metadaten</a></li><li><a href="control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Startseite">
+      <div class="wiki-content__inner">
+        
+        <h1 class="wiki-h1">MugPlan Wiki</h1>
+    <p class="wiki-lead">Interne Projektdokumentation für die Dispositions- und Planungsanwendung MugPlan. Markdown bleibt Quelle der Wahrheit; diese HTML-Seiten sind generierte Leseseiten.</p>
+    <section class="wiki-cards" aria-label="Bereiche">
+      <article class="wiki-card">
+        <h2 class="wiki-card__title"><a href="projekt/projekte.html">Projekte</a></h2>
+        <p class="wiki-card__desc">Thematisch verwandte Aufgabensammlungen mit Masteraufgaben, Einzelaufgaben und Arbeitsständen.</p>
+        <ul class="wiki-card__links">
+          <li><a href="projekt/projekte.html">Projekte <span class="wiki-card__count">2</span></a></li>
+          <li><a href="projekt/aufgaben.html">Aufgaben <span class="wiki-card__count">36</span></a></li>
+        </ul>
+      </article>
+      <article class="wiki-card">
+        <h2 class="wiki-card__title"><a href="lastenheft/features.html">Lastenheft</a></h2>
+        <p class="wiki-card__desc">Features, Use Cases, Backlogs und nicht-funktionale Anforderungen.</p>
+        <ul class="wiki-card__links">
+          <li><a href="lastenheft/features.html">Features <span class="wiki-card__count">25</span></a></li>
+          <li><a href="lastenheft/use-cases.html">Use Cases <span class="wiki-card__count">237</span></a></li>
+          <li><a href="lastenheft/backlogs.html">Backlogs <span class="wiki-card__count">24</span></a></li>
+          <li><a href="lastenheft/nfrs.html">NFRs <span class="wiki-card__count">1</span></a></li>
+        </ul>
+      </article>
+      <article class="wiki-card">
+        <h2 class="wiki-card__title"><a href="verwaltung/journal.html">Verwaltung</a></h2>
+        <p class="wiki-card__desc">Journal und Kontrollberichte zur generierten Wiki-Ausgabe.</p>
+        <ul class="wiki-card__links">
+          <li><a href="verwaltung/journal.html">Journal <span class="wiki-card__count">49</span></a></li>
+          <li><a href="control-report.html">Kontrollbericht <span class="wiki-card__count">aktuell</span></a></li>
+        </ul>
+      </article>
+    </section>
+    <div class="wiki-status-line" aria-label="Projektstatus">
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">2</span> Projekte</span>
+      <span class="wiki-status-line__sep">·</span>
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">36</span> Aufgaben</span>
+      <span class="wiki-status-line__sep">·</span>
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">25</span> Features</span>
+      <span class="wiki-status-line__sep">·</span>
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">237</span> Use Cases</span>
+      <span class="wiki-status-line__sep">·</span>
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">09.05.26</span> Indexstand</span>
+      <span class="wiki-status-line__sep">·</span><span class="wiki-status-line__item">Letzter Eintrag <span class="wiki-status-line__num">08.05.26</span></span>
+    </div>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

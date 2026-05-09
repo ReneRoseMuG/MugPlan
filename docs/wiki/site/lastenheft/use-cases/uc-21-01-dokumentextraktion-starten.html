@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-21/01: Dokumentextraktion starten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-21/01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/01 Dokumentextraktion starten</span></nav>
+        <h1 class="wiki-h1">UC-21/01: Dokumentextraktion starten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-21</span></div>
+    <p class="wiki-lead">Ein geeignetes Dokument mittels regelbasierter Parsing-Prozesse analysieren und daraus strukturierte, editierbare Datenvorschläge erzeugen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-21-dokumentenextraktion.html">FT (21): Dokumentenextraktion</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Ein geeignetes Dokument mittels regelbasierter Parsing-Prozesse analysieren und daraus strukturierte, editierbare Datenvorschläge erzeugen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Attachment existiert und ist einem fachlichen Objekt zugeordnet.</li><li>Das Dokument ist technisch lesbar.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt die Berechtigung zur Dokumentextraktion.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur wählt ein vorhandenes Attachment aus.</li><li>Der Akteur startet die Funktion „Dokument extrahieren&quot;.</li><li>Das System extrahiert den Text aus dem Dokument.</li><li>Das System analysiert den Text mithilfe deterministischer Parsing-Regeln.</li><li>Das System prüft, ob eine Auftragsnummer im extrahierten Text identifiziert wurde.</li><li>Wenn eine Auftragsnummer vorhanden ist: Das System prüft, ob diese Auftragsnummer bereits in der Datenbank existiert.</li><li>Wenn die Auftragsnummer bereits existiert: Das System bricht den Prozess ab und zeigt eine Fehlermeldung an (z. B. „Auftrag mit dieser Nummer bereits vorhanden. Weitere Verarbeitung nicht möglich.&quot;).</li><li>Wenn die Auftragsnummer nicht existiert oder nicht vorhanden ist: Das System fährt fort.</li><li>Wenn die Kundennummer existiert, wird ein stilles Update leerer Stammdatenfelder ausgeführt</li><li>es wird kein doppelter Kundendatnsetz angelegt</li><li>Der Akteur erfährt nichts von diesem Vorgang</li><li>Das System identifiziert strukturierte Bereiche wie Kundendaten, Artikelliste und projektbezogene Informationen.</li><li>Das System validiert die extrahierten Daten gegen definierte Feld- und Formatregeln.</li><li>Das System zeigt die extrahierten Daten als editierbaren Vorschlag in einem Dialog an.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Dokument ist technisch nicht lesbar → Das System bricht ab und zeigt eine Fehlermeldung an.</li><li>Auftragsnummer existiert bereits → Das System bricht den Prozess sofort ab und zeigt eine eindeutige Fehlermeldung an. Es erfolgt keine weitere Verarbeitung.</li><li>Parsing-Regeln liefern keine verwertbaren Daten → Das System zeigt einen Hinweis und erzeugt keinen Vorschlag.</li><li>Validierung schlägt fehl → Das System zeigt einen strukturierten Fehlerstatus an; es werden keine Daten persistiert.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Ein strukturierter, validierter und editierbarer Datenvorschlag wird angezeigt. Es wurden keine fachlichen Stammdaten persistiert. Die Auftragsnummer-Eindeutigkeit ist gewährleistet.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-21-dokumentenextraktion.html">FT-21</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

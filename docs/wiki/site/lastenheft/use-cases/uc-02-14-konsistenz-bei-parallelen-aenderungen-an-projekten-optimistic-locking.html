@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/14">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/14 Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)</span></nav>
+        <h1 class="wiki-h1">UC-02/14: Konsistenz bei parallelen Änderungen an Projekten (Optimistic Locking)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Sicherstellen, dass parallele Änderungen an einem Projekt keine inkonsistenten Zustände oder stillen Überschreibungen verursachen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass parallele Änderungen an einem Projekt keine inkonsistenten Zustände oder stillen Überschreibungen verursachen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Projekt existiert.</li><li>Beide Akteure sind authentifiziert.</li><li>Projekt wird von mindestens zwei Akteuren parallel geöffnet.</li><li>Projekt besitzt ein Versionsmerkmal (<code>version</code>).</li><li>Beide Akteure besitzen Änderungsrechte.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur A und Akteur B öffnen dasselbe Projekt.</li><li>Akteur A ändert Projektdaten und speichert.</li><li>System erhöht die Projektversion.</li><li>Akteur B ändert Projektdaten auf Basis der alten Version und speichert.</li><li>System erkennt die veraltete Versionsbasis.</li><li>System verweigert das Speichern mit HTTP 409 VERSION_CONFLICT.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Änderungsrechte → HTTP 403.</li><li>Keine parallele Änderung → Speichern erfolgt regulär.</li><li>Akteur B lädt das Projekt nach dem Konflikt neu → Aktuelle Version wird geladen und kann bearbeitet werden.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Es kommt zu keiner stillen Überschreibung von Projektdaten.</p>
+<p>Das Projekt bleibt in einem konsistenten Zustand.</p>
+<p>Abhängige Sichten zeigen ausschließlich den zuletzt erfolgreich gespeicherten Zustand.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

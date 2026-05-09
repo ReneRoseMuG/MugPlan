@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-tour-kw-view-notizen-lanes: 05.05.26 | UI-Nacharbeit | FT-04: Tour-KW-View Notizen und Tour-Lanes · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-tour-kw-view-notizen-lanes">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-tour-kw-view-notizen-lanes 05.05.26 | UI-Nacharbeit | FT-04: Tour-KW-View Notizen und Tour-Lanes</span></nav>
+        <h1 class="wiki-h1">05-05-26-tour-kw-view-notizen-lanes: 05.05.26 | UI-Nacharbeit | FT-04: Tour-KW-View Notizen und Tour-Lanes</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Der Tour-KW-View wurde bei Notizen, Tour-Lanes und Kachelhöhen nachgezogen. Notizen stehen jetzt unter den Wochenkacheln, Touren lassen sich wie im Wochenkalender einklappen, und Karten innerhalb einer Tour-Bahn erhalten einen gemeinsamen Höhenausgleich.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Tour-KW-View wurde bei Notizen, Tour-Lanes und Kachelhöhen nachgezogen. Notizen stehen jetzt unter den Wochenkacheln, Touren lassen sich wie im Wochenkalender einklappen, und Karten innerhalb einer Tour-Bahn erhalten einen gemeinsamen Höhenausgleich.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Frontend-UI-Nacharbeit in bestehender Struktur. Es wurden keine Backend-Contracts, Datenmodelle, Rollenregeln oder Persistenzpfade geändert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT (04): Tourenplanung</li><li>Tour-KW-View / Wochenplanung</li><li>Kalenderwochen-Notizen</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Tour-KW-Notizen werden unter den Kacheln statt im Kachelbody angezeigt.</li><li>Notizkarten nutzen den zentralen Textfarben-Helfer für bessere Lesbarkeit auf kräftigen Farben.</li><li>Der Textfarben-Helfer wurde für kräftige gesättigte Mitteltöne erweitert.</li><li>Der Tour-KW-View übernimmt den Touren-Toggle <code>Aufgeklappt</code> / <code>Zugeklappt</code> aus dem Wochenkalender.</li><li>Tour-Header-Bars sind im interaktiven Zustand vollflächig klickbar.</li><li>Blockierte Wochen zeigen nicht zusätzlich <code>Keine Mitarbeiter geplant</code>.</li><li>Karten einer Tour-Bahn werden höhengleich gerendert; Notizen liegen darunter in einer separaten Zeile.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Die Änderung verändert keine Rechte. Mutierende Tour-KW-Aktionen bleiben auf die bestehenden schreibenden Rollen begrenzt; readonly Nutzer behalten die reine Lesesicht.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/lib/note-colors.test.ts tests/unit/ui/tourWeekPlanningView.render.test.tsx</code></li><li><code>npm run test:unit -- tests/unit/ui/tourManagement.role-readonly.smoke.test.tsx tests/unit/ui/tourManagement.versioning.test.tsx</code></li><li><code>npm run test:unit -- tests/unit/lib/note-colors.test.ts tests/unit/ui/tourWeekPlanningView.render.test.tsx tests/unit/ui/tourWeekCard.render.test.tsx tests/unit/ui/calendarWeekTourLaneHeaderBar.counters.test.tsx tests/unit/ui/calendarWeekTourLaneHeaderBar.notesForeground.test.tsx</code></li><li><code>npm run check</code></li><li><code>npm run lint</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein zusätzlicher Browser-E2E-Lauf.</li><li>Eine manuelle Browserprüfung der finalen visuellen Wirkung ist sinnvoll, falls weitere Layoutfeinheiten sichtbar werden.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

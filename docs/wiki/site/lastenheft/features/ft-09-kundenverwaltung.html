@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-09: Kundenverwaltung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-09">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-09 Kundenverwaltung</span></nav>
+        <h1 class="wiki-h1">FT-09: Kundenverwaltung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature stellt die Verwaltung von Kundenstammdaten bereit, damit Termine nicht mehr mit frei erfassten Kundendaten arbeiten müssen. Termine referenzieren künftig ein Projekt und über dieses einen Kunden und übernehmen Adresse sowie Kontaktdaten daraus, um Konsistenz, Wiede</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature stellt die Verwaltung von Kundenstammdaten bereit, damit Termine nicht mehr mit frei erfassten Kundendaten arbeiten müssen. Termine referenzieren künftig ein Projekt und über dieses einen Kunden und übernehmen Adresse sowie Kontaktdaten daraus, um Konsistenz, Wiederverwendbarkeit und saubere Historien sicherzustellen. Einem Kunden können Notizen zugeordnet werden.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Die Kundenverwaltung ermöglicht das Anlegen, Bearbeiten und Anzeigen von Kunden. Pro Kunde werden Stammdaten gespeichert, insbesondere <strong>Name/Firma</strong>, <strong>Kundennummer</strong>, <strong>Adresse</strong> und <strong>Telefonnummer</strong>.</p>
+<p>Ein Kunde kann beliebig viele Projekte und damit indirekt beliebig viele Termine besitzen. In der Kundendetailansicht wird eine <strong>Projektliste</strong> angezeigt, die alle dem Kunden zugeordneten Projekte umfasst (z. B. Aufbau, Service, Nachbesserung).</p>
+<p>Disponenten erhalten serverseitig nur aktive Kunden und können daher nur aktive Kunden für neue Projekte auswählen. Die Verwaltung von aktiven und inaktiven Kunden (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation für Disponenten.</p>
+<p>Kunden haben eine <strong>Notizenliste</strong> (0..n). Notizen sind freie Texteinträge, die kundenbezogene Informationen, Absprachen oder Besonderheiten dokumentieren. Jede Notiz besteht aus einem Titel und einem Inhalt. Notizen sind <strong>kundenbezogen</strong> und <strong>projektunabhängig</strong> – sie gelten für alle zum Kunden gehörenden Projekte und Termine und bleiben bestehen, unabhängig von Projektänderungen, Kundenstatusänderungen oder anderen Modifikationen. Notizen können optional in Druckausgaben oder Exportformaten mitgeführt werden. Die Verwaltungslogik für Notizen erfolgt direkt in der Kundendetailansicht über einen Richtext-Editor.</p>
+<p>In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge zugeordnet werden. Der Disponent kann Anhänge hochladen, in einer Anhangsliste einsehen, per Vorschau öffnen und bei Bedarf herunterladen. Eine Löschfunktion für Anhänge ist nicht vorgesehen.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Kundendaten (Name, Kundennummer, Adresse, Telefon) werden <strong>zentral</strong> am Kunden gepflegt.</li><li>Kunden dürfen <strong>nicht gelöscht</strong> werden, wenn sie in Projekten verwendet werden.</li><li>Disponenten erhalten serverseitig nur aktive Kunden und können nur aktive Kunden für neue Projekte auswählen.</li><li>Pflichtfelder:</li><li>Kundennummer (aus WAWI).</li><li>Notizen sind optional und werden über die Relationstabelle <code>customer_note</code> mit dem Kunden verknüpft.</li></ul>
+<p><strong>Notizen an Kunden</strong></p>
+<ul><li>Ein Kunde kann null, eine oder mehrere Notizen haben.</li><li>Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.</li><li>Notizen sind unabhängig vom Kunden; Änderungen am Kunden (Adresse, Telefon, Status) wirken sich nicht auf die Notizen aus.</li><li>Notizen werden nicht automatisch gelöscht, wenn ein Kunde bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder der gesamte Kunde gelöscht wird.</li><li>Wenn ein Kunde gelöscht wird, werden auch seine zugeordneten Notizen entfernt.</li><li>Notizen sind für alle zu einem Kunden gehörenden Projekte und Termine kontextabhängig sichtbar, sofern das jeweilige Feature dies vorsieht.</li><li>Notizen können optional in Druckausgaben, CSV-Exporten oder anderen Exportformaten mitgeführt werden, sofern das jeweilige Feature dies vorsieht.</li><li>Kundenanhänge sind kundenbezogen und unabhängig von Projekten; Anhänge können hinzugefügt und heruntergeladen werden, eine physische Löschung ist nicht vorgesehen.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-09-01-kunde-anlegen.html">UC 09/01: Kunde anlegen</a></li><li><a href="../use-cases/uc-09-02-kunde-bearbeiten.html">UC 09/02: Kunde bearbeiten</a></li><li><a href="../use-cases/uc-09-03-kunde-anzeigen-inkl-terminliste.html">UC 09/03: Kunde anzeigen (inkl. Terminliste)</a></li><li><a href="../use-cases/uc-09-04-kunde-deaktivieren-archivieren.html">UC 09/04: Kunde deaktivieren / archivieren</a></li><li><a href="../use-cases/uc-09-06-kunde-reaktivieren.html">UC 09/06: Kunde reaktivieren</a></li><li><a href="../use-cases/uc-09-07-kundenanhaenge-verwalten.html">UC 09/07: Kundenanhänge verwalten</a></li><li><a href="../use-cases/uc-09-08-versionskonflikt-bei-paralleler-kundenbearbeitung.html">UC 09/08: Versionskonflikt bei paralleler Kundenbearbeitung</a></li><li><a href="../use-cases/uc-09-09-statuskonflikt-bei-parallelem-bearbeiten-und-deaktivieren.html">UC 09/09: Statuskonflikt bei parallelem Bearbeiten und Deaktivieren</a></li><li><a href="../use-cases/uc-09-10-parallelkonflikt-bei-statuswechsel-deaktivieren-vs-reaktivieren.html">UC 09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)</a></li><li><a href="../use-cases/uc-09-11-rollenabhaengige-filterung-von-kundenlisten.html">UC 09/11: Rollenabhängige Filterung von Kundenlisten</a></li><li><a href="../use-cases/uc-09-12-zugriff-auf-inaktiven-kunden-durch-disponent-blockieren.html">UC 09/12: Zugriff auf inaktiven Kunden durch Disponent blockieren</a></li><li><a href="../use-cases/uc-09-13-kunde-loeschen-ohne-referenzen.html">UC 09/13: Kunde löschen ohne Referenzen</a></li><li><a href="../use-cases/uc-09-14-kunde-loeschen-mit-referenzen-blockade.html">UC 09/14: Kunde löschen mit Referenzen (Blockade)</a></li><li><a href="../use-cases/uc-09-15-konsistenz-von-kundenlisten-bei-statusaenderung-multi-browser.html">UC 09/15: Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)</a></li><li><a href="../use-cases/uc-09-16-statusaenderung-des-kunden-waehrend-notiz-oder-attachment-operation.html">UC 09/16: Statusänderung des Kunden während Notiz- oder Attachment-Operation</a></li><li><a href="../use-cases/uc-09-17-notiz-an-kunde-anlegen.html">UC 09/17: Notiz an Kunde anlegen</a></li><li><a href="../use-cases/uc-09-18-notiz-am-kunde-bearbeiten.html">UC 09/18: Notiz am Kunde bearbeiten</a></li><li><a href="../use-cases/uc-09-19-notiz-von-kunde-entfernen.html">UC 09/19: Notiz von Kunde entfernen</a></li><li><a href="../use-cases/uc-09-20-notizen-beim-kunde-loeschen-entfernen.html">UC 09/20: Notizen beim Kunde-Löschen entfernen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-09-01-kunde-anlegen.html">UC-09/01</a><a href="../use-cases/uc-09-02-kunde-bearbeiten.html">UC-09/02</a><a href="../use-cases/uc-09-03-kunde-anzeigen-inkl-terminliste.html">UC-09/03</a><a href="../use-cases/uc-09-04-kunde-deaktivieren-archivieren.html">UC-09/04</a><a href="../use-cases/uc-09-06-kunde-reaktivieren.html">UC-09/06</a><a href="../use-cases/uc-09-07-kundenanhaenge-verwalten.html">UC-09/07</a><a href="../use-cases/uc-09-08-versionskonflikt-bei-paralleler-kundenbearbeitung.html">UC-09/08</a><a href="../use-cases/uc-09-09-statuskonflikt-bei-parallelem-bearbeiten-und-deaktivieren.html">UC-09/09</a><a href="../use-cases/uc-09-10-parallelkonflikt-bei-statuswechsel-deaktivieren-vs-reaktivieren.html">UC-09/10</a><a href="../use-cases/uc-09-11-rollenabhaengige-filterung-von-kundenlisten.html">UC-09/11</a><a href="../use-cases/uc-09-12-zugriff-auf-inaktiven-kunden-durch-disponent-blockieren.html">UC-09/12</a><a href="../use-cases/uc-09-13-kunde-loeschen-ohne-referenzen.html">UC-09/13</a><a href="../use-cases/uc-09-14-kunde-loeschen-mit-referenzen-blockade.html">UC-09/14</a><a href="../use-cases/uc-09-15-konsistenz-von-kundenlisten-bei-statusaenderung-multi-browser.html">UC-09/15</a><a href="../use-cases/uc-09-16-statusaenderung-des-kunden-waehrend-notiz-oder-attachment-operation.html">UC-09/16</a><a href="../use-cases/uc-09-17-notiz-an-kunde-anlegen.html">UC-09/17</a><a href="../use-cases/uc-09-18-notiz-am-kunde-bearbeiten.html">UC-09/18</a><a href="../use-cases/uc-09-19-notiz-von-kunde-entfernen.html">UC-09/19</a><a href="../use-cases/uc-09-20-notizen-beim-kunde-loeschen-entfernen.html">UC-09/20</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-09-kundenverwaltung-backlog.html">BL-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

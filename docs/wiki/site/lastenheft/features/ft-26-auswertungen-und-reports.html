@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-26: Auswertungen und Reports · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-26">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-26 Auswertungen und Reports</span></nav>
+        <h1 class="wiki-h1">FT-26: Auswertungen und Reports</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Unter dem Navigationspunkt **Reports** stellt die Anwendung konfigurierbare Auswertungen bereit. Reports sind Lese- und Erzeugungsfunktionen, keine Echtzeitansichten. Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und eigene Presets verwalten.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li><li>Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254</li><li>Lokaler Stand: 04.05.26</li><li>Importstatus: Ursprünglich aus lokalem Notion-Markdown-Export übernommen; fachlich für Report-Presets und entkoppelte Report-Persistenz aktualisiert.</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Unter dem Navigationspunkt <strong>Reports</strong> stellt die Anwendung konfigurierbare Auswertungen bereit. Reports sind Lese- und Erzeugungsfunktionen, keine Echtzeitansichten. Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und eigene Presets verwalten.</p>
+<p>Der Bereich umfasst vier Reports:</p>
+<ul><li>Vorlaufliste</li><li>Produktionsplanung</li><li>Auftragsliste</li><li>Tourenplan</li></ul>
+<p>Reports speichern ihren Zustand nicht mehr automatisch über User-Settings oder andere stille Settings-Mechanismen. Dauerhafte Wiederverwendung erfolgt ausschließlich über bewusst gespeicherte Presets. Die einzige fachliche Ausnahme ist die globale Layout-Konfiguration der Produktionsplanung; sie bleibt Admin-seitig persistent und gilt zunächst für alle.</p>
+<h2 class="wiki-h2">Gemeinsame Struktur</h2>
+<p>Jeder Report wird über ein Konfigurationspanel gesteuert. Das Panel enthält mindestens die Aktion <strong>Report erzeugen</strong> und eine generische Preset-Steuerung. Die Ergebnistabelle oder Ergebnisansicht erscheint unterhalb des Panels.</p>
+<p>Reports werden nicht automatisch aktualisiert. Eine Ausgabe entsteht nur durch eine ausdrückliche Aktion des Benutzers oder durch die ausdrückliche Ausführung eines Presets, das die Aktion <strong>Report erzeugen</strong> enthält.</p>
+<h2 class="wiki-h2">Zustandsmodell</h2>
+<h3 class="wiki-h3">Flüchtiger UI-Zustand</h3>
+<p>Alle Report-Konfigurationsmöglichkeiten bleiben als UI-Funktionen erhalten. Dazu gehören insbesondere:</p>
+<ul><li>Zeitraum und Kalenderwochenmodus</li><li>aktive Tabs</li><li>Spaltenauswahl und Spaltenreihenfolge</li><li>Kategorieauswahl</li><li>Shortcode-Schalter</li><li>Tour-Auswahl</li><li>Druck- und Vorschauoptionen</li></ul>
+<p>Diese Werte bleiben zunächst nur im aktuellen UI-Zustand. Beim Verlassen oder erneuten Öffnen eines Reports dürfen sie nicht still aus User-Settings oder vergleichbaren Settings wiederhergestellt werden.</p>
+<h3 class="wiki-h3">Explizite Preset-Persistenz</h3>
+<p>Ein Preset ist eine bewusst gespeicherte Report-Konfiguration. Es kann alle für den jeweiligen Report fachlich zulässigen Konfigurationswerte enthalten. Presets können außerdem Folgeaktionen enthalten, zum Beispiel:</p>
+<ul><li>Report erzeugen</li><li>Druckvorschau öffnen</li></ul>
+<p>Ein Preset enthält mindestens:</p>
+<ul><li>Name</li><li>Report-Key</li><li>Scope</li><li>Konfiguration</li><li>optionale Aktionen</li></ul>
+<p>Presets werden serverseitig im Dateisystem über die vorhandene generische Server-Filesystem-Infrastruktur gespeichert. Sie werden nicht in der Datenbank gespeichert.</p>
+<h3 class="wiki-h3">Scope und Rechte</h3>
+<p>Presets haben zwei Scopes:</p>
+<ul><li><code>USER</code>: nur für den jeweiligen Benutzer sichtbar und durch diesen Benutzer verwaltbar.</li><li><code>GLOBAL</code>: für alle angemeldeten Benutzer sichtbar, aber nur durch Admins anlegbar, änderbar und löschbar.</li></ul>
+<p>Alle angemeldeten Rollen dürfen eigene USER-Presets anlegen, ändern, löschen und ausführen. Admins dürfen zusätzlich GLOBAL-Presets verwalten.</p>
+<p>Die technische Durchsetzung erfolgt serverseitig. UI-Sichtbarkeit ist nur ergänzende Bedienlogik und keine ausreichende Berechtigungsprüfung.</p>
+<h3 class="wiki-h3">Globale Produktionsplanungs-Layout-Konfiguration</h3>
+<p>Die globale Layout-Konfiguration der Produktionsplanung bleibt als Admin-seitig verwaltete Persistenz erhalten. Sie gilt zunächst für alle Benutzer als Standardlayout.</p>
+<p>Dieses Layout darf Bestandteil eines Presets sein. Wenn ein Preset ein Layout enthält, ist das eine explizit gespeicherte Preset-Konfiguration und keine stille User-Settings-Persistenz. Das Ändern der globalen Layout-Konfiguration bleibt Admins vorbehalten.</p>
+<h2 class="wiki-h2">Datumskonfiguration</h2>
+<p>Beim Öffnen eines Reports wird ein definierter Default-Zustand gesetzt:</p>
+<ul><li>Modus: Kalenderwoche</li><li>Start: aktuelle ISO-Kalenderwoche</li><li>Zeitraum: 1 KW</li></ul>
+<p>Für Presets muss die Report-Datumskonfiguration dynamische Kalenderwochen-Modi unterstützen:</p>
+<ul><li>Start aktuelle KW</li><li>Start kommende KW</li><li>Anzahl der KW als Zeitraum</li></ul>
+<p>Die dynamische Angabe wird erst bei der Ausführung des Presets in eine konkrete Datumsspanne aufgelöst. Dadurch kann ein Preset zum Beispiel immer die kommenden 4 KW erzeugen, ohne ein statisches Datum zu speichern.</p>
+<p>Die bestehenden UI-Modi für konkrete Datumsspannen bleiben erhalten, solange sie für den jeweiligen Report fachlich vorgesehen sind. Sie dürfen aber nicht automatisch als Setting persistiert werden.</p>
+<h2 class="wiki-h2">Report: Vorlaufliste</h2>
+<p>HelpKey: <code>report-vorlaufliste</code></p>
+<p>Die Vorlaufliste fasst Termine innerhalb eines wählbaren Zeitraums zusammen, denen ein Projekt zugeordnet ist. Termine ohne Projekt werden nicht aufgenommen.</p>
+<p>Das Konfigurationspanel hat drei Tabs:</p>
+<ul><li>Datum</li><li>Kalenderwoche</li><li>Spalten</li></ul>
+<p>Beim Öffnen startet die Vorlaufliste im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum. Der zuletzt aktive Tab und die Spaltenauswahl werden nicht automatisch wiederhergestellt. Tab, Zeitraum, Spaltenauswahl, Spaltenreihenfolge, Spaltenbreiten und Shortcode-Option dürfen aber Bestandteil eines Presets sein.</p>
+<p>Die Sortierung bleibt aufsteigend nach vorgeplantem Termin und ist nicht konfigurierbar.</p>
+<h2 class="wiki-h2">Report: Produktionsplanung</h2>
+<p>HelpKey: <code>reports-produkte</code></p>
+<p>Der Report Produktionsplanung aggregiert Auftragsmengen aus <code>project_order_items</code> über Projekte mit Terminen im konfigurierten Zeitraum. Die Datumsspannen-Konfiguration folgt den gemeinsamen Regeln.</p>
+<p>Die anzuzeigenden Kategorien und ihre Darstellung in Blöcken und Spalten werden über die globale Produktionsplanungs-Layout-Konfiguration gesteuert. Der Layout-Editor bleibt Admin-seitig. Ist kein Layout konfiguriert, werden Standardkategorien verwendet.</p>
+<p>Shortcodes bleiben als expliziter Schalter erhalten. Wenn Shortcodes aktiv sind, werden Artikel mit identischem Shortcode innerhalb derselben Kategorie zu einem Eintrag zusammengeführt und ihre Mengen summiert. Artikel ohne Shortcode bleiben unter ihrem Vollnamen.</p>
+<p>Projekte oder Termine mit Reklamation-Tag oder Storniert-Tag werden vollständig ausgeschlossen.</p>
+<h3 class="wiki-h3">Projekt- und Terminkacheln</h3>
+<p>Unterhalb der Summenbereiche werden nur noch Einzelkacheln für Projekte bzw. Termine ausgegeben, die das System-Tag <strong>Sondermaß</strong> tragen. Die Tags <strong>Anmerkungen</strong> und <strong>Gespiegelt</strong> sind keine eigenständigen Gründe mehr, eine Kachel im unteren Bereich der Produktionsplanung auszugeben.</p>
+<p>Wenn ein Projekt oder Termin zusätzlich andere Tags trägt, bleiben diese in der Kachel sichtbar, sofern die Kachel wegen Sondermaß aufgenommen wurde.</p>
+<h2 class="wiki-h2">Report: Auftragsliste</h2>
+<p>HelpKey: <code>report-auftragsliste</code></p>
+<p>Die Auftragsliste zeigt Projekte mit mindestens einem gültigen Termin im konfigurierten Zeitraum als Kachelansicht. Pro Projekt wird der erste gültige Termin im Zeitfenster als repräsentativer Termin genutzt. Projekte und Termine mit Reklamation-Tag oder Storniert-Tag werden vollständig ausgeschlossen.</p>
+<p>Die Datumsspanne wird über Modus Datum oder Kalenderwoche konfiguriert. Beim Öffnen startet der Report im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.</p>
+<p>Komponenten- und Produktkategorien können im Konfigurationspanel abgewählt werden. Der Tag-Filter bietet Nicht-System-Tags sowie die Report-Tags Sondermaß und Anmerkungen an; Sperr- und Workflow-Tags wie Reklamation, Storniert oder Geparkt sind dort nicht wählbar. Diese Auswahl bleibt flüchtig, bis sie als Bestandteil eines Presets gespeichert wird. Deaktivierte Kategorien erscheinen weder in den Kacheln noch in der Druckausgabe.</p>
+<h2 class="wiki-h2">Report: Tourenplan</h2>
+<p>HelpKey: <code>report-tourenplan</code></p>
+<p>Der Tourenplan gibt Termine einer gewählten Tour als druckfähige Kartenansicht aus. Die Option <strong>Ohne Tour</strong> schließt Termine ohne Tourzuordnung ein.</p>
+<p>Die Tour-Auswahl, der Zeitraum, der Shortcode-Schalter sowie Druck- und Vorschauoptionen bleiben UI-Funktionen. Sie werden nicht automatisch über User-Settings oder globale Settings gespeichert. Wenn diese Werte dauerhaft wiederverwendet werden sollen, müssen sie Bestandteil eines Presets sein.</p>
+<p>Die Tag-Priorität pro Karte bleibt:</p>
+<ul><li>Reklamation</li><li>Sondermaß</li><li>Messe Aufbau/Abbau</li><li>Neutral</li></ul>
+<p>Die Priorität steuert ausschließlich die Darstellung. Es gibt im Tourenplan keine stille Ausschlusslogik wie in der Produktionsplanung.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Alle angemeldeten Rollen dürfen Reports öffnen, konfigurieren, erzeugen und eigene USER-Presets verwalten.</li><li>GLOBAL-Presets dürfen nur Admins verwalten.</li><li>Die globale Produktionsplanungs-Layout-Konfiguration darf nur durch Admins geändert werden.</li><li>Reports erzeugen keine Ausgabe ohne ausdrückliche Aktion.</li><li>Reports lesen beim Öffnen keine alten Report-User-Settings für Zeitraum, Tab, Spalten, Kategorien, Shortcodes, Tourenplan-Optionen oder vergleichbare UI-Zustände.</li><li>Änderungen im Konfigurationspanel schreiben keine Report-Settings.</li><li>Wiederverwendbare Konfigurationen werden ausschließlich über Presets gespeichert.</li><li>Presets werden serverseitig validiert. Der Client darf keine Rechte aus UI-Sichtbarkeit ableiten.</li><li>Alte Report-Settings werden nicht migriert und dürfen den Report-Startzustand nicht beeinflussen.</li></ul>
+<h2 class="wiki-h2">Umsetzungspakete</h2>
+<h3 class="wiki-h3">1. Report-Preset-Infrastruktur</h3>
+<p>Die allgemeine Infrastruktur für Report-Presets umfasst Contracts, Route, Controller, Service, Repository und Dateisystem-Anbindung. Dazu gehören Report-Key-Validierung, Scope-Validierung, erlaubte Aktionen, dynamische KW-Auflösung und serverseitige Rechteprüfung.</p>
+<p>Tests:</p>
+<ul><li>USER-Presets sind je Benutzer getrennt.</li><li>GLOBAL-Presets sind für alle angemeldeten Benutzer sichtbar.</li><li>GLOBAL-Presets dürfen nur Admins schreiben oder löschen.</li><li>Alle Rollen dürfen eigene USER-Presets schreiben, ändern und löschen.</li><li>Start aktuelle KW und Start kommende KW werden mit Anzahl KW korrekt in konkrete Datumsspannen aufgelöst.</li><li>Ungültige Report-Keys, Aktionen und Konfigurationen werden abgelehnt.</li></ul>
+<h3 class="wiki-h3">2. Implizite Report-Persistenz entkoppeln</h3>
+<p>Alle bestehenden Report-UI-Funktionen bleiben erhalten. Entfernt wurde nur das automatische Lesen und Schreiben reportbezogener Settings. Vorhandene alte Settings dürfen beim Öffnen eines Reports keine Werte still setzen. Änderungen in Report-Panels dürfen keine alten Report-Settings mehr schreiben.</p>
+<p>Ausnahme: Die globale Produktionsplanungs-Layout-Konfiguration bleibt Admin-seitig persistent.</p>
+<p>Tests:</p>
+<ul><li>Alte User-Settings für Reports beeinflussen den Startzustand nicht.</li><li>UI-Änderungen schreiben keine Report-Settings.</li><li>Dieselben Konfigurationswerte können explizit als Preset gespeichert und angewendet werden.</li><li>Die globale Produktionsplanungs-Layout-Konfiguration bleibt wirksam und Admin-seitig geschützt.</li></ul>
+<h3 class="wiki-h3">3. Vorlaufliste mit Presets</h3>
+<p>Die Vorlaufliste wird an Presets angebunden. Zeitraum, aktiver Tab, Spaltenauswahl, Reihenfolge, Breiten und Shortcode-Optionen können im Preset enthalten sein.</p>
+<p>Tests:</p>
+<ul><li>Default startet mit aktueller KW und 1 KW.</li><li>Ein Preset mit Start kommende KW und mehreren KW erzeugt den erwarteten Datenbereich.</li><li>Spaltenkonfiguration aus einem Preset wirkt auf die konkrete Vorlaufliste mit echten Daten.</li><li>Ohne Preset erfolgt keine Wiederherstellung alter Tab- oder Spaltenwerte.</li></ul>
+<h3 class="wiki-h3">4. Produktionsplanung mit Presets</h3>
+<p>Die Produktionsplanung wird an Presets angebunden. Zeitraum, Shortcode-Schalter und optionales Layout können Bestandteil eines Presets sein. Der untere Kachelbereich enthält nur Sondermaß-Projekte bzw. Sondermaß-Termine.</p>
+<p>Tests:</p>
+<ul><li>Default startet mit aktueller KW und 1 KW.</li><li>Ein Preset mit Start kommende KW und mehreren KW wirkt auf die Summenbereiche mit echten Auftragspositionen.</li><li>Shortcode-Konfiguration aus einem Preset wirkt auf die Aggregation.</li><li>Ein im Preset enthaltenes Layout wirkt auf die Report-Ausgabe.</li><li>Projekt-/Terminkacheln erscheinen unten nur bei Sondermaß; Anmerkungen und Gespiegelt allein reichen nicht.</li><li>Reklamation und Storniert bleiben vollständig ausgeschlossen.</li></ul>
+<h3 class="wiki-h3">5. Auftragsliste mit Presets</h3>
+<p>Die Auftragsliste wird an Presets angebunden. Zeitraum, Kategorieauswahl, Tag-Filter, Sauna-Modell-Auswahl, Shortcodes und Druckvorschau-Aktion können Bestandteil eines Presets sein.</p>
+<p>Tests:</p>
+<ul><li>Default startet mit aktueller KW und 1 KW.</li><li>Ein Preset mit Start kommende KW und mehreren KW erzeugt die erwarteten Kacheln mit echten Projekten.</li><li>Kategorieauswahl aus einem Preset verändert Kachel- und Druckausgabe.</li><li>Ein Preset kann Report-Erzeugung und Druckvorschau-Aktion auslösen.</li><li>Ohne Preset wird keine alte Kategorieauswahl wiederhergestellt.</li></ul>
+<h3 class="wiki-h3">6. Tourenplan mit Presets</h3>
+<p>Der Tourenplan wird an Presets angebunden. Tour-Auswahl, Zeitraum, Shortcodes, Druckmodus, Vorschauoptionen und Druckvorschau-Aktion können Bestandteil eines Presets sein.</p>
+<p>Tests:</p>
+<ul><li>Default startet mit aktueller KW und 1 KW.</li><li>Ein Preset mit Start kommende KW und mehreren KW erzeugt die erwarteten Tour-Karten mit echten Terminen.</li><li>Tour-Auswahl aus einem Preset beschränkt die Ausgabe korrekt.</li><li>Shortcode- und Druckoptionen aus einem Preset wirken auf Vorschau und Druckmodell.</li><li>Ohne Preset werden keine alten Tourenplan-Settings für Zeitraum, Druckmodus oder Schriftgröße wiederhergestellt.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.html">UC 26/01: Vorlaufliste konfigurieren und erzeugen</a></li><li><a href="../use-cases/uc-26-02-bis-datum-nachtraeglich-entfernen.html">UC 26/02: Bis Datum nachträglich entfernen</a></li><li><a href="../use-cases/uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.html">UC 26/03: Produktionsplanung konfigurieren und erzeugen</a></li><li><a href="../use-cases/uc-26-04-datumsspanne-in-der-produktionsplanung-nachtraeglich-anpassen.html">UC 26/04: Datumsspanne in der Produktionsplanung nachträglich anpassen</a></li><li><a href="../use-cases/uc-26-05-produktionsplanung-drucken.html">UC 26/05: Produktionsplanung drucken</a></li><li><a href="../use-cases/uc-26-06-auftragsliste-konfigurieren-und-erzeugen.html">UC 26/06: Auftragsliste konfigurieren und erzeugen</a></li><li><a href="../use-cases/uc-26-07-auftragsliste-drucken.html">UC 26/07: Auftragsliste drucken</a></li><li><a href="../use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.html">UC 26/08: Tourenplan konfigurieren und erzeugen</a></li><li><a href="../use-cases/uc-26-09-tourenplan-drucken.html">UC 26/09: Tourenplan drucken</a></li><li><a href="../use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.html">UC 26/10: Report-Preset speichern und ausführen</a></li></ul>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<ul><li>Alle angemeldeten Rollen dürfen eigene USER-Presets verwalten.</li><li>GLOBAL-Presets bleiben Admin-seitig.</li><li>Die globale Produktionsplanungs-Layout-Konfiguration bleibt Admin-seitig persistent und darf Bestandteil eines Presets sein.</li><li>Produktionsplanung zeigt unten nur noch Sondermaß-Kacheln.</li><li>Es findet keine Migration alter Report-Settings statt.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-26-01-vorlaufliste-konfigurieren-und-erzeugen.html">UC-26/01</a><a href="../use-cases/uc-26-02-bis-datum-nachtraeglich-entfernen.html">UC-26/02</a><a href="../use-cases/uc-26-03-produktionsplanung-konfigurieren-und-erzeugen.html">UC-26/03</a><a href="../use-cases/uc-26-04-datumsspanne-in-der-produktionsplanung-nachtraeglich-anpassen.html">UC-26/04</a><a href="../use-cases/uc-26-05-produktionsplanung-drucken.html">UC-26/05</a><a href="../use-cases/uc-26-06-auftragsliste-konfigurieren-und-erzeugen.html">UC-26/06</a><a href="../use-cases/uc-26-07-auftragsliste-drucken.html">UC-26/07</a><a href="../use-cases/uc-26-08-tourenplan-konfigurieren-und-erzeugen.html">UC-26/08</a><a href="../use-cases/uc-26-09-tourenplan-drucken.html">UC-26/09</a><a href="../use-cases/uc-26-10-report-preset-speichern-und-ausfuehren.html">UC-26/10</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-26-auswertungen-und-reports-backlog.html">BL-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

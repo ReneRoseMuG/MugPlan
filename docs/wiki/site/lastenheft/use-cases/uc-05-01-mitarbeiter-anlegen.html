@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-05/01: Mitarbeiter anlegen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-05/01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-05/01 Mitarbeiter anlegen</span></nav>
+        <h1 class="wiki-h1">UC-05/01: Mitarbeiter anlegen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-05</span></div>
+    <p class="wiki-lead">Einen neuen Mitarbeiter als aktive Stammdatenressource im System anlegen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-05-mitarbeiterverwaltung.html">FT (05): Mitarbeiterverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen neuen Mitarbeiter als aktive Stammdatenressource im System anlegen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt die Rolle Administrator oder Disponent.</li><li>Die erforderlichen Pflichtfelder sind bekannt und im Formular sichtbar.</li><li>Es besteht keine System-Sperre (z. B. Wartungsmodus).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur öffnet die Mitarbeiterverwaltung.</li><li>Akteur wählt die Funktion „Mitarbeiter anlegen“.</li><li>System öffnet ein leeres Mitarbeiterformular im Modus „Neu“.</li><li>Akteur erfasst die erforderlichen Stammdaten.</li><li>Akteur speichert den neuen Mitarbeiter.</li><li>System validiert alle Pflichtfelder.</li><li>System legt den Mitarbeiter mit <code>is_active = true</code> an.</li><li>System persistiert den Datensatz.</li><li>System aktualisiert alle abhängigen Listen- und Auswahlansichten.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Pflichtfeld fehlt oder ist ungültig →</li></ul>
+<p>System speichert nicht und liefert Validierungsfehler (HTTP 400 bei API-Aufruf).</p>
+<ul><li>Akteur ohne Berechtigung →</li></ul>
+<p>System blockiert den Zugriff (HTTP 403).</p>
+<ul><li>Technischer Persistenzfehler →</li></ul>
+<p>System liefert Fehlerstatus (HTTP 500) und speichert keinen Datensatz.</p>
+<ul><li>Zwei Akteure legen gleichzeitig Mitarbeiter mit identischen Stammdaten an →</li></ul>
+<p>Beide Datensätze werden unabhängig voneinander gespeichert, da keine Eindeutigkeitsregel existiert.</p>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Ein neuer Mitarbeiterdatensatz existiert persistent in der Datenbank.</li><li>Der Mitarbeiter besitzt standardmäßig <code>is_active = true</code>.</li><li>Der Mitarbeiter erscheint:</li><li>in der Mitarbeiterlistenansicht (Board und Tabelle),</li><li>in Dialoglisten zur Mitarbeiterzuweisung,</li><li>in Terminformularen zur Auswahl,</li><li>in Filtern, sofern aktive Mitarbeiter abgefragt werden.</li><li>Es existieren keine impliziten Beziehungen zu Terminen, Touren oder Teams.</li><li>Die Terminübersicht des Mitarbeiters ist initial leer.</li><li>Es wurden keine bestehenden Termine oder Projekte verändert.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-05-mitarbeiterverwaltung.html">FT-05</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

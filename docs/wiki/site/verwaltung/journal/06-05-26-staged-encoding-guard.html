@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-05-26-staged-encoding-guard: 06.05.26 | Tooling | Staged-Encoding-Guard · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 06-05-26-staged-encoding-guard">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">06-05-26-staged-encoding-guard 06.05.26 | Tooling | Staged-Encoding-Guard</span></nav>
+        <h1 class="wiki-h1">06-05-26-staged-encoding-guard: 06.05.26 | Tooling | Staged-Encoding-Guard</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>06.05.26</div>
+    <p class="wiki-lead">W-14 wurde abgeschlossen. Neue Encoding-/Mojibake-Probleme werden lokal vor dem Commit über einen Staged-Guard erkannt.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>W-14 wurde abgeschlossen. Neue Encoding-/Mojibake-Probleme werden lokal vor dem Commit über einen Staged-Guard erkannt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Lokale Tooling- und Dokumentationsänderung ohne fachliche Änderung an App-Funktionen, Rollen, API, Datenmodell, Persistenz oder UI-Verhalten.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>W-14: UTF-8-Härtung gegen Umlaute und Mojibake</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>scripts/check-staged-encoding.mjs</code> prüft gestagte Textdateien auf gültiges UTF-8.</li><li>Neu hinzugefügte Diff-Zeilen werden auf typische Mojibake-Muster und offensichtliche ASCII-Umlaut-Umschreibungen geprüft.</li><li><code>.githooks/pre-commit</code> ruft den Guard vor lokalen Commits auf.</li><li><code>package.json</code> enthält <code>check:encoding:staged</code>.</li><li><code>agents.md</code> dokumentiert den erweiterten <code>save</code>-Flow mit Blocker-Meldung und Rückfrage vor Bereinigung.</li><li>Die Decision W-14 wurde als abgeschlossen markiert.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Kein Rollenbezug. Es wurden keine Berechtigungen, Sichtbarkeiten oder serverseitigen Rollenprüfungen verändert.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>node --check scripts/check-staged-encoding.mjs</code></li><li><code>npm run check:encoding:staged</code></li><li>Negativer Smoke-Test mit künstlichem Mojibake-Beispiel</li><li><code>npm run check:encoding</code></li><li><code>npm run lint:encoding</code></li><li><code>git diff --cached --check</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Andere Arbeitskopien müssen <code>git config core.hooksPath .githooks</code> einmalig setzen, damit der versionierte Hook lokal aktiv ist.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

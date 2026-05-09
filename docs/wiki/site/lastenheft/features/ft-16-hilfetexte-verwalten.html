@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-16: Hilfetexte verwalten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-16">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-16 Hilfetexte verwalten</span></nav>
+        <h1 class="wiki-h1">FT-16: Hilfetexte verwalten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature ermöglicht die zentrale Verwaltung von Hilfetexten in der Anwendung, die von Benutzern kontextbezogen über Hilfe-Symbole in der UI abgerufen werden können. Ziel ist, fachliche Bedienhinweise konsistent, wartbar und rollenbasiert bereitzustellen, ohne dass Hilfetext</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature ermöglicht die zentrale Verwaltung von Hilfetexten in der Anwendung, die von Benutzern kontextbezogen über Hilfe-Symbole in der UI abgerufen werden können. Ziel ist, fachliche Bedienhinweise konsistent, wartbar und rollenbasiert bereitzustellen, ohne dass Hilfetexte in einzelnen UI-Views dupliziert oder fest im Frontend verdrahtet werden müssen.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Ein Hilfetext ist ein eigenständiges, administrierbares Objekt mit eindeutiger Kennung („help_key“), Titel und formatierbarem Inhalt (Markdown). Hilfetexte werden in der UI kontextbezogen über ein Hilfe-Symbol (z. B. „?“ oder „i“) angezeigt. Die UI übergibt beim Abruf den help_key, das System liefert den passenden Hilfetext zurück.</p>
+<p>Hilfetexte sind rein informativ. Sie verändern keine fachlichen Daten (Kunden, Projekte, Termine, Touren etc.) und sind unabhängig von Termin- und Planungslogik. Sie dienen der besseren Bedienbarkeit, der Einarbeitung und der Reduzierung von Rückfragen.</p>
+<p>Die Pflege der Hilfetexte erfolgt administrativ. Disponenten und Leser können Hilfetexte anzeigen, aber nicht verändern. Admins können Hilfetexte anlegen, bearbeiten, aktivieren/deaktivieren und verwalten.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<p>Ein Hilfetext besitzt einen eindeutigen help_key und darf pro help_key nur einmal existieren.</p>
+<p>Hilfetexte sind global gültig; die Kontextbindung erfolgt ausschließlich über den help_key, nicht über direkte Fremdschlüssel auf Domainobjekte.</p>
+<p>Hilfetexte haben keine fachliche Wirkung und sind ausschließlich Anzeige-/Dokumentationsinhalte.</p>
+<p>Hilfetexte können aktiviert/deaktiviert werden; deaktivierte Hilfetexte sind in der UI nicht abrufbar, bleiben aber aus Gründen der Nachvollziehbarkeit erhalten.</p>
+<p>Die Verwaltung (CRUD) der Hilfetexte ist ausschließlich der Rolle Admin vorbehalten.</p>
+<p>Die Anzeige der Hilfetexte ist für alle Rollen erlaubt, sofern der Text aktiv ist.</p>
+<p>Der Inhalt wird als Markdown gespeichert; externe Ressourcen- oder Dateipfadabhängigkeiten aus dem Client sind nicht vorgesehen.</p>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-16-01-hilfetext-anzeigen-kontextbezogen.html">UC 16/01: Hilfetext anzeigen (kontextbezogen)</a></li><li><a href="../use-cases/uc-16-02-hilfetext-anlegen.html">UC 16/02: Hilfetext anlegen</a></li><li><a href="../use-cases/uc-16-03-hilfetext-bearbeiten.html">UC 16/03: Hilfetext bearbeiten</a></li><li><a href="../use-cases/uc-16-04-hilfetext-aktivieren-deaktivieren.html">UC 16/04: Hilfetext aktivieren/deaktivieren</a></li><li><a href="../use-cases/uc-16-05-hilfetexte-durchsuchen-und-anzeigen.html">UC 16/05: Hilfetexte durchsuchen und anzeigen</a></li><li><a href="../use-cases/uc-16-06-hilfetext-loeschen.html">UC 16/06: Hilfetext löschen</a></li><li><a href="../use-cases/uc-16-07-versionskonflikt-bei-paralleler-bearbeitung-eines-hilfetextes.html">UC 16/07: Versionskonflikt bei paralleler Bearbeitung eines Hilfetextes</a></li><li><a href="../use-cases/uc-16-08-unberechtigter-zugriff-auf-hilfetext-verwaltung-verhindern.html">UC 16/08: Unberechtigter Zugriff auf Hilfetext-Verwaltung verhindern</a></li><li><a href="../use-cases/uc-16-09-hilfetexte-aus-datei-importieren.html">UC 16/09: Hilfetexte aus Datei importieren</a></li><li><a href="../use-cases/uc-16-10-hilfetexte-in-datei-exportieren.html">UC 16/10: Hilfetexte in Datei exportieren</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-16-01-hilfetext-anzeigen-kontextbezogen.html">UC-16/01</a><a href="../use-cases/uc-16-02-hilfetext-anlegen.html">UC-16/02</a><a href="../use-cases/uc-16-03-hilfetext-bearbeiten.html">UC-16/03</a><a href="../use-cases/uc-16-04-hilfetext-aktivieren-deaktivieren.html">UC-16/04</a><a href="../use-cases/uc-16-05-hilfetexte-durchsuchen-und-anzeigen.html">UC-16/05</a><a href="../use-cases/uc-16-06-hilfetext-loeschen.html">UC-16/06</a><a href="../use-cases/uc-16-07-versionskonflikt-bei-paralleler-bearbeitung-eines-hilfetextes.html">UC-16/07</a><a href="../use-cases/uc-16-08-unberechtigter-zugriff-auf-hilfetext-verwaltung-verhindern.html">UC-16/08</a><a href="../use-cases/uc-16-09-hilfetexte-aus-datei-importieren.html">UC-16/09</a><a href="../use-cases/uc-16-10-hilfetexte-in-datei-exportieren.html">UC-16/10</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-16-hilfetexte-verwalten-backlog.html">BL-16</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

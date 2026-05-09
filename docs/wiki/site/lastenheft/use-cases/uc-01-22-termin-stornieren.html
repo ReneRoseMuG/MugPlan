@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/22: Termin stornieren · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/22">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/22 Termin stornieren</span></nav>
+        <h1 class="wiki-h1">UC-01/22: Termin stornieren</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Einen bestehenden, nicht historischen Termin dauerhaft stornieren. Der Storno-Workflow führt alle fachlichen Konsequenzen in einem einzigen atomaren Schritt aus: Alle zugeordneten Mitarbeiter werden abgezogen, der Auftragswert des verknüpften Projekts wird auf 0 gesetzt und der T</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen bestehenden, nicht historischen Termin dauerhaft stornieren. Der Storno-Workflow führt alle fachlichen Konsequenzen in einem einzigen atomaren Schritt aus: Alle zugeordneten Mitarbeiter werden abgezogen, der Auftragswert des verknüpften Projekts wird auf 0 gesetzt und der Termin erhält den Tag „Storniert“. Danach ist der Termin dauerhaft gesperrt und geht nicht mehr in Umsatzkalkulationen ein.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Der Termin ist einem Kunden zugeordnet.</li><li>Der Termin liegt nicht in der Vergangenheit (Startdatum ≥ heute) <strong>— für Disponenten. Administratoren dürfen auch historische Termine stornieren.</strong></li><li>Der Termin hat nicht bereits den Tag „Storniert&quot;.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet den Termin im Terminformular.</li><li>Der Akteur klickt auf den Button „Termin stornieren“.</li><li>Das System zeigt einen Bestätigungsdialog mit einer eindeutigen Warnung, dass der Vorgang nicht rükgängig gemacht werden kann.</li><li>Der Akteur bestätigt den Storno.</li><li>Das System führt den Storno-Workflow atomar aus:</li><li>Alle dem Termin zugeordneten Mitarbeiter werden entfernt (Join-Tabelle Termin–Mitarbeiter wird geleert).</li><li>Ist dem Termin ein Projekt zugeordnet, wird der Auftragswert des Projekts auf 0 gesetzt.</li><li>Der Termin erhält den Tag „Storniert“.</li><li>Der Termin wird dauerhaft gesperrt (read-only, nicht editierbar, nicht löschbar, nicht verschiebbar).</li><li>Das System aktualisiert alle abhängigen Sichten. Der Termin bleibt in Kalender und Listenansichten sichtbar, ist jedoch optisch als storniert gekennzeichnet.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Abbruch im Bestätigungsdialog:</strong> Der Akteur bricht ab. Es werden keine Änderungen vorgenommen; der Termin bleibt unverändert.</li><li><strong>Termin ist historisch (nur Disponent):</strong> Der Button „Termin stornieren“ ist für Disponenten nicht verfügbar. Das System verhindert den Aufruf serverseitig mit HTTP 409 PAST_APPOINTMENT_READONLY. Administratoren können historische Termine stornieren.</li><li><strong>Termin ist bereits storniert:</strong> Der Button ist nicht verfügbar. Keine Aktion möglich.</li><li><strong>Termin hat kein Projekt:</strong> Schritt 5b (Auftragswert auf 0) entfällt. Die übrigen Schritte werden vollständig ausgeführt.</li><li><strong>Fehler während des Workflows:</strong> Das System stellt sicher, dass kein Teilzustand entsteht. Entweder alle Schritte werden ausgeführt oder keiner. Der Termin bleibt im ursprünglichen Zustand, und das System zeigt eine eindeutige Fehlermeldung.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist storniert und dauerhaft gesperrt. Er erscheint in allen Sichten weiterhin, ist aber optisch als storniert gekennzeichnet. Keine Mitarbeiter sind mehr zugeordnet; betroffene Mitarbeiter sind im Zeitraum des Termins wieder frei verfügbar. Falls ein Projekt zugeordnet war, ist dessen Auftragswert auf 0 gesetzt. Der Termin kann nicht reaktiviert, bearbeitet, verschoben oder gelöscht werden. Er geht nicht in Umsatzkalkulationen und Auftragswert-Reports ein.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

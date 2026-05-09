@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/02: Projekt bearbeiten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/02 Projekt bearbeiten</span></nav>
+        <h1 class="wiki-h1">UC-02/02: Projekt bearbeiten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Überschreibungen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Überschreibungen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Das Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).</li><li>Das Projekt besitzt ein Versionsmerkmal (Optimistic Locking).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet ein Projekt.</li><li>Der Akteur ändert zulässige Felder (Titel, Beschreibung, Aktiv-Status).</li><li>Der Akteur versucht, den Kunden des Projekts zu ändern.</li><li>Das System prüft: Hat das Projekt mindestens einen Termin zugeordnet?</li><li>Falls <strong>JA:</strong> Das System blockiert den Kundenwechsel mit Fehlermeldung. Der Kundenwert ist readonly.</li><li>Falls <strong>NEIN:</strong> Der Akteur wählt einen neuen Kunden. Das System prüft Existenz und Aktivstatus des neuen Kunden. Das System speichert die Kundenänderung und aktualisiert den <code>customer_id</code>-Wert aller zugeordneten Termine kaskadierend.</li><li>Optional ändert der Akteur strukturierte Auftragspositionen, darunter das Artikellistenfeld <strong>Sauna</strong>.</li><li>Wenn dadurch ein anderes Sauna-Modell gewählt wird und der Projektname nicht bereits dem neuen Modell entspricht, fragt das System, ob der Projektname angepasst werden soll.</li><li>Bestätigt der Akteur, setzt das System den Projektnamen auf den Namen des gewählten Sauna-Modells.</li><li>Lehnt der Akteur ab, bleibt der bisherige Projektname unverändert.</li><li>Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäß FT (28).</li><li>Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Projekt nicht vorhanden → HTTP 404.</li><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Änderungsrechte → HTTP 403.</li><li>Projekt hat Termine → Kundenwechsel wird blockiert (HTTP 409 BUSINESS_CONFLICT).</li><li>Neuer Kunde existiert nicht → HTTP 422.</li><li>Neuer Kunde ist inaktiv → HTTP 409 INACTIVE_ENTITY_ASSIGNMENT.</li><li>Versionskonflikt (Optimistic Locking) → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.</li><li>Sauna-Modell wird nicht fachlich geändert → System zeigt keine Projektnamen-Rückfrage.</li><li>Abbruch → keine Änderung wird gespeichert.</li><li>Technischer Fehler → HTTP 500, keine Änderung.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Das Projekt ist aktualisiert. Der Kundenwert bleibt stabil, solange das Projekt Termine besitzt. Bei einem zulässigen Kundenwechsel werden alle zugeordneten Termine auf den neuen Kunden aktualisiert. Alle abhängigen Ansichten sind konsistent.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

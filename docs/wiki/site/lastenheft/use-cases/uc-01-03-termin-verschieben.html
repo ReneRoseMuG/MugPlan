@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/03: Termin verschieben · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/03 Termin verschieben</span></nav>
+        <h1 class="wiki-h1">UC-01/03: Termin verschieben</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Einen bestehenden Termin auf ein anderes Datum verschieben, ohne die Uhrzeit unbeabsichtigt zu verändern und ohne fachliche Inkonsistenzen oder Mitarbeiterüberschneidungen zu erzeugen. Der Use Case umfasst sowohl das Verschieben über das Terminformular als auch das Verschieben pe</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen bestehenden Termin auf ein anderes Datum verschieben, ohne die Uhrzeit unbeabsichtigt zu verändern und ohne fachliche Inkonsistenzen oder Mitarbeiterüberschneidungen zu erzeugen. Der Use Case umfasst sowohl das Verschieben über das Terminformular als auch das Verschieben per Drag-and-drop im Kalender.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).</li><li><strong>Rollenbasierte Datumsbeschränkung:</strong> Disponenten dürfen Termine nicht in die Vergangenheit verschieben und können keine historischen Termine verschieben. Administratoren dürfen Termine auf beliebige Datumsangaben verschieben — einschließlich Vergangenheit.</li><li>Der Termin ist einem Kunden zugeordnet.</li><li>Optional: Der Termin ist einem Projekt zugeordnet.</li><li>Die zugehörigen Mitarbeiterzuordnungen sind vorhanden oder der Termin hat keine zugeordneten Mitarbeiter.</li><li>Optional: Der Termin ist einer Tour zugeordnet.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur verschiebt den Termin auf einen anderen Tag, entweder über das Terminformular oder per Drag-and-drop im Kalender.</li><li>Wenn der Termin über das Terminformular verschoben wird, editiert der Akteur Startdatum und optional Enddatum.</li><li>Wenn der Termin per Drag-and-drop verschoben wird, verschiebt der Akteur den Termin im Kalender auf den gewünschten Tag.</li><li>Das System darf dabei die bestehende Startuhrzeit nicht unbeabsichtigt verändern, sondern übernimmt die Uhrzeit unverändert.</li><li>Das System führt die Überschneidungsprüfung für alle dem Termin zugeordneten Mitarbeiter durch.</li><li>Mitarbeiter dürfen keine überschneidenden Termine haben.</li><li>Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin nach dem Verschieben umfasst.</li><li>Eine evtl. vorhandene Tour Zuordnung bleibt erhalten. Das Verschieben des Termins per D&amp;D auf eine andere Tour ist nicht möglich.</li><li>Das System speichert den Termin mit dem neuen Datum beziehungsweise Zeitraum.</li><li>Das System aktualisiert die Kalenderansichten und alle relevanten Sichten, die den Termin anzeigen.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Überschneidung erkannt: Das System blockiert das Verschieben und zeigt einen Konflikt an. Der Termin bleibt unverändert auf dem ursprünglichen Datum, und es entstehen keine Teiländerungen an Termin oder Join-Einträgen.</li><li>KW-Wechsel mit Wochenplanung: Wenn das Verschieben zu einem Wechsel der Kalenderwoche führt und für die alte oder neue Tour-KW-Kombination Wochenplanungseinträge vorhanden sind, zeigt das System vor dem Speichern einen Vorschau-Dialog: welche Mitarbeiter aus der alten KW entfernt werden, welche aus der neuen KW hinzugefügt werden, welche Konflikte bestehen, welche Mitarbeiter unverändert bleiben. Erst nach Bestätigung wird der Termin gespeichert. Bei Abbruch wird der Termin nicht verschoben.</li><li>Abbruch: Der Akteur bricht den Vorgang ab. Der Termin bleibt unverändert.</li><li>Historischer Zeitraum (nur Disponent): Wenn ein Disponent einen Termin auf ein Datum in der Vergangenheit verschieben würde oder einen historischen Termin verschieben möchte, blockiert das System mit HTTP 409 PAST_APPOINTMENT_READONLY. Es wird nichts gespeichert. Administratoren dürfen Termine auf beliebige Datumsangaben — einschließlich Vergangenheit — verschieben.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist auf das neue Datum beziehungsweise den neuen Zeitraum verschoben und bleibt weiterhin fachlich gültig. Ein vorhandener Projektbezug bleibt erhalten; andernfalls bleibt der direkte Kundenbezug erhalten. Die Uhrzeit ist nach einem mausgesteuerten Verschieben unverändert geblieben. Alle Mitarbeiterzuordnungen bleiben konsistent als Einträge in der Join-Tabelle Termin–Mitarbeiter erhalten, sofern das Verschieben erfolgreich war.</p>
+<p>Der Termin erscheint in der neuen Tages- beziehungsweise Wochen-Sicht und ist in der alten Sicht nicht mehr vorhanden. Für alle zugeordneten Mitarbeiter ist der Termin in der Mitarbeiter-Terminliste sichtbar, und wenn der Termin einer Tour zugeordnet ist, ist er auch in der Tour-Terminliste sichtbar.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

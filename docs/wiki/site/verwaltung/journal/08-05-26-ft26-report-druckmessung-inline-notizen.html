@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>08-05-26-ft26-report-druckmessung-inline-notizen: 08.05.26 | Umsetzung | FT-26/FT-03/FT-13: Report-Druckmessung und Inline-Notizen-E2E · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 08-05-26-ft26-report-druckmessung-inline-notizen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">08-05-26-ft26-report-druckmessung-inline-notizen 08.05.26 | Umsetzung | FT-26/FT-03/FT-13: Report-Druckmessung und Inline-Notizen-E2E</span></nav>
+        <h1 class="wiki-h1">08-05-26-ft26-report-druckmessung-inline-notizen: 08.05.26 | Umsetzung | FT-26/FT-03/FT-13: Report-Druckmessung und Inline-Notizen-E2E</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>08.05.26</div>
+    <p class="wiki-lead">Die Auftragslisten-Druckvorschau wurde von fester Höhen-Schätzung auf gemessene Kartenhöhen im Browser umgestellt. Dafür wurde eine gemeinsame, reportunabhängige Mess- und Paginierungsbasis für Kartenreports ergänzt und der bestehende Tourenplan-Messpfad darauf umgestellt. Zusätz</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Auftragslisten-Druckvorschau wurde von fester Höhen-Schätzung auf gemessene Kartenhöhen im Browser umgestellt. Dafür wurde eine gemeinsame, reportunabhängige Mess- und Paginierungsbasis für Kartenreports ergänzt und der bestehende Tourenplan-Messpfad darauf umgestellt. Zusätzlich wurde die offene Browser-E2E-Lücke für bedienbare Inline-Notizen im Wochenkalender geschlossen und der neue <code>rückblick</code>-Workflow in <code>agents.md</code> ergänzt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtige Frontend- und Teständerung ohne Backend-, Contract-, Rollen-, Datenbank- oder Migrationsänderung. Die fachlichen Reportdaten, Filter, Presets, Tag-Logik und bestehenden Report-Endpunkte bleiben unverändert. Die Änderung betrifft die clientseitige Print-Infrastruktur, Report-Paginierung und Browser-Testabdeckung.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-26 Auswertungen und Reports: Auftragsliste drucken, Tourenplan-Druckvorschau und gemeinsame Karten-Paginierung.</li><li>FT-03 Kalenderansichten: Wochenkalender-Terminkarten.</li><li>FT-13 Notizverwaltung: Inline-Notizen bearbeiten und löschen.</li><li>Repo-Arbeitsworkflow: <code>rückblick &lt;datum|gestern|heute&gt;</code> als reiner Informationsbericht aus dem Wiki-Journal.</li></ul>
+<p>Lokale Aufgabenbasis:</p>
+<ul><li><code>docs/wiki/tasks/a-15-ft26-report-print-basiskomponente.md</code></li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>client/src/lib/measured-print-pages.ts</code> ergänzt eine generische Paginierung für gemessene Kartenhöhen.</li><li><code>client/src/components/print/MeasuredPrintCardMeasurement.tsx</code> ergänzt eine wiederverwendbare Offscreen-Messansicht für Kartenreports.</li><li>Die Auftragsliste nutzt im Browser-Printpfad gemessene Kartenhöhen und gruppiert Karten erst nach realer DOM-Messung in Druckseiten.</li><li>Der bisherige Schätzpfad der Auftragsliste bleibt nur als Fallback für nicht-browserseitige Renderpfade erhalten.</li><li><code>TourenplanPaginationMeasurement</code> nutzt dieselbe Messkomponente weiter, damit Tourenplan und Auftragsliste eine gemeinsame Print-Basis teilen.</li><li>Der Browser-E2E-Test <code>reports.ft26.browser.e2e.spec.ts</code> prüft lange Auftragslisten-Karten über mehrere Druckseiten und stellt sicher, dass keine Karte über die A4-Seitenkante läuft.</li><li>Der Browser-E2E-Test <code>calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts</code> prüft das Bearbeiten einer Termin-Inline-Notiz und das Löschen einer Projekt-Inline-Notiz über echte UI-, API- und Persistenzpfade.</li><li><code>agents.md</code> ergänzt den <code>rückblick</code>-Workflow und dokumentiert, dass neue Arbeitsdokumentation über das Wiki-Journal läuft.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Für FT-26 bleiben <code>ADMIN</code>, <code>DISPONENT</code> und <code>READER</code> beziehungsweise <code>LESER</code> im bestehenden Rahmen. Reports öffnen, konfigurieren und drucken bleibt eine Lese- und Browseraktion. Es wurden keine neuen Endpunkte, Mutationen oder Berechtigungen eingeführt. Die serverseitige Durchsetzung der Reportdaten bleibt über die bestehenden Report-Endpunkte maßgeblich.</p>
+<p>Für Inline-Notizen wurde im Browser-E2E der Admin-Pfad geprüft. Die bestehende serverseitige Notiz-Mutationsabsicherung bleibt unverändert.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/lib/measured-print-pages.test.ts tests/unit/lib/auftragsliste-print-model.test.ts tests/unit/ui/printComponents.primitives.test.tsx tests/unit/lib/tourenplan.model.test.ts tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx tests/unit/ui/tourenplanReportPanel.smoke.test.tsx</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/reports.ft26.browser.e2e.spec.ts</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts</code></li><li><code>npm run check</code></li><li><code>git diff --check</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein echter Betriebssystem- oder Druckertreiber-Test; Browser-Druckdialog-Skalierung kann die App nicht vollständig kontrollieren.</li><li>Kein Screenshot- oder PDF-Pixelvergleich der Druckseiten.</li><li>Vorlaufliste und Produktionsplanung wurden nicht auf die neue Messbasis umgestellt, weil die Aufgabe gezielt Kartenreports Auftragsliste und Tourenplan betrifft.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

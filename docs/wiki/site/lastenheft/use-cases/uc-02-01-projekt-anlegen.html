@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/01: Projekt anlegen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/01 Projekt anlegen</span></nav>
+        <h1 class="wiki-h1">UC-02/01: Projekt anlegen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Ein neues Projekt erfassen, einem aktiven Kunden zuordnen und mit einer Auftragsnummer versehen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Ein neues Projekt erfassen, einem aktiven Kunden zuordnen und mit einer Auftragsnummer versehen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Anlegerechte (Disponent oder Administrator).</li><li>Der Ziel-Kunde existiert und ist aktiv.</li><li>Optional: Projektbezogene Tags existieren gemäß FT (28), sofern sie bei der Anlage vergeben werden sollen.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur startet „Projekt anlegen&quot;.</li><li>Der Akteur wählt einen Kunden aus der Liste aktiver Kunden.</li><li>Der Akteur erfasst Titel, Auftragsnummer (Pflicht) und optional eine Beschreibung (Markdown).</li><li>Optional vergibt der Akteur projektbezogene Tags gemäß FT (28).</li><li>Das System validiert serverseitig:</li></ol>
+<ul><li>Authentifizierung und Berechtigung,</li><li>Existenz und Aktivstatus des Kunden,</li><li>Auftragsnummer nicht leer.</li></ul>
+<ol><li>Das System legt das Projekt an und persistiert Projektreferenz, Auftrag und Kundenzuordnung atomar.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur nicht authentifiziert → HTTP 401, keine Persistenz.</li><li>Akteur ohne Anlegerechte → HTTP 403, keine Persistenz.</li><li>Gewählter Kunde existiert nicht → HTTP 422, keine Persistenz.</li><li>Gewählter Kunde ist inaktiv → HTTP 409, keine Persistenz.</li><li>Auftragsnummer fehlt oder ist leer → HTTP 422, keine Persistenz.</li><li>Abbruch durch den Akteur → keine Persistenz.</li><li>Technischer Fehler → HTTP 500, keine Persistenz.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Das Projekt ist persistent angelegt, einem aktiven Kunden zugeordnet und mit einer Auftragsnummer versehen. Es kann für die Terminplanung genutzt werden.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>
