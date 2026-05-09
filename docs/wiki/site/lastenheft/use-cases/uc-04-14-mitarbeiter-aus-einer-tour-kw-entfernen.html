@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/14 Mitarbeiter aus einer Tour-KW entfernen</span></nav>
         <h1 class="wiki-h1">UC-04/14: Mitarbeiter aus einer Tour-KW entfernen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Einen Mitarbeiter aus einer Tour-Kalenderwoche entfernen und nach Bestätigung von Terminen abziehen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Einen Mitarbeiter aus einer Tour-Kalenderwoche entfernen und nach Bestätigung von Terminen abziehen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Der Mitarbeiter ist in <code>tour_week_employees</code> für die Kalenderwoche enthalten.</li><li>Die Kalenderwoche liegt in der Zukunft.</li><li>Der Akteur ist berechtigt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet den Tab „Wochenplanung“.</li><li>Der Akteur klickt den Entfernen-Button am Mitarbeiter-Badge.</li><li>Das System ermittelt Termine der Tour in dieser Woche, denen der Mitarbeiter zugeordnet ist.</li><li>Das System prüft, ob durch die Entfernung Unterbesetzung entstehen würde.</li><li>Das System zeigt eine Vorschau je Termin mit Datum, Projekt, aktuellem Mitarbeiterbestand und Status.</li><li>Alle Termine sind vorausgewählt.</li><li>Der Akteur kann einzelne Termine abwählen.</li><li>Der Akteur bestätigt die Auswahl.</li><li>Das System entfernt die <code>tour_week_employees</code>-Zuordnung.</li><li>Das System zieht den Mitarbeiter atomar von den bestätigten Terminen ab.</li><li>Unterbesetzte Termine werden an das Dispositions-Monitoring gemeldet.</li><li>Das System aktualisiert die betroffenen Sichten.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Keine Termine mit diesem Mitarbeiter vorhanden: Die Vorschau ist leer, die Tour-KW-Zuordnung wird trotzdem entfernt.</li><li>Abbruch durch den Akteur: Es wird keine Zuordnung und keine Terminmutation geändert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Mitarbeiter ist nicht mehr in <code>tour_week_employees</code> enthalten und von den bestätigten Terminen entfernt. Unterbesetzung ist im Monitoring sichtbar, historische Termine bleiben unverändert und es gibt keine stillen Änderungen.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

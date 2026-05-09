@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-08/04 Fachliche Änderung erzeugt Journal-Eintrag</span></nav>
         <h1 class="wiki-h1">UC-08/04: Fachliche Änderung erzeugt Journal-Eintrag</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-08</span></div>
-    
+    <p class="wiki-lead">Eine erfolgreiche Mutation automatisch dokumentieren.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-08-journal-aenderungshistorie.html">FT (08): Journal / Änderungshistorie</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Eine erfolgreiche Mutation automatisch dokumentieren.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Eine mutierende Operation auf einer journalisierten Entität wurde erfolgreich abgeschlossen.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur speichert eine fachliche Änderung.</li><li>Das System schreibt einen Journal-Eintrag mit Beschreibung, Akteur und Zeit.</li><li>Das System ergänzt die relevanten Kontextbezüge.</li><li>Das System stellt den Eintrag global und in betroffenen Detailansichten bereit.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<p>Keine.</p>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die fachliche Änderung ist historisch nachvollziehbar.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/10 Löschkonflikt bei paralleler Terminzuordnung</span></nav>
         <h1 class="wiki-h1">UC-04/10: Löschkonflikt bei paralleler Terminzuordnung</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Eine Tour nicht löschen, wenn ihr parallel ein Termin zugeordnet wird.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Eine Tour nicht löschen, wenn ihr parallel ein Termin zugeordnet wird.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Der Tour sind zunächst keine Termine zugeordnet.</li><li>Zwei berechtigte Akteure arbeiten parallel.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur A initiiert die Löschung der Tour.</li><li>Akteur B ordnet der Tour parallel einen Termin zu.</li><li>Das System prüft beim Löschen erneut, ob Termine vorhanden sind.</li><li>Das System erkennt die neue Terminzuordnung.</li><li>Das System blockiert die Löschung.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Die Löschung ist bereits abgeschlossen, bevor Akteur B speichert: Die Terminzuordnung schlägt fehl.</li><li>Akteur A bricht die Löschung ab: Die Tour bleibt erhalten.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Eine Tour mit Terminreferenz wird nicht gelöscht. Verwaiste Terminreferenzen entstehen nicht.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

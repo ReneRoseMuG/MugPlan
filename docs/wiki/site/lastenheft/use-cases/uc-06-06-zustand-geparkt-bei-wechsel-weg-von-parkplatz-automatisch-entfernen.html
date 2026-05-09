@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/06 Zustand Geparkt bei Wechsel weg von Parkplatz automatisch entfernen</span></nav>
         <h1 class="wiki-h1">UC-06/06: Zustand Geparkt bei Wechsel weg von Parkplatz automatisch entfernen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
-    
+    <p class="wiki-lead">Den Zustand „Geparkt“ automatisch entfernen, sobald ein Termin den Parkplatz verlässt.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>System</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Den Zustand „Geparkt“ automatisch entfernen, sobald ein Termin den Parkplatz verlässt.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin ist der Tour „Parkplatz“ zugeordnet.</li><li>Der Termin trägt den Zustand „Geparkt“.</li><li>Die Tourzuordnung wird auf eine andere Tour geändert.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur ändert die Tourzuordnung des Termins auf eine reguläre Tour.</li><li>Das System erkennt, dass der Termin die Tour „Parkplatz“ verlässt.</li><li>Das System entfernt den Zustand „Geparkt“.</li><li>Das System speichert die neue Tourzuordnung.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Termin bleibt auf dem Parkplatz: Der Zustand „Geparkt“ bleibt erhalten.</li><li>Die Änderung wird abgebrochen: Der Termin bleibt unverändert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin liegt auf einer regulären Tour und trägt den Zustand „Geparkt“ nicht mehr.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

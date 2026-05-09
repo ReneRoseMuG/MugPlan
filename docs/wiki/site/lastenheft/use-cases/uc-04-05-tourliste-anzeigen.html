@@ -39,15 +39,25 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/05 Tourliste anzeigen</span></nav>
         <h1 class="wiki-h1">UC-04/05: Tourliste anzeigen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Alle Touren rollenabhängig anzeigen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator, Monteur</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Alle Touren rollenabhängig anzeigen.</p>
+<h2 class="wiki-h2">Beschreibung</h2>
+<p>Die Tourübersicht zeigt alle Touren. Mutationsfunktionen sind rollenabhängig sichtbar und serverseitig abzusichern.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist angemeldet.</li><li>Touren können vorhanden sein oder die Liste kann leer sein.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Tourenübersicht.</li><li>Das System ermittelt alle Touren.</li><li>Das System zeigt je Tour Name und Farbe.</li><li>Das System rendert die Bedienung rollenabhängig:</li></ol>
+<ul><li>Disponent und Administrator sehen Aktionen zum Anlegen, Bearbeiten und Löschen.</li><li>Monteure sehen die Übersicht im Lesemodus.</li></ul>
+<ol><li>Das System stellt sicher, dass Mutationsaktionen für Monteure nicht gerendert und serverseitig blockiert werden.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Keine Touren vorhanden: Das System zeigt eine leere Übersicht mit Hinweis.</li><li>Direkter Zugriff auf eine Mutationsfunktion ohne Berechtigung: Das System blockiert serverseitig.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Tourübersicht ist vollständig sichtbar und entspricht der Rolle des Akteurs. Unzulässige Aktionen können nicht ausgeführt werden.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

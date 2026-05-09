@@ -39,15 +39,23 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/01 Tour anlegen</span></nav>
         <h1 class="wiki-h1">UC-04/01: Tour anlegen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Eine neue Tour zur organisatorischen Gruppierung von Terminen anlegen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Eine neue Tour zur organisatorischen Gruppierung von Terminen anlegen.</p>
+<h2 class="wiki-h2">Beschreibung</h2>
+<p>Der Name wird beim Anlegen automatisch mit dem nächsten freien Index vorgeschlagen. Er ist beim Anlegen sichtbar und nachträglich änderbar. Zusätzlich legt der Akteur eine Farbe fest.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist angemeldet.</li><li>Das System ist betriebsbereit.</li><li>Die Tourenverwaltung ist verfügbar.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Tourenverwaltung.</li><li>Der Akteur wählt „Tour anlegen“.</li><li>Das System erzeugt einen neuen Tourdatensatz mit automatisch generiertem Namen.</li><li>Das System zeigt den vorgeschlagenen Namen an.</li><li>Der Akteur ändert den Namen bei Bedarf.</li><li>Der Akteur wählt eine Farbe.</li><li>Der Akteur bestätigt die Anlage.</li><li>Das System speichert die Tour.</li><li>Das System führt keine Kaskadenänderung an Terminen oder Mitarbeitern aus.</li><li>Das System aktualisiert die betroffenen Sichten.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Abbruch durch den Akteur: Es wird keine Tour gespeichert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die neue Tour ist gespeichert, ihr Name ist generiert, aber änderbar, und eine Farbe ist definiert. Die Tour steht für Terminzuweisungen bereit und wird in Kalender- und Wochenansichten berücksichtigt.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

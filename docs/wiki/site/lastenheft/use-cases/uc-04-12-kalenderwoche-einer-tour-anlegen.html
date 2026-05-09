@@ -39,15 +39,23 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/12 Kalenderwoche einer Tour anlegen</span></nav>
         <h1 class="wiki-h1">UC-04/12: Kalenderwoche einer Tour anlegen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Eine neue Kalenderwoche in der Tour-Wochenplanung anlegen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Eine neue Kalenderwoche in der Tour-Wochenplanung anlegen.</p>
+<h2 class="wiki-h2">Beschreibung</h2>
+<p>Im Tab „Wochenplanung“ kann über „KW einfügen“ eine leere Wochenkarte angelegt werden. Zulässig sind nur zukünftige Kalenderwochen; doppelte Wochenkarten sind nicht erlaubt.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Der Akteur ist berechtigt.</li><li>Die gewünschte Kalenderwoche liegt in der Zukunft.</li><li>Für die Tour existiert noch keine Wochenkarte für diese Kalenderwoche.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur wählt eine Tour und öffnet den Tab „Wochenplanung“.</li><li>Der Akteur klickt auf „KW einfügen“.</li><li>Das System öffnet einen Dialog mit der nächsten freien editierbaren Kalenderwoche.</li><li>Der Akteur übernimmt oder ändert die Kalenderwoche.</li><li>Das System prüft, dass die Kalenderwoche nach heute liegt und noch nicht vorhanden ist.</li><li>Der Akteur bestätigt die Anlage.</li><li>Das System legt eine leere Wochenkarte ohne <code>tour_week_employees</code> an.</li><li>Das System zeigt die Karte sortiert an.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Vergangenheit oder laufende Woche: Das System blockiert die Anlage.</li><li>Kalenderwoche bereits vorhanden: Das System blockiert die Anlage.</li><li>Abbruch durch den Akteur: Es wird nichts angelegt.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Eine leere Wochenkarte ist sichtbar und editierbar. Terminmutationen finden nicht statt.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

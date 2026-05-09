@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-28/03 Tag löschen</span></nav>
         <h1 class="wiki-h1">UC-28/03: Tag löschen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-28</span></div>
-    
+    <p class="wiki-lead">Einen nicht mehr benötigten Tag entfernen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-28-universelles-tagging-system.html">FT (28): Universelles Tagging-System</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Einen nicht mehr benötigten Tag entfernen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Tag ist kein Default Tag.</li><li>Der Nutzer ist als Administrator angemeldet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Administrator wählt einen Tag in der Verwaltung.</li><li>Der Administrator initiiert die Löschung.</li><li>Das System zeigt die Anzahl betroffener Zuweisungen als Warnhinweis.</li><li>Das System verhindert das Löschen, wenn Relationen vorhanden sind.</li><li>Der Administrator bestätigt die Löschung.</li><li>Das System entfernt den Tag und alle zugehörigen Join-Einträge per Cascade Delete.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Tag ist ein Default Tag: Das System blockiert die Löschung serverseitig mit Fehlermeldung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Tag ist vollständig entfernt. Betroffene Domänenobjekte haben keine verwaisten Referenzen mehr.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

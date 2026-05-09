@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/06 Kalenderdarstellung nach Touränderung aktualisieren</span></nav>
         <h1 class="wiki-h1">UC-04/06: Kalenderdarstellung nach Touränderung aktualisieren</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Änderungen an einer Tour in Kalenderansichten sichtbar machen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Änderungen an einer Tour in Kalenderansichten sichtbar machen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Der Tour sind Termine zugeordnet.</li><li>Der Akteur ist berechtigt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur bearbeitet eine Tour.</li><li>Der Akteur ändert Farbe oder Mitarbeiterliste.</li><li>Der Akteur bestätigt die Änderung.</li><li>Das System speichert die Änderung.</li><li>Das System aktualisiert die Kalenderansichten.</li><li>Das System stellt sicher, dass Termine dieser Tour die neue Farbe verwenden.</li><li>Das System lässt die Terminzuordnungen unverändert.</li><li>Andere Touren und tourlose Termine bleiben unverändert.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Abbruch durch den Akteur: Es wird keine Änderung gespeichert.</li><li>Tour ohne Termine: Die Änderung ist gespeichert, erzeugt aber keine sichtbare Terminänderung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Termine der Tour werden konsistent mit der aktuellen Tourfarbe dargestellt. Andere Termine bleiben unverändert.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

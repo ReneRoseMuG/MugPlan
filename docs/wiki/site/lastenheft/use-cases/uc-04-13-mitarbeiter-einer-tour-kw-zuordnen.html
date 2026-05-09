@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/13 Mitarbeiter einer Tour-KW zuordnen</span></nav>
         <h1 class="wiki-h1">UC-04/13: Mitarbeiter einer Tour-KW zuordnen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Einen Mitarbeiter einer Tour-Kalenderwoche zuordnen und nach selektiver Bestätigung auf Termine ausrollen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Einen Mitarbeiter einer Tour-Kalenderwoche zuordnen und nach selektiver Bestätigung auf Termine ausrollen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Der Mitarbeiter ist aktiv.</li><li>Die Kalenderwoche liegt in der Zukunft.</li><li>Der Akteur ist berechtigt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet den Tab „Wochenplanung“ der Tour.</li><li>Der Akteur klickt im Kartenheader auf das Plus.</li><li>Das System zeigt aktive Mitarbeiter, die in dieser Kalenderwoche keiner anderen Tour zugeordnet sind.</li><li>Mitarbeiter des Typs 1 werden nicht angezeigt.</li><li>Der Akteur wählt einen Mitarbeiter.</li><li>Das System ermittelt Termine der Tour in dieser Kalenderwoche.</li><li>Das System prüft die Überschneidungsfreiheit für Typ-2-Mitarbeiter.</li><li>Das System zeigt eine Vorschau je Termin mit Datum, Projekt, Kunde, aktuellem Mitarbeiterbestand und Status.</li><li>Konfliktfreie Termine sind vorausgewählt, Konflikte sind deaktiviert.</li><li>Der Akteur kann vorausgewählte Termine abwählen.</li><li>Der Akteur bestätigt die Auswahl.</li><li>Das System legt die <code>tour_week_employees</code>-Zuordnung an.</li><li>Das System fügt den Mitarbeiter atomar den bestätigten konfliktfreien Terminen hinzu.</li><li>Das System aktualisiert die betroffenen Sichten.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Alle Termine haben Konflikte: Die Vorschau enthält keine auswählbaren Terminmutationen, die Tour-KW-Zuordnung wird trotzdem angelegt.</li><li>Keine Termine vorhanden: Das System legt die Tour-KW-Zuordnung direkt an.</li><li>Abbruch durch den Akteur: Es wird keine Zuordnung und keine Terminmutation gespeichert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Mitarbeiter ist in <code>tour_week_employees</code> gespeichert und auf den bestätigten Terminen zugeordnet. Historische Termine bleiben unverändert; die Ausrollung erfolgt nur nach expliziter Bestätigung.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

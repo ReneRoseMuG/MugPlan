@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-08/05 Journal ohne Leseberechtigung nicht öffnen</span></nav>
         <h1 class="wiki-h1">UC-08/05: Journal ohne Leseberechtigung nicht öffnen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-08</span></div>
-    
+    <p class="wiki-lead">Sicherstellen, dass nur berechtigte Rollen Journalinhalte sehen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-08-journal-aenderungshistorie.html">FT (08): Journal / Änderungshistorie</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Benutzer ohne Journal-Leseberechtigung</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass nur berechtigte Rollen Journalinhalte sehen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Benutzer ist angemeldet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Benutzer versucht, das Journal zu öffnen.</li><li>Das System prüft die Rolle und Leseberechtigung.</li><li>Bei fehlender Berechtigung zeigt das System keine Journalinhalte an und blockiert den Zugriff.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<p>Keine.</p>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Änderungshistorie bleibt auf Administratoren und Disponenten mit Berechtigung beschränkt.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

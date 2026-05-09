@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-31/03 Trigger konfigurieren</span></nav>
         <h1 class="wiki-h1">UC-31/03: Trigger konfigurieren</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-31</span></div>
-    
+    <p class="wiki-lead">Trigger-Parameter anpassen, um das Monitoring an die betrieblichen Anforderungen anzupassen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-31-dispositions-monitoring-konflikte.html">FT (31): Dispositions-Monitoring (Konflikte)</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Trigger-Parameter anpassen, um das Monitoring an die betrieblichen Anforderungen anzupassen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt die Rolle Administrator.</li><li>Die Monitoring-Konfiguration ist erreichbar.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Monitoring-Konfiguration.</li><li>Das System zeigt alle vorhandenen Trigger mit ihren aktuellen Parametern.</li><li>Der Akteur ändert für einen Trigger Aktivstatus, Vorlaufhorizont oder Triggerbedingungsparameter.</li><li>Der Akteur speichert die Änderungen.</li><li>Das System persistiert die Konfiguration.</li><li>Das System verwendet die neuen Werte bei der nächsten Berechnung.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Ungültiger Wert, zum Beispiel Mindestzahl kleiner 1 oder Horizont kleiner 1: Das System blockiert mit Validierungsfehler.</li><li>Der Akteur deaktiviert alle Trigger: Das Monitoring zeigt beim nächsten Login keinen Hinweis.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Konfiguration ist gespeichert und wirkt bei der nächsten Berechnung. Bereits laufende Sessions werden nicht beeinflusst.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

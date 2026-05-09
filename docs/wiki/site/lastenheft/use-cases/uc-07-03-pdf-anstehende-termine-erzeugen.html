@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-07/03 PDF „Anstehende Termine“ erzeugen</span></nav>
         <h1 class="wiki-h1">UC-07/03: PDF „Anstehende Termine“ erzeugen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-07</span></div>
-    
+    <p class="wiki-lead">Ein aktuelles, gut lesbares PDF-Dokument aller anstehenden Termine erzeugen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-07-automatisierte-datensicherung-und-fallback.html">FT (07): Automatisierte Datensicherung und Fallback</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>System</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Ein aktuelles, gut lesbares PDF-Dokument aller anstehenden Termine erzeugen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Termin wurde neu angelegt oder geändert.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Das System ermittelt alle Termine ab dem heutigen Tag, heute eingeschlossen.</li><li>Das System sortiert die Termine nach Datum und Uhrzeit.</li><li>Termine ohne Uhrzeit stehen innerhalb eines Datums zuerst.</li><li>Das System rendert für jeden Termin einen visuell abgegrenzten horizontalen Abschnitt.</li><li>Die Kopfzeile enthält Uhrzeit, sofern erfasst, Datum, Kundennummer, vollständigen Kundennamen und Auftragsnummer.</li><li>Ist eine Auftragsnummer vorhanden, rendert das System einen eingerückten Detailbereich mit Artikelliste des Projekts und Anmerkungen aus der Projektbeschreibung.</li><li>Das System speichert das PDF serverseitig.</li><li>Das System protokolliert den Vorgang im Backup-Log.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Fehler bei der PDF-Erstellung: Das System protokolliert den Status „error“. Die Termin-Speicherung bleibt unberührt.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Das aktuelle PDF „Anstehende Termine“ ist persistent gespeichert und über die Backup-Historie abrufbar.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

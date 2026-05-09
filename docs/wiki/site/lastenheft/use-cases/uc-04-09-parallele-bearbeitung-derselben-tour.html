@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/09 Parallele Bearbeitung derselben Tour</span></nav>
         <h1 class="wiki-h1">UC-04/09: Parallele Bearbeitung derselben Tour</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Stille Überschreibungen bei paralleler Bearbeitung derselben Tour verhindern.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Stille Überschreibungen bei paralleler Bearbeitung derselben Tour verhindern.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die Tour existiert.</li><li>Zwei berechtigte Akteure bearbeiten dieselbe Tour gleichzeitig.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur A öffnet die Tour.</li><li>Akteur B öffnet dieselbe Tour.</li><li>Akteur A ändert die Farbe und speichert.</li><li>Das System speichert die Änderung und erhöht die Version.</li><li>Akteur B speichert auf Basis des alten Versionsstands.</li><li>Das System erkennt den Versionskonflikt und blockiert die Speicherung.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur B speichert zuerst: Akteur A erhält bei späterem Speichern den Versionskonflikt.</li><li>Einer der Akteure bricht ab: Es wird nur die bestätigte Änderung gespeichert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Keine Änderung überschreibt still eine andere. Die Tour bleibt in einem konsistenten Zustand.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

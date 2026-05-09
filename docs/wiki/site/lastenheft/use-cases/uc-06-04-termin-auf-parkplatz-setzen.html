@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/04 Termin auf Parkplatz setzen</span></nav>
         <h1 class="wiki-h1">UC-06/04: Termin auf Parkplatz setzen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
-    
+    <p class="wiki-lead">Einen Termin auf die Systemtour „Parkplatz“ setzen, den Zustand „Geparkt“ setzen und Mitarbeiter entfernen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Einen Termin auf die Systemtour „Parkplatz“ setzen, den Zustand „Geparkt“ setzen und Mitarbeiter entfernen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Der Termin liegt noch nicht auf dem Parkplatz.</li><li>Der Termin ist nicht storniert.</li><li>Der Akteur besitzt Schreibrechte.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur löst die Aktion „Parken“ aus.</li><li>Das System fordert eine Bestätigung an.</li><li>Der Akteur bestätigt die Aktion.</li><li>Das System ordnet den Termin der Tour „Parkplatz“ zu.</li><li>Das System setzt den Zustand „Geparkt“.</li><li>Das System entfernt vorhandene Mitarbeiterzuweisungen.</li><li>Das System aktualisiert die betroffenen Ansichten.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Abbruch durch den Akteur: Der Termin bleibt unverändert.</li><li>Der Termin liegt bereits auf dem Parkplatz: Die Aktion ist nicht verfügbar.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist der Tour „Parkplatz“ zugeordnet, trägt den Zustand „Geparkt“ und besitzt keine Mitarbeiterzuweisungen.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

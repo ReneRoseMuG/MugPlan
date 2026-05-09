@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-26/05 Produktionsplanung drucken</span></nav>
         <h1 class="wiki-h1">UC-26/05: Produktionsplanung drucken</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-26</span></div>
-    
+    <p class="wiki-lead">Aus einem generierten Report eine Druckausgabe im Querformat DIN A4 mit Summenreport, Vorlaufliste und Projektzeilen erzeugen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-26-auswertungen-und-reports.html">FT (26): Auswertungen und Reports</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Aus einem generierten Report eine Druckausgabe im Querformat DIN A4 mit Summenreport, Vorlaufliste und Projektzeilen erzeugen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Produktionsplanungs-Report wurde erzeugt.</li><li>Das Report-Overlay ist geöffnet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur klickt auf „Produktionsplanung drucken“.</li><li>Das System erzeugt die Druckausgabe anhand der aktuellen Parameter für Zeitraum, Kategorie-Layout und Shortcodes.</li><li>Das System rendert den Summenreport.</li><li>Das System rendert die Vorlaufliste mit einer Zeile pro Projekt, Index, ohne Kundendaten, Tourname und Shortcodes, sofern diese aktiv sind.</li><li>Das System rendert Projektzeilen für Sondermaß, Anmerkungen und Gespiegelt als Karten mit Header, Beschreibung und Footer.</li><li>Das System öffnet den Browser-Druckdialog.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Für einen Bereich gibt es keine passenden Daten: Das System zeigt dort einen Leerhinweis und rendert die übrigen Bereiche weiter.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Produktionsplanung kann gedruckt oder als PDF gespeichert werden. Stornierungen und Reklamationen sind ausgeschlossen.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-04/07 Wochenübersicht nach Touränderung korrekt ableiten</span></nav>
         <h1 class="wiki-h1">UC-04/07: Wochenübersicht nach Touränderung korrekt ableiten</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-04</span></div>
-    
+    <p class="wiki-lead">Mitarbeiter- und tourbezogene Wochenübersichten aus den aktuellen Tour- und Mitarbeiterdaten korrekt ableiten.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-04-tourenplanung.html">FT (04): Tourenplanung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Mitarbeiter- und tourbezogene Wochenübersichten aus den aktuellen Tour- und Mitarbeiterdaten korrekt ableiten.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Termine mit Tour- oder Mitarbeiterbezug sind vorhanden.</li><li>Mindestens eine relevante Kalenderwoche existiert.</li><li>Der Akteur darf die Wochenübersicht sehen.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur ruft die Wochenübersicht auf.</li><li>Das System ermittelt Termine und leitet Touren und Mitarbeiter pro Woche ab.</li><li>Der Akteur ändert eine Tour.</li><li>Das System speichert die Änderung.</li><li>Das System aktualisiert die Wochenübersicht.</li><li>Das System entfernt oder ergänzt Mitarbeiterzuordnungen korrekt.</li><li>Leere Wochen bleiben leer.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Keine Termine vorhanden: Das System zeigt eine leere Übersicht.</li><li>Abbruch der Touränderung: Die Wochenübersicht bleibt unverändert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Wochenübersicht ist konsistent zur aktuellen Tour- und Mitarbeiterlage. Der Use Case ist rein informativ und ändert selbst keine Daten.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

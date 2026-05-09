@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/01 Tag Anmerkungen bei Projektbeschreibung automatisch setzen</span></nav>
         <h1 class="wiki-h1">UC-06/01: Tag Anmerkungen bei Projektbeschreibung automatisch setzen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
-    
+    <p class="wiki-lead">Projekte mit Beschreibung automatisch mit dem Tag „Anmerkungen“ kennzeichnen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>System</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Projekte mit Beschreibung automatisch mit dem Tag „Anmerkungen“ kennzeichnen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Projekt wird gespeichert.</li><li>Das Projekt enthält eine Beschreibung.</li><li>Der Tag „Anmerkungen“ fehlt am Projekt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur speichert ein Projekt.</li><li>Das System prüft, ob eine Projektbeschreibung vorhanden ist.</li><li>Das System prüft, ob der Tag „Anmerkungen“ bereits gesetzt ist.</li><li>Falls der Tag fehlt, setzt das System ihn automatisch.</li><li>Das System speichert das Projekt mit aktualisierter Tag-Zuordnung.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Keine Beschreibung vorhanden: Das System setzt keinen Tag.</li><li>Der Tag ist bereits vorhanden: Das System nimmt keine zusätzliche Änderung vor.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Projekte mit Beschreibung tragen den Tag „Anmerkungen“, ohne dass eine separate Benachrichtigung oder Entscheidung erforderlich ist.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-32/01 SSE-Verbindung aufbauen</span></nav>
         <h1 class="wiki-h1">UC-32/01: SSE-Verbindung aufbauen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-32</span></div>
-    
+    <p class="wiki-lead">Beim Laden der Anwendung eine persistente Server-Push-Verbindung aufbauen, über die der Client Änderungsereignisse empfangen kann.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-32-aktive-aenderungsbenachrichtigung.html">FT (32): Aktive Änderungsbenachrichtigung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer aller Rollen</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Beim Laden der Anwendung eine persistente Server-Push-Verbindung aufbauen, über die der Client Änderungsereignisse empfangen kann.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Benutzer ist angemeldet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Client baut nach erfolgreichem Login eine SSE-Verbindung zum Server auf.</li><li>Der Server registriert die Session als aktiven Empfänger.</li><li>Die Verbindung bleibt für die Dauer der Session offen.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<p>Keine.</p>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Session ist als Empfänger registriert und empfängt ab sofort Änderungsereignisse anderer Benutzer.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

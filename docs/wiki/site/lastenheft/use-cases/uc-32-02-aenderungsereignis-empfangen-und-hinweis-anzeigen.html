@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-32/02 Änderungsereignis empfangen und Hinweis anzeigen</span></nav>
         <h1 class="wiki-h1">UC-32/02: Änderungsereignis empfangen und Hinweis anzeigen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-32</span></div>
-    
+    <p class="wiki-lead">Den Benutzer nicht-blockierend informieren, dass in seiner aktuellen Session fremde Änderungen vorliegen und eine zentrale Aktualisierung verfügbar ist.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-32-aktive-aenderungsbenachrichtigung.html">FT (32): Aktive Änderungsbenachrichtigung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer aller Rollen</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Den Benutzer nicht-blockierend informieren, dass in seiner aktuellen Session fremde Änderungen vorliegen und eine zentrale Aktualisierung verfügbar ist.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Die SSE-Verbindung der Session ist aktiv.</li><li>Eine andere Session hat eine mutierende Operation erfolgreich abgeschlossen.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Client empfängt ein SSE-Ereignis zu einer Fremdänderung.</li><li>Das System setzt für die aktuelle Session den Status „Updates verfügbar“.</li><li>Das System zeigt einen globalen, länger sichtbaren Toast mit dem Hinweis, dass über „Neu laden“ in der Hauptnavigation alle offenen Ansichten aktualisiert werden können.</li><li>Weitere eingehende Fremdänderungen erzeugen keine zusätzlichen Einzelmeldungen, solange der Status bereits aktiv ist.</li><li>Ist in der aktuellen Session kein Edit-Form geöffnet, kann der Benutzer bei Bedarf die zentrale Funktion „Neu laden“ auslösen.</li><li>Das System aktualisiert alle offenen, refresh-fähigen Ansichten der aktuellen Session.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Es liegt bereits ein aktiver Status „Updates verfügbar“ vor: Das neue Ereignis erzeugt keine zusätzliche Meldung.</li><li>In der aktuellen Session ist ein Edit-Form geöffnet: Die Funktion „Neu laden“ ist gesperrt und kann nicht ausgelöst werden.</li><li>Eine Ansicht befindet sich in laufender Bearbeitung oder enthält ungespeicherte Änderungen: Diese Ansicht darf nicht still überschrieben werden.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Benutzer ist informiert und kann die Aktualisierung zentral auslösen, sofern kein Edit-Form geöffnet ist. Seine laufende Bearbeitung bleibt unberührt. Der Versionskonflikt beim Speichern gemäß NFR (01) bleibt als harte Absicherung aktiv.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-32/04 Session-Ende – Verbindung schließen</span></nav>
         <h1 class="wiki-h1">UC-32/04: Session-Ende – Verbindung schließen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-32</span></div>
-    
+    <p class="wiki-lead">Beim Logout oder Schließen des Browsers die SSE-Verbindung sauber beenden und serverseitige Ressourcen freigeben.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-32-aktive-aenderungsbenachrichtigung.html">FT (32): Aktive Änderungsbenachrichtigung</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer aller Rollen</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Beim Logout oder Schließen des Browsers die SSE-Verbindung sauber beenden und serverseitige Ressourcen freigeben.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Eine aktive SSE-Verbindung für die Session besteht.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Benutzer meldet sich ab oder schließt den Browser-Tab.</li><li>Der Server erkennt das Ende der Verbindung.</li><li>Der Server entfernt die Session aus der Liste aktiver Empfänger.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<p>Keine.</p>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Es werden keine Ereignisse mehr an diese Session gesendet. Serverseitige Ressourcen sind freigegeben.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

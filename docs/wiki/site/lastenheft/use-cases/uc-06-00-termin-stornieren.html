@@ -39,15 +39,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/00 Termin stornieren</span></nav>
         <h1 class="wiki-h1">UC-06/00: Termin stornieren</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
-    
+    <p class="wiki-lead">Einen Termin unwiderruflich als storniert markieren, den Projektbetrag auf 0 setzen und den Termin aus Reports ausschließen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
+<p>Einen Termin unwiderruflich als storniert markieren, den Projektbetrag auf 0 setzen und den Termin aus Reports ausschließen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Der Termin ist noch nicht storniert.</li><li>Der Akteur besitzt Schreibrechte.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur löst die Aktion „Stornieren“ aus.</li><li>Das System fordert eine Bestätigung an.</li><li>Der Akteur bestätigt die Stornierung.</li><li>Das System markiert den Termin als storniert.</li><li>Das System entfernt Mitarbeiterzuweisungen.</li><li>Das System setzt den Projektbetrag auf 0.</li><li>Das System aktualisiert die betroffenen Ansichten.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Abbruch durch den Akteur: Der Termin bleibt unverändert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist storniert, befindet sich im Systemzustand „Storniert“, ist nur eingeschränkt bearbeitbar und wird in Reports nicht mehr berücksichtigt.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">
