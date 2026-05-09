@@ -7,10 +7,13 @@ import { ColoredEntityCard } from "@/components/ui/colored-entity-card";
 import { ListLayout } from "@/components/ui/list-layout";
 import { BoardView } from "@/components/ui/board-view";
 import { TeamEditForm } from "@/components/TeamEditForm";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { BadgeInteractionProvider } from "@/components/ui/badge-interaction-provider";
 import { defaultEntityColor } from "@/lib/colors";
+import { domainIcons } from "@/lib/domain-icons";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import { useToast } from "@/hooks/use-toast";
 import type { Team, Employee } from "@shared/schema";
 
@@ -20,15 +23,23 @@ interface TeamWithMembers extends Team {
 
 interface TeamManagementProps {
   onCancel?: () => void;
+  userRole?: string;
   onEditingChange?: (isEditing: boolean) => void;
 }
 
-export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProps) {
+export function TeamManagement({ onCancel, userRole, onEditingChange }: TeamManagementProps) {
   const { toast } = useToast();
+  const TeamsIcon = domainIcons.teams;
   const [editingTeam, setEditingTeam] = useState<TeamWithMembers | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const effectiveUserRole = (window.localStorage.getItem("userRole") ?? "").toUpperCase();
-  const isAdmin = effectiveUserRole === "ADMIN";
+  const [deleteTarget, setDeleteTarget] = useState<TeamWithMembers | null>(null);
+  const [listError, setListError] = useState<NormalizedServerError | null>(null);
+  const [formError, setFormError] = useState<NormalizedServerError | null>(null);
+  const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
+  const canMutateTeams =
+    effectiveUserRole === "ADMIN"
+    || effectiveUserRole === "DISPATCHER"
+    || effectiveUserRole === "DISPONENT";
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery<Team[]>({
     queryKey: ["/api/teams"],
@@ -56,10 +67,19 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
     return `Team ${maxNumber + 1}`;
   };
 
-  const extractApiCode = (error: unknown): string | null => {
-    if (!(error instanceof Error)) return null;
-    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
-    return match?.[1] ?? null;
+  const showMutationError = (
+    error: unknown,
+    fallbackTitle: string,
+    setInlineError: (nextError: NormalizedServerError) => void,
+  ) => {
+    const normalized = normalizeServerError(error, { title: fallbackTitle });
+    setInlineError(normalized);
+    toast({
+      title: normalized.title,
+      description: normalized.description,
+      variant: "destructive",
+    });
+    return normalized;
   };
 
   const createMutation = useMutation({
@@ -86,16 +106,6 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
       void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
       invalidateEmployees();
     },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
-    },
   });
 
   const updateMutation = useMutation({
@@ -104,16 +114,6 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["/api/teams"] });
-    },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Speichern nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
     },
   });
 
@@ -131,66 +131,78 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
     onSuccess: () => {
       invalidateEmployees();
     },
-    onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Zuweisung nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
-    },
   });
 
   const handleOpenCreate = () => {
+    if (!canMutateTeams) return;
+    setFormError(null);
+    setListError(null);
     setEditingTeam(null);
     setIsCreating(true);
   };
 
   const handleSubmitTeam = async (teamId: number | null, employeeIds: number[], color: string) => {
-    if (teamId === null) {
-      const response = await createMutation.mutateAsync({ color });
-      const newTeam = await response.json();
-      await assignMembersMutation.mutateAsync({ teamId: newTeam.id, employeeIds });
-    } else {
-      const team = teams.find((entry) => entry.id === teamId);
-      if (!team || !Number.isInteger(team.version) || team.version < 1) {
-        throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing team version"}');
-      }
-      const currentMemberIds = new Set(
-        employees
-          .filter((employee) => employee.teamId === teamId)
-          .map((employee) => employee.id),
-      );
-      const nextMemberIds = new Set(employeeIds);
-      const removedMembers = employees.filter((employee) => currentMemberIds.has(employee.id) && !nextMemberIds.has(employee.id));
-
-      await updateMutation.mutateAsync({ id: teamId, color, version: team.version });
-      for (const employee of removedMembers) {
-        if (!Number.isInteger(employee.version) || employee.version < 1) {
-          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
-        }
-        await apiRequest("DELETE", `/api/teams/${teamId}/employees/${employee.id}`, { version: employee.version });
-      }
-      await assignMembersMutation.mutateAsync({ teamId, employeeIds });
+    if (!canMutateTeams) {
+      const forbidden = new Error('403: {"code":"FORBIDDEN"}');
+      showMutationError(forbidden, "Speichern nicht möglich", setFormError);
+      throw forbidden;
     }
 
-    handleCloseDialog();
+    setFormError(null);
+    try {
+      if (teamId === null) {
+        const response = await createMutation.mutateAsync({ color });
+        const newTeam = await response.json();
+        await assignMembersMutation.mutateAsync({ teamId: newTeam.id, employeeIds });
+      } else {
+        const team = teams.find((entry) => entry.id === teamId);
+        if (!team || !Number.isInteger(team.version) || team.version < 1) {
+          throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing team version"}');
+        }
+        const currentMemberIds = new Set(
+          employees
+            .filter((employee) => employee.teamId === teamId)
+            .map((employee) => employee.id),
+        );
+        const nextMemberIds = new Set(employeeIds);
+        const removedMembers = employees.filter((employee) => currentMemberIds.has(employee.id) && !nextMemberIds.has(employee.id));
+
+        await updateMutation.mutateAsync({ id: teamId, color, version: team.version });
+        for (const employee of removedMembers) {
+          if (!Number.isInteger(employee.version) || employee.version < 1) {
+            throw new Error('422: {"code":"VALIDATION_ERROR","message":"Missing employee version"}');
+          }
+          await apiRequest("DELETE", `/api/teams/${teamId}/employees/${employee.id}`, { version: employee.version });
+        }
+        await assignMembersMutation.mutateAsync({ teamId, employeeIds });
+      }
+
+      handleCloseDialog();
+    } catch (error) {
+      showMutationError(error, "Speichern nicht möglich", setFormError);
+      throw error;
+    }
   };
 
   const handleCloseDialog = () => {
     setEditingTeam(null);
     setIsCreating(false);
+    setFormError(null);
   };
 
   const handleOpenEdit = (team: TeamWithMembers) => {
+    if (!canMutateTeams) return;
+    setFormError(null);
+    setListError(null);
     setEditingTeam(team);
   };
 
   const handleOpenEditById = (teamId: number | string) => {
+    if (!canMutateTeams) return;
     const target = teamsWithMembers.find((team) => String(team.id) === String(teamId));
     if (!target) return;
+    setFormError(null);
+    setListError(null);
     setEditingTeam(target);
     setIsCreating(false);
   };
@@ -199,19 +211,40 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
     onEditingChange?.(!!editingTeam || isCreating);
   }, [editingTeam, isCreating, onEditingChange]);
 
-  const handleDelete = (team: TeamWithMembers) => {
-    if (window.confirm(`Wollen Sie das Team ${team.name} wirklich löschen?`)) {
-      deleteMutation.mutate({ id: team.id, version: team.version });
-    }
+  const handleRequestDelete = (team: TeamWithMembers) => {
+    if (!canMutateTeams) return;
+    setListError(null);
+    setDeleteTarget(team);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    const currentTeam = teamsWithMembers.find((entry) => entry.id === deleteTarget.id) ?? deleteTarget;
+    deleteMutation.mutate(
+      { id: currentTeam.id, version: currentTeam.version },
+      {
+        onSuccess: () => {
+          setDeleteTarget(null);
+        },
+        onError: (error) => {
+          showMutationError(error, "Löschen nicht möglich", setListError);
+        },
+      },
+    );
   };
 
   const handleDeleteFromForm = () => {
-    if (!editingTeam) return;
+    if (!editingTeam || !canMutateTeams) return;
     const currentTeam = teamsWithMembers.find((entry) => entry.id === editingTeam.id) ?? editingTeam;
-    if (!window.confirm(`Wollen Sie das Team ${currentTeam.name} wirklich löschen?`)) return;
+    setFormError(null);
     deleteMutation.mutate(
       { id: currentTeam.id, version: currentTeam.version },
-      { onSuccess: handleCloseDialog },
+      {
+        onSuccess: handleCloseDialog,
+        onError: (error) => {
+          showMutationError(error, "Löschen nicht möglich", setFormError);
+        },
+      },
     );
   };
 
@@ -219,16 +252,17 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
     ? (teamsWithMembers.find((team) => team.id === editingTeam.id) ?? editingTeam)
     : null;
 
-  if (activeTeam || isCreating) {
+  if (canMutateTeams && (activeTeam || isCreating)) {
     return (
       <TeamEditForm
         team={activeTeam}
         allEmployees={employees}
         onSubmit={handleSubmitTeam}
         onDelete={handleDeleteFromForm}
-        canDelete={isAdmin}
+        canDelete={canMutateTeams}
         isDeleting={deleteMutation.isPending}
         isSaving={createMutation.isPending || updateMutation.isPending || assignMembersMutation.isPending}
+        mutationError={formError}
         isCreate={isCreating}
         defaultName={getNextTeamName()}
         defaultColor={defaultEntityColor}
@@ -239,7 +273,7 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
 
   return (
     <>
-      <BadgeInteractionProvider value={{ openTeamEdit: handleOpenEditById }}>
+      <BadgeInteractionProvider value={{ openTeamEdit: canMutateTeams ? handleOpenEditById : () => undefined }}>
         <ListLayout
           title="Teams"
           icon={<Users className="w-5 h-5" />}
@@ -247,72 +281,92 @@ export function TeamManagement({ onCancel, onEditingChange }: TeamManagementProp
           isLoading={isLoading}
           onClose={onCancel}
           closeTestId="button-close-teams"
-          footerSlot={(
+          footerSlot={(canMutateTeams || onCancel) ? (
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handleOpenCreate}
-                disabled={createMutation.isPending}
-                data-testid="button-new-team"
-              >
-                Team anlegen
-              </Button>
+              {canMutateTeams ? (
+                <Button
+                  variant="outline"
+                  onClick={handleOpenCreate}
+                  disabled={createMutation.isPending}
+                  data-testid="button-new-team"
+                >
+                  Team anlegen
+                </Button>
+              ) : <span />}
               {onCancel ? (
                 <Button variant="ghost" onClick={onCancel} data-testid="button-cancel-teams">
                   Schließen
                 </Button>
               ) : null}
             </div>
-          )}
+          ) : null}
           contentSlot={(
-            <BoardView
-              gridTestId="list-teams"
-              gridCols="3"
-              isEmpty={teamsWithMembers.length === 0}
-              emptyState={(
-                <p className="text-sm text-slate-400 text-center py-8 col-span-full">
-                  Keine Teams vorhanden
-                </p>
-              )}
-            >
-              {teamsWithMembers.map((team) => (
-                <ColoredEntityCard
-                  key={team.id}
-                  title={team.name}
-                  icon={<Users className="w-4 h-4" />}
-                  borderColor={team.color}
-                  onDelete={() => handleDelete(team)}
-                  isDeleting={deleteMutation.isPending}
-                  testId={`card-team-${team.id}`}
-                  onDoubleClick={() => handleOpenEdit(team)}
-                >
-                  <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />
-                  <div className="space-y-2">
-                    {team.members.map((member) => (
-                      <EmployeeInfoBadge
-                        key={member.id}
-                        id={member.id}
-                        firstName={member.firstName}
-                        lastName={member.lastName}
-                        action="none"
-                        showPreview={false}
-                        size="sm"
-                        fullWidth
-                        testId={`text-team-member-${member.id}`}
-                      />
-                    ))}
-                    {team.members.length === 0 && (
-                      <div className="text-sm text-slate-400 italic">
-                        Keine Mitarbeiter zugewiesen
-                      </div>
-                    )}
-                  </div>
-                </ColoredEntityCard>
-              ))}
-            </BoardView>
+            <div className="space-y-4">
+              {listError ? <DialogBaseInlineMessage error={listError} /> : null}
+              <BoardView
+                gridTestId="list-teams"
+                gridCols="3"
+                isEmpty={teamsWithMembers.length === 0}
+                emptyState={(
+                  <p className="text-sm text-slate-400 text-center py-8 col-span-full">
+                    Keine Teams vorhanden
+                  </p>
+                )}
+              >
+                {teamsWithMembers.map((team) => (
+                  <ColoredEntityCard
+                    key={team.id}
+                    title={team.name}
+                  icon={<TeamsIcon className="w-4 h-4" />}
+                    borderColor={team.color}
+                    onDelete={canMutateTeams ? () => handleRequestDelete(team) : undefined}
+                    isDeleting={deleteMutation.isPending}
+                    testId={`card-team-${team.id}`}
+                    onDoubleClick={canMutateTeams ? () => handleOpenEdit(team) : undefined}
+                  >
+                    <MembersSectionHeader className="px-0 py-1 mb-1 border-b border-border" />
+                    <div className="space-y-2">
+                      {team.members.map((member) => (
+                        <EmployeeInfoBadge
+                          key={member.id}
+                          id={member.id}
+                          firstName={member.firstName}
+                          lastName={member.lastName}
+                          action="none"
+                          showPreview={false}
+                          size="sm"
+                          fullWidth
+                          testId={`text-team-member-${member.id}`}
+                        />
+                      ))}
+                      {team.members.length === 0 && (
+                        <div className="text-sm text-slate-400 italic">
+                          Keine Mitarbeiter zugewiesen
+                        </div>
+                      )}
+                    </div>
+                  </ColoredEntityCard>
+                ))}
+              </BoardView>
+            </div>
           )}
         />
       </BadgeInteractionProvider>
+      <ConfirmDialogBase
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Team wirklich löschen?"
+        description={deleteTarget ? `${deleteTarget.name} wird gelöscht. Die zugewiesenen Mitarbeiter bleiben erhalten und werden vom Team gelöst.` : undefined}
+        confirmLabel="Team löschen"
+        icon={<TeamsIcon className="h-5 w-5 text-primary" />}
+        pendingLabel="Löschen..."
+        isPending={deleteMutation.isPending}
+        variant="destructive"
+        testId="dialog-confirm-delete-team"
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 }

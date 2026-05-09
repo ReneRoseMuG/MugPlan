@@ -40,4 +40,4 @@ Keine bekannt.
 
 - Features: [FT-27 - Produktverwaltung und Auftragspositionen](../features/ft-27-produktverwaltung-und-auftragspositionen/ft-27-produktverwaltung-und-auftragspositionen.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)

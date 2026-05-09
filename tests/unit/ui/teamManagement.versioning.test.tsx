@@ -92,8 +92,19 @@ vi.mock("@/components/ui/board-view", () => ({
 }));
 
 vi.mock("@/components/ui/colored-entity-card", () => ({
-  ColoredEntityCard: ({ children, footer, testId }: { children?: React.ReactNode; footer?: React.ReactNode; testId?: string }) => (
+  ColoredEntityCard: ({
+    children,
+    footer,
+    onDelete,
+    testId,
+  }: {
+    children?: React.ReactNode;
+    footer?: React.ReactNode;
+    onDelete?: () => void;
+    testId?: string;
+  }) => (
     <article data-testid={testId}>
+      {onDelete ? <button type="button" data-testid={testId ? `button-delete-${testId}` : undefined}>delete</button> : null}
       {children}
       {footer}
     </article>
@@ -110,6 +121,15 @@ vi.mock("@/components/ui/members-section-header", () => ({
 
 vi.mock("@/components/ui/badge-interaction-provider", () => ({
   BadgeInteractionProvider: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock("@/components/ui/dialog-base", () => ({
+  ConfirmDialogBase: ({ open, testId }: { open: boolean; testId?: string }) => (
+    open ? <section data-testid={testId}>confirm-dialog</section> : null
+  ),
+  DialogBaseInlineMessage: ({ error }: { error?: { title?: string } | null }) => (
+    <div data-testid="dialog-inline-message">{error?.title}</div>
+  ),
 }));
 
 vi.mock("@/components/TeamEditForm", () => ({
@@ -137,6 +157,9 @@ async function loadTeamManagement(options?: {
         }
         if (stateCall === 2) {
           return [options?.isCreating ?? false, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall >= 3 && stateCall <= 5) {
+          return [initial, vi.fn()] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         return actual.useState(initial);
       }) as typeof actual.useState,
@@ -270,6 +293,7 @@ describe("FT06 TeamManagement behavior", () => {
     await onDelete();
 
     expect(apiRequestMock).toHaveBeenCalledWith("DELETE", "/api/teams/7", { version: 4 });
+    expect(window.confirm).not.toHaveBeenCalled();
   });
 
   it("shows a destructive conflict toast when the update was changed concurrently", async () => {
@@ -294,9 +318,29 @@ describe("FT06 TeamManagement behavior", () => {
     await expect(onSubmit(7, [101], "#aa4400")).rejects.toThrow(/VERSION_CONFLICT/);
 
     expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
-      title: "Speichern nicht möglich",
-      description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
+      title: "Änderungskonflikt",
+      description: "Die Daten wurden zwischenzeitlich geändert. Laden Sie die Ansicht neu und führen Sie die Aktion erneut aus.",
       variant: "destructive",
     }));
+  });
+
+  it("hides team mutation controls for reader users", async () => {
+    const { TeamManagement } = await loadTeamManagement();
+
+    const markup = renderToStaticMarkup(<TeamManagement userRole="READER" />);
+
+    expect(markup).toContain("card-team-7");
+    expect(markup).not.toContain("button-new-team");
+    expect(markup).not.toContain("button-delete-card-team-7");
+    expect(teamEditFormCalls).toHaveLength(0);
+  });
+
+  it("keeps team mutation controls for dispatchers", async () => {
+    const { TeamManagement } = await loadTeamManagement();
+
+    const markup = renderToStaticMarkup(<TeamManagement userRole="DISPATCHER" />);
+
+    expect(markup).toContain("button-new-team");
+    expect(markup).toContain("button-delete-card-team-7");
   });
 });

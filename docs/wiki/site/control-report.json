@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 36,
-      "generated_count": 36,
+      "source_count": 33,
+      "generated_count": 33,
       "warnings": 0,
       "errors": 0
     },
@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 49,
-      "generated_count": 49,
+      "source_count": 52,
+      "generated_count": 52,
       "warnings": 0,
       "errors": 0
     }
@@ -650,24 +650,6 @@
         "errors": []
       },
       {
-        "id": "A-17",
-        "title": "Fehler-Normalisierung",
-        "source": "tasks/fehler-normalisierung.md",
-        "output": "projekt/aufgaben/fehler-normalisierung.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-18",
-        "title": "Dialog-Basiskomponenten",
-        "source": "tasks/dialog-basiskomponenten.md",
-        "output": "projekt/aufgaben/dialog-basiskomponenten.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-19",
         "title": "Tour-KW- und Termin-Mutationsdialoge",
         "source": "tasks/tour-kw-termin-mutationsdialoge.md",
@@ -708,15 +690,6 @@
         "title": "Mitarbeiter-Dialoge",
         "source": "tasks/mitarbeiter-dialoge.md",
         "output": "projekt/aufgaben/mitarbeiter-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-24",
-        "title": "Teams-Dialoge",
-        "source": "tasks/teams-dialoge.md",
-        "output": "projekt/aufgaben/teams-dialoge.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -3570,6 +3543,33 @@
       }
     ],
     "journal": [
+      {
+        "id": "09-05-26-p01-dialog-basiskomponenten-abgeschlossen",
+        "title": "09.05.26 | Abschluss | P01 Dialog-Basiskomponenten",
+        "source": "journal/09-05-26-p01-dialog-basiskomponenten-abgeschlossen.md",
+        "output": "verwaltung/journal/09-05-26-p01-dialog-basiskomponenten-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "09-05-26-p01-fehler-normalisierung-abgeschlossen",
+        "title": "09.05.26 | Abschluss | P01 Fehler-Normalisierung",
+        "source": "journal/09-05-26-p01-fehler-normalisierung-abgeschlossen.md",
+        "output": "verwaltung/journal/09-05-26-p01-fehler-normalisierung-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "09-05-26-p01-teams-dialoge-abgeschlossen",
+        "title": "09.05.26 | Abschluss | P01 Teams-Dialoge",
+        "source": "journal/09-05-26-p01-teams-dialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/09-05-26-p01-teams-dialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "08-05-26-ft26-report-druckmessung-inline-notizen",
         "title": "08.05.26 | Umsetzung | FT-26/FT-03/FT-13: Report-Druckmessung und Inline-Notizen-E2E",

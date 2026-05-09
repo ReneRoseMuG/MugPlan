@@ -37,4 +37,4 @@ Keine bekannt.
 
 - Features: [FT-14 - Benutzer- und Rollenverwaltung](../features/ft-14-benutzer-und-rollenverwaltung/ft-14-benutzer-und-rollenverwaltung.md) · [FT-20 - Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung](../features/ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung/ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)

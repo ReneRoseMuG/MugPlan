@@ -3,6 +3,10 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as teamsService from "../services/teamsService";
 
+function canMutateTeams(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listTeams(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const teams = await teamsService.listTeams();
@@ -14,6 +18,10 @@ export async function listTeams(_req: Request, res: Response, next: NextFunction
 
 export async function createTeam(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTeams(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.teams.create.input.parse(req.body);
     const team = await teamsService.createTeam(input);
     res.status(201).json(team);
@@ -28,6 +36,10 @@ export async function createTeam(req: Request, res: Response, next: NextFunction
 
 export async function updateTeam(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTeams(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.teams.update.input.parse(req.body);
     const team = await teamsService.updateTeam(Number(req.params.id), input);
     if (!team) {
@@ -50,6 +62,10 @@ export async function updateTeam(req: Request, res: Response, next: NextFunction
 
 export async function deleteTeam(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTeams(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.teams.delete.input.parse(req.body);
     await teamsService.deleteTeam(Number(req.params.id), input.version);
     res.status(204).send();

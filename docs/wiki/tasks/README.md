@@ -29,14 +29,11 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die v
 | A-13 | [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) | Implementierung | `offen` |
 | A-14 | [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md) | Refactoring | `offen` |
 | A-16 | [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) | Planung | `in Bearbeitung` |
-| A-17 | [Fehler-Normalisierung](fehler-normalisierung.md) | Implementierung | `in Bearbeitung` |
-| A-18 | [Dialog-Basiskomponenten](dialog-basiskomponenten.md) | Implementierung | `in Bearbeitung` |
 | A-19 | [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md) | Implementierung | `offen` |
 | A-20 | [Termine- und Kalenderdialoge](termine-und-kalenderdialoge.md) | Implementierung | `offen` |
 | A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `offen` |
 | A-22 | [Kunden-Dialoge](kunden-dialoge.md) | Implementierung | `offen` |
 | A-23 | [Mitarbeiter-Dialoge](mitarbeiter-dialoge.md) | Implementierung | `offen` |
-| A-24 | [Teams-Dialoge](teams-dialoge.md) | Implementierung | `offen` |
 | A-25 | [Notizen-Dialoge](notizen-dialoge.md) | Implementierung | `offen` |
 | A-26 | [Stammdaten-, Produkte- und Komponenten-Dialoge](stammdaten-produkte-komponenten-dialoge.md) | Implementierung | `offen` |
 | A-27 | [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md) | Implementierung | `offen` |

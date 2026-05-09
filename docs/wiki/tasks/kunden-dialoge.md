@@ -38,4 +38,4 @@ Keine bekannt.
 
 - Features: [FT-09 - Kundenverwaltung](../features/ft-09-kundenverwaltung/ft-09-kundenverwaltung.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)

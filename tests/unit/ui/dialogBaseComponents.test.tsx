@@ -1,8 +1,34 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/ui/alert-dialog", () => ({
+  AlertDialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  AlertDialogAction: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+  AlertDialogCancel: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <button type="button" {...props}>{children}</button>
+  ),
+  AlertDialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <section {...props}>{children}</section>
+  ),
+  AlertDialogDescription: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <p {...props}>{children}</p>
+  ),
+  AlertDialogFooter: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <footer {...props}>{children}</footer>
+  ),
+  AlertDialogHeader: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <header {...props}>{children}</header>
+  ),
+  AlertDialogTitle: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <h2 {...props}>{children}</h2>
+  ),
+}));
 
 import {
+  ConfirmDialogBase,
   DialogBaseFooter,
   DialogBaseInlineMessage,
   DialogBaseStepper,
@@ -23,6 +49,29 @@ describe("dialog base components", () => {
     expect(html).toContain("Abbrechen");
     expect(html).toContain("disabled");
     expect(html).toContain("animate-spin");
+  });
+
+  it("renders confirm dialogs with MuG icon, body and footer structure", () => {
+    const html = renderToStaticMarkup(
+      <ConfirmDialogBase
+        open
+        onOpenChange={() => undefined}
+        title="Team wirklich löschen?"
+        description="Team 1 wird gelöscht."
+        confirmLabel="Team löschen"
+        icon={<span data-testid="team-domain-icon">team-domain-icon</span>}
+        onConfirm={() => undefined}
+      />,
+    );
+
+    expect(html).not.toContain("mugplan-icon-b2.svg");
+    expect(html).toContain("team-domain-icon");
+    expect(html).toContain("Team wirklich löschen?");
+    expect(html).toContain("Team 1 wird gelöscht.");
+    expect(html).toContain("Abbrechen");
+    expect(html).toContain("Team löschen");
+    expect(html).toContain("border-b");
+    expect(html).toContain("border-t");
   });
 
   it("renders normalized server errors without exposing raw backend codes", () => {

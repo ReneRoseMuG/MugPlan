@@ -43,4 +43,4 @@ Keine bekannt.
 
 - Features: [FT-13 - Notizverwaltung](../features/ft-13-notizverwaltung/ft-13-notizverwaltung.md) · [FT-01 - Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)

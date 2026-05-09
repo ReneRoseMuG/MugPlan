@@ -42,4 +42,4 @@ Keine bekannt.
 
 - Features: [FT-02 - Projekte](../features/ft-02-projekte/ft-02-projekte.md) · [FT-21 - Dokumentenextraktion](../features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)

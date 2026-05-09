@@ -23,9 +23,12 @@ import request, { type SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 
 let app: express.Express;
 let employeeCounter = 1;
+let roleUserCounter = 1;
 
 beforeAll(async () => {
   app = express();
@@ -38,6 +41,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   employeeCounter = 1;
+  roleUserCounter += 1;
 });
 
 async function loginAgent(username: string, password: string): Promise<SuperAgentTest> {
@@ -48,6 +52,22 @@ async function loginAgent(username: string, password: string): Promise<SuperAgen
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
   return loginAgent("test-admin", "test-admin-password");
+}
+
+async function loginRoleAgent(roleCode: "DISPATCHER" | "READER"): Promise<SuperAgentTest> {
+  const token = `ft11-${roleCode.toLowerCase()}-${roleUserCounter}`;
+  roleUserCounter += 1;
+  const username = `test-${token}`;
+  const password = `${token}-password`;
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "FT11",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+  return loginAgent(username, password);
 }
 
 async function createEmployee(agent: SuperAgentTest) {
@@ -84,6 +104,62 @@ describe("FT11 integration: team management core behavior", () => {
     await admin.post("/api/teams").send({}).expect(422).expect((res) => {
       expect(res.body.code).toBe("VALIDATION_ERROR");
     });
+  });
+
+  it("allows dispatchers to create, update and delete teams", async () => {
+    const dispatcher = await loginRoleAgent("DISPATCHER");
+
+    const created = await dispatcher.post("/api/teams").send({ color: "#224477" }).expect(201);
+
+    const updated = await dispatcher
+      .patch(`/api/teams/${created.body.id}`)
+      .send({ color: "#337788", version: created.body.version })
+      .expect(200);
+
+    expect(updated.body.color).toBe("#337788");
+
+    await dispatcher.delete(`/api/teams/${created.body.id}`).send({ version: updated.body.version }).expect(204);
+  });
+
+  it("blocks reader write access on all team mutation endpoints with FORBIDDEN", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await loginRoleAgent("READER");
+    const team = await admin.post("/api/teams").send({ color: "#663399" }).expect(201);
+    const employee = await createEmployee(admin);
+
+    await reader.get("/api/teams").expect(200);
+
+    await reader.post("/api/teams").send({ color: "#112233" }).expect(403).expect((res) => {
+      expect(res.body.code).toBe("FORBIDDEN");
+    });
+    await reader
+      .patch(`/api/teams/${team.body.id}`)
+      .send({ color: "#334455", version: team.body.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+    await reader
+      .delete(`/api/teams/${team.body.id}`)
+      .send({ version: team.body.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+    await reader
+      .post(`/api/teams/${team.body.id}/employees`)
+      .send({ items: [{ employeeId: employee.id, version: employee.version }] })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+    await reader
+      .delete(`/api/teams/${team.body.id}/employees/${employee.id}`)
+      .send({ version: employee.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
   });
 
   it("documents empty assign payload behavior as 200 with empty array", async () => {

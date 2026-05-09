@@ -2185,7 +2185,9 @@ export const api = {
       input: insertTeamSchema,
       responses: {
         201: z.custom<typeof teams.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         400: errorSchemas.validation,
+        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
     },
     update: {
@@ -2196,6 +2198,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof teams.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -2209,6 +2212,7 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3365,6 +3369,7 @@ export const api = {
       }),
       responses: {
         200: z.custom<typeof employees.$inferSelect>(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3383,6 +3388,7 @@ export const api = {
       }),
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         409: z.object({ code: z.literal("VERSION_CONFLICT") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },

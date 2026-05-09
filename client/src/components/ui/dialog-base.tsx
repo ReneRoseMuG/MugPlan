@@ -97,6 +97,7 @@ interface ConfirmDialogBaseProps {
   confirmLabel: string;
   description?: React.ReactNode;
   disabled?: boolean;
+  icon: React.ReactNode;
   isPending?: boolean;
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
@@ -387,6 +388,7 @@ export function ConfirmDialogBase({
   confirmLabel,
   description,
   disabled = false,
+  icon,
   isPending = false,
   onConfirm,
   onOpenChange,
@@ -409,14 +411,30 @@ export function ConfirmDialogBase({
         onOpenChange(nextOpen);
       }}
     >
-      <AlertDialogContent data-testid={testId}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          {description ? (
-            <AlertDialogDescription>{description}</AlertDialogDescription>
-          ) : null}
+      <AlertDialogContent
+        className="gap-0 overflow-hidden p-0 sm:max-w-lg"
+        data-testid={testId}
+      >
+        <AlertDialogHeader className="border-b bg-muted/30 px-6 py-4">
+          <div className="flex items-center gap-3 text-left">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
+              {icon}
+            </div>
+            <AlertDialogTitle className="min-w-0 leading-snug">
+              {title}
+            </AlertDialogTitle>
+          </div>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+
+        <div className="px-6 py-5">
+          {description ? (
+            <AlertDialogDescription className="text-base leading-relaxed text-foreground">
+              {description}
+            </AlertDialogDescription>
+          ) : null}
+        </div>
+
+        <AlertDialogFooter className="border-t bg-muted/30 px-6 py-4">
           <AlertDialogCancel disabled={effectiveCloseDisabled}>
             {cancelLabel}
           </AlertDialogCancel>

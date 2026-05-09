@@ -40,4 +40,4 @@ Keine bekannt.
 
 - Features: [FT-05 - Mitarbeiterverwaltung](../features/ft-05-mitarbeiterverwaltung/ft-05-mitarbeiterverwaltung.md) · [FT-33 - Abwesenheiten über interne Personalplanung](../features/ft-33-abwesenheiten-ueber-interne-personalplanung/ft-33-abwesenheiten-ueber-interne-personalplanung.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md) · [Mitarbeiter-Auswahl-Dialogstruktur](mitarbeiter-auswahl-dialogstruktur.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md) · [Mitarbeiter-Auswahl-Dialogstruktur](mitarbeiter-auswahl-dialogstruktur.md)

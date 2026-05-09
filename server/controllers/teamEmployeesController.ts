@@ -3,6 +3,10 @@ import { api } from "@shared/routes";
 import { ZodError } from "zod";
 import * as teamEmployeesService from "../services/teamEmployeesService";
 
+function canMutateTeamEmployees(req: Request): boolean {
+  return req.userContext?.roleKey === "ADMIN" || req.userContext?.roleKey === "DISPONENT";
+}
+
 export async function listTeamEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const teamId = Number(req.params.teamId);
@@ -15,6 +19,10 @@ export async function listTeamEmployees(req: Request, res: Response, next: NextF
 
 export async function removeTeamEmployee(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTeamEmployees(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const input = api.teamEmployees.remove.input.parse(req.body);
     const employeeId = Number(req.params.employeeId);
     const employee = await teamEmployeesService.removeEmployeeFromTeam(employeeId, input.version);
@@ -38,6 +46,10 @@ export async function removeTeamEmployee(req: Request, res: Response, next: Next
 
 export async function assignTeamEmployees(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!canMutateTeamEmployees(req)) {
+      res.status(403).json({ code: "FORBIDDEN" });
+      return;
+    }
     const teamId = Number(req.params.teamId);
     const input = api.teamEmployees.assign.input.parse(req.body);
     const results = await teamEmployeesService.assignEmployeesToTeam(teamId, input.items);

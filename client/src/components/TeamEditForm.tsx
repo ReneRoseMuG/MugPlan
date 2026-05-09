@@ -7,18 +7,11 @@ import { MembersSectionHeader } from "@/components/ui/members-section-header";
 import { PlusActionButton } from "@/components/ui/plus-action-button";
 import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { Button } from "@/components/ui/button";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { domainIcons } from "@/lib/domain-icons";
+import type { NormalizedServerError } from "@/lib/error-normalization";
 import type { Team, Employee } from "@shared/schema";
 
 type TeamWithMembers = Team & {
@@ -33,6 +26,7 @@ interface TeamEditFormProps {
   canDelete?: boolean;
   isDeleting?: boolean;
   isSaving: boolean;
+  mutationError?: NormalizedServerError | null;
   isCreate?: boolean;
   defaultName?: string;
   defaultColor?: string;
@@ -47,11 +41,13 @@ export function TeamEditForm({
   canDelete = false,
   isDeleting = false,
   isSaving,
+  mutationError = null,
   isCreate = false,
   defaultName = "Team anlegen",
   defaultColor = "#60a5fa",
   onCancel,
 }: TeamEditFormProps) {
+  const TeamsIcon = domainIcons.teams;
   const [selectedMembers, setSelectedMembers] = useState<number[]>(() => team?.members.map((member) => member.id) ?? []);
   const [selectedColor, setSelectedColor] = useState<string>(() => team?.color ?? defaultColor);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
@@ -161,6 +157,7 @@ export function TeamEditForm({
         )}
       >
         <div className="w-full space-y-4" data-testid="team-form-main-column">
+          {mutationError ? <DialogBaseInlineMessage error={mutationError} /> : null}
           <div className="sub-panel space-y-3">
             <h3 className="flex items-center gap-2 text-sm font-bold tracking-wider text-primary">
               <Users className="w-4 h-4" />
@@ -244,28 +241,22 @@ export function TeamEditForm({
           </DialogContent>
         </Dialog>
 
-        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Team wirklich löschen?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Diese Aktion ist endgültig. Das Team wird gelöscht und die laufende Bearbeitung geschlossen.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  setDeleteConfirmOpen(false);
-                  onDelete?.();
-                }}
-                data-testid="button-confirm-delete-team"
-              >
-                Team löschen
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialogBase
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Team wirklich löschen?"
+          description="Das Team wird gelöscht und die zugewiesenen Mitarbeiter werden vom Team gelöst."
+          confirmLabel="Team löschen"
+          icon={<TeamsIcon className="h-5 w-5 text-primary" />}
+          pendingLabel="Löschen..."
+          isPending={isDeleting}
+          variant="destructive"
+          testId="dialog-confirm-delete-team-form"
+          onConfirm={() => {
+            setDeleteConfirmOpen(false);
+            onDelete?.();
+          }}
+        />
       </EntityFormShell>
     </div>
   );
