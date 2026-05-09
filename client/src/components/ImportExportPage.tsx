@@ -1,8 +1,10 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { normalizeServerError } from "@/lib/error-normalization";
 import { queryClient } from "@/lib/queryClient";
 
 type ImportRowStatus = "IMPORTED" | "DUPLICATE" | "INVALID" | "ERROR";
@@ -86,8 +88,10 @@ export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProp
         type: "active",
       });
     } catch (uploadError) {
-      const message = uploadError instanceof Error ? uploadError.message : "Unbekannter Fehler";
-      setError(`Import fehlgeschlagen: ${message}`);
+      const normalized = normalizeServerError(uploadError, {
+        title: "Import fehlgeschlagen",
+      });
+      setError(normalized.description);
       setResult(null);
     } finally {
       setIsUploading(false);
@@ -116,13 +120,13 @@ export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProp
           data-testid="button-employee-import-upload"
         >
           <Upload className="w-4 h-4" />
-          {isUploading ? "Import laeuft..." : "CSV importieren"}
+          {isUploading ? "Import läuft..." : "CSV importieren"}
         </Button>
 
         {error && (
-          <p className="text-sm text-red-600" data-testid="text-employee-import-error">
-            {error}
-          </p>
+          <div data-testid="text-employee-import-error">
+            <DialogBaseInlineMessage title="Import fehlgeschlagen" description={error} tone="error" />
+          </div>
         )}
       </section>
 
@@ -165,4 +169,3 @@ export function EmployeeImportPanel({ resetSignal = 0 }: EmployeeImportPanelProp
     </div>
   );
 }
-

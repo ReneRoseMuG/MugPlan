@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>09-05-26-p01-tags-hilfetexte-admin-dialoge-abgeschlossen: 09.05.26 | Abschluss | P01 Tags, Hilfetexte und Admin-Dialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 09-05-26-p01-tags-hilfetexte-admin-dialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">09-05-26-p01-tags-hilfetexte-admin-dialoge-abgeschlossen 09.05.26 | Abschluss | P01 Tags, Hilfetexte und Admin-Dialoge</span></nav>
+        <h1 class="wiki-h1">09-05-26-p01-tags-hilfetexte-admin-dialoge-abgeschlossen: 09.05.26 | Abschluss | P01 Tags, Hilfetexte und Admin-Dialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>09.05.26</div>
+    <p class="wiki-lead">Die P01-Schritte A-28, A-30 und A-31 sind technisch umgesetzt. Tags, Hilfetexte, Import-/Export-Pfade, Einstellungen, Dump-Aktionen, Monitoring-Bezüge und administrative Korrekturworkflows verwenden nun gemeinsame Dialog-, Bestätigungs- und Inline-Fehlerstrukturen, soweit diese A</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die P01-Schritte A-28, A-30 und A-31 sind technisch umgesetzt. Tags, Hilfetexte, Import-/Export-Pfade, Einstellungen, Dump-Aktionen, Monitoring-Bezüge und administrative Korrekturworkflows verwenden nun gemeinsame Dialog-, Bestätigungs- und Inline-Fehlerstrukturen, soweit diese Aufgabe sie berührt.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>UI-Tests: 44 bestandene Tests, 1 übersprungener Test für die betroffenen Tag-, Hilfetext-, Settings-, Monitoring- und Admin-Komponenten.</li><li>Integrationstests: 28 bestandene Tests für Tags, Hilfetexte, Monitoring, Korrekturworkflow und Settings-Persistenz.</li><li>Browser-E2E: 33 bestandene Tests für Tag-Auswahl, Tag-Regelpfade, Settings-Navigation, Settings-Bedienung und Monitoring-Fokus.</li><li>Nachprüfung am 10.05.26: <code>npm run test:unit -- tests/unit/ui/workflowNoteDialogs.behavior.test.tsx tests/unit/ui/tagManagementPage.dialogs.test.tsx tests/unit/hooks/useTagRuleEngine.test.ts</code> erfolgreich mit 20 bestandenen Tests.</li><li>Nachprüfung am 10.05.26: <code>npm run test:e2e:browser -- tests/e2e-browser/tag-rule-engine.workflow.browser.e2e.spec.ts</code> erfolgreich mit 17 bestandenen Browser-Tests.</li><li>Nachprüfung am 10.05.26: Die zentrale Dialogbasis richtet normale Dialogtitel zwischen Icon und Schließen-Button aus, trennt Body-Text vom Header und vereinheitlicht Dialog-Icons inklusive Hintergrund; destruktive Bestätigungsdialoge bleiben als begründete Ausnahme ohne Schließen-Button.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>Wiki-Build: <code>node scripts/build-wiki-site.mjs</code> erfolgreich; Kontrollbericht mit 0 Fehlern und 57 bestehenden Warnungsgruppen.</li><li>Datumsformat-Suchlauf: Treffer verbleiben in bestehenden technischen ISO-Pfaden, Testdaten, generierten Coverage-Dateien und Regeltexten.</li><li>Manuelle App-Prüfung: Übergabe mit manueller Pfadliste am 09.05.26; Nutzerprüfung steht noch aus.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> darf Tags, Hilfetexte, Hilfetext-Import/-Export, globale Einstellungen, Dump-Aktionen und administrative Korrekturworkflows verwalten.</li><li><code>DISPONENT</code> darf die bestehenden Termin-Tag- und Monitoring-Lesepfade sowie persönliche Einstellungen nutzen, erhält aber keine neuen Admin-Aktionen.</li><li><code>LESER</code> darf aktive Hilfetexte und persönliche Einstellungen nutzen, erhält aber keine Verwaltungs-, Monitoring- oder Admin-Aktionen.</li><li>Die Hilfetext-Verwaltungsendpunkte wurden ausdrücklich serverseitig auf <code>ADMIN</code> begrenzt; die aktive Hilfetextanzeige per Key bleibt rollenübergreifend nutzbar.</li><li>Nachtrag: Das Reklamations-Tag ist kein manuell zu setzendes Tag im Tag-Picker, sondern wird über den Workflow „Reklamation melden“ gesetzt beziehungsweise aufgehoben.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Aufgabe: <a href="../../../tasks/closed/tags-dialoge.md">Tags-Dialoge</a></li><li>Aufgabe: <a href="../../../tasks/closed/hilfetexte-import-export-dialoge.md">Hilfetexte-, Import- und Export-Dialoge</a></li><li>Aufgabe: <a href="../../../tasks/closed/einstellungen-monitoring-admin-dialoge.md">Einstellungen-, Monitoring- und Admin-Dialoge</a></li><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout Masterplan</a></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

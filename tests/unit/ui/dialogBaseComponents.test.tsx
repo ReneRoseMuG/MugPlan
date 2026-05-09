@@ -27,8 +27,28 @@ vi.mock("@/components/ui/alert-dialog", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/dialog", () => ({
+  Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <section {...props}>{children}</section>
+  ),
+  DialogDescription: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <p {...props}>{children}</p>
+  ),
+  DialogFooter: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <footer {...props}>{children}</footer>
+  ),
+  DialogHeader: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <header {...props}>{children}</header>
+  ),
+  DialogTitle: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => (
+    <h2 {...props}>{children}</h2>
+  ),
+}));
+
 import {
   ConfirmDialogBase,
+  DialogBaseShell,
   DialogBaseFooter,
   DialogBaseInlineMessage,
   DialogBaseStepper,
@@ -72,6 +92,28 @@ describe("dialog base components", () => {
     expect(html).toContain("Team löschen");
     expect(html).toContain("border-b");
     expect(html).toContain("border-t");
+  });
+
+  it("anchors dialog shell titles between the icon and close slot with separated body copy", () => {
+    const html = renderToStaticMarkup(
+      <DialogBaseShell
+        open
+        onOpenChange={() => undefined}
+        title="Notiz anlegen?"
+        description="Soll eine Notiz angelegt werden?"
+        icon={<span data-testid="note-domain-icon">note-domain-icon</span>}
+        footer={<span>Footer</span>}
+      >
+        <span>Body</span>
+      </DialogBaseShell>,
+    );
+
+    expect(html).toContain("grid-cols-[2.75rem_minmax(0,1fr)_2.75rem]");
+    expect(html).toContain("items-end");
+    expect(html).toContain("bg-slate-100 text-slate-700");
+    expect(html).toContain("self-end");
+    expect(html.indexOf("Notiz anlegen?")).toBeLessThan(html.indexOf("Soll eine Notiz angelegt werden?"));
+    expect(html.indexOf("border-b bg-slate-50")).toBeLessThan(html.indexOf("px-6 py-5"));
   });
 
   it("renders normalized server errors without exposing raw backend codes", () => {

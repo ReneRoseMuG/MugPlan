@@ -1,7 +1,10 @@
 import React, { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@shared/routes";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
+import { normalizeServerError } from "@/lib/error-normalization";
 import { queryClient } from "@/lib/queryClient";
 import { formatDisplayTimestamp } from "@/lib/date-display-format";
 
@@ -117,6 +120,7 @@ async function readJsonResponse<T>(response: Response, fallback: string): Promis
 export function CorrectionWorkflowAdminPanel() {
   const [preview, setPreview] = useState<WorkflowPreviewResponse | null>(null);
   const [applyResult, setApplyResult] = useState<WorkflowApplyResponse | null>(null);
+  const [applyConfirmOpen, setApplyConfirmOpen] = useState(false);
 
   const previewMutation = useMutation({
     mutationFn: async () => {
@@ -150,6 +154,7 @@ export function CorrectionWorkflowAdminPanel() {
     },
     onSuccess: async (payload) => {
       setApplyResult(payload);
+      setApplyConfirmOpen(false);
       await invalidateProjectMigrationQueries();
     },
   });
@@ -177,13 +182,7 @@ export function CorrectionWorkflowAdminPanel() {
           </Button>
           <Button
             size="sm"
-            onClick={() => {
-              if (!preview) return;
-              applyMutation.mutate({
-                manifestPath: preview.manifestPath,
-                manifestHash: preview.manifestHash,
-              });
-            }}
+            onClick={() => setApplyConfirmOpen(true)}
             disabled={!canApply}
             data-testid="button-apply-sauna-project-title-migration"
           >
@@ -193,14 +192,18 @@ export function CorrectionWorkflowAdminPanel() {
       </div>
 
       {previewMutation.error instanceof Error ? (
-        <p className="text-xs text-destructive" data-testid="sauna-project-title-migration-preview-error">
-          {previewMutation.error.message}
-        </p>
+        <div data-testid="sauna-project-title-migration-preview-error">
+          <DialogBaseInlineMessage
+            error={normalizeServerError(previewMutation.error, { title: "Migrationsvorschau konnte nicht erzeugt werden" })}
+          />
+        </div>
       ) : null}
       {applyMutation.error instanceof Error ? (
-        <p className="text-xs text-destructive" data-testid="sauna-project-title-migration-apply-error">
-          {applyMutation.error.message}
-        </p>
+        <div data-testid="sauna-project-title-migration-apply-error">
+          <DialogBaseInlineMessage
+            error={normalizeServerError(applyMutation.error, { title: "Migration konnte nicht ausgeführt werden" })}
+          />
+        </div>
       ) : null}
 
       {preview ? (
@@ -288,6 +291,25 @@ export function CorrectionWorkflowAdminPanel() {
           ) : null}
         </div>
       ) : null}
+      <ConfirmDialogBase
+        open={applyConfirmOpen}
+        onOpenChange={setApplyConfirmOpen}
+        icon={<AlertTriangle className="h-5 w-5" />}
+        title="Migration anwenden"
+        description="Die Korrektur schreibt die Projekttitel der angezeigten Kandidaten anhand des Preview-Manifests."
+        confirmLabel="Migration anwenden"
+        pendingLabel="Migration läuft..."
+        isPending={applyMutation.isPending}
+        onConfirm={() => {
+          if (!preview) return;
+          applyMutation.mutate({
+            manifestPath: preview.manifestPath,
+            manifestHash: preview.manifestHash,
+          });
+        }}
+        testId="dialog-apply-sauna-project-title-migration"
+        variant="destructive"
+      />
     </div>
   );
 }

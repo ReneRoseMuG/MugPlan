@@ -3,10 +3,12 @@ import { CalendarMarkersAdminPage } from "@/components/CalendarMarkersAdminPage"
 import { CorrectionWorkflowAdminPanel } from "@/components/CorrectionWorkflowAdminPanel";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/useSettings";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { normalizeServerError } from "@/lib/error-normalization";
 import { queryClient } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { api } from "@shared/routes";
@@ -434,6 +436,9 @@ export function SettingsPage() {
   const [dumpImportError, setDumpImportError] = useState<string | null>(null);
   const [dumpConfirmationInput, setDumpConfirmationInput] = useState("");
   const [isDumpDeleting, setIsDumpDeleting] = useState<string | null>(null);
+  const [dumpDeleteCandidate, setDumpDeleteCandidate] = useState<DumpListRow | null>(null);
+  const [dumpDeleteError, setDumpDeleteError] = useState<string | null>(null);
+  const [dumpImportApplyConfirmOpen, setDumpImportApplyConfirmOpen] = useState(false);
   const isDumpImporting = isDumpPreviewLoading || isDumpApplying;
 
   useEffect(() => {
@@ -793,6 +798,7 @@ export function SettingsPage() {
 
 
   const handleDeleteDump = async (filename: string) => {
+    setDumpDeleteError(null);
     setIsDumpDeleting(filename);
     try {
       const response = await fetch(`/api/admin/dumps/${encodeURIComponent(filename)}`, {
@@ -801,8 +807,12 @@ export function SettingsPage() {
       });
       if (!response.ok) throw new Error("Dump konnte nicht gelöscht werden");
       await dumpsQuery.refetch();
-    } catch {
-      // silently ignore — list will still show the file
+      setDumpDeleteCandidate(null);
+    } catch (error) {
+      const normalized = normalizeServerError(error, {
+        title: "Dump konnte nicht gelöscht werden",
+      });
+      setDumpDeleteError(normalized.description);
     } finally {
       setIsDumpDeleting(null);
     }
@@ -858,6 +868,7 @@ export function SettingsPage() {
       }
       const payload = await response.json() as DumpImportApplyRow;
       setDumpImportResult(payload);
+      setDumpImportApplyConfirmOpen(false);
       await dumpsQuery.refetch();
     } catch (error) {
       setDumpImportError(error instanceof Error ? error.message : "Unbekannter Fehler");
@@ -886,6 +897,7 @@ export function SettingsPage() {
     : "Benutzerspezifische Einstellungen für Vorschau, Layout und persönliche Anzeige";
 
   return (
+    <>
     <div className="h-full min-h-0 rounded-lg border-2 border-foreground bg-white flex flex-col" data-testid="settings-landing-page">
       <div className="flex min-h-0 flex-1">
 
@@ -1506,6 +1518,11 @@ export function SettingsPage() {
                   {dumpCreateError && (
                     <p className="mb-3 text-xs text-destructive" data-testid="dump-create-error">{dumpCreateError}</p>
                   )}
+                  {dumpDeleteError && (
+                    <div className="mb-3" data-testid="dump-delete-error">
+                      <DialogBaseInlineMessage title="Dump konnte nicht gelöscht werden" description={dumpDeleteError} tone="error" />
+                    </div>
+                  )}
 
                   <div className="rounded-md border border-slate-200 bg-white overflow-hidden" data-testid="dump-list-section">
                     {dumpsQuery.isLoading ? (
@@ -1543,7 +1560,10 @@ export function SettingsPage() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => void handleDeleteDump(row.filename)}
+                                    onClick={() => {
+                                      setDumpDeleteError(null);
+                                      setDumpDeleteCandidate(row);
+                                    }}
                                     disabled={isDumpDeleting === row.filename}
                                     data-testid={`dump-delete-${row.filename}`}
                                   >
@@ -1637,7 +1657,7 @@ export function SettingsPage() {
                         />
                         <Button
                           size="sm"
-                          onClick={() => void handleApplyDumpImport()}
+                          onClick={() => setDumpImportApplyConfirmOpen(true)}
                           disabled={
                             isDumpApplying
                             || dumpImportPreview.transferReadiness === "blocked"
@@ -1669,7 +1689,9 @@ export function SettingsPage() {
                     </div>
                   )}
                   {dumpImportError && (
-                    <p className="mt-2 text-xs text-destructive" data-testid="dump-import-error">{dumpImportError}</p>
+                    <div className="mt-2" data-testid="dump-import-error">
+                      <DialogBaseInlineMessage title="Import fehlgeschlagen" description={dumpImportError} tone="error" />
+                    </div>
                   )}
                 </div>
               )}
@@ -1686,5 +1708,41 @@ export function SettingsPage() {
         </div>
       </div>
     </div>
+    <ConfirmDialogBase
+      open={dumpDeleteCandidate !== null}
+      onOpenChange={(open) => {
+        if (!open) setDumpDeleteCandidate(null);
+      }}
+      icon={<DatabaseBackup className="h-5 w-5" />}
+      title="Dump löschen"
+      description={
+        dumpDeleteCandidate
+          ? `Soll der Dump "${dumpDeleteCandidate.filename}" gelöscht werden?`
+          : undefined
+      }
+      confirmLabel="Löschen"
+      pendingLabel="Löschen..."
+      isPending={Boolean(isDumpDeleting)}
+      onConfirm={() => {
+        if (!dumpDeleteCandidate) return;
+        void handleDeleteDump(dumpDeleteCandidate.filename);
+      }}
+      testId="dialog-delete-dump"
+      variant="destructive"
+    />
+    <ConfirmDialogBase
+      open={dumpImportApplyConfirmOpen}
+      onOpenChange={setDumpImportApplyConfirmOpen}
+      icon={<DatabaseBackup className="h-5 w-5" />}
+      title="Dump-Import anwenden"
+      description="Der Import überschreibt vorhandene Daten unwiderruflich und erstellt vorher ein Ziel-Backup."
+      confirmLabel="Import anwenden"
+      pendingLabel="Import läuft..."
+      isPending={isDumpApplying}
+      onConfirm={() => void handleApplyDumpImport()}
+      testId="dialog-apply-dump-import"
+      variant="destructive"
+    />
+    </>
   );
 }

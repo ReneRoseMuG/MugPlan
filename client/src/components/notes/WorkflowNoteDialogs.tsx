@@ -1,14 +1,6 @@
 import React, { type ReactNode } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { StickyNote, Trash2 } from "lucide-react";
+import { DialogBaseFooter, DialogBaseShell } from "@/components/ui/dialog-base";
 
 type WorkflowNoteSuggestionDialogProps = {
   open: boolean;
@@ -35,30 +27,35 @@ export function WorkflowNoteSuggestionDialog({
   onSkip,
   onConfirm,
 }: WorkflowNoteSuggestionDialogProps) {
+  const description = `Soll eine Notiz „${templateTitle ?? ""}“ für ${targetLabel} angelegt werden?`;
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent data-testid="dialog-note-suggestion">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Notiz anlegen?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {`Soll eine Notiz „${templateTitle ?? ""}“ für ${targetLabel} angelegt werden?`}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel data-testid="button-note-suggestion-skip" onClick={onSkip}>
-            Überspringen
-          </AlertDialogCancel>
-          <AlertDialogAction
-            data-testid="button-note-suggestion-confirm"
-            onClick={() => {
+    <DialogBaseShell
+      footer={(
+        <DialogBaseFooter
+          secondaryAction={{
+            label: "Überspringen",
+            onClick: onSkip,
+            testId: "button-note-suggestion-skip",
+            variant: "outline",
+          }}
+          primaryAction={{
+            label: "Jetzt anlegen",
+            onClick: () => {
               void onConfirm();
-            }}
-          >
-            Jetzt anlegen
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            },
+            testId: "button-note-suggestion-confirm",
+          }}
+        />
+      )}
+      icon={<StickyNote />}
+      onOpenChange={onOpenChange}
+      open={open}
+      testId="dialog-note-suggestion"
+      title="Notiz anlegen?"
+    >
+      <p className="text-base leading-relaxed text-slate-700">{description}</p>
+    </DialogBaseShell>
   );
 }
 
@@ -70,26 +67,32 @@ export function WorkflowNoteRemovalDialog({
   onConfirm,
 }: WorkflowNoteRemovalDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent data-testid="dialog-note-removal">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Notiz entfernen?</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel data-testid="button-note-removal-keep" onClick={onKeep}>
-            Behalten
-          </AlertDialogCancel>
-          <AlertDialogAction
-            data-testid="button-note-removal-confirm"
-            onClick={() => {
+    <DialogBaseShell
+      footer={(
+        <DialogBaseFooter
+          secondaryAction={{
+            label: "Behalten",
+            onClick: onKeep,
+            testId: "button-note-removal-keep",
+            variant: "outline",
+          }}
+          primaryAction={{
+            label: "Entfernen",
+            onClick: () => {
               void onConfirm();
-            }}
-          >
-            Entfernen
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            },
+            testId: "button-note-removal-confirm",
+            variant: "destructive",
+          }}
+        />
+      )}
+      icon={<Trash2 />}
+      onOpenChange={onOpenChange}
+      open={open}
+      testId="dialog-note-removal"
+      title="Notiz entfernen?"
+    >
+      <div className="text-base leading-relaxed text-slate-700">{description}</div>
+    </DialogBaseShell>
   );
 }

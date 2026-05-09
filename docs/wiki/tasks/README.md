@@ -36,10 +36,7 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die v
 | A-23 | [Mitarbeiter-Dialoge](mitarbeiter-dialoge.md) | Implementierung | `offen` |
 | A-25 | [Notizen-Dialoge](notizen-dialoge.md) | Implementierung | `offen` |
 | A-27 | [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md) | Implementierung | `offen` |
-| A-28 | [Tags-Dialoge](tags-dialoge.md) | Implementierung | `offen` |
 | A-29 | [Reports- und Druck-Dialoge](reports-und-druck-dialoge.md) | Implementierung | `offen` |
-| A-30 | [Hilfetexte-, Import- und Export-Dialoge](hilfetexte-import-export-dialoge.md) | Implementierung | `offen` |
-| A-31 | [Einstellungen-, Monitoring- und Admin-Dialoge](einstellungen-monitoring-admin-dialoge.md) | Implementierung | `offen` |
 
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Dialoge. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 

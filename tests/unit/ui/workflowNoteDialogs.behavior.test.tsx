@@ -22,20 +22,54 @@ type DialogButtonProps = {
 const actionProps = new Map<string, DialogButtonProps>();
 const cancelProps = new Map<string, DialogButtonProps>();
 
-vi.mock("@/components/ui/alert-dialog", () => ({
-  AlertDialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  AlertDialogContent: ({ children, ...props }: { children?: React.ReactNode }) => <section {...props}>{children}</section>,
-  AlertDialogDescription: ({ children }: { children?: React.ReactNode }) => <p>{children}</p>,
-  AlertDialogFooter: ({ children }: { children?: React.ReactNode }) => <footer>{children}</footer>,
-  AlertDialogHeader: ({ children }: { children?: React.ReactNode }) => <header>{children}</header>,
-  AlertDialogTitle: ({ children }: { children?: React.ReactNode }) => <h2>{children}</h2>,
-  AlertDialogAction: (props: DialogButtonProps) => {
-    if (props["data-testid"]) actionProps.set(props["data-testid"], props);
-    return <button type="button" {...props}>{props.children}</button>;
-  },
-  AlertDialogCancel: (props: DialogButtonProps) => {
-    if (props["data-testid"]) cancelProps.set(props["data-testid"], props);
-    return <button type="button" {...props}>{props.children}</button>;
+vi.mock("@/components/ui/dialog-base", () => ({
+  DialogBaseShell: ({
+    children,
+    description,
+    footer,
+    testId,
+    title,
+  }: {
+    children?: React.ReactNode;
+    description?: React.ReactNode;
+    footer?: React.ReactNode;
+    testId?: string;
+    title?: React.ReactNode;
+  }) => (
+    <section data-testid={testId}>
+      <h2>{title}</h2>
+      <p>{description}</p>
+      {children}
+      <footer>{footer}</footer>
+    </section>
+  ),
+  DialogBaseFooter: ({
+    primaryAction,
+    secondaryAction,
+  }: {
+    primaryAction?: { label: string; onClick?: () => void; testId?: string };
+    secondaryAction?: { label: string; onClick?: () => void; testId?: string };
+  }) => {
+    if (primaryAction?.testId) {
+      actionProps.set(primaryAction.testId, {
+        "data-testid": primaryAction.testId,
+        onClick: primaryAction.onClick,
+        children: primaryAction.label,
+      });
+    }
+    if (secondaryAction?.testId) {
+      cancelProps.set(secondaryAction.testId, {
+        "data-testid": secondaryAction.testId,
+        onClick: secondaryAction.onClick,
+        children: secondaryAction.label,
+      });
+    }
+    return (
+      <>
+        {secondaryAction ? <button type="button" data-testid={secondaryAction.testId} onClick={secondaryAction.onClick}>{secondaryAction.label}</button> : null}
+        {primaryAction ? <button type="button" data-testid={primaryAction.testId} onClick={primaryAction.onClick}>{primaryAction.label}</button> : null}
+      </>
+    );
   },
 }));
 

@@ -3,9 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Note, NoteTemplate, Tag } from "@shared/schema";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { TagSelectionMenuContent } from "@/components/tags/tag-selection-menu-content";
-import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { EntityTagFooterRow } from "@/components/ui/entity-tag-footer-row";
 import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
@@ -16,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Switch } from "@/components/ui/switch";
 import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import { apiRequest } from "@/lib/queryClient";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
@@ -52,6 +52,7 @@ export function CalendarWeekAppointmentTagPicker({
   const [noteCardColor, setNoteCardColor] = useState<string>("#f8fafc");
   const [notePrint, setNotePrint] = useState(true);
   const [cardColorLocked, setCardColorLocked] = useState(false);
+  const [noteEditorError, setNoteEditorError] = useState<NormalizedServerError | null>(null);
 
   const appointmentNotesQueryKey = ["/api/appointments", appointmentId, "notes"] as const;
   const noteTemplatesQueryKey = ["/api/note-templates"] as const;
@@ -140,9 +141,12 @@ export function CalendarWeekAppointmentTagPicker({
       void invalidateAfterTagMutation();
     },
     onError: (mutationError: Error) => {
-      toast({
+      const normalized = normalizeServerError(mutationError, {
         title: "Tag-Zuweisung fehlgeschlagen",
-        description: mutationError.message,
+      });
+      toast({
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -173,13 +177,18 @@ export function CalendarWeekAppointmentTagPicker({
       setNoteCardColor(createdNote.cardColor ?? "#f8fafc");
       setNotePrint(createdNote.print);
       setCardColorLocked(createdNote.cardColorLocked);
+      setNoteEditorError(null);
       setEditorOpen(true);
       void invalidateAfterNoteMutation();
     },
     onError: (mutationError: Error) => {
-      toast({
+      const normalized = normalizeServerError(mutationError, {
         title: "Notiz konnte nicht angelegt werden",
-        description: mutationError.message,
+      });
+      setNoteEditorError(normalized);
+      toast({
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -205,13 +214,18 @@ export function CalendarWeekAppointmentTagPicker({
     },
     onSuccess: (updatedNote) => {
       setEditingNoteVersion(updatedNote.version);
+      setNoteEditorError(null);
       setEditorOpen(false);
       void invalidateAfterNoteMutation();
     },
     onError: (mutationError: Error) => {
-      toast({
+      const normalized = normalizeServerError(mutationError, {
         title: "Notiz konnte nicht aktualisiert werden",
-        description: mutationError.message,
+      });
+      setNoteEditorError(normalized);
+      toast({
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -292,19 +306,48 @@ export function CalendarWeekAppointmentTagPicker({
         onConfirm={handleCreateFromTemplate}
       />
 
-      <Dialog
+      <DialogBaseShell
         open={editorOpen}
         onOpenChange={(open) => {
           setEditorOpen(open);
         }}
+        size="md"
+        testId="dialog-week-note-editor"
+        title="Notiz bearbeiten"
+        headerMeta={<EditFormContextText>{noteTitle.trim() || null}</EditFormContextText>}
+        closeDisabled={updateAppointmentNoteMutation.isPending}
+        footer={
+          <DialogBaseFooter
+            secondaryAction={{
+              label: "Abbrechen",
+              onClick: () => setEditorOpen(false),
+              disabled: updateAppointmentNoteMutation.isPending,
+              testId: "button-cancel-note",
+            }}
+            primaryAction={{
+              label: "Speichern",
+              pendingLabel: "Speichern...",
+              isPending: updateAppointmentNoteMutation.isPending,
+              disabled: !noteTitle.trim(),
+              onClick: () => {
+                if (!editingNoteId || !noteTitle.trim()) return;
+                setNoteEditorError(null);
+                updateAppointmentNoteMutation.mutate({
+                  noteId: editingNoteId,
+                  version: editingNoteVersion,
+                  title: noteTitle,
+                  body: noteBody,
+                  cardColor: noteCardColor,
+                  print: notePrint,
+                });
+              },
+              testId: "button-save-note",
+            }}
+          />
+        }
       >
-        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100dvw-2rem)] max-w-lg overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Notiz bearbeiten</DialogTitle>
-            <EditFormContextText>{noteTitle.trim() || null}</EditFormContextText>
-          </DialogHeader>
-
           <div className="space-y-4">
+            {noteEditorError ? <DialogBaseInlineMessage error={noteEditorError} /> : null}
             <div className="space-y-2">
               <Label htmlFor={`week-note-title-${appointmentId}`}>Titel *</Label>
               <Input
@@ -353,31 +396,7 @@ export function CalendarWeekAppointmentTagPicker({
               />
             </div>
           </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setEditorOpen(false)} data-testid="button-cancel-note">
-              Abbrechen
-            </Button>
-            <Button
-              onClick={() => {
-                if (!editingNoteId || !noteTitle.trim()) return;
-                updateAppointmentNoteMutation.mutate({
-                  noteId: editingNoteId,
-                  version: editingNoteVersion,
-                  title: noteTitle,
-                  body: noteBody,
-                  cardColor: noteCardColor,
-                  print: notePrint,
-                });
-              }}
-              disabled={!noteTitle.trim()}
-              data-testid="button-save-note"
-            >
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </DialogBaseShell>
     </>
   );
 }

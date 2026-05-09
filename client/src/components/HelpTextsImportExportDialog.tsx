@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Download } from "lucide-react";
@@ -54,12 +54,12 @@ function toErrorCode(payload: unknown): string {
 }
 
 function mapCodeToMessage(code: string): string {
-  if (code === "FORBIDDEN") return "Nur Admin darf Import/Export ausfuehren.";
+  if (code === "FORBIDDEN") return "Nur Admin darf Import/Export ausführen.";
   if (code === "INVALID_IMPORT_FILE") return "Datei konnte nicht gelesen werden.";
-  if (code === "INVALID_IMPORT_FORMAT") return "YAML-Format ist ungueltig.";
-  if (code === "VALIDATION_ERROR") return "Importdatei ist ungueltig oder unvollstaendig.";
-  if (code === "FILE_HASH_MISMATCH") return "Datei wurde geaendert. Bitte Vorschau neu laden.";
-  if (code === "PAYLOAD_TOO_LARGE") return "Datei ist zu gross.";
+  if (code === "INVALID_IMPORT_FORMAT") return "YAML-Format ist ungültig.";
+  if (code === "VALIDATION_ERROR") return "Importdatei ist ungültig oder unvollständig.";
+  if (code === "FILE_HASH_MISMATCH") return "Datei wurde geändert. Bitte Vorschau neu laden.";
+  if (code === "PAYLOAD_TOO_LARGE") return "Datei ist zu groß.";
   return `Aktion fehlgeschlagen (${code})`;
 }
 
@@ -219,11 +219,34 @@ export function HelpTextsImportExportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="helptexts-import-export-dialog">
-        <DialogHeader>
-          <DialogTitle>Import/Export Hilfetexte</DialogTitle>
-        </DialogHeader>
+    <DialogBaseShell
+      open={open}
+      onOpenChange={handleOpenChange}
+      size="xl"
+      testId="helptexts-import-export-dialog"
+      title="Import/Export Hilfetexte"
+      closeDisabled={isExporting || isPreviewLoading || isApplyingImport}
+      footer={
+        resultReport ? (
+          <DialogBaseFooter
+            primaryAction={{
+              label: "OK",
+              onClick: () => handleOpenChange(false),
+              testId: "button-helptexts-import-export-report-confirm",
+            }}
+          />
+        ) : (
+          <DialogBaseFooter
+            secondaryAction={{
+              label: "Schließen",
+              onClick: () => handleOpenChange(false),
+              disabled: isExporting || isPreviewLoading || isApplyingImport,
+              testId: "button-helptexts-import-export-close",
+            }}
+          />
+        )
+      }
+    >
 
         {resultReport ? (
           <div className="space-y-4" data-testid="helptexts-import-export-report">
@@ -233,22 +256,14 @@ export function HelpTextsImportExportDialog({
               </h3>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                 <div>Neu angelegt: {resultReport.createdCount}</div>
-                <div>Still ueberschrieben: {resultReport.silentOverwrittenCount}</div>
-                <div>Per Entscheidung ueberschrieben: {resultReport.decisionOverwrittenCount}</div>
-                <div>Uebersprungen: {resultReport.skippedCount}</div>
+                <div>Still überschrieben: {resultReport.silentOverwrittenCount}</div>
+                <div>Per Entscheidung überschrieben: {resultReport.decisionOverwrittenCount}</div>
+                <div>Übersprungen: {resultReport.skippedCount}</div>
                 {resultReport.mode === "export" && (
                   <div className="col-span-2">Exportierte Einträge: {resultReport.exportedCount ?? 0}</div>
                 )}
               </div>
             </div>
-            <DialogFooter>
-              <Button
-                onClick={() => handleOpenChange(false)}
-                data-testid="button-helptexts-import-export-report-confirm"
-              >
-                OK
-              </Button>
-            </DialogFooter>
           </div>
         ) : (
           <div className="space-y-5">
@@ -265,7 +280,7 @@ export function HelpTextsImportExportDialog({
                 data-testid="button-helptexts-export"
               >
                 <Download className="w-4 h-4" />
-                {isExporting ? "Export laeuft..." : "Export"}
+                {isExporting ? "Export läuft..." : "Export"}
               </Button>
             </section>
 
@@ -295,7 +310,7 @@ export function HelpTextsImportExportDialog({
                   data-testid="button-helptexts-import-preview"
                 >
                   <Upload className="w-4 h-4 mr-2" />
-                  {isPreviewLoading ? "Vorschau laeuft..." : "Vorschau laden"}
+                  {isPreviewLoading ? "Vorschau läuft..." : "Vorschau laden"}
                 </Button>
                 <Button
                   type="button"
@@ -314,7 +329,7 @@ export function HelpTextsImportExportDialog({
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>Gesamt Items: {preview.summary.totalItems}</div>
                   <div>Neu anzulegen: {preview.summary.createCount}</div>
-                  <div>Still zu ueberschreiben: {preview.summary.silentOverwriteCount}</div>
+                  <div>Still zu überschreiben: {preview.summary.silentOverwriteCount}</div>
                   <div>Konflikte mit Entscheidung: {preview.summary.conflictCount}</div>
                 </div>
 
@@ -347,8 +362,8 @@ export function HelpTextsImportExportDialog({
                                 data-testid={`select-helptexts-conflict-${conflict.helpKey}`}
                                 className="border rounded px-2 py-1 bg-white"
                               >
-                                <option value="SKIP">Ueberspringen</option>
-                                <option value="OVERWRITE">Ueberschreiben</option>
+                                <option value="SKIP">Überspringen</option>
+                                <option value="OVERWRITE">Überschreiben</option>
                               </select>
                             </td>
                           </tr>
@@ -361,19 +376,17 @@ export function HelpTextsImportExportDialog({
             )}
 
             {error && (
-              <p className="text-sm text-red-600" data-testid="text-helptexts-import-export-error">
-                {error}
-              </p>
+              <div data-testid="text-helptexts-import-export-error">
+                <DialogBaseInlineMessage
+                  title="Aktion fehlgeschlagen"
+                  description={error}
+                  tone="error"
+                />
+              </div>
             )}
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => handleOpenChange(false)} data-testid="button-helptexts-import-export-close">
-                Schliessen
-              </Button>
-            </DialogFooter>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogBaseShell>
   );
 }

@@ -2,7 +2,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { HelpCircle } from "lucide-react";
 import { EntityFormLayout } from "@/components/ui/entity-form-layout";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { joinEditFormContext } from "@/lib/edit-form-context";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/RichTextEditor";
@@ -17,12 +19,6 @@ interface HelpTextFormProps {
   onSaved?: () => void;
 }
 
-function extractApiCode(error: unknown): string | null {
-  if (!(error instanceof Error)) return null;
-  const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
-  return match?.[1] ?? null;
-}
-
 export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProps) {
   const { toast } = useToast();
   const isEditing = Number.isInteger(helpTextId) && (helpTextId as number) > 0;
@@ -30,6 +26,8 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
   const [helpKey, setHelpKey] = useState("");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [mutationError, setMutationError] = useState<NormalizedServerError | null>(null);
 
   const { data: helpText, isLoading } = useQuery<HelpText>({
     queryKey: ["/api/help-texts/by-id", helpTextId],
@@ -62,13 +60,18 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
+      setMutationError(null);
       toast({ title: "Hilfetext erstellt" });
       onSaved?.();
     },
     onError: (error) => {
+      const normalized = normalizeServerError(error, {
+        title: "Hilfetext konnte nicht erstellt werden",
+      });
+      setMutationError(normalized);
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Hilfetext konnte nicht erstellt werden.",
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -87,22 +90,18 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
+      setMutationError(null);
       toast({ title: "Hilfetext aktualisiert" });
       onSaved?.();
     },
     onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Speichern nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
+      const normalized = normalizeServerError(error, {
+        title: "Hilfetext konnte nicht aktualisiert werden",
+      });
+      setMutationError(normalized);
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Hilfetext konnte nicht aktualisiert werden.",
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -115,22 +114,19 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/help-texts/by-id", helpTextId] });
+      setDeleteConfirmOpen(false);
+      setMutationError(null);
       toast({ title: "Hilfetext gelöscht" });
       onSaved?.();
     },
     onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
+      const normalized = normalizeServerError(error, {
+        title: "Hilfetext konnte nicht gelöscht werden",
+      });
+      setMutationError(normalized);
       toast({
-        title: "Fehler",
-        description: error instanceof Error ? error.message : "Hilfetext konnte nicht gelöscht werden.",
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
     },
@@ -155,8 +151,13 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
 
   const handleSubmit = async () => {
     if (!helpKey.trim() || !title.trim()) {
-      toast({
+      const normalized = normalizeServerError("VALIDATION_ERROR", {
         title: "Bitte Pflichtfelder ausfüllen",
+      });
+      setMutationError(normalized);
+      toast({
+        title: normalized.title,
+        description: normalized.description,
         variant: "destructive",
       });
       throw new Error("VALIDATION_ERROR");
@@ -185,6 +186,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
   };
 
   return (
+    <>
     <EntityFormLayout
       title={isEditing ? "Hilfetext bearbeiten" : "Neuer Hilfetext"}
       subtitle={editContext}
@@ -200,8 +202,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
           variant="destructive"
           onClick={() => {
             if (!helpText) return;
-            if (!window.confirm(`Wollen Sie den Hilfetext ${helpText.title} wirklich löschen?`)) return;
-            deleteMutation.mutate({ id: helpText.id, version: helpText.version });
+            setDeleteConfirmOpen(true);
           }}
           disabled={isBusy}
           data-testid="button-delete-helptext"
@@ -214,6 +215,7 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
         <div className="text-sm text-muted-foreground">Hilfetext wird geladen...</div>
       ) : (
         <div className="space-y-6">
+          {mutationError ? <DialogBaseInlineMessage error={mutationError} /> : null}
           <div className="space-y-2">
             <Label htmlFor={isEditing ? undefined : "helptext-key"}>Hilfe-Schlüssel</Label>
             {isEditing ? (
@@ -258,6 +260,23 @@ export function HelpTextForm({ helpTextId, onCancel, onSaved }: HelpTextFormProp
       )}
       {isSaveDisabled ? <div className="sr-only" data-testid="helptext-save-disabled" /> : null}
     </EntityFormLayout>
+    <ConfirmDialogBase
+      open={deleteConfirmOpen}
+      onOpenChange={setDeleteConfirmOpen}
+      icon={<HelpCircle className="h-5 w-5" />}
+      title="Hilfetext löschen"
+      description={helpText ? `Soll der Hilfetext "${helpText.title}" gelöscht werden?` : undefined}
+      confirmLabel="Löschen"
+      pendingLabel="Löschen..."
+      isPending={deleteMutation.isPending}
+      onConfirm={() => {
+        if (!helpText) return;
+        setMutationError(null);
+        deleteMutation.mutate({ id: helpText.id, version: helpText.version });
+      }}
+      testId="dialog-delete-helptext"
+      variant="destructive"
+    />
+    </>
   );
 }
-

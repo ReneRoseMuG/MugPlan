@@ -223,4 +223,51 @@ describe("FT16 integration: help texts import/export yaml", () => {
       .attach("file", Buffer.from(yamlPayload, "utf8"), "helptexts.yaml")
       .expect(403);
   });
+
+  it("allows help text display for readers but blocks all management endpoints", async () => {
+    const admin = await loginAdminAgent();
+    const createResponse = await admin.post("/api/help-texts").send({
+      helpKey: "ft16.reader.display",
+      title: "Reader Display",
+      body: "visible body",
+      isActive: true,
+    }).expect(201);
+
+    const reader = await createReaderAgent();
+
+    await reader
+      .get("/api/help-texts/ft16.reader.display")
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toMatchObject({
+          helpKey: "ft16.reader.display",
+          title: "Reader Display",
+          body: "visible body",
+        });
+      });
+
+    await reader.get("/api/help-texts").expect(403);
+    await reader.get(`/api/help-texts/by-id/${createResponse.body.id}`).expect(403);
+    await reader.post("/api/help-texts/seed-missing-from-frontend").expect(403);
+    await reader.post("/api/help-texts").send({
+      helpKey: "ft16.reader.blocked",
+      title: "Blocked",
+      body: "blocked",
+      isActive: true,
+    }).expect(403);
+    await reader.put(`/api/help-texts/${createResponse.body.id}`).send({
+      helpKey: "ft16.reader.display",
+      title: "Blocked Update",
+      body: "blocked",
+      isActive: true,
+      version: createResponse.body.version,
+    }).expect(403);
+    await reader.patch(`/api/help-texts/${createResponse.body.id}/active`).send({
+      isActive: false,
+      version: createResponse.body.version,
+    }).expect(403);
+    await reader.delete(`/api/help-texts/${createResponse.body.id}`).send({
+      version: createResponse.body.version,
+    }).expect(403);
+  });
 });

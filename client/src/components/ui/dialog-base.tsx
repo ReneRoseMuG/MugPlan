@@ -167,6 +167,12 @@ const stepStyles: Record<DialogBaseStepState, string> = {
   pending: "border-muted-foreground/40 bg-background text-muted-foreground",
 };
 
+const dialogIconFrameClassName =
+  "flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-slate-700 shadow-sm [&_svg]:h-5 [&_svg]:w-5 [&_svg]:!text-slate-700";
+
+const dialogHeaderGridClassName =
+  "grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-end gap-3 text-center";
+
 export function DialogBaseShell({
   children,
   closeDisabled = false,
@@ -184,7 +190,7 @@ export function DialogBaseShell({
     <Dialog open={open} onOpenChange={(nextOpen) => handleOpenChange(nextOpen)}>
       <DialogContent
         className={cn(
-          "max-h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto]",
+          "max-h-[calc(100vh-2rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0",
           sizeClasses[size],
         )}
         data-testid={testId}
@@ -199,32 +205,37 @@ export function DialogBaseShell({
           }
         }}
       >
-        <DialogHeader className="gap-2">
-          <div className="flex items-start gap-3 text-left">
+        <DialogHeader className="border-b bg-slate-50 px-6 py-4">
+          <div className={dialogHeaderGridClassName}>
             {icon ? (
-              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-muted">
+              <div className={dialogIconFrameClassName}>
                 {icon}
               </div>
-            ) : null}
-            <div className="min-w-0 flex-1 space-y-1">
+            ) : (
+              <div aria-hidden="true" className="h-11 w-11" />
+            )}
+            <div className="min-w-0 self-end space-y-1">
               {headerMeta ? (
                 <div className="text-xs font-medium text-muted-foreground">
                   {headerMeta}
                 </div>
               ) : null}
-              <DialogTitle className="leading-snug">{title}</DialogTitle>
-              {description ? (
-                <DialogDescription className="leading-relaxed">
-                  {description}
-                </DialogDescription>
-              ) : null}
+              <DialogTitle className="leading-snug text-slate-950">{title}</DialogTitle>
             </div>
+            <div aria-hidden="true" className="h-11 w-11" />
           </div>
         </DialogHeader>
 
-        <div className="min-h-0 overflow-y-auto pr-1">{children}</div>
+        <div className="min-h-0 overflow-y-auto px-6 py-5">
+          {description ? (
+            <DialogDescription className="mb-4 text-base leading-relaxed text-slate-700">
+              {description}
+            </DialogDescription>
+          ) : null}
+          {children}
+        </div>
 
-        {footer ? <div className="border-t pt-4">{footer}</div> : null}
+        {footer ? <div className="border-t bg-slate-50 px-6 py-4">{footer}</div> : null}
       </DialogContent>
     </Dialog>
   );
@@ -415,14 +426,15 @@ export function ConfirmDialogBase({
         className="gap-0 overflow-hidden p-0 sm:max-w-lg"
         data-testid={testId}
       >
-        <AlertDialogHeader className="border-b bg-muted/30 px-6 py-4">
-          <div className="flex items-center gap-3 text-left">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
+        <AlertDialogHeader className="border-b bg-slate-50 px-6 py-4">
+          <div className={dialogHeaderGridClassName}>
+            <div className={dialogIconFrameClassName}>
               {icon}
             </div>
-            <AlertDialogTitle className="min-w-0 leading-snug">
+            <AlertDialogTitle className="min-w-0 self-end leading-snug text-slate-950">
               {title}
             </AlertDialogTitle>
+            <div aria-hidden="true" className="h-11 w-11" />
           </div>
         </AlertDialogHeader>
 
@@ -434,7 +446,7 @@ export function ConfirmDialogBase({
           ) : null}
         </div>
 
-        <AlertDialogFooter className="border-t bg-muted/30 px-6 py-4">
+        <AlertDialogFooter className="border-t bg-slate-50 px-6 py-4">
           <AlertDialogCancel disabled={effectiveCloseDisabled}>
             {cancelLabel}
           </AlertDialogCancel>

@@ -39,6 +39,7 @@ export async function getHelpTextByKey(req: Request, res: Response, next: NextFu
 
 export async function listHelpTexts(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const query = req.query.query as string | undefined;
     const helpTexts = await helpTextsService.listHelpTexts(query);
     res.json(helpTexts);
@@ -145,8 +146,9 @@ export async function applyHelpTextsYamlImport(req: Request, res: Response, next
   }
 }
 
-export async function seedMissingHelpTextsFromFrontend(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function seedMissingHelpTextsFromFrontend(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const result = await helpTextsService.seedMissingHelpTextsFromFrontend();
     res.json(result);
   } catch (err) {
@@ -156,6 +158,7 @@ export async function seedMissingHelpTextsFromFrontend(_req: Request, res: Respo
 
 export async function getHelpTextById(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const id = Number(req.params.id);
     const helpText = await helpTextsService.getHelpTextById(id);
     if (!helpText) {
@@ -170,6 +173,7 @@ export async function getHelpTextById(req: Request, res: Response, next: NextFun
 
 export async function createHelpText(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const input = api.helpTexts.create.input.parse(req.body);
     const result = await helpTextsService.createHelpText(input);
     if (result.error) {
@@ -188,6 +192,7 @@ export async function createHelpText(req: Request, res: Response, next: NextFunc
 
 export async function updateHelpText(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const id = Number(req.params.id);
     const input = api.helpTexts.update.input.parse(req.body);
     const result = await helpTextsService.updateHelpText(id, input);
@@ -215,6 +220,7 @@ export async function updateHelpText(req: Request, res: Response, next: NextFunc
 
 export async function toggleHelpTextActive(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const id = Number(req.params.id);
     const input = api.helpTexts.toggleActive.input.parse(req.body);
     const helpText = await helpTextsService.toggleHelpTextActive(id, input.isActive, input.version);
@@ -238,6 +244,7 @@ export async function toggleHelpTextActive(req: Request, res: Response, next: Ne
 
 export async function deleteHelpText(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!requireAdmin(req, res)) return;
     const input = api.helpTexts.delete.input.parse(req.body);
     const id = Number(req.params.id);
     const existing = await helpTextsService.getHelpTextById(id);
