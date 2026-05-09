@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-28: Universelles Tagging-System · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-28">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-28 Universelles Tagging-System</span></nav>
+        <h1 class="wiki-h1">FT-28: Universelles Tagging-System</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Ein generisches, domänenübergreifendes Tagging-System wird eingeführt, das an allen zentralen Domänenobjekten (Projekt, Kunde, Mitarbeiter, Termin) konsistent nutzbar ist. Tags ergänzen zunächst den bestehenden Projektstatus (FT 15) und können diesen mittelfristig vollständig abl</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Ein generisches, domänenübergreifendes Tagging-System wird eingeführt, das an allen zentralen Domänenobjekten (Projekt, Kunde, Mitarbeiter, Termin) konsistent nutzbar ist. Tags ergänzen zunächst den bestehenden Projektstatus (FT 15) und können diesen mittelfristig vollständig ablösen. Das System ersetzt rudimentäres Mehrfach-Marking durch eine sauber normalisierte, rollengeschützte Infrastruktur.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Das System besteht aus zwei Ebenen: einer zentralen <code>tags</code>-Tabelle sowie je einer Join-Tabelle pro Domänenobjekt (<code>project_tags</code>, <code>customer_tags</code>, <code>employee_tags</code>, <code>appointment_tags</code>).</p>
+<p>Jeder Tag besitzt einen eindeutigen Namen und eine Farbe. Die Farbe wird per freiem Color-Picker gewählt und dient der visuellen Unterscheidung in Listen- und Kalenderansichten. Tags können in einer zentralen Verwaltungsansicht angelegt, umbenannt, neu eingefärbt und gelöscht werden. Die Zuweisung erfolgt im Kontext des jeweiligen Domänenobjekts. Filtern und Suchen nach Tags ist in allen Listenansichten der jeweiligen Domäne vorgesehen.</p>
+<p><strong>Default Tags</strong> sind systemseitig vordefinierte Tags, die beim initialen Setup oder per Migrations-Skript angelegt werden. Sie sind geschützte System-Tags und dürfen nicht wie frei verfügbare Tags durch Nutzer zugewiesen, entfernt, gelöscht oder umbenannt werden. Änderungen an Default Tags einschließlich Umbenennung, Farbe und Löschung sind serverseitig geschützt. In der Verwaltungsansicht sind Default Tags visuell als geschützt gekennzeichnet (z. B. Schloss-Icon).</p>
+<p>Welche System-Tags im Tag-Picker einer Domäne erscheinen, ist pro Domäne geregelt: Bei <strong>Mitarbeitern</strong>, <strong>Kunden</strong>, <strong>Terminen</strong> und <strong>Projekten</strong> sind geschützte System-Tags aus dem generischen Picker ausgeschlossen. Der Storniert-Tag wird ausschließlich über den Storno-Workflow gesetzt. Der Reklamation-Tag wird ausschließlich über die fachlichen Reklamationsfunktionen am Termin oder am Projekt gesetzt und entfernt. Eine manuelle Zuweisung oder Entfernung über die generischen Tag-Funktionen ist für Nutzer nicht zulässig.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Ein Tag-Name ist eindeutig innerhalb der zentralen <code>tags</code>-Tabelle.</li><li>Tags können beliebig vielen Einträgen aller Domänen zugewiesen werden.</li><li>Das Löschen eines Tags entfernt automatisch alle zugehörigen Join-Einträge (Cascade Delete).</li><li>Tags dürfen nur vom Admin gelöscht werden und nur, wenn keine Relationen bestehen.</li><li>Default Tags besitzen ein <code>is_default</code>-Flag und werden serverseitig vor Mutation geschützt – der Schutz wird nicht allein über die UI, sondern per API-Guard durchgesetzt.</li><li>Die Farbwahl erfolgt über einen freien Color-Picker ohne vordefiniertes Farbset.</li><li>Disponenten können Tags zuweisen und entfernen, aber keine Tags anlegen, umbenennen oder löschen.</li><li>Disponenten und Administratoren können geschützte System-Tags nicht über generische Tag-Zuweisungen setzen oder entfernen. Dafür müssen die jeweiligen fachlichen Workflows verwendet werden.</li><li>Die Sichtbarkeit von System-Tags im Tag-Picker ist domänenspezifisch geregelt (siehe Fachliche Beschreibung). Die Filterung erfolgt serverseitig über den <code>/api/tags?domain=</code>-Parameter.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-28-01-tag-anlegen.html">UC 28/01: Tag anlegen</a></li><li><a href="../use-cases/uc-28-02-tag-bearbeiten.html">UC 28/02: Tag bearbeiten</a></li><li><a href="../use-cases/uc-28-03-tag-loeschen.html">UC 28/03: Tag löschen</a></li><li><a href="../use-cases/uc-28-04-tag-an-domaenenobjekt-zuweisen.html">UC 28/04: Tag an Domänenobjekt zuweisen</a></li><li><a href="../use-cases/uc-28-05-tag-zuweisung-entfernen.html">UC 28/05: Tag-Zuweisung entfernen</a></li><li><a href="../use-cases/uc-28-06-domaenenspezifische-system-tag-filterung-im-picker.html">UC 28/06: Domänenspezifische System-Tag-Filterung im Picker</a></li><li><a href="../use-cases/uc-28-07-termin-stornieren-storniert-tag-ueber-workflow-setzen.html">UC 28/07: Termin stornieren – Storniert-Tag über Workflow setzen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-28-01-tag-anlegen.html">UC-28/01</a><a href="../use-cases/uc-28-02-tag-bearbeiten.html">UC-28/02</a><a href="../use-cases/uc-28-03-tag-loeschen.html">UC-28/03</a><a href="../use-cases/uc-28-04-tag-an-domaenenobjekt-zuweisen.html">UC-28/04</a><a href="../use-cases/uc-28-05-tag-zuweisung-entfernen.html">UC-28/05</a><a href="../use-cases/uc-28-06-domaenenspezifische-system-tag-filterung-im-picker.html">UC-28/06</a><a href="../use-cases/uc-28-07-termin-stornieren-storniert-tag-ueber-workflow-setzen.html">UC-28/07</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-28-universelles-tagging-system-backlog.html">BL-28</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -20,6 +20,7 @@ Dieser Bereich enthält Pflege- und Ausführungsregeln für Codex. Die lesbare A
 - Analyse
 - Refactoring
 - Infrastruktur
+- Planung
 
 ## Metadaten
 
@@ -30,13 +31,14 @@ Jede Aufgabe enthält mindestens:
 - Thema
 - Typ
 - Erstellt
-- Quelle
-- Verantwortlich
-- Journal
 
 `Thema` ist ein gruppierbarer Arbeitszuschnitt. Mehrere Aufgaben mit demselben oder verwandtem Thema können gemeinsam analysiert oder umgesetzt werden.
 
-`Journal` enthält Links auf Journaleinträge, die eine Umsetzung, Teilumsetzung, Entscheidung, Blockade oder Verschiebung der Aufgabe dokumentieren.
+Journalbezüge können im Abschnitt `## Beziehungen` als weitere Bezüge geführt werden, wenn sie für Umsetzung, Teilumsetzung, Entscheidung, Blockade oder Verschiebung relevant sind.
+
+## Projektbezug
+
+Größere Arbeitsstränge werden unter `docs/wiki/projects/` als Projektseiten geführt. Eine Projektseite bündelt Masteraufgabe, Einzelaufgaben und relevante Decisions, ohne die thematische Sortierung der Aufgabenübersicht zu ersetzen.
 
 ## Offene Aufgaben Anzeigen
 

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-reklamation-create-formulare: 04.05.26 | Änderung | FT-06: Reklamationsworkflow in Create-Formularen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-reklamation-create-formulare">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-reklamation-create-formulare 04.05.26 | Änderung | FT-06: Reklamationsworkflow in Create-Formularen</span></nav>
+        <h1 class="wiki-h1">04-05-26-reklamation-create-formulare: 04.05.26 | Änderung | FT-06: Reklamationsworkflow in Create-Formularen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">Der Reklamationsworkflow ist jetzt im Projekt- und Terminformular bereits beim Anlegen verfügbar. Administratoren und Disponenten können im Create-Modus Reklamation melden wählen, erhalten den optionalen Reklamationsnotiz-Vorschlag und speichern den Zustand anschließend mit dem n</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Reklamationsworkflow ist jetzt im Projekt- und Terminformular bereits beim Anlegen verfügbar. Administratoren und Disponenten können im Create-Modus <code>Reklamation melden</code> wählen, erhalten den optionalen Reklamationsnotiz-Vorschlag und speichern den Zustand anschließend mit dem neu erzeugten Projekt oder Termin.</p>
+<p>Der geschützte Systemzustand wird weiterhin nicht über den generischen Tag-Endpunkt gesetzt. Create-Drafts zeigen die Reklamation lokal an; nach erfolgreichem Create wird die bestehende dedizierte Reklamationsroute aufgerufen.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Frontend-Verhalten in Projekt- und Terminformular erweitert.</li><li>Create-Draft für Reklamation ergänzt.</li><li>Reklamationsnotiz-Vorschlag im Termin-Create über <code>NotesSection</code>-Prefill angebunden.</li><li>Persistenz bewusst über bestehende Workflow-Endpunkte statt generische Tag-Mutation geführt.</li><li>Unit- und Browser-E2E-Tests für Sichtbarkeit, Speichern, Tag-Persistenz und Notiz-Persistenz ergänzt.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-01-kalendertermine.html">FT-01: Kalendertermine</a></li><li><a href="../../lastenheft/features/ft-02-projekte.html">FT-02: Projekte</a></li><li><a href="../../lastenheft/features/ft-06-automatische-regeln.html">FT-06: Automatische Regeln</a></li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>ProjectForm</code> zeigt das Funktionen-Panel im Create-Modus mit <code>Reklamation melden</code>.</li><li><code>AppointmentForm</code> zeigt das Funktionen-Panel im Create-Modus mit <code>Reklamation melden</code>.</li><li>Reklamations-Draft-Tags werden beim Speichern aus generischen Tag-Loops herausgefiltert.</li><li>Projekt-Create ruft nach erfolgreichem Create <code>/api/projects/:id/reklamation</code> mit der erzeugten Version auf.</li><li>Termin-Create ruft nach erfolgreichem Create <code>/api/appointments/:id/reklamation</code> mit der erzeugten Version auf.</li><li>Der optionale Notizvorschlag kann vor dem ersten Save als Draft gespeichert und danach persistiert werden.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/ui/projectForm.layoutShellIntegration.test.tsx tests/unit/ui/appointmentForm.layoutTourIntegration.test.tsx</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts</code></li><li><code>npm run typecheck</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein vollständiger Browser-Gesamtlauf über alle E2E-Dateien.</li><li>Keine Schema-, Contract- oder Migrationsänderungen.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

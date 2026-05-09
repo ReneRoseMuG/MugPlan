@@ -5,6 +5,7 @@
 - [Features](features/README.md)
 - [Use Cases](use-cases.md)
 - [Backlog](backlog.md)
+- [Projekte](projects/README.md)
 - [Aufgaben](tasks/README.md)
 - [Dialoge und Meldungen](dialoge-und-meldungen-pfade.md)
 - [Querbeziehungen](relations.md)

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-38: FT-07 DB-Dry-Run für Dump-Import vorbereiten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-38">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-38 FT-07 DB-Dry-Run für Dump-Import vorbereiten</span></nav>
+        <h1 class="wiki-h1">A-38: FT-07 DB-Dry-Run für Dump-Import vorbereiten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Datensicherung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Planung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>09.05.26</div>
+    <p class="wiki-lead">Die Aufgabe soll den späteren DB-Dry-Run für Dump-Imports sicher vorbereiten. Vor jeder Umsetzung müssen Ziel-Datenbank, Upload-Pfad, Cleanup und Guards eindeutig isoliert sein.</p>
+    <p>Die offene Decision zum echten DB-Dry-Run für Dump-Imports soll als Aufgabe vorbereitet werden. Der Fokus liegt zunächst auf Safety-Guards, isolierten Zielumgebungen und Konfigurationsgrenzen, bevor ein produktnaher Admin-Pfad umgesetzt werden kann.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Datensicherung</td><td>Planung</td><td>09.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die Aufgabe soll den späteren DB-Dry-Run für Dump-Imports sicher vorbereiten. Vor jeder Umsetzung müssen Ziel-Datenbank, Upload-Pfad, Cleanup und Guards eindeutig isoliert sein.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>W-22 beschreibt, dass die heutige Importvorschau Archiv- und Manifestprüfungen abdeckt, aber keinen echten SQL-seitigen Trockenlauf ausführt. SQL-Importierbarkeit, Foreign-Key-Konflikte und Schema-Mismatches werden dadurch erst im destruktiven Apply-Pfad sichtbar.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Die benötigten Dry-Run-Env-Variablen und Allowlists fachlich und technisch vorbereiten.</li><li>Sicherheitsgrenzen gegen Dev-, Test- und Produktionsdatenbanken dokumentieren.</li><li>Upload- und Cleanup-Grenzen für den isolierten Dry-Run-Pfad klären.</li><li>Nicht Teil der Aufgabe ist ein produktiver Import-Dry-Run ohne bestätigte Zielumgebung.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Betroffene Rolle ist ausschließlich ADMIN.</li><li>Die Durchsetzung muss serverseitig erfolgen; UI-Sichtbarkeit reicht nicht.</li><li>Dry-Run-Datenbank und Upload-Root dürfen nicht identisch mit normalen Dev-, Test- oder Produktionszielen sein.</li><li>Dump-Inhalte können sensible Auth-, 2FA- und Upload-Daten enthalten und dürfen nicht ungeeignet protokolliert werden.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Die isolierten Dry-Run-Datenbanken und Upload-Pfade sind noch nicht bereitgestellt.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: FT-07 Automatisierte Datensicherung und Fallback</li><li>Entscheidungen: <a href="../../../decisions/w-22-ft07-db-dry-run-dump-import.md">W-22 - FT-07 echter DB-Dry-Run für Dump-Import</a></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

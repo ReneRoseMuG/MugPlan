@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-33/02: Abwesenheit anlegen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-33/02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-33/02 Abwesenheit anlegen</span></nav>
+        <h1 class="wiki-h1">UC-33/02: Abwesenheit anlegen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-33</span></div>
+    <p class="wiki-lead">Neue Abwesenheit für einen Mitarbeiter erfassen</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT (33): Abwesenheiten über interne Personalplanung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Neue Abwesenheit für einen Mitarbeiter erfassen</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Mitarbeiterformular ist geöffnet.</li><li>Akteur besitzt Disponent- oder Administratorrechte.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur öffnet den Tab <strong>Abwesenheiten</strong> im Mitarbeiterformular</li><li>Akteur wählt die Abwesenheitsart: <strong>Urlaub</strong>, <strong>Krankheit</strong> oder <strong>Abwesend</strong></li><li>Akteur setzt Startdatum und optional Enddatum</li><li>Akteur setzt optional eine Notiz</li><li>System stellt Systemdaten sicher (Lazy Ensure für Tour, Kunde, Tag)</li><li>System legt Termin an mit bestehendem Seed-Kunden <strong>Meisel &amp; Gerken</strong> mit Kundennummer <code>001</code>, Systemtour <strong>Abwesenheiten</strong>, genau diesem Mitarbeiter, ohne Startzeit</li><li>System setzt den gewählten Abwesenheits-Tag</li><li>System prüft Terminüberschneidungen</li><li>System speichert die Abwesenheit</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Kollidierende reguläre Termine existieren: System liefert die betroffenen Termine mit Versionen zurück und fordert eine ausdrückliche Bestätigung zur Entfernung des Mitarbeiters aus diesen Terminen an.</li><li>Akteur bestätigt die Entfernung: System entfernt nur den betroffenen Mitarbeiter aus den bestätigten regulären Terminen und speichert danach die Abwesenheit. Die Termine bleiben in ihrer bisherigen Tour.</li><li>Zeitraum beginnt vor dem aktuellen Tag, läuft aber am aktuellen Tag noch oder reicht in die Zukunft: Disponent darf die Abwesenheit erfassen.</li><li>Zeitraum liegt vollständig in der Vergangenheit: System blockiert die Erfassung für Disponenten und verändert keine regulären Termine.</li><li>Akteur bricht ab oder bestätigt nicht alle erforderlichen Versionen: System speichert keine Abwesenheit und verändert keine regulären Termine.</li><li>Konflikt mit einer bestehenden Abwesenheit oder ein Versionskonflikt liegt vor: System blockiert und meldet den Konflikt.</li><li>Betroffene Tour-KW-Planungen existieren: System liefert die betroffenen KW-Planungen zur Bestätigung zurück und fordert eine ausdrückliche Bestätigung zur Entfernung des Mitarbeiters aus diesen KW-Planungen an.</li><li>Akteur bestätigt die KW-Entfernung: System entfernt nur die betroffenen Tour-KW-Mitarbeiterzuordnungen und speichert danach die Abwesenheit.</li><li>Akteur bricht bei KW-Konflikten ab: System speichert keine Abwesenheit und verändert keine Tour-KW-Planungen.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Abwesenheit ist als interner Termin gespeichert. Mitarbeiter ist im Zeitraum als nicht verfügbar markiert. Bestätigte kollidierende reguläre Termine bleiben bestehen und enthalten den abwesenden Mitarbeiter nicht mehr. Bestätigte betroffene Tour-KW-Planungen enthalten den Mitarbeiter nicht mehr.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT-33</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

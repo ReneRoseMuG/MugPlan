@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-06/05: Wochenplanung für Parkplatz sperren · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-06/05">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/05 Wochenplanung für Parkplatz sperren</span></nav>
+        <h1 class="wiki-h1">UC-06/05: Wochenplanung für Parkplatz sperren</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
+    <p class="wiki-lead">Verhindern, dass die Systemtour **Parkplatz** als reguläre Tour-KW-Planung verwendet wird. Parkplatz dient als fachlicher Zwischen- und Sonderzustand für Termine, aber nicht als Basis für Mitarbeiterplanung.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent, Leser</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Verhindern, dass die Systemtour <strong>Parkplatz</strong> als reguläre Tour-KW-Planung verwendet wird. Parkplatz dient als fachlicher Zwischen- und Sonderzustand für Termine, aber nicht als Basis für Mitarbeiterplanung.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Die Systemtour <strong>Parkplatz</strong> existiert.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur öffnet die Parkplatz-Tour im Tourformular.</li><li>System zeigt die normalen Stammdaten- und Terminbereiche der Tour.</li><li>System bietet keinen Tab <strong>Wochenplanung</strong> an.</li><li>System lädt keine Tour-KW-Karten, keine Mitarbeiterplanungsaktionen und keinen KW-Einfügen-Schalter für Parkplatz.</li><li>Im Wochenkalender kann die Parkplatz-Lane Termine anzeigen, erhält aber keine Tour-KW-Personalkarte in der Personalspalte.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur öffnet die übergreifende Tour-KW-Planungsansicht: System blendet Parkplatz als nicht planbare Bahn aus.</li><li>Direkte API-Aufrufe bleiben durch die bestehenden Tour-KW-, Rollen-, Historien- und Sperrregeln serverseitig begrenzt. UI-Sichtbarkeit ersetzt keine serverseitige Durchsetzung.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Parkplatz erscheint nicht als regulärer Ursprung für Tour-KW-Mitarbeiterplanung. Termine auf Parkplatz bleiben fachlich bearbeitbar, soweit die bestehenden Termin- und Parkplatz-Regeln dies erlauben.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-06-automatische-regeln.html">FT-06</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

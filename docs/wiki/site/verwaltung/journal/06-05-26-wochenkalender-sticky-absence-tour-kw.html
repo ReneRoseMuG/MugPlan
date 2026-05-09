@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-05-26-wochenkalender-sticky-absence-tour-kw: 06.05.26 | Kalender | FT-03/FT-04: Sticky-Absence und Tour-KW-Karten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 06-05-26-wochenkalender-sticky-absence-tour-kw">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">06-05-26-wochenkalender-sticky-absence-tour-kw 06.05.26 | Kalender | FT-03/FT-04: Sticky-Absence und Tour-KW-Karten</span></nav>
+        <h1 class="wiki-h1">06-05-26-wochenkalender-sticky-absence-tour-kw: 06.05.26 | Kalender | FT-03/FT-04: Sticky-Absence und Tour-KW-Karten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>06.05.26</div>
+    <p class="wiki-lead">Der Wochenkalender wurde im Sticky-Bereich stabilisiert. Die Abwesenheitsspur klebt nun unter dem tatsächlich gemessenen Tagesheader, kann pro Nutzer eingeklappt werden und die Tour-KW-Personalkarten haben im expandierten Zustand eine eigene Header-Bar und einen vollbreiten Foote</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Wochenkalender wurde im Sticky-Bereich stabilisiert. Die Abwesenheitsspur klebt nun unter dem tatsächlich gemessenen Tagesheader, kann pro Nutzer eingeklappt werden und die Tour-KW-Personalkarten haben im expandierten Zustand eine eigene Header-Bar und einen vollbreiten Footer.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtige UI- und Settings-Änderung ohne neue API-Route, ohne Datenmodelländerung und ohne Migration.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-03 Kalenderansichten: Wochenkalender und Abwesenheitsspur</li><li>FT-04 Tourenplanung: Tour-KW-Personalkarten im Wochenkalender</li></ul>
+<p>Notion-Links wurden in dieser Session nicht zusätzlich geprüft; Grundlage waren der freigegebene Plan, die lokale Repo-Dokumentation und der aktuelle Code.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>CalendarWeekAbsenceRow</code> verwendet keinen festen <code>top-[3.75rem]</code> mehr, sondern erhält den gemessenen Sticky-Offset des Tagesheaders.</li><li>Die Sticky-Layer sind im Code dokumentiert: Tagesheader <code>z-30</code>, Abwesenheitsspur <code>z-20</code>, Lane-Inhalte <code>z-10</code>, Marker-Hintergrund <code>z-0</code>.</li><li>Die Abwesenheitsspur hat einen Collapse-/Expand-Button mit eigenem <code>data-testid</code>.</li><li>Neues User-Setting <code>calendar.weekAbsenceLane.collapsed</code> mit Default <code>false</code>.</li><li>Die Tour-KW-Personalkarte nutzt im expandierten Zustand eine Header-Bar für Add-/Apply-Aktionen und Menü sowie einen vollbreiten Footer.</li><li>Tests decken Setting-Registry, Hook-Fallback, User-Scope-Persistenz, expandierte/kollabierte Abwesenheitsspur und Tour-KW-Kartenstruktur ab.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p><code>ADMIN</code>, <code>DISPATCHER</code>/<code>DISPONENT</code> und <code>READER</code> dürfen ihren persönlichen Anzeigezustand der Abwesenheitsspur speichern. Tour-KW-Schreibaktionen bleiben unverändert durch bestehende Rollen-, Readonly- und Lock-Regeln begrenzt.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:run -- tests/unit/settings/useSettings.weekAbsenceLaneCollapsed.test.ts tests/unit/settings/weekAbsenceLaneCollapsed.registry.test.ts</code></li><li><code>npm run test:run -- tests/unit/ui/calendarWeekView.layoutGrid.test.tsx tests/unit/ui/calendarWeekView.blockedWeekBehavior.test.tsx</code></li><li><code>npm run test:run -- tests/integration/server/userSettings.weekAbsenceLane.persistence.test.ts --reporter=verbose</code></li><li><code>npm run typecheck</code></li><li><code>npm run check:encoding</code></li><li><code>npm run lint</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Die händische Browser-Sichtprüfung der Scroll-Artefakte im Wochenkalender steht noch aus.</li></ul>
+<h2 class="wiki-h2">Nachtrag</h2>
+<p>Fachlich nicht planbare Touren sind nun auch in der Tour-KW-Planung ausgeblendet: Im Wochenkalender werden für <code>Ohne Tour</code>, <code>Abwesenheiten</code> und <code>Parkplatz</code> keine Tour-KW-Personalkarten mehr gerendert. Im Tourformular ist der Tab <code>Wochenplanung</code> für <code>Abwesenheiten</code> und <code>Parkplatz</code> unsichtbar.</p>
+<p>Die Änderung betrifft nur die UI-Sichtbarkeit. Tour-KW-Mutationen bleiben unverändert durch die bestehenden Rollen-, Readonly- und Lock-Regeln abgesichert.</p>
+<p>Die Regel ist zusätzlich in den Feature-Seiten zu FT (03), FT (04), FT (06) und FT (33) nachlesbar.</p>
+<p>Zusätzlich verifiziert:</p>
+<ul><li><code>npm run test:run -- tests/unit/ui/calendarWeekView.layoutGrid.test.tsx tests/unit/ui/tourEditForm.layoutShellIntegration.test.tsx</code></li><li><code>npm run typecheck</code></li><li><code>npm run lint</code></li><li><code>npm run check:encoding</code></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-03-kalenderansichten.html">FT-03</a><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04</a><a href="../../lastenheft/features/ft-06-automatische-regeln.html">FT-06</a><a href="../../lastenheft/features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT-33</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

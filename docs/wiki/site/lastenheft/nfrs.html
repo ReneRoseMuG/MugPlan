@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFRs · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekt/projekte.html">Projekte</a></li><li><a href="../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="features.html">Features</a></li><li><a href="use-cases.html">Use Cases</a></li><li><a href="backlogs.html">Backlogs</a></li><li><a href="nfrs.html" class="is-active">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../verwaltung/journal.html">Journal</a></li><li><a href="../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="NFRs">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../index.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">NFRs</span></nav>
+        <h1 class="wiki-h1" data-icon="nfrs">NFRs</h1>
+    <p class="wiki-lead">Nicht-funktionale Anforderungen aus lokalen NFR-Quellen und dem redaktionellen Index.</p>
+    <table class="wiki-table">
+      <thead><tr><th>ID</th><th>Titel</th><th>Kategorie</th><th>Status</th><th>Beschreibung</th></tr></thead>
+      <tbody>
+        <tr><td class="wiki-table__id"><a href="nfrs/nfr-01-multi-user-konsistenz.html">NFR-01</a></td><td><a href="nfrs/nfr-01-multi-user-konsistenz.html">Multi-User-Konsistenz</a></td><td><span class="wiki-badge wiki-badge--neutral">Konsistenz</span></td><td><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span></td><td>Parallele Nutzung durch mehrere Benutzer oder Browser-Sessions muss deterministisch konsistent bleiben.</td></tr>
+      </tbody>
+    </table>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

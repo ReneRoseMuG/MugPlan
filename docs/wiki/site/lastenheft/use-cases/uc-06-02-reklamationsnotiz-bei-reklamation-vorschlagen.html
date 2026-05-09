@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-06/02: Reklamationsnotiz bei Reklamation vorschlagen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-06/02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-06/02 Reklamationsnotiz bei Reklamation vorschlagen</span></nav>
+        <h1 class="wiki-h1">UC-06/02: Reklamationsnotiz bei Reklamation vorschlagen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-06</span></div>
+    <p class="wiki-lead">Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält dabei optional einen fachlich passenden Notizvorschlag. Beim Aufheben der Reklamation entscheidet der Akteur, ob eine vorhandene Reklamationsnotiz gelöscht oder als Dokumentation behalten wird.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-06-automatische-regeln.html">FT (06): Automatische Regeln</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator oder Disponent.</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält dabei optional einen fachlich passenden Notizvorschlag. Beim Aufheben der Reklamation entscheidet der Akteur, ob eine vorhandene Reklamationsnotiz gelöscht oder als Dokumentation behalten wird.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Das System-Tag <strong>Reklamation</strong> ist vorhanden und als geschütztes System-Tag markiert.</li><li>Eine Notizvorlage <strong>Reklamation</strong> ist vorhanden.</li><li>Der Akteur besitzt Schreibrechte für das betroffene Objekt.</li><li>Das betroffene Objekt ist nicht durch fachliche Sperren für die Aktion gesperrt.</li><li>Für Termine gelten zusätzlich die Termin-Schreibregeln aus FT (01), insbesondere Rollenlogik für historische und stornierte Termine.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<h3 class="wiki-h3">Reklamation an Termin melden</h3>
+<ol><li>Der Akteur öffnet einen Termin im Terminformular oder in einer Kalenderansicht mit Reklamationsaktion.</li><li>Der Akteur wählt <strong>Reklamation melden</strong>.</li><li>Das System setzt das geschützte System-Tag <strong>Reklamation</strong> am Termin über die fachliche Reklamationsfunktion.</li><li>Das System prüft, ob am Termin bereits eine passende Reklamationsnotiz vorhanden ist.</li><li>Wenn keine passende Notiz vorhanden ist, öffnet das System einen Vorschlagsdialog für eine Reklamationsnotiz.</li><li>Bestätigt der Akteur den Vorschlag, legt das System eine Notiz aus der Reklamationsvorlage am Termin an und öffnet den Notizeditor.</li><li>Überspringt der Akteur den Vorschlag, bleibt die Reklamation gesetzt, ohne dass eine Notiz angelegt wird.</li></ol>
+<h3 class="wiki-h3">Reklamation an Projekt melden</h3>
+<ol><li>Der Akteur öffnet ein bestehendes Projekt mit Reklamationsaktion.</li><li>Der Akteur wählt <strong>Reklamation melden</strong>.</li><li>Das System setzt das geschützte System-Tag <strong>Reklamation</strong> am Projekt über die fachliche Reklamationsfunktion.</li><li>Das System prüft, ob am Projekt bereits eine passende Reklamationsnotiz vorhanden ist.</li><li>Wenn keine passende Notiz vorhanden ist, öffnet das System einen Vorschlagsdialog für eine Reklamationsnotiz.</li><li>Bestätigt der Akteur den Vorschlag, wird eine Notiz aus der Reklamationsvorlage für die Projektnotizen vorbereitet und im Notizbereich zur Bearbeitung geöffnet.</li><li>Speichert der Akteur die Notiz, wird sie am Projekt angelegt. Bricht der Akteur die Notizbearbeitung ab, bleibt die Reklamation gesetzt, ohne dass eine Notiz entsteht.</li></ol>
+<h3 class="wiki-h3">Reklamation beim Anlegen vorbereiten</h3>
+<ol><li>Der Akteur öffnet das Projekt- oder Terminformular im Create-Modus.</li><li>Der Akteur wählt <strong>Reklamation melden</strong>.</li><li>Das System zeigt den Reklamationszustand lokal als Draft und bietet bei Bedarf den Reklamationsnotiz-Vorschlag an.</li><li>Der Akteur speichert das Projekt oder den Termin.</li><li>Nach erfolgreicher Anlage setzt das System die Reklamation über den dedizierten Reklamationspfad auf dem neu erzeugten Objekt.</li><li>Eine vorbereitete Reklamationsnotiz wird anschließend am neu erzeugten Objekt gespeichert oder bleibt bei Abbruch des Notizeditors aus.</li></ol>
+<h3 class="wiki-h3">Reklamation aufheben</h3>
+<ol><li>Der Akteur wählt am Termin oder Projekt <strong>Reklamation aufheben</strong>.</li><li>Das System entfernt das geschützte System-Tag <strong>Reklamation</strong> über die fachliche Reklamationsfunktion.</li><li>Das System prüft, ob eine passende Reklamationsnotiz vorhanden ist.</li><li>Wenn eine passende Notiz vorhanden ist, fragt das System, ob diese Notiz entfernt werden soll.</li><li>Bestätigt der Akteur das Entfernen, löscht das System die Notiz.</li><li>Entscheidet sich der Akteur für Behalten, bleibt die Notiz als Dokumentation bestehen.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Wenn bereits eine passende Reklamationsnotiz vorhanden ist, öffnet das System beim Setzen keinen weiteren Notizvorschlag.</li><li>Wenn beim Aufheben keine passende Reklamationsnotiz vorhanden ist, wird kein Entferndialog geöffnet.</li><li>Wenn das System-Tag <strong>Reklamation</strong> oder die Notizvorlage <strong>Reklamation</strong> fehlt, kann der jeweilige Folgefluss nicht vollständig ausgeführt werden und muss als fachlicher bzw. technischer Fehler behandelt werden.</li><li>Wenn das Objekt durch Optimistic Locking veraltet ist, wird die Aktion abgewiesen und muss nach Neuladen erneut ausgeführt werden.</li><li>Wenn das Speichern im Create-Modus fehlschlägt, werden Reklamations-Draft und Notiz-Draft nicht über generische Tag-Pfade persistiert.</li><li>Wenn der Akteur keine ausreichende Rolle besitzt, ist die Reklamationsaktion nicht sichtbar bzw. serverseitig verboten.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Das betroffene Objekt besitzt oder verliert das System-Tag <strong>Reklamation</strong> konsistent über den fachlichen Workflow. Der optionale Notizfluss erzeugt keine unbeabsichtigten Duplikate und löscht vorhandene Dokumentation nur nach ausdrücklicher Bestätigung.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-06-automatische-regeln.html">FT-06</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

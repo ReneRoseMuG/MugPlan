@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/16">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/16 Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)</span></nav>
+        <h1 class="wiki-h1">UC-02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Sicherstellen, dass der Kundenwert eines Projekts stabil bleibt, sobald Termine existieren, und dass Konsistenz zwischen Projekt-Kunde und Termin-Kunden garantiert ist.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass der Kundenwert eines Projekts stabil bleibt, sobald Termine existieren, und dass Konsistenz zwischen Projekt-Kunde und Termin-Kunden garantiert ist.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Administratorrechte.</li><li>Projekt ist einem Kunden zugeordnet.</li><li>Optional: Dem Projekt sind Termine zugeordnet.</li></ul>
+<h3 class="wiki-h3"><strong>Invarianten</strong></h3>
+<ol><li><strong>Readonly-Regel:</strong> Wenn ein Projekt mindestens einen Termin hat, ist der Kundenwert des Projekts <strong>readonly</strong>. Ein Kundenwechsel ist nicht zulässig.</li><li><strong>Konsistenzregel:</strong> Alle Termine eines Projekts müssen denselben Kundenwert haben wie das Projekt. Dies ist eine Invariante ohne Ausnahme.</li><li><strong>Lösch-Blockade:</strong> Ein Projekt kann nur gelöscht werden, wenn es keine Termine besitzt (analog zur Readonly-Regel).</li></ol>
+<h3 class="wiki-h3"><strong>Ablauf – Beispiel 1: Projekt mit Terminen hat readonly Kunden</strong></h3>
+<ol><li>Projekt P existiert mit Kunde K.</li><li>Termin T wird Projekt P zugewiesen (Kundenwert von T muss K sein, siehe UC 01/02).</li><li>Administrator versucht, den Kunden von Projekt P zu wechseln.</li><li>System erkennt: Projekt hat Termin → readonly.</li><li>System blockiert Kundenwechsel mit Fehlermeldung.</li></ol>
+<h3 class="wiki-h3"><strong>Ablauf – Beispiel 2: Projekt ohne Termine erlaubt Kundenwechsel</strong></h3>
+<ol><li>Projekt P existiert mit Kunde K.</li><li>Projekt P hat keine Termine.</li><li>Administrator wechselt Kunde zu K'.</li><li>System prüft: Keine Termine vorhanden → Wechsel ist zulässig.</li><li>System speichert neue Kundenreferenz.</li></ol>
+<h3 class="wiki-h3"><strong>Ablauf – Beispiel 3: Termin-Anlage mit Projekt erzwingt Kundenwert</strong></h3>
+<ol><li>Administrator legt Termin an, wählt Kunde K und Projekt P.</li><li>System prüft: Ist K == P.customer_id?</li><li>Falls nein: System blockiert mit Fehlermeldung (siehe UC 01/02).</li><li>Falls ja: System speichert Termin mit konsistenten Werten.</li><li>Nach Speicherung: Projekt P wird readonly für Kundenwechsel.</li></ol>
+<h2 class="wiki-h2">Ablauf</h2>
+<h2 class="wiki-h2">Alternativen</h2>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Projekt-Kundenwerte sind stabil und unveränderbar, sobald Termine existieren.</li><li>Alle Termine eines Projekts haben garantiert denselben Kundenwert wie das Projekt.</li><li>Keine verwaisten oder inkonsistenten Projekt-Termin-Kunde-Beziehungen entstehen.</li><li>Administratoren wissen eindeutig: Wer ein Projekt bearbeiten will, muss zuerst prüfen, ob Termine existieren.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

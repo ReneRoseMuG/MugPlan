@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-13/08: Notizvorlage erstellen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-13/08">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-13/08 Notizvorlage erstellen</span></nav>
+        <h1 class="wiki-h1">UC-13/08: Notizvorlage erstellen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-13</span></div>
+    <p class="wiki-lead">Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt werden kann.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-13-notizverwaltung.html">FT (13): Notizverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt werden kann.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Zugriff auf die Vorlagenverwaltung gemäß Rollenkonzept.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Vorlagenverwaltung.</li><li>Der Akteur wählt die Funktion „Vorlage hinzufügen&quot;.</li><li>Das System öffnet einen Editor zur Erfassung der Vorlagendaten.</li><li>Der Akteur erfasst mindestens Titel und vordefinierten Inhalt.</li><li>Optional legt der Akteur eine Sortierreihenfolge fest.</li><li>Optional legt der Administrator eine Kennzeichnungsfarbe (<code>color</code>) fest. Disponenten können die Kennzeichnungsfarbe nicht setzen oder ändern.</li><li>Der Akteur bestätigt die Eingabe.</li><li>Das System prüft serverseitig:</li></ol>
+<ul><li>Authentifizierung,</li><li>Berechtigung,</li><li>Validierung der Pflichtfelder.</li></ul>
+<ol><li>Das System erstellt die Vorlage mit folgenden Initialwerten:</li></ol>
+<ul><li><code>is_active = true</code>,</li><li>Setzen von <code>created_at</code> und <code>updated_at</code>.</li></ul>
+<ol><li>Das System speichert die Vorlage persistent.</li><li>Das System aktualisiert die Vorlagenliste gemäß definierter Sortierlogik.</li></ol>
+<h3 class="wiki-h3">Alternativabläufe</h3>
+<ul><li>Pflichtfelder fehlen → Validierungsfehler, keine Persistierung.</li><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Persistierung.</li><li>Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Persistierung.</li><li>Technischer Fehler → HTTP 500, keine Persistierung.</li><li>Abbruch durch den Akteur → Keine Persistierung.</li></ul>
+<h2 class="wiki-h2">Alternativen</h2>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Eine neue Notizvorlage existiert persistent.</li><li>Die Vorlage ist aktiv (<code>is_active = true</code>) und erscheint in der Auswahlliste bei der Notizerstellung.</li><li>Die Kennzeichnungsfarbe ist ausschließlich gesetzt, wenn sie durch einen Administrator definiert wurde.</li><li>Es entstehen keine Seiteneffekte auf bereits bestehende Notizen.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-13-notizverwaltung.html">FT-13</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

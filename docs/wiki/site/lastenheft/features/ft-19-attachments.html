@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-19: Attachments · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-19">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-19 Attachments</span></nav>
+        <h1 class="wiki-h1">FT-19: Attachments</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature stellt eine domänenübergreifende Infrastruktur zur Verfügung, um Dateien strukturiert an fachliche Objekte zu binden. Ziel ist es, Upload, Speicherung, Anzeige und Download von Dokumenten einheitlich, sicher und wartbar umzusetzen, ohne die jeweilige Fachdomäne mit</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature stellt eine domänenübergreifende Infrastruktur zur Verfügung, um Dateien strukturiert an fachliche Objekte zu binden. Ziel ist es, Upload, Speicherung, Anzeige und Download von Dokumenten einheitlich, sicher und wartbar umzusetzen, ohne die jeweilige Fachdomäne mit technischer Dateilogik zu belasten.</p>
+<p>Attachments sind keine fachlichen Kerndaten, sondern ergänzende Dokumente zur Dokumentation, Nachvollziehbarkeit und Kommunikation.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Ein Attachment ist eine Datei, die eindeutig einem Parent-Objekt zugeordnet ist. Ein Attachment kann nie ohne Parent existieren.</p>
+<p>Das System unterstützt Attachments aktuell für folgende Domänen:</p>
+<ul><li>Projekt</li><li>Kunde</li><li>Mitarbeiter</li><li>Termin</li></ul>
+<p>Die technische Behandlung ist für alle Domänen identisch. Unterschiede bestehen ausschließlich in der Parent-Zuordnung.</p>
+<p>Ein Attachment besitzt Metadaten wie:</p>
+<ul><li>Originaldateiname</li><li>Persistenter Speichername</li><li>MIME-Typ</li><li>Dateigröße</li><li>Erstellungszeitpunkt</li></ul>
+<p>Dateien werden serverseitig gespeichert und über einen gesicherten Download-Endpunkt ausgeliefert. Die UI zeigt Attachments als kompakte Liste mit Vorschau- bzw. Download-Funktion.</p>
+<p>Das Öffnen eines Attachments kann je nach Dateityp inline (z. B. PDF, Bild) oder als Download erfolgen. Eine explizite Download-Option ist zusätzlich verfügbar.</p>
+<p>Attachments können über einen expliziten Lösch-Workflow entfernt werden. Der Workflow unterscheidet zwei Stufen: Entkopplung (Datensatz wird entfernt, physische Datei bleibt erhalten) und physische Löschung (Datensatz und Datei werden vollständig entfernt). Die physische Löschung erfordert eine explizite Nutzerentscheidung und ist bei Auftragsdokumenten nicht empfohlen.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<h3 class="wiki-h3">Allgemeine Struktur</h3>
+<ul><li>Ein Attachment gehört immer genau einem Parent-Objekt.</li><li>Ein Attachment kann nie ohne Parent-Zuordnung existieren.</li><li>Für jede unterstützte Domäne existiert eine eigene Attachment-Tabelle.</li><li>Die Tabellen sind strukturgleich aufgebaut.</li><li>Zwischen Parent und Attachment besteht eine referenzielle Integrität (FK).</li></ul>
+<h3 class="wiki-h3">Upload</h3>
+<ul><li>Upload erfolgt über Multipart-Request.</li><li>Feldname für die Datei ist systemweit einheitlich.</li><li>Es gilt eine definierte maximale Dateigröße.</li><li>Der Originaldateiname wird serverseitig sanitisiert.</li><li>Der persistente Dateiname wird eindeutig generiert.</li><li>Metadaten werden in der jeweiligen Attachment-Tabelle gespeichert.</li></ul>
+<p>Ungültige Dateien oder Überschreiten der Größenbegrenzung führen zu einem Fehler und werden nicht gespeichert.</p>
+<h3 class="wiki-h3">Speicherung</h3>
+<ul><li>Dateien werden serverseitig in einem definierten Upload-Verzeichnis gespeichert.</li><li>Der physische Speicherort wird nicht vom Client bestimmt.</li><li>Der Storage-Pfad wird als Metadatum gespeichert.</li><li>Attachments werden nicht versioniert.</li></ul>
+<h3 class="wiki-h3">Download</h3>
+<ul><li>Download erfolgt ausschließlich über definierte API-Endpunkte.</li><li>Der Endpunkt liefert:</li><li>korrekten MIME-Typ</li><li>passende Content-Disposition</li><li>Für bestimmte Dateitypen (z. B. PDF, Bilder) kann Inline-Anzeige erlaubt sein.</li><li>Über einen expliziten Parameter kann Download erzwungen werden.</li></ul>
+<p>Direkter Zugriff auf das Upload-Verzeichnis ist nicht vorgesehen.</p>
+<h3 class="wiki-h3">Löschung</h3>
+<ul><li>Attachments können über einen Lösch-Workflow entfernt werden, der zwei Stufen unterscheidet.</li><li>Stufe 1 — Entkopplung: Der Attachment-Datensatz wird entfernt, die physische Datei bleibt im Upload-Verzeichnis erhalten.</li><li>Stufe 2 — Physische Löschung: Datensatz und physische Datei werden vollständig entfernt. Nur mit expliziter Nutzerentscheidung.</li><li>Vor jeder Löschoperation wird dem Akteur folgende Sicherheitsfrage gestellt: „Soll nur die Verknüpfung zum [Termin / Projekt / Kunde / Mitarbeiter] entfernt oder auch die physische Datei gelöscht werden? (Nicht empfohlen bei Auftragsdokumenten.)“</li><li>Die Sicherheitsfrage benennt den konkreten Parent-Typ dynamisch.</li><li>Löschung setzt Änderungsrechte auf das Parent-Objekt voraus.</li><li>UI: Jedes Attachment-Badge erhält einen Action-Button, der den Lösch-Workflow auslöst.</li><li>API-seitig sind Delete-Endpunkte vorhanden und durch Berechtigungsprüfung abgesichert.</li></ul>
+<h3 class="wiki-h3">Sicherheit und Verantwortlichkeit</h3>
+<ul><li>Die Parent-Existenz wird vor Speicherung eines Attachments geprüft.</li><li>Attachments haben keine eigenständigen Berechtigungen, sondern folgen den Berechtigungen ihres Parents.</li><li>UI-seitige Einschränkungen ersetzen keine serverseitige Prüfung.</li><li>Der Download erfolgt ausschließlich nach erfolgreicher Identifikation des Attachments.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-19-01-attachment-hochladen.html">UC 19/01: Attachment hochladen</a></li><li><a href="../use-cases/uc-19-02-attachmentliste-anzeigen.html">UC 19/02: Attachmentliste anzeigen</a></li><li><a href="../use-cases/uc-19-03-attachment-oeffnen-inline-anzeige.html">UC 19/03: Attachment öffnen (Inline-Anzeige)</a></li><li><a href="../use-cases/uc-19-04-attachment-herunterladen.html">UC 19/04: Attachment herunterladen</a></li><li><a href="../use-cases/uc-19-05-attachment-upload-validieren-groesse-typ.html">UC 19/05: Attachment-Upload validieren (Größe / Typ)</a></li><li><a href="../use-cases/uc-19-06-loesch-workflow-initiieren-action-button.html">UC 19/06: Lösch-Workflow initiieren (Action Button)</a></li><li><a href="../use-cases/uc-19-07-verhalten-bei-loeschung-eines-parent-objekts.html">UC 19/07: Verhalten bei Löschung eines Parent-Objekts</a></li><li><a href="../use-cases/uc-19-08-serverseitige-berechtigungspruefung-bei-attachment-zugriff.html">UC 19/08: Serverseitige Berechtigungsprüfung bei Attachment-Zugriff</a></li><li><a href="../use-cases/uc-19-09-attachment-an-termin-verwalten.html">UC 19/09: Attachment an Termin verwalten</a></li><li><a href="../use-cases/uc-19-10-attachment-duplikat-entfernen.html">UC 19/10: Attachment-Duplikat entfernen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-19-01-attachment-hochladen.html">UC-19/01</a><a href="../use-cases/uc-19-02-attachmentliste-anzeigen.html">UC-19/02</a><a href="../use-cases/uc-19-03-attachment-oeffnen-inline-anzeige.html">UC-19/03</a><a href="../use-cases/uc-19-04-attachment-herunterladen.html">UC-19/04</a><a href="../use-cases/uc-19-05-attachment-upload-validieren-groesse-typ.html">UC-19/05</a><a href="../use-cases/uc-19-06-loesch-workflow-initiieren-action-button.html">UC-19/06</a><a href="../use-cases/uc-19-07-verhalten-bei-loeschung-eines-parent-objekts.html">UC-19/07</a><a href="../use-cases/uc-19-08-serverseitige-berechtigungspruefung-bei-attachment-zugriff.html">UC-19/08</a><a href="../use-cases/uc-19-09-attachment-an-termin-verwalten.html">UC-19/09</a><a href="../use-cases/uc-19-10-attachment-duplikat-entfernen.html">UC-19/10</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-19-attachments-backlog.html">BL-19</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

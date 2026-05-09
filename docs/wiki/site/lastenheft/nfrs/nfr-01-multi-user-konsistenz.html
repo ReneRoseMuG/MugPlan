@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFR-01: Multi-User-Konsistenz · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html" class="is-active">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="NFRs NFR-01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../nfrs.html">NFRs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">NFR-01 Multi-User-Konsistenz</span></nav>
+        <h1 class="wiki-h1">NFR-01: Multi-User-Konsistenz</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Kategorie</span><span class="wiki-badge wiki-badge--neutral">Konsistenz</span></div>
+    <p class="wiki-lead">Parallele Nutzung durch mehrere Benutzer oder Browser-Sessions muss deterministisch konsistent bleiben.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Kategorie: Konsistenz</li><li>Typ: NFR</li><li>Quelle: Notion <code>https://www.notion.so/313da094354e810db445c5ffe0c054f9</code></li><li>Übernommen: 09.05.26</li></ul>
+<h2 class="wiki-h2">Beschreibung</h2>
+<p>Das System muss parallele Nutzung durch mehrere Benutzer oder mehrere Browser-Sessions ermöglichen, ohne dass Änderungen still überschrieben werden, fachliche Invarianten verletzt werden, inkonsistente Zustände entstehen oder Race Conditions unbemerkt bleiben.</p>
+<p>Das System garantiert deterministische Konsistenz bei parallelen Mutationen.</p>
+<h2 class="wiki-h2">Geltungsbereich</h2>
+<p>Diese Anforderung gilt für:</p>
+<ul><li>alle mutierenden REST-Endpoints (<code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>)</li><li>alle versionierten Entitäten</li><li>alle Service-Operationen mit fachlichen Abhängigkeiten</li><li>alle Operationen mit zeitlicher Logik, insbesondere Termine und Mitarbeiterzuweisung</li></ul>
+<h2 class="wiki-h2">Technische Mindestanforderungen</h2>
+<h3 class="wiki-h3">Optimistic Locking</h3>
+<p>Alle mutierbaren Kernentitäten müssen eine <code>version</code>-Spalte besitzen.</p>
+<p>Updates dürfen nur erfolgen, wenn ID und Version dem aktuellen Persistenzstand entsprechen.</p>
+<p>Bei Versionsabweichung muss der Server deterministisch mit <code>HTTP 409 CONFLICT</code> und dem maschinenlesbaren Code <code>VERSION_CONFLICT</code> antworten.</p>
+<h3 class="wiki-h3">Transaktionale Fachregelprüfung</h3>
+<p>Fachregeln mit konkurrierenden Zuständen müssen innerhalb einer DB-Transaktion geprüft und angewendet werden.</p>
+<p>Beispiele:</p>
+<ul><li>Mitarbeiter darf keine Terminüberschneidung haben.</li><li>Archivierte Projekte dürfen keine neuen Termine erhalten.</li><li>Gesperrte Termine dürfen nicht verändert werden.</li></ul>
+<p>Operationen müssen atomar sein: vollständiger Commit oder vollständiger Rollback.</p>
+<h3 class="wiki-h3">Server als alleinige Wahrheit</h3>
+<p>Der Client darf keine Fachregeln erzwingen, keine Konfliktentscheidungen treffen und keine Versionslogik lokal berechnen.</p>
+<p>Der Server entscheidet immer auf Basis des aktuellen DB-Zustands.</p>
+<h3 class="wiki-h3">Fehlerstandardisierung</h3>
+<p>Konflikte müssen maschinenlesbar sein.</p>
+<p>Verbindliche Fehlercodes:</p>
+<ul><li><code>VERSION_CONFLICT</code></li><li><code>BUSINESS_RULE_CONFLICT</code></li><li><code>LOCK_VIOLATION</code></li><li><code>NOT_FOUND</code></li><li><code>VALIDATION_ERROR</code></li></ul>
+<h3 class="wiki-h3">Aktive Änderungsbenachrichtigung</h3>
+<p>Das System muss angemeldete Benutzer proaktiv informieren, wenn Daten, die sie gerade betrachten oder bearbeiten, durch einen anderen Benutzer verändert wurden.</p>
+<p>Dies ergänzt das Optimistic Locking: Statt den Konflikt erst beim Speichern zu erkennen, wird der Benutzer bereits während der Bearbeitung informiert.</p>
+<h4 class="wiki-h3">Transportmechanismus</h4>
+<p>Das System stellt für jeden angemeldeten Benutzer eine persistente Server-Push-Verbindung über Server-Sent Events bereit. Die Verbindung wird beim Login aufgebaut und bleibt für die Dauer der Session offen.</p>
+<h4 class="wiki-h3">Auslöser</h4>
+<p>Nach jeder erfolgreich abgeschlossenen mutierenden Operation schreibt der Server einen Eintrag in ein internes <code>change_log</code>. Dieser Eintrag enthält Entitätstyp, Entitäts-ID, Zeitstempel und die ID des verursachenden Benutzers.</p>
+<p>Das System sendet daraufhin ein SSE-Ereignis an alle verbundenen Sessions mit Ausnahme der Session des verursachenden Benutzers.</p>
+<h4 class="wiki-h3">Verhalten bei Verbindungsunterbrechung</h4>
+<p>Baut der Client die SSE-Verbindung neu auf, übermittelt er die ID des zuletzt empfangenen Ereignisses. Der Server liefert alle <code>change_log</code>-Einträge nach, die seit diesem Zeitpunkt entstanden sind, sodass keine Änderungen verloren gehen.</p>
+<h4 class="wiki-h3">Verhalten im Client</h4>
+<p>Der Client wertet eingehende Ereignisse nicht-blockierend aus. Er zeigt dem Benutzer einen Hinweis, dass sich Daten geändert haben, und bietet die Möglichkeit, die aktuellen Daten neu zu laden.</p>
+<p>Eine automatische Überschreibung laufender Bearbeitungen findet nicht statt.</p>
+<h4 class="wiki-h3">Abgrenzung zum Optimistic Locking</h4>
+<p>Beide Mechanismen sind komplementär und bleiben unabhängig voneinander aktiv. Die Benachrichtigung ist ein Komfortmechanismus.</p>
+<p>Der Versionskonflikt beim Speichern bleibt die harte, nicht umgehbare Absicherung.</p>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

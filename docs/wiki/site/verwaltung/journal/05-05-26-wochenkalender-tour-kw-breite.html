@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-wochenkalender-tour-kw-breite: 05.05.26 | UI-Fix | FT-04: Wochenkalender Tour-KW-Breite · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-wochenkalender-tour-kw-breite">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-wochenkalender-tour-kw-breite 05.05.26 | UI-Fix | FT-04: Wochenkalender Tour-KW-Breite</span></nav>
+        <h1 class="wiki-h1">05-05-26-wochenkalender-tour-kw-breite: 05.05.26 | UI-Fix | FT-04: Wochenkalender Tour-KW-Breite</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Die expandierte Tour-KW-Planungsspalte im Wochenkalender wurde verbreitert und an die gemessene Breite der Mitarbeiter-Badges gekoppelt. Mitarbeiter-Badges sollen dadurch inklusive Entfernen-Button nicht mehr umbrechen.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die expandierte Tour-KW-Planungsspalte im Wochenkalender wurde verbreitert und an die gemessene Breite der Mitarbeiter-Badges gekoppelt. Mitarbeiter-Badges sollen dadurch inklusive Entfernen-Button nicht mehr umbrechen.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Kleiner lokaler UI-Fix in der bestehenden Wochenkalender-Struktur. Es wurden keine Backend-Contracts, Datenmodelle, API-Endpunkte, Persistenzpfade oder Rollenregeln geändert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-04: Tourenplanung / Tour-KW-Planung</li><li>Wochenkalender: Tour-KW-Personalspalte</li></ul>
+<p>Ein belastbarer Notion-Link wurde im Auftrag nicht verwendet.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Die vorhandene Messlogik der Wochenkalender-Personalspalte unterscheidet jetzt zwischen gemessener Badge-Breite und daraus abgeleiteter Spaltenbreite.</li><li>Die Spaltenbreite enthält zusätzlichen Innenabstand, damit Badge und Aktion nicht an der Kartengrenze gedrückt werden.</li><li>Sichtbare Mitarbeiter-Badges werden im expandierten Zustand auf die gemessene Wochenbreite gestreckt.</li><li>Badge-Messung und sichtbare Badge-Zeile verwenden <code>whitespace-nowrap</code>, damit Namen und Entfernen-Button nicht umbrechen.</li><li>Der Fallback der expandierten Tour-KW-Personalspalte wurde verbreitert.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Keine Änderung an Rollen oder Berechtigungen.</p>
+<ul><li>Mutierende Aktionen bleiben an die bestehenden Bedingungen für <code>ADMIN</code> und <code>DISPONENT</code>, Woche, Sperrstatus und Tour gebunden.</li><li>Readonly- und Leser-Zustände bleiben unverändert.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/ui/calendarWeekView.layoutGrid.test.tsx</code></li><li><code>npm run typecheck</code></li><li><code>npx eslint client/src/components/calendar/CalendarWeekView.tsx tests/unit/ui/calendarWeekView.layoutGrid.test.tsx</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein Browser-Screenshot wurde nachgezogen.</li><li>Weitere offene Dateien unter <code>docs/wiki/decisions/</code> gehören nicht zu diesem Journaleintrag.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

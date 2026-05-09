@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-34/01: Kalendermarker im Kalender anzeigen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-34/01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-34/01 Kalendermarker im Kalender anzeigen</span></nav>
+        <h1 class="wiki-h1">UC-34/01: Kalendermarker im Kalender anzeigen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-34</span></div>
+    <p class="wiki-lead">Kalenderrelevante Marker im Wochen- und Monatskalender erkennen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-34-kalendermarker-feiertage-betriebsferien.html">FT (34): Kalendermarker, Feiertage und Betriebsferien</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent, Leser</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Kalenderrelevante Marker im Wochen- und Monatskalender erkennen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist angemeldet.</li><li>Für den sichtbaren Zeitraum existieren aktive Kalendermarker.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur öffnet Wochen- oder Monatskalender.</li><li>System lädt aktive Kalendermarker für den sichtbaren Zeitraum.</li><li>System hinterlegt betroffene Tage farbig entsprechend der Markerart.</li><li>Im Wochenkalender markiert System den betroffenen Tag als durchgehende Spalte über alle sichtbaren Tour-Lanes.</li><li>Im Monatskalender markiert System die volle betroffene Tageskachel.</li><li>System zeigt den Marker im Tageskopf abhängig vom verfügbaren Platz als Volltext, kompakten Platzhalter oder Icon.</li><li>Bei komprimierter Darstellung bleibt der vollständige Markername per Hover erreichbar.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Gibt es keine aktiven Marker im sichtbaren Zeitraum, bleibt die Kalenderansicht unverändert.</li><li>Sind mehrere Marker auf demselben Tag aktiv, zeigt die Oberfläche im Tageskopf nur einen Primärmarker in verdichteter Form an.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Akteur erkennt Feiertage, Betriebsfeiertage und Betriebsferien im Kalender, ohne dass Terminbedienung, Drag &amp; Drop oder Klickverhalten blockiert werden.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-34-kalendermarker-feiertage-betriebsferien.html">FT-34</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

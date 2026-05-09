@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BL-07: FT (07) Backlog · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html" class="is-active">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Backlogs BL-07">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../backlogs.html">Backlogs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">BL-07 FT (07) Backlog</span></nav>
+        <h1 class="wiki-h1">BL-07: FT (07) Backlog</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-07</span></div>
+    <p class="wiki-lead">Quelle: https://www.notion.so/33ada094354e80fb958ac334f264bad9</p>
+    <h2 class="wiki-h2">E-Mail-Versand nach Backup-Lauf</h2>
+<p>Quelle: https://www.notion.so/33ada094354e80fb958ac334f264bad9</p>
+<p>Status: Backlog / nicht begonnen</p>
+<p>Notion-Titel: E-Mail Versandt</p>
+<h3 class="wiki-h3">Ziel / Zweck</h3>
+<p>Nach jedem erfolgreichen Backup-Lauf soll die erzeugte Backup-Datei per E-Mail an eine konfigurierte Empfängeradresse versendet werden.</p>
+<p>Das gilt sowohl für automatisch durch den Scheduler erzeugte Backups als auch für manuell durch einen Administrator ausgelöste Backup-Läufe. Der Versand dient als zusätzliche externe Sicherungskopie und soll sicherstellen, dass ein aktueller Stand das System verlässt, ohne dass ein Administrator die Datei aktiv herunterladen muss.</p>
+<h3 class="wiki-h3">Fachliche Beschreibung</h3>
+<p>Der E-Mail-Versand erfolgt im Anschluss an einen erfolgreichen Backup-Lauf. Die E-Mail enthält die erzeugte Backup-Datei als Anhang.</p>
+<p>Scheitert der Versand, bleibt das Backup selbst davon unberührt. Der Versandfehler wird protokolliert, blockiert aber weder die Backup-Erzeugung noch den normalen Systembetrieb. Der E-Mail-Versand ist damit ein nachgelagerter, nicht-kritischer Folgepfad.</p>
+<p>Der Versand soll aktivierbar und deaktivierbar sein. Die Empfängeradresse wird durch einen Administrator im Einstellungsbereich gepflegt und persistiert.</p>
+<h3 class="wiki-h3">Konfiguration</h3>
+<p>Zugangsdaten für den Mailversand, insbesondere Server, Port, Absender und Authentifizierung, werden über die Serverkonfiguration bereitgestellt.</p>
+<p>Die Empfängeradresse wird im Einstellungsbereich des Administrators gepflegt. Diese Einstellung muss serverseitig rollenbeschränkt sein und darf nicht allein über UI-Sichtbarkeit abgesichert werden.</p>
+<h3 class="wiki-h3">Regeln &amp; Randbedingungen</h3>
+<ul><li>E-Mail-Versand setzt einen erfolgreichen Backup-Lauf voraus.</li><li>Der Versand erfolgt nach automatischen und manuellen Backup-Läufen.</li><li>Der Versand darf den Backup-Lauf nicht zum kritischen Pfad machen.</li><li>Versandfehler werden protokolliert.</li><li>Backup-Dateien bleiben auch bei Versandfehlern erhalten.</li><li>Versand kann aktiviert oder deaktiviert werden.</li><li>Mailserver-Zugangsdaten gehören in die Serverkonfiguration und dürfen nicht in Wiki, Code, Logs oder Admin-UI offengelegt werden.</li><li>Die Empfängeradresse darf ausschließlich durch Administratoren gepflegt werden.</li><li>Große Backup-Dateien können den Mailversand unpraktikabel machen.</li></ul>
+<h3 class="wiki-h3">Abhängigkeiten und Abgrenzung</h3>
+<p>Dieses Backlog setzt den automatischen Backup-Lauf mit integriertem Dump voraus, weil die erzeugte ZIP-Datei als Mailanhang versendet werden soll.</p>
+<p>Backup Cloud Sync bleibt als mögliche Ergänzung oder Alternative offen, falls Backup-Dateien für den Mailversand zu groß werden.</p>
+<h3 class="wiki-h3">Offene Klärungen</h3>
+<ul><li>Ab welcher Dateigröße soll der Versand übersprungen oder durch Cloud Sync ersetzt werden?</li><li>Soll ein Administrator bei fehlgeschlagenem Versand zusätzlich benachrichtigt werden?</li><li>Wo wird die Empfängeradresse technisch gespeichert und wie wird sie validiert?</li><li>Soll es eine Testmail-Funktion geben?</li><li>Wie werden Versandstatus und Fehlermeldungen in der Backup-Historie sichtbar?</li><li>Welche Rollen dürfen Versandstatus sehen, Versand aktivieren und die Empfängeradresse ändern?</li></ul>
+<h2 class="wiki-h2">Backup Cloud Sync</h2>
+<p>Quelle: https://www.notion.so/33ada094354e801e9017e3e4424871c6</p>
+<p>Status: Backlog / nicht begonnen</p>
+<h3 class="wiki-h3">Ziel / Zweck</h3>
+<p>Backup-Dateien sollen nach ihrer Erzeugung automatisch in einen konfigurierten Cloud-Speicher übertragen werden.</p>
+<p>Cloud Sync dient als Ergänzung oder Alternative zum E-Mail-Versand, insbesondere wenn die Backup-Dateien eine Größe erreichen, bei der ein Mail-Anhang unpraktikabel oder unzuverlässig wird.</p>
+<h3 class="wiki-h3">Fachliche Beschreibung</h3>
+<p>Nach jedem erfolgreichen Backup-Lauf wird die erzeugte Backup-Datei in einen konfigurierten Cloud-Speicher übertragen. Der Upload erfolgt nicht blockierend. Fehler werden protokolliert, ohne den Backup-Prozess zu gefährden.</p>
+<p>Cloud Sync ist aktivierbar und deaktivierbar. Welcher Cloud-Dienst unterstützt werden soll, ist noch offen.</p>
+<h3 class="wiki-h3">Regeln &amp; Randbedingungen</h3>
+<ul><li>Cloud Sync setzt einen erfolgreichen Backup-Lauf voraus.</li><li>Der Upload erfolgt nach automatischen und manuellen Backup-Läufen, sofern Cloud Sync aktiv ist.</li><li>Cloud Sync darf den Backup-Lauf nicht zum kritischen Pfad machen.</li><li>Uploadfehler werden protokolliert.</li><li>Backup-Dateien bleiben auch bei Uploadfehlern erhalten.</li><li>Cloud Sync kann aktiviert oder deaktiviert werden.</li><li>Zugangsdaten und Zielordner gehören in geschützte Server- bzw. Admin-Konfiguration und dürfen nicht in Wiki, Code oder Logs offengelegt werden.</li><li>Konfiguration und Aktivierung dürfen ausschließlich Administratoren möglich sein und müssen serverseitig rollenbeschränkt werden.</li></ul>
+<h3 class="wiki-h3">Abhängigkeiten und Abgrenzung</h3>
+<p>Cloud Sync ergänzt den E-Mail-Versand nach Backup-Lauf. Offen ist, ob beide Kanäle unabhängig nebeneinander laufen oder ob Cloud Sync den Mailversand ab einer bestimmten Dateigröße ersetzt.</p>
+<p>Der Eintrag setzt den automatischen Backup-Lauf mit integriertem Dump voraus, weil die erzeugte ZIP-Datei übertragen werden soll.</p>
+<h3 class="wiki-h3">Offene Klärungen</h3>
+<ul><li>Welcher Cloud-Dienst soll unterstützt werden, zum Beispiel Nextcloud, S3-kompatibler Speicher oder Google Drive?</li><li>Soll Cloud Sync den Mailversand bei Überschreitung einer bestimmten Dateigröße automatisch ersetzen?</li><li>Wie werden Zugangsdaten und Zielordner konfiguriert?</li><li>Wie werden Uploadstatus und Fehler in der Backup-Historie sichtbar?</li><li>Gibt es eine Test-Upload-Funktion?</li><li>Welche Rollen dürfen Cloud Sync aktivieren, Zielordner ändern und Uploadstatus sehen?</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-07-automatisierte-datensicherung-und-fallback.html">FT-07</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

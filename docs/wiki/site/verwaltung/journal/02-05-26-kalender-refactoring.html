@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>02-05-26-kalender-refactoring: 02.05.26 - Kalender-Refactoring umgesetzt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 02-05-26-kalender-refactoring">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">02-05-26-kalender-refactoring 02.05.26 - Kalender-Refactoring umgesetzt</span></nav>
+        <h1 class="wiki-h1">02-05-26-kalender-refactoring: 02.05.26 - Kalender-Refactoring umgesetzt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>02.05.26</div>
+    <p class="wiki-lead">Das erste Kalender-Refactoring-Paket wurde auf Branch refactor/kalender-refactoring umgesetzt. Wochen- und Monatskalender erhalten kompaktere Arbeitsflächen, optionale Zusatzbereiche und Druckvorschauen.</p>
+    <h2 class="wiki-h2">Kurzfassung</h2>
+<p>Das erste Kalender-Refactoring-Paket wurde auf Branch <code>refactor/kalender-refactoring</code> umgesetzt. Wochen- und Monatskalender erhalten kompaktere Arbeitsflächen, optionale Zusatzbereiche und Druckvorschauen.</p>
+<h2 class="wiki-h2">Änderungen</h2>
+<ul><li>Wochenkalender:</li><li>kompakte Tagesspalten-Beschriftung <code>Mo 27 Apr</code> als dokumentierte Ausnahme von der allgemeinen sichtbaren Datumsregel,</li><li>Toggle für dauerhaft sichtbare Termin-Notizkarten,</li><li>Toggle für passive Abwesenheitszeile,</li><li>persistierbare Personalübersicht je Tour-Lane,</li><li>direkte Terminkarten-Aktionen für Notizanlage und Mitarbeiterzuweisung über bestehende Fachpfade.</li><li>Kalenderdaten:</li><li>optionale Termin-Notizvorschau in <code>/api/calendar/appointments</code>.</li><li>Druck:</li><li>read-only Druckvorschau für Wochen- und Monatskalender.</li><li>Sicherheit:</li><li>serverseitige Leser-Blockade für Termin-Notiz-Mutationen nachgezogen.</li></ul>
+<h2 class="wiki-h2">Hinweise</h2>
+<p>Die Wiki wurde angepasst, weil sich sichtbares Kalenderverhalten und der Kalenderdaten-Contract geändert haben. Keine Schema-Migration ist Bestandteil dieser Änderung.</p>
+<p><code>npm test -- --reporter=verbose</code> ist erfolgreich gelaufen. Der lokale Audit ist in 7 von 8 Teilen erfolgreich; der verbleibende Fehler liegt im bestehenden Wiki-Encoding-Altbestand des <code>check:encoding</code>-Schritts.</p>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

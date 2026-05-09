@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-09/08: Versionskonflikt bei paralleler Kundenbearbeitung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-09/08">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-09/08 Versionskonflikt bei paralleler Kundenbearbeitung</span></nav>
+        <h1 class="wiki-h1">UC-09/08: Versionskonflikt bei paralleler Kundenbearbeitung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-09</span></div>
+    <p class="wiki-lead">Sicherstellen, dass bei paralleler Bearbeitung desselben Kunden keine stillen Datenüberschreibungen (Lost Updates) entstehen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-09-kundenverwaltung.html">FT (09): Kundenverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass bei paralleler Bearbeitung desselben Kunden keine stillen Datenüberschreibungen (Lost Updates) entstehen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Ein Kunde existiert.</li><li>Zwei Akteure sind gleichzeitig authentifiziert.</li><li>Beide Akteure haben Bearbeitungsrechte.</li><li>Beide Akteure laden denselben Kunden mit identischer Versionskennung.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Akteur A öffnet die Kundendetailansicht.</li><li>Akteur B öffnet dieselbe Kundendetailansicht.</li><li>Beide erhalten denselben Versionsstand (z. B. <code>version = 5</code>).</li><li>Akteur A ändert Kundendaten und speichert.</li><li>Das System prüft die Versionskennung.</li><li>Das System persistiert die Änderung.</li><li>Das System erhöht die Versionskennung auf <code>version = 6</code>.</li><li>Akteur B speichert nun seine Änderungen mit veralteter Versionskennung (<code>version = 5</code>).</li><li>Das System prüft die Versionskennung.</li><li>Das System erkennt die Abweichung.</li><li>Das System blockiert den Speichervorgang mit 409 (Konflikt).</li><li>Das System fordert Akteur B zum Neuladen auf.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur B lädt vor dem Speichern neu → kein Konflikt.</li><li>Akteur B bricht ab → keine Änderung.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Es kommt zu keinem stillen Überschreiben von Kundendaten.</li><li>Der zuletzt gespeicherte, valide Stand bleibt erhalten.</li><li>Das System garantiert Optimistic Locking für Kundenänderungen.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-09-kundenverwaltung.html">FT-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

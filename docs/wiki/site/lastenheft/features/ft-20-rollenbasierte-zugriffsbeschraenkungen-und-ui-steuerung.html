@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-20: Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-20">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-20 Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung</span></nav>
+        <h1 class="wiki-h1">FT-20: Rollenbasierte Zugriffsbeschränkungen und UI-Steuerung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature definiert die fachliche Bedeutung der Rollen **Admin**, **Disponent(in)** und **Leser** innerhalb der Anwendung und regelt, welche Funktionen, Aktionen und Navigationsbereiche rollenspezifisch verfügbar sind.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature definiert die fachliche Bedeutung der Rollen <strong>Admin</strong>, <strong>Disponent(in)</strong> und <strong>Leser</strong> innerhalb der Anwendung und regelt, welche Funktionen, Aktionen und Navigationsbereiche rollenspezifisch verfügbar sind.</p>
+<p>Ziel ist es, eine klare Verantwortungsstruktur im System zu etablieren, ohne die bestehende Daten- oder Terminlogik zu verändern. Die Zugriffsbeschränkungen betreffen ausschließlich Sichtbarkeit, Bedienbarkeit und serverseitig durchgesetzte Autorisierung.</p>
+<p>Die fachliche Sicherheit bleibt stets serverseitig abgesichert (vgl. FT (14)); FT (20) ergänzt diese Grundlage um UI-seitige Steuerung und klare Nutzungsmodelle.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Jeder Benutzer besitzt genau eine Rolle. Diese Rolle definiert seinen funktionalen Handlungsspielraum im System.</p>
+<p>Die Anwendung unterscheidet drei Rollen:</p>
+<h3 class="wiki-h3">1. Admin</h3>
+<p>Der Admin besitzt systemweite Verantwortung.</p>
+<p>Er darf:</p>
+<ul><li>Benutzer verwalten und Rollen ändern</li><li>Systemnahe Stammdaten verwalten</li><li>Gesperrte Termine bearbeiten</li><li>Alle Funktionen der Disposition nutzen</li></ul>
+<p>Der Admin ist die höchste Berechtigungsstufe. Es muss stets mindestens ein Admin im System existieren.</p>
+<h3 class="wiki-h3">2. Disponent(in)</h3>
+<p>Der Disponent ist der operative Hauptnutzer der Anwendung.</p>
+<p>Er darf:</p>
+<ul><li>Projekte anlegen, bearbeiten und deaktivieren</li><li>Termine anlegen, verschieben, bearbeiten und löschen</li><li>Mitarbeiter zuweisen</li><li>Touren und Teams verwalten</li><li>Notizen und Anhänge verwalten</li><li>Druckfunktionen nutzen</li></ul>
+<p>Der Disponent darf keine Benutzerrollen ändern und keine systemweiten Administrationsfunktionen ausführen.</p>
+<h3 class="wiki-h3">3. Leser</h3>
+<p>Der Leser ist ein rein lesender Nutzer.</p>
+<p>Er darf:</p>
+<ul><li>Kalenderansichten anzeigen</li><li>Projekt- und Kundendetails einsehen</li><li>Eigene und fremde Termine einsehen</li><li>Mitarbeiteransichten im Lesemodus öffnen</li><li>Reports lesend aufrufen und erzeugen</li></ul>
+<p>Der Leser darf keine Daten verändern, anlegen oder löschen.</p>
+<p>Die Oberfläche für Leser ist funktional reduziert und enthält keine aktiven Bearbeitungselemente. Das Journal bleibt für Leser verborgen. Monitoring bleibt weiterhin Disponenten und Admins vorbehalten.</p>
+<h2 class="wiki-h2">Grundprinzipien</h2>
+<ol><li>Sicherheit wird serverseitig durchgesetzt.</li><li>UI-Sichtbarkeit ist eine Komfortfunktion, keine Sicherheitsmaßnahme.</li><li>Die fachliche Datenstruktur bleibt unverändert.</li><li>Es wird keine Rechte-Matrix eingeführt.</li><li>Rollen wirken ausschließlich auf Funktionsverfügbarkeit, nicht auf Datenmodellierung.</li></ol>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Rollen ändern keine Datenmodelle.</li><li>Rollen beeinflussen keine Aggregationslogik.</li><li>Rollen beeinflussen keine Query-Struktur.</li><li>Rollen verändern keine Termin-Lane-Logik.</li><li>Navigation wird nicht umstrukturiert, sondern nur ergänzt oder konditional gerendert.</li><li>Deep-Link-Aufrufe werden serverseitig validiert.</li><li>Es darf keine clientseitige Autorisierungslogik ohne serverseitige Gegenprüfung existieren.</li><li>Ein Leser sieht alle Termine, jedoch ausschließlich im Lesemodus.</li><li>Reports sind für Leser serverseitig lesbar; globale Preset-Verwaltung und andere administrative Reportfunktionen bleiben eingeschränkt.</li><li>Der Mitarbeiterbereich darf für Leser sichtbar sein, bleibt dort aber vollständig read-only.</li><li>Das Journal bleibt für Leser unsichtbar und serverseitig gesperrt.</li><li>Der letzte Admin darf nicht entfernt oder herabgestuft werden.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-20-01-unzulaessige-aktion-wird-blockiert.html">UC 20/01: Unzulässige Aktion wird blockiert</a></li><li><a href="../use-cases/uc-20-02-rollenabhaengige-navigation-anzeigen.html">UC 20/02: Rollenabhängige Navigation anzeigen</a></li><li><a href="../use-cases/uc-20-03-admin-verwaltet-benutzerrollen.html">UC 20/03: Admin verwaltet Benutzerrollen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-20-01-unzulaessige-aktion-wird-blockiert.html">UC-20/01</a><a href="../use-cases/uc-20-02-rollenabhaengige-navigation-anzeigen.html">UC-20/02</a><a href="../use-cases/uc-20-03-admin-verwaltet-benutzerrollen.html">UC-20/03</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-20-rollenbasierte-zugriffsbeschraenkungen-und-ui-steuerung-backlog.html">BL-20</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

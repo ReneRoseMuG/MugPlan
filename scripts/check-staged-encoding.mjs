@@ -73,6 +73,8 @@ const asciiUmlautAllowlist = new Set([
   "blue",
   "clue",
   "continue",
+  "Dauer",
+  "dauer",
   "dauerhafte",
   "dauerhaften",
   "doesn",
@@ -110,6 +112,7 @@ const asciiUmlautAllowlist = new Set([
   "Request",
   "rescue",
   "revenue",
+  "Segoe",
   "Steuer",
   "steuert",
   "steuern",
@@ -122,6 +125,7 @@ const asciiUmlautAllowlist = new Set([
   "umzubauen",
   "Vorschauen",
   "value",
+  "values",
   "visuelle",
   "visuell",
   "visuelles",
@@ -132,6 +136,7 @@ const asciiUmlautAllowlist = new Set([
 ]);
 
 const asciiUmlautAllowedStemPatterns = [
+  /^[Ss]ystemgesteuer[A-Za-zÄÖÜäöüß]*$/,
   /^[Qq]uell[A-Za-zÄÖÜäöüß]*$/,
   /^[Ss]teuer[A-Za-zÄÖÜäöüß]*$/,
 ];

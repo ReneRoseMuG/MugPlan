@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>07-05-26-terminkachel-notizen-editor: 07.05.26 | FT-03/FT-13 | Terminkachel-Notizen editierbar und Editor bedienbar · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 07-05-26-terminkachel-notizen-editor">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">07-05-26-terminkachel-notizen-editor 07.05.26 | FT-03/FT-13 | Terminkachel-Notizen editierbar und Editor bedienbar</span></nav>
+        <h1 class="wiki-h1">07-05-26-terminkachel-notizen-editor: 07.05.26 | FT-03/FT-13 | Terminkachel-Notizen editierbar und Editor bedienbar</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>07.05.26</div>
+    <p class="wiki-lead">Die inline angezeigten Notizen unter Terminkacheln im Wochenkalender wurden von einer reinen Vorschau zu bedienbaren Notizkarten erweitert. Notizen verwenden nun fest weiße Schrift statt automatischer Kontrastauswahl. Der Notizeditor wurde für kleinere Bildschirme so begrenzt, da</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die inline angezeigten Notizen unter Terminkacheln im Wochenkalender wurden von einer reinen Vorschau zu bedienbaren Notizkarten erweitert. Notizen verwenden nun fest weiße Schrift statt automatischer Kontrastauswahl. Der Notizeditor wurde für kleinere Bildschirme so begrenzt, dass er scrollbar und bedienbar bleibt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtige UI- und API-nahe Änderung ohne Datenbank- oder Migrationsänderung. Der Kalender-Preview-Contract wurde um bestehende Notiz-Metadaten erweitert, damit Inline-Aktionen mit Versionierung und gesperrter Vorlagenfarbe korrekt arbeiten können. Serverseitig wurden die bestehenden Notiz-Mutationsrechte explizit abgesichert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-03 Kalenderansichten: Wochenkalender, Terminkacheln und Inline-Notizen.</li><li>FT-13 Notizverwaltung: Notizkarten, Notizeditor, Kartenfarbe, Druckflag und Mutationen.</li></ul>
+<p>Notion-Links wurden für diese Session nicht ergänzt; die lokale Feature-Dokumentation und der aktuelle Code waren für den Zuschnitt ausreichend.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>note-colors</code> liefert für Notiztexte immer weiße Primär- und Sekundärfarbe; die automatische Schriftfarbselektion ist damit abgeklemmt.</li><li>Die Wochenkalender-Terminkarten nutzen eine gemeinsame Inline-Notizkomponente mit X-Button zum Löschen und Doppelklick zum Bearbeiten.</li><li>Inline-Notizen unterscheiden Termin- und Projektnotizen, damit Löschen und Invalidierung gegen den passenden API-Pfad laufen.</li><li>Der Kalender-Preview-Contract liefert für Termin- und Projektnotizen zusätzlich <code>version</code> und <code>cardColorLocked</code>.</li><li>Der Workflow-Notizeditor im Wochenkalender kann bestehende Termin- und Projektnotizen öffnen und speichert über den generischen Notiz-Update-Endpunkt.</li><li>Notizdialoge in Wochenkalender, Notizsektionen, Terminformular und Tag-Picker verwenden viewport-sichere Breite, Höhe und Scrollverhalten.</li><li>Customer-, Project- und generische Note-Controller blockieren Mutationen für lesende Rollen jetzt serverseitig mit <code>403 FORBIDDEN</code>.</li><li>Historische Terminnotizen und Abwesenheitsterminnotizen bleiben serverseitig gegen Update und Delete gesperrt.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p><code>ADMIN</code> und <code>DISPONENT</code> dürfen die neuen Inline-Notizaktionen sehen und ausführen, sofern die Terminkarte nicht durch Historie, Abwesenheit, Storno oder Lock read-only ist. <code>LESER</code> darf Notizen weiterhin lesen, erhält aber keine Inline-Mutationsaktionen und wird serverseitig bei direkten Mutationsaufrufen blockiert. Die Änderung verlässt sich nicht nur auf UI-Sichtbarkeit.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/lib/note-colors.test.ts tests/unit/ui/calendarWeekAppointmentCards.layout.test.tsx</code></li><li><code>npm run test:integration -- tests/integration/server/calendar.appointments.notes-counts.integration.test.ts tests/integration/server/notes.joins-and-template-integrity.integration.test.ts --reporter=verbose</code></li><li><code>npm run check</code></li><li><code>git diff --check</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Keine offenen Blocker im bearbeiteten Zuschnitt.</li><li>Es wurde keine Browser-E2E-Verifikation ergänzt; die Absicherung erfolgte über gezielte UI-Unit-Tests, Integrationstests und Typecheck.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

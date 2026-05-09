@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/14: Historische Termine — Rollenbasiertes Verhalten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/14">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/14 Historische Termine — Rollenbasiertes Verhalten</span></nav>
+        <h1 class="wiki-h1">UC-01/14: Historische Termine — Rollenbasiertes Verhalten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Sicherstellen, dass historische Termine für Disponenten unveränderbar sind, während Administratoren historische Termine in vollem Umfang bearbeiten dürfen. Das System steuert dies über das isLocked-Flag im API-Response und über serverseitige Guards.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent (read-only auf historischen Terminen), Administrator (vollständige Schreibrechte auch auf historischen Terminen)</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Sicherstellen, dass historische Termine für Disponenten unveränderbar sind, während Administratoren historische Termine in vollem Umfang bearbeiten dürfen. Das System steuert dies über das <code>isLocked</code>-Flag im API-Response und über serverseitige Guards.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Es existieren Termine in der Datenbank, darunter mindestens ein Termin mit Startdatum in der Vergangenheit.</li><li>Es existieren Kalender- oder Listenansichten sowie das Terminformular.</li><li>Das System kennt die Rolle des authentifizierten Akteurs.</li><li>Das System verfügt über Validierung und Guard-Regeln, die historische Eingaben rollenbasiert blockieren oder erlauben.</li></ul>
+<h3 class="wiki-h3"><strong>Ablauf — Disponent</strong></h3>
+<ol><li>Der Disponent öffnet einen historischen Termin im Terminformular.</li><li>Das System erkennt: Startdatum &lt; heute <strong>und</strong> Rolle = Disponent.</li><li>Das System setzt <code>isLocked = true</code> im API-Response.</li><li>Das System stellt den Termin im Read-only-Modus dar.</li><li>Das System verhindert alle Änderungen am Termin: Datum, Uhrzeit, Projektzuordnung, Tourzuordnung, Mitarbeiterzuordnungen, Tags.</li><li>Das System verhindert das Löschen, Stornieren und Verschieben des historischen Termins für den Disponenten.</li><li>Der Disponent versucht, im Kalender einen neuen Termin in der Vergangenheit anzulegen: Das System blockiert mit HTTP 409 PAST_APPOINTMENT_READONLY.</li></ol>
+<h3 class="wiki-h3"><strong>Ablauf — Administrator</strong></h3>
+<ol><li>Der Administrator öffnet einen historischen Termin im Terminformular.</li><li>Das System erkennt: Startdatum &lt; heute <strong>und</strong> Rolle = Administrator.</li><li>Das System setzt <code>isLocked = false</code> im API-Response.</li><li>Das System stellt den Termin im normalen Bearbeitungsmodus dar.</li><li>Der Administrator kann alle Felder bearbeiten: Datum, Uhrzeit, Projektzuordnung, Tourzuordnung, Mitarbeiterzuordnungen, Tags setzen/entfernen, Mitarbeiter entfernen.</li><li>Der Administrator kann den Termin löschen, verschieben und stornieren.</li><li>Der Administrator kann neue Termine mit Startdatum in der Vergangenheit anlegen.</li></ol>
+<ul><li>Es existieren Termine in der Datenbank, darunter mindestens ein Termin, dessen Startzeitpunkt in der Vergangenheit liegt.</li><li>Es existieren Kalender- oder Listenansichten sowie das Terminformular.</li><li>Das System kennt die Rolle des authentifizierten Akteurs.</li><li>Das System verfügt über Validierung und Guard-Regeln, die historische Eingaben rollenbasiert blockieren oder erlauben.</li></ul>
+<h3 class="wiki-h3"><strong>Ablauf — Disponent</strong></h3>
+<ol><li>Der Disponent öffnet einen historischen Termin im Terminformular.</li><li>Das System erkennt: Startdatum &lt; heute <strong>und</strong> Rolle = Disponent.</li><li>Das System setzt <code>isLocked = true</code> im API-Response.</li><li>Das System stellt den Termin im Read-only-Modus dar.</li><li>Das System verhindert alle Änderungen: Datum, Uhrzeit, Projektzuordnung, Tourzuordnung, Mitarbeiterzuordnungen, Tags.</li><li>Das System verhindert Löschen, Stornieren und Verschieben für den Disponenten.</li><li>Versucht der Disponent im Kalender einen Termin in der Vergangenheit anzulegen, blockiert das System mit HTTP 409 PAST_APPOINTMENT_READONLY.</li></ol>
+<h3 class="wiki-h3"><strong>Ablauf — Administrator</strong></h3>
+<ol><li>Der Administrator öffnet einen historischen Termin im Terminformular.</li><li>Das System erkennt: Startdatum &lt; heute <strong>und</strong> Rolle = Administrator.</li><li>Das System setzt <code>isLocked = false</code> im API-Response.</li><li>Das System stellt den Termin im normalen Bearbeitungsmodus dar.</li><li>Der Administrator kann alle Felder bearbeiten: Datum, Uhrzeit, Projektzuordnung, Tourzuordnung, Mitarbeiterzuordnungen, Tags setzen/entfernen.</li><li>Der Administrator kann den Termin löschen, verschieben und stornieren.</li><li>Der Administrator kann neue Termine mit Startdatum in der Vergangenheit anlegen.</li></ol>
+<h2 class="wiki-h2">Ablauf</h2>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Disponent, Grenzfall „heute, Startzeit in Vergangenheit“:</strong> Das System blockiert mit HTTP 409 VALIDATION_ERROR. Administratoren sind ausgenommen.</li><li><strong>Parallelandsänderungen:</strong> Wenn ein Termin während der Anzeige historisch wird, blockiert das System beim nächsten Speichern für Disponenten den Vorgang.</li><li><strong>Abbruch:</strong> Der Termin bleibt unverändert.</li><li><strong>Stornierter Termin:</strong> Gilt für <strong>alle Rollen</strong> als dauerhaft gesperrt — auch Administratoren können stornierte Termine nicht reaktivieren oder bearbeiten.</li><li><strong>Abwesenheitstermin:</strong> Nur über das Mitarbeiterformular änderbar — gilt für alle Rollen.</li></ul>
+<ul><li>Grenzfall „heute, aber Startzeit in der Vergangenheit“: Wenn ein Benutzer für den heutigen Tag eine Startzeit in der Vergangenheit eingibt, blockiert das System den Vorgang ebenso wie bei einem Datum in der Vergangenheit.</li><li>Abbruch: Wenn der Akteur die Bearbeitung abbricht, bleibt der Termin unverändert und es entstehen keine Teilzustände.</li><li>Paralleländerungen: Wenn ein Termin während der Anzeige durch einen anderen Benutzer in einen historischen Zustand gerät, muss das System spätestens beim nächsten Speichern die Änderung blockieren und den Benutzer verständlich informieren.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Historische Termine sind für Disponenten nicht veränderbar. Das <code>isLocked</code>-Flag steuert die UI-Darstellung rollenbasiert. Administratoren können historische Termine ohne Einschränkungen bearbeiten — außer bei stornierten oder Abwesenheitsterminen. Das System erzeugt keine Teilzustände wenn ein blockierter Vorgang abgebrochen wird. Historisch bedeutet dabei, dass Datum oder Startzeit nicht vor dem aktuellen Zeitpunkt liegen dürfen. Das System muss Bearbeiten, Verschieben, Löschen sowie das Ändern von Zuordnungen (Tour, Team als Einfügehilfe, Mitarbeiter) für historische Termine blockieren und gleichzeitig verhindern, dass über UI-Aktionen historische Termine überhaupt neu angelegt werden können.</p>
+<p>Historische Termine sind nicht veränderbar. Es gibt keine Möglichkeit, historische Termine neu anzulegen oder bestehende Termine in die Vergangenheit zu verschieben. Das System stellt sicher, dass weder Termin-Datensätze noch Join-Einträge Termin–Mitarbeiter als Teilzustand entstehen, wenn eine historische Eingabe blockiert wird.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

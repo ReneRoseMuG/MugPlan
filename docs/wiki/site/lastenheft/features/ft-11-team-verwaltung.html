@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-11: Team Verwaltung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-11">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-11 Team Verwaltung</span></nav>
+        <h1 class="wiki-h1">FT-11: Team Verwaltung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Teams ermöglichen der Disposition, häufig verwendete Mitarbeiterkombinationen schnell und konsistent auf Termine anzuwenden. Ziel ist es, die Mitarbeiterzuweisung zu beschleunigen, ohne die Terminplanung fachlich zu verändern oder zu verkomplizieren.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Teams ermöglichen der Disposition, häufig verwendete Mitarbeiterkombinationen schnell und konsistent auf Termine anzuwenden. Ziel ist es, die Mitarbeiterzuweisung zu beschleunigen, ohne die Terminplanung fachlich zu verändern oder zu verkomplizieren.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Teams sind <strong>reine Dispositionshilfen</strong>. Ein Team besteht aus einer Bezeichnung und einer Liste aktiver Mitarbeiter. Sie kann beim Anlegen oder Bearbeiten eines Termins ausgewählt werden; das System übernimmt dann die enthaltenen Mitarbeiter <strong>als Vorschlag</strong> in die Mitarbeiterzuweisung des Termins.</p>
+<p>Am Termin selbst wird <strong>immer die konkrete Mitarbeiterliste</strong> gespeichert, nicht das Team. Änderungen an Teams wirken sich <strong>nicht rückwirkend</strong> auf bestehende oder vergangene Termine aus. Teams besitzen <strong>keine Historie</strong> und haben <strong>keine fachliche Bedeutung</strong> über die Vereinfachung der Eingabe hinaus.</p>
+<p>Teams können unabhängig von Terminen existieren. Sie dürfen ausschließlich <strong>aktive Mitarbeiter</strong> enthalten. Beim Anwenden eines Teams ist eindeutig festzulegen, ob die Mitarbeiter <strong>ersetzt</strong> oder <strong>hinzugefügt</strong> werden; die Entscheidung ist systemweit konsistent umzusetzen.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Teams sind <strong>nicht</strong> direkt mit Terminen verknüpft.</li><li>Gespeichert wird am Termin stets die <strong>konkrete Mitarbeiterzuweisung</strong>.</li><li>Änderungen an Teams wirken <strong>nicht rückwirkend</strong>.</li><li>Teams enthalten <strong>nur aktive Mitarbeiter</strong>.</li><li>Ein Termin kann mehrere Mitarbeiter haben; die Mitarbeiterzuweisung ist optional.</li><li>Teams besitzen <strong>keine Historie</strong> und <strong>keinen Status</strong>.</li><li>Teams können ohne Bezug zu Terminen existieren.</li><li>Ein Mitarbeiter darf zu einem Zeitpunkt nur genau einem Team zugeordnet sein.</li><li>Eine Teamzuweisung ist nur zulässig, wenn der Mitarbeiter keinem anderen Team zugeordnet ist.</li><li>Bei paralleler Zuweisung entscheidet das System deterministisch durch serverseitige Validierung (409 bei Konflikt).</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-11-01-team-anlegen.html">UC 11/01: Team anlegen</a></li><li><a href="../use-cases/uc-11-02-team-bearbeiten.html">UC 11/02: Team bearbeiten</a></li><li><a href="../use-cases/uc-11-02-team-bearbeiten.html">UC 11/02: Team bearbeiten</a></li><li><a href="../use-cases/uc-11-03-team-loeschen.html">UC 11/03: Team löschen</a></li><li><a href="../use-cases/uc-11-04-team-anzeigen.html">UC 11/04: Team anzeigen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-11-01-team-anlegen.html">UC-11/01</a><a href="../use-cases/uc-11-02-team-bearbeiten.html">UC-11/02</a><a href="../use-cases/uc-11-03-team-loeschen.html">UC-11/03</a><a href="../use-cases/uc-11-04-team-anzeigen.html">UC-11/04</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-11-team-verwaltung-backlog.html">BL-11</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

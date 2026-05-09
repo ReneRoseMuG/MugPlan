@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-02/07: Projekte anzeigen (Liste) · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-02/07">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-02/07 Projekte anzeigen (Liste)</span></nav>
+        <h1 class="wiki-h1">UC-02/07: Projekte anzeigen (Liste)</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Eine für die tägliche Arbeit passende Projektliste einsehen und bei Bedarf filtern oder auf andere Grundmengen umschalten.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-02-projekte.html">FT (02): Projekte</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Administrator, Disponent, Leser</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Eine für die tägliche Arbeit passende Projektliste einsehen und bei Bedarf filtern oder auf andere Grundmengen umschalten.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt mindestens Leserechte gemäß seiner Rolle.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet die Projektübersicht.</li><li>Das System lädt standardmäßig die Grundmenge „Aktuelle Projekte&quot; (mindestens ein Termin mit Startdatum ≥ heute), paginiert.</li><li>Jeder Listeneintrag zeigt: Titel, Kunde, Auftragsnummer, Anzahl Notizen, Anzahl Anhänge, nächste Termininformation, Tags.</li><li>Bei mehreren Terminen zeigt das System den nächsten Termin ab heute.</li><li>Der Akteur kann zwischen den Grundmengen <code>Alle</code>, <code>Geplante</code> und <code>Ohne Termin</code> umschalten.</li><li>Bei <code>Geplante</code> lädt das System Projekte mit mindestens einem aktuellen oder zukünftigen Termin. Bei <code>Ohne Termin</code> lädt das System ausschließlich Projekte ohne Termine.</li><li>Zusätzliche Filter wirken immer nur auf die jeweils geladene Grundmenge:</li></ol>
+<ul><li>Titelsuche (Substring, case-insensitiv)</li><li>Kundenname / Kundennummer</li><li>Auftragsnummer</li><li>Tag-Filter</li><li>Artikellistenfilter nach Sauna-Produkten und Komponenten-Kategorien</li><li>Aktiv/Inaktiv-Status</li></ul>
+<ol><li>Der Akteur kann die Spalte <strong>Nächster Termin</strong> sortieren. Projekte ohne nächsten Termin bleiben bei dieser Sortierung am Ende.</li><li>Der Akteur blättert bei Bedarf durch Seiten (Paginierung).</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Leserechte → HTTP 403.</li><li>Keine Projekte in der gewählten Grundmenge → System zeigt eine leere Liste.</li><li>Filter ergibt keine Treffer → System zeigt eine leere Liste innerhalb der Grundmenge.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Akteur sieht die gewählte Grundmenge gefiltert, sortiert und paginiert. Die Grundmengen sind fachlich getrennt; es erfolgt keine fachliche Datenänderung.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

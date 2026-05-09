@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-09/07: Kundenanhänge verwalten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-09/07">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-09/07 Kundenanhänge verwalten</span></nav>
+        <h1 class="wiki-h1">UC-09/07: Kundenanhänge verwalten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-09</span></div>
+    <p class="wiki-lead">Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne die fachliche Integrität des Kunden oder referenzierender Projekte zu beeinträchtigen.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-09-kundenverwaltung.html">FT (09): Kundenverwaltung</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne die fachliche Integrität des Kunden oder referenzierender Projekte zu beeinträchtigen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Kunde existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Leserechte; für Upload zusätzlich Änderungsrechte.</li><li>Die hochzuladende Datei entspricht erlaubten Formaten und Größenbeschränkungen.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ablauf – Anhang hochladen</h2>
+<ol><li>Der Akteur öffnet die Kundendetailansicht.</li><li>Der Akteur startet die Funktion „Anhang hinzufügen“.</li><li>Der Akteur wählt eine Datei aus.</li><li>Das System prüft:</li></ol>
+<ul><li>Authentifizierung,</li><li>Berechtigung,</li><li>Dateiformat,</li><li>Dateigröße.</li></ul>
+<ol><li>Das System speichert die Datei serverseitig unter persistentem Speichername.</li><li>Das System legt einen Attachment-Datensatz mit Parent-Referenz auf den Kunden an.</li><li>Das System speichert Metadaten (Originalname, MIME-Typ, Größe, Zeitstempel).</li><li>Das System aktualisiert die Anhangsliste in der UI.</li></ol>
+<hr>
+<h2 class="wiki-h2">Ablauf – Anhang anzeigen / herunterladen</h2>
+<ol><li>Der Akteur öffnet die Anhangsliste des Kunden.</li><li>Das System lädt alle dem Kunden zugeordneten Attachments.</li><li>Der Akteur wählt einen Anhang aus.</li><li>Das System liefert die Datei über einen gesicherten Download-Endpunkt aus.</li><li>Je nach Dateityp erfolgt Inline-Anzeige oder Download.</li></ol>
+<hr>
+<h2 class="wiki-h2">Regeln und Einschränkungen</h2>
+<ul><li>Ein Attachment kann nicht ohne Parent-Kunde existieren.</li><li>Attachments sind kundenbezogen und unabhängig von Projekten.</li><li>Eine physische Löschung von Attachments ist systemweit nicht vorgesehen.</li><li>Das Löschen eines Kunden entfernt referenzierte Notizen (CASCADE), jedoch keine physische Dateilöschung ist spezifiziert.</li><li>Mehrere Akteure können parallel Anhänge hochladen; jeder Upload erzeugt einen eigenständigen Attachment-Datensatz.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ablauf</h2>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Kunde existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Berechtigung → System blockiert mit 403.</li><li>Datei ungültig → System lehnt Upload mit Validierungsfehler ab.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
+<hr>
+<h2 class="wiki-h2">Ergebnis</h2>
+<ul><li>Der Anhang ist persistent gespeichert und eindeutig dem Kunden zugeordnet.</li><li>Die Anhangsliste zeigt alle vorhandenen Attachments konsistent an.</li><li>Es entstehen keine Auswirkungen auf Projekte oder Termine.</li><li>Es entstehen keine verwaisten Attachment-Referenzen.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-09-kundenverwaltung.html">FT-09</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

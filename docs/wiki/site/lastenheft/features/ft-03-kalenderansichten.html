@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-03: Kalenderansichten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-03 Kalenderansichten</span></nav>
+        <h1 class="wiki-h1">FT-03: Kalenderansichten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature beschreibt die aktuell fachlich relevanten Kalenderansichten der Anwendung. Im Zentrum steht der Wochenkalender als zentrale Dispositions- und Planungsansicht. Ergänzt wird er durch eine Monatsübersicht zur kompakten Orientierung sowie durch eine read-only Auslastu</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature beschreibt die aktuell fachlich relevanten Kalenderansichten der Anwendung. Im Zentrum steht der Wochenkalender als zentrale Dispositions- und Planungsansicht. Ergänzt wird er durch eine Monatsübersicht zur kompakten Orientierung sowie durch eine read-only Auslastungsansicht im Mitarbeiterformular, die die Belegung eines einzelnen Mitarbeiters in derselben visuellen Sprache und mit derselben Monatsnavigation darstellt.</p>
+<p>Die Kalenderansichten dienen der Planung, Orientierung und dem Drilldown in bestehende Termin-, Projekt-, Kunden-, Tour- und Mitarbeiterbezüge.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Die Anwendung stellt derzeit drei fachlich relevante kalendernahe Darstellungen bereit.</p>
+<h3 class="wiki-h3">Wochenkalender</h3>
+<p>Der Wochenkalender ist die zentrale Planungsansicht. Termine werden wochenweise in Touren organisiert. Jede Tour bildet eine eigene Lane. Zusätzlich existiert eine Gruppe für Termine ohne Tourzuordnung.</p>
+<p>Termine werden innerhalb der Woche als Kacheln oder mehrtägige Spannelemente dargestellt. In dieser Ansicht können Termine geöffnet, neu angelegt und, sofern die fachlichen Sperrregeln dies zulassen, per Drag &amp; Drop verschoben werden.</p>
+<p>Der Wochenkalender besitzt zusätzlich zwei Darstellungsmodi.</p>
+<p><strong>Kacheln</strong></p>
+<ul><li>Kompakt</li><li>Standard</li><li>Detail</li></ul>
+<p>Dieser Modus steuert ausschließlich die Informationsdichte und Ausdehnung der Terminkacheln.</p>
+<p><strong>Touren</strong></p>
+<ul><li>Aufgeklappt</li><li>Zugeklappt</li></ul>
+<p>Dieser Modus steuert ausschließlich die visuelle Darstellung der Tour-Lanes.</p>
+<p>Beide Darstellungsmodi verändern keine fachliche Terminlogik.</p>
+<p>Zusätzlich kann der Wochenkalender optionale Arbeitsbereiche einblenden:</p>
+<ul><li>Termin-Notizen als rein lesende Karten direkt unter Terminkarten im Kachelmodus.</li><li>Eine Personalübersicht je Tour-Lane auf Basis der bestehenden Kalenderwochen-Tourenplanung.</li><li>Eine dauerhaft sichtbare passive Abwesenheitszeile je sichtbarem Kalendertag.</li></ul>
+<p>Diese Bereiche ändern keine fachliche Termin-, Tour- oder Abwesenheitslogik. Sie machen bestehende Daten sichtbar oder öffnen bestehende Mutationspfade.</p>
+<h3 class="wiki-h3">Monatsübersicht</h3>
+<p>Die Monatsübersicht dient der kompakten Übersicht über einen Monatsbereich. Sie übernimmt die fachliche Kalenderlogik des Wochenkalenders in verdichteter Form. Termine bleiben nach Datum, Dauer, Tourzuordnung und optionaler Startzeit organisiert.</p>
+<p>Auch in der Monatsübersicht können bestehende Termine geöffnet werden. Das Anlegen neuer Termine pro Kalendertag sowie fachlich zulässiges Verschieben von Terminen bleiben möglich, sofern diese Interaktionen in der Oberfläche angeboten werden.</p>
+<h3 class="wiki-h3">Auslastungsansicht im Mitarbeiterformular</h3>
+<p>Im Mitarbeiterformular existiert zusätzlich eine Auslastungsansicht. Diese Darstellung ist optisch aus der Monatsübersicht abgeleitet und zeigt für genau einen Mitarbeiter einen festen Bereich in derselben Monatslogik wie der allgemeine Monatskalender.</p>
+<p>Die Ansicht dient ausschließlich der Einschätzung der bereits geplanten Belegung eines Mitarbeiters. Sie ist ausdrücklich read-only. Aus dieser Ansicht heraus werden keine Termine angelegt, verschoben oder bearbeitet.</p>
+<p>Die Navigation verwendet dieselbe Monatsnavigation wie der Monatskalender. Dazu gehört auch der KW-Sprung einschließlich Rücksprung auf die vorherige Position.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<p>Kalendermarker aus FT (34) werden in Wochen- und Monatskalender als zusätzliche, nicht planungswirksame Orientierung dargestellt. Sie verändern keine Terminlogik, blockieren keine Interaktion und erzeugen keine Konflikte.</p>
+<p>Gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien werden farblich unterschieden. Die globale Intensität der Darstellung wird über FT (34) gepflegt und wirkt nur visuell.</p>
+<p>Feiertage und Betriebsfeiertage verwenden im Wochenkalender dieselbe kompakte Breitenlogik wie Wochenendtage. Sie werden nur dann auf normale Wochentagsbreite verbreitert, wenn reguläre Termine auf dem Tag liegen. Reine Abwesenheiten verbreitern Feiertags-, Betriebsfeiertags- oder Wochenendspalten nicht.</p>
+<p>Die Kalenderansichten lesen dafür aktive, bereits gespeicherte Kalendermarker im sichtbaren Zeitraum. Eine Live-Berechnung gesetzlicher Feiertage in FT (03) findet nicht statt.</p>
+<p>Der Wochenkalender ist die primäre Dispositionsoberfläche. In dieser Ansicht können Termine über den Plus-Button pro Kalendertag angelegt, über Klick geöffnet und, sofern erlaubt, per Drag &amp; Drop verschoben werden.</p>
+<p>Die Monatsübersicht ist eine verdichtete Kalenderansicht mit denselben fachlichen Termindaten. Sie dient vorrangig der Übersicht, unterstützt aber weiterhin das Öffnen bestehender Termine und, sofern in der Oberfläche vorgesehen, das Anlegen und fachlich zulässige Verschieben von Terminen. Die Navigation nutzt dieselben Monatsblätterfunktionen wie die Auslastungsansicht im Mitarbeiterformular; zusätzliche Sondernavigationen je Teilansicht sind nicht vorgesehen.</p>
+<p>Die Auslastungsansicht im Mitarbeiterformular ist read-only. In dieser Ansicht dürfen keine Termine erzeugt, verschoben oder bearbeitet werden.</p>
+<p>Für das Anlegen und Bearbeiten von Terminen wird ausschließlich das in FT (01) definierte Terminformular verwendet. Die Kalenderansichten führen keine eigene Erstell- oder Bearbeitungslogik ein, sondern öffnen das bestehende Formular im passenden Modus.</p>
+<p>Beim Klick auf den Plus-Button wird das Formular im Modus „Neuer Termin“ geöffnet und das Startdatum auf den angeklickten Tag gesetzt. Beim Klick auf einen bestehenden Termin wird das Formular im Modus „Termin bearbeiten“ geöffnet.</p>
+<p>Für alle ändernden Aktionen gelten dieselben Sperr- und Rollenregeln wie beim Bearbeiten eines Termins. Ein Termin darf ab seinem Starttag von normalen Benutzern nicht mehr geändert werden. Administratoren dürfen diese Sperre übersteuern und Termine auch nachträglich verändern. In gesperrten Fällen sind Drag &amp; Drop sowie das Bearbeiten über Klick zu verhindern oder eindeutig mit einer Fehlermeldung abzulehnen.</p>
+<p>Das Verschieben eines Termins per Drag &amp; Drop führt immer zu einer deterministischen Neuordnung der Termindarstellung in allen betroffenen Tagen oder Wochenabschnitten. Betroffen sind mindestens Quell- und Zieltag, bei mehrtägigen Terminen alle Tage der Termindauer.</p>
+<p>Der benutzerspezifische Kachelmodus Kompakt, Standard oder Detail verändert ausschließlich die Informationsdichte und vertikale Ausdehnung der Wochenkacheln. Er darf keine fachliche Auswirkung auf Reihenfolge, Zuordnung, Dauer oder Bearbeitbarkeit von Terminen haben.</p>
+<p>Die Umschaltung Touren Aufgeklappt oder Zugeklappt verändert ausschließlich die visuelle Darstellung der Tour-Lanes. Auch dieser Modus darf keine fachliche Terminlogik verändern.</p>
+<p>Die Kalenderansichten benötigen für die dargestellten Termine Zugriff auf Projekt- und Kundendaten sowie auf Tour- und Mitarbeiterzuordnungen. Diese Informationen dürfen serverseitig zusammengeführt oder bei Bedarf nachgeladen werden, solange die Oberfläche ohne spürbare Verzögerung bedienbar bleibt.</p>
+<p>Direkte Aktionen an Terminkarten dürfen keine eigene Fachlogik einführen. Notizen werden über den bestehenden Termin-Notiz-Pfad angelegt. Mitarbeiterzuweisungen aus der Terminkarte verwenden die bestehende Tour-KW-Vorschau und die normale Terminmutation, sodass serverseitige Rollen-, Historien-, Overlap- und Abwesenheitsprüfungen maßgeblich bleiben. Wenn für den Termin eine Tour-KW-Planung existiert, zeigt der Dialog zuerst die Tour-KW-Mitarbeiter und darunter die weiteren konfliktfrei zuweisbaren Mitarbeiter. Initial vorausgewählt sind nur konfliktfrei übernehmbare Tour-KW-Mitarbeiter, die noch nicht am Termin hängen. Die konfliktfreie Restmenge bleibt sichtbar, ist aber nicht vorausgewählt. Gibt es keine oder eine leere Tour-KW-Planung, zeigt der Dialog nur konfliktfrei zuweisbare Mitarbeiter ohne Vorauswahl.</p>
+<p>Druckvorschauen für Monats- und Wochenkalender sind read-only. Sie orientieren sich am aktuellen sichtbaren Zustand und blenden interaktive Bedienelemente aus.</p>
+<h2 class="wiki-h2">Darstellung</h2>
+<h3 class="wiki-h3">Gesamtkonzept</h3>
+<p>Die verschiedenen Kalenderdarstellungen greifen auf dieselbe Terminbasis zurück, unterscheiden sich aber in ihrer Informationsdichte und ihrem Nutzungskontext.</p>
+<p>Der Wochenkalender ist die detailreichste Ansicht und dient der aktiven Disposition.</p>
+<p>Die Monatsübersicht verdichtet dieselbe Logik auf Monatsebene.</p>
+<p>Die Auslastungsansicht im Mitarbeiterformular übernimmt die visuelle Grundidee der Monatsübersicht für einen einzelnen Mitarbeiter in read-only Form.</p>
+<p>Ein Termin ist ein Zeitraum mit Startdatum und optional Enddatum. Ein Termin kann optional einer Tour zugeordnet sein. Eine Tour besitzt eine individuelle Farbe, die die Terminfarbe bestimmt. Ist keine Tour zugeordnet, wird eine neutrale Farbe verwendet.</p>
+<p>Ein Termin kann optional eine Startzeit haben. Solche Termine bleiben geometrisch Kalendereinträge innerhalb eines Tags. Die Uhrzeit ergänzt die Information und kann die Sortierung beeinflussen, erzeugt jedoch keine stundenbasierte Zeitachse.</p>
+<h3 class="wiki-h3">Wochenkalender</h3>
+<p>Im Wochenkalender werden Termine innerhalb der sichtbaren Woche tourbezogen organisiert. Die Darstellung unterscheidet zwischen Tour-Lanes und der Gruppe „Ohne Tour“. Mehrtägige Termine können sich über mehrere Tage spannen. Termine mit Uhrzeit bleiben Tagesobjekte.</p>
+<p>Kalendermarker wirken im Wochenkalender als tagesbezogene Hintergrundmarkierung über die gesamte betroffene Tagesspalte hinweg. Bei Feiertagen, Betriebsfeiertagen oder Betriebsferien reicht diese farbliche Markierung über alle sichtbaren Tour-Lanes der betroffenen Spalte.</p>
+<p>Die textliche Markeranzeige sitzt im Kopf des jeweiligen Kalendertags. Sie verwendet eine adaptive Darstellung: Wenn genügend Platz vorhanden ist, wird der volle Markername gezeigt. Reicht der Platz nicht aus, wird ein kompakter Platzhalter angezeigt. Ist auch dieser nicht mehr stabil darstellbar, wird ein Icon verwendet. In kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.</p>
+<p>Die Tagesspalten im Wochenkalender verwenden eine kompakte Beschriftung mit deutschem Wochentag, Tageszahl und Monatskürzel, zum Beispiel <code>Mo 27 Apr</code>. Bei knappem Platz kann das Monatskürzel ausgeblendet werden. Diese Darstellung ist als bewusste Ausnahme von der allgemeinen sichtbaren Datumsregel dokumentiert; andere sichtbare Datumsangaben bleiben beim Kurzformat <code>dd.MM.yy</code>.</p>
+<p>Termin-Notizen können im Wochenkalender dauerhaft sichtbar gemacht werden. Angezeigt werden Titel, Inhalt und Kartenfarbe; Bearbeiten, Löschen, Pinning und Vorlagenfunktionen bleiben den bestehenden Notizdialogen vorbehalten.</p>
+<p>Die Personalübersicht je Tour-Lane liest die geplanten Mitarbeiter der jeweiligen Tour-KW. Neben dem Hinzufügen einzelner Tour-KW-Mitarbeiter kann die Tour-KW-Planung direkt auf die Termine der jeweiligen Tour und Kalenderwoche angewendet werden. Diese Aktion nutzt dieselbe Vorschau-/Bestätigungslogik wie die Tour-KW-Planung und speichert keine getrennte Mitarbeiterplanung. Änderungen aus der Terminkarte verwenden ebenfalls die bestehende Vorschau-/Bestätigungslogik.</p>
+<p>Tour-KW-Personalkarten werden nur für regulär planbare Tour-Lanes angezeigt. Für die Gruppe <strong>Ohne Tour</strong> sowie für die Systemtouren <strong>Abwesenheiten</strong> und <strong>Parkplatz</strong> wird keine Tour-KW-Karte, kein Mitarbeiterplanungsmenü und keine Anwenden-Aktion angezeigt. Diese Lanes können weiterhin Termine oder passive Informationen zeigen, sie sind aber keine Basis für Tour-KW-Mitarbeiterplanung.</p>
+<p>Die Abwesenheitszeile zeigt vorhandene Abwesenheitstermine pro sichtbarem Tag als Mitarbeiter-Badges. Sie ist dauerhaft sichtbar, liegt direkt unter dem Tageskopf und ist vollständig passiv. Sie bietet keine Pflege von Abwesenheiten an.</p>
+<h4 class="wiki-h3">Kachelmodus</h4>
+<p>Der Regler Kacheln steuert die Informationsdichte der Terminkacheln.</p>
+<p><strong>Kompakt</strong> zeigt die Kachel maximal verdichtet.</p>
+<p><strong>Standard</strong> zeigt einen mittleren Informationsumfang.</p>
+<p><strong>Detail</strong> zeigt die Kachel maximal ausgedehnt.</p>
+<p>Die Umschaltung verändert nur die visuelle Informationsmenge und die resultierende Höhe des dargestellten Kachelbereichs.</p>
+<h4 class="wiki-h3">Tourenmodus</h4>
+<p>Der Regler Touren steuert, ob die Tour-Lanes ausführlicher oder verdichtet dargestellt werden.</p>
+<p><strong>Aufgeklappt</strong> zeigt die Tour-Lanes ausführlicher.</p>
+<p><strong>Zugeklappt</strong> reduziert die Darstellung auf eine verdichtete Form.</p>
+<p>Die Lane-Reihenfolge und die fachliche Zuordnung der Termine bleiben stabil.</p>
+<h3 class="wiki-h3">Monatsübersicht</h3>
+<p>Die Monatsübersicht organisiert den sichtbaren Zeitraum in Wochenzeilen mit Tagesspalten. Innerhalb jeder Wochenzeile werden Tour-Slots verwendet, sodass Termine einer Tour in derselben visuellen Ordnung erscheinen. Die Höhe einer Wochenzeile ergibt sich aus dem tatsächlich benötigten Platz für die in dieser Zeile vorkommenden Tour-Slots und Terminbalken.</p>
+<p>Die Monatsübersicht ist damit verdichteter als der Wochenkalender, bleibt aber fachlich konsistent. Termine werden weiterhin über Tour, Datum, Dauer und optionale Startzeit strukturiert.</p>
+<p>Kalendermarker färben im Monatskalender die volle betroffene Tageskachel. Die Markerbeschriftung wird im vorhandenen Kopf der Tageskachel gezeigt und darf keine zusätzliche Layout-Zeile unterhalb des Kopfbereichs erzeugen.</p>
+<p>Wie im Wochenkalender ist die Markerbeschriftung adaptiv. Je nach verfügbarer Breite wird voller Markername, kompakter Platzhalter oder nur ein Icon gezeigt. Bei kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.</p>
+<h3 class="wiki-h3">Auslastungsansicht im Mitarbeiterformular</h3>
+<p>Die Auslastungsansicht im Mitarbeiterformular ist eine abgeleitete, read-only Darstellung. Sie zeigt einen festen Vier-Wochen-Bereich für genau einen Mitarbeiter und verwendet bewusst dieselbe visuelle Sprache wie die Monatsübersicht.</p>
+<p>Ziel ist nicht die Disposition, sondern die schnelle Beurteilung der bereits geplanten Auslastung eines Mitarbeiters.</p>
+<p>Die Navigation dieser Ansicht verwendet dieselben Monatswechsel und denselben KW-Sprung wie der Monatskalender. Änderungen an Terminen selbst werden aus dieser Ansicht heraus nicht vorgenommen.</p>
+<h3 class="wiki-h3">Drilldown und Zusatzinformationen</h3>
+<p>Kalendereinträge dürfen Zusatzinformationen aus Termin, Projekt, Kunde, Tour und Mitarbeiterzuordnung bündeln. Verdichtete Ansichten dürfen Inhalte kürzen oder ausblenden, solange der Drilldown in den Termin erhalten bleibt und die zugrunde liegende Terminlogik nicht verändert wird.</p>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-03-01-wochenkalender-anzeigen.html">UC 03/01: Wochenkalender anzeigen</a></li><li><a href="../use-cases/uc-03-02-zeitraum-wechseln.html">UC 03/02: Zeitraum wechseln</a></li><li><a href="../use-cases/uc-03-03-darstellungsgrad-der-wochenkacheln-umschalten.html">UC 03/03: Darstellungsgrad der Wochenkacheln umschalten</a></li><li><a href="../use-cases/uc-03-04-tour-lanes-aufklappen-oder-zuklappen.html">UC 03/04: Tour-Lanes aufklappen oder zuklappen</a></li><li><a href="../use-cases/uc-03-05-monatsuebersicht-anzeigen.html">UC 03/05: Monatsübersicht anzeigen</a></li><li><a href="../use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.html">UC 03/06: Auslastungsansicht eines Mitarbeiters anzeigen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<ul><li><a href="../backlogs/ft-03-kalenderansichten-backlog.html">FT-03: Kartenansicht (Termin- und Tourvisualisierung)</a></li></ul>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-03-01-wochenkalender-anzeigen.html">UC-03/01</a><a href="../use-cases/uc-03-02-zeitraum-wechseln.html">UC-03/02</a><a href="../use-cases/uc-03-03-darstellungsgrad-der-wochenkacheln-umschalten.html">UC-03/03</a><a href="../use-cases/uc-03-04-tour-lanes-aufklappen-oder-zuklappen.html">UC-03/04</a><a href="../use-cases/uc-03-05-monatsuebersicht-anzeigen.html">UC-03/05</a><a href="../use-cases/uc-03-06-auslastungsansicht-eines-mitarbeiters-anzeigen.html">UC-03/06</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-03-kalenderansichten-backlog.html">BL-03</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

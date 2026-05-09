@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-37: Termintabellen in Formularen vereinheitlichen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-37">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-37 Termintabellen in Formularen vereinheitlichen</span></nav>
+        <h1 class="wiki-h1">A-37: Termintabellen in Formularen vereinheitlichen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Mittel</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Formularansichten</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Planung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>09.05.26</div>
+    <p class="wiki-lead">Die Aufgabe soll eine klare Umsetzungsentscheidung für Termintabellen in Formularen vorbereiten. Danach soll feststehen, ob der Status quo bleibt, ob Kunden und Projekte eigene Haupttabs erhalten oder ob ein gemeinsames Terminlistenmuster abgeleitet wird.</p>
+    <p>Die offene Decision zu Terminlisten in Formular- und Detailansichten soll als Aufgabe geführt werden. Ziel ist eine fachlich und UX-seitig bewusste Entscheidung, ob Kunden- und Projektformulare stärker an die Terminlistenmuster von Touren und Mitarbeitern angeglichen werden sollen.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Mittel</td><td>Formularansichten</td><td>Planung</td><td>09.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die Aufgabe soll eine klare Umsetzungsentscheidung für Termintabellen in Formularen vorbereiten. Danach soll feststehen, ob der Status quo bleibt, ob Kunden und Projekte eigene Haupttabs erhalten oder ob ein gemeinsames Terminlistenmuster abgeleitet wird.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>W-11 beschreibt unterschiedliche Termin-Darstellungen in Kunden-, Projekt-, Tour- und Mitarbeiterformularen. Dadurch entstehen Sonderpfade für Darstellung, Navigation, Vorschau und Tests.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Bestehende Terminlistenvarianten in Formularen fachlich vergleichen.</li><li>Auswirkungen auf UX, Navigation, Fokuswege und Tests dokumentieren.</li><li>Prüfen, welche Variante ohne fachliche Rollen- oder API-Änderung umsetzbar wäre.</li><li>Nicht Teil der Aufgabe ist eine direkte UI-Umgestaltung ohne bestätigte Variante.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Rollen, Berechtigungen und serverseitige Terminlogik sollen unverändert bleiben.</li><li>Der spätere Eingriff liegt voraussichtlich in Informationsarchitektur, Layout und Frontend-Verkabelung.</li><li>Browser-Tests müssen geänderte Öffnungswege, Fokusführung und Terminlistenverhalten abdecken.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Die Zielvariante für Kunden- und Projektformulare ist noch nicht freigegeben.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: Formular- und Detailansichten für Kunden, Projekte, Touren und Mitarbeiter</li><li>Entscheidungen: <a href="../../../decisions/w-11-termintabellen-in-formularen.md">W-11 - Termintabellen in Formularen vereinheitlichen</a></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

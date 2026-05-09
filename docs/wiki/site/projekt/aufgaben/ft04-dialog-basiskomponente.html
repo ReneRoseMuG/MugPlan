@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-09: FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-09">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-09 FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</span></nav>
+        <h1 class="wiki-h1">A-09: FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Dialoge</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Implementierung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>06.05.26</div>
+    <p class="wiki-lead">Eine wiederverwendbare Bestätigungs-Dialog-Basiskomponente soll die fachlich verwandten, aber unterschiedlich ausgelösten Vorschau- und Bestätigungsabläufe für Tour-KW-Wochenplanung, Tourwechsel per Drag &amp; Drop und Mark &amp; Insert tragen. Der gemeinsame Kern ist eine selektive Term</p>
+    <p>Eine wiederverwendbare Bestätigungs-Dialog-Basiskomponente soll die fachlich verwandten, aber unterschiedlich ausgelösten Vorschau- und Bestätigungsabläufe für Tour-KW-Wochenplanung, Tourwechsel per Drag &amp; Drop und Mark &amp; Insert tragen. Der gemeinsame Kern ist eine selektive Terminvorschau mit Checkboxen, sichtbaren Konflikten und expliziter Bestätigung durch den Disponenten. Stille Seiteneffekte sind ausgeschlossen. Die Mehrfach-Mitarbeiterzuweisung in der Tour-KW-Wochenplanung läuft derzeit über den bestehenden `.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Dialoge</td><td>Implementierung</td><td>06.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Eine wiederverwendbare Bestätigungs-Dialog-Basiskomponente soll die fachlich verwandten, aber unterschiedlich ausgelösten Vorschau- und Bestätigungsabläufe für Tour-KW-Wochenplanung, Tourwechsel per Drag &amp; Drop und Mark &amp; Insert tragen. Der gemeinsame Kern ist eine selektive Terminvorschau mit Checkboxen, sichtbaren Konflikten und expliziter Bestätigung durch den Disponenten. Stille Seiteneffekte sind ausgeschlossen.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Die Mehrfach-Mitarbeiterzuweisung in der Tour-KW-Wochenplanung läuft derzeit über den bestehenden <code>TourEmployeeCascadeDialog</code> und eine stille Folge einzelner Dialogschritte. Der Disponent sieht dabei nicht transparent, wie viele Mitarbeiter noch folgen und welche Gesamtauswirkung die Mehrfachauswahl hat. Die abgeschlossenen Verschiebeaufgaben zu Drag &amp; Drop und Mark &amp; Insert benötigen denselben fachlichen Dialog-Kern für kombinierte Terminänderungen aus Datum, Tour und gegebenenfalls KW-Mitarbeiterzuordnung. Ohne gemeinsame Basis würden mehrere unabhängige Dialog- und Tourwechsel-Logiken entstehen.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören:</li><li>bestehende Aufrufpfade von <code>TourEmployeeCascadeDialog</code> in Tour-KW-, Tourformular- und Wochenplanungs-Kontexten analysieren</li><li>Props und Varianten des bestehenden <code>TourEmployeeCascadeDialog</code> analysieren, insbesondere <code>week</code> / <code>appointment</code> und <code>add</code> / <code>remove</code></li><li>stille Mehrfach-Zuweisung in <code>TourManagement.handleStartAddWeekEmployees</code> transparent machen</li><li><code>remainingEmployeeIds</code> in <code>TourManagement</code> als konkrete stille Schleifenmechanik analysieren</li><li>State-Übergänge zwischen den bisherigen Einzel-Dialogen analysieren</li><li>entscheiden, ob <code>TourEmployeeCascadeDialog</code> erweitert oder schrittweise durch eine neue Basiskomponente abgelöst wird</li><li>bestehende Radix-Primitive und Shadcn-Komponenten als Basis prüfen</li><li>Props-Struktur mit sauberer Trennung von Steuer-Logik und Darstellung entwerfen</li><li>gemeinsame Dialog-Shell mit Header, optionalem Untertitel/Icon, festen Footer-Aktionen und Loading-State bereitstellen</li><li>Footer ohne freies <code>children</code> gestalten; primäre Aktion, sekundäre Aktion und optionaler Zurück-Button sind explizit konfiguriert</li><li>Content-Zonen für InfoBox, CheckList und Summary unterstützen</li><li>Status-Badges in CheckList-Einträgen für mindestens <code>wird hinzugefügt</code>, <code>wird entfernt</code>, <code>Konflikt</code>, <code>bereits zugewiesen</code> und <code>unterbesetzt</code> unterstützen</li><li>optionalen Stepper für mehrstufige Abläufe mit Step-Nummer, Titel, Done-Markierung und Zuständen <code>aktiv</code>, <code>abgeschlossen</code>, <code>ausstehend</code> bereitstellen</li><li>konfliktfreie Einträge vorauswählen und konfliktbehaftete Einträge deaktiviert sichtbar lassen</li><li>Auswahlaktionen „Alle wählen“ und „Alle abwählen“ auf selektierbare Einträge begrenzen</li><li>Schließen per Außenklick oder Escape ohne explizite Nutzeraktion verhindern</li><li>Mehrfach-Zuweisung als transparenten Stepper-Flow mit Anfangszusammenfassung, pro-Mitarbeiter-Vorschau und Endzusammenfassung abbilden</li><li>Endzusammenfassung mit Anzahl ausgewählter Mitarbeiter, Anzahl betroffener Termine und Anzahl übersprungener Konflikte anzeigen</li><li>Schnittstelle so dokumentieren, dass Drag &amp; Drop und Mark &amp; Insert dieselbe Komponente ohne eigene Dialog-Logik nutzen können</li><li>Nicht Teil der Aufgabe sind neue DB-Schemas, neue API-Routen, eine zweite Tourwechsel-Logik, stille Mutationen oder eine Aufweichung bestehender Rollen-, Sperr- und Konfliktregeln.</li><li>Vorschau-Mutation schlägt fehl: Toast anzeigen und Dialog nicht öffnen.</li><li>Bestätigungs-Mutation schlägt fehl: Dialog bleibt offen, Fehlermeldung wird im Dialog angezeigt, Nutzer kann erneut versuchen oder abbrechen.</li><li>Alle Einträge sind konfliktbehaftet: Bestätigen ist deaktiviert und eine erklärende InfoBox sichtbar.</li><li>Teilweise Konflikte: Nur konfliktfreie Einträge sind vorausgewählt; Konflikte bleiben sichtbar und deaktiviert.</li><li>Zurück-Navigation in mehrstufigen Flows ist nur zulässig, solange noch keine irreversible Mutation ausgeführt wurde.</li><li>Codex muss vor Umsetzung klären, ob Mehrfach-Flows pro Schritt committen oder erst nach der finalen Gesamtbestätigung.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Ausgangspunkte für die Analyse sind <code>TourEmployeeCascadeDialog.tsx</code>, <code>TourManagement.tsx</code>, <code>TourWeekForm.tsx</code>, <code>TourWeekPlanningView.tsx</code> sowie die vorhandenen Radix- und Shadcn-Dialog-Primitive.</li><li>Die bestehende Preview-Mutation für betroffene Termine ist wiederzuverwenden, soweit sie fachlich passt.</li><li>Serverseitige Re-Checks bleiben Pflicht, weil die Vorschau zwischen Anzeige und Bestätigung veralten kann.</li><li>Historische Termine dürfen durch diese Dialogabläufe nicht berührt werden.</li><li>Cache-Invalidierung nach Mutationen bleibt über die bestehenden <code>refreshCascadeDependentViews</code>-Pfade erhalten.</li><li>Der bisherige Dialog darf während einer Migration bestehen bleiben; ein Big-Bang-Austausch ist nicht erforderlich.</li><li>Betroffene Rollen sind mindestens <code>ADMIN</code> und <code>DISPONENT</code>.</li><li>Erlaubte Sichtbarkeit: Nutzer dürfen nur Termine, Tour-Lanes, Mitarbeiter und Kalenderdaten sehen, die ihnen bereits nach bestehender Rollen- und Sichtbarkeitslogik zugänglich sind.</li><li>Erlaubte Aktionen:</li><li><code>ADMIN</code> darf die bestehenden Tour-KW- und Terminänderungen im Rahmen der vorhandenen serverseitigen Regeln ausführen.</li><li><code>DISPONENT</code> darf aktuelle Tour-KW- und Terminänderungen im Rahmen der vorhandenen serverseitigen Regeln ausführen.</li><li><code>READER</code> darf keine schreibenden Aktionen über diese Dialoge ausführen.</li><li>Technische Durchsetzung muss serverseitig erhalten bleiben. UI-Sperren und deaktivierte Checkboxen ersetzen keine Backend-Prüfung. Direkte API-Aufrufe, parallele Bearbeitung, Versionskonflikte, blockierte Tour-KWs, historische Sperren und Mitarbeiter-Overlap müssen weiterhin serverseitig abgesichert sein.</li><li>FT-04-Konflikttypen sind ausdrücklich zu beachten: Typ-1 <code>KW-Tour-Unique</code>, also ein Mitarbeiter pro KW nur in einer Tour, und Typ-2 Termin-Überschneidung bei Mitarbeiterzuweisungen.</li><li>Einzelzuweisung bleibt fachlich identisch zum bisherigen Dialog und zeigt keinen Stepper.</li><li>Mehrfachzuweisung zeigt Fortschritt, aktuelle Position und noch ausstehende Schritte.</li><li>Zurück-Navigation funktioniert, solange keine Mutation ausgeführt wurde.</li><li>Abbrechen bricht den gesamten Batch ohne Teilmutation ab.</li><li>Konfliktfreie Einträge sind vorausgewählt.</li><li>Konfliktbehaftete Einträge sind sichtbar, deaktiviert und von der Mutation ausgeschlossen.</li><li>„Alle wählen“ und „Alle abwählen“ wirken nur auf selektierbare Einträge.</li><li>Loading-State wird während der Mutation sichtbar.</li><li>Fehler bei Bestätigung hält den Dialog offen und zeigt eine Fehlermeldung.</li><li>Bestehende Tests für <code>TourEmployeeCascadeDialog</code> und verwandte Cascade-Dialog-Tests bleiben grün oder werden im Rahmen der Migration fachlich angepasst.</li><li>Drag &amp; Drop und Mark &amp; Insert können die neue Basiskomponente verwenden, ohne eigene Dialog- oder Tourwechsel-Logik einzuführen.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Ohne Codeanalyse darf nicht entschieden werden, ob der bestehende <code>TourEmployeeCascadeDialog</code> erweitert oder durch eine neue Basiskomponente ersetzt wird.</li><li>Ohne Codeanalyse darf nicht entschieden werden, ob Drag &amp; Drop und Mark &amp; Insert Varianten-Modi oder eigene Aufruf-Wrapper verwenden.</li><li>Ohne Klärung des Commit-Zeitpunkts im Mehrfach-Flow darf keine Umsetzung erfolgen, die Zurück-Navigation nach bereits ausgeführten Teilmutationen suggeriert.</li><li>Ohne belegte serverseitige Re-Checks darf keine Umsetzung erfolgen, die Preview-Ergebnisse als abschließende Berechtigung oder Konfliktprüfung behandelt.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: FT-04 Tourenplanung · FT-03 Kalenderansichten · FT-01 Kalendertermine</li><li>Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen · UC 01/03 - Termin verschieben · UC 01/05 - Tour einem Termin zuweisen · UC 01/15 - Optimistic Locking bei paralleler Bearbeitung</li><li>Entscheidungen: —</li><li>Weitere Bezüge: <a href="ft04-multistep-tour-kw-dialog.html">FT-04 mehrstufiger Tour-KW-Dialog</a> · <a href="termin-tour-kw-mutationsdialoge.html">Termin- und Tour-KW-Mutationsdialoge vereinheitlichen</a> · FT-03/FT-04 Tourwechsel per Drag &amp; Drop im Wochenkalender · FT-03 Termin markieren und per Einfügen verschieben</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Projekte</div><div class="wiki-relations__val"><a href="../projekte/dialog-rollout.html">P-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

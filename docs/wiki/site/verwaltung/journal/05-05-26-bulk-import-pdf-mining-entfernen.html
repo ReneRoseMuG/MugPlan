@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-bulk-import-pdf-mining-entfernen: 05.05.26 | Cleanup | Bulk-Import und PDF-Mining entfernt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-bulk-import-pdf-mining-entfernen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-bulk-import-pdf-mining-entfernen 05.05.26 | Cleanup | Bulk-Import und PDF-Mining entfernt</span></nav>
+        <h1 class="wiki-h1">05-05-26-bulk-import-pdf-mining-entfernen: 05.05.26 | Cleanup | Bulk-Import und PDF-Mining entfernt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Der verwaiste Bulk-Import- und Admin-PDF-Mining-Stack wurde entfernt. FT-21 Dokumentenextraktion bleibt unverändert.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der verwaiste Bulk-Import- und Admin-PDF-Mining-Stack wurde entfernt. FT-21 Dokumentenextraktion bleibt unverändert.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtiger technischer Cleanup in Server, Shared-Contracts, Client und Tests. Es wurden keine Datenbankmigrationen, keine Persistenzänderungen und keine neuen UI-Flows eingeführt.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>W-18: Bulk-Import und PDF-Mining entfernen</li><li>FT-21: Dokumentenextraktion als Schutzgrenze</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Die Admin-Bulk-Routen wurden aus <code>server/routes.ts</code> ausgehängt.</li><li>Bulk-Import-Service, PDF-Mining-Service, Admin-Controller und Admin-Routendatei wurden gelöscht.</li><li>Bulk-Import- und PDF-Mining-Contracts wurden aus <code>shared/routes.ts</code> entfernt.</li><li>Verwaiste Client-Dateien für Kunden-Bulk-Import, Projekt-Bulk-Import und Admin-PDF-Mining wurden gelöscht.</li><li>Bulk-/PDF-Mining-spezifische Unit-Tests wurden entfernt.</li><li><code>ProjectDuplicateResolutionDialog</code> und FT-21 Doc-Extract-Dateien blieben unangetastet.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Die entfernten Endpunkte sind nach der Änderung für keine Rolle mehr ausführbar, weil sie serverseitig nicht mehr registriert sind. Bestehende globale API-Middlewares und FT-21-Routen wurden nicht verändert.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run audit:local -- --skip-coverage</code>: Nicht-Coverage-Schritte erfolgreich; der Runner führte trotz Skip-Argument zusätzlich <code>analyze:coverage</code> aus.</li><li><code>npm run test:extraction</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/projects.order-number-conflict.integration.test.ts tests/integration/server/documentExtraction.routes.test.ts</code></li></ul>
+<p>Fehlgeschlagen, ohne nachträgliche Fixes:</p>
+<ul><li><code>npm run audit:local -- --skip-coverage</code>: Gesamtstatus fehlgeschlagen, weil der lokale Runner trotz Skip-Argument <code>analyze:coverage</code> ausführte. Coverage meldete zwei fehlgeschlagene EmployeeForm-Testdateien.</li><li><code>npm run test:run</code>: zwei fehlgeschlagene EmployeeForm-Testdateien, fünf fehlgeschlagene Tests, Ursache laut Report <code>HelpIcon</code> mit <code>Cannot read properties of undefined (reading 'trim')</code>.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Die Decision W-18 sollte später redaktionell korrigiert werden, weil <code>ProjectDuplicateResolutionDialog</code> nicht verwaist ist.</li><li>Die fehlgeschlagenen EmployeeForm-Tests liegen außerhalb des Bulk-/PDF-Mining-Cleanups und wurden gemäß Auftrag nicht repariert.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-05-26-a07-a08-kalender-verschieben: 06.05.26 | Kalender | A-07/A-08: Termine markieren und verschieben · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 06-05-26-a07-a08-kalender-verschieben">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">06-05-26-a07-a08-kalender-verschieben 06.05.26 | Kalender | A-07/A-08: Termine markieren und verschieben</span></nav>
+        <h1 class="wiki-h1">06-05-26-a07-a08-kalender-verschieben: 06.05.26 | Kalender | A-07/A-08: Termine markieren und verschieben</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>06.05.26</div>
+    <p class="wiki-lead">A-07 und A-08 sind abgeschlossen. Termine können im Wochenkalender per Drag &amp; Drop auf reguläre Tour-Lanes verschoben werden. Zusätzlich können Termine per längerem Linksklick als Verschiebeauswahl markiert und in Wochen- oder Monatsansicht in ein reguläres Tour-Ziel eingefügt we</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>A-07 und A-08 sind abgeschlossen. Termine können im Wochenkalender per Drag &amp; Drop auf reguläre Tour-Lanes verschoben werden. Zusätzlich können Termine per längerem Linksklick als Verschiebeauswahl markiert und in Wochen- oder Monatsansicht in ein reguläres Tour-Ziel eingefügt werden. Solange ein Termin selektiert ist, zeigt der Kalender oben eine deutlich sichtbare Statuskarte. Ein Rechtsklick im Kalenderbereich hebt die Auswahl auf.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Mehrschichtige Frontend- und Backend-Änderung ohne DB-Schemaänderung und ohne Migration. Die Änderung nutzt bestehende Termin- und Tour-KW-Preview-Pfade und erweitert sie um einen gemeinsamen Kalender-Move-Zuschnitt.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-03 Kalenderansichten: Wochenkalender, Monatsübersicht, Kalender-Workspace.</li><li>FT-01 Kalendertermine: Terminverschiebung mit Datum, Tour und Mitarbeiterliste.</li><li>FT-04 Tourenplanung: Tour-KW-Mitarbeiter-Vorschau beim Tour- oder KW-Wechsel.</li></ul>
+<p>Notion-Links wurden für diese Session nicht ergänzt; die lokale Wiki-Aufgabenlage A-07/A-08 war ausreichend.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Neuer gemeinsamer Move-Helfer <code>client/src/lib/calendar-move.ts</code> für Auswahl, Move-Request, Zielvalidierung und Preview-Auswahl.</li><li><code>CalendarWorkspace</code> hält den ausgewählten Termin, rendert die obere Statuskarte, hebt per Rechtsklick auf und führt Preview, Bestätigung und PATCH zentral aus.</li><li>Wochen- und Monatsansicht erhalten Long-Press-Markierung, visuelle Auswahlringe und Einfügeaktionen.</li><li>Week-Drop-Ziele berücksichtigen jetzt die Ziel-Tour-Lane statt nur die bisherige Quell-Tour.</li><li>&quot;Ohne Tour&quot;, &quot;Parkplatz&quot; und Abwesenheiten sind als Verschiebe- und Einfügeziele ausgeschlossen.</li><li><code>tour-change-preview</code> erhält die Request-Rolle und blockiert Leser sowie historische Disponentenfälle serverseitig.</li><li>A-07, A-08 und der Aufgabenindex wurden auf abgeschlossen aktualisiert.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p><code>ADMIN</code> darf Termine markieren, ziehen und einfügen, auch historische Fälle, soweit bestehende serverseitige Regeln dies erlauben. <code>DISPATCHER</code>/<code>DISPONENT</code> darf aktuelle und zukünftige Termine verschieben, aber keine historischen Quell- oder Zieltermine. <code>READER</code>/<code>LESER</code> bleibt read-only; Auswahl-, Einfüge- und Drag-Aktionen werden nicht angeboten und direkte Preview-Aufrufe werden serverseitig abgelehnt.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run typecheck</code></li><li><code>npm run test:unit -- tests/unit/ui/calendarMove.helpers.test.ts tests/unit/ui/calendarWorkspace.viewSwitch.wiring.test.tsx tests/unit/ui/calendarDragDrop.regular-draggable.wiring.test.tsx</code></li><li><code>npm run test:integration -- tests/integration/server/appointments.tour-change-preview.integration.test.ts --reporter=verbose</code></li><li><code>npm run check</code></li></ul>
+<p>Zusätzlich wurde der Datumsformat-Suchlauf ausgeführt. Die verbleibenden Treffer sind bestehende technische ISO-Werte, Testdaten, maschinenlesbare Keys oder bestehende Dokumentationshinweise.</p>
+<p>Der Staged-Encoding-Guard führt <code>aktuelle</code>, <code>Quell</code> und <code>visuelle</code> als bestätigte positive Treffer, weil diese Schreibungen keine Umlaut-Ersatzformen sind.</p>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Keine offenen A-07/A-08-Blocker im aktuell beauftragten Zuschnitt.</li><li>Die ursprünglich in A-08 erwähnte Escape-/Click-Away-Deselektion wurde nicht umgesetzt, weil der aktuelle Auftrag Rechtsklick als Deselektion festgelegt hat.</li><li>A-09 bleibt separat offen.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

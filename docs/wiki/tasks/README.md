@@ -12,6 +12,14 @@ Offene und laufende Aufgaben - gegliedert nach Thema.
 Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Attachments. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
+### Datensicherung
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-38 | [FT-07 DB-Dry-Run für Dump-Import vorbereiten](ft07-db-dry-run-dump-import-vorbereiten.md) | Planung | `offen` |
+
+Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+
+
 ### Dialoge
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |
@@ -40,6 +48,22 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Attachments. Die verl
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Dialoge. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 
 
+### Feature-Testabdeckung
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-33 | [Feature-Testabdeckung und UC-Lücken koordinieren](feature-testabdeckung-uc-luecken-koordinieren.md) | Planung | `offen` |
+
+Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Feature-Testabdeckung. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+
+
+### Formularansichten
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-37 | [Termintabellen in Formularen vereinheitlichen](termintabellen-in-formularen-vereinheitlichen.md) | Planung | `offen` |
+
+Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Formularansichten. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+
+
 ### Frontend-Build
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |
@@ -48,12 +72,21 @@ Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen
 Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Frontend-Build. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
+### Frontend-Cache
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-36 | [App-weite Frontend-Cache-Strategie planen](frontend-cache-strategie-planen.md) | Planung | `offen` |
+
+Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Frontend-Cache. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+
+
 ### Kalender/Touren/Abwesenheiten
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |
 | A-04 | [FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen](ft01-ft04-ft33-testabdeckung-uc-luecken.md) | Testabdeckung | `offen` |
+| A-34 | [Storno historischer Termine fachlich entscheiden](storno-historischer-termine-fachlich-entscheiden.md) | Planung | `offen` |
 
-Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Kalender/Touren/Abwesenheiten. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
+Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Kalender/Touren/Abwesenheiten. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 
 
 ### Kalendermarker / Feiertage
@@ -79,6 +112,14 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Kalender-Performance.
 | A-15 | [FT-26 gemeinsame Print-Basiskomponente für Kartenreports](ft26-report-print-basiskomponente.md) | Refactoring | `offen` |
 
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Reports. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
+
+
+### Termin-Workflows
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-35 | [Systemgesteuerte Termin-Workflows gezielt generalisieren](systemgesteuerte-termin-workflows-generalisieren.md) | Analyse | `offen` |
+
+Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Termin-Workflows. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
 ### Testinfrastruktur

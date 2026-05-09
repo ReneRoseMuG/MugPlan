@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>P-02: Feature-Testabdeckung und UC-Lücken · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html" class="is-active">Projekte</a></li><li><a href="../aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Projekte P-02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">P-02 Feature-Testabdeckung und UC-Lücken</span></nav>
+        <h1 class="wiki-h1">P-02: Feature-Testabdeckung und UC-Lücken</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span></div>
+    <p class="wiki-lead">Das Projekt soll Feature-Testlücken sichtbar bündeln und priorisieren, ohne bestehende Aufgaben in fachlich andere Themen umzudeuten. Die Masteraufgabe koordiniert Reihenfolge, Abdeckungsebene und offene Fachentscheidungen; die Einzelaufgaben bleiben für konkrete Features zuständ</p>
+    <p>Dieses Projekt bündelt Aufgaben, die gezielt Testabdeckung, Use-Case-Lücken und fachliche Regressionserkennung einzelner Features verbessern. Es ist als dauerhafte Projektklammer angelegt, weil weitere Aufgaben dieses Typs ergänzt werden können.</p>
+<h2 class="wiki-h2">Metadaten</h2>
+<ul><li>ID: P-02</li><li>Status: offen</li><li>Dringlichkeit: Hoch</li><li>Masteraufgabe: <a href="../aufgaben/feature-testabdeckung-uc-luecken-koordinieren.html">Feature-Testabdeckung und UC-Lücken koordinieren</a></li><li>Erstellt: 09.05.26</li></ul>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Das Projekt soll Feature-Testlücken sichtbar bündeln und priorisieren, ohne bestehende Aufgaben in fachlich andere Themen umzudeuten. Die Masteraufgabe koordiniert Reihenfolge, Abdeckungsebene und offene Fachentscheidungen; die Einzelaufgaben bleiben für konkrete Features zuständig.</p>
+<h2 class="wiki-h2">Masteraufgabe</h2>
+<ul><li><a href="../aufgaben/feature-testabdeckung-uc-luecken-koordinieren.html">Feature-Testabdeckung und UC-Lücken koordinieren</a></li></ul>
+<h2 class="wiki-h2">Einzelaufgaben</h2>
+<ul><li><a href="../aufgaben/ft01-ft04-ft33-testabdeckung-uc-luecken.html">FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen</a></li><li><a href="../aufgaben/ft19-attachment-testluecken.html">FT-19 Attachment-Testlücken schließen</a></li><li><a href="../aufgaben/ft26-reports-testabdeckung.html">FT-26 Reports: verbleibende Testabdeckung schließen</a></li><li><a href="../aufgaben/ft34-kalendermarker-testluecken.html">FT-34 Kalendermarker: Testlücken schließen</a></li></ul>
+<h2 class="wiki-h2">Abgrenzung</h2>
+<p>Das Projekt ersetzt keine Testsuite-Aufträge und führt keine Tests automatisch aus. Jede Einzelaufgabe muss selbst entscheiden, welche Ebene fachlich belastbar ist: Unit, Integration, API, Browser-E2E oder ergänzende Dokumentationskorrektur.</p>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Aufgaben: <a href="../aufgaben.html">Aufgabenübersicht</a></li><li>Entscheidungen: <a href="../../../decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md">W-19 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken</a> · <a href="../../../decisions/w-21-ft26-reports-testabdeckung.md">W-21 - FT-26 Reports: verbleibende Testabdeckung</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Masteraufgabe</div><div class="wiki-relations__val"><a href="../aufgaben/feature-testabdeckung-uc-luecken-koordinieren.html">A-33</a></div><div class="wiki-relations__key">Einzelaufgaben</div><div class="wiki-relations__val"><ul class="wiki-checklist">
+    <li class="wiki-checklist__item">
+          <input type="checkbox" disabled aria-label="A-04 FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen">
+          <span class="wiki-checklist__text">
+            <a href="../aufgaben/ft01-ft04-ft33-testabdeckung-uc-luecken.html">A-04 FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen</a>
+            <span class="wiki-badge wiki-badge--offen">offen</span>
+          </span>
+        </li><li class="wiki-checklist__item">
+          <input type="checkbox" disabled aria-label="A-11 FT-19 Attachment-Testlücken schließen">
+          <span class="wiki-checklist__text">
+            <a href="../aufgaben/ft19-attachment-testluecken.html">A-11 FT-19 Attachment-Testlücken schließen</a>
+            <span class="wiki-badge wiki-badge--offen">offen</span>
+          </span>
+        </li><li class="wiki-checklist__item">
+          <input type="checkbox" disabled aria-label="A-05 FT-26 Reports: verbleibende Testabdeckung schließen">
+          <span class="wiki-checklist__text">
+            <a href="../aufgaben/ft26-reports-testabdeckung.html">A-05 FT-26 Reports: verbleibende Testabdeckung schließen</a>
+            <span class="wiki-badge wiki-badge--offen">offen</span>
+          </span>
+        </li><li class="wiki-checklist__item">
+          <input type="checkbox" disabled aria-label="A-32 FT-34 Kalendermarker: Testlücken schließen">
+          <span class="wiki-checklist__text">
+            <a href="../aufgaben/ft34-kalendermarker-testluecken.html">A-32 FT-34 Kalendermarker: Testlücken schließen</a>
+            <span class="wiki-badge wiki-badge--offen">offen</span>
+          </span>
+        </li>
+  </ul></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

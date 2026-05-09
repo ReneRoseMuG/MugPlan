@@ -245,7 +245,7 @@ Codex führt ausschließlich seriell `git add`, `git commit` und `git push` für
 Legacy-Alias für `journal`. Codex erstellt keinen neuen Eintrag unter `logs/`, sondern einen Journaleintrag gemäß Abschnitt 14.2a. Der Ordner `logs/` bleibt nur historischer Altbestand.
 
 `journal`  
-Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag im Repo-Wiki unter `docs/wiki/journal/` gemäß Abschnitt 14.2a und ergänzt den Eintrag oben in `docs/wiki/journal/README.md`. Für sichtbare Datumsangaben gilt zwingend das Kurzformat `dd.MM.yy`.
+Codex erstellt für die aktuelle Session bzw. die letzte Aufgabe einen Journaleintrag im Repo-Wiki unter `docs/wiki/journal/` gemäß Abschnitt 14.2a, ergänzt den Eintrag oben in `docs/wiki/journal/README.md`, führt anschließend `node scripts/build-wiki-site.mjs` aus und prüft den generierten Kontrollbericht unter `docs/wiki/site/control-report.*`. Für sichtbare Datumsangaben gilt zwingend das Kurzformat `dd.MM.yy`.
 
 `rückblick <datum|gestern|heute>`
 Codex erstellt einen reinen Informationsbericht über die Arbeiten des angegebenen Tages gemäß Abschnitt 14.2b. Primäre Quelle ist das Repo-Wiki-Journal unter `docs/wiki/journal/` inklusive `docs/wiki/journal/README.md`. Wenn dort keine ausreichenden Informationen vorhanden sind, darf Codex ergänzend die lokale Git-Historie, vorhandene Testausgaben und belegbare lokale Arbeitsartefakte des angegebenen Tages auswerten. Codex nimmt dabei keine Code-, Test-, Konfigurations- oder Dokumentationsänderungen vor und schreibt keine neuen Dateien.
@@ -754,6 +754,11 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 - Der Dateiname verwendet das Muster `<dd-mm-yy>-<kurztitel-kebab-case>.md`, zum Beispiel `02-05-26-feiertage-marker-visualisierung.md`.
 - Codex ergänzt den neuen Eintrag in `docs/wiki/journal/README.md` ganz oben unter `## Einträge`.
 - Bestehende Struktur, Reihenfolge und Formatierung des Wiki-Journals sind strikt einzuhalten.
+- Nach dem Schreiben der Markdown-Quelle führt Codex `node scripts/build-wiki-site.mjs` aus, damit `docs/wiki/site/` als generierte HTML-Wiki-Ausgabe aktualisiert wird.
+- Codex prüft danach den Kontrollbericht `docs/wiki/site/control-report.json` bzw. `docs/wiki/site/control-report.html`.
+- Enthält der Kontrollbericht Fehler, gilt der Journalauftrag als blockiert. Codex meldet die Fehler konkret und behauptet nicht, die HTML-Wiki sei erfolgreich aktualisiert.
+- Warnungen im Kontrollbericht sind im Abschluss knapp zu benennen, sofern sie durch den neuen Journaleintrag entstanden sind oder den Auftrag fachlich betreffen. Bereits bestehende, unveränderte Warnungen dürfen als bestehende redaktionelle Lücken eingeordnet werden.
+- `docs/wiki/site/` bleibt Build-Ausgabe und wird nicht manuell nachbearbeitet. Änderungen an Darstellung oder Struktur erfolgen über Quellen, Index oder Generator.
 - Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Notion-Feature-Seiten tatsächlich belegt sind.
 - Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJ | [Typ] | [Feature]: [Kurztitel]`.
 - Für den Journaltitel ist hier bewusst das projektweite Kurzformat `TT.MM.JJ` zu verwenden, zum Beispiel `01.05.26`.

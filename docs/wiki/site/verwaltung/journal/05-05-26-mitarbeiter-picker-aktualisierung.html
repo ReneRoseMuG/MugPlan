@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-mitarbeiter-picker-aktualisierung: 05.05.26 | Bugfix | Mitarbeiter-Picker nach Neuanlage aktualisiert · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-mitarbeiter-picker-aktualisierung">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-mitarbeiter-picker-aktualisierung 05.05.26 | Bugfix | Mitarbeiter-Picker nach Neuanlage aktualisiert</span></nav>
+        <h1 class="wiki-h1">05-05-26-mitarbeiter-picker-aktualisierung: 05.05.26 | Bugfix | Mitarbeiter-Picker nach Neuanlage aktualisiert</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Nach dem Speichern eines neuen aktiven Mitarbeiters wird die Mitarbeiterliste jetzt verlässlich aktualisiert, bevor das Mitarbeiterformular geschlossen wird. Dadurch steht der neue Mitarbeiter beim anschließenden Öffnen des Kalender-Terminformulars in der Funktion „Mitarbeiter hi</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Nach dem Speichern eines neuen aktiven Mitarbeiters wird die Mitarbeiterliste jetzt verlässlich aktualisiert, bevor das Mitarbeiterformular geschlossen wird. Dadurch steht der neue Mitarbeiter beim anschließenden Öffnen des Kalender-Terminformulars in der Funktion „Mitarbeiter hinzufügen“ zur Auswahl.</p>
+<p>Zusätzlich wurde der bestehende Nachname-/Vorname-Filter des Mitarbeiter-Pickers in den Footer der angebotenen Mitarbeiterliste verschoben.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li><li><a href="../../lastenheft/features/ft-05-mitarbeiterverwaltung.html">FT (05): Mitarbeiterverwaltung</a></li></ul>
+<h2 class="wiki-h2">Technische Umsetzung</h2>
+<p>Der Create-Flow in <code>EmployeeForm.tsx</code> wartet die Invalidierung aller <code>/api/employees</code>-Queries ab. Der Picker in <code>EmployeePickerDialogList.tsx</code> rendert den bestehenden <code>EmployeePickerFilterPanel</code> nun im Footer und behält die Sammel-Übernahme im Listenmodus bei.</p>
+<h2 class="wiki-h2">Rollenbezug</h2>
+<p>Keine Änderung an Rollen oder Berechtigungen. Administrator und Disponent verwenden weiter die bestehende Mitarbeiteranlage und Terminzuweisung. Leser können weiterhin keine Mitarbeiter zu Terminen hinzufügen. Die erlaubte Mitarbeitermenge wird unverändert serverseitig über aktive Mitarbeiter und Rollenfilter bestimmt.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:unit -- tests/unit/ui/employeePickerDialogList.bulkSelection.wiring.test.tsx --reporter=verbose</code></li><li><code>npm run typecheck</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein voller Browser-E2E-Lauf in diesem Auftrag.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-01-kalendertermine.html">FT-01</a><a href="../../lastenheft/features/ft-05-mitarbeiterverwaltung.html">FT-05</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

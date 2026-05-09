@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>04-05-26-tour-kw-week-card-actions: 04.05.26 | Änderung | FT-04: Tour-KW-Kartenaktionen im Wochenkalender · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 04-05-26-tour-kw-week-card-actions">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">04-05-26-tour-kw-week-card-actions 04.05.26 | Änderung | FT-04: Tour-KW-Kartenaktionen im Wochenkalender</span></nav>
+        <h1 class="wiki-h1">04-05-26-tour-kw-week-card-actions: 04.05.26 | Änderung | FT-04: Tour-KW-Kartenaktionen im Wochenkalender</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>04.05.26</div>
+    <p class="wiki-lead">Die Tour-KW-Aktionen im Wochenkalender wurden von der Tour-Header-Bar an die Tour-KW-Kacheln der KW-Plan-Spalte verschoben. Die Kachel enthält jetzt das Drei-Punkt-Menü für Notiz hinzufügen, Wochenplanung blockieren und Wochenplanung freigeben. Zusätzlich zeigt sie einen Footer-C</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Tour-KW-Aktionen im Wochenkalender wurden von der Tour-Header-Bar an die Tour-KW-Kacheln der KW-Plan-Spalte verschoben. Die Kachel enthält jetzt das Drei-Punkt-Menü für <code>Notiz hinzufügen</code>, <code>Wochenplanung blockieren</code> und <code>Wochenplanung freigeben</code>. Zusätzlich zeigt sie einen Footer-Counter für Tour-KW-Notizen, der per Hover die vorhandenen Notizen zugänglich macht.</p>
+<p>Parallel wurde die Rollenregel für laufende Tour-KWs erweitert: Dispatcher dürfen die aktuelle Tour-KW-Planung jetzt ebenfalls ändern. Vergangene Tour-KWs bleiben unverändert schreibgeschützt, Reader bleiben ohne Mutationsrechte.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Frontend-Verhalten im Wochenkalender geändert.</li><li>Bestehenden Tour-KW-Notizflow an die KW-Plan-Kachel angebunden.</li><li>Tour-Header-Bar um entfernte Tour-KW-Aktionen bereinigt.</li><li>Server- und UI-Sperrlogik für Dispatcher in der laufenden KW angepasst.</li><li>Integration-, Unit- und Browsertests für Rollen, Menüplatzierung, Notiz-Footer und Blockierflow ergänzt.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li><a href="../../lastenheft/features/ft-03-kalenderansichten.html">FT-03: Kalenderansichten</a></li><li><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04: Tourenplanung</a></li></ul>
+<p>Notion-Featureseiten wurden in dieser Session nicht herangezogen, weil die konkrete Fachregel vom Nutzer vorgegeben wurde und die lokale Feature- und Architekturdokumentation für die Einordnung ausreichte.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Die Tour-KW-Kachel in der Wochenkalender-KW-Plan-Spalte rendert das Drei-Punkt-Menü.</li><li>Der vorhandene Tour-KW-Notizdialog wird über <code>Notiz hinzufügen</code> aus dieser Kachel geöffnet.</li><li>Die Kachel zeigt einen Notiz-Counter mit Hover-Vorschau für Tour-KW-Notizen.</li><li>Blockieren und Freigeben der Wochenplanung sind in die Kachel gewandert.</li><li>Die Tour-Header-Bar zeigt keine Tour-KW-Menü- und Notizaktionen mehr.</li><li><code>ADMIN</code> und <code>DISPONENT</code> dürfen laufende und zukünftige Tour-KWs ändern.</li><li>Vergangene Tour-KWs bleiben serverseitig gesperrt.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Gezielt erfolgreich ausgeführt:</p>
+<ul><li><code>npm exec tsc</code></li><li><code>git diff --check</code></li><li><code>npm run test:unit -- tests/unit/ui/calendarWeekTourLaneHeaderBar.counters.test.tsx tests/unit/ui/calendarWeekTourLaneHeaderBar.notesForeground.test.tsx tests/unit/ui/calendarWeekView.compactHeader.test.ts tests/unit/ui/calendarWeekView.layoutGrid.test.tsx tests/unit/ui/calendarWeekView.blockedWeekBehavior.test.tsx --reporter=verbose</code></li><li>Safety-Gate für <code>.env.test</code>, <code>NODE_ENV=test</code>, <code>MUGPLAN_MODE=test</code>, Test-Datenbank-Allowlist und Test-Host-Allowlist</li><li><code>npm run test:integration -- tests/integration/server/tourWeekEmployees.integration.test.ts --reporter=verbose</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/tour-week-form.browser.e2e.spec.ts</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein vollständiger Browser-Gesamtlauf über alle E2E-Dateien.</li><li>Bestehende React-SSR-Warnungen zu <code>useLayoutEffect</code> im Hover-Preview-Umfeld bleiben in den Unit-Testausgaben sichtbar.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

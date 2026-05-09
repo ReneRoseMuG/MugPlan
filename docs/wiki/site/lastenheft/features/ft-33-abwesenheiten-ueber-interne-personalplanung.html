@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-33: Abwesenheiten über interne Personalplanung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-33">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-33 Abwesenheiten über interne Personalplanung</span></nav>
+        <h1 class="wiki-h1">FT-33: Abwesenheiten über interne Personalplanung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature ermöglicht die Erfassung und Berücksichtigung von Mitarbeiter-Abwesenheiten, ohne das stillgelegte alte Abwesenheitsmodul zu reaktivieren und ohne eine allgemeine Einführung von Termintypen vorzunehmen. Abwesenheiten werden als kontrollierter Sonderfall bestehender</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature ermöglicht die Erfassung und Berücksichtigung von Mitarbeiter-Abwesenheiten, ohne das stillgelegte alte Abwesenheitsmodul zu reaktivieren und ohne eine allgemeine Einführung von Termintypen vorzunehmen. Abwesenheiten werden als kontrollierter Sonderfall bestehender Termine abgebildet:</p>
+<ul><li>bestehender Seed-Kunde <strong>Meisel &amp; Gerken</strong> mit Kundennummer <code>001</code></li><li>Systemtour <strong>Abwesenheiten</strong></li><li>regulärer Termin mit Startdatum und optionalem Enddatum</li><li>genau eine Mitarbeiterzuweisung am Termin</li><li>genau ein fachlicher Abwesenheits-Tag: <strong>Urlaub</strong>, <strong>Krankheit</strong> oder <strong>Abwesend</strong></li></ul>
+<p>Die App nutzt weiterhin Termine als zentrale Quelle der Wahrheit. Abwesenheiten werden nicht über ein neues <code>appointment_type</code>-Konzept modelliert, sondern über einen dedizierten Mitarbeiter-Abwesenheiten-Flow.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p><strong>Kerndefinition</strong></p>
+<p>Eine Abwesenheit liegt vor, wenn ein Termin folgende Merkmale kumulativ erfüllt:</p>
+<ul><li>Kunde ist der bestehende Seed-Kunde <strong>Meisel &amp; Gerken</strong> mit Kundennummer <code>001</code></li><li>Tour ist <strong>Abwesenheiten</strong></li><li>Genau ein Mitarbeiter ist zugewiesen</li><li>Der Termin besitzt ein gültiges Startdatum und optional ein Enddatum</li><li>Genau ein Abwesenheits-Tag ist gesetzt: <strong>Urlaub</strong>, <strong>Krankheit</strong> oder <strong>Abwesend</strong></li></ul>
+<p>Der Abwesenheits-Tag ist nicht optional. Er klassifiziert die Art der Abwesenheit und wird ausschließlich über dedizierte Abwesenheitsfunktionen gesetzt oder geändert. Abwesenheits-Tags sind System-Tags (<code>isDefault = true</code>) und erscheinen nicht im normalen User-Tag-Picker.</p>
+<p>Abwesenheiten besitzen kein Projekt und fallen dadurch strukturell aus allen projektbasierten Reports heraus – ohne expliziten Filter.</p>
+<p><strong>Erfassung und Pflege</strong></p>
+<p>Abwesenheiten werden ausschließlich über das Mitarbeiterformular im Tab <strong>Abwesenheiten</strong> angelegt, bearbeitet und gelöscht. Die technischen Endpunkte liegen unter <code>/api/employees/:id/absence-appointments</code>. Der Server setzt beim Anlegen und Bearbeiten automatisch Kunde, Tour, Mitarbeiter und Tag.</p>
+<p>Außerhalb dieses dedizierten Mitarbeiterpfads bleiben Abwesenheiten zwar lesbar, generische Terminmutationen sind dort aber gesperrt. Dadurch werden Abwesenheiten nicht versehentlich über fachlich unpassende Terminaktionen verändert.</p>
+<p><strong>Systemdaten</strong></p>
+<p>Folgende Systemdaten werden benötigt und zweistufig sichergestellt – über den System-Seed und zusätzlich über Lazy Ensure im Abwesenheiten-Service:</p>
+<ul><li>bestehender Seed-Kunde <strong>Meisel &amp; Gerken</strong> mit Kundennummer <code>001</code></li><li>Systemtour <strong>Abwesenheiten</strong> mit Farbe <code>#64748B</code></li><li>Systemtags <strong>Urlaub</strong>, <strong>Krankheit</strong>, <strong>Abwesend</strong> (<code>isDefault = true</code>)</li></ul>
+<p><strong>Darstellung im Kalender</strong></p>
+<p><em>Wochenkalender:</em> Die Tour <strong>Abwesenheiten</strong> wird ganz unten als passive Lane eingeblendet. Sie bietet keine Action-Elemente: kein +‑Button, kein Drag &amp; Drop, keine Tag-Bearbeitung, keine Blockier-Aktionen, keine Notizen.</p>
+<p><em>Monatskalender:</em> Im Standardmodus <strong>Terminplanung</strong> werden Abwesenheiten ausgeblendet. Ein Toggle im Kopfbereich schaltet zwischen <strong>Terminplanung</strong> und <strong>Abwesenheiten</strong> um. Im Modus <strong>Abwesenheiten</strong> werden ausschließlich Abwesenheitstermine angezeigt, reguläre Termine ausgeblendet. Die kompakte Monatsdarstellung zeigt dabei den betroffenen Mitarbeiter statt des internen Systemkunden. Der Toggle-Zustand wird nicht persistiert.</p>
+<p><em>Auslastungsübersicht im Mitarbeiterformular:</em> Abwesenheiten werden gemeinsam mit regulären Terminen angezeigt (<code>absenceVisibility=&quot;include&quot;</code>).</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<p><strong>R-01 Dedizierter Flow</strong></p>
+<p>Abwesenheiten werden über <code>/api/employees/:id/absence-appointments</code> erzeugt und gepflegt. Der normale Termin-Flow ist nicht der primäre Erfassungsweg.</p>
+<p><strong>R-02 Systemkontext automatisch setzen</strong></p>
+<p>Beim Anlegen und Bearbeiten setzt der Server automatisch den bestehenden Seed-Kunden <strong>Meisel &amp; Gerken</strong> mit Kundennummer <code>001</code>, die Tour <strong>Abwesenheiten</strong>, genau einen Mitarbeiter und genau einen Abwesenheits-Tag.</p>
+<p><strong>R-03 Mitarbeiter blockieren</strong></p>
+<p>Der einem Abwesenheitstermin zugewiesene Mitarbeiter gilt im Terminzeitraum als nicht verfügbar. Die bestehende Termin-Überschneidungsprüfung prüft reguläre Termine gegen Abwesenheitstermine.</p>
+<p>Disponenten dürfen Abwesenheiten auch dann erfassen oder bearbeiten, wenn der Zeitraum bereits vor dem aktuellen Tag beginnt, solange die Abwesenheit am aktuellen Tag noch läuft oder in die Zukunft reicht. Vollständig vergangene Abwesenheiten bleiben für Disponenten schreibgeschützt. Administratoren behalten die bestehende historische Ausnahme.</p>
+<p>Wenn beim Anlegen oder Bearbeiten einer Abwesenheit bereits reguläre Termine desselben Mitarbeiters im Zeitraum liegen, liefert der Server die betroffenen Termine zur Bestätigung zurück. Nach ausdrücklicher Bestätigung wird nur der betroffene Mitarbeiter aus diesen regulären Terminen entfernt und die Abwesenheit anschließend gespeichert. Die Termine selbst bleiben in ihrer bisherigen Tour, werden nicht auf den Parkplatz verschoben und erhalten keinen Parken-Tag. Ohne Bestätigung bleibt der Bestand unverändert.</p>
+<p>Wenn der Mitarbeiter in einer vom Abwesenheitszeitraum betroffenen Tour-KW-Planung eingetragen ist, liefert der Server diese KW-Planungen ebenfalls zur Bestätigung zurück. Nach ausdrücklicher Bestätigung wird nur die Tour-KW-Mitarbeiterzuordnung entfernt. Ohne Bestätigung bleiben Terminzuweisungen, Tour-KW-Planungen und Abwesenheit unverändert.</p>
+<p><strong>R-04 Keine Wochenplanungsübernahme</strong></p>
+<p>Für die Systemtour <strong>Abwesenheiten</strong> darf keine automatische Mitarbeiterübernahme aus der Tour- oder Kalenderwochenplanung ausgeführt werden.</p>
+<p>Im Tourformular wird für die Systemtour <strong>Abwesenheiten</strong> kein Tab <strong>Wochenplanung</strong> angeboten. Im Wochenkalender erhält die Abwesenheiten-Lane keine Tour-KW-Personalkarte in der Personalspalte. Abwesenheiten werden über den dedizierten Abwesenheitsflow und die passive Abwesenheitsanzeige sichtbar, nicht über reguläre Tour-KW-Mitarbeiterplanung.</p>
+<p>Tour-KW-Sperren der Systemtour <strong>Abwesenheiten</strong> blockieren den dedizierten Abwesenheitsflow nicht. Abwesenheiten sind keine reguläre Tourenplanung und dürfen deshalb nicht durch Wochenplanungssperren dieser Systemtour verhindert werden.</p>
+<p><strong>R-05 Tag-Wechsel kontrolliert</strong></p>
+<p>Beim Wechsel der Abwesenheitsart entfernt der Server alle anderen Abwesenheits-Tags und setzt genau den neuen Tag.</p>
+<p><strong>R-06 Generische Terminmutationen blockieren</strong></p>
+<p>Abwesenheiten bleiben außerhalb des Mitarbeiterformulars lesbar, dürfen dort aber nicht über generische Terminpfade bearbeitet, storniert, gelöscht, umgetaggt oder anderweitig mutiert werden.</p>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-33-01-abwesenheiten-anzeigen.html">UC 33/01: Abwesenheiten anzeigen</a></li><li><a href="../use-cases/uc-33-02-abwesenheit-anlegen.html">UC 33/02: Abwesenheit anlegen</a></li><li><a href="../use-cases/uc-33-03-abwesenheit-bearbeiten.html">UC 33/03: Abwesenheit bearbeiten</a></li><li><a href="../use-cases/uc-33-04-abwesenheit-loeschen.html">UC 33/04: Abwesenheit löschen</a></li><li><a href="../use-cases/uc-33-05-einplanung-mit-abwesendem-mitarbeiter-verhindern.html">UC 33/05: Einplanung mit abwesendem Mitarbeiter verhindern</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h3 class="wiki-h3">Betroffene Schema-Objekte</h3>
+<p><strong>Primäre Tabelle(n)</strong></p>
+<p><code>appointments</code> – Abwesenheiten sind reguläre Termine ohne Projekt.</p>
+<p><strong>Beteiligte Join-Tabellen</strong></p>
+<ul><li><code>appointment_employees</code> – genau ein Eintrag pro Abwesenheitstermin</li><li><code>appointment_tags</code> – genau ein Abwesenheits-Tag pro Abwesenheitstermin</li></ul>
+<p><strong>Kritische Felder</strong> <em>(mit Nullable-Hinweis)</em></p>
+<ul><li><code>start_date</code> – Pflichtfeld</li><li><code>end_date</code> – nullable, bei Mehrtagestermin gesetzt</li><li><code>start_time</code> – immer null (ganztägig)</li><li><code>tour_id</code> – Systemtour Abwesenheiten (not null)</li><li><code>customer_id</code> – bestehender Seed-Kunde Meisel &amp; Gerken / <code>001</code> (not null)</li><li><code>project_id</code> – immer null</li></ul>
+<h3 class="wiki-h3">Verwandte Features &amp; Abhängigkeiten</h3>
+<p><strong>Dieses Feature konsumiert (abhängig von):</strong></p>
+<ul><li>FT-04 Termine – Terminlogik, Überschneidungsprüfung, Lösch- und Versionsprüfung</li><li>FT-30 Tour-Management – Systemtour Abwesenheiten, Wochenplanungsausschluss</li><li>Tag-Management – isDefault-Konzept für System-Tags</li></ul>
+<p><strong>Dieses Feature wird konsumiert von:</strong></p>
+<ul><li>FT-31 Dispositions-Monitoring – Überschneidungserkennung berücksichtigt Abwesenheitstermine</li><li>FT-01 Kalendertermine – bestätigte Konflikttermine behalten Termin-, Tour- und Tag-Zustand; nur die Mitarbeiterzuordnung des abwesenden Mitarbeiters wird entfernt</li><li>Wochenkalender – passive Anzeige der Tour Abwesenheiten</li><li>Monatskalender – Toggle Terminplanung / Abwesenheiten</li></ul>
+<p><strong>Seiteneffekte bei Änderungen:</strong></p>
+<ul><li>Änderungen an der Überschneidungsprüfung in FT-04 betreffen direkt R-03.</li><li>Umbenennung der Systemtour bricht <code>isAbsenceTourName()</code>-Checks im gesamten Client und Server.</li><li>Änderungen am isDefault-Konzept betreffen die Sichtbarkeit der Abwesenheits-Tags im Picker.</li></ul>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<h3 class="wiki-h3">Offene Fragen</h3>
+<p>Keine.</p>
+<h3 class="wiki-h3">Entscheidungslog</h3>
+<p><strong>Abwesenheiten als kontrollierter Sonderfall regulärer Termine</strong></p>
+<p>Kein neues <code>appointment_type</code>-Konzept, kein reaktiviertes altes Abwesenheitsmodul. Identifikation über Kombination aus Systemtour, Systemkunde und Abwesenheits-Tag.</p>
+<p><strong>Ein Termin pro Mitarbeiter</strong></p>
+<p>Keine Sammeltermine mit mehreren Mitarbeitern. Pro abwesendem Mitarbeiter ein eigener Termin.</p>
+<p><strong>Erfassungsweg ausschließlich über Mitarbeiterformular</strong></p>
+<p>Kein Drag &amp; Drop auf die Tour Abwesenheiten, kein +‑Button in der Abwesenheits-Lane des Kalenders.</p>
+<p><strong>Kein separater interner Sonderkunde</strong></p>
+<p>Abwesenheiten verwenden keinen zusätzlichen Kunden <code>MuG Personalplanung</code> mehr, sondern den bestehenden Seed-Kunden <code>001 · Meisel &amp; Gerken</code>.</p>
+<p><strong>Abwesenheits-Tags als System-Tags</strong></p>
+<p>Tags mit <code>isDefault = true</code> erscheinen nicht im normalen User-Tag-Picker und können nur über dedizierte Abwesenheitsfunktionen gesetzt werden.</p>
+<p><strong>Keine eigene globale Abwesenheitsliste</strong></p>
+<p>Die bestehende Terminliste ist nach Tour und Tag filterbar und reicht für Auswertungen aus.</p>
+<p><strong>Lazy Ensure zusätzlich zum Seed</strong></p>
+<p>Systemdaten werden beim Abwesenheits-Flow zusätzlich sichergestellt, damit fehlende Systemdaten keinen Fehler verursachen.</p>
+<h3 class="wiki-h3">Bekannte Abweichungen Code ↔ Spec</h3>
+<p><strong>Toggle-Zustand Monatskalender</strong></p>
+<p>Spec: „Beim erneuten Aufruf des Monatskalenders startet die Ansicht immer in Terminplanung.&quot; Code: Der Toggle-Zustand überlebt einen View-Wechsel innerhalb der Session. Erst ein Seitenneuladen setzt ihn zurück.</p>
+<p><strong>Auslastungsübersicht Mitarbeiterformular</strong></p>
+<p>Implementierungsaufgabe beschreibt eine dedizierte Abwesenheits-Lane. Implementiert ist <code>absenceVisibility=&quot;include&quot;</code> auf der bestehenden Monatsrasteransicht: Abwesenheiten erscheinen gemeinsam mit regulären Terminen, nicht als separate Lane.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-33-01-abwesenheiten-anzeigen.html">UC-33/01</a><a href="../use-cases/uc-33-02-abwesenheit-anlegen.html">UC-33/02</a><a href="../use-cases/uc-33-03-abwesenheit-bearbeiten.html">UC-33/03</a><a href="../use-cases/uc-33-04-abwesenheit-loeschen.html">UC-33/04</a><a href="../use-cases/uc-33-05-einplanung-mit-abwesendem-mitarbeiter-verhindern.html">UC-33/05</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-33-abwesenheiten-ueber-interne-personalplanung-backlog.html">BL-33</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

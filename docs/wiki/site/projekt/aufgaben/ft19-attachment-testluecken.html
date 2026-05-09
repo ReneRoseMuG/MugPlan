@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-11: FT-19 Attachment-Testlücken schließen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-11">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-11 FT-19 Attachment-Testlücken schließen</span></nav>
+        <h1 class="wiki-h1">A-11: FT-19 Attachment-Testlücken schließen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Attachments</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Testabdeckung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>07.05.26</div>
+    <p class="wiki-lead">Die im Änderungsauftrag benannten FT-19-Testlücken sollen fachlich belastbar geschlossen oder kontrolliert als bekannte Lücke dokumentiert werden. Der Schwerpunkt liegt auf serverseitigen Attachment-Regeln, Download-Verhalten, Kaskaden bei Parent-Löschung und einem isolierten Bro</p>
+    <p>Die im Änderungsauftrag benannten FT-19-Testlücken sollen fachlich belastbar geschlossen oder kontrolliert als bekannte Lücke dokumentiert werden. Der Schwerpunkt liegt auf serverseitigen Attachment-Regeln, Download-Verhalten, Kaskaden bei Parent-Löschung und einem isolierten Browser-Upload-Flow. Der Import beschreibt mehrere konkrete Test- und Klärungsaufträge. Ein Teil betrifft bereits ausformulierte, aber übersprungene Integrationstests; andere Punkte betreffen fehlende Assertions, fehlende Browser-E2E-Abdeckung.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Attachments</td><td>Testabdeckung</td><td>07.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die im Änderungsauftrag benannten FT-19-Testlücken sollen fachlich belastbar geschlossen oder kontrolliert als bekannte Lücke dokumentiert werden. Der Schwerpunkt liegt auf serverseitigen Attachment-Regeln, Download-Verhalten, Kaskaden bei Parent-Löschung und einem isolierten Browser-Upload-Flow.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Der Import beschreibt mehrere konkrete Test- und Klärungsaufträge. Ein Teil betrifft bereits ausformulierte, aber übersprungene Integrationstests; andere Punkte betreffen fehlende Assertions, fehlende Browser-E2E-Abdeckung oder uneindeutige Testkommentare.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören:</li><li><code>describe.skip</code> für historische Termin-Sonderregeln bei Appointment-Attachments klären und aktivieren oder als <code>todo</code> mit Begründung markieren</li><li><code>content-disposition</code> für Employee-, Customer-, Project- und Appointment-Downloads explizit testen und gegebenenfalls vereinheitlichen</li><li>Attachment-Kaskaden bei Projekt- und, falls API-seitig vorhanden, Kundenlöschung absichern</li><li>irreführende Fehlerfall-Kommentare in Appointment-Attachment-Tests korrigieren</li><li>Browser-E2E-Test für den Projekt-Upload-Flow mit Admin und Dispatcher ergänzen</li><li>Browser-Validierung für zu große Upload-Dateien prüfen</li><li>Browser-Fixtures mit fiktivem <code>storagePath</code> eindeutig als Browser-only markieren</li><li>UC 19/10 für das Entfernen eines Attachment-Duplikats ergänzen</li><li>Nicht Teil der Aufgabe ist eine fachliche Neudefinition von FT-19 ohne Rücksprache. Falls der Code bewusst von FT-19 abweicht, ist dies zu dokumentieren statt stillschweigend umzudeuten.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Integrationstests müssen mit Test-DB-Safety-Gate und <code>--reporter=verbose</code> laufen.</li><li>Neue oder geänderte Tests sollen echte API-, Persistenz- oder Browser-Flows verwenden, soweit der Auftrag dies fordert.</li><li>Für Parent-Löschungen dürfen keine Service-Direktzugriffe genutzt werden, wenn der Auftrag ausdrücklich API-Flows verlangt.</li><li>Synthetische Testdaten mit eindeutigen Tokens verwenden.</li><li>Kommentare müssen das tatsächlich geprüfte Verhalten beschreiben.</li><li>Betroffen sind mindestens Admin- und Dispatcher-Uploadpfade sowie unautorisierte, nicht erlaubte oder historische Attachment-Operationen.</li><li>Die Tests müssen echte serverseitige Session-, Rollen-, Historien- und Größenprüfungen abdecken. Reine UI-Sichtbarkeit oder symbolische Mocks reichen nicht als Nachweis.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Falls die serverseitige Regel für historische Termin-Deletes fehlt, darf sie nicht ohne Rücksprache implementiert werden.</li><li>Falls kein Kunden-Delete-Endpunkt existiert, ist die Kunden-Kaskade nur als bekannte API-Lücke dokumentierbar.</li><li>Falls Employee-Downloads bewusst immer als Attachment ausgeliefert werden sollen, braucht diese Abweichung eine fachliche Begründung in Test und Handler.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: FT-19 Attachments</li><li>Use Cases: UC 19/01 - Attachment hochladen · UC 19/05 - Größen- und Typvalidierung · UC 19/07 - Attachment-Kaskade bei Parent-Löschung · UC 19/10 - Attachment-Duplikat entfernen</li><li>Entscheidungen: —</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Projekte</div><div class="wiki-relations__val"><a href="../projekte/feature-testabdeckung-uc-luecken.html">P-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

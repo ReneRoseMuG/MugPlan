@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BL-02: FT (02) Backlog · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html" class="is-active">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Backlogs BL-02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../backlogs.html">Backlogs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">BL-02 FT (02) Backlog</span></nav>
+        <h1 class="wiki-h1">BL-02: FT (02) Backlog</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-02</span></div>
+    <p class="wiki-lead">Quelle: https://www.notion.so/313da094354e81c2886eeedc2c42e5b4</p>
+    <h2 class="wiki-h2">BL (08): Projekttypen / Projektkategorisierung</h2>
+<p>Quelle: https://www.notion.so/313da094354e81c2886eeedc2c42e5b4</p>
+<p>Status: In Bearbeitung / teilweise implementiert</p>
+<h3 class="wiki-h3">Ziel / Zweck</h3>
+<p>Projekte sollen strukturiert kategorisiert werden können, damit fachlich unterschiedliche Projektarten systematisch unterschieden und perspektivisch unterschiedlich behandelt werden können.</p>
+<p>Die Projektgrundlogik aus FT (02) bleibt dabei erhalten. Projekttypen sollen die bestehende Projektlogik nicht fragmentieren, sondern eine kontrollierte Differenzierung für Formulare, Darstellung und strukturierte Zusatzdaten ermöglichen.</p>
+<h3 class="wiki-h3">Teilimplementierungsstand</h3>
+<p>Im Code existiert bereits ein stiller Projekttyp:</p>
+<ul><li><code>projects.type</code> ist als Pflichtfeld mit Default <code>1</code> vorhanden.</li><li><code>projectTypeSchema</code> akzeptiert positive Ganzzahlen und defaultet auf <code>1</code>.</li><li>Das Projektformular führt <code>projectType</code> intern mit.</li><li><code>resolveProjectEditForm()</code> normalisiert aktuell jeden Projekttyp auf Typ <code>1</code> und liefert als Formularschlüssel <code>sauna</code> mit Label „Typ 1 - Sauna“.</li><li>Create- und Update-Pfade speichern den normalisierten Typ mit.</li><li>Der Typ ist derzeit nicht als fachliche Auswahl, Filterung oder sichtbare Projektkategorie umgesetzt.</li></ul>
+<p>Damit ist die technische Basis teilweise vorhanden, aber die vollständige fachliche Implementierung steht noch aus.</p>
+<h3 class="wiki-h3">Fachliche Beschreibung</h3>
+<p>Jedes Projekt kann genau einem Projekttyp zugeordnet sein. Der Projekttyp definiert die fachliche Kategorie eines Projekts.</p>
+<p>Perspektivisch kann ein Projekttyp steuern:</p>
+<ul><li>unterschiedliche Eingabeformulare</li><li>unterschiedliche Pflichtfelder</li><li>typabhängige Zusatzbereiche</li><li>differenzierte Kartenlayouts oder Detailansichten</li><li>unterschiedliche visuelle Kennzeichnung</li><li>strukturierte Produktdaten und Attributsets, zum Beispiel Sauna-Projekt gegenüber Serviceeinsatz</li><li>optionale spätere Ressourcenbindungen</li></ul>
+<h3 class="wiki-h3">Regeln &amp; Randbedingungen</h3>
+<ul><li>Die Kernlogik von Projekten bleibt typunabhängig gültig.</li><li>Kundenbezug, Termine und Kernattribute bleiben unabhängig vom Projekttyp konsistent.</li><li>Projekttypen sind nicht gleichbedeutend mit freien Projekt-Tags.</li><li>Keine Änderung der Terminlogik im Rahmen dieses Backlog-Punkts.</li><li>Keine automatische Ableitung von Preisen oder Material im Rahmen dieses Backlog-Punkts.</li><li>Keine Prozessautomatisierung im Rahmen dieses Backlog-Punkts.</li><li>Rollen und Berechtigungen sind vor vollständiger Umsetzung zu klären; Sichtbarkeit, Pflege und Änderung von Projekttypen dürfen nicht nur über UI-Logik abgesichert werden.</li></ul>
+<h3 class="wiki-h3">Abgrenzung</h3>
+<p>FT (28): Universelles Tagging-System bleibt für freie und systemgeschützte Markierungen zuständig. Projekttypen sollen dagegen eine strukturierte, genau eine fachliche Projektkategorie bilden.</p>
+<p>FT (27): Produktverwaltung und Auftragspositionen ist berührt, weil Typ <code>1</code> aktuell mit dem Sauna-Formular und Artikellisten verknüpft ist.</p>
+<h3 class="wiki-h3">Offene Klärungen</h3>
+<ul><li>Welche Projekttypen soll es fachlich geben?</li><li>Ist der Projekttyp bei Projektanlage Pflicht oder gibt es einen neutralen Default?</li><li>Wer darf Projekttypen verwalten?</li><li>Wer darf den Projekttyp eines Projekts setzen oder ändern?</li><li>Darf ein Projekttyp nachträglich geändert werden, wenn bereits Termine, Auftragspositionen oder Anhänge existieren?</li><li>Welche Formularfelder, Pflichtfelder und Zusatzbereiche hängen konkret am Projekttyp?</li><li>Wie wird der bestehende stille Typ <code>1</code> fachlich benannt und sichtbar gemacht?</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

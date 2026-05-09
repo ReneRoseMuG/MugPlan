@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-34: Kalendermarker, Feiertage und Betriebsferien · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-34">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-34 Kalendermarker, Feiertage und Betriebsferien</span></nav>
+        <h1 class="wiki-h1">FT-34: Kalendermarker, Feiertage und Betriebsferien</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Dieses Feature beschreibt Kalendermarker als eigenständige, nicht planungswirksame Zusatzinformationen für die Kalenderansichten. Dazu gehören gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Dieses Feature beschreibt Kalendermarker als eigenständige, nicht planungswirksame Zusatzinformationen für die Kalenderansichten. Dazu gehören gesetzliche Feiertage, Betriebsfeiertage und Betriebsferien.</p>
+<p>Ziel ist es, kalendarisch relevante Tage sichtbar zu machen, ohne daraus Termine, Mitarbeiterabwesenheiten, Konflikte, Locks, Reporteffekte oder Terminmutationen abzuleiten. Kalendermarker dienen der Orientierung in Wochen- und Monatskalender und können durch Administratoren und Disponenten gepflegt werden.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Kalendermarker sind gespeicherte Markierungen auf einem Datum oder Zeitraum. Sie stehen fachlich neben Terminen und werden nicht als Termin modelliert.</p>
+<p>Es gibt drei Markerarten:</p>
+<ul><li><strong>Gesetzlicher Feiertag</strong>: automatisch berechneter Feiertag mit bundesweiter oder regionaler Geltung.</li><li><strong>Betriebsfeiertag</strong>: firmenweiter einzelner Schließtag.</li><li><strong>Betriebsferien</strong>: firmenweiter Zeitraum.</li></ul>
+<p>Gesetzliche Feiertage werden über einen Seed aus der Feiertagsberechnung erzeugt und anschließend im Kalendermarker-Bestand gespeichert. Die Anzeige im Kalender liest ausschließlich gespeicherte, aktive Marker. Eine Live-Berechnung in der Kalenderanzeige findet nicht statt.</p>
+<p>Der automatische Seed kann über zwei technische Auslöser laufen: über den System-Seed und zusätzlich nach dem ersten erfolgreichen Admin-Login eines Tages. Mehrere spätere Admin-Logins am selben Tag lösen keinen weiteren Tages-Seed aus.</p>
+<p>Administratoren und Disponenten können gespeicherte Marker bearbeiten, deaktivieren, reaktivieren und löschen. Editierte Marker haben Vorrang vor dem automatischen Sollzustand. Ein Seed darf bestehende Marker nicht überschreiben, wenn sie anhand ihrer fachlichen Identität bereits vorhanden sind.</p>
+<p>Die Visualisierung der Marker ist global konfigurierbar. Es gibt die Stile <strong>Dezent</strong>, <strong>Standard</strong> und <strong>Hervorgehoben</strong>. Die Stile verändern nur die Intensität der Darstellung, nicht die fachliche Bedeutung des Markers.</p>
+<p>Die Markeranzeige folgt in den Kalenderansichten einer kontextbezogenen Darstellung. Im Wochenkalender wird der betroffene Tag als durchgehende Spalte über alle sichtbaren Tour-Lanes markiert. Im Monatskalender wird die volle Tageskachel markiert. Die textliche Markeranzeige wird im Kopf des Tages gezeigt und verwendet abhängig vom Platz entweder den vollen Namen, einen kompakten Platzhalter oder ein Icon. In kompakten Varianten bleibt der vollständige Markername per Hover erreichbar.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<p><strong>R-01 Keine Terminwirkung</strong></p>
+<p>Kalendermarker sind keine Termine. Sie erzeugen keine Mitarbeiterzuweisungen, keine Terminüberschneidungen, keine Sperren, keine Abwesenheiten, keine Projekt- oder Kundenbezüge und keine Reporteffekte.</p>
+<p><strong>R-02 Persistenz vor Berechnung</strong></p>
+<p>Die Kalenderanzeige verwendet gespeicherte Marker. Automatisch berechnete gesetzliche Feiertage werden vorab in den gespeicherten Bestand geseedet.</p>
+<p><strong>R-03 Seed-Zeitraum</strong></p>
+<p>Der automatische Feiertags-Seed erzeugt Marker für das aktuelle Jahr bis einschließlich aktuelles Jahr plus fünf Jahre.</p>
+<p><strong>R-03a Seed-Auslöser</strong></p>
+<p>Der automatische Feiertags-Seed wird über den System-Seed sowie nach dem ersten erfolgreichen Admin-Login eines Tages ausgelöst. Nicht-Admin-Logins dürfen keinen Feiertags-Seed starten.</p>
+<p><strong>R-04 Seed-Idempotenz</strong></p>
+<p>Ein Seed erkennt bestehende gesetzliche Feiertage über Datum, Typ, Quelle, Geltung und Bundesländer. Existiert ein Marker mit dieser fachlichen Identität bereits, wird er nicht überschrieben.</p>
+<p><strong>R-05 Editierte Daten haben Vorrang</strong></p>
+<p>Name, Notiz, Aktiv-Status und Version eines bestehenden Markers bleiben bei späteren Seeds erhalten.</p>
+<p><strong>R-06 Aktiv-Status steuert Kalenderanzeige</strong></p>
+<p>Nur aktive Marker erscheinen im Kalender-Leseendpunkt und damit in Wochen- und Monatskalender. Deaktivierte Marker bleiben im Admin-Bestand sichtbar.</p>
+<p><strong>R-07 Rollen</strong></p>
+<p>Kalenderlesen ist für Administratoren, Disponenten und Leser erlaubt. Pflege von Markern sowie Änderung des globalen Visualisierungsstils ist für Administratoren und Disponenten erlaubt und serverseitig abzusichern. Leser dürfen Marker ausschließlich lesen.</p>
+<p><strong>R-08 Visualisierung</strong></p>
+<p>Gesetzliche Feiertage werden rot, Betriebsfeiertage grün und Betriebsferien blau dargestellt. Die globale Stilauswahl steuert nur die Farbintensität.</p>
+<p><strong>R-09 Primärmarker pro Tag</strong></p>
+<p>Sind an einem Tag mehrere Marker aktiv, zeigt die kompakte Kalenderdarstellung nur einen Primärmarker sichtbar im Tageskopf. Die vollständige Markerinformation bleibt über Hover erreichbar.</p>
+<p><strong>R-10 Monatskopf ohne Zusatzzeile</strong></p>
+<p>Im Monatskalender darf die Markerbeschriftung keine zusätzliche Zeile unterhalb des Tageskopfs erzeugen. Die Darstellung muss im bestehenden Kopfbereich der Tageskachel bleiben, damit die Grid-Logik stabil bleibt.</p>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-34-01-kalendermarker-im-kalender-anzeigen.html">UC 34/01: Kalendermarker im Kalender anzeigen</a></li><li><a href="../use-cases/uc-34-02-feiertage-und-betriebsmarker-verwalten.html">UC 34/02: Feiertage und Betriebsmarker verwalten</a></li><li><a href="../use-cases/uc-34-03-gesetzliche-feiertage-automatisch-seeden.html">UC 34/03: Gesetzliche Feiertage automatisch seeden</a></li><li><a href="../use-cases/uc-34-04-marker-deaktivieren-und-reaktivieren.html">UC 34/04: Marker deaktivieren und reaktivieren</a></li><li><a href="../use-cases/uc-34-05-visualisierungsstil-global-waehlen.html">UC 34/05: Visualisierungsstil global wählen</a></li><li><a href="../use-cases/uc-34-06-unberechtigte-marker-pflege-blockieren.html">UC 34/06: Unberechtigte Marker-Pflege blockieren</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<p>Nicht angegeben.</p>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h3 class="wiki-h3">Betroffene Daten</h3>
+<p>Kalendermarker werden im bestehenden Kalendermarker-Bestand gespeichert. Es wird keine neue Terminart und keine neue Termintabelle eingeführt.</p>
+<p>Gespeicherte Marker umfassen sowohl manuell gepflegte Betriebsmarker als auch gesetzliche Feiertage aus dem Seed. Die Kalenderanzeige konsumiert nur diesen bestehenden Marker-Bestand und keine parallele Live-Berechnung.</p>
+<h3 class="wiki-h3">Verwandte Features &amp; Abhängigkeiten</h3>
+<p><strong>Dieses Feature konsumiert:</strong></p>
+<ul><li>FT (03): Kalenderansichten, weil Wochen- und Monatskalender die Marker visualisieren.</li><li>FT (18): User Preferences, weil der globale Visualisierungsstil als Setting geführt wird.</li><li>FT (20): Rollenbasierte Zugriffsbeschränkungen, weil Pflege und globale Einstellung auf Administratoren und Disponenten begrenzt sind.</li></ul>
+<p><strong>Dieses Feature wird konsumiert von:</strong></p>
+<ul><li>FT (03): Kalenderansichten, die aktive Marker im dargestellten Zeitraum anzeigen.</li></ul>
+<p><strong>Abgrenzung zu FT (01):</strong></p>
+<p>Kalendermarker sind keine Termine. Änderungen an Markern dürfen die fachliche Terminlogik aus FT (01) nicht verändern.</p>
+<h3 class="wiki-h3">Seiteneffekte bei Änderungen</h3>
+<ul><li>Änderungen an Markerarten oder Farben betreffen Wochen- und Monatskalender.</li><li>Änderungen an Rollenregeln betreffen die Stammdatenpflege, die Settings-Navigation und direkte API-Aufrufe.</li><li>Änderungen am Seed-Verhalten können gespeicherte Feiertage duplizieren oder editierte Admin-Werte überschreiben, wenn die Idempotenz verletzt wird.</li></ul>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<h3 class="wiki-h3">Offene Fragen</h3>
+<p>Keine.</p>
+<h3 class="wiki-h3">Entscheidungslog</h3>
+<p><strong>Kalendermarker als eigenes Feature</strong></p>
+<p>Feiertage und Betriebsferien werden nicht in FT (01) integriert, weil sie keine Termine sind. Sie werden als eigenes Feature dokumentiert und von FT (03) visualisiert.</p>
+<p><strong>Gespeicherte Feiertage statt Live-Berechnung</strong></p>
+<p>Gesetzliche Feiertage werden berechnet und anschließend gespeichert. Die Kalenderanzeige liest gespeicherte aktive Marker.</p>
+<p><strong>Seed überschreibt editierte Daten nicht</strong></p>
+<p>Bestehende Marker behalten Namen, Notiz, Aktiv-Status und Version. Der Seed ergänzt nur fehlende fachliche Identitäten.</p>
+<p><strong>Globale Visualisierung</strong></p>
+<p>Die Stilauswahl ist global und admin-gepflegt. Sie verändert nur die Darstellung, nicht die fachliche Markerlogik.</p>
+<p><strong>Adaptive Markeranzeige</strong></p>
+<p>Die Kalenderdarstellung verwendet für Marker im Tageskopf eine adaptive Anzeige mit Volltext, kompaktem Platzhalter und Icon. Dadurch bleibt die Darstellung in Woche und Monat stabil, auch wenn für Markerbeschriftungen nur wenig Platz verfügbar ist.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-34-01-kalendermarker-im-kalender-anzeigen.html">UC-34/01</a><a href="../use-cases/uc-34-02-feiertage-und-betriebsmarker-verwalten.html">UC-34/02</a><a href="../use-cases/uc-34-03-gesetzliche-feiertage-automatisch-seeden.html">UC-34/03</a><a href="../use-cases/uc-34-04-marker-deaktivieren-und-reaktivieren.html">UC-34/04</a><a href="../use-cases/uc-34-05-visualisierungsstil-global-waehlen.html">UC-34/05</a><a href="../use-cases/uc-34-06-unberechtigte-marker-pflege-blockieren.html">UC-34/06</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

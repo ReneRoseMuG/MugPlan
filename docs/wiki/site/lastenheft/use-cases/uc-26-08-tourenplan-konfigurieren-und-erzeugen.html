@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-26/08: Tourenplan konfigurieren und erzeugen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-26/08">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-26/08 Tourenplan konfigurieren und erzeugen</span></nav>
+        <h1 class="wiki-h1">UC-26/08: Tourenplan konfigurieren und erzeugen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-26</span></div>
+    <p class="wiki-lead">Der Benutzer ruft den Tourenplan auf, wählt Tour und Zeitraum und erzeugt die Kartenansicht.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-26-auswertungen-und-reports.html">FT (26): Auswertungen und Reports</a></li><li>Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254</li><li>Importstatus: Lokal für Report-Presets und entkoppelte Persistenz aktualisiert</li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer.</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Benutzer ruft den Tourenplan auf, wählt Tour und Zeitraum und erzeugt die Kartenansicht.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Benutzer ist angemeldet.</li><li>Der Navigationspunkt Reports ist verfügbar.</li><li>Es existieren Touren oder die Option Ohne Tour ist fachlich nutzbar.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Benutzer öffnet Reports und wählt Tourenplan.</li><li>Das System zeigt das Konfigurationspanel.</li><li>Der Report startet ohne Wiederherstellung alter Report-Settings im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.</li><li>Der Benutzer wählt eine Tour oder Ohne Tour.</li><li>Der Benutzer passt optional Zeitraum, Shortcode-Schalter, Druckmodus oder Vorschauoptionen an.</li><li>Der Benutzer klickt auf Report erzeugen.</li><li>Das System ermittelt die Termine der gewählten Tour im konfigurierten Zeitraum.</li><li>Das System gruppiert Karten nach Kalenderwoche und wendet die Tag-Priorität für die Darstellung an.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Pflichtangaben fehlen: Das System verhindert die Erzeugung oder zeigt eine Validierungsmeldung.</li><li>Keine passenden Termine: Das System zeigt einen leeren Report-Zustand.</li><li>Der Benutzer wendet ein Preset an: Das System setzt Tour, Zeitraum, Optionen, löst dynamische Kalenderwochen auf und führt optionale Preset-Aktionen aus.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Tourenplan ist sichtbar. Tour-Auswahl, Zeitraum, Druckmodus und Vorschauoptionen wurden nicht automatisch als Setting gespeichert. Wenn der Benutzer die Konfiguration dauerhaft sichern möchte, speichert er sie ausdrücklich als Preset.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

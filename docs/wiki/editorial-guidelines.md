@@ -40,17 +40,19 @@ Jede Backlog-Datei verwendet diese Abschnitte:
 
 Umsetzbare Aufgaben werden unter `docs/wiki/tasks/` geführt. Die lesbare Übersicht unter [Aufgaben](tasks/README.md) enthält nur offene Aufgaben. Pflege- und Strukturregeln stehen unter [Aufgabenpflege](tasks/meta/README.md). Jede Aufgabe verwendet die feste Vorlage aus [Aufgaben-Template](tasks/template.md) und enthält mindestens:
 
-- Metadaten mit Status, Dringlichkeit, Thema, Typ, Quelle, Verantwortlichkeit und Journalbezug
+- Metadaten mit Status, Dringlichkeit, Thema, Typ und Erstelldatum
 - Beziehungen zu Features, Use Cases, Entscheidungen und weiteren Bezügen
 - Ziel
 - Ausgangslage
 - Umfang
 - Umsetzungshinweise
-- Anhänge
 - Blocker und offene Fragen
-- Abschluss
 
 Abgeschlossene oder verworfene Aufgaben werden aus der offenen Übersicht entfernt und nach `docs/wiki/tasks/closed/` verschoben.
+
+## Projekt-Vorlage
+
+Größere Arbeitsstränge werden unter `docs/wiki/projects/` geführt. Eine Projektseite bündelt Masteraufgabe, Einzelaufgaben, relevante Decisions und Abgrenzung; sie ersetzt nicht die Aufgabenübersicht und schließt keine Aufgabe automatisch ab.
 
 ## Journal-Vorlage
 

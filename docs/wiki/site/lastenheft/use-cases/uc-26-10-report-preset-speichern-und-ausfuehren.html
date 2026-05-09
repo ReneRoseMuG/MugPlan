@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-26/10: Report-Preset speichern und ausführen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-26/10">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-26/10 Report-Preset speichern und ausführen</span></nav>
+        <h1 class="wiki-h1">UC-26/10: Report-Preset speichern und ausführen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-26</span></div>
+    <p class="wiki-lead">Der Benutzer speichert eine Report-Konfiguration bewusst als Preset und führt dieses Preset später erneut aus.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-26-auswertungen-und-reports.html">FT (26): Auswertungen und Reports</a></li><li>Status: Abgeschlossen</li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer. GLOBAL-Presets dürfen nur Admins verwalten.</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Benutzer speichert eine Report-Konfiguration bewusst als Preset und führt dieses Preset später erneut aus.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Benutzer ist angemeldet.</li><li>Ein Report-Konfigurationspanel ist geöffnet.</li><li>Die aktuelle Konfiguration ist fachlich gültig.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Benutzer konfiguriert einen Report.</li><li>Der Benutzer wählt Preset speichern.</li><li>Das System fragt mindestens den Preset-Namen und den Scope ab.</li><li>Das System erlaubt jedem Benutzer den Scope USER.</li><li>Das System erlaubt den Scope GLOBAL nur Admins.</li><li>Das System speichert die Konfiguration serverseitig als Preset.</li><li>Der Benutzer wählt später ein Preset aus.</li><li>Das System lädt das Preset, validiert Scope und Report-Key und setzt die gespeicherte Konfiguration in den Report.</li><li>Enthält das Preset dynamische Kalenderwochen, löst das System Start aktuelle KW oder Start kommende KW mit Anzahl KW in eine konkrete Datumsspanne auf.</li><li>Enthält das Preset Aktionen, führt das System die erlaubten Aktionen in definierter Reihenfolge aus.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Benutzer versucht, ein GLOBAL-Preset ohne Admin-Recht zu speichern: Das System verweigert die Änderung serverseitig.</li><li>Das Preset enthält einen ungültigen Report-Key oder eine ungültige Aktion: Das System verweigert die Speicherung oder Ausführung.</li><li>Das Preset gehört einem anderen Benutzer und ist USER-gescoped: Das System zeigt es nicht an und erlaubt keinen direkten Zugriff.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Das Preset steht im zulässigen Scope zur Verfügung. Es ersetzt keine stille Settings-Persistenz; es wird nur durch ausdrückliche Benutzeraktion gespeichert und angewendet.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-27: Produktverwaltung und Auftragspositionen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-27">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-27 Produktverwaltung und Auftragspositionen</span></nav>
+        <h1 class="wiki-h1">FT-27: Produktverwaltung und Auftragspositionen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">Produkte (Saunamodelle) und ihre Komponenten (Bauteile/Varianten) werden als strukturierte Stammdaten mit optionalen Spezifikationen erfasst und gepflegt. Damit werden Auftragspositionen präzise referenzierbar, statt nur Freitextbeschreibungen zu verwenden. Admin-Benutzer verwalt</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>Produkte (Saunamodelle) und ihre Komponenten (Bauteile/Varianten) werden als strukturierte Stammdaten mit optionalen Spezifikationen erfasst und gepflegt. Damit werden Auftragspositionen präzise referenzierbar, statt nur Freitextbeschreibungen zu verwenden. Admin-Benutzer verwalten die Produktkatalogdaten, Disponenten nutzen diese zum Erfassen von Auftragspositionen.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<h3 class="wiki-h3">Produkte und Produktkategorien</h3>
+<p>Ein <strong>Produkt</strong> repräsentiert ein fertiges Saunamodell (z.B. Kolmikko, Suuri, Mini). Jedes Produkt wird genau einer <strong>Produktkategorie</strong> zugeordnet (z.B. &quot;Sauna-Modelle&quot;, &quot;Zubehör&quot;). Produkte haben einen eindeutigen Namen, eine optionale Beschreibung und ein Aktivitätskennzeichen. Nur Admins können Produkte anlegen, bearbeiten oder deaktivieren.</p>
+<h3 class="wiki-h3">Komponenten und Komponentenkategorien</h3>
+<p>Eine <strong>Komponente</strong> ist ein eigenständiges Bauteil (z.B. Rückwand, Ofen, Vorderwand, Fenster, Türen). Jede Komponente wird genau einer <strong>Komponentenkategorie</strong> zugeordnet (z.B. &quot;Wände&quot;, &quot;Heizung&quot;, &quot;Türen&quot;) und kann eine optionale Beschreibung haben. Komponenten und Produkte sind voneinander unabhängige Stammdatenbereiche ohne strukturelle Verknüpfung.</p>
+<h3 class="wiki-h3">Integration mit Auftragsmanagement</h3>
+<p>Auftragspositionen (<code>project_order_items</code>) werden pro Projekt verwaltet, um eine Artikelliste pflegen zu können. Eine Position referenziert entweder ein Produkt oder eine Komponente — beide Felder sind unabhängig voneinander wählbar (kein Cascade-Dropdown). Mindestens eines von beiden muss gesetzt sein. Eine optionale freie Beschreibung kann zusätzlich angegeben werden. Die Zuordnung erfolgt strukturiert über Foreign Keys, nicht als Freitextbeschreibung.</p>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<h3 class="wiki-h3">Namensuniqueness und Eindeutigkeit</h3>
+<ul><li>Produktnamen sind global eindeutig (UNIQUE).</li><li>Komponentennamen sind global eindeutig (UNIQUE).</li><li>Kategorienamen sind eindeutig innerhalb ihres Typs.</li></ul>
+<h3 class="wiki-h3">Kategorien</h3>
+<ul><li>Jedes Produkt muss genau einer Produktkategorie zugeordnet sein.</li><li>Jede Komponente muss genau einer Komponentenkategorie zugeordnet sein.</li><li>Kategorien sind pflegende Stammdaten (Admin-Only).</li></ul>
+<h3 class="wiki-h3">Lebenszyklus und Deaktivierung</h3>
+<ul><li>Inaktive Produkte, Komponenten und Kategorien werden nicht gelöscht, sondern über <code>is_active = false</code> deaktiviert.</li><li>Deaktivierte Stammdaten werden in Auswahlfeldern nicht mehr angeboten.</li><li>Historische Auftragspositionen, die auf inaktive Stammdaten verweisen, bleiben konsistent referenzierbar.</li><li>Löschen ist blockiert, solange aktive Referenzen existieren (z.B. Auftragspositionen, die eine Komponente nutzen).</li></ul>
+<h3 class="wiki-h3">Berechtigungen</h3>
+<ul><li><strong>Admins:</strong> Volle Mutations- und Löschrechte auf Kategorien, Produkte und Komponenten.</li><li><strong>Disponenten:</strong> Lesezugriff auf alle Stammdaten. Keine Mutations- oder Löschrechte.</li><li>Serverseitige Berechtigungsprüfung ist verpflichtend; UI-seitige Beschränkung reicht nicht.</li></ul>
+<h3 class="wiki-h3">Referenzintegrität</h3>
+<ul><li>Beim Löschen eines Produkts oder einer Komponente wird geprüft, ob noch aktive Auftragspositionen darauf verweisen; wenn ja, wird das Löschen blockiert.</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC 27/01: Produktkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC 27/02: Produkt anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC 27/03: Komponentenkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC 27/04: Komponente anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC 27/05: Auftragsposition manuell erfassen (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC 27/06: Auftragsposition bearbeiten (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC 27/07: Auftragsposition löschen (Admin)</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC-27/01</a><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC-27/02</a><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC-27/03</a><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC-27/04</a><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC-27/05</a><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC-27/06</a><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC-27/07</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-27-produktverwaltung-und-auftragspositionen-backlog.html">BL-27</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

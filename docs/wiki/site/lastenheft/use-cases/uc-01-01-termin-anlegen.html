@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/01: Termin anlegen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/01">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/01 Termin anlegen</span></nav>
+        <h1 class="wiki-h1">UC-01/01: Termin anlegen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kundenvorbefüllung) oder direkt aus dem Kalender (mit freier Kundenwahl). Der Use Case unterstützt beide Wege der Terminanlage.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen neuen Termin anlegen, entweder aus einem Projekt heraus (mit Projekt-Kundenvorbefüllung) oder direkt aus dem Kalender (mit freier Kundenwahl). Der Use Case unterstützt beide Wege der Terminanlage.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Anlegerechte (Disponent oder Administrator).</li><li>Kunde existiert und ist aktiv (Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen).</li><li><strong>Rollenbasierte Datumsbeschränkung:</strong> Disponenten dürfen nur Termine mit Startdatum ≥ heute anlegen. Administratoren dürfen Termine mit beliebigem Startdatum anlegen — einschließlich Datumsangaben in der Vergangenheit.</li><li>Optional: Projekt existiert und ist einem aktiven Kunden zugeordnet.</li><li>Optional: Team existiert und hat mindestens einen zugeordneten Mitarbeiter.</li><li>Optional: Tour existiert.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<p><strong>Weg 1: Termin aus Projekt heraus anlegen</strong></p>
+<ol><li>Der Akteur editiert ein vorhandenes Projekt und klickt in der Terminliste rechts auf „+&quot; (Termin anlegen). Das System öffnet das Terminformular.</li><li>Das System verknüpft den Termin mit dem Projekt und übernimmt den Kunden vom Projekt (Vorbefüllung, schreibgeschützt).</li><li>Das System setzt das Startdatum auf den aktuellen Tag.</li><li>Der Kundenwert ist nicht editierbar (schreibgeschützt), da er vom Projekt vorgegeben ist.</li><li>Der Akteur editiert Startdatum und optional Enddatum sowie optional eine Startuhrzeit.</li><li>Der Akteur weist dem Termin optional eine Tour zu.</li><li>Der Akteur weist dem Termin optional ein Team zu.</li><li>Der Akteur weist dem Termin optional Mitarbeiter manuell zu.</li><li>Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.</li><li>Das System speichert den Termin mit <code>customer_id</code> (vom Projekt), <code>project_id</code> (vom Projekt).</li><li>Das System zeigt den Termin im Kalender an.</li></ol>
+<hr>
+<p><strong>Weg 2: Termin direkt aus dem Kalender anlegen</strong></p>
+<ol><li>Der Akteur klickt im Kalender auf einen „+&quot;-Button (Termin anlegen). Das System öffnet das Terminformular.</li><li>Das System setzt das Startdatum auf den angeklickten Tag.</li><li>Der angeklickte „+“-Button gehörte optional zu einer Tour-Lane.</li><li>Das System verknüpft den Termin mit dieser Tour. Wenn für die Kalenderwoche des Startdatums in der Tour eine Wochenplanung hinterlegt ist, zeigt das System sofort einen Vorschau-Dialog mit den geplanten Mitarbeitern und möglichen Konflikten. Nach Bestätigung werden die ausgewählten Mitarbeiter in die Mitarbeiterliste übernommen. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt leer.</li><li>Der Akteur wählt einen Kunden (Pflichtfeld, Dropdown mit aktiven Kunden gemäß Rolle). Das System filtert serverseitig: Disponenten sehen nur aktive Kunden; Administratoren können auch inaktive Kunden sehen.</li><li>Der Akteur editiert Startdatum und optional Enddatum sowie optional eine Startuhrzeit.</li><li>Der Akteur weist dem Termin optional ein Projekt zu (Kundenmismatch wird geprüft, siehe Alternativen).</li><li>Der Akteur weist dem Termin optional eine Tour zu, falls nicht bereits durch Schritt 3 erfolgt (oder um die Tour zu ändern/entfernen). Siehe 3.a</li><li>Der Akteur weist dem Termin optional ein Team zu.</li><li>Der Akteur weist dem Termin optional Mitarbeiter manuell zu.</li><li>Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.</li><li>Das System speichert den Termin mit <code>customer_id</code> (vom Akteur gewählt), <code>project_id</code> (optional, nur wenn Kundenwerte konsistent sind).</li><li>Das System zeigt den Termin im Kalender an, entweder mit Tourfarbe oder mit Standardfarbe.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Nicht authentifiziert:</strong> HTTP 401, keine Persistenz.</li><li><strong>Keine Berechtigung:</strong> HTTP 403, keine Persistenz.</li><li><strong>Überschneidung erkannt:</strong> Das System blockiert den Vorgang und zeigt einen Konflikt an (HTTP 409 EMPLOYEE_OVERLAP_CONFLICT).</li><li><strong>Abbruch:</strong> Der Termin wird nicht gespeichert.</li><li>Es wird kein neuer Termin-Datensatz in der Datenbank angelegt.</li><li>Es werden keine neuen Einträge in der Join-Tabelle Termin–Mitarbeiter angelegt, auch dann nicht, wenn zwischenzeitlich Mitarbeiter im Formular ausgewählt wurden.</li><li><strong>Startdatum in der Vergangenheit (nur Disponent):</strong> Wenn ein Disponent ein Startdatum vor dem heutigen Tag eingibt, blockiert das System den Vorgang mit HTTP 409 PAST_APPOINTMENT_READONLY. Administratoren sind von dieser Einschränkung ausgenommen und dürfen Termine mit Startdatum in der Vergangenheit anlegen.</li><li><strong>Startzeit in der Vergangenheit, heutiges Datum (nur Disponent):</strong> Wenn ein Disponent für den heutigen Tag eine Startzeit eingibt, die bereits vergangen ist, blockiert das System den Vorgang mit HTTP 409 VALIDATION_ERROR. Administratoren sind ausgenommen.</li><li><strong>Tour-Woche gesperrt:</strong> Das System blockiert die Anlage mit HTTP 409 BUSINESS_CONFLICT.</li><li><strong>Speichern ohne Kundenzuordnung (Weg 2 nur):</strong> Der Akteur versucht zu speichern, ohne dass ein Kunde zugeordnet ist. Das System blockiert den Vorgang mit HTTP 422 und zeigt eine eindeutige Fehlermeldung an: „Kunde erforderlich – Termin kann nicht ohne Kundenkontext gespeichert werden.&quot;</li><li><strong>Kunde ist inaktiv (Weg 2 nur):</strong> Falls ein Disponent einen inaktiven Kunden auswählen versucht, wird das blockiert (serverseitige Filterung zeigt ihn nicht im Dropdown). Administratoren können inaktive Kunden auswählen.</li><li><strong>Projekt-Kundenmismatch (Weg 2 nur):</strong> Der Akteur versucht, ein Projekt zu wählen, dessen Kundenwert sich vom gewählten Kundenwert unterscheidet. Das System blockiert die Projektzuordnung mit HTTP 422 und Fehlermeldung: „Kundenmismatch – Das gewählte Projekt gehört zu einem anderen Kunden. Bitte wählen Sie ein Projekt desselben Kunden oder entfernen Sie die Projektzuordnung.&quot;</li><li><strong>Technischer Fehler:</strong> HTTP 500, keine Persistenz.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist einem Kunden zugeordnet und im Kalender sichtbar, entweder mit Tourfarbe oder mit Standardfarbe. Der Termin ist fachlich gültig. Der Termin kann optional einem Projekt desselben Kunden zugeordnet sein. Die Mitarbeiterzuordnungen des Termins sind als Einträge in der Join-Tabelle Termin–Mitarbeiter abrufbar.</p>
+<p>Für alle dem Termin zugeordneten Mitarbeiter zeigt das Mitarbeiterformular diesen Termin in der Mitarbeiter-Terminliste. Das Kundenformular zeigt den Termin in der Terminliste des Kunden, dem der Termin zugeordnet ist. Das Projektformular zeigt den Termin in der Projekt-Terminliste (sofern der Termin einem Projekt zugeordnet ist). Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

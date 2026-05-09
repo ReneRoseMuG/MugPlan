@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-10: FT-04 mehrstufiger Tour-KW-Dialog · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-10">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekt</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-10 FT-04 mehrstufiger Tour-KW-Dialog</span></nav>
+        <h1 class="wiki-h1">A-10: FT-04 mehrstufiger Tour-KW-Dialog</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Dialoge</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Implementierung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>07.05.26</div>
+    <p class="wiki-lead">Wenn ein Disponent mehrere Mitarbeiter für eine Tour-KW übernimmt, soll ein einheitlicher mehrstufiger Dialog den gesamten Vorgang transparent abbilden. Die bisherige stille Verkettung einzelner Vorschauen soll durch einen nachvollziehbaren Dialogfluss mit Fortschritt, Vorschau u</p>
+    <p>Wenn ein Disponent mehrere Mitarbeiter für eine Tour-KW übernimmt, soll ein einheitlicher mehrstufiger Dialog den gesamten Vorgang transparent abbilden. Die bisherige stille Verkettung einzelner Vorschauen soll durch einen nachvollziehbaren Dialogfluss mit Fortschritt, Vorschau und Bestätigung ersetzt werden. Die Mehrfach-Zuweisung kann aus <code>TourManagement</code>, <code>TourEditForm</code>, <code>TourWeekForm</code> und <code>TourWeekPlanningView</code> ausgelöst werden. Der aktuell vorliegende Auftragsimport beschreibt den fachlichen Kern, endet aber i.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Dialoge</td><td>Implementierung</td><td>07.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Wenn ein Disponent mehrere Mitarbeiter für eine Tour-KW übernimmt, soll ein einheitlicher mehrstufiger Dialog den gesamten Vorgang transparent abbilden. Die bisherige stille Verkettung einzelner Vorschauen soll durch einen nachvollziehbaren Dialogfluss mit Fortschritt, Vorschau und Bestätigung ersetzt werden.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Die Mehrfach-Zuweisung kann aus <code>TourManagement</code>, <code>TourEditForm</code>, <code>TourWeekForm</code> und <code>TourWeekPlanningView</code> ausgelöst werden. Der aktuell vorliegende Auftragsimport beschreibt den fachlichen Kern, endet aber in der Quelle nach dem Abschnitt zu betroffenen Dateien unvollständig. Die Umsetzung muss deshalb auf Codeanalyse, FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente und den bestehenden FT-04-Regeln aufbauen.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören:</li><li>alle bestehenden Einstiegspunkte der Mehrfach-Mitarbeiterzuweisung zur Tour-KW identifizieren</li><li>den heutigen stillen Kaskadenfluss analysieren</li><li>den Ablauf mit der gemeinsamen Dialogstruktur aus FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente verbinden</li><li>Fortschritt, aktuelle Mitarbeiterposition und ausstehende Schritte sichtbar machen</li><li>konfliktfreie betroffene Termine vorauswählen</li><li>konfliktbehaftete Termine sichtbar, aber deaktiviert darstellen</li><li>Abbruch und Zurück-Navigation fachlich korrekt begrenzen</li><li>Bestätigung erst nach klarer Nutzerentscheidung ausführen</li><li>Nicht Teil der Aufgabe sind neue API-Routen, DB-Schemaänderungen oder eine Aufweichung bestehender Tour-KW-, Rollen-, Historien- oder Konfliktregeln.</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Ausgangspunkte sind <code>TourManagement</code>, <code>TourWeekForm</code>, <code>TourEditForm</code>, <code>TourWeekPlanningView</code> und der bestehende <code>TourEmployeeCascadeDialog</code>.</li><li>Die Aufgabe ist thematisch an FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente gekoppelt und soll keine zweite unabhängige Dialoglogik einführen.</li><li>Serverseitige Re-Checks bleiben Pflicht; die Vorschau darf nicht als abschließende Berechtigung oder Konfliktprüfung behandelt werden.</li><li>Historische Termine und gesperrte Kalenderwochen dürfen nicht durch den Dialog umgangen werden.</li><li>Betroffene Rollen sind mindestens <code>ADMIN</code>, <code>DISPONENT</code> und <code>READER</code>.</li><li>Erlaubte Aktionen:</li><li><code>ADMIN</code> und <code>DISPONENT</code> dürfen die bestehenden Tour-KW-Mutationen nur im Rahmen der vorhandenen serverseitigen Regeln ausführen.</li><li><code>READER</code> darf keine schreibenden Tour-KW-Mutationen ausführen.</li><li>Die serverseitige Durchsetzung von Rollen, Sperren, historischen Grenzen, Versionskonflikten und Mitarbeiterkonflikten muss erhalten bleiben.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Die importierte Auftragsdatei ist offenbar unvollständig und muss vor Umsetzung gegen Code und FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente validiert werden.</li><li>Vor Umsetzung ist zu klären, ob die Mehrfach-Zuweisung erst final oder bereits pro Schritt mutiert.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: FT-04 Tourenplanung</li><li>Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen</li><li>Entscheidungen: —</li><li>Weitere Bezüge: <a href="ft04-dialog-basiskomponente.html">FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</a> · <a href="termin-tour-kw-mutationsdialoge.html">Termin- und Tour-KW-Mutationsdialoge vereinheitlichen</a> · <a href="ft04-multiselect-kw-planung-wochenkalender.html">FT-04 Multiselect für KW-Planung im Wochenkalender</a> · <a href="mitarbeiter-auswahl-dialogstruktur.html">Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Projekte</div><div class="wiki-relations__val"><a href="../projekte/dialog-rollout.html">P-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

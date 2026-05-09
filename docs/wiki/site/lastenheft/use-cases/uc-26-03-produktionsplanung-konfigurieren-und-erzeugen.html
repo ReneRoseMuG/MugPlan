@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-26/03: Produktionsplanung konfigurieren und erzeugen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-26/03">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-26/03 Produktionsplanung konfigurieren und erzeugen</span></nav>
+        <h1 class="wiki-h1">UC-26/03: Produktionsplanung konfigurieren und erzeugen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-26</span></div>
+    <p class="wiki-lead">Der Benutzer ruft die Produktionsplanung auf, konfiguriert Zeitraum und Optionen und erzeugt die Summenbereiche sowie die Sondermaß-Kacheln.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-26-auswertungen-und-reports.html">FT (26): Auswertungen und Reports</a></li><li>Notion-Quelle: https://app.notion.com/p/313da094354e80b2a13ad9fdb689a254</li><li>Importstatus: Lokal für Report-Presets und entkoppelte Persistenz aktualisiert</li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Angemeldeter Benutzer. Das Bearbeiten der globalen Layout-Konfiguration ist Admins vorbehalten.</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Der Benutzer ruft die Produktionsplanung auf, konfiguriert Zeitraum und Optionen und erzeugt die Summenbereiche sowie die Sondermaß-Kacheln.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Benutzer ist angemeldet.</li><li>Der Navigationspunkt Reports ist verfügbar.</li><li>Die globale Produktionsplanungs-Layout-Konfiguration ist entweder vorhanden oder das System nutzt das Standardlayout.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Benutzer öffnet Reports und wählt Produktionsplanung.</li><li>Das System zeigt das Konfigurationspanel.</li><li>Der Report startet ohne Wiederherstellung alter Report-Settings im Kalenderwochenmodus mit aktueller KW und 1 KW Zeitraum.</li><li>Der Benutzer passt optional Zeitraum und Shortcode-Schalter an.</li><li>Optional öffnet ein Admin den Kategorie-Layout-Editor und ändert die globale Layout-Konfiguration.</li><li>Der Benutzer klickt auf Report erzeugen.</li><li>Das System ermittelt Projekte mit Terminen im konfigurierten Zeitraum.</li><li>Das System schließt Projekte und Termine mit Reklamation-Tag oder Storniert-Tag vollständig aus.</li><li>Das System aggregiert Produkt- und Komponentenmengen entsprechend Layout und Shortcode-Konfiguration.</li><li>Das System zeigt unten nur Einzelkacheln für Projekte bzw. Termine, die das System-Tag Sondermaß tragen.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Pflichtangaben fehlen: Das System verhindert die Erzeugung oder zeigt eine Validierungsmeldung.</li><li>Keine passenden Einträge: Das System zeigt leere Summenbereiche und keinen Kachelbereich.</li><li>Ein Nicht-Admin versucht, die globale Layout-Konfiguration zu ändern: Das System verweigert die Änderung serverseitig.</li><li>Der Benutzer wendet ein Preset an: Das System setzt die gespeicherte Konfiguration, löst dynamische Kalenderwochen auf und führt optionale Preset-Aktionen aus.</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Die Produktionsplanung ist sichtbar. Die Summenbereiche folgen der aktuellen Konfiguration. Der untere Kachelbereich enthält ausschließlich Sondermaß-Kacheln. Anmerkungen oder Gespiegelt allein erzeugen keine Kachel.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

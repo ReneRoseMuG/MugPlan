@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FT-21: Dokumentenextraktion · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html" class="is-active">Features</a></li><li><a href="../use-cases.html">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Features FT-21">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Features</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">FT-21 Dokumentenextraktion</span></nav>
+        <h1 class="wiki-h1">FT-21: Dokumentenextraktion</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--abgeschlossen">Abgeschlossen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Feature</span></div>
+    <p class="wiki-lead">FT (21) erweitert das System um eine kontextgebundene Dokumentenextraktion zur Unterstützung der Disposition.</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Status: Abgeschlossen</li><li>Typ: Feature</li></ul>
+<h2 class="wiki-h2">Ziel / Zweck</h2>
+<p>FT (21) erweitert das System um eine kontextgebundene Dokumentenextraktion zur Unterstützung der Disposition.</p>
+<p>Aus einem textbasierten Auftragsdokument (PDF) sollen automatisiert folgende Daten extrahiert werden:</p>
+<ul><li>Kundendaten gemäß bestehendem Kundenschema</li><li>Saunamodell (als Projekttitel-Vorschlag)</li><li>Artikelliste (Menge + Beschreibung, mehrzeilig möglich, ohne Preise)</li></ul>
+<p>Die extrahierten Daten werden als editierbarer Vorschlag präsentiert und können in das aktuelle Formular (Neues Projekt oder Neuer Termin) übernommen werden.</p>
+<p>Das Feature dient ausschließlich der Arbeitserleichterung.</p>
+<p>Es ersetzt keine bestehende Validierungs- oder Sicherheitslogik.</p>
+<h2 class="wiki-h2">Fachliche Beschreibung</h2>
+<p>Die Extraktionsfunktion ist ausschließlich in folgenden Kontexten verfügbar:</p>
+<ul><li>Formular <strong>Neues Projekt</strong></li><li>Formular <strong>Neuer Termin</strong></li></ul>
+<p>Die Disponentin kann ein PDF in einen definierten Extraktionsbereich ziehen.</p>
+<p>Das System:</p>
+<ol><li>Extrahiert den Text aus dem Dokument.</li><li>Segmentiert strukturelle Bereiche (Kunde, Artikelliste, Auftragsblock).</li><li>Extrahiert strukturierte Kundendaten.</li><li>Extrahiert eine Artikelliste.</li><li>Erkennt das Saunamodell.</li><li>Kategorisiert die Artikelliste semantisch.</li><li>Liefert ein validiertes Ergebnis zurück.</li></ol>
+<h2 class="wiki-h2">Präsentation</h2>
+<p>Nach erfolgreicher Extraktion erscheint ein schwebender Dialog.</p>
+<h3 class="wiki-h3">Bereich 1 – Kundendaten</h3>
+<p>Nachbildung des Kunden-Edit-Formulars mit vorbefüllten Feldern.</p>
+<p>Alle Felder sind editierbar.</p>
+<h3 class="wiki-h3">Bereich 2 – Projektvorschlag</h3>
+<p>Titelfeld:</p>
+<ul><li>Vorgefüllt mit erkanntem Saunamodell.</li></ul>
+<p>Editorfeld (RTF/HTML-kompatibel):</p>
+<ul><li>Extrahierte, sortierte Artikelliste.</li><li>Darstellung als strukturierte HTML-Auflistung.</li><li>Vollständig editierbar.</li></ul>
+<h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<ul><li>Die Verarbeitung erfolgt ausschließlich serverseitig.</li><li>Es werden keine Dokumente oder Texte an externe Dienste übertragen.</li><li>Dokumenttexte werden nicht persistiert.</li><li>Prompts und Rohtexte werden nicht geloggt.</li><li>Ungültige oder unvollständige Daten dürfen nicht gespeichert werden.</li><li>Die Speicherung erfolgt nur nach Benutzerbestätigung.</li><li>Rollen- und Berechtigungslogik wird serverseitig geprüft.</li><li>FT (21) verändert das Attachment-Modell aus FT (19) nicht.</li><li>FT (21) verändert keine bestehenden Domänenmodelle.</li><li>Das Feature darf keine impliziten Datenänderungen auslösen.</li><li>Bei strukturell ungeeigneten Dokumenten muss der Prozess sauber abbrechen.</li><li>DIe Kundennummer gilt als Duplikat Key für Kunden</li><li>Erkannte Duplikate werden zum stillen Auffüllen von Kundenstammdaten verwendet</li></ul>
+<h2 class="wiki-h2">Use Cases</h2>
+<ul><li><a href="../use-cases/uc-21-01-dokumentextraktion-starten.html">UC 21/01: Dokumentextraktion starten</a></li><li><a href="../use-cases/uc-21-02-extrahierte-daten-bestaetigen.html">UC 21/02: Extrahierte Daten bestätigen</a></li><li><a href="../use-cases/uc-21-03-ungeeignetes-dokument-behandeln.html">UC 21/03: Ungeeignetes Dokument behandeln</a></li><li><a href="../use-cases/uc-21-04-kategorisierung-schlaegt-fehl.html">UC 21/04: Kategorisierung schlägt fehl</a></li><li><a href="../use-cases/uc-21-05-dokumentextraktion-im-formular-neues-projekt-starten.html">UC 21/05: Dokumentextraktion im Formular „Neues Projekt“ starten</a></li><li><a href="../use-cases/uc-21-06-dokumentextraktion-im-formular-neuer-termin-starten.html">UC 21/06: Dokumentextraktion im Formular „Neuer Termin“ starten</a></li><li><a href="../use-cases/uc-21-07-kundendaten-uebernehmen-scope-neues-projekt.html">UC 21/07: Kundendaten übernehmen – Scope Neues Projekt</a></li><li><a href="../use-cases/uc-21-08-kundendaten-uebernehmen-scope-neuer-termin.html">UC 21/08: Kundendaten übernehmen – Scope Neuer Termin</a></li><li><a href="../use-cases/uc-21-09-projekt-uebernehmen-scope-neues-projekt.html">UC 21/09: Projekt übernehmen – Scope Neues Projekt</a></li><li><a href="../use-cases/uc-21-10-projekt-uebernehmen-scope-neuer-termin.html">UC 21/10: Projekt übernehmen – Scope Neuer Termin</a></li><li><a href="../use-cases/uc-21-11-extraktionsvorgang-abbrechen.html">UC 21/11: Extraktionsvorgang abbrechen</a></li><li><a href="../use-cases/uc-21-12-extraktion-bei-bestehendem-kunden-im-termin-kontext.html">UC 21/12: Extraktion bei bestehendem Kunden im Termin-Kontext</a></li><li><a href="../use-cases/uc-21-13-wiederholte-extraktion-desselben-dokuments.html">UC 21/13: Wiederholte Extraktion desselben Dokuments</a></li><li><a href="../use-cases/uc-21-14-extraktion-bei-zwischenzeitlich-geloeschtem-parent-objekt.html">UC 21/14: Extraktion bei zwischenzeitlich gelöschtem Parent-Objekt</a></li><li><a href="../use-cases/uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.html">UC 21/17: Extrahiertes PDF als Projekt-Attachment verknüpfen</a></li></ul>
+<h2 class="wiki-h2">Backlogs</h2>
+<h2 class="wiki-h2">Architektur &amp; Kontext</h2>
+<h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-21-01-dokumentextraktion-starten.html">UC-21/01</a><a href="../use-cases/uc-21-02-extrahierte-daten-bestaetigen.html">UC-21/02</a><a href="../use-cases/uc-21-03-ungeeignetes-dokument-behandeln.html">UC-21/03</a><a href="../use-cases/uc-21-04-kategorisierung-schlaegt-fehl.html">UC-21/04</a><a href="../use-cases/uc-21-05-dokumentextraktion-im-formular-neues-projekt-starten.html">UC-21/05</a><a href="../use-cases/uc-21-06-dokumentextraktion-im-formular-neuer-termin-starten.html">UC-21/06</a><a href="../use-cases/uc-21-07-kundendaten-uebernehmen-scope-neues-projekt.html">UC-21/07</a><a href="../use-cases/uc-21-08-kundendaten-uebernehmen-scope-neuer-termin.html">UC-21/08</a><a href="../use-cases/uc-21-09-projekt-uebernehmen-scope-neues-projekt.html">UC-21/09</a><a href="../use-cases/uc-21-10-projekt-uebernehmen-scope-neuer-termin.html">UC-21/10</a><a href="../use-cases/uc-21-11-extraktionsvorgang-abbrechen.html">UC-21/11</a><a href="../use-cases/uc-21-12-extraktion-bei-bestehendem-kunden-im-termin-kontext.html">UC-21/12</a><a href="../use-cases/uc-21-13-wiederholte-extraktion-desselben-dokuments.html">UC-21/13</a><a href="../use-cases/uc-21-14-extraktion-bei-zwischenzeitlich-geloeschtem-parent-objekt.html">UC-21/14</a><a href="../use-cases/uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.html">UC-21/17</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-21-dokumentenextraktion-backlog.html">BL-21</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>06-05-26-report-layout-presets-ft03-task: 06.05.26 | Implementierung | FT-26/FT-03: Reportlayout, Preset-Sperre und offene Aufgabe · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 06-05-26-report-layout-presets-ft03-task">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">06-05-26-report-layout-presets-ft03-task 06.05.26 | Implementierung | FT-26/FT-03: Reportlayout, Preset-Sperre und offene Aufgabe</span></nav>
+        <h1 class="wiki-h1">06-05-26-report-layout-presets-ft03-task: 06.05.26 | Implementierung | FT-26/FT-03: Reportlayout, Preset-Sperre und offene Aufgabe</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>06.05.26</div>
+    <p class="wiki-lead">Die Produktionsplanung stellt Kategorien im selben Block nun nebeneinander dar. Die Preset-Controls der vier Reports bleiben sichtbar, sind aber temporär deaktiviert. Zusätzlich wurde der offene FT-03-Auftrag Mark &amp; Insert als Wiki-Aufgabe A-08 übernommen.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Produktionsplanung stellt Kategorien im selben Block nun nebeneinander dar. Die Preset-Controls der vier Reports bleiben sichtbar, sind aber temporär deaktiviert. Zusätzlich wurde der offene FT-03-Auftrag Mark &amp; Insert als Wiki-Aufgabe A-08 übernommen.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>UI-Implementierung mit ergänzender Unit-/UI-Testabdeckung sowie Wiki-Dokumentation. Es wurden keine API-Contracts, Datenbankmigrationen oder Rollenmodelle geändert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-26: Auswertungen und Reports</li><li>FT-03: Kalenderansichten</li><li>FT-01: Kalendertermine als Bezug für Terminverschiebung</li><li>FT-04: Tourenplanung als Bezug für Tourwechsel und Konfliktprüfung</li></ul>
+<p>Notion-Links wurden in dieser Session nicht zusätzlich geprüft; Grundlage waren die lokale Auftragsdatei und die bestehenden Repo-Wiki-Seiten.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Produktionsplanung: Kategorien mit gleicher Blocknummer werden als gewichtetes Raster gerendert.</li><li>Produktionsplanung-Druckansicht: nutzt dieselbe Blockbreitenlogik.</li><li>Report-Presets: <code>ReportPresetControls</code> kann vollständig disabled gerendert werden.</li><li>Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan setzen die Preset-Controls temporär auf disabled.</li><li>Tests sichern Blockauflösung, Bildschirmrendering, Druckrendering und Preset-Sperre ab.</li><li>A-08 dokumentiert Mark &amp; Insert mit Ziel, Scope, Rollenbezug, offenen Designpunkten und erwarteten Tests.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Die Reportänderung verändert keine Rollen oder serverseitigen Berechtigungen. Die Preset-Sperre ist eine UI-Sperre; bestehende serverseitige Preset-Regeln bleiben unverändert.</p>
+<p>A-08 hält fest, dass Mark &amp; Insert vor Umsetzung serverseitig gegen historische Sperren, direkte API-Aufrufe, Deep Links, parallele Bearbeitung und Konfliktpfade abgesichert werden muss.</p>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:run -- tests/unit/lib/produktionsplanungCategoryLayout.test.ts tests/unit/ui/produktionsplanungPrintLayout.wiring.test.tsx tests/unit/ui/reportsPage.wiring.test.tsx tests/unit/ui/reportPresetControls.disabled.test.tsx</code></li><li><code>npm run typecheck</code></li><li><code>git diff --check</code> für die bearbeiteten Code-, Test- und Wiki-Dateien</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Die Preset-Sperre ist bewusst temporär und muss später wieder entfernt oder durch eine fachliche Entscheidung ersetzt werden.</li><li>A-08 bleibt offen; vor Umsetzung sind Codeanalyse, gemeinsame Mutationsstrategie mit A-07 und Rollen-/Sicherheitsprüfung erforderlich.</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

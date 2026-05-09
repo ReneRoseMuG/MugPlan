@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>05-05-26-report-presets-auftragsliste: 05.05.26 | UI-Nacharbeit | FT-26: Report-Presets und Auftragsliste · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 05-05-26-report-presets-auftragsliste">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">05-05-26-report-presets-auftragsliste 05.05.26 | UI-Nacharbeit | FT-26: Report-Presets und Auftragsliste</span></nav>
+        <h1 class="wiki-h1">05-05-26-report-presets-auftragsliste: 05.05.26 | UI-Nacharbeit | FT-26: Report-Presets und Auftragsliste</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>05.05.26</div>
+    <p class="wiki-lead">Die Report-Konfigurationen wurden visuell nachgezogen und die Auftragsliste fachlich geschärft. Preset-Controls stehen jetzt rechts, Einstellungscontainer sind kompakter getrennt, stornierte Termine werden aus der Auftragsliste ausgeschlossen und der Tag-Filter bietet die fachlic</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Report-Konfigurationen wurden visuell nachgezogen und die Auftragsliste fachlich geschärft. Preset-Controls stehen jetzt rechts, Einstellungscontainer sind kompakter getrennt, stornierte Termine werden aus der Auftragsliste ausgeschlossen und der Tag-Filter bietet die fachlich relevanten Report-Tags an.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<p>Kleiner lokaler Fix in bestehender Report-UI und bestehender Report-Serverlogik. Es wurden keine Datenmodelle, Migrationen oder Rollenregeln geändert.</p>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT (26): Auswertungen und Reports</li><li>Auftragsliste</li><li>Report-Presets</li><li>Tagfilter in Report-Konfigurationen</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Report-Konfigurationspanels richten Date-Range und Einstellungen links sowie Presets rechts aus.</li><li>Shortcode-Optionen liegen in eigenen schmalen Einstellungscontainern.</li><li>Auftragsliste und Tourenplan nutzen kompaktere Optionscontainer ohne unnötige Breite.</li><li>Die Auftragsliste schließt Projekte mit Reklamation oder Storniert serverseitig aus.</li><li>Der Tag-Katalog kann für Reports über <code>includeReportTags=true</code> zusätzlich <code>Sondermaß</code> und <code>Anmerkungen</code> liefern.</li><li>Die Auftragsliste nutzt diesen Report-Tag-Katalog für den Tagfilter.</li><li>Der Tag-Picker-Button bleibt in der Auftragsliste auch bei leerer Optionsliste klickbar und zeigt dann den leeren Picker-Zustand.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Keine Änderung an Rollen oder Berechtigungen.</p>
+<ul><li>Alle bisherigen Report-Rollen behalten ihren Zugriff auf Reports.</li><li>USER-Presets bleiben für angemeldete Benutzer verwaltbar.</li><li>GLOBAL-Presets bleiben Admins vorbehalten.</li><li>Die Tagfilter-Änderung betrifft nur sichtbare Filteroptionen, nicht serverseitige Mutationsrechte.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<p>Erfolgreich ausgeführt:</p>
+<ul><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/reports.auftragsliste.integration.test.ts</code></li><li><code>npm run test:integration -- --reporter=verbose tests/integration/server/appointments.cancellation.integration.test.ts</code></li><li><code>npm run test:unit -- tests/unit/ui/reportsPage.wiring.test.tsx</code></li><li><code>npm run test:unit -- tests/unit/ui/tagFilterInput.behavior.test.tsx tests/unit/ui/reportsPage.wiring.test.tsx</code></li><li><code>npm run typecheck</code></li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein voller Audit und kein vollständiger Browser-E2E-Lauf.</li><li>Weitere offene Mitarbeiter-Dateien im Arbeitsbaum gehören nicht zu diesem Journaleintrag.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

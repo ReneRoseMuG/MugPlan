@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UC-01/02: Termin bearbeiten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekt</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../features.html">Features</a></li><li><a href="../use-cases.html" class="is-active">Use Cases</a></li><li><a href="../backlogs.html">Backlogs</a></li><li><a href="../nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Use Cases UC-01/02">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-01/02 Termin bearbeiten</span></nav>
+        <h1 class="wiki-h1">UC-01/02: Termin bearbeiten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-01</span></div>
+    <p class="wiki-lead">Einen bestehenden Termin ändern, ohne fachliche Inkonsistenzen zu erzeugen. Der Use Case umfasst Änderungen an Zeitraum und Uhrzeit, Änderungen der Kundenzuordnung, Änderungen der Projektzuordnung (mit Konsistenzprüfung), Änderungen der Tourzuordnung, das Übernehmen von Mitarbeit</p>
+    <h2 class="wiki-h2">Metadaten</h2>
+<ul><li>Feature: <a href="../features/ft-01-kalendertermine.html">FT (01): Kalendertermine</a></li></ul>
+<h2 class="wiki-h2">Akteur</h2>
+<p>Disponent, Administrator</p>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Einen bestehenden Termin ändern, ohne fachliche Inkonsistenzen zu erzeugen. Der Use Case umfasst Änderungen an Zeitraum und Uhrzeit, Änderungen der Kundenzuordnung, Änderungen der Projektzuordnung (mit Konsistenzprüfung), Änderungen der Tourzuordnung, das Übernehmen von Mitarbeitern über Tour oder Team als Einfügehilfe sowie manuelle Mitarbeiterzuweisungen und -entfernungen.</p>
+<h2 class="wiki-h2">Vorbedingungen</h2>
+<ul><li>Der Termin existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).</li><li><strong>Rollenbasierte Datumsbeschränkung:</strong> Disponenten dürfen nur nicht-historische Termine bearbeiten (Startdatum ≥ heute). Administratoren dürfen Termine unabhängig vom Startdatum bearbeiten.</li><li>Der zum Termin gehörende Kunde existiert (ggf. inaktiv für Admin sichtbar).</li><li>Optional: Projekt existiert und gehört zum gleichen Kunden wie der Termin.</li><li>Optional: Tour existiert.</li><li>Optional: Team existiert und hat mindestens einen zugeordneten Mitarbeiter.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
+<ol><li>Der Akteur öffnet einen bestehenden Termin im Terminformular.</li><li>Der Akteur editiert Startdatum und optional Enddatum sowie optional eine Startuhrzeit.</li><li>Der Akteur ändert optional die Kundenzuordnung des Termins.</li><li>Das System zeigt eine Auswahl aktiver Kunden (für Disponenten) oder aller Kunden (für Administratoren).</li><li>Der Akteur wählt einen anderen Kunden.</li><li>Das System prüft: Wenn der Termin aktuell einem Projekt zugeordnet ist, und der neu gewählte Kundenwert unterscheidet sich vom Kunden des zugeordneten Projekts, blockiert das System die Kundenzuordnung mit Fehlermeldung: „Kundenwechsel nicht möglich – Der Termin ist einem Projekt zugeordnet, das zu einem anderen Kunden gehört. Bitte entfernen Sie zunächst die Projektzuordnung oder wählen Sie einen Kunden, dem das aktuelle Projekt zugeordnet ist.&quot;</li><li>Falls der Termin kein Projekt hat oder der Kundenwert konsistent ist, aktualisiert das System die Kundenzuordnung.</li><li>Der Akteur ändert optional die Projektzuordnung des Termins oder entfernt die Projektzuordnung.</li><li>Wenn eine neue Projekt-Zuordnung gewählt wird, prüft das System: Ist der Kundenwert des gewählten Projekts identisch mit dem aktuellen Kundenwert des Termins?</li><li>Falls ja: Das System setzt die Projektzuordnung.</li><li>Falls nein: Das System blockiert die Zuweisung mit Fehlermeldung: „Kundenmismatch – Das gewählte Projekt gehört zu einem anderen Kunden. Bitte wählen Sie ein Projekt desselben Kunden oder entfernen Sie die Projektzuordnung.&quot;</li><li>Wenn die Projektzuordnung entfernt wird (Projekt auf NULL): Der Kundenwert des Termins bleibt unverändert.</li><li>Der Akteur weist dem Termin optional eine Tour zu oder ändert eine bereits verknüpfte Tour.</li><li>Wenn eine Tour neu zugewiesen wird, prüft das System ob für die Kalenderwoche des Terminstartdatums in der Tour eine Wochenplanung hinterlegt ist. Wenn ja, öffnet sich sofort ein Vorschau-Dialog mit den geplanten Mitarbeitern und möglichen Konflikten. Nach Bestätigung werden die ausgewählten Mitarbeiter hinzugefügt. Bei Abbruch bleibt die Tour-Auswahl gesetzt, die Mitarbeiterliste bleibt unverändert.</li><li>Wenn die Tour gewechselt wird, prüft das System für die neue und die alte Tour/KW-Kombination ob Wochenplanungseinträge vorhanden sind. Wenn ja, zeigt das System vor dem Speichern einen Vorschau-Dialog: welche Mitarbeiter aus der alten Tour-KW entfernt werden, welche aus der neuen Tour-KW hinzugefügt werden, welche Konflikte bestehen, welche Mitarbeiter (manuell oder per Team zugewiesen) unverändert bleiben. Erst nach Bestätigung wird gespeichert.</li><li>Der Akteur entfernt optional eine Tourzuordnung.</li><li>Das System löst die Tourverknüpfung am Termin. Die Mitarbeiter, welche der Tour zugewiesen sind, bleiben am Termin hängen und werden ausdrücklich nicht entfernt.</li><li>Der Akteur verwendet optional ein Team als Einfügehilfe.</li><li>Das System übernimmt die Team-Mitarbeiter in die Mitarbeiterliste des Termins zusätzlich zu bereits vorhandenen Mitarbeitern.</li><li>Das System speichert keine Teamzuordnung am Termin, sondern ausschließlich die konkrete Mitarbeiterliste.</li><li>Der Akteur weist optional weitere Mitarbeiter manuell zu oder entfernt einzelne Mitarbeiter manuell.</li><li>Das System prüft Mitarbeiter-Überschneidungen im Zeitraum.</li><li>Mitarbeiter dürfen keine überschneidenden Termine haben.</li><li>Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst.</li><li>Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.</li><li>Das System speichert die Änderungen am Termin und aktualisiert die Darstellung in allen relevanten Sichten.</li></ol>
+<h2 class="wiki-h2">Alternativen</h2>
+<ul><li><strong>Nicht authentifiziert:</strong> HTTP 401.</li><li><strong>Keine Berechtigung:</strong> HTTP 403.</li><li><strong>Historischer Termin (nur Disponent):</strong> Wenn ein Disponent einen Termin mit Startdatum in der Vergangenheit zu ändern versucht, blockiert das System mit HTTP 409 PAST_APPOINTMENT_READONLY. Administratoren dürfen historische Termine ohne Einschränkung bearbeiten.</li><li><strong>Überschneidung erkannt:</strong> Das System blockiert das Speichern und zeigt einen Konflikt an, der den betroffenen Mitarbeiter und den kollidierenden Zeitraum verständlich benennt.</li><li><strong>Abbruch:</strong> Der Akteur bricht die Bearbeitung ab. Das System speichert keine Änderungen am Termin und es entstehen keine Teiländerungen, also insbesondere keine neuen oder gelöschten Einträge in der Join-Tabelle Termin–Mitarbeiter.</li><li><strong>Speichern ohne Kundenzuordnung:</strong> Falls der Akteur versucht zu speichern, ohne dass ein Kunde zugeordnet ist, blockiert das System den Vorgang und zeigt eine eindeutige Fehlermeldung an, zum Beispiel: „Kunde erforderlich – Termin kann nicht ohne Kundenkontext gespeichert werden.&quot;</li><li><strong>Kundenmismatch bei Projektzuordnung:</strong> Das System blockiert mit Fehlermeldung (siehe Punkt 4.3 oben).</li><li><strong>Kundenwechsel mit bestehendem Projekt:</strong> Das System blockiert mit Fehlermeldung (siehe Punkt 3.3 oben).</li></ul>
+<h2 class="wiki-h2">Ergebnis</h2>
+<p>Der Termin ist mit den geänderten Daten gespeichert. Der Kundenwert des Termins ist direkt am Termin gespeichert und eindeutig. Das Projekt (falls zugeordnet) gehört zum gleichen Kunden – Konsistenz ist garantiert. Die Mitarbeiterzuordnungen sind als Einträge in der Join-Tabelle Termin–Mitarbeiter konsistent abrufbar, ohne Duplikate und ohne Teilzustände.</p>
+<p>Die aktualisierten Termindaten sind in allen konsumierenden Sichten konsistent sichtbar. Das bedeutet, dass das Mitarbeiterformular den Termin in der Mitarbeiter-Terminliste für alle zugeordneten Mitarbeiter korrekt anzeigt, das Kundenformular den Termin in der Terminliste des Kunden anzeigt, dem der Termin direkt zugeordnet ist. Das Projektformular zeigt den Termin in der Projekt-Terminliste des zugeordneten Projekts (sofern vorhanden). Wenn der Termin einer Tour zugeordnet ist, zeigt das Tour-Formular den Termin in der Tour-Terminliste, und wenn die Tourzuordnung entfernt wurde, verschwindet der Termin entsprechend aus dieser Tour-Sicht.</p>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Feature</div><div class="wiki-relations__val"><a href="../features/ft-01-kalendertermine.html">FT-01</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>
