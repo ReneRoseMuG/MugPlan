@@ -4,9 +4,9 @@
  * Abgedeckte Regeln:
  * - Die Komponentenliste zeigt Shortcodes als `Name - Shortcode`.
  * - Komponenten ohne Shortcode bleiben beim reinen Namen.
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Der Shortcode wird in der Auswahlliste nicht angezeigt.
- * - Ein fehlender Shortcode fuehrt zu einem falschen Trennzeichen.
+ * - Ein fehlender Shortcode führt zu einem falschen Trennzeichen.
  *
  * Ziel:
  * Die sichtbare Labelbildung der Komponenten-Auswahlliste im Stammdatenbereich regressionssicher absichern.
@@ -34,6 +34,10 @@ vi.mock("@/components/ui/component-create-dialog", () => ({
 
 vi.mock("@/components/ui/component-details", () => ({
   ComponentDetails: () => null,
+}));
+
+vi.mock("@/components/ui/dialog-base", () => ({
+  ConfirmDialogBase: () => null,
 }));
 
 import { AllComponentList } from "../../../client/src/components/ui/all-component-list";

@@ -1,11 +1,14 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Boxes, Package } from "lucide-react";
 import type { Component, ComponentCategory, Product, ProductCategory } from "@shared/schema";
 import { ListLayout } from "@/components/ui/list-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AllComponentList, type ComponentEditorInput } from "@/components/ui/all-component-list";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
+import type { ProductCreateInput } from "@/components/ui/product-create-dialog";
 import { ProductDetails, type ProductDetailsDraft } from "@/components/ui/product-details";
 import { ProductDropDown } from "@/components/ui/product-drop-down";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -20,6 +23,13 @@ type ApiErrorPayload = {
   productCount?: number;
   componentCount?: number;
 };
+type ProductManagementConfirmTarget =
+  | { kind: "product"; product: Product }
+  | { kind: "products-in-category"; category: ProductCategory; count: number }
+  | { kind: "product-category"; category: ProductCategory }
+  | { kind: "components-in-category"; category: ComponentCategory; count: number }
+  | { kind: "component-category"; category: ComponentCategory };
+type ActionErrorMessage = { title: string; description?: string };
 
 function extractApiPayload(error: unknown): ApiErrorPayload | null {
   if (!(error instanceof Error)) return null;
@@ -79,12 +89,12 @@ function resolveCategoryDeleteError(error: unknown, entityLabel: "Produktkategor
 }
 
 function resolveCategoryImportError(code: string | null, entityLabel: "Produkte" | "Komponenten"): { title: string; description?: string } {
-  if (code === "INVALID_CSV_HEADER") return { title: `CSV-Header für ${entityLabel.toLocaleLowerCase("de")} ungueltig`, description: 'Erwartet wird mindestens eine Spalte "Name". Optional sind "Beschreibung" und "IsActive".' };
-  if (code === "INVALID_CSV_FORMAT") return { title: `CSV-Datei für ${entityLabel.toLocaleLowerCase("de")} ist formal ungueltig`, description: "Bitte Trennzeichen, Quotes und Dateiformat prüfen." };
+  if (code === "INVALID_CSV_HEADER") return { title: `CSV-Header für ${entityLabel.toLocaleLowerCase("de")} ungültig`, description: 'Erwartet wird mindestens eine Spalte "Name". Optional sind "Beschreibung" und "IsActive".' };
+  if (code === "INVALID_CSV_FORMAT") return { title: `CSV-Datei für ${entityLabel.toLocaleLowerCase("de")} ist formal ungültig`, description: "Bitte Trennzeichen, Quotes und Dateiformat prüfen." };
   if (code === "INVALID_CSV_CONTENT") return { title: `CSV-Datei für ${entityLabel.toLocaleLowerCase("de")} enthält keine gültigen Daten`, description: "Nach dem Header muss mindestens eine verwertbare Zeile mit Name vorhanden sein." };
-  if (code === "NOT_FOUND") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Die gewaehlte Kategorie wurde nicht gefunden." };
+  if (code === "NOT_FOUND") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Die gewählte Kategorie wurde nicht gefunden." };
   if (code === "FORBIDDEN") return { title: `${entityLabel} konnten nicht importiert werden`, description: "Der Import ist nur für Admins erlaubt." };
-  return { title: `${entityLabel}import fehlgeschlagen`, description: code ? `Servercode: ${code}` : "Die genaue Ursache konnte nicht aufgeloest werden." };
+  return { title: `${entityLabel}import fehlgeschlagen`, description: code ? `Servercode: ${code}` : "Der konkrete Grund konnte nicht aufgelöst werden." };
 }
 
 function toProductDraft(product: Product | null): ProductDetailsDraft {
@@ -134,6 +144,8 @@ export function ProductManagementPage() {
   const [productDraft, setProductDraft] = useState<ProductDetailsDraft>(toProductDraft(null));
   const [pendingProductCategoryImportId, setPendingProductCategoryImportId] = useState<number | null>(null);
   const [pendingComponentCategoryImportId, setPendingComponentCategoryImportId] = useState<number | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<ProductManagementConfirmTarget | null>(null);
+  const [actionError, setActionError] = useState<ActionErrorMessage | null>(null);
   const productCategoryImportInputRef = useRef<HTMLInputElement | null>(null);
   const componentCategoryImportInputRef = useRef<HTMLInputElement | null>(null);
   const isAdmin = (window.localStorage.getItem("userRole")?.toUpperCase() ?? "DISPATCHER") === "ADMIN";
@@ -167,9 +179,23 @@ export function ProductManagementPage() {
     setProductDraft(toProductDraft(null));
   }, [products, selectedProductId]);
 
+  const showActionError = (title: string, description?: string) => {
+    setActionError({ title, description });
+    toast({ title, description, variant: "destructive" });
+  };
+
+  const clearActionError = () => setActionError(null);
+
   const createProductMutation = useMutation({
-    mutationFn: async (input: { name: string; categoryId: number }) => {
-      const response = await apiRequest("POST", "/api/admin/master-data/products", { name: input.name.trim(), shortCode: null, categoryId: input.categoryId, description: null, isActive: true, version: 1 });
+    mutationFn: async (input: ProductCreateInput) => {
+      const response = await apiRequest("POST", "/api/admin/master-data/products", {
+        name: input.name.trim(),
+        shortCode: input.shortCode?.trim() || null,
+        categoryId: input.categoryId,
+        description: input.description?.trim() || null,
+        isActive: true,
+        version: 1,
+      });
       return response.json() as Promise<Product>;
     },
     onSuccess: async (createdProduct) => {
@@ -228,6 +254,7 @@ export function ProductManagementPage() {
   });
   const deleteSelectedComponentWithConflictDetails = async (component: Component): Promise<void> => {
     try {
+      clearActionError();
       await deleteComponentMutation.mutateAsync({ id: component.id, version: component.version });
       toast({ title: "Komponente gelöscht" });
     } catch (error) {
@@ -245,11 +272,12 @@ export function ProductManagementPage() {
     },
     onSuccess: async (result) => {
       await invalidateMasterDataQueries(activeScope);
+      clearActionError();
       toast({ title: `Produktimport: ${result.summary.createdRows} neu, ${result.summary.updatedRows} aktualisiert, ${result.summary.reactivatedRows} reaktiviert` });
     },
     onError: (error) => {
       const message = resolveCategoryImportError(extractApiCode(error), "Produkte");
-      toast({ title: message.title, description: message.description, variant: "destructive" });
+      showActionError(message.title, message.description);
     },
     onSettled: () => {
       setPendingProductCategoryImportId(null);
@@ -266,11 +294,12 @@ export function ProductManagementPage() {
     },
     onSuccess: async (result) => {
       await invalidateMasterDataQueries(activeScope);
+      clearActionError();
       toast({ title: `Komponentenimport: ${result.summary.createdRows} neu, ${result.summary.updatedRows} aktualisiert, ${result.summary.reactivatedRows} reaktiviert` });
     },
     onError: (error) => {
       const message = resolveCategoryImportError(extractApiCode(error), "Komponenten");
-      toast({ title: message.title, description: message.description, variant: "destructive" });
+      showActionError(message.title, message.description);
     },
     onSettled: () => {
       setPendingComponentCategoryImportId(null);
@@ -279,21 +308,22 @@ export function ProductManagementPage() {
   });
 
   const categoryMutations = {
-    createProduct: useMutation({ mutationFn: async () => apiRequest("POST", "/api/admin/master-data/product-categories", { name: newProductCategoryName.trim(), isDefault: false, isActive: true, version: 1 }), onSuccess: async () => { setNewProductCategoryName(""); await invalidateMasterDataQueries(activeScope); } }),
-    updateProduct: useMutation({ mutationFn: async (input: { id: number; version: number; name: string; isDefault: boolean }) => apiRequest("PUT", `/api/admin/master-data/product-categories/${input.id}`, input), onSuccess: async () => { setEditProductCategory(null); await invalidateMasterDataQueries(activeScope); } }),
-    deleteProduct: useMutation({ mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/product-categories/${input.id}`, { version: input.version }), onSuccess: async () => { await invalidateMasterDataQueries(activeScope); } }),
-    createComponent: useMutation({ mutationFn: async () => apiRequest("POST", "/api/admin/master-data/component-categories", { name: newComponentCategoryName.trim(), isDefault: false, isActive: true, version: 1 }), onSuccess: async () => { setNewComponentCategoryName(""); await invalidateMasterDataQueries(activeScope); } }),
-    updateComponent: useMutation({ mutationFn: async (input: { id: number; version: number; name: string; isDefault: boolean }) => apiRequest("PUT", `/api/admin/master-data/component-categories/${input.id}`, input), onSuccess: async () => { setEditComponentCategory(null); await invalidateMasterDataQueries(activeScope); } }),
-    deleteComponent: useMutation({ mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/component-categories/${input.id}`, { version: input.version }), onSuccess: async () => { await invalidateMasterDataQueries(activeScope); } }),
+    createProduct: useMutation({ mutationFn: async () => apiRequest("POST", "/api/admin/master-data/product-categories", { name: newProductCategoryName.trim(), isDefault: false, isActive: true, version: 1 }), onSuccess: async () => { setNewProductCategoryName(""); clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
+    updateProduct: useMutation({ mutationFn: async (input: { id: number; version: number; name: string; isDefault: boolean }) => apiRequest("PUT", `/api/admin/master-data/product-categories/${input.id}`, input), onSuccess: async () => { setEditProductCategory(null); clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
+    deleteProduct: useMutation({ mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/product-categories/${input.id}`, { version: input.version }), onSuccess: async () => { clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
+    createComponent: useMutation({ mutationFn: async () => apiRequest("POST", "/api/admin/master-data/component-categories", { name: newComponentCategoryName.trim(), isDefault: false, isActive: true, version: 1 }), onSuccess: async () => { setNewComponentCategoryName(""); clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
+    updateComponent: useMutation({ mutationFn: async (input: { id: number; version: number; name: string; isDefault: boolean }) => apiRequest("PUT", `/api/admin/master-data/component-categories/${input.id}`, input), onSuccess: async () => { setEditComponentCategory(null); clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
+    deleteComponent: useMutation({ mutationFn: async (input: { id: number; version: number }) => apiRequest("DELETE", `/api/admin/master-data/component-categories/${input.id}`, { version: input.version }), onSuccess: async () => { clearActionError(); await invalidateMasterDataQueries(activeScope); } }),
   };
 
   const handleCategoryMutationError = (error: unknown, duplicateTitle: string, defaultTitle: string) => {
-    toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? duplicateTitle : defaultTitle, variant: "destructive" });
+    showActionError(extractApiCode(error) === "BUSINESS_CONFLICT" ? duplicateTitle : defaultTitle);
   };
 
-  async function createProductFromDropDown(input: { name: string; shortCode: string | null; description: string | null; categoryId: number }): Promise<Product> {
+  async function createProductFromDropDown(input: ProductCreateInput): Promise<Product> {
     try {
-      return await createProductMutation.mutateAsync({ name: input.name, categoryId: input.categoryId });
+      clearActionError();
+      return await createProductMutation.mutateAsync(input);
     } catch (error) {
       throw new Error(extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produktname existiert bereits." : "Produkt konnte nicht angelegt werden.");
     }
@@ -301,53 +331,36 @@ export function ProductManagementPage() {
   async function updateSelectedProduct(): Promise<void> {
     if (!selectedProduct || !productDraft.name.trim()) return;
     try {
+      clearActionError();
       await updateProductMutation.mutateAsync({ id: selectedProduct.id, version: selectedProduct.version, name: productDraft.name.trim(), shortCode: productDraft.shortCode.trim() || null, categoryId: selectedProduct.categoryId, description: productDraft.description.trim() || null, isActive: productDraft.isActive });
       toast({ title: "Produkt aktualisiert" });
     } catch (error) {
-      toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produktname existiert bereits" : "Produkt konnte nicht aktualisiert werden", variant: "destructive" });
+      showActionError(extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produktname existiert bereits" : "Produkt konnte nicht aktualisiert werden");
     }
   }
-  async function deleteSelectedProduct(): Promise<void> {
-    if (!selectedProduct || !window.confirm(`Produkt "${selectedProduct.name}" löschen?`)) return;
-    try {
-      await deleteProductMutation.mutateAsync({ id: selectedProduct.id, version: selectedProduct.version });
-      toast({ title: "Produkt gelöscht" });
-    } catch (error) {
-      toast({ title: extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht gelöscht werden", variant: "destructive" });
-    }
+  function requestDeleteProduct(product: Product): void {
+    clearActionError();
+    setConfirmTarget({ kind: "product", product });
   }
-  async function deleteAllProductsInCategory(categoryId: string): Promise<void> {
+
+  function requestDeleteAllProductsInCategory(categoryId: string): void {
     const category = productCategories.find((c) => String(c.id) === categoryId);
+    if (!category) return;
     const count = products.filter((p) => String(p.categoryId) === categoryId).length;
-    if (!window.confirm(`Alle Produkte der Kategorie "${category?.name ?? categoryId}" löschen? ${count} Einträge betroffen.`)) return;
-    try {
-      const result = await deleteAllProductsInCategoryMutation.mutateAsync(Number(categoryId));
-      if (result.skippedCount > 0) {
-        toast({ title: `${result.deletedCount} Produkte gelöscht, ${result.skippedCount} noch in Verwendung` });
-      } else {
-        toast({ title: `${result.deletedCount} Produkte gelöscht` });
-      }
-    } catch {
-      toast({ title: "Produkte konnten nicht gelöscht werden", variant: "destructive" });
-    }
+    clearActionError();
+    setConfirmTarget({ kind: "products-in-category", category, count });
   }
-  async function deleteAllComponentsInCategory(categoryId: string): Promise<void> {
+
+  function requestDeleteAllComponentsInCategory(categoryId: string): void {
     const category = componentCategories.find((c) => String(c.id) === categoryId);
+    if (!category) return;
     const count = components.filter((c) => String(c.categoryId) === categoryId).length;
-    if (!window.confirm(`Alle Komponenten der Kategorie "${category?.name ?? categoryId}" löschen? ${count} Einträge betroffen.`)) return;
-    try {
-      const result = await deleteAllComponentsInCategoryMutation.mutateAsync(Number(categoryId));
-      if (result.skippedCount > 0) {
-        toast({ title: `${result.deletedCount} Komponenten gelöscht, ${result.skippedCount} noch in Verwendung` });
-      } else {
-        toast({ title: `${result.deletedCount} Komponenten gelöscht` });
-      }
-    } catch {
-      toast({ title: "Komponenten konnten nicht gelöscht werden", variant: "destructive" });
-    }
+    clearActionError();
+    setConfirmTarget({ kind: "components-in-category", category, count });
   }
   async function createStandaloneComponent(input: ComponentEditorInput): Promise<Component> {
     try {
+      clearActionError();
       const created = await createComponentMutation.mutateAsync(input);
       toast({ title: "Komponente angelegt" });
       return created;
@@ -357,6 +370,7 @@ export function ProductManagementPage() {
   }
   async function updateComponentData(component: Component, input: ComponentEditorInput): Promise<Component> {
     try {
+      clearActionError();
       const updated = await updateComponentMutation.mutateAsync({ id: component.id, version: component.version, name: input.name.trim(), shortCode: input.shortCode.trim() || null, categoryId: input.categoryId, description: input.description, isActive: input.isActive });
       toast({ title: "Komponente aktualisiert" });
       return updated;
@@ -364,6 +378,134 @@ export function ProductManagementPage() {
       throw new Error(extractApiCode(error) === "BUSINESS_CONFLICT" ? "Komponentenname existiert bereits." : "Komponente konnte nicht aktualisiert werden.");
     }
   }
+
+  const confirmDialogContent = (() => {
+    if (!confirmTarget) return null;
+
+    switch (confirmTarget.kind) {
+      case "product":
+        return {
+          confirmLabel: "Produkt löschen",
+          description: `Produkt "${confirmTarget.product.name}" wird gelöscht.`,
+          icon: <Package className="h-5 w-5 text-primary" />,
+          testId: "dialog-confirm-delete-product",
+          title: "Produkt wirklich löschen?",
+        };
+      case "products-in-category":
+        return {
+          confirmLabel: "Produkte löschen",
+          description: `Kategorie "${confirmTarget.category.name}" enthält ${confirmTarget.count} Produkte. Nicht referenzierte Produkte werden gelöscht.`,
+          icon: <Package className="h-5 w-5 text-primary" />,
+          testId: "dialog-confirm-delete-products-in-category",
+          title: "Alle Produkte dieser Kategorie löschen?",
+        };
+      case "product-category":
+        return {
+          confirmLabel: "Produktkategorie löschen",
+          description: `Produktkategorie "${confirmTarget.category.name}" wird gelöscht.`,
+          icon: <Package className="h-5 w-5 text-primary" />,
+          testId: "dialog-confirm-delete-product-category",
+          title: "Produktkategorie wirklich löschen?",
+        };
+      case "components-in-category":
+        return {
+          confirmLabel: "Komponenten löschen",
+          description: `Kategorie "${confirmTarget.category.name}" enthält ${confirmTarget.count} Komponenten. Nicht referenzierte Komponenten werden gelöscht.`,
+          icon: <Boxes className="h-5 w-5 text-primary" />,
+          testId: "dialog-confirm-delete-components-in-category",
+          title: "Alle Komponenten dieser Kategorie löschen?",
+        };
+      case "component-category":
+        return {
+          confirmLabel: "Komponentenkategorie löschen",
+          description: `Komponentenkategorie "${confirmTarget.category.name}" wird gelöscht.`,
+          icon: <Boxes className="h-5 w-5 text-primary" />,
+          testId: "dialog-confirm-delete-component-category",
+          title: "Komponentenkategorie wirklich löschen?",
+        };
+      default:
+        return null;
+    }
+  })();
+
+  const isConfirmPending = deleteProductMutation.isPending
+    || deleteAllProductsInCategoryMutation.isPending
+    || deleteAllComponentsInCategoryMutation.isPending
+    || categoryMutations.deleteProduct.isPending
+    || categoryMutations.deleteComponent.isPending;
+
+  const handleConfirmTarget = () => {
+    if (!confirmTarget) return;
+    clearActionError();
+
+    switch (confirmTarget.kind) {
+      case "product": {
+        const currentProduct = products.find((product) => product.id === confirmTarget.product.id) ?? confirmTarget.product;
+        deleteProductMutation.mutate(
+          { id: currentProduct.id, version: currentProduct.version },
+          {
+            onSuccess: () => {
+              toast({ title: "Produkt gelöscht" });
+              setConfirmTarget(null);
+            },
+            onError: (error) => {
+              showActionError(extractApiCode(error) === "BUSINESS_CONFLICT" ? "Produkt wird noch verwendet" : "Produkt konnte nicht gelöscht werden");
+            },
+          },
+        );
+        return;
+      }
+      case "products-in-category":
+        deleteAllProductsInCategoryMutation.mutate(confirmTarget.category.id, {
+          onSuccess: (result) => {
+            toast({
+              title: result.skippedCount > 0
+                ? `${result.deletedCount} Produkte gelöscht, ${result.skippedCount} noch in Verwendung`
+                : `${result.deletedCount} Produkte gelöscht`,
+            });
+            setConfirmTarget(null);
+          },
+          onError: () => showActionError("Produkte konnten nicht gelöscht werden"),
+        });
+        return;
+      case "product-category":
+        categoryMutations.deleteProduct.mutate(
+          { id: confirmTarget.category.id, version: confirmTarget.category.version },
+          {
+            onSuccess: () => {
+              toast({ title: "Produktkategorie gelöscht" });
+              setConfirmTarget(null);
+            },
+            onError: (error) => showActionError(resolveCategoryDeleteError(error, "Produktkategorie")),
+          },
+        );
+        return;
+      case "components-in-category":
+        deleteAllComponentsInCategoryMutation.mutate(confirmTarget.category.id, {
+          onSuccess: (result) => {
+            toast({
+              title: result.skippedCount > 0
+                ? `${result.deletedCount} Komponenten gelöscht, ${result.skippedCount} noch in Verwendung`
+                : `${result.deletedCount} Komponenten gelöscht`,
+            });
+            setConfirmTarget(null);
+          },
+          onError: () => showActionError("Komponenten konnten nicht gelöscht werden"),
+        });
+        return;
+      case "component-category":
+        categoryMutations.deleteComponent.mutate(
+          { id: confirmTarget.category.id, version: confirmTarget.category.version },
+          {
+            onSuccess: () => {
+              toast({ title: "Komponentenkategorie gelöscht" });
+              setConfirmTarget(null);
+            },
+            onError: (error) => showActionError(resolveCategoryDeleteError(error, "Komponentenkategorie")),
+          },
+        );
+    }
+  };
 
   const renderCategorySection = (
     title: string,
@@ -440,7 +582,8 @@ export function ProductManagementPage() {
   );
 
   return (
-    <ListLayout
+    <>
+      <ListLayout
       title="Produkte"
       icon={null}
       isLoading={isLoading}
@@ -449,13 +592,22 @@ export function ProductManagementPage() {
         <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[minmax(0,1.75fr)_minmax(420px,1fr)]">
           <input ref={productCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-product-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingProductCategoryImportId) productCategoryImportMutation.mutate({ categoryId: pendingProductCategoryImportId, file }); }} />
           <input ref={componentCategoryImportInputRef} type="file" accept=".csv,text/csv" className="hidden" data-testid="input-component-category-import-file" onChange={(event) => { const file = event.target.files?.[0]; if (file && pendingComponentCategoryImportId) componentCategoryImportMutation.mutate({ categoryId: pendingComponentCategoryImportId, file }); }} />
+          {actionError ? (
+            <div className="xl:col-span-2">
+              <DialogBaseInlineMessage
+                title={actionError.title}
+                description={actionError.description}
+                tone="error"
+              />
+            </div>
+          ) : null}
 
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-2">
-            <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={() => void deleteSelectedProduct()} onDeleteAllInCategory={(categoryId) => void deleteAllProductsInCategory(categoryId)} isAdmin={isAdmin} />
+            <ProductDropDown products={filteredProducts} categories={productCategories} selectedProductId={selectedProductId} onSelectProduct={setSelectedProductId} onCreateProduct={createProductFromDropDown} onDeleteProduct={requestDeleteProduct} onDeleteAllInCategory={requestDeleteAllProductsInCategory} isAdmin={isAdmin} />
             <section className="rounded-md border border-slate-200 bg-white p-4" data-testid="master-data-products">
               <ProductDetails draft={productDraft} disabled={!selectedProduct} isAdmin={isAdmin} onDraftChange={setProductDraft} onSubmit={() => void updateSelectedProduct()} />
             </section>
-            <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} onDeleteAllComponentsInCategory={(categoryId) => void deleteAllComponentsInCategory(categoryId)} />
+            <AllComponentList components={components} categories={componentCategories} isAdmin={isAdmin} onCreateComponent={createStandaloneComponent} onUpdateComponent={updateComponentData} onDeleteComponent={deleteSelectedComponentWithConflictDetails} onDeleteAllComponentsInCategory={requestDeleteAllComponentsInCategory} />
           </div>
 
           <div className="flex min-h-0 flex-col gap-4 overflow-y-auto pr-1">
@@ -467,7 +619,7 @@ export function ProductManagementPage() {
               }
               if (!newProductCategoryName.trim()) return;
               categoryMutations.createProduct.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Produktkategorie existiert bereits", "Produktkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Produktkategorie "${row.name}" löschen?`)) return; categoryMutations.deleteProduct.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Produktkategorie"), variant: "destructive" }) }); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
+            }, (row) => { clearActionError(); setConfirmTarget({ kind: "product-category", category: row }); }, "master-data-product-categories", "input-new-product-category", "button-create-product-category")}
             {renderCategorySection("Komponentenkategorien", componentCategories, editComponentCategory, setEditComponentCategory, editComponentCategory ? editComponentCategory.name : newComponentCategoryName, editComponentCategory ? (value) => setEditComponentCategory({ ...editComponentCategory, name: value }) : setNewComponentCategoryName, () => {
               if (editComponentCategory) {
                 if (!editComponentCategory.name.trim()) return;
@@ -476,12 +628,30 @@ export function ProductManagementPage() {
               }
               if (!newComponentCategoryName.trim()) return;
               categoryMutations.createComponent.mutate(undefined, { onError: (error) => handleCategoryMutationError(error, "Komponentenkategorie existiert bereits", "Komponentenkategorie konnte nicht angelegt werden") });
-            }, (row) => { if (!window.confirm(`Komponentenkategorie "${row.name}" löschen?`)) return; categoryMutations.deleteComponent.mutate({ id: row.id, version: row.version }, { onError: (error) => toast({ title: resolveCategoryDeleteError(error, "Komponentenkategorie"), variant: "destructive" }) }); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
+            }, (row) => { clearActionError(); setConfirmTarget({ kind: "component-category", category: row }); }, "master-data-component-categories", "input-new-component-category", "button-create-component-category")}
           </div>
         </div>
       )}
-    />
+      />
+      {confirmDialogContent ? (
+        <ConfirmDialogBase
+          open={confirmTarget !== null}
+          onOpenChange={(open) => {
+            if (!open && !isConfirmPending) {
+              setConfirmTarget(null);
+            }
+          }}
+          title={confirmDialogContent.title}
+          description={confirmDialogContent.description}
+          confirmLabel={confirmDialogContent.confirmLabel}
+          icon={confirmDialogContent.icon}
+          isPending={isConfirmPending}
+          pendingLabel="Lösche..."
+          variant="destructive"
+          testId={confirmDialogContent.testId}
+          onConfirm={handleConfirmTarget}
+        />
+      ) : null}
+    </>
   );
 }
-
-

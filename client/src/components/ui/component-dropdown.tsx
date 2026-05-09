@@ -1,7 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Boxes } from "lucide-react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { CollectionDropDown } from "@/components/ui/collection-drop-down";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogBaseShell } from "@/components/ui/dialog-base";
 import { findProjectProductCategory, getProjectProductFieldByCategoryName } from "@/lib/project-product-form";
 
 interface ComponentDropdownProps {
@@ -115,14 +116,14 @@ export function ComponentDropdown({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title ?? `${targetCategory} auswählen`}</DialogTitle>
-        </DialogHeader>
-        {panel}
-      </DialogContent>
-    </Dialog>
+    <DialogBaseShell
+      icon={<Boxes className="h-5 w-5 text-primary" />}
+      onOpenChange={onOpenChange ?? (() => undefined)}
+      open={open}
+      testId="dialog-select-component"
+      title={title ?? `${targetCategory} auswählen`}
+    >
+      {panel}
+    </DialogBaseShell>
   );
 }
-

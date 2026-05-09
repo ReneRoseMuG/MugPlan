@@ -27,7 +27,7 @@ Die Reihenfolge folgt der Hybrid-Strategie aus Planung und Testsuite: zuerst die
 | 1 | [Fehler-Normalisierung](../tasks/closed/fehler-normalisierung.md) | Abgeschlossen: Grundlage für verständliche Meldungen und bekannte Server-Fehlercodes. |
 | 2 | [Dialog-Basiskomponenten](../tasks/closed/dialog-basiskomponenten.md) | Abgeschlossen: Generische Shell, Confirm-Variante, Footer, Loading- und Error-Bereich. |
 | 3 | [Teams-Dialoge](../tasks/closed/teams-dialoge.md) | Abgeschlossen: Einfacher Domain-Bereich mit CRUD- und Löschdialogen als erster echter Pilot für die Grundlagen. |
-| 4 | [Stammdaten-, Produkte- und Komponenten-Dialoge](../tasks/stammdaten-produkte-komponenten-dialoge.md) | Einfache Erfassungs-, Auswahl- und Löschpfade. |
+| 4 | [Stammdaten-, Produkte- und Komponenten-Dialoge](../tasks/closed/stammdaten-produkte-komponenten-dialoge.md) | Abgeschlossen: Einfache Erfassungs-, Auswahl- und Löschpfade für FT-27-Stammdaten. |
 | 5 | [Tags-Dialoge](../tasks/tags-dialoge.md) | Einfache Dialoge mit besonderer Beachtung geschützter System-Tags. |
 | 6 | [Hilfetexte-, Import- und Export-Dialoge](../tasks/hilfetexte-import-export-dialoge.md) | Einfache bis mittlere Dialog- und Ergebnisreport-Pfade. |
 | 7 | [Einstellungen-, Monitoring- und Admin-Dialoge](../tasks/einstellungen-monitoring-admin-dialoge.md) | Meldungspfade mit adminnahem Kontext. |

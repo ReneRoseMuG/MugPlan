@@ -2,15 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Produktliste waehlt beim ersten Rendern automatisch die erste verfuegbare Produktkategorie vor.
- * - Produkt hinzufuegen und Produktliste loeschen bleiben dadurch auch ohne vorherige Produktauswahl nutzbar.
+ * - Die Produktliste wählt beim ersten Rendern automatisch die erste verfügbare Produktkategorie vor.
+ * - Produkt hinzufügen und Produktliste löschen bleiben dadurch auch ohne vorherige Produktauswahl nutzbar.
  *
- * Fehlerfaelle:
- * - Die Aktionen bleiben deaktiviert, bis man manuell eine Kategorie oder ein Produkt auswaehlt.
- * - Das Plus-Dialogziel oder das Kategorie-Loeschen arbeitet mit keiner oder der falschen Kategorie.
+ * Fehlerfälle:
+ * - Die Aktionen bleiben deaktiviert, bis man manuell eine Kategorie oder ein Produkt auswählt.
+ * - Das Plus-Dialogziel oder das Kategorie-Löschen arbeitet mit keiner oder der falschen Kategorie.
  *
  * Ziel:
- * Die sichtbare Produktlisten-Bedienung ueber die initial verdrahteten Auswahl- und Disabled-Props absichern.
+ * Die sichtbare Produktlisten-Bedienung über die initial verdrahteten Auswahl- und Disabled-Props absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -21,6 +21,7 @@ type EntitySelectionRowProps = {
   addDisabled?: boolean;
   deleteAllDisabled?: boolean;
   itemOptions?: Array<{ value: string; label: string }>;
+  onRemove?: () => void;
 };
 
 const entitySelectionRowMock = vi.fn();
@@ -92,5 +93,34 @@ describe("FT27 UI: ProductDropDown behavior", () => {
       { value: "3", label: "Beta" },
       { value: "2", label: "Zeta - Z9" },
     ]);
+  });
+
+  it("passes the selected product into the delete request hook", () => {
+    const onDeleteProduct = vi.fn();
+    const selectedProduct = {
+      id: 2,
+      categoryId: 7,
+      name: "Zeta",
+      shortCode: "Z9",
+      description: null,
+      isActive: true,
+      version: 1,
+    };
+
+    renderToStaticMarkup(
+      <ProductDropDown
+        products={[selectedProduct]}
+        categories={[{ id: 7, name: "Fass", isDefault: true, isActive: true, version: 1 }]}
+        selectedProductId="2"
+        onSelectProduct={vi.fn()}
+        onCreateProduct={vi.fn()}
+        onDeleteProduct={onDeleteProduct}
+        isAdmin
+      />,
+    );
+
+    entitySelectionRowMock.mock.calls[0]?.[0]?.onRemove?.();
+
+    expect(onDeleteProduct).toHaveBeenCalledWith(selectedProduct);
   });
 });

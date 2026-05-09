@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 33,
-      "generated_count": 33,
+      "source_count": 32,
+      "generated_count": 32,
       "warnings": 0,
       "errors": 0
     },
@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 52,
-      "generated_count": 52,
+      "source_count": 53,
+      "generated_count": 53,
       "warnings": 0,
       "errors": 0
     }
@@ -699,15 +699,6 @@
         "title": "Notizen-Dialoge",
         "source": "tasks/notizen-dialoge.md",
         "output": "projekt/aufgaben/notizen-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-26",
-        "title": "Stammdaten-, Produkte- und Komponenten-Dialoge",
-        "source": "tasks/stammdaten-produkte-komponenten-dialoge.md",
-        "output": "projekt/aufgaben/stammdaten-produkte-komponenten-dialoge.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -3557,6 +3548,15 @@
         "title": "09.05.26 | Abschluss | P01 Fehler-Normalisierung",
         "source": "journal/09-05-26-p01-fehler-normalisierung-abgeschlossen.md",
         "output": "verwaltung/journal/09-05-26-p01-fehler-normalisierung-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen",
+        "title": "09.05.26 | Abschluss | P01 Stammdaten-, Produkte- und Komponenten-Dialoge",
+        "source": "journal/09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen.html",
         "ok": true,
         "warnings": [],
         "errors": []

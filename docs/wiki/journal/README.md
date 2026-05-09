@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [09.05.26 - P01: Stammdaten-, Produkte- und Komponenten-Dialoge abgeschlossen](09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen.md)
 - [09.05.26 - P01: Teams-Dialoge abgeschlossen](09-05-26-p01-teams-dialoge-abgeschlossen.md)
 - [09.05.26 - P01: Dialog-Basiskomponenten abgeschlossen](09-05-26-p01-dialog-basiskomponenten-abgeschlossen.md)
 - [09.05.26 - P01: Fehler-Normalisierung abgeschlossen](09-05-26-p01-fehler-normalisierung-abgeschlossen.md)

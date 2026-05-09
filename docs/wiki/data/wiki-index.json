@@ -237,7 +237,6 @@
       "dringlichkeit_id": "prio-hoch",
       "master_task": "tasks/dialog-rollout-masterplan.md",
       "aufgaben": [
-        "tasks/stammdaten-produkte-komponenten-dialoge.md",
         "tasks/tags-dialoge.md",
         "tasks/hilfetexte-import-export-dialoge.md",
         "tasks/einstellungen-monitoring-admin-dialoge.md",

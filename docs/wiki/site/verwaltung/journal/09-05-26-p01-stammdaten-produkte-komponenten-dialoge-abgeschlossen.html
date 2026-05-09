@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen: 09.05.26 | Abschluss | P01 Stammdaten-, Produkte- und Komponenten-Dialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen 09.05.26 | Abschluss | P01 Stammdaten-, Produkte- und Komponenten-Dialoge</span></nav>
+        <h1 class="wiki-h1">09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen: 09.05.26 | Abschluss | P01 Stammdaten-, Produkte- und Komponenten-Dialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>09.05.26</div>
+    <p class="wiki-lead">Die P01-Domainaufgabe Stammdaten-, Produkte- und Komponenten-Dialoge ist abgeschlossen. Die FT-27-Stammdatenpflege nutzt für Produkt- und Komponentenanlage, Auswahl im Dialogmodus sowie Löschbestätigungen die gemeinsame Dialogbasis.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die P01-Domainaufgabe Stammdaten-, Produkte- und Komponenten-Dialoge ist abgeschlossen. Die FT-27-Stammdatenpflege nutzt für Produkt- und Komponentenanlage, Auswahl im Dialogmodus sowie Löschbestätigungen die gemeinsame Dialogbasis.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>UI-Tests: 4 bestandene Tests für Produktauswahl, Komponentenliste und Löschdialog-Wiring.</li><li>Integrationstests: 27 bestandene Tests für FT-27-Stammdaten-API und rollenabhängige Sichtbarkeit.</li><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>App-Prüfung: Abschluss durch Nutzer am 09.05.26 bestätigt.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> darf Produkte, Komponenten und Kategorien anlegen, bearbeiten, importieren und löschen.</li><li><code>DISPONENT</code> und <code>LESER</code> erhalten keine neuen Mutationsmöglichkeiten; die serverseitige Admin-Durchsetzung im FT-27-Stammdatenservice bleibt maßgeblich.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Aufgabe: <a href="../../../tasks/closed/stammdaten-produkte-komponenten-dialoge.md">Stammdaten-, Produkte- und Komponenten-Dialoge</a></li><li>Feature: <a href="../../lastenheft/features/ft-27-produktverwaltung-und-auftragspositionen.html">FT-27 - Produktverwaltung und Auftragspositionen</a></li><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout Masterplan</a></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

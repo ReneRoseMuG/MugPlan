@@ -1,7 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import type { Product, ProductCategory } from "@shared/schema";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
-import { ProductCreateDialog } from "@/components/ui/product-create-dialog";
+import { ProductCreateDialog, type ProductCreateInput } from "@/components/ui/product-create-dialog";
 
 function formatProductLabel(product: Product): string {
   const shortCode = product.shortCode?.trim();
@@ -13,8 +13,8 @@ interface ProductListProps {
   categories: ProductCategory[];
   selectedProductId: string;
   onSelectProduct: (productId: string) => void;
-  onCreateProduct: (input: { name: string; shortCode: string | null; description: string | null; categoryId: number }) => Promise<Product>;
-  onDeleteProduct?: () => void;
+  onCreateProduct: (input: ProductCreateInput) => Promise<Product>;
+  onDeleteProduct?: (product: Product) => void;
   onDeleteAllInCategory?: (categoryId: string) => void;
   isAdmin: boolean;
 }
@@ -74,7 +74,7 @@ export function ProductList({
     }
   };
 
-  const handleCreate = async (input: Parameters<ProductListProps["onCreateProduct"]>[0]) => {
+  const handleCreate = async (input: ProductCreateInput) => {
     const created = await onCreateProduct(input);
     onSelectProduct(String(created.id));
     setSelectedCategoryId(String(created.categoryId));
@@ -98,10 +98,10 @@ export function ProductList({
           showRemove={isAdmin}
           showAdd={isAdmin}
           showDeleteAll={isAdmin}
-          onRemove={onDeleteProduct}
+          onRemove={selectedProduct ? () => onDeleteProduct?.(selectedProduct) : undefined}
           onAdd={() => setCreateDialogOpen(true)}
           onDeleteAll={selectedCategoryId ? () => onDeleteAllInCategory?.(selectedCategoryId) : undefined}
-          removeDisabled={!selectedProductId}
+          removeDisabled={!selectedProduct}
           addDisabled={!selectedCategoryId}
           deleteAllDisabled={!selectedCategoryId}
           itemTestId="select-product-record"
@@ -124,4 +124,3 @@ export function ProductList({
 
 // Backward-compat alias used by ProductManagementPage
 export { ProductList as ProductDropDown };
-

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Boxes } from "lucide-react";
+import { DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { ComponentDetails, type ComponentDetailsDraft } from "@/components/ui/component-details";
 
 export type ComponentCreateInput = {
@@ -30,7 +30,7 @@ export function ComponentCreateDialog({
   onConfirm,
 }: ComponentCreateDialogProps) {
   const [draft, setDraft] = useState<ComponentDetailsDraft>(emptyDraft);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<unknown | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
@@ -60,37 +60,46 @@ export function ComponentCreateDialog({
       onClose();
       reset();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Komponente konnte nicht angelegt werden.");
+      setError(err instanceof Error ? err : new Error("Komponente konnte nicht angelegt werden."));
       setSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Neue Komponente{categoryName ? ` — ${categoryName}` : ""}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <ComponentDetails
-            draft={draft}
-            disabled={submitting}
-            isAdmin={false}
-            hideIsActive={true}
-            onDraftChange={setDraft}
-          />
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={submitting}>Abbrechen</Button>
-          <Button
-            onClick={() => void handleConfirm()}
-            disabled={submitting || !draft.name.trim()}
-          >
-            {submitting ? "Speichere..." : "Bestätigen"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DialogBaseShell
+      closeDisabled={submitting}
+      footer={(
+        <DialogBaseFooter
+          secondaryAction={{
+            disabled: submitting,
+            label: "Abbrechen",
+            onClick: () => handleOpenChange(false),
+          }}
+          primaryAction={{
+            disabled: submitting || !draft.name.trim(),
+            isPending: submitting,
+            label: "Bestätigen",
+            onClick: () => void handleConfirm(),
+            pendingLabel: "Speichere...",
+          }}
+        />
+      )}
+      icon={<Boxes className="h-5 w-5 text-primary" />}
+      onOpenChange={handleOpenChange}
+      open={open}
+      testId="dialog-create-component"
+      title={`Neue Komponente${categoryName ? ` - ${categoryName}` : ""}`}
+    >
+      <div className="space-y-3">
+        <ComponentDetails
+          draft={draft}
+          disabled={submitting}
+          isAdmin={false}
+          hideIsActive={true}
+          onDraftChange={setDraft}
+        />
+        {error ? <DialogBaseInlineMessage error={error} /> : null}
+      </div>
+    </DialogBaseShell>
   );
 }

@@ -1,7 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Boxes } from "lucide-react";
 import type { Component, ComponentCategory } from "@shared/schema";
 import { ComponentCreateDialog, type ComponentCreateInput } from "@/components/ui/component-create-dialog";
 import { ComponentDetails, type ComponentDetailsDraft } from "@/components/ui/component-details";
+import { ConfirmDialogBase } from "@/components/ui/dialog-base";
 import { EntitySelectionRow } from "@/components/ui/entity-selection-row";
 
 function formatComponentLabel(component: Component): string {
@@ -54,6 +56,7 @@ export function AllComponentList({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Component | null>(null);
 
   useEffect(() => {
     if (!selectedCategoryId && categories.length > 0) {
@@ -142,15 +145,16 @@ export function AllComponentList({
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedComponent) return;
-    if (!window.confirm(`Komponente "${selectedComponent.name}" löschen?`)) return;
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const currentComponent = components.find((component) => component.id === deleteTarget.id) ?? deleteTarget;
     setSubmitting(true);
     setError(null);
     try {
-      await onDeleteComponent(selectedComponent);
+      await onDeleteComponent(currentComponent);
       setSelectedComponentId("");
       setDraft(toDraft(null));
+      setDeleteTarget(null);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Komponente konnte nicht gelöscht werden.");
     } finally {
@@ -190,7 +194,7 @@ export function AllComponentList({
           showRemove={isAdmin}
           showAdd={isAdmin}
           showDeleteAll={isAdmin}
-          onRemove={() => void handleDelete()}
+          onRemove={selectedComponent ? () => setDeleteTarget(selectedComponent) : undefined}
           onAdd={() => setCreateDialogOpen(true)}
           onDeleteAll={selectedCategoryId ? () => onDeleteAllComponentsInCategory?.(selectedCategoryId) : undefined}
           removeDisabled={!selectedComponent || submitting}
@@ -223,7 +227,23 @@ export function AllComponentList({
           onConfirm={handleCreateConfirm}
         />
       ) : null}
+      <ConfirmDialogBase
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !submitting) {
+            setDeleteTarget(null);
+          }
+        }}
+        title="Komponente wirklich löschen?"
+        description={deleteTarget ? `Komponente "${deleteTarget.name}" wird gelöscht.` : undefined}
+        confirmLabel="Komponente löschen"
+        icon={<Boxes className="h-5 w-5 text-primary" />}
+        isPending={submitting}
+        pendingLabel="Lösche..."
+        variant="destructive"
+        testId="dialog-confirm-delete-component"
+        onConfirm={() => void handleConfirmDelete()}
+      />
     </section>
   );
 }
-

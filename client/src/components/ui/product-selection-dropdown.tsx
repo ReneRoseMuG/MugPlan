@@ -1,7 +1,8 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Package } from "lucide-react";
 import type { Product } from "@shared/schema";
 import { CollectionDropDown } from "@/components/ui/collection-drop-down";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogBaseShell } from "@/components/ui/dialog-base";
 
 interface ProductSelectionDropdownProps {
   products: Product[];
@@ -102,14 +103,14 @@ export function ProductSelectionDropdown({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title ?? `${label ?? "Sauna"} auswählen`}</DialogTitle>
-        </DialogHeader>
-        {panel}
-      </DialogContent>
-    </Dialog>
+    <DialogBaseShell
+      icon={<Package className="h-5 w-5 text-primary" />}
+      onOpenChange={onOpenChange ?? (() => undefined)}
+      open={open}
+      testId="dialog-select-product"
+      title={title ?? `${label ?? "Sauna"} auswählen`}
+    >
+      {panel}
+    </DialogBaseShell>
   );
 }
-
