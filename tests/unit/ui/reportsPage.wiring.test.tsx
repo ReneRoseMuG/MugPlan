@@ -103,6 +103,7 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogContent: ({ children, ...props }: Record<string, unknown> & { children?: React.ReactNode }) => <div data-testid={String(props["data-testid"] ?? "")}>{children}</div>,
   DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -353,6 +354,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("toggle-reports-auftragsliste-calendarWeek");
     expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
     expect(html).toContain("button-reports-auftragsliste-open-categories");
+    expect(html).toContain("dialog-reports-auftragsliste-categories");
+    expect(html).toContain("button-reports-auftragsliste-categories-close");
     expect(html).toContain("button-reports-auftragsliste-add-tag-filter");
     expect(html).toContain("button-reports-auftragsliste-open-sauna-model-filter");
     expect(html).toContain("button-reports-vorlaufliste-open-tab");

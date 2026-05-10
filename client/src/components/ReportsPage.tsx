@@ -679,7 +679,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [selectedAuftragslisteComponentCategoryIds, setSelectedAuftragslisteComponentCategoryIds] = useState<number[]>([]);
   const [selectedAuftragslisteTagIds, setSelectedAuftragslisteTagIds] = useState<number[]>([]);
   const [selectedAuftragslisteSaunaModels, setSelectedAuftragslisteSaunaModels] = useState<string[]>([]);
-  const [isAuftragslisteCategoryPopoverOpen, setIsAuftragslisteCategoryPopoverOpen] = useState(false);
+  const [isAuftragslisteCategoryDialogOpen, setIsAuftragslisteCategoryDialogOpen] = useState(false);
   const [isAuftragslisteTagPickerOpen, setIsAuftragslisteTagPickerOpen] = useState(false);
   const [isAuftragslisteSaunaModelPopoverOpen, setIsAuftragslisteSaunaModelPopoverOpen] = useState(false);
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
@@ -1486,7 +1486,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     setIsReportOverlayOpen(false);
     setIsVorlauflisteColumnsPopoverOpen(false);
     setIsVorlauflistePrintPreviewOpen(false);
-    setIsAuftragslisteCategoryPopoverOpen(false);
+    setIsAuftragslisteCategoryDialogOpen(false);
     setIsAuftragslistePrintPreviewOpen(false);
     setIsProduktionsplanungCategoryLayoutDialogOpen(false);
   };
@@ -1648,6 +1648,69 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   />
                 </DialogBaseShell>
               ) : null}
+
+              <DialogBaseShell
+                open={isAuftragslisteCategoryDialogOpen}
+                onOpenChange={setIsAuftragslisteCategoryDialogOpen}
+                title="Kategorien"
+                description="Produkt- und Komponentenkategorien der Auftragsliste auswählen."
+                icon={<Columns3 />}
+                size="md"
+                testId="dialog-reports-auftragsliste-categories"
+                footer={(
+                  <DialogBaseFooter
+                    primaryAction={{
+                      label: "Schließen",
+                      onClick: () => setIsAuftragslisteCategoryDialogOpen(false),
+                      testId: "button-reports-auftragsliste-categories-close",
+                    }}
+                  />
+                )}
+              >
+                <div className="space-y-3" data-testid="reports-auftragsliste-categories-dialog">
+                  <h4 className="text-sm font-semibold text-foreground">Artikelliste</h4>
+                  <div className="space-y-2">
+                    {activeProductCategories.map((category) => {
+                      const checked = effectiveAuftragslisteProductCategoryIds.includes(category.id);
+                      return (
+                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(nextChecked) => {
+                              const nextIds = Boolean(nextChecked)
+                                ? Array.from(new Set([...effectiveAuftragslisteProductCategoryIds, category.id]))
+                                : effectiveAuftragslisteProductCategoryIds.filter((id) => id !== category.id);
+                              setSelectedAuftragslisteProductCategoryIds(nextIds);
+                              void persistAuftragslisteSelection({ productCategoryIds: nextIds });
+                            }}
+                            data-testid={`checkbox-reports-auftragsliste-product-category-${category.id}`}
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      );
+                    })}
+                    {activeComponentCategories.map((category) => {
+                      const checked = effectiveAuftragslisteComponentCategoryIds.includes(category.id);
+                      return (
+                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(nextChecked) => {
+                              const nextIds = Boolean(nextChecked)
+                                ? Array.from(new Set([...effectiveAuftragslisteComponentCategoryIds, category.id]))
+                                : effectiveAuftragslisteComponentCategoryIds.filter((id) => id !== category.id);
+                              setSelectedAuftragslisteComponentCategoryIds(nextIds);
+                              void persistAuftragslisteSelection({ componentCategoryIds: nextIds });
+                            }}
+                            data-testid={`checkbox-reports-auftragsliste-category-${category.id}`}
+                          />
+                          <span>{category.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </DialogBaseShell>
 
               <div className="flex flex-col gap-5 pb-2">
                 <ReportConfigPanel
@@ -1844,65 +1907,15 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   title="Auftragsliste"
                   helpKey="report-auftragsliste"
                   actionButton={(
-                    <Popover open={isAuftragslisteCategoryPopoverOpen} onOpenChange={setIsAuftragslisteCategoryPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
-                          data-testid="button-reports-auftragsliste-open-categories"
-                        >
-                          <Columns3 className="h-3.5 w-3.5" />
-                          Kategorien
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" className="w-80" data-testid="reports-auftragsliste-categories-popover">
-                        <div className="space-y-3">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">Artikelliste</p>
-                          </div>
-                          <div className="space-y-2">
-                            {activeProductCategories.map((category) => {
-                              const checked = effectiveAuftragslisteProductCategoryIds.includes(category.id);
-                              return (
-                                <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
-                                  <Checkbox
-                                    checked={checked}
-                                    onCheckedChange={(nextChecked) => {
-                                      const nextIds = Boolean(nextChecked)
-                                        ? Array.from(new Set([...effectiveAuftragslisteProductCategoryIds, category.id]))
-                                        : effectiveAuftragslisteProductCategoryIds.filter((id) => id !== category.id);
-                                      setSelectedAuftragslisteProductCategoryIds(nextIds);
-                                      void persistAuftragslisteSelection({ productCategoryIds: nextIds });
-                                    }}
-                                    data-testid={`checkbox-reports-auftragsliste-product-category-${category.id}`}
-                                  />
-                                  <span>{category.name}</span>
-                                </label>
-                              );
-                            })}
-                            {activeComponentCategories.map((category) => {
-                              const checked = effectiveAuftragslisteComponentCategoryIds.includes(category.id);
-                              return (
-                                <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
-                                  <Checkbox
-                                    checked={checked}
-                                    onCheckedChange={(nextChecked) => {
-                                      const nextIds = Boolean(nextChecked)
-                                        ? Array.from(new Set([...effectiveAuftragslisteComponentCategoryIds, category.id]))
-                                        : effectiveAuftragslisteComponentCategoryIds.filter((id) => id !== category.id);
-                                      setSelectedAuftragslisteComponentCategoryIds(nextIds);
-                                      void persistAuftragslisteSelection({ componentCategoryIds: nextIds });
-                                    }}
-                                    data-testid={`checkbox-reports-auftragsliste-category-${category.id}`}
-                                  />
-                                  <span>{category.name}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <button
+                      type="button"
+                      onClick={() => setIsAuftragslisteCategoryDialogOpen(true)}
+                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
+                      data-testid="button-reports-auftragsliste-open-categories"
+                    >
+                      <Columns3 className="h-3.5 w-3.5" />
+                      Kategorien
+                    </button>
                   )}
                   optionsSlot={(
                     <div
