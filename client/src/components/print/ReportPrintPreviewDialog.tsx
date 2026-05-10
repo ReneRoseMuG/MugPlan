@@ -1,9 +1,8 @@
 import React, { type Key, type ReactNode } from "react";
-import { Printer, RefreshCw } from "lucide-react";
+import { Printer } from "lucide-react";
 
 import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type ReportPrintPreviewDialogProps<TPage> = {
   open: boolean;
@@ -24,21 +23,15 @@ type ReportPrintPreviewDialogProps<TPage> = {
   pageOrientation?: "portrait" | "landscape";
   onPageOrientationChange?: (nextOrientation: "portrait" | "landscape") => void;
   orientationTestIdPrefix?: string;
-  onRefresh: () => void;
   onPrint: () => void;
-  isRefreshing?: boolean;
   printDisabled?: boolean;
-  refreshTestId: string;
   printTestId: string;
   extraActions?: ReactNode;
 };
 
 export function ReportPrintPreviewDialog<TPage>({
-  onRefresh,
   onPrint,
-  isRefreshing = false,
   printDisabled = false,
-  refreshTestId,
   printTestId,
   extraActions,
   pageOrientation,
@@ -75,10 +68,6 @@ export function ReportPrintPreviewDialog<TPage>({
       pageOrientation={pageOrientation}
       headerActions={(
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing} data-testid={refreshTestId}>
-            <RefreshCw className={cn("h-4 w-4", isRefreshing ? "animate-spin" : undefined)} />
-            Aktualisieren
-          </Button>
           {orientationActions}
           {extraActions}
           <Button type="button" variant="outline" size="sm" onClick={onPrint} disabled={printDisabled} data-testid={printTestId}>

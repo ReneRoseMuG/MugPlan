@@ -140,19 +140,33 @@ async function expectProjectSidebarPanels(page: Page, isEditing: boolean) {
 }
 
 async function selectProjectArticle(page: Page, fieldKey: string, itemId: number) {
-  if (fieldKey === "saunaModel") {
-    const dialogPromise = new Promise<string>((resolve) => {
-      page.once("dialog", async (dialog) => {
-        const message = dialog.message();
-        await dialog.dismiss();
-        resolve(message);
-      });
-    });
-    await page.getByTestId(`select-project-product-${fieldKey}`).selectOption(String(itemId));
-    expect(await dialogPromise).toBe("Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?");
-    return;
-  }
   await page.getByTestId(`select-project-product-${fieldKey}`).selectOption(String(itemId));
+}
+
+async function confirmProjectSaveReview(page: Page, options: { adoptSaunaTitle?: boolean } = {}) {
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+  while (await page.getByTestId("button-project-save-review-next").isVisible().catch(() => false)) {
+    const adoptCheckbox = page.getByTestId("checkbox-project-save-review-adopt-sauna-title");
+    if (await adoptCheckbox.isVisible().catch(() => false)) {
+      if (options.adoptSaunaTitle === false && await adoptCheckbox.isChecked()) {
+        await adoptCheckbox.uncheck();
+      }
+      if (options.adoptSaunaTitle === true && !await adoptCheckbox.isChecked()) {
+        await adoptCheckbox.check();
+      }
+    }
+    await page.getByTestId("button-project-save-review-next").click();
+  }
+  const adoptCheckbox = page.getByTestId("checkbox-project-save-review-adopt-sauna-title");
+  if (await adoptCheckbox.isVisible().catch(() => false)) {
+    if (options.adoptSaunaTitle === false && await adoptCheckbox.isChecked()) {
+      await adoptCheckbox.uncheck();
+    }
+    if (options.adoptSaunaTitle === true && !await adoptCheckbox.isChecked()) {
+      await adoptCheckbox.check();
+    }
+  }
+  await page.getByTestId("button-project-save-review-confirm").click();
 }
 
 async function waitForNamedMasterDataId(page: Page, url: string, expectedName: string): Promise<number> {
@@ -177,11 +191,12 @@ async function createProductViaProjectDialog(page: Page, params: {
   const saunaSelect = page.getByTestId("select-project-product-saunaModel");
   if ((await saunaSelect.inputValue()) !== String(params.baseProductId)) {
     await selectProjectArticle(page, "saunaModel", params.baseProductId);
+    await expect(saunaSelect).toHaveValue(String(params.baseProductId));
   }
   await page.getByTestId("button-create-project-product-saunaModel").click();
 
   const dialog = page.getByRole("dialog").filter({ hasText: "Neues Produkt" });
-  await expect(dialog.getByText("Neues Produkt \u2014 Fass Saunen")).toBeVisible();
+  await expect(dialog.getByText("Neues Produkt - Fass Saunen")).toBeVisible();
   await dialog.locator("#product-details-short-code").fill(params.shortCode);
   await dialog.locator("#product-details-name").fill(params.name);
   await dialog.locator("#product-details-description").fill(params.description);
@@ -201,7 +216,7 @@ async function createComponentViaProjectDialog(page: Page, params: {
   await page.getByTestId("button-create-project-product-oven").click();
 
   const dialog = page.getByRole("dialog").filter({ hasText: "Neue Komponente" });
-  await expect(dialog.getByText("Neue Komponente \u2014 \u00d6fen")).toBeVisible();
+  await expect(dialog.getByText("Neue Komponente - \u00d6fen")).toBeVisible();
   await dialog.locator("#component-details-short-code").fill(params.shortCode);
   await dialog.locator("#component-details-name").fill(params.name);
   await dialog.locator("#component-details-description").fill(params.description);
@@ -313,6 +328,7 @@ test("creates a fully visible project, checks EntityFormShell and restores all v
     && !response.url().includes("/order-items")
   ));
   await page.getByTestId("button-save-project").click();
+  await confirmProjectSaveReview(page, { adoptSaunaTitle: false });
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
@@ -395,6 +411,7 @@ test("creates product and component entries in a new project form and restores t
     && !response.url().includes("/order-items")
   ));
   await page.getByTestId("button-save-project").click();
+  await confirmProjectSaveReview(page, { adoptSaunaTitle: false });
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok()).toBeTruthy();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
@@ -491,6 +508,7 @@ test("creates product and component entries while editing an existing project an
   });
 
   await page.getByTestId("button-save-project").click();
+  await confirmProjectSaveReview(page, { adoptSaunaTitle: false });
   await expect(page.getByTestId("button-new-project")).toBeVisible();
 
   await expectPersistedOrderItems(page, {

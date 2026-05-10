@@ -89,12 +89,13 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
             { categoryId: 10, value: "WIN-A" },
             { categoryId: 20, value: "DOOR-B" },
           ],
+          projectArticleItems: [
+            { label: "Sauna", value: "Sauna Alpha", source: "product", shortCode: "SA" },
+            { label: "Fenster", value: "WIN-A", source: "component" },
+            { label: "Tür", value: "DOOR-B", source: "component" },
+          ],
           projectDescription: "Beschreibung Alpha",
         }}
-        categories={[
-          { id: 10, name: "Fenster" },
-          { id: 20, name: "Tueren" },
-        ]}
       />,
     );
 
@@ -104,6 +105,9 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
     expect(html).toContain("Tour Nord");
     expect(html).toContain("05.11.99");
     expect(html).toContain("2 Tage");
+    expect(html).toContain("Artikelliste");
+    expect(html).toContain("Sauna");
+    expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Fenster");
     expect(html).toContain("WIN-A");
     expect(html).toContain("Tür");
@@ -147,9 +151,9 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
           attachmentsCount: 0,
           tags: [],
           articleValues: [],
+          projectArticleItems: [],
           projectDescription: null,
         }}
-        categories={[{ id: 10, name: "Fenster" }]}
       />,
     );
 
@@ -186,9 +190,9 @@ describe("UI: AuftragslisteProjectCard wiring", () => {
             { id: 12, name: "Messe Aufbau/Abbau", color: "#3465A4", isDefault: false, version: 1 },
           ],
           articleValues: [],
+          projectArticleItems: [],
           projectDescription: null,
         }}
-        categories={[{ id: 10, name: "Fenster" }]}
       />,
     );
 

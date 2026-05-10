@@ -210,6 +210,10 @@ describe("integration: report auftragsliste", () => {
           { categoryId: productCategoryId, value: "SAU-A" },
           { categoryId: windowCategoryId, value: "WIN-A" },
         ],
+        projectArticleItems: expect.arrayContaining([
+          expect.objectContaining({ value: "Fenster Alpha", shortCode: "WIN-A" }),
+          expect.objectContaining({ value: "Tuer Beta", shortCode: "DOOR-B" }),
+        ]),
       }),
     ]);
   });

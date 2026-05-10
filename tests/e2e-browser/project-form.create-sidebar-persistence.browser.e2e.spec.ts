@@ -177,9 +177,9 @@ test("persists Reklamation workflow from the new project form with a template no
 
   await page.getByTestId("button-set-project-reklamation").click();
   await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
-  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
-  await page.getByTestId("button-note-suggestion-confirm").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await page.getByTestId("button-save-project").click();
   await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
 
   await page.getByTestId("button-save-note").click();
@@ -217,8 +217,11 @@ test("does not reopen the Reklamation note suggestion on new project save after 
 
   await page.getByTestId("button-set-project-reklamation").click();
   await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
-  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
-  await page.getByTestId("button-note-suggestion-skip").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+
+  await page.getByTestId("button-save-project").click();
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-cancel-note").click();
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
@@ -356,6 +359,7 @@ test("shows an extracted document as pending project attachment before save and 
 
   await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+  await expect(page.getByTestId("button-open-extraction-pdf-tab")).toBeVisible();
   await page.getByTestId("button-doc-extract-apply-data").click();
   await expect(page.getByTestId("badge-customer")).toHaveCount(0);
   await openCustomerPickerAndSelect(page, customer.customerNumber);
@@ -366,6 +370,8 @@ test("shows an extracted document as pending project attachment before save and 
     && new URL(response.url()).pathname === "/api/projects"
   ));
   await page.getByTestId("button-save-project").click();
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+  await page.getByTestId("button-project-save-review-confirm").click();
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-new-project")).toBeVisible();

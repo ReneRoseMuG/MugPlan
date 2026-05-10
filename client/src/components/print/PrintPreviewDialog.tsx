@@ -68,7 +68,7 @@ export function PrintPreviewDialog<TPage>({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className={`w-[calc(297mm+88px)] max-w-[calc(100vw-32px)] overflow-hidden p-0 print:hidden${dialogWidthClassName ? ` ${dialogWidthClassName}` : ""}`}
+          className={`w-[calc(297mm+88px)] max-w-[calc(100vw-32px)] overflow-hidden p-0 print:hidden [&>button:last-child]:right-2 [&>button:last-child]:h-9 [&>button:last-child]:w-9${dialogWidthClassName ? ` ${dialogWidthClassName}` : ""}`}
           data-testid={dialogTestId ?? `${testIdPrefix}-dialog`}
         >
           <div className="flex max-h-[calc(100vh-32px)] flex-col">

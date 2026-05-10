@@ -6,7 +6,7 @@
  * - Die Default-Range leitet Enddatum und KW-Reichweite aus dem letzten verfügbaren Projektermin ab.
  * - Der URL-Aufbau der Reports bleibt beim optionalen toDate-Parameter technisch korrekt.
  * - Der Produktionsplanung-URL-Aufbau enthaelt nur noch Kategorien, Zeitraum und Shortcodes.
- * - Die Auftragsliste übergibt Kategorien und Shortcodes über einen eigenen URL-Builder.
+ * - Die Auftragsliste übergibt Tags, Modellfilter und Shortcodes über einen eigenen URL-Builder.
  *
  * Fehlerfaelle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
@@ -306,12 +306,10 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).not.toContain("sonderblockTagIds=");
   });
 
-  it("builds the auftragsliste URL with product and component categories plus shortcodes", () => {
+  it("builds the auftragsliste URL without obsolete category filters", () => {
     const url = buildAuftragslisteReportUrl({
       fromDate: "2026-03-29",
       toDate: "2026-03-30",
-      productCategoryIds: [1],
-      componentCategoryIds: [2, 4],
       tagIds: [8],
       saunaModels: ["Modell Alpha"],
       useShortCodes: true,
@@ -320,9 +318,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("/api/reports/auftragsliste?");
     expect(url).toContain("fromDate=2026-03-29");
     expect(url).toContain("toDate=2026-03-30");
-    expect(url).toContain("productCategoryIds=1");
-    expect(url).toContain("componentCategoryIds=2");
-    expect(url).toContain("componentCategoryIds=4");
+    expect(url).not.toContain("productCategoryIds=");
+    expect(url).not.toContain("componentCategoryIds=");
     expect(url).toContain("tagIds=8");
     expect(url).toContain("saunaModels=Modell+Alpha");
     expect(url).toContain("useShortCodes=true");
@@ -350,8 +347,8 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("toDate=2026-04-05");
     expect(url).toContain("kwStart=14");
     expect(url).toContain("weekCount=1");
-    expect(url).toContain("productCategoryIds=1");
-    expect(url).toContain("componentCategoryIds=2");
+    expect(url).not.toContain("productCategoryIds=1");
+    expect(url).not.toContain("componentCategoryIds=2");
     expect(url).toContain("tagIds=8");
     expect(url).toContain("saunaModels=Modell+Alpha");
     expect(url).toContain("useShortCodes=true");

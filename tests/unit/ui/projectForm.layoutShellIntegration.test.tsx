@@ -153,6 +153,10 @@ vi.mock("@/components/NotesSection", () => ({
   },
 }));
 
+vi.mock("@/components/ProjectSaveReviewDialog", () => ({
+  ProjectSaveReviewDialog: () => null,
+}));
+
 vi.mock("@/components/TagPickerPanel", () => ({
   TagPickerPanel: (props: Record<string, unknown>) => {
     tagPickerPanelCalls.push(props);
@@ -163,6 +167,10 @@ vi.mock("@/components/TagPickerPanel", () => ({
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
 vi.mock("@/components/ui/tabs", () => ({
@@ -337,6 +345,38 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(editMarkup).toContain("button-delete-project");
     expect(getIndex(editMarkup, "project-form-functions-panel")).toBeLessThan(getIndex(editMarkup, "project-appointments-panel-marker"));
     expect(getIndex(editMarkup, "button-cancel-project")).toBeLessThan(getIndex(editMarkup, "button-save-project"));
+  });
+
+  it("offers the extracted PDF as a new-tab action in the create sidebar", () => {
+    const originalCreateObjectUrl = URL.createObjectURL;
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn(() => "blob:project-extraction"),
+    });
+
+    try {
+      const markup = renderToStaticMarkup(
+        <ProjectForm
+          initialDocumentExtractionFile={{
+            name: "extraktion.pdf",
+            type: "application/pdf",
+            size: 12,
+          } as File}
+        />,
+      );
+
+      expect(markup).toContain("button-open-extraction-pdf-tab");
+      expect(markup).toContain("PDF in neuem Tab");
+    } finally {
+      if (originalCreateObjectUrl) {
+        Object.defineProperty(URL, "createObjectURL", {
+          configurable: true,
+          value: originalCreateObjectUrl,
+        });
+      } else {
+        Reflect.deleteProperty(URL, "createObjectURL");
+      }
+    }
   });
 
   it("renders edit mode as readonly for reader roles", () => {

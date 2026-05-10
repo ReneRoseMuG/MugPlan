@@ -134,7 +134,7 @@ export function ReportProjectCard({
 }) {
   return (
     <article
-      className={cn("rounded-lg border border-border bg-white shadow-sm", className)}
+      className={cn("overflow-hidden rounded-lg border border-border bg-white shadow-sm", className)}
       data-testid={testIdPrefix}
       data-report-dominant-tag={dominantTagName ?? undefined}
       style={style}

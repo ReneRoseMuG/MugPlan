@@ -512,21 +512,26 @@ test("shows an extracted document only as project attachment after successful pr
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByTestId("project-description-editor-panel").getByTestId("richtext-editor").fill("Extrahierte Projektbeschreibung fuer den Overlay-Save");
   await page.getByRole("tab", { name: "Artikelliste" }).click();
-  const dialogPromise = new Promise<string>((resolve) => {
-    page.once("dialog", async (dialog) => {
-      const message = dialog.message();
-      await dialog.dismiss();
-      resolve(message);
-    });
-  });
   await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
-  expect(await dialogPromise).toBe("Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?");
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === "/api/projects"
   ));
   await page.getByTestId("button-save-project").click();
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+  while (await page.getByTestId("button-project-save-review-next").isVisible().catch(() => false)) {
+    const adoptCheckbox = page.getByTestId("checkbox-project-save-review-adopt-sauna-title");
+    if (await adoptCheckbox.isVisible().catch(() => false) && await adoptCheckbox.isChecked()) {
+      await adoptCheckbox.uncheck();
+    }
+    await page.getByTestId("button-project-save-review-next").click();
+  }
+  const adoptCheckbox = page.getByTestId("checkbox-project-save-review-adopt-sauna-title");
+  if (await adoptCheckbox.isVisible().catch(() => false) && await adoptCheckbox.isChecked()) {
+    await adoptCheckbox.uncheck();
+  }
+  await page.getByTestId("button-project-save-review-confirm").click();
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = (await createdProjectResponse.json()) as { id: number };

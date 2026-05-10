@@ -9,7 +9,9 @@ import { TourenplanPaginationMeasurement } from "@/components/reports/Tourenplan
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
 import { ReportResultOverlayShell } from "@/components/reports/ReportResultOverlayShell";
+import { TourenplanAppointmentCard } from "@/components/reports/TourenplanAppointmentCard";
 import { TourenplanPrintPage } from "@/components/reports/TourenplanPrintPage";
+import { TourenplanWeekNoteStrip } from "@/components/reports/TourenplanWeekNoteStrip";
 import {
   buildTourenplanPrintPagesForSections,
   buildTourenplanPrintSections,
@@ -491,11 +493,6 @@ export function TourenplanReportPanel({
     window.open(buildStandaloneReportUrl(launch), "_blank");
   }, [buildStandaloneReportUrl, resolveStandaloneLaunch]);
 
-  const refreshReport = React.useCallback(() => {
-    setPaginationMeasurement(null);
-    setReportRequestId((current) => current + 1);
-  }, []);
-
   const quickRangeOptions = (
     <div className="hidden" data-testid="reports-tourenplan-quick-range-options">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Termine ab:</div>
@@ -720,16 +717,13 @@ export function TourenplanReportPanel({
           open={isReportOpen}
           title="Tourenplan"
           metaLabel={`${rangeMetaLabel}${selectedToursLabel ? ` · ${selectedToursLabel}` : ""}`}
-          onRefresh={refreshReport}
           onOpenPrintPreview={() => setIsPreviewOpen(true)}
           onBack={() => {
             setIsReportOpen(false);
             setIsPreviewOpen(false);
           }}
-          isRefreshing={isPreviewLoading}
           printPreviewDisabled={isGenerateDisabled}
           testId="reports-tourenplan-overlay"
-          refreshTestId="button-reports-tourenplan-refresh"
           printPreviewTestId="button-reports-tourenplan-print-preview"
           backTestId="button-reports-tourenplan-back"
           contentClassName="overflow-auto bg-slate-100 p-6"
@@ -756,16 +750,24 @@ export function TourenplanReportPanel({
                     {section.weeks.map((week) => (
                       <div key={week.weekStart} className="space-y-2">
                         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">KW {week.weekNumber}</div>
-                        {week.appointments.length > 0 ? (
-                          <div className="grid gap-2">
-                            {week.appointments.map((appointment) => (
-                              <div key={appointment.id} className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
-                                <span className="font-medium text-slate-900">{appointment.projectName}</span>
-                                {appointment.customer.fullName ? <span className="ml-2 text-slate-500">{appointment.customer.fullName}</span> : null}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
+                        {week.weekNotes.filter((note) => note.print).map((note) => (
+                          <TourenplanWeekNoteStrip
+                            key={note.id}
+                            note={note}
+                            printMode={printMode}
+                          />
+                        ))}
+                        {week.appointments.length > 0 ? week.appointments.map((appointment, appointmentIndex) => (
+                          <TourenplanAppointmentCard
+                            key={appointment.id}
+                            appointment={appointment}
+                            printMode={printMode}
+                            fontSize={fontSize}
+                            useShortCodes={useShortCodes}
+                            dataKwStart={appointmentIndex === 0 ? week.weekStart : undefined}
+                            testId={`reports-tourenplan-result-appointment-${appointment.id}`}
+                          />
+                        )) : (
                           <p className="text-sm text-muted-foreground">Keine Termine.</p>
                         )}
                       </div>
@@ -818,11 +820,8 @@ export function TourenplanReportPanel({
         onPageOrientationChange={setOrientation}
         orientationTestIdPrefix="button-reports-tourenplan-orientation"
         getPageKey={(page) => page.pageNumber}
-        onRefresh={refreshReport}
         onPrint={() => window.print()}
-        isRefreshing={isPreviewLoading || isPaginationMeasuring}
         printDisabled={pages.length === 0 || isPaginationMeasuring}
-        refreshTestId="button-reports-tourenplan-print-preview-refresh"
         printTestId="button-reports-tourenplan-print"
         renderPage={(page) => (
           <TourenplanPrintPage

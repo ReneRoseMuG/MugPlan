@@ -143,6 +143,10 @@ vi.mock("@/components/NotesSection", () => ({
   NotesSection: () => <div>notes</div>,
 }));
 
+vi.mock("@/components/ProjectSaveReviewDialog", () => ({
+  ProjectSaveReviewDialog: () => null,
+}));
+
 vi.mock("@/components/TagPickerPanel", () => ({
   TagPickerPanel: () => <div>tags</div>,
 }));

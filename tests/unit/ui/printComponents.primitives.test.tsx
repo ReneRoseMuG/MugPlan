@@ -189,9 +189,11 @@ describe("generisches Print-System", () => {
     );
 
     expect(html).toContain("Drucken");
+    expect(html).toContain("button:last-child");
+    expect(html).toContain("right-2");
   });
 
-  it("ReportPrintPreviewDialog rendert die einheitlichen Refresh- und Druck-Aktionen", () => {
+  it("ReportPrintPreviewDialog rendert die einheitlichen Druck- und Zusatzaktionen", () => {
     vi.stubGlobal("document", { body: {} });
 
     const html = renderToStaticMarkup(
@@ -205,19 +207,16 @@ describe("generisches Print-System", () => {
         getPageKey={(page) => page.pageNumber}
         getPageTitle={(page) => page.title}
         renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
-        onRefresh={() => undefined}
         onPrint={() => undefined}
         pageOrientation="landscape"
         onPageOrientationChange={() => undefined}
         orientationTestIdPrefix="button-report-orientation"
-        refreshTestId="button-report-print-refresh"
         printTestId="button-report-print"
         extraActions={<button type="button" data-testid="button-report-extra">Extra</button>}
       />,
     );
 
-    expect(html).toContain("button-report-print-refresh");
-    expect(html).toContain("Aktualisieren");
+    expect(html).not.toContain("Aktualisieren");
     expect(html).toContain("button-report-orientation-landscape");
     expect(html).toContain("button-report-orientation-portrait");
     expect(html).toContain("Querformat");
@@ -241,16 +240,12 @@ describe("generisches Print-System", () => {
         getPageKey={(page) => page.pageNumber}
         getPageTitle={(page) => page.title}
         renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
-        onRefresh={() => undefined}
         onPrint={() => undefined}
-        refreshTestId="button-report-print-refresh"
         printTestId="button-report-print"
-        isRefreshing
         printDisabled
       />,
     );
 
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="button-report-print-refresh"/);
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="button-report-print"/);
   });
 

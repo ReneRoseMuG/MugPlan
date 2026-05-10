@@ -6,11 +6,10 @@
  * - In der Druckansicht nutzt die Tag-Zeile die volle Footer-Breite; die rechte Badge-Spalte bleibt ausgeblendet.
  * - Highlight-Tags färben Header und Kartenkontur der Druckkarte sichtbar ein.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Die Druckansicht weicht strukturell weiter von der Öffnen-Karte ab.
  * - Die Badge-Spalte bleibt in der Druckvorschau sichtbar und verdrängt die Tags unnötig.
  * - Das Highlight-Tag fehlt trotz Datenlage oder verliert seine sichtbare Farbverdrahtung.
- * - Die Inhaltsbereiche werden trotz Vorgabe dunkel getönt.
  *
  * Ziel:
  * Die Druckkarte der Auftragsliste auf dieselbe sichtbare Kartenbasis wie die Öffnen-Ansicht regressionssicher absichern.
@@ -43,7 +42,7 @@ vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
 
 vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsHover", () => ({
   CalendarWeekAppointmentAttachmentsHover: ({ totalAttachmentsCount }: { totalAttachmentsCount: number }) => (
-    <div data-testid="attachments-hover">Anhaenge {totalAttachmentsCount}</div>
+    <div data-testid="attachments-hover">Anhänge {totalAttachmentsCount}</div>
   ),
 }));
 
@@ -63,10 +62,6 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
   it("renders the same card structure as the opened report including footer tags", () => {
     const html = renderToStaticMarkup(
       <AuftragslistePrintLayout
-        categories={[
-          { id: 10, name: "Fass Saunen" },
-          { id: 20, name: "Fenster" },
-        ]}
         items={[
           {
             projectId: 1,
@@ -97,12 +92,18 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
               { categoryId: 10, value: "Sauna Alpha" },
               { categoryId: 20, value: "Fenster Breit" },
             ],
+            projectArticleItems: [
+              { label: "Sauna", value: "Sauna Alpha", source: "product" },
+              { label: "Fenster", value: "Fenster Breit", source: "component" },
+            ],
             projectDescription: "Beschreibung Alpha",
           },
         ]}
       />,
     );
 
+    expect(html).toContain("reports-auftragsliste-project-card-1");
+    expect(html).not.toContain("print-auftragsliste-project-card-1");
     expect(html).toContain("C-001");
     expect(html).toContain("Kunde Alpha");
     expect(html).toContain("ORD-001");
@@ -114,11 +115,10 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
     expect(html).not.toContain("employee-badge");
     expect(html).not.toContain("notes-hover");
     expect(html).not.toContain("attachments-hover");
+    expect(html).not.toContain("footer-badges-column");
     expect(html).toContain("background-color:rgba(52, 101, 164, 0.14)");
     expect(html).toContain("border-color:#3465A4");
-    expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.04)");
-    expect(html).not.toContain("background-color:rgba(52, 101, 164, 0.08)");
-    expect(html).not.toContain("footer-badges-column");
+    expect(html).toContain("Artikelliste");
     expect(html).toContain("Sauna");
     expect(html).toContain("Sauna Alpha");
     expect(html).toContain("Fenster");
@@ -129,7 +129,6 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
   it("keeps Gespiegelt ahead of Messe in the printed card markup", () => {
     const html = renderToStaticMarkup(
       <AuftragslistePrintLayout
-        categories={[{ id: 10, name: "Fass Saunen" }]}
         items={[
           {
             projectId: 2,
@@ -157,6 +156,7 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
               { id: 17, name: "Gespiegelt", color: "#0891b2", isDefault: false, version: 1 },
             ],
             articleValues: [{ categoryId: 10, value: "Sauna Beta" }],
+            projectArticleItems: [{ label: "Sauna", value: "Sauna Beta", source: "product" }],
             projectDescription: null,
           },
         ]}
@@ -165,5 +165,6 @@ describe("FT26 UI: AuftragslistePrintLayout wiring", () => {
 
     expect(html).toContain('data-report-dominant-tag="Gespiegelt"');
     expect(html).toContain("border-color:#0891b2");
+    expect(html).not.toContain("print-auftragsliste-project-card-2");
   });
 });

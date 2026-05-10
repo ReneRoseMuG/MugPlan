@@ -3,14 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Die Reports-Seite rendert die prototypnahen FT26-Toggles fuer Datum und Kalenderwoche samt Header-Actions.
- * - Die Auftragsliste erscheint als dritter Report-Block mit eigener Kategorien-Aktion.
+ * - Die Auftragsliste erscheint als dritter Report-Block ohne alte Kategorien-Aktion.
  * - Die Produktionsplanung zeigt keinen alten Info-Tag-, Sonderblock- oder deaktivierten Kategorie-Block mehr.
  * - Nicht-Admins sehen keinen Kategorie-Layout-Button; Admins erhalten stattdessen den Dialog-Einstieg.
  *
  * Fehlerfaelle:
  * - Alte Produktionsplanung-Blöcke oder Legacy-Tabelle bleiben sichtbar verdrahtet.
  * - Die prototypnahen Toggle- und Action-Elemente fehlen oder fallen auf die alte Tab-Struktur zurueck.
- * - Die Auftragsliste fehlt oder rendert ohne ihren Kategorien-Einstieg.
+ * - Die Auftragsliste fehlt oder zeigt den entfernten Kategorien-Einstieg weiter an.
  * - Der Admin-Einstieg fuer das Kategorie-Layout fehlt oder wird Nicht-Admins angezeigt.
  *
  * Ziel:
@@ -362,9 +362,8 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("toggle-reports-auftragsliste-date");
     expect(html).toContain("toggle-reports-auftragsliste-calendarWeek");
     expect(html).toContain("button-reports-vorlaufliste-open-columns-dialog");
-    expect(html).toContain("button-reports-auftragsliste-open-categories");
-    expect(html).toContain("dialog-reports-auftragsliste-categories");
-    expect(html).toContain("button-reports-auftragsliste-categories-close");
+    expect(html).not.toContain("button-reports-auftragsliste-open-categories");
+    expect(html).not.toContain("dialog-reports-auftragsliste-categories");
     expect(html).toContain("button-reports-auftragsliste-add-tag-filter");
     expect(html).toContain("button-reports-auftragsliste-open-sauna-model-filter");
     expect(html).toContain("button-reports-vorlaufliste-open-tab");
@@ -386,13 +385,12 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("checkbox-reports-tourenplan-use-shortcodes");
   });
 
-  it("renders the auftragsliste categories as one article list with product categories first", () => {
+  it("does not render the obsolete auftragsliste category selection", () => {
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect(html).toContain("Artikelliste");
-    expect(html).toContain("checkbox-reports-auftragsliste-product-category-1");
-    expect(html).toContain("checkbox-reports-auftragsliste-category-2");
-    expect(html.indexOf("Fass Saunen")).toBeLessThan(html.indexOf("Fenster"));
+    expect(html).not.toContain("checkbox-reports-auftragsliste-product-category-1");
+    expect(html).not.toContain("checkbox-reports-auftragsliste-category-2");
+    expect(html).not.toContain("reports-auftragsliste-categories-dialog");
   });
 
   it("offers non-system tags plus Sondermaß and Anmerkungen in the auftragsliste tag filter", () => {
@@ -468,6 +466,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
             attachmentsCount: 0,
             tags: [],
             articleValues: [{ categoryId: 1, value: "Sauna Alpha" }],
+            projectArticleItems: [{ label: "Sauna", value: "Sauna Alpha", source: "product" }],
             projectDescription: "Hinweis Alpha",
           }],
         },
@@ -532,8 +531,6 @@ describe("FT26 UI: ReportsPage wiring", () => {
 
     const html = renderToStaticMarkup(<ReportsPage />);
 
-    expect(html).toContain("Fass Saunen");
-    expect(html).toContain("Fenster");
     expect(html).toContain("data-column-ids=\"__indicator,amount,customerFullName,postalCode,city,product-1,product-3,component-2,plannedDateText,plannedWeek,actualDate,projectDescription\"");
   });
 

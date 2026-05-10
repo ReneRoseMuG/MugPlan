@@ -21,9 +21,10 @@ function estimateDescriptionLines(value: string | null): number {
 }
 
 export function estimateAuftragslisteCardHeight(row: ReportAuftragslisteProjectRow): number {
-  const articleLines = row.articleValues.filter((entry) => typeof entry.value === "string" && entry.value.trim().length > 0).length;
+  const articleItems = row.projectArticleItems ?? [];
+  const articleLines = articleItems.filter((entry) => entry.label.trim().length > 0 && entry.value.trim().length > 0).length;
   const descriptionLines = estimateDescriptionLines(row.projectDescription);
-  return BASE_CARD_HEIGHT_PX + (articleLines * ARTICLE_LINE_HEIGHT_PX) + (descriptionLines * DESCRIPTION_LINE_HEIGHT_PX);
+  return BASE_CARD_HEIGHT_PX + ((articleLines > 0 ? articleLines + 1 : 0) * ARTICLE_LINE_HEIGHT_PX) + (descriptionLines * DESCRIPTION_LINE_HEIGHT_PX);
 }
 
 export function paginateAuftragslistePrintPages(

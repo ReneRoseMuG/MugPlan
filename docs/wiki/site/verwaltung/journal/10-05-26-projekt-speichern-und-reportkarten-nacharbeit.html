@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-05-26-projekt-speichern-und-reportkarten-nacharbeit: 10.05.26 | Implementierung | Projekt-Speichern-Dialog und Reportkarten-Nacharbeit · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 10-05-26-projekt-speichern-und-reportkarten-nacharbeit">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">10-05-26-projekt-speichern-und-reportkarten-nacharbeit 10.05.26 | Implementierung | Projekt-Speichern-Dialog und Reportkarten-Nacharbeit</span></nav>
+        <h1 class="wiki-h1">10-05-26-projekt-speichern-und-reportkarten-nacharbeit: 10.05.26 | Implementierung | Projekt-Speichern-Dialog und Reportkarten-Nacharbeit</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>10.05.26</div>
+    <p class="wiki-lead">Der offene Arbeitsstand bündelt zwei Nacharbeiten: Im Projektformular wurde der Speichern-Flow für Projekte mit Dokumentextraktion, Artikelliste, Sauna-Modell-Vorschlag, Reklamationsnotiz und PDF-Duplikatentscheidung in einen gemeinsamen Review-Dialog überführt. Dadurch ersetzen </p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der offene Arbeitsstand bündelt zwei Nacharbeiten: Im Projektformular wurde der Speichern-Flow für Projekte mit Dokumentextraktion, Artikelliste, Sauna-Modell-Vorschlag, Reklamationsnotiz und PDF-Duplikatentscheidung in einen gemeinsamen Review-Dialog überführt. Dadurch ersetzen gezielte Dialogschritte mehrere verstreute Browser-Confirm- und Einzelpfade.</p>
+<p>Für Reports wurde die Nacharbeit an Auftragsliste und Tourenplan fortgeführt. Die Auftragsliste rendert in Reportansicht und Druckvorschau wieder dieselbe Kartenkomponente. Die Druckmessung bleibt erhalten, misst aber nun die echte Reportkarte statt einer separaten Druckkarte. Die Reportkarte schneidet farbige Header- und Footerbereiche sauber an den Rundungen ab; der zusätzliche rechteckige Header-Border wurde entfernt.</p>
+<p>Zusätzlich wurde die Artikellisten-Darstellung in Auftragsliste und Tourenplan an den bestehenden Artikellisten-Renderer angebunden, damit Headline, vollständige Artikelliste, Shortcodes und Sortierung konsistent bleiben. Die Auftragslisten-Kategorieauswahl ist dadurch entfallen.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Projektformular: <code>ProjectSaveReviewDialog</code> ergänzt und in <code>ProjectForm</code> eingebunden.</li><li>Projektformular: Entscheidung zur Sauna-Titelübernahme, Reklamationsnotiz und PDF-Duplikat werden im Speichern-Review gebündelt.</li><li>Projektformular: Dokumentextraktions-PDF bleibt im Draft sichtbar und kann aus dem Formular heraus in einem neuen Tab geöffnet werden.</li><li>Reports: Preset-UI aus den Report-Konfigurationscontainern entfernt.</li><li>Reports: Aktualisieren-Aktionen aus Reportansichten und Druckvorschauen entfernt.</li><li>Auftragsliste: Druckkarte nutzt dieselbe <code>AuftragslisteProjectCard</code> wie die Reportansicht.</li><li>Auftragsliste und Tourenplan: Artikellisten werden über den gemeinsamen Renderer mit vollständiger Liste und Shortcode-Unterstützung gerendert.</li><li>Tourenplan: Tag-Spalte und Karten-Spaltenbreiten wurden für verkürzte Tag-Darstellung, Terminspalte und harmonischere Artikel-/Anmerkungsbereiche angepasst.</li><li>Wiki: Aufgabe A-21 wurde in Bearbeitung gesetzt und fachlich konkretisiert.</li></ul>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li><code>npm test -- --run tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx tests/unit/ui/auftragslisteProjectCard.wiring.test.tsx tests/unit/lib/auftragsliste-print-model.test.ts</code> erfolgreich mit 9 Tests in 3 Dateien.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/reports.ft26.browser.e2e.spec.ts tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts --grep &quot;filters the Auftragsliste|resolves competing|paginiert lange|renders the Tourenplan&quot;</code> erfolgreich mit 4 Browser-E2E-Tests.</li><li>Gesammelte Report-Unit- und Integrationstests erfolgreich mit 176 Tests in 41 Dateien.</li><li>Report-Browser-E2E-Suite erfolgreich mit 12 Tests.</li><li><code>npm run check</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Projektmutationen bleiben für schreibberechtigte Rollen vorgesehen: im Client <code>ADMIN</code> und <code>DISPATCHER</code>, serverseitig gemäß bestehender Durchsetzung <code>ADMIN</code> und <code>DISPONENT</code>.</li><li><code>READER</code> beziehungsweise <code>LESER</code> bleibt lesend; es wurde keine neue Schreibaktion und kein neuer Endpunkt eingeführt.</li><li>Reports bleiben für <code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code> gemäß bestehender Serverlogik sichtbar und ausführbar.</li><li>Die Änderungen an Reportkarten und Druckvorschauen verändern keine serverseitigen Berechtigungen.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Die Projekt-Speichern-Review-Änderung ist UI-seitig vorbereitet und getestet. Server-Contracts, Persistenz und Rollenlogik wurden bewusst nicht geändert.</li><li>Die Report-Druckkarten sind wieder an die Reportkarten gekoppelt; künftige Layoutänderungen an der Auftragslistenkarte wirken damit automatisch auch auf die Druckvorschau.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,18 +1,27 @@
 import type { ReportAuftragslisteProjectRow } from "@shared/routes";
 import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
-import type { ProduktionsplanungArticleCategory } from "@/components/reports/produktionsplanungProjectCard.shared";
+
+export function AuftragslistePrintProjectCard({
+  row,
+  useShortCodes = false,
+}: {
+  row: ReportAuftragslisteProjectRow;
+  useShortCodes?: boolean;
+}) {
+  return <AuftragslisteProjectCard row={row} useShortCodes={useShortCodes} hideFooterBadges />;
+}
 
 export function AuftragslistePrintLayout({
   items,
-  categories,
+  useShortCodes = false,
 }: {
   items: ReportAuftragslisteProjectRow[];
-  categories: ProduktionsplanungArticleCategory[];
+  useShortCodes?: boolean;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4">
       {items.map((row) => (
-        <AuftragslisteProjectCard key={row.projectId} row={row} categories={categories} hideFooterBadges />
+        <AuftragslistePrintProjectCard key={row.projectId} row={row} useShortCodes={useShortCodes} />
       ))}
     </div>
   );

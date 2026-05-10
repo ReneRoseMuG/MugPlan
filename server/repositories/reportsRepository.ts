@@ -1,7 +1,13 @@
-﻿import { and, asc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
+﻿import { and, asc, desc, eq, gte, inArray, isNotNull, lte, sql, type SQL } from "drizzle-orm";
 import { differenceInCalendarDays } from "date-fns";
 import type { AppointmentCancellationReportState } from "@shared/appointmentCancellation";
-import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
+import {
+  getProjectArticleField,
+  getProjectArticleFieldByCategoryName,
+  isReportSaunaProductCategoryName,
+  type ProjectArticleFieldKey,
+  type ProjectArticleItem,
+} from "@shared/projectArticleList";
 
 import { db } from "../db";
 import {
@@ -162,6 +168,7 @@ export type AuftragslisteRow = {
   attachmentsCount: number;
   tags: Tag[];
   articleValues: VorlauflisteArticleValue[];
+  projectArticleItems: ProjectArticleItem[];
   projectDescription: string | null;
 };
 
@@ -249,6 +256,18 @@ function resolveArticleName(name: string, shortCode: string | null | undefined, 
   if (useShortCodes && shortCode && shortCode.trim().length > 0) return shortCode.trim();
   return name;
 }
+
+const REPORT_PROJECT_ARTICLE_FIELD_ORDER: ProjectArticleFieldKey[] = [
+  "saunaModel",
+  "oven",
+  "control",
+  "roof",
+  "window",
+  "door",
+  "frontWall",
+  "rearWallWindow",
+  "interior",
+];
 
 function isSaunaModelCategoryName(value: string | null | undefined): boolean {
   if (!value) return false;
@@ -1048,7 +1067,8 @@ export async function getAuftragsliste(params: {
     .leftJoin(productCategories, eq(products.categoryId, productCategories.id))
     .leftJoin(components, eq(projectOrderItems.componentId, components.id))
     .leftJoin(componentCategories, eq(components.categoryId, componentCategories.id))
-    .where(inArray(projectOrderItems.projectId, eligibleProjectIds));
+    .where(inArray(projectOrderItems.projectId, eligibleProjectIds))
+    .orderBy(desc(projectOrderItems.updatedAt), desc(projectOrderItems.id));
 
   const representativeAppointmentIds = Array.from(new Set(
     eligibleProjectIds
@@ -1096,8 +1116,10 @@ export async function getAuftragsliste(params: {
 
   const articleBucketsByProjectId = new Map<number, ReportArticleBuckets>();
   const saunaModelsByProjectId = new Map<number, Set<string>>();
+  const articleSlotsByProjectId = new Map<number, Map<ProjectArticleFieldKey, ProjectArticleItem>>();
   for (const row of orderItemRows) {
     const articleBuckets = articleBucketsByProjectId.get(row.item.projectId) ?? createEmptyBuckets();
+    const articleSlots = articleSlotsByProjectId.get(row.item.projectId) ?? new Map<ProjectArticleFieldKey, ProjectArticleItem>();
 
     if (
       row.product
@@ -1105,6 +1127,14 @@ export async function getAuftragsliste(params: {
       && row.product.name.trim().length > 0
     ) {
       const trimmedProductName = row.product.name.trim();
+      if (!articleSlots.has("saunaModel")) {
+        articleSlots.set("saunaModel", {
+          label: getProjectArticleField("saunaModel").label,
+          value: trimmedProductName,
+          source: "product",
+          shortCode: row.product.shortCode?.trim() || null,
+        });
+      }
       if (productCategoryIdsForReport.has(row.productCategory.id)) {
         const displayName = resolveArticleName(trimmedProductName, row.product.shortCode, params.useShortCodes);
         addToBucket(articleBuckets, row.productCategory.id, displayName);
@@ -1126,7 +1156,35 @@ export async function getAuftragsliste(params: {
       addToBucket(articleBuckets, row.componentCategory.id, displayName);
     }
 
+    if (
+      row.component
+      && row.componentCategory
+      && row.component.name.trim().length > 0
+    ) {
+      const fieldKey = getProjectArticleFieldByCategoryName(row.componentCategory.name);
+      if (fieldKey && !articleSlots.has(fieldKey)) {
+        articleSlots.set(fieldKey, {
+          label: getProjectArticleField(fieldKey).label,
+          value: row.component.name.trim(),
+          source: "component",
+          shortCode: row.component.shortCode?.trim() || null,
+        });
+      }
+    }
+
     articleBucketsByProjectId.set(row.item.projectId, articleBuckets);
+    articleSlotsByProjectId.set(row.item.projectId, articleSlots);
+  }
+
+  const projectArticleItemsByProjectId = new Map<number, ProjectArticleItem[]>();
+  for (const [projectId, slots] of Array.from(articleSlotsByProjectId.entries())) {
+    projectArticleItemsByProjectId.set(
+      projectId,
+      REPORT_PROJECT_ARTICLE_FIELD_ORDER.flatMap((fieldKey) => {
+        const item = slots.get(fieldKey);
+        return item ? [item] : [];
+      }),
+    );
   }
 
   const availableSaunaModels = Array.from(new Set(
@@ -1207,6 +1265,7 @@ export async function getAuftragsliste(params: {
           categoryId: category.id,
           value: joinSorted(articleBuckets.get(category.id) ?? new Set()),
         })),
+        projectArticleItems: projectArticleItemsByProjectId.get(projectId) ?? [],
         projectDescription: stripReportHtmlToText(projectDetail.project.descriptionMd),
       };
       return row;

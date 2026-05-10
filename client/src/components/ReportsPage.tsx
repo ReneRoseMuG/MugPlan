@@ -15,7 +15,7 @@ import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } fr
 import type { ComponentCategory, Product, ProductCategory, Tag } from "@shared/schema";
 
 import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
-import { AuftragslistePrintLayout } from "@/components/reports/AuftragslistePrintLayout";
+import { AuftragslistePrintLayout, AuftragslistePrintProjectCard } from "@/components/reports/AuftragslistePrintLayout";
 import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
@@ -183,8 +183,6 @@ type ProduktionsplanungSelection = {
 };
 
 type AuftragslisteSelection = {
-  productCategoryIds?: number[];
-  componentCategoryIds?: number[];
   tagIds?: number[];
   saunaModels?: string[];
   useShortCodes?: boolean;
@@ -238,8 +236,6 @@ type ProduktionsplanungRequestParams = {
 type AuftragslisteRequestParams = {
   fromDate: string;
   toDate?: string;
-  productCategoryIds: number[];
-  componentCategoryIds: number[];
   tagIds: number[];
   saunaModels: string[];
   useShortCodes: boolean;
@@ -426,8 +422,6 @@ export function buildAuftragslisteReportUrl(params: AuftragslisteRequestParams):
     fromDate: params.fromDate,
   });
   if (params.toDate) searchParams.set("toDate", params.toDate);
-  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
-  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
   for (const id of params.tagIds) searchParams.append("tagIds", String(id));
   for (const model of params.saunaModels) searchParams.append("saunaModels", model);
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
@@ -443,8 +437,10 @@ export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string
   if (params.toDate) searchParams.set("toDate", params.toDate);
   if (typeof params.kwStart === "number") searchParams.set("kwStart", String(params.kwStart));
   if (typeof params.weekCount === "number") searchParams.set("weekCount", String(params.weekCount));
-  for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
-  for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  if (params.reportType === "produktionsplanung") {
+    for (const id of params.productCategoryIds) searchParams.append("productCategoryIds", String(id));
+    for (const id of params.componentCategoryIds) searchParams.append("componentCategoryIds", String(id));
+  }
   for (const id of params.tagIds) searchParams.append("tagIds", String(id));
   for (const model of params.saunaModels) searchParams.append("saunaModels", model);
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
@@ -670,11 +666,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [produktionsplanungPaginationMeasurement, setProduktionsplanungPaginationMeasurement] = useState<MeasuredPrintCardMeasurementResult | null>(null);
   const [produktionsplanungPrintOrientation, setProduktionsplanungPrintOrientation] = useState<ReportPrintOrientation>("landscape");
   const [useAuftragslisteShortCodes, setUseAuftragslisteShortCodes] = useState(false);
-  const [selectedAuftragslisteProductCategoryIds, setSelectedAuftragslisteProductCategoryIds] = useState<number[]>([]);
-  const [selectedAuftragslisteComponentCategoryIds, setSelectedAuftragslisteComponentCategoryIds] = useState<number[]>([]);
   const [selectedAuftragslisteTagIds, setSelectedAuftragslisteTagIds] = useState<number[]>([]);
   const [selectedAuftragslisteSaunaModels, setSelectedAuftragslisteSaunaModels] = useState<string[]>([]);
-  const [isAuftragslisteCategoryDialogOpen, setIsAuftragslisteCategoryDialogOpen] = useState(false);
   const [isAuftragslisteTagPickerOpen, setIsAuftragslisteTagPickerOpen] = useState(false);
   const [isAuftragslisteSaunaModelPopoverOpen, setIsAuftragslisteSaunaModelPopoverOpen] = useState(false);
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
@@ -731,8 +724,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       if (typeof standaloneLaunch.kwStart === "number") setAuftragslisteKwStart(standaloneLaunch.kwStart);
       if (typeof standaloneLaunch.weekCount === "number") setAuftragslisteWeekCount(standaloneLaunch.weekCount);
       setUseAuftragslisteShortCodes(standaloneLaunch.useShortCodes);
-      setSelectedAuftragslisteProductCategoryIds(standaloneLaunch.productCategoryIds);
-      setSelectedAuftragslisteComponentCategoryIds(standaloneLaunch.componentCategoryIds);
       setSelectedAuftragslisteTagIds(standaloneLaunch.tagIds);
       setSelectedAuftragslisteSaunaModels(standaloneLaunch.saunaModels);
     }
@@ -742,8 +733,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       reportType: standaloneLaunch.reportType,
       fromDate: standaloneLaunch.fromDate,
       toDate: standaloneLaunch.toDate,
-      productCategoryIds: standaloneLaunch.productCategoryIds,
-      componentCategoryIds: standaloneLaunch.componentCategoryIds,
+      productCategoryIds: standaloneLaunch.reportType === "auftragsliste" ? [] : standaloneLaunch.productCategoryIds,
+      componentCategoryIds: standaloneLaunch.reportType === "auftragsliste" ? [] : standaloneLaunch.componentCategoryIds,
       tagIds: standaloneLaunch.tagIds,
       saunaModels: standaloneLaunch.saunaModels,
       useShortCodes: standaloneLaunch.useShortCodes,
@@ -761,22 +752,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     () => new Set(activeComponentCategories.map((category) => category.id)),
     [activeComponentCategories],
   );
-  const allActiveAuftragslisteComponentCategoryIds = useMemo(
-    () => activeComponentCategories.map((category) => category.id),
-    [activeComponentCategories],
-  );
-  const allActiveAuftragslisteProductCategoryIds = useMemo(
-    () => activeProductCategories.map((category) => category.id),
-    [activeProductCategories],
-  );
-  const effectiveAuftragslisteProductCategoryIds = useMemo(() => {
-    const selectedIds = selectedAuftragslisteProductCategoryIds.filter((id) => activeProductCategoryIds.has(id));
-    return selectedIds.length > 0 ? selectedIds : allActiveAuftragslisteProductCategoryIds;
-  }, [activeProductCategoryIds, allActiveAuftragslisteProductCategoryIds, selectedAuftragslisteProductCategoryIds]);
-  const effectiveAuftragslisteComponentCategoryIds = useMemo(() => {
-    const selectedIds = selectedAuftragslisteComponentCategoryIds.filter((id) => activeComponentCategoryIds.has(id));
-    return selectedIds.length > 0 ? selectedIds : allActiveAuftragslisteComponentCategoryIds;
-  }, [activeComponentCategoryIds, allActiveAuftragslisteComponentCategoryIds, selectedAuftragslisteComponentCategoryIds]);
   const auftragslisteTagOptions = useMemo(
     () => tags
       .filter((tag) =>
@@ -905,8 +880,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     queryFn: async () => fetchJson(buildAuftragslisteReportUrl({
       fromDate: submittedFilters!.fromDate,
       toDate: submittedFilters?.toDate,
-      productCategoryIds: submittedFilters?.productCategoryIds ?? [],
-      componentCategoryIds: submittedFilters?.componentCategoryIds ?? [],
       tagIds: submittedFilters?.tagIds ?? [],
       saunaModels: submittedFilters?.saunaModels ?? [],
       useShortCodes: submittedFilters?.useShortCodes ?? false,
@@ -981,18 +954,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     effectiveProduktionsplanungCategoryIds,
     isProduktionsplanungCategoryLayoutConfigured,
   ]);
-  const effectiveAuftragslisteCategories = useMemo<ProduktionsplanungPrintCategory[]>(() => {
-    const productCats = auftragslisteData?.productCategories
-      ?? activeProductCategories.map((category) => ({ id: category.id, name: category.name }));
-    const componentCats = auftragslisteData?.componentCategories
-      ?? activeComponentCategories.map((category) => ({ id: category.id, name: category.name }));
-    return [...productCats, ...componentCats].map((category) => ({ id: category.id, name: category.name }));
-  }, [
-    activeComponentCategories,
-    activeProductCategories,
-    auftragslisteData?.componentCategories,
-    auftragslisteData?.productCategories,
-  ]);
   const vorlauflisteKwRange = useMemo(() => resolveReportRangeFromKw({
     kwStart: vorlauflisteKwStart,
     weekCount: vorlauflisteWeekCount,
@@ -1033,7 +994,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     }
     setActiveAuftragslistePrintPageIndex(0);
     setAuftragslistePaginationMeasurement(null);
-  }, [auftragslisteData, auftragslistePrintOrientation, effectiveAuftragslisteCategories, isAuftragslistePrintPreviewOpen]);
+  }, [auftragslisteData, auftragslistePrintOrientation, isAuftragslistePrintPreviewOpen]);
 
   useEffect(() => {
     if (!isProduktionsplanungPrintPreviewOpen) {
@@ -1312,12 +1273,12 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     const productCategoryIds = isVorlaufliste
       ? []
       : isAuftragsliste
-        ? effectiveAuftragslisteProductCategoryIds
+        ? []
         : effectiveProduktionsplanungProductCategoryIds;
     const componentCategoryIds = isVorlaufliste
       ? []
       : isAuftragsliste
-        ? effectiveAuftragslisteComponentCategoryIds
+        ? []
         : effectiveProduktionsplanungComponentCategoryIds;
 
     if (fromDate.trim().length === 0) return null;
@@ -1379,18 +1340,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     window.open(buildStandaloneReportUrl(launch), "_blank");
   };
 
-  const handleRefreshReport = (reportType: ConfiguredReportType) => {
-    if (submittedFilters?.reportType !== reportType) return;
-    if (reportType === "produktionsplanung") setProduktionsplanungPaginationMeasurement(null);
-    if (reportType === "auftragsliste") setAuftragslistePaginationMeasurement(null);
-    setReportRequestId((current) => current + 1);
-  };
-
   const closeOverlay = () => {
     setIsReportOverlayOpen(false);
     setIsVorlauflistePrintPreviewOpen(false);
     setIsProduktionsplanungPrintPreviewOpen(false);
-    setIsAuftragslisteCategoryDialogOpen(false);
     setIsAuftragslistePrintPreviewOpen(false);
     setIsProduktionsplanungCategoryLayoutDialogOpen(false);
   };
@@ -1527,69 +1480,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   />
                 </DialogBaseShell>
               ) : null}
-
-              <DialogBaseShell
-                open={isAuftragslisteCategoryDialogOpen}
-                onOpenChange={setIsAuftragslisteCategoryDialogOpen}
-                title="Kategorien"
-                description="Produkt- und Komponentenkategorien der Auftragsliste auswählen."
-                icon={<Columns3 />}
-                size="md"
-                testId="dialog-reports-auftragsliste-categories"
-                footer={(
-                  <DialogBaseFooter
-                    primaryAction={{
-                      label: "Schließen",
-                      onClick: () => setIsAuftragslisteCategoryDialogOpen(false),
-                      testId: "button-reports-auftragsliste-categories-close",
-                    }}
-                  />
-                )}
-              >
-                <div className="space-y-3" data-testid="reports-auftragsliste-categories-dialog">
-                  <h4 className="text-sm font-semibold text-foreground">Artikelliste</h4>
-                  <div className="space-y-2">
-                    {activeProductCategories.map((category) => {
-                      const checked = effectiveAuftragslisteProductCategoryIds.includes(category.id);
-                      return (
-                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(nextChecked) => {
-                              const nextIds = Boolean(nextChecked)
-                                ? Array.from(new Set([...effectiveAuftragslisteProductCategoryIds, category.id]))
-                                : effectiveAuftragslisteProductCategoryIds.filter((id) => id !== category.id);
-                              setSelectedAuftragslisteProductCategoryIds(nextIds);
-                              void persistAuftragslisteSelection({ productCategoryIds: nextIds });
-                            }}
-                            data-testid={`checkbox-reports-auftragsliste-product-category-${category.id}`}
-                          />
-                          <span>{category.name}</span>
-                        </label>
-                      );
-                    })}
-                    {activeComponentCategories.map((category) => {
-                      const checked = effectiveAuftragslisteComponentCategoryIds.includes(category.id);
-                      return (
-                        <label key={category.id} className="flex items-center gap-3 text-sm text-foreground">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={(nextChecked) => {
-                              const nextIds = Boolean(nextChecked)
-                                ? Array.from(new Set([...effectiveAuftragslisteComponentCategoryIds, category.id]))
-                                : effectiveAuftragslisteComponentCategoryIds.filter((id) => id !== category.id);
-                              setSelectedAuftragslisteComponentCategoryIds(nextIds);
-                              void persistAuftragslisteSelection({ componentCategoryIds: nextIds });
-                            }}
-                            data-testid={`checkbox-reports-auftragsliste-category-${category.id}`}
-                          />
-                          <span>{category.name}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              </DialogBaseShell>
 
               <div className="flex flex-col gap-5 pb-2">
                 <ReportConfigPanel
@@ -1763,17 +1653,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 <ReportConfigPanel
                   title="Auftragsliste"
                   helpKey="report-auftragsliste"
-                  actionButton={(
-                    <button
-                      type="button"
-                      onClick={() => setIsAuftragslisteCategoryDialogOpen(true)}
-                      className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800"
-                      data-testid="button-reports-auftragsliste-open-categories"
-                    >
-                      <Columns3 className="h-3.5 w-3.5" />
-                      Kategorien
-                    </button>
-                  )}
                   optionsSlot={(
                     <div
                       className="flex h-full w-fit flex-col items-start gap-3 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700"
@@ -1928,12 +1807,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               open={isVorlauflisteOverlay}
               title="Vorlaufliste"
               metaLabel={vorlauflisteRangeMetaLabel}
-              onRefresh={() => handleRefreshReport("vorlaufliste")}
               onOpenPrintPreview={() => setIsVorlauflistePrintPreviewOpen(true)}
               onBack={closeOverlay}
-              isRefreshing={isVorlauflisteLoading}
               testId="reports-overlay"
-              refreshTestId="button-reports-vorlaufliste-refresh"
               printPreviewTestId="button-reports-vorlaufliste-print-preview"
               backTestId="button-reports-back"
               footer={(
@@ -1985,18 +1861,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                           emptyState={<ListEmptyState helpKey="reports.vorlaufliste" fallbackTitle="Keine Treffer gefunden." fallbackBody="Für den gewählten Datumsbereich konnten keine passenden Projekte ermittelt werden." />}
                         />
                       </div>
-                      <div className="border-t border-border px-6 py-3" data-testid="reports-vorlaufliste-legend">
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <span className="block h-4 w-2 rounded-sm" style={{ backgroundColor: "#E24B4A" }} />
-                            <span>Storniert</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="block h-4 w-2 rounded-sm" style={{ backgroundColor: "#1e3a8a" }} />
-                            <span>Sondermaß / Info-Tag</span>
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   )}
             </ReportResultOverlayShell>
@@ -2016,11 +1880,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               onPageOrientationChange={setVorlauflistePrintOrientation}
               orientationTestIdPrefix="button-reports-vorlaufliste-orientation"
               getPageKey={(page) => page.pageNumber}
-              onRefresh={() => handleRefreshReport("vorlaufliste")}
               onPrint={handleVorlauflistePrint}
-              isRefreshing={isVorlauflistePrintPreviewLoading}
               printDisabled={vorlauflistePrintPages.length === 0}
-              refreshTestId="button-reports-vorlaufliste-print-preview-refresh"
               printTestId="button-reports-vorlaufliste-print"
               renderPage={(page) => (
                 <PrintPageShell
@@ -2112,14 +1973,11 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               open={isAuftragslisteOverlay}
               title="Auftragsliste"
               metaLabel={auftragslisteRangeMetaLabel}
-              onRefresh={() => handleRefreshReport("auftragsliste")}
               onOpenPrintPreview={() => setIsAuftragslistePrintPreviewOpen(true)}
               onBack={closeOverlay}
-              isRefreshing={isAuftragslisteLoading}
               className="bg-slate-100"
               contentClassName="overflow-auto bg-slate-100 p-6"
               testId="reports-auftragsliste-overlay"
-              refreshTestId="button-reports-auftragsliste-refresh"
               printPreviewTestId="button-reports-auftragsliste-print-preview"
               backTestId="button-reports-auftragsliste-back"
             >
@@ -2135,7 +1993,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                             <AuftragslisteProjectCard
                               key={row.projectId}
                               row={row}
-                              categories={effectiveAuftragslisteCategories}
+                              useShortCodes={submittedFilters?.useShortCodes ?? false}
                             />
                           ))}
                         </div>
@@ -2153,10 +2011,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 measurementKey={`${auftragslisteRangeMetaLabel}-${auftragslistePrintOrientation}`}
                 testId="auftragsliste-print-measurement"
                 renderCard={(row) => (
-                  <AuftragslisteProjectCard
+                  <AuftragslistePrintProjectCard
                     row={row}
-                    categories={effectiveAuftragslisteCategories}
-                    hideFooterBadges
+                    useShortCodes={submittedFilters?.useShortCodes ?? false}
                   />
                 )}
                 renderMeasurementLayout={({ contentRef, cards }) => (
@@ -2205,11 +2062,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               onPageOrientationChange={setAuftragslistePrintOrientation}
               orientationTestIdPrefix="button-reports-auftragsliste-orientation"
               getPageKey={(page) => page.pageNumber}
-              onRefresh={() => handleRefreshReport("auftragsliste")}
               onPrint={handleVorlauflistePrint}
-              isRefreshing={isAuftragslisteLoading || isAuftragslistePaginationMeasuring}
               printDisabled={auftragslistePrintPages.length === 0 || isAuftragslistePaginationMeasuring}
-              refreshTestId="button-reports-auftragsliste-print-preview-refresh"
               printTestId="button-reports-auftragsliste-print"
               renderPage={(page) => (
                 <PrintPageShell
@@ -2230,7 +2084,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
                     <AuftragslistePrintLayout
                       items={page.items}
-                      categories={effectiveAuftragslisteCategories}
+                      useShortCodes={submittedFilters?.useShortCodes ?? false}
                     />
                   </div>
                 </PrintPageShell>
@@ -2245,13 +2099,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               open={isProduktionsplanungLayout}
               title="Produktionsplanung"
               metaLabel={produktionsplanungRangeMetaLabel}
-              onRefresh={() => handleRefreshReport("produktionsplanung")}
               onOpenPrintPreview={() => setIsProduktionsplanungPrintPreviewOpen(true)}
               onBack={closeOverlay}
-              isRefreshing={isProduktionsplanungLoading}
               contentClassName="overflow-auto p-6"
               testId="reports-produktionsplanung-overlay"
-              refreshTestId="button-reports-produktionsplanung-refresh"
               printPreviewTestId="button-reports-produktionsplanung-print-preview"
               backTestId="button-reports-produktionsplanung-back"
             >
@@ -2348,11 +2199,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               onPageOrientationChange={setProduktionsplanungPrintOrientation}
               orientationTestIdPrefix="button-reports-produktionsplanung-orientation"
               getPageKey={(page) => page.pageNumber}
-              onRefresh={() => handleRefreshReport("produktionsplanung")}
               onPrint={handleVorlauflistePrint}
-              isRefreshing={isProduktionsplanungLoading || isProduktionsplanungPaginationMeasuring}
               printDisabled={produktionsplanungPrintPages.length === 0 || isProduktionsplanungPaginationMeasuring}
-              refreshTestId="button-reports-produktionsplanung-print-preview-refresh"
               printTestId="button-reports-produktionsplanung-print"
               renderPage={(page) => (
                 <PrintPageShell

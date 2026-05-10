@@ -47,6 +47,10 @@ function buildRow(projectId: number, description = ""): ReportAuftragslisteProje
       { categoryId: 1, value: "A" },
       { categoryId: 2, value: "B" },
     ],
+    projectArticleItems: [
+      { label: "Sauna", value: "A", source: "product" },
+      { label: "Fenster", value: "B", source: "component" },
+    ],
     projectDescription: description || null,
   };
 }
@@ -70,6 +74,16 @@ describe("auftragsliste print model", () => {
     const pages = paginateAuftragslistePrintPages([], 920);
 
     expect(pages).toEqual([{ pageNumber: 1, items: [] }]);
+  });
+
+  it("keeps legacy rows without projectArticleItems from crashing the standalone print path", () => {
+    const legacyRow = buildRow(4) as ReportAuftragslisteProjectRow & {
+      projectArticleItems?: ReportAuftragslisteProjectRow["projectArticleItems"];
+    };
+    delete legacyRow.projectArticleItems;
+
+    expect(() => estimateAuftragslisteCardHeight(legacyRow as ReportAuftragslisteProjectRow)).not.toThrow();
+    expect(paginateAuftragslistePrintPages([legacyRow as ReportAuftragslisteProjectRow], 920)).toHaveLength(1);
   });
 
   it("uses measured card heights for the browser print path", () => {

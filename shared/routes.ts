@@ -975,6 +975,7 @@ const reportAuftragslisteProjectRowSchema = z.object({
   attachmentsCount: z.number().int().min(0),
   tags: z.array(tagSchema),
   articleValues: z.array(reportVorlauflisteArticleValueSchema),
+  projectArticleItems: z.array(projectArticleItemSchema),
   projectDescription: z.string().nullable(),
 });
 

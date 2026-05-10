@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - Die Tourenplan-Karte unterscheidet Farb- und Sparmodus sichtbar.
- * - Der Komponentenfilter blendet Sauna-Produkte aus.
+ * - Die vollständige Artikelliste rendert mit Überschrift und stabiler Reihenfolge.
  * - Der Shortcode-Modus ersetzt Artikelnamen nur bei vorhandenen Shortcodes.
  * - Reklamation erscheint nicht mehr als Headertext, bleibt aber als Kartenmarkierung sichtbar.
  * - Farbdruck markiert farbige Flächen explizit für den Browser-Print und Mitarbeiterbadges bleiben fett.
@@ -11,7 +11,7 @@
  *
  * Fehlerfaelle:
  * - Der Kartenmodus rendert denselben Header fuer beide Druckvarianten.
- * - Sauna-Eintraege aus der Produktkategorie erscheinen in der Tourenplan-Artikelliste.
+ * - Sauna-Einträge aus der Produktkategorie fehlen in der Tourenplan-Artikelliste.
  * - Shortcodes werden ignoriert oder ersetzen leere Codes.
  * - Reklamation wird im Datumsheader statt nur im Karteninhalt dargestellt.
  * - Notiztitel verlieren das erwartete Icon im Notizkopf.
@@ -21,7 +21,7 @@
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { TourenplanAppointmentCard } from "../../../client/src/components/reports/TourenplanAppointmentCard";
 import type { TourenplanResolvedAppointment } from "../../../client/src/components/reports/tourenplan-model";
 
@@ -72,6 +72,10 @@ const appointment: TourenplanResolvedAppointment = {
 };
 
 describe("UI: TourenplanAppointmentCard", () => {
+  beforeEach(() => {
+    Object.assign(globalThis, { React });
+  });
+
   it("renders component-only article items and employee badges in farbdruck mode", () => {
     const html = renderToStaticMarkup(
       <TourenplanAppointmentCard
@@ -85,11 +89,14 @@ describe("UI: TourenplanAppointmentCard", () => {
 
     expect(html).toContain('data-tourenplan-print-mode="farbdruck"');
     expect(html).toContain("14.04.26 | 2 Tage");
-    expect(html).toContain("Sondermaß");
+    expect(html).toContain("grid-template-columns:146px 140px");
+    expect(html).toContain("tourenplan-card-tag-5");
+    expect(html).toContain("Son.");
+    expect(html).toContain("Artikelliste");
+    expect(html).toContain("Panorama Sauna");
     expect(html).toContain("Harvia 20");
     expect(html).toContain("Xenio 3");
     expect(html).toContain("Flachdach");
-    expect(html).not.toContain("Panorama Sauna");
     expect(html).toContain("Roy H.");
     expect(html).toContain("Dirk W.");
     expect(html).toContain("Bitte Einfahrt freihalten.");
@@ -117,6 +124,7 @@ describe("UI: TourenplanAppointmentCard", () => {
     expect(html).toContain('data-tourenplan-print-mode="spardruck"');
     expect(html).toContain('data-tourenplan-font-size="small"');
     expect(html).toContain("tourenplan-card-header-separator");
+    expect(html).toContain("PS");
     expect(html).toContain("H20");
     expect(html).toContain("X3");
     expect(html).toContain("Flachdach");
@@ -145,7 +153,8 @@ describe("UI: TourenplanAppointmentCard", () => {
 
     expect(html).toContain("14.04.26 | 1 Tag");
     expect(html).not.toContain("| Reklamation");
-    expect(html).toContain(">Reklamation<");
+    expect(html).toContain("tourenplan-card-tag-8");
+    expect(html).toContain("Rek.");
     expect(html).toContain("Vorbesprechung Kunde");
     expect(html).toContain("Kran erforderlich.");
   });

@@ -21,6 +21,12 @@ import {
 } from "@/components/ProjectDuplicateResolutionDialog";
 import { CustomersPage } from "@/components/CustomersPage";
 import { NotesSection } from "@/components/NotesSection";
+import {
+  ProjectSaveReviewDialog,
+  type ProjectSaveReviewDuplicateSummary,
+  type ProjectSaveReviewNoteDraft,
+  type ProjectSaveReviewResult,
+} from "@/components/ProjectSaveReviewDialog";
 import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { TagPickerPanel, type TagRelationItem } from "@/components/TagPickerPanel";
 import { CustomerDetailCard } from "@/components/ui/customer-detail-card";
@@ -28,6 +34,7 @@ import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { RelationSlot } from "@/components/ui/relation-slot";
 import {
   FolderKanban,
+  FileText,
   LayoutList,
   ScrollText,
   Trash2,
@@ -85,6 +92,7 @@ import {
 } from "@shared/appointmentCancellation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
+import { collectMissingProjectArticleLabels, resolveSaunaTitleSuggestion } from "@/lib/project-save-review";
 import type { Project, Customer, Note, NoteTemplate, Component, ComponentCategory, ProductCategory, ProjectOrderItem, InsertProjectOrderItem, Product, Tag } from "@shared/schema";
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -121,6 +129,21 @@ type ProjectNoteDraft = {
   cardColor?: string | null;
   print: boolean;
   templateId?: number;
+};
+
+type ProjectSaveReviewRequest = {
+  missingArticleLabels: string[];
+  saunaModelName: string | null;
+  reklamationNoteDraft: ProjectSaveReviewNoteDraft | null;
+  duplicateAttachmentSummary: ProjectSaveReviewDuplicateSummary | null;
+};
+
+type ExtractionAttachmentDuplicateDecision = "allow" | "skip" | "not-needed" | "check";
+
+type ExecuteProjectSaveOptions = {
+  nameOverride?: string;
+  additionalProjectNotes?: ProjectNoteDraft[];
+  extractionAttachmentDuplicateDecision?: ExtractionAttachmentDuplicateDecision;
 };
 
 type ProjectOrderNumberResolutionResponse = {
@@ -179,6 +202,7 @@ export function ProjectForm({
   const [descriptionMd, setDescriptionMd] = useState("");
   const [productSelections, setProductSelections] = useState<ProjectProductSelections>(createEmptyProjectProductSelections);
   const [dynamicProductSelections, setDynamicProductSelections] = useState<DynamicProjectProductSelections>({});
+  const [articleListTouched, setArticleListTouched] = useState(false);
   const [extractedArticleListHtml, setExtractedArticleListHtml] = useState("");
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerDialogOpen, setCustomerDialogOpen] = useState(false);
@@ -188,9 +212,12 @@ export function ProjectForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
+  const [saveReviewRequest, setSaveReviewRequest] = useState<ProjectSaveReviewRequest | null>(null);
+  const [isPreparingSaveReview, setIsPreparingSaveReview] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
   const [suggestedProjectNoteDraft, setSuggestedProjectNoteDraft] = useState<ProjectNoteDraft | null>(null);
+  const [pendingDraftReklamationTemplateTitle, setPendingDraftReklamationTemplateTitle] = useState<string | null>(null);
   const [draftProjectTags, setDraftProjectTags] = useState<TagRelationItem[]>([]);
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
@@ -211,6 +238,24 @@ export function ProjectForm({
   const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
     attachment.originalName === file.name && attachment.mimeType === (file.type || null) && attachment.file.size === file.size;
+  const documentExtractionFileUrl = useMemo(() => {
+    if (!documentExtractionFile) return null;
+    if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return null;
+    return URL.createObjectURL(documentExtractionFile);
+  }, [documentExtractionFile]);
+
+  useEffect(() => {
+    return () => {
+      if (documentExtractionFileUrl && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+        URL.revokeObjectURL(documentExtractionFileUrl);
+      }
+    };
+  }, [documentExtractionFileUrl]);
+
+  const openDocumentExtractionFileInTab = () => {
+    if (!documentExtractionFileUrl || typeof window === "undefined") return;
+    window.open(documentExtractionFileUrl, "_blank", "noopener,noreferrer");
+  };
 
   const buildFormSnapshot = (input: {
     name: string;
@@ -389,6 +434,7 @@ export function ProjectForm({
       setPlannedWeek(projectData.project.projectOrder?.plannedWeek ?? "");
       setDescriptionMd(extractEditorDescriptionHtml(projectData.project.descriptionMd));
       setExtractedArticleListHtml("");
+      setArticleListTouched(false);
       setCustomerId(projectData.project.customerId);
       setInitialFormSnapshot(
         buildFormSnapshot({
@@ -414,6 +460,7 @@ export function ProjectForm({
       setProjectType(DEFAULT_PROJECT_TYPE);
       setProductSelections(createEmptyProjectProductSelections());
       setDynamicProductSelections(createEmptyDynamicProjectProductSelections(dynamicCategorySlots));
+      setArticleListTouched(false);
       setExtractedArticleListHtml("");
       setInitialFormSnapshot(
         buildFormSnapshot({
@@ -464,6 +511,7 @@ export function ProjectForm({
     setCustomerId(initialDraft.customerId ?? null);
     setProductSelections(nextSelections);
     setDynamicProductSelections(nextDynamicSelections);
+    setArticleListTouched(false);
     setExtractedArticleListHtml(initialDraft.extractedArticleListHtml ?? "");
     setInitialFormSnapshot(
       buildFormSnapshot({
@@ -610,6 +658,7 @@ export function ProjectForm({
   };
 
   const handleFieldSelection = (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
+    setArticleListTouched(true);
     if (!selectedValue) {
       setProductSelections((current) => ({ ...current, [fieldKey]: createEmptySelection() }));
       return;
@@ -627,22 +676,6 @@ export function ProjectForm({
     if (field.source === "product" && !product) return;
     if (field.source === "component" && !component) return;
 
-    if (fieldKey === "saunaModel" && product) {
-      const previousProductId = productSelections.saunaModel.productId;
-      const nextSaunaModelName = product.name.trim();
-      const projectName = name.trim();
-      const isChangedSelection = previousProductId !== product.id;
-
-      if (isChangedSelection && nextSaunaModelName.length > 0 && projectName !== nextSaunaModelName) {
-        const shouldAdoptProjectName = window.confirm(
-          "Sauna-Modell geändert, soll ich den Namen des Projekts anpassen?",
-        );
-        if (shouldAdoptProjectName) {
-          setName(nextSaunaModelName);
-        }
-      }
-    }
-
     setProductSelections((current) => ({
       ...current,
       [fieldKey]: {
@@ -656,6 +689,7 @@ export function ProjectForm({
   };
 
   const handleDynamicFieldSelection = (slotId: string, selectedValue: string) => {
+    setArticleListTouched(true);
     const slot = dynamicCategorySlots.find((entry) => entry.slotId === slotId);
     if (!slot) return;
 
@@ -904,11 +938,12 @@ export function ProjectForm({
       }
       return [...current, { tag: complaintTag, relationVersion: 1 }];
     });
-    openProjectNoteSuggestionForTag("Reklamation");
+    setPendingDraftReklamationTemplateTitle("Reklamation");
   };
 
   const removeDraftProjectReklamation = () => {
     setDraftProjectTags((current) => current.filter((entry) => !isManagedComplaintTagName(entry.tag.name)));
+    setPendingDraftReklamationTemplateTitle(null);
     clearWorkflowNoteSuggestionSeen("Reklamation");
     openProjectNoteRemovalForTag("Reklamation");
   };
@@ -969,6 +1004,12 @@ export function ProjectForm({
         templateId,
       },
     ]);
+    if (
+      pendingDraftReklamationTemplateTitle
+      && normalizeWorkflowNoteTitle(title) === normalizeWorkflowNoteTitle(pendingDraftReklamationTemplateTitle)
+    ) {
+      setPendingDraftReklamationTemplateTitle(null);
+    }
   };
 
   const updateDraftProjectNote = (
@@ -1314,8 +1355,18 @@ export function ProjectForm({
     await apiRequest("POST", `/api/projects/${targetProjectId}/reklamation`, { version: expectedVersion });
   };
 
-  const persistDraftProjectNotes = async (targetProjectId: number) => {
-    for (const note of draftProjectNotes) {
+  const persistDraftProjectNotes = async (targetProjectId: number, additionalProjectNotes: ProjectNoteDraft[] = []) => {
+    const notesToPersist = [
+      ...draftProjectNotes.map((note) => ({
+        title: note.title,
+        body: note.body,
+        cardColor: note.cardColor,
+        print: note.print,
+        templateId: note.templateId,
+      })),
+      ...additionalProjectNotes,
+    ];
+    for (const note of notesToPersist) {
       await apiRequest("POST", `/api/projects/${targetProjectId}/notes`, {
         title: note.title,
         body: note.body,
@@ -1326,21 +1377,24 @@ export function ProjectForm({
     }
   };
 
-  const persistDraftProjectAttachments = async (targetProjectId: number) => {
+  const persistDraftProjectAttachments = async (
+    targetProjectId: number,
+    extractionAttachmentDuplicateDecision: ExtractionAttachmentDuplicateDecision = "check",
+  ) => {
     let attachmentLinked = false;
     for (const attachment of draftProjectAttachments) {
       const isExtractionAttachment = documentExtractionFile
         ? matchesAttachmentFileSignature(attachment, documentExtractionFile)
         : false;
       if (isExtractionAttachment) {
-        const duplicateInfo = await checkAttachmentDuplicateByOriginalName(attachment.file);
-        if (duplicateInfo.duplicate) {
-          const confirmed = window.confirm(
-            `Dateiname bereits vorhanden (Kunde: ${duplicateInfo.summary.customer}, Projekt: ${duplicateInfo.summary.project}, Mitarbeiter: ${duplicateInfo.summary.employee}). Trotzdem verknüpfen?`,
-          );
-          if (!confirmed) {
-            toast({ title: "Dokumentverknüpfung übersprungen" });
-            continue;
+        if (extractionAttachmentDuplicateDecision === "skip") {
+          toast({ title: "Dokumentverknüpfung übersprungen" });
+          continue;
+        }
+        if (extractionAttachmentDuplicateDecision === "check") {
+          const duplicateInfo = await checkAttachmentDuplicateByOriginalName(attachment.file);
+          if (duplicateInfo.duplicate) {
+            throw new Error("Duplikatentscheidung für das PDF fehlt.");
           }
         }
       }
@@ -1353,15 +1407,25 @@ export function ProjectForm({
     return attachmentLinked;
   };
 
-  const persistCreateSidebarDrafts = async (targetProjectId: number, expectedVersion: number | undefined) => {
+  const persistCreateSidebarDrafts = async (
+    targetProjectId: number,
+    expectedVersion: number | undefined,
+    options: Pick<ExecuteProjectSaveOptions, "additionalProjectNotes" | "extractionAttachmentDuplicateDecision"> = {},
+  ) => {
     await persistDraftProjectReklamation(targetProjectId, expectedVersion);
     await persistDraftProjectTags(targetProjectId);
-    await persistDraftProjectNotes(targetProjectId);
-    return persistDraftProjectAttachments(targetProjectId);
+    await persistDraftProjectNotes(targetProjectId, options.additionalProjectNotes ?? []);
+    return persistDraftProjectAttachments(
+      targetProjectId,
+      options.extractionAttachmentDuplicateDecision ?? "check",
+    );
   };
 
-  const persistEditAttachmentDrafts = async (targetProjectId: number) => {
-    const attachmentLinked = await persistDraftProjectAttachments(targetProjectId);
+  const persistEditAttachmentDrafts = async (
+    targetProjectId: number,
+    extractionAttachmentDuplicateDecision: ExtractionAttachmentDuplicateDecision,
+  ) => {
+    const attachmentLinked = await persistDraftProjectAttachments(targetProjectId, extractionAttachmentDuplicateDecision);
     setDraftProjectAttachments([]);
     setDocumentExtractionFile(null);
     return attachmentLinked;
@@ -1430,25 +1494,26 @@ export function ProjectForm({
     });
   };
 
-  const handleSubmit = async () => {
+  const validateProjectSaveInput = (projectNameOverride?: string) => {
     if (isReadOnlyView) {
       toast({ title: "Nur Lesemodus", description: "Diese Rolle darf Projekte nicht bearbeiten.", variant: "destructive" });
-      return;
+      return null;
     }
-    if (!name.trim()) {
+    const storedProjectName = (projectNameOverride ?? name).trim();
+    if (!storedProjectName) {
       toast({ title: "Projektname ist erforderlich", variant: "destructive" });
-      return;
+      return null;
     }
-    if (!customerId) {
+    const resolvedCustomerId = customerId;
+    if (!resolvedCustomerId) {
       toast({ title: "Kunde muss ausgewählt werden", variant: "destructive" });
-      return;
+      return null;
     }
     if (!selectedCustomerNumber) {
       toast({ title: "Kundennummer des zugeordneten Kunden fehlt", variant: "destructive" });
-      return;
+      return null;
     }
 
-    const storedProjectName = name.trim();
     const normalizedOrderNumber = orderNumber.trim() || null;
     const normalizedAmountText = amount.replace(",", ".").trim();
     const parsedAmountNumber = normalizedAmountText.length === 0 ? null : Number(normalizedAmountText);
@@ -1456,16 +1521,13 @@ export function ProjectForm({
     const amountIsValid =
       normalizedAmountText.length === 0 || /^-?\d+(?:\.\d{1,2})?$/.test(normalizedAmountText);
     if (!amountIsValid || (parsedAmountNumber != null && !Number.isFinite(parsedAmountNumber))) {
-      toast({ title: "Betrag ist ungueltig (max. 2 Nachkommastellen)", variant: "destructive" });
-      throw new Error("validation");
+      toast({ title: "Betrag ist ungültig (max. 2 Nachkommastellen)", variant: "destructive" });
+      return null;
     }
     if (!isEditing && normalizedOrderNumber === null) {
       toast({ title: "Auftragsnummer ist erforderlich", variant: "destructive" });
-      return;
+      return null;
     }
-
-    let createdProjectId: number | null = null;
-    let extractionAttachmentLinked = false;
     const normalizedPlannedDateText = plannedDateText.trim() || null;
     const normalizedPlannedWeek = plannedWeek.trim() || null;
     if (normalizedPlannedWeek && normalizedPlannedWeek.length > 10) {
@@ -1474,9 +1536,93 @@ export function ProjectForm({
         description: "Bitte maximal 10 Zeichen verwenden, zum Beispiel KW 14.",
         variant: "destructive",
       });
-      return;
+      return null;
     }
     const persistedDescriptionMd = buildPersistedProjectDescription(productSelections, descriptionMd);
+    return {
+      storedProjectName,
+      normalizedOrderNumber,
+      normalizedAmount,
+      normalizedPlannedDateText,
+      normalizedPlannedWeek,
+      persistedDescriptionMd,
+      customerId: resolvedCustomerId,
+    };
+  };
+
+  const resolvePendingReklamationNoteDraft = async (): Promise<ProjectNoteDraft | null> => {
+    if (isEditing || !pendingDraftReklamationTemplateTitle) return null;
+    if (!draftProjectTags.some((item) => isManagedComplaintTagName(item.tag.name))) return null;
+    const normalizedTemplateTitle = normalizeWorkflowNoteTitle(pendingDraftReklamationTemplateTitle);
+    const hasExistingNote = visibleProjectNotes.some(
+      (note) => normalizeWorkflowNoteTitle(note.title) === normalizedTemplateTitle,
+    );
+    if (hasExistingNote) return null;
+
+    const templates = noteTemplates.length > 0
+      ? noteTemplates
+      : await queryClient.ensureQueryData({
+        queryKey: ["/api/note-templates"],
+        queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
+      });
+    const template = findWorkflowNoteTemplate(templates, pendingDraftReklamationTemplateTitle);
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: `Die Notizvorlage „${pendingDraftReklamationTemplateTitle}“ wurde nicht gefunden.`,
+        variant: "destructive",
+      });
+      return null;
+    }
+    return buildWorkflowNoteDraft(template);
+  };
+
+  const resolveExtractionDuplicateAttachmentSummary = async (): Promise<ProjectSaveReviewDuplicateSummary | null> => {
+    const extractionFile = documentExtractionFile;
+    if (!extractionFile) return null;
+    const extractionAttachment = draftProjectAttachments.find((attachment) =>
+      matchesAttachmentFileSignature(attachment, extractionFile),
+    );
+    if (!extractionAttachment) return null;
+    const duplicateInfo = await checkAttachmentDuplicateByOriginalName(extractionAttachment.file);
+    return duplicateInfo.duplicate ? duplicateInfo.summary : null;
+  };
+
+  const buildProjectSaveReviewRequest = async (projectNameForReview: string): Promise<ProjectSaveReviewRequest> => ({
+    missingArticleLabels: collectMissingProjectArticleLabels({
+      productSelections,
+      dynamicSelections: dynamicProductSelections,
+      dynamicSlots: dynamicCategorySlots,
+      articleListTouched,
+      extractedArticleListHtml,
+    }),
+    saunaModelName: resolveSaunaTitleSuggestion({
+      projectName: projectNameForReview,
+      productSelections,
+    }),
+    reklamationNoteDraft: await resolvePendingReklamationNoteDraft(),
+    duplicateAttachmentSummary: await resolveExtractionDuplicateAttachmentSummary(),
+  });
+
+  const executeProjectSave = async (options: ExecuteProjectSaveOptions = {}) => {
+    const validated = validateProjectSaveInput(options.nameOverride);
+    if (!validated) return;
+    const {
+      storedProjectName,
+      normalizedOrderNumber,
+      normalizedAmount,
+      normalizedPlannedDateText,
+      normalizedPlannedWeek,
+      persistedDescriptionMd,
+      customerId: validatedCustomerId,
+    } = validated;
+
+    if (options.nameOverride && options.nameOverride.trim() !== name.trim()) {
+      setName(storedProjectName);
+    }
+
+    let createdProjectId: number | null = null;
+    let extractionAttachmentLinked = false;
     if (isEditing) {
       if (!projectVersion || !Number.isInteger(projectVersion) || projectVersion < 1) {
         toast({ title: "Projektversion fehlt, bitte neu laden", variant: "destructive" });
@@ -1488,7 +1634,7 @@ export function ProjectForm({
         name: storedProjectName,
         orderNumber: normalizedOrderNumber,
         amount: normalizedAmount,
-        customerId,
+        customerId: validatedCustomerId,
         descriptionMd: persistedDescriptionMd,
         projectOrder: {
           amount: normalizedAmount,
@@ -1508,7 +1654,10 @@ export function ProjectForm({
         }
       }
       if (effectiveProjectId && draftProjectAttachments.length > 0) {
-        extractionAttachmentLinked = await persistEditAttachmentDrafts(effectiveProjectId);
+        extractionAttachmentLinked = await persistEditAttachmentDrafts(
+          effectiveProjectId,
+          options.extractionAttachmentDuplicateDecision ?? "check",
+        );
       }
     } else {
       let createdProject: Awaited<ReturnType<typeof createMutation.mutateAsync>>;
@@ -1518,7 +1667,7 @@ export function ProjectForm({
           type: resolvedProjectEditForm.normalizedType,
           orderNumber: normalizedOrderNumber,
           amount: normalizedAmount,
-          customerId,
+          customerId: validatedCustomerId,
           descriptionMd: persistedDescriptionMd,
           projectOrder: {
             amount: normalizedAmount,
@@ -1547,13 +1696,17 @@ export function ProjectForm({
         }
       }
       try {
-        extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id, createdProject.version);
+        extractionAttachmentLinked = await persistCreateSidebarDrafts(createdProject.id, createdProject.version, {
+          additionalProjectNotes: options.additionalProjectNotes ?? [],
+          extractionAttachmentDuplicateDecision: options.extractionAttachmentDuplicateDecision ?? "check",
+        });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'tags'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'notes'] });
         await queryClient.invalidateQueries({ queryKey: ['/api/projects', createdProject.id, 'attachments'] });
         setDraftProjectTags([]);
         setDraftProjectNotes([]);
         setDraftProjectAttachments([]);
+        setPendingDraftReklamationTemplateTitle(null);
       } catch (error) {
         toast({
           title: "Projekt gespeichert, Sidebar-Daten konnten nicht vollständig persistiert werden",
@@ -1565,7 +1718,7 @@ export function ProjectForm({
       }
     }
     setInitialFormSnapshot(buildFormSnapshot({
-      name,
+      name: storedProjectName,
       orderNumber,
       amount,
       plannedDateText,
@@ -1577,6 +1730,7 @@ export function ProjectForm({
       customerId,
       sidebarDraftSignature: isEditing ? null : emptyCreateSidebarDraftSignature,
     }));
+    setArticleListTouched(false);
 
     if (onSaved && onSaved !== onCancel) {
       onSaved();
@@ -1584,6 +1738,63 @@ export function ProjectForm({
     if (createdProjectId) {
       onProjectCreated?.(createdProjectId, { attachmentLinked: extractionAttachmentLinked });
     }
+  };
+
+  const handleSubmit = async () => {
+    const validated = validateProjectSaveInput();
+    if (!validated) return;
+    setIsPreparingSaveReview(true);
+    try {
+      const reviewRequest = await buildProjectSaveReviewRequest(validated.storedProjectName);
+      const hasArticleStep = reviewRequest.missingArticleLabels.length > 0;
+      const hasTitleStep = reviewRequest.saunaModelName !== null;
+      const hasAttachmentStep = reviewRequest.duplicateAttachmentSummary !== null;
+      const hasReklamationStep = reviewRequest.reklamationNoteDraft !== null;
+      const needsCombinedDialog = hasArticleStep || hasTitleStep || hasAttachmentStep;
+
+      if (hasReklamationStep && !needsCombinedDialog) {
+        setSuggestedProjectNoteDraft(reviewRequest.reklamationNoteDraft);
+        setPendingDraftReklamationTemplateTitle(null);
+        return;
+      }
+
+      if (hasArticleStep || hasTitleStep || hasReklamationStep || hasAttachmentStep) {
+        setSaveReviewRequest(reviewRequest);
+        return;
+      }
+
+      await executeProjectSave({ extractionAttachmentDuplicateDecision: "not-needed" });
+    } catch (error) {
+      toast({
+        title: "Speichern-Prüfung fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Unbekannter Fehler",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPreparingSaveReview(false);
+    }
+  };
+
+  const handleSaveReviewCancel = () => {
+    if (isSubmitPending) return;
+    setSaveReviewRequest(null);
+  };
+
+  const handleSaveReviewConfirm = (result: ProjectSaveReviewResult) => {
+    const reviewRequest = saveReviewRequest;
+    setSaveReviewRequest(null);
+    if (reviewRequest?.reklamationNoteDraft) {
+      setPendingDraftReklamationTemplateTitle(null);
+    }
+    void executeProjectSave({
+      nameOverride: result.adoptSaunaTitle && reviewRequest?.saunaModelName
+        ? reviewRequest.saunaModelName
+        : undefined,
+      additionalProjectNotes: result.reklamationNote ? [result.reklamationNote] : [],
+      extractionAttachmentDuplicateDecision: reviewRequest?.duplicateAttachmentSummary
+        ? (result.linkDuplicateAttachment ? "allow" : "skip")
+        : "not-needed",
+    });
   };
 
   const applyExtractedData = async (payload: {
@@ -1676,6 +1887,7 @@ export function ProjectForm({
   }
 
   const isSubmitPending = createMutation.isPending || updateMutation.isPending;
+  const isProjectSaveBusy = isSubmitPending || isPreparingSaveReview;
 
   return (
     <Tabs
@@ -1748,6 +1960,18 @@ export function ProjectForm({
                         : hasReklamationTag
                           ? "Reklamation aufheben"
                           : "Reklamation melden"}
+                    </Button>
+                  ) : null}
+                  {documentExtractionFileUrl ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full justify-start gap-2"
+                      onClick={openDocumentExtractionFileInTab}
+                      data-testid="button-open-extraction-pdf-tab"
+                    >
+                      <FileText className="w-4 h-4" />
+                      PDF in neuem Tab öffnen
                     </Button>
                   ) : null}
                   {isEditing ? (
@@ -1880,10 +2104,10 @@ export function ProjectForm({
               <Button
                 type="button"
                 onClick={() => void handleSubmit()}
-                disabled={isSubmitPending}
+                disabled={isProjectSaveBusy}
                 data-testid="button-save-project"
               >
-                {isSubmitPending ? "Speichern..." : "Speichern"}
+                {isProjectSaveBusy ? "Speichern..." : "Speichern"}
               </Button>
             ) : null}
           </div>
@@ -2039,6 +2263,23 @@ export function ProjectForm({
           }
         }}
         onConfirm={confirmExistingProjectDuplicate}
+      />
+
+      <ProjectSaveReviewDialog
+        open={saveReviewRequest !== null}
+        missingArticleLabels={saveReviewRequest?.missingArticleLabels ?? []}
+        saunaModelName={saveReviewRequest?.saunaModelName}
+        currentProjectName={name.trim()}
+        reklamationNoteDraft={saveReviewRequest?.reklamationNoteDraft}
+        duplicateAttachmentSummary={saveReviewRequest?.duplicateAttachmentSummary}
+        isBusy={isSubmitPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleSaveReviewCancel();
+          }
+        }}
+        onCancel={handleSaveReviewCancel}
+        onConfirm={handleSaveReviewConfirm}
       />
 
       {/* Customer Selection Dialog */}

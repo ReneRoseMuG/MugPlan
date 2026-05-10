@@ -458,8 +458,7 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(vorlauflisteTable).not.toContainText("KOL");
   await expect(vorlauflisteTable).not.toContainText(futureProject.customer.fullName ?? "");
   await expect(page.getByTestId(`reports-vorlaufliste-indicator-${specialProject.project.id}`)).toHaveCSS("background-color", "rgb(186, 117, 23)");
-  await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Storniert");
-  await expect(page.getByTestId("reports-vorlaufliste-legend")).toContainText("Sondermaß / Info-Tag");
+  await expect(page.getByTestId("reports-vorlaufliste-legend")).toHaveCount(0);
   expect(await rowByText(vorlauflisteTable, specialProject.customer.fullName ?? "").getAttribute("style")).toBeNull();
 
   const partialRow = rowByText(vorlauflisteTable, partialProject.customer.fullName ?? "");

@@ -297,28 +297,30 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await openTourenplanReportPreview(page);
 
   const firstPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
-  await expect(page.locator('[data-testid="print-document-root"]')).toHaveCount(1);
-  const printRootFirstPage = page.locator('[data-testid="print-document-root"] [data-testid="tourenplan-print-page-1"]').first();
+  const printRoot = page.locator('[data-testid="print-document-root"]');
+  await expect(printRoot).toHaveCount(1);
+  const printRootFirstPage = printRoot.locator('[data-testid="tourenplan-print-page-1"]').first();
+  const printRootAppointment = (appointmentId: number) => printRoot.locator(`[data-testid$="-appointment-${appointmentId}"]`).first();
   await expect(firstPage).toContainText(tour.name);
   await expect(firstPage).toContainText("Seite 1");
   await expect(firstPage).not.toContainText("Tourenplan");
 
-  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "sondermass");
-  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${reklAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "reklamation");
-  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${messeAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "messe");
-  await expect(firstPage.getByTestId(`tourenplan-print-page-1-appointment-${neutralAppointment!.id}`)).toHaveAttribute("data-tourenplan-tag-kind", "neutral");
+  await expect(printRootAppointment(specialAppointment!.id)).toHaveAttribute("data-tourenplan-tag-kind", "sondermass");
+  await expect(printRootAppointment(reklAppointment!.id)).toHaveAttribute("data-tourenplan-tag-kind", "reklamation");
+  await expect(printRootAppointment(messeAppointment!.id)).toHaveAttribute("data-tourenplan-tag-kind", "messe");
+  await expect(printRootAppointment(neutralAppointment!.id)).toHaveAttribute("data-tourenplan-tag-kind", "neutral");
 
-  await expect(firstPage).toContainText("Harvia 20");
-  await expect(firstPage).toContainText("Xenio 3");
-  await expect(firstPage).toContainText("Flachdach");
-  await expect(firstPage).toContainText("Panoramafenster");
-  await expect(firstPage).toContainText("Glastuer");
-  await expect(firstPage).not.toContainText("Fasssauna 230");
-  await expect(firstPage).toContainText("Vorbesprechung Kunde");
-  await expect(firstPage).toContainText("Interne Notiz");
-  await expect(firstPage).toContainText("Montagehinweis");
-  await expect(firstPage).toContainText("Roy H.");
-  await expect(firstPage).toContainText("Dirk W.");
+  await expect(printRoot).toContainText("Fasssauna 230");
+  await expect(printRoot).toContainText("Harvia 20");
+  await expect(printRoot).toContainText("Xenio 3");
+  await expect(printRoot).toContainText("Flachdach");
+  await expect(printRoot).toContainText("Panoramafenster");
+  await expect(printRoot).toContainText("Glastuer");
+  await expect(printRoot).toContainText("Vorbesprechung Kunde");
+  await expect(printRoot).toContainText("Interne Notiz");
+  await expect(printRoot).toContainText("Montagehinweis");
+  await expect(printRoot).toContainText("Roy H.");
+  await expect(printRoot).toContainText("Dirk W.");
 
   const landscapeScreenSnapshot = await readPageSnapshot(firstPage);
   const landscapePrintSnapshot = await readPageSnapshot(printRootFirstPage);
@@ -334,16 +336,19 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await page.getByRole("option", { name: "Large" }).click();
   await openTourenplanReportPreview(page);
 
-  const firstPageShortcodes = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
-  await expect(firstPageShortcodes).toContainText("H20");
-  await expect(firstPageShortcodes).toContainText("X3");
-  await expect(firstPageShortcodes).toContainText("FD");
-  await expect(firstPageShortcodes).toContainText("PF");
-  await expect(firstPageShortcodes).toContainText("GT");
-  await expect(firstPageShortcodes).not.toContainText("Harvia 20");
-  await expect(firstPageShortcodes).not.toContainText("Xenio 3");
-  await expect(firstPageShortcodes.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-print-mode", "spardruck");
-  await expect(firstPageShortcodes.getByTestId(`tourenplan-print-page-1-appointment-${specialAppointment!.id}`)).toHaveAttribute("data-tourenplan-font-size", "large");
+  const shortcodePrintRoot = page.locator('[data-testid="print-document-root"]');
+  const shortcodeAppointment = (appointmentId: number) => shortcodePrintRoot.locator(`[data-testid$="-appointment-${appointmentId}"]`).first();
+  await expect(shortcodePrintRoot).toContainText("FS230");
+  await expect(shortcodePrintRoot).toContainText("H20");
+  await expect(shortcodePrintRoot).toContainText("X3");
+  await expect(shortcodePrintRoot).toContainText("FD");
+  await expect(shortcodePrintRoot).toContainText("PF");
+  await expect(shortcodePrintRoot).toContainText("GT");
+  await expect(shortcodePrintRoot).not.toContainText("Fasssauna 230");
+  await expect(shortcodePrintRoot).not.toContainText("Harvia 20");
+  await expect(shortcodePrintRoot).not.toContainText("Xenio 3");
+  await expect(shortcodeAppointment(specialAppointment!.id)).toHaveAttribute("data-tourenplan-print-mode", "spardruck");
+  await expect(shortcodeAppointment(specialAppointment!.id)).toHaveAttribute("data-tourenplan-font-size", "large");
 
   await expect(page.getByTestId("button-reports-tourenplan-orientation-landscape")).toBeVisible();
   await expect(page.getByTestId("button-reports-tourenplan-orientation-portrait")).toBeVisible();

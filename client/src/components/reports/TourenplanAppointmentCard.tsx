@@ -1,6 +1,7 @@
 import React from "react";
 import { StickyNote } from "lucide-react";
 import { renderSelectiveProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
+import { TagBadge } from "@/components/ui/tag-badge";
 import type { TourenplanFontSize, TourenplanPrintMode, TourenplanResolvedAppointment } from "@/components/reports/tourenplan-model";
 import {
   formatTourenplanDate,
@@ -10,6 +11,7 @@ import {
   resolveTourenplanTagPresentation,
 } from "@/components/reports/tourenplan-model";
 import { stripHtmlToText } from "@/lib/printText";
+import { mergeUniqueTags } from "@/lib/tag-utils";
 
 type TourenplanAppointmentCardProps = {
   appointment: TourenplanResolvedAppointment;
@@ -20,7 +22,7 @@ type TourenplanAppointmentCardProps = {
   testId?: string;
 };
 
-const TOURENPLAN_CARD_GRID_COLUMNS = "132px 148px minmax(0, 1.7fr) minmax(0, 0.8fr) 92px";
+const TOURENPLAN_CARD_GRID_COLUMNS = "146px 140px minmax(0, 1.15fr) minmax(0, 1fr) 92px";
 const EXACT_PRINT_COLOR_STYLE = {
   WebkitPrintColorAdjust: "exact",
   printColorAdjust: "exact",
@@ -70,6 +72,13 @@ function bodyCellStyle(fontSize: TourenplanFontSize) {
   } as const;
 }
 
+function tagCellStyle(fontSize: TourenplanFontSize) {
+  return {
+    ...bodyCellStyle(fontSize),
+    padding: "4px 5px",
+  } as const;
+}
+
 export function TourenplanAppointmentCard({
   appointment,
   printMode,
@@ -80,13 +89,15 @@ export function TourenplanAppointmentCard({
 }: TourenplanAppointmentCardProps) {
   const preset = TOURENPLAN_FONT_SIZE_PRESETS[fontSize];
   const tagPresentation = resolveTourenplanTagPresentation(appointment, printMode);
+  const displayTags = mergeUniqueTags(appointment.appointmentTags, appointment.customerTags, appointment.projectTags);
   const locationLines = formatTourenplanLocationLines(appointment.customer);
   const employeeBadges = formatTourenplanEmployeeBadges(appointment.employees);
   const projectDescription = formatTourenplanProjectDescription(appointment.projectDescription);
   const hasProjectDescription = stripHtmlToText(appointment.projectDescription).length > 0;
   const articleSection = renderSelectiveProjectArticleListSection({
     articleItems: appointment.projectArticleItems,
-    articleListOptions: { filter: "components", useShortCodes },
+    articleListOptions: { filter: "all", useShortCodes },
+    showSectionTitles: true,
     articleListClassName: "list-disc pl-3 text-[10px] leading-[1.4] text-slate-600",
     testIdPrefix: testId,
   });
@@ -142,20 +153,20 @@ export function TourenplanAppointmentCard({
         className="grid bg-white"
         style={{ gridTemplateColumns: TOURENPLAN_CARD_GRID_COLUMNS }}
       >
-        <div style={bodyCellStyle(fontSize)}>
-          {tagPresentation.label ? (
-            <span
-              className="inline-block rounded px-1.5 py-0.5 font-semibold"
-              style={{
-                background: tagPresentation.pillBackground ?? "transparent",
-                color: tagPresentation.pillTextColor ?? "#475569",
-                fontSize: `${preset.pillFontSizePx}px`,
-                ...EXACT_PRINT_COLOR_STYLE,
-              }}
-            >
-              {tagPresentation.label}
-            </span>
-          ) : null}
+        <div style={tagCellStyle(fontSize)}>
+          {displayTags.length > 0 ? (
+            <div className="flex min-w-0 flex-col items-start gap-0.5 overflow-hidden">
+              {displayTags.map((tag) => (
+                <TagBadge
+                  key={tag.id}
+                  tag={tag}
+                  size="sm"
+                  level={1}
+                  testId={testId ? `${testId}-tag-${tag.id}` : undefined}
+                />
+              ))}
+            </div>
+          ) : "-"}
         </div>
         <div style={bodyCellStyle(fontSize)}>
           {locationLines.length > 0 ? (

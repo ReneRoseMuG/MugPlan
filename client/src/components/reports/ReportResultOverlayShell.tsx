@@ -1,5 +1,5 @@
 import React, { type ReactNode } from "react";
-import { Printer, RefreshCw } from "lucide-react";
+import { Printer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,6 @@ type ReportResultOverlayShellProps = {
   open: boolean;
   title: string;
   metaLabel?: string;
-  onRefresh: () => void;
   onOpenPrintPreview: () => void;
   onBack: () => void;
   children: ReactNode;
@@ -16,10 +15,8 @@ type ReportResultOverlayShellProps = {
   className?: string;
   contentClassName?: string;
   testId: string;
-  refreshTestId: string;
   printPreviewTestId: string;
   backTestId: string;
-  isRefreshing?: boolean;
   printPreviewDisabled?: boolean;
 };
 
@@ -27,7 +24,6 @@ export function ReportResultOverlayShell({
   open,
   title,
   metaLabel,
-  onRefresh,
   onOpenPrintPreview,
   onBack,
   children,
@@ -35,10 +31,8 @@ export function ReportResultOverlayShell({
   className,
   contentClassName,
   testId,
-  refreshTestId,
   printPreviewTestId,
   backTestId,
-  isRefreshing = false,
   printPreviewDisabled = false,
 }: ReportResultOverlayShellProps) {
   return (
@@ -58,10 +52,6 @@ export function ReportResultOverlayShell({
             {metaLabel ? <span className="truncate text-sm text-muted-foreground">{metaLabel}</span> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={onRefresh} disabled={isRefreshing} data-testid={refreshTestId}>
-              <RefreshCw className={cn("h-4 w-4", isRefreshing ? "animate-spin" : undefined)} />
-              Aktualisieren
-            </Button>
             <Button type="button" variant="outline" onClick={onOpenPrintPreview} disabled={printPreviewDisabled} data-testid={printPreviewTestId}>
               <Printer className="h-4 w-4" />
               Druckvorschau

@@ -31,7 +31,7 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die v
 | A-16 | [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) | Planung | `in Bearbeitung` |
 | A-19 | [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md) | Implementierung | `offen` |
 | A-20 | [Termine- und Kalenderdialoge](termine-und-kalenderdialoge.md) | Implementierung | `offen` |
-| A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `offen` |
+| A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `in Bearbeitung` |
 | A-27 | [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md) | Implementierung | `offen` |
 | A-40 | [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) | Implementierung | `offen` |
 

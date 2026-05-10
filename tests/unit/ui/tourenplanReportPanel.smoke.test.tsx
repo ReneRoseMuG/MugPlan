@@ -317,7 +317,6 @@ describe("UI: TourenplanReportPanel smoke", () => {
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-farbdruck");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-spardruck");
     expect(landscapeHtml).toContain("print-preview-dialog-marker");
-    expect(landscapeHtml).toContain("button-reports-tourenplan-print-preview-refresh");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print");
     expect(landscapeHtml).toContain("tourenplan-print-page-1");
     expect(landscapeHtml).toContain('data-page-orientation="landscape"');
