@@ -1,4 +1,4 @@
-﻿# UC 13/09: Notizvorlage bearbeiten
+# UC 13/09: Notizvorlage bearbeiten
 
 ## Metadaten
 
@@ -36,7 +36,9 @@ Eine bestehende Notizvorlage ändern, ohne bereits erstellte Notizen rückwirken
 9. Das System erhöht das Versionsmerkmal und aktualisiert `updated_at`.
 10. Das System aktualisiert die Vorlagenliste gemäß Sortierlogik.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder ungültig → Validierungsfehler, keine Persistierung.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
@@ -44,8 +46,6 @@ Eine bestehende Notizvorlage ändern, ohne bereits erstellte Notizen rückwirken
 - Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → HTTP 500, keine Änderung.
-
-## Alternativen
 
 
 ## Ergebnis

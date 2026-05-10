@@ -48,13 +48,13 @@
 <p>Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen, um den Auftragsumfang und geplante Lieferungen zu dokumentieren.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Das Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
 <h3 class="wiki-h3">Ablauf — Position anlegen</h3>
 <ol><li>Der Akteur öffnet das Projekt und navigiert zum Bereich „Auftragspositionen&quot;.</li><li>Der Akteur wählt „Position hinzufügen&quot; und erfasst Bezeichnung, Menge und ggf. Einheit.</li><li>Das System validiert Pflichtfelder und legt die Position mit Projektreferenz an.</li></ol>
 <h3 class="wiki-h3">Ablauf — Position bearbeiten</h3>
 <ol><li>Der Akteur wählt eine bestehende Position und ändert Felder.</li><li>Das System speichert die Änderung atomar.</li></ol>
 <h3 class="wiki-h3">Ablauf — Position löschen</h3>
 <ol><li>Der Akteur entfernt eine Position.</li><li>Das System löscht den Datensatz. Alle Positionen werden bei Projektlöschung automatisch via Cascade entfernt (siehe UC 02/08).</li></ol>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Projekt nicht vorhanden → HTTP 404.</li><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Rechte → HTTP 403.</li><li>Pflichtfeld fehlt → HTTP 422.</li><li>Technischer Fehler → HTTP 500.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>

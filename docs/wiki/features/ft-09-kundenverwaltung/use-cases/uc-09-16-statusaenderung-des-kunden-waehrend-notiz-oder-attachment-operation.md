@@ -1,4 +1,4 @@
-﻿# UC 09/16: Statusänderung des Kunden während Notiz- oder Attachment-Operation
+# UC 09/16: Statusänderung des Kunden während Notiz- oder Attachment-Operation
 
 ## Metadaten
 
@@ -19,9 +19,12 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 - Einer der Akteure besitzt Administratorrechte.
 - Der Kunde ist initial aktiv (`is_active = true`).
 
+
+## Ablauf
+
 ---
 
-## Ablauf – Beispiel 1: Notiz hinzufügen während Deaktivierung
+### Ablauf – Beispiel 1: Notiz hinzufügen während Deaktivierung
 
 1. Akteur A (Disponent) öffnet die Kundendetailansicht und beginnt, eine Notiz zu erstellen.
 2. Akteur B (Administrator) deaktiviert den Kunden.
@@ -35,7 +38,7 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 
 ---
 
-## Ablauf – Beispiel 2: Notiz hinzufügen während Löschung
+### Ablauf – Beispiel 2: Notiz hinzufügen während Löschung
 
 1. Akteur A beginnt mit dem Erstellen einer Notiz.
 2. Akteur B löscht den Kunden gemäß UC 13.
@@ -47,7 +50,7 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 
 ---
 
-## Ablauf – Beispiel 3: Attachment-Upload während Deaktivierung
+### Ablauf – Beispiel 3: Attachment-Upload während Deaktivierung
 
 1. Akteur A startet einen Upload.
 2. Akteur B deaktiviert den Kunden.
@@ -57,7 +60,7 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 
 ---
 
-## Ablauf – Beispiel 4: Attachment-Upload während Löschung
+### Ablauf – Beispiel 4: Attachment-Upload während Löschung
 
 1. Akteur A startet Upload.
 2. Akteur B löscht den Kunden.
@@ -75,12 +78,6 @@ Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Lö
 - Löschung eines Kunden verhindert jede weitere Operation auf diesem Parent.
 - Es dürfen keine verwaisten Notizen oder Attachments entstehen.
 - Referenzielle Integrität ist serverseitig garantiert.
-
----
-
-## Ablauf
-
-
 ## Alternativen
 
 - Versionskonflikt → System blockiert mit 409.

@@ -1,4 +1,4 @@
-﻿# UC 05/03: Mitarbeiter-Termine anzeigen
+# UC 05/03: Mitarbeiter-Termine anzeigen
 
 ## Metadaten
 
@@ -29,7 +29,8 @@ Der Nutzer wählt einen Mitarbeiter zur Anzeige aus.
 4. Das System zeigt zu jedem Termin die relevanten Informationen an.
 5. Das System stellt sicher, dass auch vergangene Termine angezeigt werden.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Dem Mitarbeiter sind keine Termine zugewiesen: Das System zeigt eine leere Terminliste an.
 

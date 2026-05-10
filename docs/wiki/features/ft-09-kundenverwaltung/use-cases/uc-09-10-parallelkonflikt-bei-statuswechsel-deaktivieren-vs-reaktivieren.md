@@ -1,4 +1,4 @@
-﻿# UC 09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)
+# UC 09/10: Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)
 
 ## Metadaten
 
@@ -21,6 +21,7 @@ Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsis
 
 ---
 
+## Ablauf
 ### Ablauf – Beispiel: paralleles Deaktivieren
 
 1. Administrator A öffnet die Detailansicht eines aktiven Kunden.
@@ -47,9 +48,6 @@ Sicherstellen, dass bei parallelen Statusänderungen eines Kunden keine inkonsis
 8. Das System blockiert mit 409.
 
 ---
-
-## Ablauf
-
 
 ## Alternativen
 

@@ -49,13 +49,13 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Kunde existiert.</li><li>Zwei Administratoren sind gleichzeitig authentifiziert.</li><li>Beide Administratoren laden denselben Kunden mit identischer Versionskennung.</li><li>Der Kunde befindet sich in einem definierten Ausgangszustand (<code>is_active = true</code> oder <code>false</code>).</li></ul>
 <hr>
+<h2 class="wiki-h2">Ablauf</h2>
 <h3 class="wiki-h3">Ablauf – Beispiel: paralleles Deaktivieren</h3>
 <ol><li>Administrator A öffnet die Detailansicht eines aktiven Kunden.</li><li>Administrator B öffnet denselben Kunden.</li><li>Administrator A löst „Deaktivieren“ aus.</li><li>Das System prüft Berechtigung und Versionskennung.</li><li>Das System setzt <code>is_active = false</code>, persistiert und erhöht die Versionskennung.</li><li>Administrator B löst ebenfalls „Deaktivieren“ aus.</li><li>Das System prüft die Versionskennung.</li><li>Das System erkennt die veraltete Version.</li><li>Das System antwortet mit 409 (Konflikt).</li></ol>
 <hr>
 <h3 class="wiki-h3">Ablauf – Beispiel: Deaktivieren vs. Reaktivieren</h3>
 <ol><li>Administrator A öffnet einen aktiven Kunden.</li><li>Administrator B öffnet denselben Kunden.</li><li>Administrator A deaktiviert den Kunden.</li><li>Das System persistiert <code>is_active = false</code> und erhöht die Versionskennung.</li><li>Administrator B versucht, den Kunden zu reaktivieren (auf Basis veralteter Version).</li><li>Das System prüft die Versionskennung.</li><li>Das System erkennt den Konflikt.</li><li>Das System blockiert mit 409.</li></ol>
 <hr>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Einer der Administratoren lädt vor dem Statuswechsel neu → kein Konflikt.</li><li>Ein Statuswechsel wird vor dem parallelen Zugriff vollständig abgeschlossen → der zweite Vorgang wird mit aktuellem Status geprüft und ggf. als „keine Zustandsänderung“ behandelt.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <hr>

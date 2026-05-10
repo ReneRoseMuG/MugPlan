@@ -1,4 +1,4 @@
-﻿# UC 19/05: Attachment-Upload validieren (Größe / Typ)
+# UC 19/05: Attachment-Upload validieren (Größe / Typ)
 
 ## Metadaten
 
@@ -25,7 +25,8 @@ Sicherstellen, dass ausschließlich zulässige Dateien gespeichert werden.
 5. Bei gültiger Datei wird der Upload-Prozess fortgesetzt.
 6. Bei ungültiger Datei wird der Upload-Prozess abgebrochen.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Datei überschreitet Größenlimit → System antwortet mit 400 und speichert nichts.
 - Datei besitzt unzulässigen Typ → System antwortet mit 400 und speichert nichts.

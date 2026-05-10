@@ -52,9 +52,8 @@
 <ol><li>Der Akteur löst die Druckausgabe für die gewünschte Kalenderwoche aus.</li><li>Das System lädt alle Druckdaten dieser Woche einschließlich der Wochen-Notizen über <code>calendar_week_note</code>.</li><li>Das System sortiert die Wochen-Notizen deterministisch:</li></ol>
 <ul><li>Angepinnte Notizen zuerst,</li><li>danach Sortierung nach <code>updated_at</code> absteigend.</li></ul>
 <ol><li>Das System bettet die Wochen-Notizen an einer konsistenten Position in die Druckausgabe ein, orientiert am vorhandenen Aufbau der Wochendruckansicht.</li><li>Jede Notiz wird in der Druckausgabe mit Titel und Beschreibung dargestellt.</li><li>Das System erzeugt die Druckausgabe und stellt sie dem Akteur bereit.</li></ol>
-<h3 class="wiki-h3">Alternativabläufe</h3>
-<ul><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Druckausgabe.</li><li>Der Akteur besitzt keine Leserechte → HTTP 403, keine Druckausgabe.</li><li>Es existieren keine Wochen-Notizen → Der Notizbereich in der Druckausgabe bleibt leer oder wird ausgeblendet; kein Fehler.</li><li>Technischer Fehler → HTTP 500, keine Druckausgabe.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Druckausgabe.</li><li>Der Akteur besitzt keine Leserechte → HTTP 403, keine Druckausgabe.</li><li>Es existieren keine Wochen-Notizen → Der Notizbereich in der Druckausgabe bleibt leer oder wird ausgeblendet; kein Fehler.</li><li>Technischer Fehler → HTTP 500, keine Druckausgabe.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Wochen-Notizen sind Bestandteil der Druckausgabe der Kalenderwoche.</li><li>Die Darstellung ist konsistent mit den übrigen Wocheninformationen in der Druckansicht.</li><li>Es entsteht kein neues, paralleles Drucksystem.</li><li>Die Druckausgabe verändert keine persistierten Daten.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">

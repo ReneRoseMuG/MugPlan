@@ -1,4 +1,4 @@
-﻿# UC 02/05: Projektnotizen pflegen
+# UC 02/05: Projektnotizen pflegen
 
 ## Metadaten
 
@@ -18,6 +18,7 @@ Projektbezogene Notizen anlegen oder bearbeiten, um projektspezifische Informati
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Schreibrechte (Disponent oder Administrator).
 
+## Ablauf
 ### Ablauf — Notiz anlegen
 
 1. Der Akteur öffnet das Projekt und navigiert zum Bereich „Notizen".
@@ -34,9 +35,6 @@ Projektbezogene Notizen anlegen oder bearbeiten, um projektspezifische Informati
 2. Das System lädt die Notizdaten einschließlich Versionsmerkmal.
 3. Der Akteur ändert Titel und/oder Beschreibung.
 4. Das System prüft Versionsmerkmal serverseitig. Bei Übereinstimmung speichert es die Änderungen und erhöht das Versionsmerkmal.
-
-## Ablauf
-
 
 ## Alternativen
 

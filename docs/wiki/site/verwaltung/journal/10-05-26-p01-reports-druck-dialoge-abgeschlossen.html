@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-05-26-p01-reports-druck-dialoge-abgeschlossen: 10.05.26 | Abschluss | P01 Reports- und Druck-Dialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 10-05-26-p01-reports-druck-dialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">10-05-26-p01-reports-druck-dialoge-abgeschlossen 10.05.26 | Abschluss | P01 Reports- und Druck-Dialoge</span></nav>
+        <h1 class="wiki-h1">10-05-26-p01-reports-druck-dialoge-abgeschlossen: 10.05.26 | Abschluss | P01 Reports- und Druck-Dialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>10.05.26</div>
+    <p class="wiki-lead">Der P-01-Schritt Reports- und Druck-Dialoge ist technisch umgesetzt und als Wiki-Aufgabe abgeschlossen. Spaltenauswahl und Produktionsplanung-Kategorie-Layout nutzen die gemeinsame Dialogbasis, Report-, Preset- und Druckvorschaufehler werden normalisiert inline angezeigt, und Auf</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der P-01-Schritt Reports- und Druck-Dialoge ist technisch umgesetzt und als Wiki-Aufgabe abgeschlossen. Spaltenauswahl und Produktionsplanung-Kategorie-Layout nutzen die gemeinsame Dialogbasis, Report-, Preset- und Druckvorschaufehler werden normalisiert inline angezeigt, und Auftragslisten- sowie Tourenplan-Druckvorschauen bleiben während der Browser-Messphase durch geschätzte Seiten sichtbar.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>Unit-Tests: <code>npm run test:unit -- tests/unit/ui/reportsPage.behavior.test.tsx tests/unit/ui/reportsPage.wiring.test.tsx tests/unit/ui/reportPresetControls.disabled.test.tsx tests/unit/ui/printComponents.primitives.test.tsx tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx tests/unit/ui/tourenplanReportPanel.smoke.test.tsx tests/unit/ui/spaltenDialog.dialogBase.test.tsx</code> erfolgreich mit 37 bestandenen Tests in 7 Dateien.</li><li>Integrationstests: <code>npm run test:integration -- tests/integration/server/reports.auftragsliste.integration.test.ts tests/integration/server/reports.produktionsplanung.integration.test.ts tests/integration/server/reportConfigs.presets.integration.test.ts tests/integration/server/reportConfigs.reportEffects.integration.test.ts --reporter=verbose</code> erfolgreich mit 20 bestandenen Tests in 4 Dateien.</li><li>Browser-E2E: <code>npm run test:e2e:browser -- tests/e2e-browser/reports.ft26.browser.e2e.spec.ts tests/e2e-browser/reports.tourenplan.browser.e2e.spec.ts tests/e2e-browser/reports.open-modes.browser.e2e.spec.ts</code> erfolgreich mit 9 bestandenen Tests.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>Wiki-Build: <code>node scripts/build-wiki-site.mjs</code> am 10.05.26 erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code> dürfen Reports lesen; die serverseitige Reportprüfung bleibt maßgeblich.</li><li><code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code> dürfen persönliche Presets lesen und schreiben; globale Presets bleiben serverseitig <code>ADMIN</code>-only.</li><li>Das Produktionsplanung-Kategorie-Layout bleibt über globale Settings und bestehende Serverregeln <code>ADMIN</code>-only.</li><li>UI-Sichtbarkeit und Dialoge bleiben Bedienführung; die serverseitigen Guards sind die verbindliche Durchsetzung.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Aufgabe: <a href="../../../tasks/closed/reports-und-druck-dialoge.md">Reports- und Druck-Dialoge</a></li><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout Masterplan</a></li><li>Grundlagen: <a href="../../../tasks/closed/fehler-normalisierung.md">Fehler-Normalisierung</a> · <a href="../../../tasks/closed/dialog-basiskomponenten.md">Dialog-Basiskomponenten</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

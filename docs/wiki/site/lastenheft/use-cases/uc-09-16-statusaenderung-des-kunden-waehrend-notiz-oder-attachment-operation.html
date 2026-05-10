@@ -48,25 +48,24 @@
 <p>Sicherstellen, dass parallele Statusänderungen eines Kunden (Deaktivieren / Löschen) keine inkonsistenten Zustände bei Notiz- oder Attachment-Operationen erzeugen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Kunde existiert.</li><li>Mindestens zwei Akteure sind gleichzeitig authentifiziert.</li><li>Einer der Akteure besitzt Administratorrechte.</li><li>Der Kunde ist initial aktiv (<code>is_active = true</code>).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
 <hr>
-<h2 class="wiki-h2">Ablauf – Beispiel 1: Notiz hinzufügen während Deaktivierung</h2>
+<h3 class="wiki-h3">Ablauf – Beispiel 1: Notiz hinzufügen während Deaktivierung</h3>
 <ol><li>Akteur A (Disponent) öffnet die Kundendetailansicht und beginnt, eine Notiz zu erstellen.</li><li>Akteur B (Administrator) deaktiviert den Kunden.</li><li>Das System persistiert <code>is_active = false</code> und erhöht die Versionskennung.</li><li>Akteur A speichert die Notiz.</li><li>Das System prüft:</li></ol>
 <ul><li>Existenz des Kunden,</li><li>aktuellen Status,</li><li>Versionskonsistenz des Parent-Objekts.</li></ul>
 <ol><li>Das System erlaubt die Notizspeicherung, da Deaktivierung keine fachliche Sperre für bestehende Stammdatenoperationen darstellt.</li></ol>
 <hr>
-<h2 class="wiki-h2">Ablauf – Beispiel 2: Notiz hinzufügen während Löschung</h2>
+<h3 class="wiki-h3">Ablauf – Beispiel 2: Notiz hinzufügen während Löschung</h3>
 <ol><li>Akteur A beginnt mit dem Erstellen einer Notiz.</li><li>Akteur B löscht den Kunden gemäß UC 13.</li><li>Das System entfernt den Kundendatensatz.</li><li>Akteur A speichert die Notiz.</li><li>Das System prüft die Parent-Existenz.</li><li>Das System erkennt, dass der Kunde nicht mehr existiert.</li><li>Das System blockiert mit 404 oder 409.</li></ol>
 <hr>
-<h2 class="wiki-h2">Ablauf – Beispiel 3: Attachment-Upload während Deaktivierung</h2>
+<h3 class="wiki-h3">Ablauf – Beispiel 3: Attachment-Upload während Deaktivierung</h3>
 <ol><li>Akteur A startet einen Upload.</li><li>Akteur B deaktiviert den Kunden.</li><li>Das System persistiert <code>is_active = false</code>.</li><li>Der Upload wird abgeschlossen.</li><li>Das System erlaubt die Persistierung des Attachment-Datensatzes, da Deaktivierung keine Parent-Löschung darstellt.</li></ol>
 <hr>
-<h2 class="wiki-h2">Ablauf – Beispiel 4: Attachment-Upload während Löschung</h2>
+<h3 class="wiki-h3">Ablauf – Beispiel 4: Attachment-Upload während Löschung</h3>
 <ol><li>Akteur A startet Upload.</li><li>Akteur B löscht den Kunden.</li><li>Das System entfernt den Kundendatensatz.</li><li>Der Upload versucht, den Attachment-Datensatz zu persistieren.</li><li>Das System prüft die Parent-Existenz.</li><li>Das System blockiert mit 404 oder 409.</li></ol>
 <hr>
 <h3 class="wiki-h3">Konsistenzregeln</h3>
 <ul><li>Notiz- und Attachment-Operationen sind nur zulässig, wenn der Parent-Kunde existiert.</li><li>Deaktivierung verhindert keine fachlich zulässigen Operationen auf bestehende Kunden.</li><li>Löschung eines Kunden verhindert jede weitere Operation auf diesem Parent.</li><li>Es dürfen keine verwaisten Notizen oder Attachments entstehen.</li><li>Referenzielle Integrität ist serverseitig garantiert.</li></ul>
-<hr>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Versionskonflikt → System blockiert mit 409.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <hr>

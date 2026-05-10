@@ -1,4 +1,4 @@
-﻿# UC 19/08: Serverseitige Berechtigungsprüfung bei Attachment-Zugriff
+# UC 19/08: Serverseitige Berechtigungsprüfung bei Attachment-Zugriff
 
 ## Metadaten
 
@@ -25,7 +25,8 @@ Sicherstellen, dass jeder Zugriff auf ein Attachment ausschließlich auf Basis d
 4. Bei gültiger Berechtigung wird der Zugriff gewährt.
 5. Bei fehlender Berechtigung wird der Zugriff verweigert.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Attachment existiert nicht → System antwortet mit 404.
 - Parent-Objekt existiert nicht → System antwortet mit 404.

@@ -1,4 +1,4 @@
-﻿# UC 13/07: Notiz anpinnen / Pinning aufheben
+# UC 13/07: Notiz anpinnen / Pinning aufheben
 
 ## Metadaten
 
@@ -36,14 +36,14 @@ Die Position einer bestehenden Notiz innerhalb der Notizenliste deterministisch 
     - danach Sortierung nach `updated_at` absteigend.
 8. Das System rendert die aktualisierte Liste.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
 - Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
 - Technischer Fehler → HTTP 500, keine Änderung.
-
-## Alternativen
 
 
 ## Ergebnis

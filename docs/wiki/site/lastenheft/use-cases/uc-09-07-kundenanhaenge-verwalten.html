@@ -48,19 +48,18 @@
 <p>Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne die fachliche Integrität des Kunden oder referenzierender Projekte zu beeinträchtigen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Der Kunde existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Leserechte; für Upload zusätzlich Änderungsrechte.</li><li>Die hochzuladende Datei entspricht erlaubten Formaten und Größenbeschränkungen.</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
 <hr>
-<h2 class="wiki-h2">Ablauf – Anhang hochladen</h2>
+<h3 class="wiki-h3">Ablauf – Anhang hochladen</h3>
 <ol><li>Der Akteur öffnet die Kundendetailansicht.</li><li>Der Akteur startet die Funktion „Anhang hinzufügen“.</li><li>Der Akteur wählt eine Datei aus.</li><li>Das System prüft:</li></ol>
 <ul><li>Authentifizierung,</li><li>Berechtigung,</li><li>Dateiformat,</li><li>Dateigröße.</li></ul>
 <ol><li>Das System speichert die Datei serverseitig unter persistentem Speichername.</li><li>Das System legt einen Attachment-Datensatz mit Parent-Referenz auf den Kunden an.</li><li>Das System speichert Metadaten (Originalname, MIME-Typ, Größe, Zeitstempel).</li><li>Das System aktualisiert die Anhangsliste in der UI.</li></ol>
 <hr>
-<h2 class="wiki-h2">Ablauf – Anhang anzeigen / herunterladen</h2>
+<h3 class="wiki-h3">Ablauf – Anhang anzeigen / herunterladen</h3>
 <ol><li>Der Akteur öffnet die Anhangsliste des Kunden.</li><li>Das System lädt alle dem Kunden zugeordneten Attachments.</li><li>Der Akteur wählt einen Anhang aus.</li><li>Das System liefert die Datei über einen gesicherten Download-Endpunkt aus.</li><li>Je nach Dateityp erfolgt Inline-Anzeige oder Download.</li></ol>
 <hr>
-<h2 class="wiki-h2">Regeln und Einschränkungen</h2>
+<h3 class="wiki-h3">Regeln und Einschränkungen</h3>
 <ul><li>Ein Attachment kann nicht ohne Parent-Kunde existieren.</li><li>Attachments sind kundenbezogen und unabhängig von Projekten.</li><li>Eine physische Löschung von Attachments ist systemweit nicht vorgesehen.</li><li>Das Löschen eines Kunden entfernt referenzierte Notizen (CASCADE), jedoch keine physische Dateilöschung ist spezifiziert.</li><li>Mehrere Akteure können parallel Anhänge hochladen; jeder Upload erzeugt einen eigenständigen Attachment-Datensatz.</li></ul>
-<hr>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Kunde existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Berechtigung → System blockiert mit 403.</li><li>Datei ungültig → System lehnt Upload mit Validierungsfehler ab.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <hr>

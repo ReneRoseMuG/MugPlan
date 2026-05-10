@@ -1,4 +1,4 @@
-﻿# UC 19/04: Attachment herunterladen
+# UC 19/04: Attachment herunterladen
 
 ## Metadaten
 
@@ -33,7 +33,8 @@ Ein Attachment eines Parent-Objekts (Projekt, Kunde, Mitarbeiter oder Termin) lo
     - den gespeicherten Dateistream.
 5. Der Browser startet den Download.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Attachment nicht auffindbar → System antwortet mit 404.
 - Akteur ohne Leserechte → System blockiert mit 403.

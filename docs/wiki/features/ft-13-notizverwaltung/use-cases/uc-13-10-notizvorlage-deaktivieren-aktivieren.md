@@ -1,4 +1,4 @@
-﻿# UC 13/10: Notizvorlage deaktivieren/aktivieren
+# UC 13/10: Notizvorlage deaktivieren/aktivieren
 
 ## Metadaten
 
@@ -33,14 +33,14 @@ Den Aktivstatus einer bestehenden Notizvorlage ändern, ohne sie physisch zu lö
 7. Das System speichert die Änderung persistent.
 8. Das System aktualisiert die Vorlagenliste.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Änderung.
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Änderung.
 - Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
 - Technischer Fehler → HTTP 500, keine Änderung.
-
-## Alternativen
 
 
 ## Ergebnis

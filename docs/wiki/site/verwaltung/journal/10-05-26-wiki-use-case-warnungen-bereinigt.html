@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-05-26-wiki-use-case-warnungen-bereinigt: 10.05.26 | Wiki | Use-Case-Warnungen bereinigt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 10-05-26-wiki-use-case-warnungen-bereinigt">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">10-05-26-wiki-use-case-warnungen-bereinigt 10.05.26 | Wiki | Use-Case-Warnungen bereinigt</span></nav>
+        <h1 class="wiki-h1">10-05-26-wiki-use-case-warnungen-bereinigt: 10.05.26 | Wiki | Use-Case-Warnungen bereinigt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>10.05.26</div>
+    <p class="wiki-lead">Die Wiki-Kontrolle für das Lastenheft wurde bereinigt. Ein entferntes FT-02-Duplikat der denormalisierten Projektanzeige wurde aus der lokalen Use-Case-Struktur entfernt, sodass es nicht mehr als aktive Use-Case-Datei, Indexeintrag oder generierte Use-Case-Seite erscheint.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Wiki-Kontrolle für das Lastenheft wurde bereinigt. Ein entferntes FT-02-Duplikat der denormalisierten Projektanzeige wurde aus der lokalen Use-Case-Struktur entfernt, sodass es nicht mehr als aktive Use-Case-Datei, Indexeintrag oder generierte Use-Case-Seite erscheint.</p>
+<p>Die zuvor gemeldeten leeren Abschnitte wurden anhand der lokalen Use-Case-Dateien und der Notion-Lastenheft-Seiten korrigiert. Ein großer Teil der Warnungen entstand nicht durch fehlenden fachlichen Inhalt, sondern durch abweichende Überschriften wie <code>### Alternativabläufe</code>, <code>## Ablauf – Upload</code> oder frei stehende <code>Vorbedingungen:</code> vor dem eigentlichen Pflichtabschnitt. Diese Inhalte wurden in die erwarteten Pflichtabschnitte <code>## Ablauf</code>, <code>## Alternativen</code> und <code>## Vorbedingungen</code> überführt.</p>
+<p>Zusätzlich wurde der Wiki-Kontrolllauf geschärft: bewusst unspezifizierte Feature-Hüllen mit Backlog-Status und ohne angelegte Use Cases werden nicht mehr als fehlende Use-Case-Datei gemeldet. Normale Features ohne lokale Use-Case-Dateien bleiben weiterhin warnpflichtig.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Wiki-Build: <code>node scripts/build-wiki-site.mjs</code> erfolgreich.</li><li>Kontrollbericht: <code>0 Fehler, 0 Warnungsgruppen</code>.</li><li>Suche nach dem entfernten FT-02-Duplikat in <code>docs/wiki</code> und <code>scripts</code>: keine aktive Referenz mehr.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>Skript-Syntax: <code>node --check scripts/build-wiki-site.mjs</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<p>Es wurden keine App-Rollen, Berechtigungen, Endpunkte oder UI-Sichtbarkeiten geändert. Die Änderungen betreffen ausschließlich Wiki-/Lastenheft-Inhalte und den Kontrollbericht der generierten Wiki.</p>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Lastenheft: lokale Use-Case-Dateien unter <code>docs/wiki/features/*/use-cases/</code></li><li>Kontrollbericht: <a href="../site/control-report.html">Wiki-Kontrollbericht</a></li><li>Notion-Quelle: Lastenheft-Datenbank im Projektkontext</li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-﻿# UC 05/06: Mitarbeiteranhänge verwalten
+# UC 05/06: Mitarbeiteranhänge verwalten
 
 ## Metadaten
 
@@ -19,7 +19,10 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 - Der Akteur besitzt Änderungsrechte für Mitarbeiter.
 - Die hochzuladende Datei entspricht den erlaubten Formaten und Größenbeschränkungen.
 
-## Ablauf – Upload
+
+## Ablauf
+
+### Ablauf – Upload
 
 1. Akteur öffnet die Detailansicht eines Mitarbeiters.
 2. Akteur wählt die Funktion „Anhang hinzufügen“.
@@ -33,16 +36,12 @@ Dokumente einem Mitarbeiter hinzufügen sowie bestehende Anhänge einsehen und h
 7. System gibt die gespeicherten Metadaten zurück.
 8. System aktualisiert die Anhangsliste in der UI.
 
-## Ablauf – Anzeigen / Herunterladen
+### Ablauf – Anzeigen / Herunterladen
 
 1. Akteur öffnet die Anhangsliste.
 2. System lädt alle dem Mitarbeiter zugeordneten Attachments.
 3. Akteur wählt einen Anhang.
 4. System liefert Datei über gesicherten Download-Endpunkt aus.
-
-## Ablauf
-
-
 ## Alternativen
 
 - Mitarbeiter existiert nicht →

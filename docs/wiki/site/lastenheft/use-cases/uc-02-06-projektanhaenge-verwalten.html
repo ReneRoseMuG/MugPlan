@@ -48,6 +48,7 @@
 <p>Dokumente zu einem Projekt hinzufügen, einsehen, herunterladen und bei Bedarf entfernen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Das Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte (für Upload und Löschung) bzw. mindestens Leserechte (für Anzeige und Download).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
 <h3 class="wiki-h3">Ablauf — Anhang hochladen</h3>
 <ol><li>Der Akteur öffnet das Projekt und wählt „Attachment hinzufügen&quot;.</li><li>Das System öffnet einen Dateiauswahldialog.</li><li>Der Akteur wählt eine lokale Datei.</li><li>Das System prüft serverseitig: Authentifizierung, Berechtigung, Existenz des Projekts, Dateigröße und MIME-Typ.</li><li>Das System generiert einen eindeutigen persistenten Speichernamen, speichert die Datei und legt einen Attachment-Datensatz mit Projektreferenz und Metadaten (Originaldateiname, Speichername, MIME-Typ, Dateigröße, Erstellungszeitpunkt) an.</li><li>Das System aktualisiert die Anhangsliste in der UI.</li></ol>
 <h3 class="wiki-h3">Ablauf — Anhang öffnen / herunterladen</h3>
@@ -56,7 +57,6 @@
 <ol><li>Der Akteur klickt den Action-Button am Attachment-Badge.</li><li>Das System zeigt eine Sicherheitsfrage: „Soll nur die Verknüpfung zum Projekt entfernt oder auch die physische Datei gelöscht werden? (Nicht empfohlen bei Auftragsdokumenten.)&quot;</li><li>Der Akteur wählt eine Option:</li></ol>
 <ul><li><strong>Entkopplung:</strong> Das System entfernt den Attachment-Datensatz. Die physische Datei verbleibt im Upload-Verzeichnis.</li><li><strong>Physische Löschung:</strong> Das System entfernt Datensatz und physische Datei vollständig.</li></ul>
 <ol><li>Das System aktualisiert die Anhangsliste.</li></ol>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Projekt nicht vorhanden → HTTP 404.</li><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Berechtigung → HTTP 403.</li><li>Datei überschreitet Größelimit oder hat ungültigen Typ → HTTP 400, keine Persistenz.</li><li>Upload abgebrochen → keine Persistenz.</li><li>Anhang nicht vorhanden (bei Öffnen/Löschen) → HTTP 404.</li><li>Akteur bricht Sicherheitsfrage ab → keine Aktion, Anhang bleibt unverändert.</li><li>Technischer Fehler → HTTP 500, keine Teillöschung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>

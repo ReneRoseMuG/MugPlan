@@ -1,4 +1,4 @@
-﻿# UC 13/14: Wochen-Notizen einer Kalenderwoche anzeigen
+# UC 13/14: Wochen-Notizen einer Kalenderwoche anzeigen
 
 ## Metadaten
 
@@ -34,14 +34,14 @@ Alle einer Kalenderwoche zugeordneten Notizen vollständig und konsistent einseh
     - ggf. Pin-Symbol.
 7. Besitzt der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
 - Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
 - Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.
 - Technischer Fehler → HTTP 500, keine Anzeige.
-
-## Alternativen
 
 
 ## Ergebnis

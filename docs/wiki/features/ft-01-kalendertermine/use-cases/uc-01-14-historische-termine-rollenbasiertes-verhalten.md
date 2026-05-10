@@ -1,4 +1,4 @@
-﻿# UC 01/14: Historische Termine — Rollenbasiertes Verhalten
+# UC 01/14: Historische Termine — Rollenbasiertes Verhalten
 
 ## Metadaten
 
@@ -19,6 +19,7 @@ Sicherstellen, dass historische Termine für Disponenten unveränderbar sind, w�
 - Das System kennt die Rolle des authentifizierten Akteurs.
 - Das System verfügt über Validierung und Guard-Regeln, die historische Eingaben rollenbasiert blockieren oder erlauben.
 
+## Ablauf
 ### **Ablauf — Disponent**
 
 1. Der Disponent öffnet einen historischen Termin im Terminformular.
@@ -64,9 +65,6 @@ Sicherstellen, dass historische Termine für Disponenten unveränderbar sind, w�
 5. Der Administrator kann alle Felder bearbeiten: Datum, Uhrzeit, Projektzuordnung, Tourzuordnung, Mitarbeiterzuordnungen, Tags setzen/entfernen.
 6. Der Administrator kann den Termin löschen, verschieben und stornieren.
 7. Der Administrator kann neue Termine mit Startdatum in der Vergangenheit anlegen.
-
-## Ablauf
-
 
 ## Alternativen
 

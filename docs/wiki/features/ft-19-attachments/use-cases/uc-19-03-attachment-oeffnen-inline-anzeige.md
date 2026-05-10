@@ -1,4 +1,4 @@
-﻿# UC 19/03: Attachment öffnen (Inline-Anzeige)
+# UC 19/03: Attachment öffnen (Inline-Anzeige)
 
 ## Metadaten
 
@@ -32,7 +32,8 @@ Ein Attachment eines Parent-Objekts (Projekt, Kunde, Mitarbeiter oder Termin) di
     - Content-Disposition „inline“, sofern Dateityp Inline-Anzeige erlaubt.
 5. Der Browser zeigt die Datei an.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Dateityp nicht inlinefähig → System liefert Content-Disposition „attachment“.
 - Attachment existiert nicht → System antwortet mit 404.

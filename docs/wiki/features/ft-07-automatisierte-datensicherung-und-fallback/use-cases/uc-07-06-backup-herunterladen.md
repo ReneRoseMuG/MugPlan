@@ -1,4 +1,4 @@
-﻿# UC 07/06: Backup herunterladen
+# UC 07/06: Backup herunterladen
 
 ## Metadaten
 
@@ -12,12 +12,10 @@ Administrator
 
 Herunterladen eines gespeicherten Backups.
 
-Vorbedingungen:
-
-- Backup-Datei existiert serverseitig.
 
 ## Vorbedingungen
 
+- Backup-Datei existiert serverseitig.
 
 ## Ablauf
 

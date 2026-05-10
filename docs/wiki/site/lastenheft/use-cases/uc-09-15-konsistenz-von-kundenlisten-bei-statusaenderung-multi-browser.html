@@ -49,6 +49,7 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Kunde existiert.</li><li>Mindestens zwei Browser-Sitzungen sind aktiv.</li><li>Mindestens ein Akteur besitzt Administratorrechte.</li></ul>
 <hr>
+<h2 class="wiki-h2">Ablauf</h2>
 <h3 class="wiki-h3">Ablauf – Beispiel: Deaktivieren in Browser A</h3>
 <ol><li>Browser A (Administrator) öffnet die Kundendetailansicht eines aktiven Kunden.</li><li>Browser B (Disponent) zeigt eine Kundenliste mit diesem Kunden an.</li><li>Administrator in Browser A deaktiviert den Kunden.</li><li>Das System setzt <code>is_active = false</code> und persistiert die Änderung.</li><li>Browser B führt eine erneute Abfrage der Kundenliste aus (z. B. durch Seitenwechsel, Filterwechsel oder explizites Neuladen).</li><li>Das System liefert serverseitig gefilterte Daten gemäß Rolle.</li><li>Der deaktivierte Kunde erscheint nicht mehr in der Liste des Disponenten.</li></ol>
 <hr>
@@ -58,7 +59,6 @@
 <h3 class="wiki-h3">Konsistenzregeln</h3>
 <ul><li>Die Datenquelle ist ausschließlich serverseitig maßgeblich.</li><li>Es existiert keine clientseitige Cache-Logik, die serverseitige Filter übersteuern darf.</li><li>Jede neue Anfrage muss den aktuellen Persistenzzustand widerspiegeln.</li><li>Es ist nicht erforderlich, dass andere Browser aktiv gepusht werden; Konsistenz ist spätestens bei der nächsten Serverabfrage garantiert.</li></ul>
 <hr>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Browser verwendet veralteten lokalen Zustand → bei nächster Serveranfrage wird Zustand korrigiert.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <hr>

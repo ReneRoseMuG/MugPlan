@@ -1,4 +1,4 @@
-﻿# UC 19/01: Attachment hochladen
+# UC 19/01: Attachment hochladen
 
 ## Metadaten
 
@@ -38,7 +38,8 @@ Eine Datei einem bestehenden Parent-Objekt (Projekt, Kunde, Mitarbeiter oder Ter
 9. Das System speichert Metadaten (Originaldateiname, persistenter Speichername, MIME-Typ, Dateigröße, Erstellungszeitpunkt).
 10. Das System aktualisiert die Attachmentliste in der UI.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Der Akteur bricht den Upload vor Bestätigung ab → Es wird kein Attachment gespeichert.
 - Das Parent-Objekt existiert nicht → System antwortet mit 404.

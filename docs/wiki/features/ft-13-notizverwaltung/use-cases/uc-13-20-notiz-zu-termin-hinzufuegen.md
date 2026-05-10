@@ -1,4 +1,4 @@
-﻿# UC 13/20: Notiz zu Termin hinzufügen
+# UC 13/20: Notiz zu Termin hinzufügen
 
 ## Metadaten
 
@@ -40,7 +40,9 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Termin zuordnen.
 13. Das System speichert die Notiz persistent.
 14. Das System aktualisiert die Notizliste im Terminformular und in allen Terminkontexten gemäß Sortierlogik.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder fehlen → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
@@ -48,8 +50,6 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Termin zuordnen.
 - Der Termin ist historisch → Das System blockiert die Aktion; Notizen an historischen Terminen können nicht angelegt werden.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler bei Speicherung → HTTP 500, keine persistente Notiz entsteht.
-
-## Alternativen
 
 
 ## Ergebnis

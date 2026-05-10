@@ -52,9 +52,8 @@
 <p>Der Akteur wählt ein Team zum Löschen aus.</p>
 <h2 class="wiki-h2">Ablauf</h2>
 <ol><li>Der Akteur startet „Team löschen“.</li><li>Das System fordert eine Bestätigung an.</li><li>Der Akteur bestätigt den Löschvorgang.</li><li>Das System prüft serverseitig die Versionskennung.</li><li>Das System setzt bei allen Mitarbeitern dieses Teams das Feld <code>team_id = null</code>.</li><li>Das System löscht das Team.</li></ol>
-<h3 class="wiki-h3">Alternativabläufe</h3>
-<ul><li>Versionskonflikt → Das System antwortet mit 409 Conflict, keine Löschung.</li><li>Abbruch durch den Akteur → Keine Löschung.</li><li>Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Versionskonflikt → Das System antwortet mit 409 Conflict, keine Löschung.</li><li>Abbruch durch den Akteur → Keine Löschung.</li><li>Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Das Team existiert nicht mehr.</li><li>Alle ehemals zugeordneten Mitarbeiter besitzen <code>team_id = null</code>.</li><li>Kein verwaister Zustand entsteht.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">

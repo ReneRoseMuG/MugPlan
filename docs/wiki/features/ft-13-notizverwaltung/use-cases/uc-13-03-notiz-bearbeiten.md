@@ -1,4 +1,4 @@
-﻿# UC 13/03: Notiz bearbeiten
+# UC 13/03: Notiz bearbeiten
 
 ## Metadaten
 
@@ -35,7 +35,9 @@ Eine bestehende Notiz ändern, ohne parallele Änderungen anderer Akteure still 
 8. Das System erhöht das Versionsmerkmal und setzt `updated_at` auf den aktuellen Zeitstempel.
 9. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder ungültig → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
@@ -43,8 +45,6 @@ Eine bestehende Notiz ändern, ohne parallele Änderungen anderer Akteure still 
 - Versionskonflikt (Notiz wurde zwischenzeitlich von einem anderen Akteur geändert oder gelöscht) → Das System antwortet mit HTTP 409 Conflict, speichert keine Änderungen und fordert den Akteur zum Neuladen des aktuellen Stands auf.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → HTTP 500, keine Änderung wird gespeichert.
-
-## Alternativen
 
 
 ## Ergebnis

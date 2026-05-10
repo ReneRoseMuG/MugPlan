@@ -1,4 +1,4 @@
-﻿# UC 11/02: Team bearbeiten
+# UC 11/02: Team bearbeiten
 
 ## Metadaten
 
@@ -41,14 +41,14 @@ Der Akteur öffnet ein bestehendes Team zur Bearbeitung.
 8. Das System erhöht die Versionskennung des Teams.
 9. Das System persistiert die Änderungen atomar.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Versionskennung hat sich zwischenzeitlich geändert → Das System antwortet mit 409 Conflict, keine Persistierung.
 - Ein neu hinzugefügter Mitarbeiter wurde parallel einem anderen Team zugeordnet → Das System antwortet mit 409 Conflict, keine Persistierung.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.
-
-## Alternativen
 
 
 ## Ergebnis

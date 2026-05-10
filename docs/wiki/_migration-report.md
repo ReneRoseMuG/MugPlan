@@ -65,7 +65,6 @@ Stand: 09.05.26
 | UC-02/17 | FT-02 | ? OK | 46 | Bereits bef?llt; nicht ?berschrieben. |
 | UC-02/18 | FT-02 | ? OK | 45 | Bereits bef?llt; nicht ?berschrieben. |
 | UC-02/19 | FT-02 | ? OK | 38 | Bereits bef?llt; nicht ?berschrieben. |
-| UC-02/20 | FT-02 | ? LEER | 23 | Notion-Quellinhalt enth?lt nur ENTFERNT-/Duplikat-?berschrift ohne fachliche Abschnitte. |
 | UC-02/21 | FT-02 | ? OK | 119 | Bereits bef?llt; nicht ?berschrieben. |
 | UC-02/22 | FT-02 | ? OK | 44 | Bereits bef?llt; nicht ?berschrieben. |
 | UC-02/23 | FT-02 | ? OK | 39 | Bereits bef?llt; nicht ?berschrieben. |

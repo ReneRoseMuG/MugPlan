@@ -11,6 +11,8 @@ import type {
 } from "@shared/routes";
 
 import { Button } from "@/components/ui/button";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
+import { normalizeServerError } from "@/lib/error-normalization";
 
 type ReportPresetControlsProps = {
   reportKey: ReportConfigReportKey;
@@ -30,7 +32,8 @@ type ReportPresetListResponse = {
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: "include", ...init });
   if (!response.ok) {
-    throw new Error((await response.text()) || `Request failed for ${url}`);
+    const bodyText = await response.text();
+    throw new Error(`${response.status}: ${bodyText || `Request failed for ${url}`}`);
   }
   return response.json() as Promise<T>;
 }
@@ -61,7 +64,7 @@ export function ReportPresetControls({
   const [selectedPresetId, setSelectedPresetId] = React.useState("");
   const [actions, setActions] = React.useState<ReportPresetAction[]>(["GENERATE_REPORT"]);
   const queryKey = ["report-configs", reportKey];
-  const { data } = useQuery<ReportPresetListResponse>({
+  const { data, error: presetsError, isError: isPresetsError } = useQuery<ReportPresetListResponse>({
     queryKey,
     queryFn: () => fetchJson(`/api/report-configs/${reportKey}`),
   });
@@ -104,12 +107,23 @@ export function ReportPresetControls({
   const canDeleteSelected = Boolean(selectedPreset && (selectedPreset.scope === "USER" || isAdmin));
   const isSaving = saveMutation.isPending;
   const isDeleting = deleteMutation.isPending;
+  const inlineError =
+    isPresetsError
+      ? normalizeServerError(presetsError, { title: "Presets konnten nicht geladen werden" })
+      : saveMutation.error
+        ? normalizeServerError(saveMutation.error, { title: "Preset konnte nicht gespeichert werden" })
+        : deleteMutation.error
+          ? normalizeServerError(deleteMutation.error, { title: "Preset konnte nicht gelöscht werden" })
+          : null;
 
   return (
     <div
       className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 text-xs text-slate-700"
       data-testid={`${testIdPrefix}-preset-controls`}
     >
+      {inlineError ? (
+        <DialogBaseInlineMessage className="text-sm" error={inlineError} />
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={selectedPresetId}

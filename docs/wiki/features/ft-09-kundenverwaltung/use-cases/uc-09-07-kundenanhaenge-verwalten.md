@@ -1,4 +1,4 @@
-﻿# UC 09/07: Kundenanhänge verwalten
+# UC 09/07: Kundenanhänge verwalten
 
 ## Metadaten
 
@@ -19,9 +19,12 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 - Der Akteur besitzt Leserechte; für Upload zusätzlich Änderungsrechte.
 - Die hochzuladende Datei entspricht erlaubten Formaten und Größenbeschränkungen.
 
+
+## Ablauf
+
 ---
 
-## Ablauf – Anhang hochladen
+### Ablauf – Anhang hochladen
 
 1. Der Akteur öffnet die Kundendetailansicht.
 2. Der Akteur startet die Funktion „Anhang hinzufügen“.
@@ -38,7 +41,7 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 
 ---
 
-## Ablauf – Anhang anzeigen / herunterladen
+### Ablauf – Anhang anzeigen / herunterladen
 
 1. Der Akteur öffnet die Anhangsliste des Kunden.
 2. Das System lädt alle dem Kunden zugeordneten Attachments.
@@ -48,19 +51,13 @@ Dokumente werden einem Kunden zugeordnet, angezeigt und heruntergeladen, ohne di
 
 ---
 
-## Regeln und Einschränkungen
+### Regeln und Einschränkungen
 
 - Ein Attachment kann nicht ohne Parent-Kunde existieren.
 - Attachments sind kundenbezogen und unabhängig von Projekten.
 - Eine physische Löschung von Attachments ist systemweit nicht vorgesehen.
 - Das Löschen eines Kunden entfernt referenzierte Notizen (CASCADE), jedoch keine physische Dateilöschung ist spezifiziert.
 - Mehrere Akteure können parallel Anhänge hochladen; jeder Upload erzeugt einen eigenständigen Attachment-Datensatz.
-
----
-
-## Ablauf
-
-
 ## Alternativen
 
 - Kunde existiert nicht → System antwortet mit 404.

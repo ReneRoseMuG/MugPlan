@@ -50,7 +50,7 @@
 <ul><li>Ein Parent-Objekt (Projekt, Kunde, Mitarbeiter oder Termin) existiert.</li><li>Dem Parent-Objekt sind ein oder mehrere Attachments zugeordnet.</li><li>Der Akteur besitzt Löschrechte für das Parent-Objekt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
 <ol><li>Der Akteur initiiert die Löschung des Parent-Objekts.</li><li>Das System prüft die Berechtigung des Akteurs.</li><li>Das System prüft referenzielle Integrität.</li><li>Das System entfernt den Parent-Datensatz gemäß den Regeln des jeweiligen Features.</li><li>Das System stellt sicher, dass Attachment-Datensätze nicht ohne Parent-Zuordnung bestehen bleiben.</li><li>Das System verhindert verwaiste Fremdschlüsselzustände.</li></ol>
-<p><strong>Alternativabläufe</strong></p>
+<h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Parent-Objekt existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Löschrechte → System blockiert mit 403.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
 <h2 class="wiki-h2">Ergebnis</h2>

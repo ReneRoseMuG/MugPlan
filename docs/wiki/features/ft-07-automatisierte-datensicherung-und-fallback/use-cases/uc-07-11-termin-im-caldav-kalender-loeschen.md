@@ -1,4 +1,4 @@
-﻿# UC 07/11: Termin im CalDAV-Kalender löschen
+# UC 07/11: Termin im CalDAV-Kalender löschen
 
 ## Metadaten
 
@@ -12,13 +12,11 @@ System
 
 Externes Event entfernen.
 
-Vorbedingungen:
-
-- Termin wird intern gelöscht.
-- external_event_id ist vorhanden.
 
 ## Vorbedingungen
 
+- Termin wird intern gelöscht.
+- external_event_id ist vorhanden.
 
 ## Ablauf
 

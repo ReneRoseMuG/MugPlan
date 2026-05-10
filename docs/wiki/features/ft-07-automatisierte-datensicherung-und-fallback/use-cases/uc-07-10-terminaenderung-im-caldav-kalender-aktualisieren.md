@@ -1,4 +1,4 @@
-﻿# UC 07/10: Terminänderung im CalDAV-Kalender aktualisieren
+# UC 07/10: Terminänderung im CalDAV-Kalender aktualisieren
 
 ## Metadaten
 
@@ -12,12 +12,10 @@ System
 
 Externen Kalender an geänderten Termin anpassen.
 
-Vorbedingungen:
-
-- Termin besitzt external_event_id.
 
 ## Vorbedingungen
 
+- Termin besitzt external_event_id.
 
 ## Ablauf
 

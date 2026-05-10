@@ -16,13 +16,13 @@
     "features": {
       "source_count": 25,
       "generated_count": 25,
-      "warnings": 1,
+      "warnings": 0,
       "errors": 0
     },
     "use_cases": {
-      "source_count": 239,
-      "generated_count": 239,
-      "warnings": 63,
+      "source_count": 238,
+      "generated_count": 238,
+      "warnings": 0,
       "errors": 0
     },
     "backlogs": {
@@ -38,478 +38,14 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 55,
-      "generated_count": 55,
+      "source_count": 57,
+      "generated_count": 57,
       "warnings": 0,
       "errors": 0
     }
   },
   "errors": [],
-  "warnings": [
-    {
-      "type": "features",
-      "id": "FT-24",
-      "title": "Fahrzeugverwaltung",
-      "messages": [
-        "Keine lokale Use-Case-Datei zugeordnet"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-01/07",
-      "title": "Mitarbeiter über Team zuweisen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Akteur"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-01/14",
-      "title": "Historische Termine — Rollenbasiertes Verhalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-02/05",
-      "title": "Projektnotizen pflegen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-02/06",
-      "title": "Projektanhänge verwalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-02/16",
-      "title": "Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf",
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-02/20",
-      "title": "ENTFERNT — Duplikat von UC 02/13",
-      "messages": [
-        "Abschnitt ohne Inhalt: Akteur",
-        "Abschnitt ohne Inhalt: Ziel",
-        "Abschnitt ohne Inhalt: Vorbedingungen",
-        "Abschnitt ohne Inhalt: Ablauf",
-        "Abschnitt ohne Inhalt: Alternativen",
-        "Abschnitt ohne Inhalt: Ergebnis"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-02/26",
-      "title": "Auftragspositionen verwalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-05/03",
-      "title": "Mitarbeiter-Termine anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-05/06",
-      "title": "Mitarbeiteranhänge verwalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-05/07",
-      "title": "Mitarbeiter anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/05",
-      "title": "Backup-Historie einsehen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/06",
-      "title": "Backup herunterladen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/08",
-      "title": "Termin in externen Kalender übertragen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/09",
-      "title": "Synchronisationsfehler protokollieren",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/10",
-      "title": "Terminänderung im CalDAV-Kalender aktualisieren",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-07/11",
-      "title": "Termin im CalDAV-Kalender löschen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Vorbedingungen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-09/07",
-      "title": "Kundenanhänge verwalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-09/10",
-      "title": "Parallelkonflikt bei Statuswechsel (Deaktivieren vs. Reaktivieren)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-09/11",
-      "title": "Rollenabhängige Filterung von Kundenlisten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-09/15",
-      "title": "Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-09/16",
-      "title": "Statusänderung des Kunden während Notiz- oder Attachment-Operation",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-11/01",
-      "title": "Team anlegen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-11/02",
-      "title": "Team bearbeiten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-11/03",
-      "title": "Team löschen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-11/04",
-      "title": "Team anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/02",
-      "title": "Notiz zu Kunde hinzufügen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/03",
-      "title": "Notiz bearbeiten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/04",
-      "title": "Notiz löschen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/05",
-      "title": "Notizen eines Projekts anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/06",
-      "title": "Notizen eines Kunden anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/07",
-      "title": "Notiz anpinnen / Pinning aufheben",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/08",
-      "title": "Notizvorlage erstellen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/09",
-      "title": "Notizvorlage bearbeiten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/10",
-      "title": "Notizvorlage deaktivieren/aktivieren",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/11",
-      "title": "Notizvorlage löschen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/12",
-      "title": "Notizen bei zulässiger Projektlöschung kaskadierend entfernen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/13",
-      "title": "Wochen-Notiz anlegen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/14",
-      "title": "Wochen-Notizen einer Kalenderwoche anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/15",
-      "title": "Wochen-Notiz bearbeiten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/16",
-      "title": "Wochen-Notiz löschen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/17",
-      "title": "Wochen-Notizen in Druckausgabe der Kalenderwoche ausgeben",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/18",
-      "title": "Notiz zu Mitarbeiter hinzufügen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/19",
-      "title": "Notizen eines Mitarbeiters anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/20",
-      "title": "Notiz zu Termin hinzufügen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-13/21",
-      "title": "Notizen eines Termins anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-16/02",
-      "title": "Hilfetext anlegen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Akteur"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/01",
-      "title": "Attachment hochladen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/02",
-      "title": "Attachmentliste anzeigen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/03",
-      "title": "Attachment öffnen (Inline-Anzeige)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/04",
-      "title": "Attachment herunterladen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/05",
-      "title": "Attachment-Upload validieren (Größe / Typ)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/06",
-      "title": "Lösch-Workflow initiieren (Action Button)",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/07",
-      "title": "Verhalten bei Löschung eines Parent-Objekts",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/08",
-      "title": "Serverseitige Berechtigungsprüfung bei Attachment-Zugriff",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/09",
-      "title": "Attachment an Termin verwalten",
-      "messages": [
-        "Abschnitt ohne Inhalt: Ablauf",
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    },
-    {
-      "type": "use_cases",
-      "id": "UC-19/10",
-      "title": "Attachment-Duplikat entfernen",
-      "messages": [
-        "Abschnitt ohne Inhalt: Alternativen"
-      ]
-    }
-  ],
+  "warnings": [],
   "items": {
     "projects": [
       {
@@ -686,15 +222,6 @@
         "errors": []
       },
       {
-        "id": "A-29",
-        "title": "Reports- und Druck-Dialoge",
-        "source": "tasks/reports-und-druck-dialoge.md",
-        "output": "projekt/aufgaben/reports-und-druck-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-32",
         "title": "FT-34 Kalendermarker: Testlücken schließen",
         "source": "tasks/ft34-kalendermarker-testluecken.md",
@@ -762,6 +289,15 @@
         "title": "FT-02 Projekte: Test-Lücken schließen",
         "source": "tasks/ft02-projekte-testluecken-schliessen.md",
         "output": "projekt/aufgaben/ft02-projekte-testluecken-schliessen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "A-40",
+        "title": "Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel",
+        "source": "tasks/projekt-speichern-dialog-artikelliste-saunatitel.md",
+        "output": "projekt/aufgaben/projekt-speichern-dialog-artikelliste-saunatitel.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -927,9 +463,7 @@
         "source": "features/ft-24-fahrzeugverwaltung/ft-24-fahrzeugverwaltung.md",
         "output": "lastenheft/features/ft-24-fahrzeugverwaltung.html",
         "ok": true,
-        "warnings": [
-          "Keine lokale Use-Case-Datei zugeordnet"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1057,9 +591,7 @@
         "source": "features/ft-01-kalendertermine/use-cases/uc-01-07-mitarbeiter-ueber-team-zuweisen.md",
         "output": "lastenheft/use-cases/uc-01-07-mitarbeiter-ueber-team-zuweisen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Akteur"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1122,9 +654,7 @@
         "source": "features/ft-01-kalendertermine/use-cases/uc-01-14-historische-termine-rollenbasiertes-verhalten.md",
         "output": "lastenheft/use-cases/uc-01-14-historische-termine-rollenbasiertes-verhalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1241,9 +771,7 @@
         "source": "features/ft-02-projekte/use-cases/uc-02-05-projektnotizen-pflegen.md",
         "output": "lastenheft/use-cases/uc-02-05-projektnotizen-pflegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1252,9 +780,7 @@
         "source": "features/ft-02-projekte/use-cases/uc-02-06-projektanhaenge-verwalten.md",
         "output": "lastenheft/use-cases/uc-02-06-projektanhaenge-verwalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1344,10 +870,7 @@
         "source": "features/ft-02-projekte/use-cases/uc-02-16-projekt-referenz-konsistenz-projekt-kunde.md",
         "output": "lastenheft/use-cases/uc-02-16-projekt-referenz-konsistenz-projekt-kunde.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf",
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1375,22 +898,6 @@
         "output": "lastenheft/use-cases/uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.html",
         "ok": true,
         "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "UC-02/20",
-        "title": "ENTFERNT — Duplikat von UC 02/13",
-        "source": "features/ft-02-projekte/use-cases/uc-02-20-entfernt-duplikat-von-uc-02-13.md",
-        "output": "lastenheft/use-cases/uc-02-20-entfernt-duplikat-von-uc-02-13.html",
-        "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Akteur",
-          "Abschnitt ohne Inhalt: Ziel",
-          "Abschnitt ohne Inhalt: Vorbedingungen",
-          "Abschnitt ohne Inhalt: Ablauf",
-          "Abschnitt ohne Inhalt: Alternativen",
-          "Abschnitt ohne Inhalt: Ergebnis"
-        ],
         "errors": []
       },
       {
@@ -1435,9 +942,7 @@
         "source": "features/ft-02-projekte/use-cases/uc-02-26-auftragspositionen-verwalten.md",
         "output": "lastenheft/use-cases/uc-02-26-auftragspositionen-verwalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1644,9 +1149,7 @@
         "source": "features/ft-05-mitarbeiterverwaltung/use-cases/uc-05-03-mitarbeiter-termine-anzeigen.md",
         "output": "lastenheft/use-cases/uc-05-03-mitarbeiter-termine-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1673,9 +1176,7 @@
         "source": "features/ft-05-mitarbeiterverwaltung/use-cases/uc-05-06-mitarbeiteranhaenge-verwalten.md",
         "output": "lastenheft/use-cases/uc-05-06-mitarbeiteranhaenge-verwalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1684,9 +1185,7 @@
         "source": "features/ft-05-mitarbeiterverwaltung/use-cases/uc-05-07-mitarbeiter-anzeigen.md",
         "output": "lastenheft/use-cases/uc-05-07-mitarbeiter-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1830,9 +1329,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-05-backup-historie-einsehen.md",
         "output": "lastenheft/use-cases/uc-07-05-backup-historie-einsehen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1841,9 +1338,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-06-backup-herunterladen.md",
         "output": "lastenheft/use-cases/uc-07-06-backup-herunterladen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1861,9 +1356,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-08-termin-in-externen-kalender-uebertragen.md",
         "output": "lastenheft/use-cases/uc-07-08-termin-in-externen-kalender-uebertragen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1872,9 +1365,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-09-synchronisationsfehler-protokollieren.md",
         "output": "lastenheft/use-cases/uc-07-09-synchronisationsfehler-protokollieren.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1883,9 +1374,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-10-terminaenderung-im-caldav-kalender-aktualisieren.md",
         "output": "lastenheft/use-cases/uc-07-10-terminaenderung-im-caldav-kalender-aktualisieren.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -1894,9 +1383,7 @@
         "source": "features/ft-07-automatisierte-datensicherung-und-fallback/use-cases/uc-07-11-termin-im-caldav-kalender-loeschen.md",
         "output": "lastenheft/use-cases/uc-07-11-termin-im-caldav-kalender-loeschen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Vorbedingungen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2022,9 +1509,7 @@
         "source": "features/ft-09-kundenverwaltung/use-cases/uc-09-07-kundenanhaenge-verwalten.md",
         "output": "lastenheft/use-cases/uc-09-07-kundenanhaenge-verwalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2051,9 +1536,7 @@
         "source": "features/ft-09-kundenverwaltung/use-cases/uc-09-10-parallelkonflikt-bei-statuswechsel-deaktivieren-vs-reaktivieren.md",
         "output": "lastenheft/use-cases/uc-09-10-parallelkonflikt-bei-statuswechsel-deaktivieren-vs-reaktivieren.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2062,9 +1545,7 @@
         "source": "features/ft-09-kundenverwaltung/use-cases/uc-09-11-rollenabhaengige-filterung-von-kundenlisten.md",
         "output": "lastenheft/use-cases/uc-09-11-rollenabhaengige-filterung-von-kundenlisten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2100,9 +1581,7 @@
         "source": "features/ft-09-kundenverwaltung/use-cases/uc-09-15-konsistenz-von-kundenlisten-bei-statusaenderung-multi-browser.md",
         "output": "lastenheft/use-cases/uc-09-15-konsistenz-von-kundenlisten-bei-statusaenderung-multi-browser.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2111,9 +1590,7 @@
         "source": "features/ft-09-kundenverwaltung/use-cases/uc-09-16-statusaenderung-des-kunden-waehrend-notiz-oder-attachment-operation.md",
         "output": "lastenheft/use-cases/uc-09-16-statusaenderung-des-kunden-waehrend-notiz-oder-attachment-operation.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2158,9 +1635,7 @@
         "source": "features/ft-11-team-verwaltung/use-cases/uc-11-01-team-anlegen.md",
         "output": "lastenheft/use-cases/uc-11-01-team-anlegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2169,9 +1644,7 @@
         "source": "features/ft-11-team-verwaltung/use-cases/uc-11-02-team-bearbeiten.md",
         "output": "lastenheft/use-cases/uc-11-02-team-bearbeiten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2180,9 +1653,7 @@
         "source": "features/ft-11-team-verwaltung/use-cases/uc-11-03-team-loeschen.md",
         "output": "lastenheft/use-cases/uc-11-03-team-loeschen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2191,9 +1662,7 @@
         "source": "features/ft-11-team-verwaltung/use-cases/uc-11-04-team-anzeigen.md",
         "output": "lastenheft/use-cases/uc-11-04-team-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2211,9 +1680,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-02-notiz-zu-kunde-hinzufuegen.md",
         "output": "lastenheft/use-cases/uc-13-02-notiz-zu-kunde-hinzufuegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2222,9 +1689,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-03-notiz-bearbeiten.md",
         "output": "lastenheft/use-cases/uc-13-03-notiz-bearbeiten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2233,9 +1698,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-04-notiz-loeschen.md",
         "output": "lastenheft/use-cases/uc-13-04-notiz-loeschen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2244,9 +1707,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-05-notizen-eines-projekts-anzeigen.md",
         "output": "lastenheft/use-cases/uc-13-05-notizen-eines-projekts-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2255,9 +1716,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-06-notizen-eines-kunden-anzeigen.md",
         "output": "lastenheft/use-cases/uc-13-06-notizen-eines-kunden-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2266,9 +1725,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-07-notiz-anpinnen-pinning-aufheben.md",
         "output": "lastenheft/use-cases/uc-13-07-notiz-anpinnen-pinning-aufheben.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2277,9 +1734,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-08-notizvorlage-erstellen.md",
         "output": "lastenheft/use-cases/uc-13-08-notizvorlage-erstellen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2288,9 +1743,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-09-notizvorlage-bearbeiten.md",
         "output": "lastenheft/use-cases/uc-13-09-notizvorlage-bearbeiten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2299,9 +1752,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-10-notizvorlage-deaktivieren-aktivieren.md",
         "output": "lastenheft/use-cases/uc-13-10-notizvorlage-deaktivieren-aktivieren.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2310,9 +1761,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-11-notizvorlage-loeschen.md",
         "output": "lastenheft/use-cases/uc-13-11-notizvorlage-loeschen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2321,9 +1770,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-12-notizen-bei-zulaessiger-projektloeschung-kaskadierend-entfernen.md",
         "output": "lastenheft/use-cases/uc-13-12-notizen-bei-zulaessiger-projektloeschung-kaskadierend-entfernen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2332,9 +1779,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-13-wochen-notiz-anlegen.md",
         "output": "lastenheft/use-cases/uc-13-13-wochen-notiz-anlegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2343,9 +1788,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-14-wochen-notizen-einer-kalenderwoche-anzeigen.md",
         "output": "lastenheft/use-cases/uc-13-14-wochen-notizen-einer-kalenderwoche-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2354,9 +1797,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-15-wochen-notiz-bearbeiten.md",
         "output": "lastenheft/use-cases/uc-13-15-wochen-notiz-bearbeiten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2365,9 +1806,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-16-wochen-notiz-loeschen.md",
         "output": "lastenheft/use-cases/uc-13-16-wochen-notiz-loeschen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2376,9 +1815,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-17-wochen-notizen-in-druckausgabe-der-kalenderwoche-ausgeben.md",
         "output": "lastenheft/use-cases/uc-13-17-wochen-notizen-in-druckausgabe-der-kalenderwoche-ausgeben.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2387,9 +1824,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-18-notiz-zu-mitarbeiter-hinzufuegen.md",
         "output": "lastenheft/use-cases/uc-13-18-notiz-zu-mitarbeiter-hinzufuegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2398,9 +1833,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-19-notizen-eines-mitarbeiters-anzeigen.md",
         "output": "lastenheft/use-cases/uc-13-19-notizen-eines-mitarbeiters-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2409,9 +1842,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-20-notiz-zu-termin-hinzufuegen.md",
         "output": "lastenheft/use-cases/uc-13-20-notiz-zu-termin-hinzufuegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2420,9 +1851,7 @@
         "source": "features/ft-13-notizverwaltung/use-cases/uc-13-21-notizen-eines-termins-anzeigen.md",
         "output": "lastenheft/use-cases/uc-13-21-notizen-eines-termins-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2503,9 +1932,7 @@
         "source": "features/ft-16-hilfetexte-verwalten/use-cases/uc-16-02-hilfetext-anlegen.md",
         "output": "lastenheft/use-cases/uc-16-02-hilfetext-anlegen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Akteur"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2622,9 +2049,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-01-attachment-hochladen.md",
         "output": "lastenheft/use-cases/uc-19-01-attachment-hochladen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2633,9 +2058,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-02-attachmentliste-anzeigen.md",
         "output": "lastenheft/use-cases/uc-19-02-attachmentliste-anzeigen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2644,9 +2067,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-03-attachment-oeffnen-inline-anzeige.md",
         "output": "lastenheft/use-cases/uc-19-03-attachment-oeffnen-inline-anzeige.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2655,9 +2076,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-04-attachment-herunterladen.md",
         "output": "lastenheft/use-cases/uc-19-04-attachment-herunterladen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2666,9 +2085,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-05-attachment-upload-validieren-groesse-typ.md",
         "output": "lastenheft/use-cases/uc-19-05-attachment-upload-validieren-groesse-typ.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2677,9 +2094,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-06-loesch-workflow-initiieren-action-button.md",
         "output": "lastenheft/use-cases/uc-19-06-loesch-workflow-initiieren-action-button.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2688,9 +2103,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-07-verhalten-bei-loeschung-eines-parent-objekts.md",
         "output": "lastenheft/use-cases/uc-19-07-verhalten-bei-loeschung-eines-parent-objekts.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2699,9 +2112,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-08-serverseitige-berechtigungspruefung-bei-attachment-zugriff.md",
         "output": "lastenheft/use-cases/uc-19-08-serverseitige-berechtigungspruefung-bei-attachment-zugriff.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2710,10 +2121,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-09-attachment-an-termin-verwalten.md",
         "output": "lastenheft/use-cases/uc-19-09-attachment-an-termin-verwalten.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Ablauf",
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -2722,9 +2130,7 @@
         "source": "features/ft-19-attachments/use-cases/uc-19-10-attachment-duplikat-entfernen.md",
         "output": "lastenheft/use-cases/uc-19-10-attachment-duplikat-entfernen.html",
         "ok": true,
-        "warnings": [
-          "Abschnitt ohne Inhalt: Alternativen"
-        ],
+        "warnings": [],
         "errors": []
       },
       {
@@ -3503,6 +2909,24 @@
         "title": "10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge",
         "source": "journal/10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen.md",
         "output": "verwaltung/journal/10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "10-05-26-p01-reports-druck-dialoge-abgeschlossen",
+        "title": "10.05.26 | Abschluss | P01 Reports- und Druck-Dialoge",
+        "source": "journal/10-05-26-p01-reports-druck-dialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/10-05-26-p01-reports-druck-dialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "10-05-26-wiki-use-case-warnungen-bereinigt",
+        "title": "10.05.26 | Wiki | Use-Case-Warnungen bereinigt",
+        "source": "journal/10-05-26-wiki-use-case-warnungen-bereinigt.md",
+        "output": "verwaltung/journal/10-05-26-wiki-use-case-warnungen-bereinigt.html",
         "ok": true,
         "warnings": [],
         "errors": []

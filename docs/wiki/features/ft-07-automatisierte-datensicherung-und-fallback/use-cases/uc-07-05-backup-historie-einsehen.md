@@ -1,4 +1,4 @@
-﻿# UC 07/05: Backup-Historie einsehen
+# UC 07/05: Backup-Historie einsehen
 
 ## Metadaten
 
@@ -12,12 +12,10 @@ Administrator
 
 Nachvollziehen aller Backup-Läufe.
 
-Vorbedingungen:
-
-- Administrator ist angemeldet.
 
 ## Vorbedingungen
 
+- Administrator ist angemeldet.
 
 ## Ablauf
 

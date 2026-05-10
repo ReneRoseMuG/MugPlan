@@ -442,10 +442,7 @@ function scanFile(filePath) {
     return decoded.findings;
   }
 
-  return getAddedLines(filePath).flatMap((line) => [
-    ...scanMojibake(line.lineText, filePath, line.lineNumber),
-    ...scanAsciiUmlauts(line.lineText, filePath, line.lineNumber),
-  ]);
+  return getAddedLines(filePath).flatMap((line) => scanMojibake(line.lineText, filePath, line.lineNumber));
 }
 
 const files = getStagedFiles().filter(shouldScanFile);

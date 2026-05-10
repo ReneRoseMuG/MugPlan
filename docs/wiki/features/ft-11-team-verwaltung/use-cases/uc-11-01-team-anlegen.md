@@ -1,4 +1,4 @@
-﻿# UC 11/01: Team anlegen
+# UC 11/01: Team anlegen
 
 ## Metadaten
 
@@ -36,15 +36,15 @@ Der Akteur startet die Funktion „Team anlegen“.
 7. Das System setzt für jeden ausgewählten Mitarbeiter das Feld `team_id` auf die ID des neu angelegten Teams.
 8. Das System erzeugt eine Versionskennung für das Team.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Keine Mitarbeiter ausgewählt → Das System lehnt die Speicherung ab und fordert zur Auswahl auf.
 - Ein ausgewählter Mitarbeiter ist zwischenzeitlich einem anderen Team zugeordnet worden → Das System antwortet mit 409 Conflict, es erfolgt keine Persistierung.
 - Versionskonflikt bei paralleler Anlage mit identischer Bezeichnung → Das System behandelt dies gemäß allgemeiner Persistenzregeln.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.
-
-## Alternativen
 
 
 ## Ergebnis

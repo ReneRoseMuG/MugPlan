@@ -54,9 +54,8 @@
 <ol><li>Das System rendert die Notizen als vertikale Kärtchenliste.</li><li>Jede Notiz zeigt mindestens:</li></ol>
 <ul><li>Titel,</li><li>Beschreibung (Richtext formatiert),</li><li>visuelle Kennzeichnung bei gesetzter <code>color</code>,</li><li>ggf. Pin-Symbol.</li></ul>
 <ol><li>Besitzt der Akteur ausschließlich Leserechte, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.</li></ol>
-<h3 class="wiki-h3">Alternativabläufe</h3>
-<ul><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.</li><li>Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.</li><li>Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.</li><li>Technischer Fehler → HTTP 500, keine Anzeige.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.</li><li>Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.</li><li>Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.</li><li>Technischer Fehler → HTTP 500, keine Anzeige.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Alle Wochen-Notizen dieser Kalenderwoche sind konsistent sichtbar.</li><li>Es werden ausschließlich Notizen dieser Woche angezeigt.</li><li>Die Sortierung ist deterministisch und reproduzierbar.</li><li>Die Anzeige verändert keine persistierten Daten.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">

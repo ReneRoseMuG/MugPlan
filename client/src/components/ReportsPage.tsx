@@ -41,7 +41,7 @@ import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { PrintSlimHeader } from "@/components/print/PrintSlimHeader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
 import { ListLayout } from "@/components/ui/list-layout";
 import { ListPagingFooter } from "@/components/ui/list-paging-footer";
@@ -78,6 +78,7 @@ import {
   type VorlauflistePrintColumn,
 } from "@/lib/vorlaufliste-print-model";
 import { formatDisplayDate } from "@/lib/date-display-format";
+import { normalizeServerError } from "@/lib/error-normalization";
 
 type ReportType = "vorlaufliste" | "produktionsplanung" | "auftragsliste";
 
@@ -381,7 +382,8 @@ function resolveVorlauflisteArticleValue(row: Pick<VorlauflisteItem, "articleVal
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { credentials: "include", ...init });
   if (!response.ok) {
-    throw new Error((await response.text()) || `Request failed for ${url}`);
+    const bodyText = await response.text();
+    throw new Error(`${response.status}: ${bodyText || `Request failed for ${url}`}`);
   }
   return response.json() as Promise<T>;
 }
@@ -839,7 +841,12 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const persistProduktionsplanungRangeConfig = async (_next: Partial<ProduktionsplanungRangeConfig>) => undefined;
   const persistAuftragslisteRangeConfig = async (_next: Partial<AuftragslisteRangeConfig>) => undefined;
 
-  const { data: vorlauflisteData, isLoading: isVorlauflisteLoading } = useQuery<VorlauflisteResponse>({
+  const {
+    data: vorlauflisteData,
+    error: vorlauflisteError,
+    isLoading: isVorlauflisteLoading,
+    isError: isVorlauflisteError,
+  } = useQuery<VorlauflisteResponse>({
     queryKey: ["reports-vorlaufliste", submittedFilters, reportRequestId, page],
     enabled: submittedFilters?.reportType === "vorlaufliste" && isReportOverlayOpen,
     queryFn: async () => {
@@ -855,6 +862,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   });
   const {
     data: vorlauflistePrintPreviewData,
+    error: vorlauflistePrintPreviewError,
     isLoading: isVorlauflistePrintPreviewLoading,
     isError: isVorlauflistePrintPreviewError,
   } = useQuery<VorlauflistePrintPreviewResponse>({
@@ -867,7 +875,12 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     }), { cache: "no-store" }),
   });
 
-  const { data: produktionsplanungData, isLoading: isProduktionsplanungLoading } = useQuery<ReportProduktionsplanungResponse>({
+  const {
+    data: produktionsplanungData,
+    error: produktionsplanungError,
+    isLoading: isProduktionsplanungLoading,
+    isError: isProduktionsplanungError,
+  } = useQuery<ReportProduktionsplanungResponse>({
     queryKey: ["reports-produktionsplanung", submittedFilters, reportRequestId],
     enabled: submittedFilters?.reportType === "produktionsplanung" && isReportOverlayOpen,
     queryFn: async () => {
@@ -880,7 +893,12 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       }));
     },
   });
-  const { data: auftragslisteData, isLoading: isAuftragslisteLoading } = useQuery<AuftragslisteResponse>({
+  const {
+    data: auftragslisteData,
+    error: auftragslisteError,
+    isLoading: isAuftragslisteLoading,
+    isError: isAuftragslisteError,
+  } = useQuery<AuftragslisteResponse>({
     queryKey: ["reports-auftragsliste", submittedFilters, reportRequestId],
     enabled: submittedFilters?.reportType === "auftragsliste" && isReportOverlayOpen,
     queryFn: async () => fetchJson(buildAuftragslisteReportUrl({
@@ -893,6 +911,18 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       useShortCodes: submittedFilters?.useShortCodes ?? false,
     }), { cache: "no-store" }),
   });
+  const normalizedVorlauflisteError = isVorlauflisteError
+    ? normalizeServerError(vorlauflisteError, { title: "Vorlaufliste konnte nicht geladen werden" })
+    : null;
+  const normalizedVorlauflistePrintPreviewError = isVorlauflistePrintPreviewError
+    ? normalizeServerError(vorlauflistePrintPreviewError, { title: "Druckvorschau konnte nicht geladen werden" })
+    : null;
+  const normalizedProduktionsplanungError = isProduktionsplanungError
+    ? normalizeServerError(produktionsplanungError, { title: "Produktionsplanung konnte nicht geladen werden" })
+    : null;
+  const normalizedAuftragslisteError = isAuftragslisteError
+    ? normalizeServerError(auftragslisteError, { title: "Auftragsliste konnte nicht geladen werden" })
+    : null;
   const auftragslisteSaunaModelOptions = useMemo(() => {
     if ((auftragslisteData?.availableSaunaModels?.length ?? 0) > 0) {
       return auftragslisteData?.availableSaunaModels ?? [];
@@ -1328,7 +1358,11 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     [auftragslisteItems, auftragslistePaginationMeasurement],
   );
   const auftragslistePrintPages = useMemo(
-    () => (typeof window === "undefined" ? estimatedAuftragslistePrintPages : measuredAuftragslistePrintPages),
+    () => (
+      typeof window === "undefined" || measuredAuftragslistePrintPages.length === 0
+        ? estimatedAuftragslistePrintPages
+        : measuredAuftragslistePrintPages
+    ),
     [estimatedAuftragslistePrintPages, measuredAuftragslistePrintPages],
   );
   const isAuftragslistePaginationMeasuring = typeof window !== "undefined"
@@ -1568,57 +1602,51 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               />
 
               {isAdmin && isProduktionsplanungCategoryLayoutDialogOpen ? (
-                <Dialog open={isProduktionsplanungCategoryLayoutDialogOpen} onOpenChange={setIsProduktionsplanungCategoryLayoutDialogOpen}>
-                  <DialogContent
-                    className="max-h-[90vh] max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-2xl"
-                    data-testid="dialog-reports-produktionsplanung-category-layout"
-                  >
-                    <div className="border-b border-slate-100 px-5 py-4">
-                      <p className="text-sm font-semibold text-slate-800">Kategorie-Layout</p>
-                      <p className="mt-0.5 text-xs text-slate-400">Bloecke und Spaltenaufteilung</p>
-                    </div>
-
-                    <div className="min-h-0 overflow-auto p-5">
-                      <ProduktionsplanungCategoryLayoutEditor
-                        layoutConfig={categoryLayoutConfig ?? []}
-                        categories={allActiveProduktionsplanungCategories}
-                        isSaving={isSaving}
-                        onAddEntries={async (entries) => {
-                          await persistCategoryLayoutConfig([...(categoryLayoutConfig ?? []), ...entries]);
-                        }}
-                        onRemoveEntry={async (index) => {
-                          await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).filter((_, entryIndex) => entryIndex !== index));
-                        }}
-                        onUpdateEntry={async (index, patch) => {
-                          const currentEntry = (categoryLayoutConfig ?? [])[index];
-                          if (!currentEntry) {
-                            return;
-                          }
-                          if (
-                            (patch.block === undefined || patch.block === currentEntry.block)
-                            && (patch.columns === undefined || patch.columns === currentEntry.columns)
-                          ) {
-                            return;
-                          }
-                          await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).map((entry, entryIndex) => (
-                            entryIndex === index ? { ...entry, ...patch } : entry
-                          )));
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-3">
-                      <button
-                        type="button"
-                        onClick={() => setIsProduktionsplanungCategoryLayoutDialogOpen(false)}
-                        className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700"
-                        data-testid="button-reports-produktionsplanung-category-layout-close"
-                      >
-                        Schliessen
-                      </button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <DialogBaseShell
+                  open={isProduktionsplanungCategoryLayoutDialogOpen}
+                  onOpenChange={setIsProduktionsplanungCategoryLayoutDialogOpen}
+                  title="Kategorie-Layout"
+                  description="Blöcke und Spaltenaufteilung"
+                  icon={<LayoutGrid />}
+                  size="xl"
+                  testId="dialog-reports-produktionsplanung-category-layout"
+                  footer={(
+                    <DialogBaseFooter
+                      primaryAction={{
+                        label: "Schließen",
+                        onClick: () => setIsProduktionsplanungCategoryLayoutDialogOpen(false),
+                        testId: "button-reports-produktionsplanung-category-layout-close",
+                      }}
+                    />
+                  )}
+                >
+                  <ProduktionsplanungCategoryLayoutEditor
+                    layoutConfig={categoryLayoutConfig ?? []}
+                    categories={allActiveProduktionsplanungCategories}
+                    isSaving={isSaving}
+                    onAddEntries={async (entries) => {
+                      await persistCategoryLayoutConfig([...(categoryLayoutConfig ?? []), ...entries]);
+                    }}
+                    onRemoveEntry={async (index) => {
+                      await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).filter((_, entryIndex) => entryIndex !== index));
+                    }}
+                    onUpdateEntry={async (index, patch) => {
+                      const currentEntry = (categoryLayoutConfig ?? [])[index];
+                      if (!currentEntry) {
+                        return;
+                      }
+                      if (
+                        (patch.block === undefined || patch.block === currentEntry.block)
+                        && (patch.columns === undefined || patch.columns === currentEntry.columns)
+                      ) {
+                        return;
+                      }
+                      await persistCategoryLayoutConfig((categoryLayoutConfig ?? []).map((entry, entryIndex) => (
+                        entryIndex === index ? { ...entry, ...patch } : entry
+                      )));
+                    }}
+                  />
+                </DialogBaseShell>
               ) : null}
 
               <div className="flex flex-col gap-5 pb-2">
@@ -2148,6 +2176,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 <div className="min-h-0 flex-1 overflow-hidden">
                   {isVorlauflisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
+                  ) : normalizedVorlauflisteError ? (
+                    <div className="p-6">
+                      <DialogBaseInlineMessage error={normalizedVorlauflisteError} />
+                    </div>
                   ) : (
                     <div className="flex h-full flex-col">
                       <div className="min-h-0 flex-1 overflow-hidden">
@@ -2306,7 +2338,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 </PrintPageShell>
               )}
               loadingState={isVorlauflistePrintPreviewLoading ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
-              errorState={isVorlauflistePrintPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
+              errorState={normalizedVorlauflistePrintPreviewError ? (
+                <DialogBaseInlineMessage className="mx-auto max-w-xl bg-white text-sm" error={normalizedVorlauflistePrintPreviewError} />
+              ) : null}
             />
 
             <div className={cn("absolute inset-0 z-10 bg-slate-100 transition-opacity", isAuftragslisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-auftragsliste-overlay">
@@ -2327,6 +2361,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-6">
                   {isAuftragslisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
+                  ) : normalizedAuftragslisteError ? (
+                    <DialogBaseInlineMessage className="bg-white text-sm" error={normalizedAuftragslisteError} />
                   ) : (
                     <section data-testid="reports-auftragsliste-project-cards">
                       {auftragslisteData?.items?.length ? (
@@ -2436,6 +2472,9 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 </PrintPageShell>
               )}
               loadingState={isAuftragslisteLoading || isAuftragslistePaginationMeasuring ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
+              errorState={normalizedAuftragslisteError ? (
+                <DialogBaseInlineMessage className="mx-auto max-w-xl bg-white text-sm" error={normalizedAuftragslisteError} />
+              ) : null}
             />
 
             <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProduktionsplanungLayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-produktionsplanung-overlay">
@@ -2452,6 +2491,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 <div className="min-h-0 flex-1 overflow-auto p-6">
                   {isProduktionsplanungLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
+                  ) : normalizedProduktionsplanungError ? (
+                    <DialogBaseInlineMessage className="bg-white text-sm" error={normalizedProduktionsplanungError} />
                   ) : (
                     <>
                       <div className="space-y-6 print:hidden">

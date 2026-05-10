@@ -1,4 +1,4 @@
-﻿# UC 19/02: Attachmentliste anzeigen
+# UC 19/02: Attachmentliste anzeigen
 
 ## Metadaten
 
@@ -30,7 +30,8 @@ Alle einem Parent-Objekt (Projekt, Kunde, Mitarbeiter oder Termin) zugeordneten 
     - Erstellungszeitpunkt.
 5. Das System zeigt die strukturierte Liste in der UI an.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Keine Attachments vorhanden → System zeigt eine leere Liste.
 - Parent-Objekt existiert nicht → System antwortet mit 404.

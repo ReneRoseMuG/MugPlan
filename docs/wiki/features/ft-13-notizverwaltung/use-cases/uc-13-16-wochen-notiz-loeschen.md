@@ -1,4 +1,4 @@
-﻿# UC 13/16: Wochen-Notiz löschen
+# UC 13/16: Wochen-Notiz löschen
 
 ## Metadaten
 
@@ -33,15 +33,15 @@ Eine bestehende Wochen-Notiz vollständig und konsistent entfernen.
 7. Stimmen die Versionsinformationen überein, löscht das System die Notiz sowie den zugehörigen Eintrag in `calendar_week_note` endgültig.
 8. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur bricht die Sicherheitsabfrage ab → Die Notiz bleibt unverändert bestehen.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
 - Der Akteur besitzt Leser-Rolle → HTTP 403, keine Löschung.
 - Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.
 - Technischer Fehler → HTTP 500, keine Löschung erfolgt.
-
-## Alternativen
 
 
 ## Ergebnis

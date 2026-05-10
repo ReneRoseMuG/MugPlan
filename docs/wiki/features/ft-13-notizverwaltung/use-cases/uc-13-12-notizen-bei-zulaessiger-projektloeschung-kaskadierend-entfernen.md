@@ -1,4 +1,4 @@
-﻿# UC 13/12: Notizen bei zulässiger Projektlöschung kaskadierend entfernen
+# UC 13/12: Notizen bei zulässiger Projektlöschung kaskadierend entfernen
 
 ## Metadaten
 
@@ -38,7 +38,9 @@ Sicherstellen, dass bei einer fachlich zulässigen Löschung eines Projekts alle
 9. Das System stellt sicher, dass keine verwaisten Projektnotizen verbleiben.
 10. Das System bestätigt den erfolgreichen Löschvorgang.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Mit dem Projekt sind Termine verknüpft → HTTP 409 Conflict, keine Löschung.
 - Der Akteur bricht die Sicherheitsabfrage ab → Keine Löschung.
@@ -46,8 +48,6 @@ Sicherstellen, dass bei einer fachlich zulässigen Löschung eines Projekts alle
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
 - Versionskonflikt → HTTP 409 Conflict, keine Löschung.
 - Technischer Fehler → HTTP 500, keine Löschung.
-
-## Alternativen
 
 
 ## Ergebnis

@@ -1,4 +1,4 @@
-﻿# UC 09/11: Rollenabhängige Filterung von Kundenlisten
+# UC 09/11: Rollenabhängige Filterung von Kundenlisten
 
 ## Metadaten
 
@@ -19,6 +19,7 @@ Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden u
 
 ---
 
+## Ablauf
 ### Ablauf – Disponent
 
 1. Der Akteur mit Rolle Disponent ruft die Kundenliste auf.
@@ -46,9 +47,6 @@ Sicherstellen, dass Kundenlisten serverseitig rollenabhängig gefiltert werden u
 - Die API muss rollenabhängig prüfen und darf sich nicht auf clientseitige Filter verlassen.
 
 ---
-
-## Ablauf
-
 
 ## Alternativen
 

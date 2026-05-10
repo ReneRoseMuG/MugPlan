@@ -1,4 +1,4 @@
-﻿# UC 07/09: Synchronisationsfehler protokollieren
+# UC 07/09: Synchronisationsfehler protokollieren
 
 ## Metadaten
 
@@ -12,12 +12,10 @@ System
 
 Nachvollziehbarkeit von Synchronisationsproblemen.
 
-Vorbedingungen:
-
-- Fehler bei API-Kommunikation.
 
 ## Vorbedingungen
 
+- Fehler bei API-Kommunikation.
 
 ## Ablauf
 

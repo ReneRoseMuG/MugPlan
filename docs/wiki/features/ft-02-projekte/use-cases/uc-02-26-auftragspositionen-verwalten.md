@@ -1,4 +1,4 @@
-﻿# UC 02/26: Auftragspositionen verwalten
+# UC 02/26: Auftragspositionen verwalten
 
 ## Metadaten
 
@@ -18,6 +18,7 @@ Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen,
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Änderungsrechte (Disponent oder Administrator).
 
+## Ablauf
 ### Ablauf — Position anlegen
 
 1. Der Akteur öffnet das Projekt und navigiert zum Bereich „Auftragspositionen".
@@ -33,9 +34,6 @@ Positionen eines Projektauftrags (Stückliste) anlegen, bearbeiten und löschen,
 
 1. Der Akteur entfernt eine Position.
 2. Das System löscht den Datensatz. Alle Positionen werden bei Projektlöschung automatisch via Cascade entfernt (siehe UC 02/08).
-
-## Ablauf
-
 
 ## Alternativen
 

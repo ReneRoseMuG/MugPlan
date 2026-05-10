@@ -1,4 +1,4 @@
-﻿# UC 13/18: Notiz zu Mitarbeiter hinzufügen
+# UC 13/18: Notiz zu Mitarbeiter hinzufügen
 
 ## Metadaten
 
@@ -37,15 +37,15 @@ Eine neue Notiz erstellen und eindeutig einem bestehenden Mitarbeiter zuordnen.
 12. Das System speichert die Notiz persistent.
 13. Das System aktualisiert die Notizliste in der Mitarbeiter-Detailansicht gemäß Sortierlogik.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder fehlen → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
 - Der Akteur besitzt keine ausreichende Rolle (Leser) → HTTP 403, keine Speicherung.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler bei Speicherung → HTTP 500, keine persistente Notiz entsteht.
-
-## Alternativen
 
 
 ## Ergebnis

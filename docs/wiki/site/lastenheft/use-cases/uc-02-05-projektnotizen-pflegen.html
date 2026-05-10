@@ -48,11 +48,11 @@
 <p>Projektbezogene Notizen anlegen oder bearbeiten, um projektspezifische Informationen zu dokumentieren.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Das Projekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Schreibrechte (Disponent oder Administrator).</li></ul>
+<h2 class="wiki-h2">Ablauf</h2>
 <h3 class="wiki-h3">Ablauf — Notiz anlegen</h3>
 <ol><li>Der Akteur öffnet das Projekt und navigiert zum Bereich „Notizen&quot;.</li><li>Der Akteur wählt „Notiz hinzufügen&quot;.</li><li>Das System öffnet einen Richtext-Editor. Optional werden aktive Notizvorlagen zur Auswahl angezeigt.</li><li>Wählt der Akteur eine Vorlage, übernimmt das System Titel und Inhalt. Besitzt die Vorlage eine Kennzeichnungsfarbe (<code>color</code>), wird diese einmalig übernommen.</li><li>Der Akteur erfasst oder ändert Titel (Pflicht) und Beschreibung (Pflicht).</li><li>Das System validiert Pflichtfelder, legt die Notiz mit <code>is_pinned = false</code> an und verknüpft sie mit dem Projekt.</li><li>Das System aktualisiert die Notizliste gemäß Sortierlogik (angepinnte zuerst, dann <code>updated_at</code> absteigend).</li></ol>
 <h3 class="wiki-h3">Ablauf — Notiz bearbeiten</h3>
 <ol><li>Der Akteur öffnet eine bestehende Notiz aus der Notizliste des Projekts.</li><li>Das System lädt die Notizdaten einschließlich Versionsmerkmal.</li><li>Der Akteur ändert Titel und/oder Beschreibung.</li><li>Das System prüft Versionsmerkmal serverseitig. Bei Übereinstimmung speichert es die Änderungen und erhöht das Versionsmerkmal.</li></ol>
-<h2 class="wiki-h2">Ablauf</h2>
 <h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Projekt nicht vorhanden → HTTP 404.</li><li>Akteur nicht authentifiziert → HTTP 401.</li><li>Akteur ohne Schreibrechte → HTTP 403.</li><li>Pflichtfelder (Titel oder Beschreibung) fehlen → Validierungsfehler, keine Persistenz.</li><li>Versionskonflikt bei Bearbeitung → HTTP 409 VERSION_CONFLICT, Akteur muss neu laden.</li><li>Abbruch → keine Änderung wird gespeichert.</li><li>Technischer Fehler → HTTP 500.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>

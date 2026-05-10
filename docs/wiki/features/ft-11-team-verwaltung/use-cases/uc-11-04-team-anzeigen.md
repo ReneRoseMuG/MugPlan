@@ -1,4 +1,4 @@
-﻿# UC 11/04: Team anzeigen
+# UC 11/04: Team anzeigen
 
 ## Metadaten
 
@@ -27,12 +27,12 @@ Der Akteur ruft die Teamübersicht auf oder wählt ein Team aus.
 2. Das System lädt zu jedem Team die aktuell zugeordneten aktiven Mitarbeiter (`team_id = teamId`).
 3. Das System zeigt Bezeichnung und Mitarbeiterliste an.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Keine Teams vorhanden → Das System zeigt eine entsprechende Information an.
 - Technischer Fehler → Das System antwortet mit 500.
-
-## Alternativen
 
 
 ## Ergebnis

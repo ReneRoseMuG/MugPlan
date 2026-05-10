@@ -1,4 +1,4 @@
-﻿# UC 02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)
+# UC 02/16: Projekt-Referenz-Konsistenz (Projekt ↔ Kunde)
 
 ## Metadaten
 
@@ -20,6 +20,7 @@ Sicherstellen, dass der Kundenwert eines Projekts stabil bleibt, sobald Termine 
 - Projekt ist einem Kunden zugeordnet.
 - Optional: Dem Projekt sind Termine zugeordnet.
 
+## Ablauf
 ### **Invarianten**
 
 1. **Readonly-Regel:** Wenn ein Projekt mindestens einen Termin hat, ist der Kundenwert des Projekts **readonly**. Ein Kundenwechsel ist nicht zulässig.
@@ -50,10 +51,13 @@ Sicherstellen, dass der Kundenwert eines Projekts stabil bleibt, sobald Termine 
 4. Falls ja: System speichert Termin mit konsistenten Werten.
 5. Nach Speicherung: Projekt P wird readonly für Kundenwechsel.
 
-## Ablauf
-
-
 ## Alternativen
+
+- Projekt besitzt bereits Termine → Der Kundenwechsel wird blockiert; der bestehende Kundenwert bleibt unverändert.
+- Termin soll mit abweichendem Kundenwert einem Projekt zugeordnet werden → Die Termin-Anlage oder Projektzuordnung wird blockiert, bis Kunde und Projekt konsistent sind.
+- Projekt besitzt keine Termine → Ein Kundenwechsel ist zulässig, sofern der neue Kunde existiert und die übrigen Projektregeln erfüllt sind.
+- Projekt oder Kunde existiert nicht → Das System blockiert die Operation mit einem Fehlerstatus; es entsteht keine inkonsistente Referenz.
+- Technischer Fehler oder parallele Änderung → Das System speichert keine Teiländerung und fordert den Akteur zum erneuten Laden des aktuellen Stands auf.
 
 
 ## Ergebnis

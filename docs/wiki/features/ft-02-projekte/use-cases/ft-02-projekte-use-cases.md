@@ -20,7 +20,6 @@
 - [UC 02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)](uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.md)
 - [UC 02/18: Race Condition bei Projektlöschung](uc-02-18-race-condition-bei-projektloeschung.md)
 - [UC 02/19: Projekt in abhängigen Sichten anzeigen (Quersicht-Vertrag)](uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.md)
-- [UC 02/20: ENTFERNT — Duplikat von UC 02/13](uc-02-20-entfernt-duplikat-von-uc-02-13.md)
 - [UC 02/21: Termin für Projekt ohne Termine anlegen (über Kalendersicht)](uc-02-21-termin-fuer-projekt-ohne-termine-anlegen-ueber-kalendersicht.md)
 - [UC 02/22: Notiz von Projekt entfernen](uc-02-22-notiz-von-projekt-entfernen.md)
 - [UC 02/23: Notiz anpinnen / lospinnen](uc-02-23-notiz-anpinnen-lospinnen.md)

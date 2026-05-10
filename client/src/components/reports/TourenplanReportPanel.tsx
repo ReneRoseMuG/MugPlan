@@ -22,10 +22,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { formatDisplayDate } from "@/lib/date-display-format";
+import { normalizeServerError } from "@/lib/error-normalization";
 import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
@@ -122,7 +124,8 @@ function QuickRangeButton({
 async function fetchJson<T>(url: string): Promise<T> {
   const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
-    throw new Error((await response.text()) || `Request failed for ${url}`);
+    const bodyText = await response.text();
+    throw new Error(`${response.status}: ${bodyText || `Request failed for ${url}`}`);
   }
   return response.json() as Promise<T>;
 }
@@ -363,7 +366,12 @@ export function TourenplanReportPanel({
     });
   }, [activeTourIds, allToursSelected]);
 
-  const { data: sectionData = [], isLoading: isPreviewLoading, isError: isPreviewError } = useQuery<TourenplanSectionRequestData[]>({
+  const {
+    data: sectionData = [],
+    error: previewError,
+    isLoading: isPreviewLoading,
+    isError: isPreviewError,
+  } = useQuery<TourenplanSectionRequestData[]>({
     queryKey: ["reports-tourenplan-preview", selectedItemsKey, previewRequest.fromDate, previewRequest.weekCount],
     enabled: isPreviewOpen && selectedItems.length > 0 && previewRequest.fromDate.length > 0,
     queryFn: () => fetchTourenplanSections({
@@ -403,7 +411,11 @@ export function TourenplanReportPanel({
     [measuredSections, paginationMeasurement, sectionData.length],
   );
   const pages = React.useMemo(
-    () => (typeof window === "undefined" ? estimatedPages : measuredPages),
+    () => (
+      typeof window === "undefined" || measuredPages.length === 0
+        ? estimatedPages
+        : measuredPages
+    ),
     [estimatedPages, measuredPages],
   );
   const isPaginationMeasuring = typeof window !== "undefined"
@@ -417,6 +429,9 @@ export function TourenplanReportPanel({
 
   const dialogWidthClassName = orientation === "portrait" ? "w-[calc(210mm+88px)]" : undefined;
   const isGenerateDisabled = selectedItems.length === 0 || previewRequest.fromDate.length === 0;
+  const normalizedPreviewError = isPreviewError
+    ? normalizeServerError(previewError, { title: "Druckvorschau konnte nicht geladen werden" })
+    : null;
   const quickRangeOptions = (
     <div className="hidden" data-testid="reports-tourenplan-quick-range-options">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Termine ab:</div>
@@ -725,7 +740,9 @@ export function TourenplanReportPanel({
           />
         )}
         loadingState={isPreviewLoading || isPaginationMeasuring ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
-        errorState={isPreviewError ? <div className="text-sm text-destructive">Druckvorschau konnte nicht geladen werden.</div> : null}
+        errorState={normalizedPreviewError ? (
+          <DialogBaseInlineMessage className="mx-auto max-w-xl bg-white text-sm" error={normalizedPreviewError} />
+        ) : null}
       />
     </>
   );

@@ -1,4 +1,4 @@
-﻿# UC 13/04: Notiz löschen
+# UC 13/04: Notiz löschen
 
 ## Metadaten
 
@@ -34,15 +34,15 @@ Eine bestehende Notiz vollständig und konsistent entfernen.
 7. Stimmen die Versionsinformationen überein, löscht das System die Notiz sowie die zugehörige Parent-Relation endgültig.
 8. Das System aktualisiert die Notizenliste im jeweiligen Parent-Kontext.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur bricht die Sicherheitsabfrage ab → Die Notiz bleibt unverändert bestehen.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
 - Versionskonflikt (Notiz wurde zwischenzeitlich geändert oder bereits gelöscht) → Das System antwortet mit HTTP 409 Conflict, es erfolgt keine Löschung, der Akteur wird zum Neuladen aufgefordert.
 - Technischer Fehler → HTTP 500, keine Löschung erfolgt.
-
-## Alternativen
 
 
 ## Ergebnis

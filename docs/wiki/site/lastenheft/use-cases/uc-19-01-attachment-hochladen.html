@@ -52,7 +52,7 @@
 <ol><li>Der Akteur wählt in der Detailansicht des Parent-Objekts die Funktion „Attachment hinzufügen“.</li><li>Das System öffnet einen Dateiauswahldialog.</li><li>Der Akteur wählt eine lokale Datei aus.</li><li>Das System überträgt die Datei per Multipart-Request an den Server.</li><li>Das System prüft serverseitig:</li></ol>
 <ul><li>Authentifizierung,</li><li>Berechtigung des Akteurs,</li><li>Existenz des Parent-Objekts,</li><li>Dateigröße,</li><li>grundlegende Dateieigenschaften.</li></ul>
 <ol><li>Das System generiert einen eindeutigen persistenten Speichername.</li><li>Das System speichert die Datei im definierten Upload-Verzeichnis.</li><li>Das System legt einen Attachment-Datensatz mit Parent-Referenz an.</li><li>Das System speichert Metadaten (Originaldateiname, persistenter Speichername, MIME-Typ, Dateigröße, Erstellungszeitpunkt).</li><li>Das System aktualisiert die Attachmentliste in der UI.</li></ol>
-<p><strong>Alternativabläufe</strong></p>
+<h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Der Akteur bricht den Upload vor Bestätigung ab → Es wird kein Attachment gespeichert.</li><li>Das Parent-Objekt existiert nicht → System antwortet mit 404.</li><li>Der Akteur besitzt keine Änderungsrechte → System blockiert mit 403.</li><li>Die Datei überschreitet das Größenlimit oder ist ungültig → System antwortet mit 400, speichert nichts.</li><li>Technischer Fehler bei Speicherung → System antwortet mit 500, speichert nichts.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
 <h2 class="wiki-h2">Ergebnis</h2>

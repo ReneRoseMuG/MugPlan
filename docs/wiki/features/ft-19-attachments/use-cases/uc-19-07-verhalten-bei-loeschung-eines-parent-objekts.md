@@ -1,4 +1,4 @@
-﻿# UC 19/07: Verhalten bei Löschung eines Parent-Objekts
+# UC 19/07: Verhalten bei Löschung eines Parent-Objekts
 
 ## Metadaten
 
@@ -27,7 +27,8 @@ Sicherstellen, dass bei Löschung eines Parent-Objekts keine verwaisten Attachme
 5. Das System stellt sicher, dass Attachment-Datensätze nicht ohne Parent-Zuordnung bestehen bleiben.
 6. Das System verhindert verwaiste Fremdschlüsselzustände.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Parent-Objekt existiert nicht → System antwortet mit 404.
 - Akteur ohne Löschrechte → System blockiert mit 403.

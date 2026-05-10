@@ -1,4 +1,4 @@
-﻿# UC 13/21: Notizen eines Termins anzeigen
+# UC 13/21: Notizen eines Termins anzeigen
 
 ## Metadaten
 
@@ -36,14 +36,14 @@ Alle einem Termin eindeutig zugeordneten Notizen vollständig und konsistent ein
     - ggf. Pin-Symbol.
 7. Besitzt der Akteur ausschließlich Leserechte oder ist der Termin historisch, werden keine Bearbeitungs- oder Löschfunktionen angezeigt.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
 - Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
 - Es existieren keine Notizen → Das System zeigt eine leere Liste oder einen Counter mit 0 ohne Fehler an.
 - Technischer Fehler → HTTP 500, keine Anzeige.
-
-## Alternativen
 
 
 ## Ergebnis

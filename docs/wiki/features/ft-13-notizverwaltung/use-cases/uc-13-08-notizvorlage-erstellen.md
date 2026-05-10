@@ -1,4 +1,4 @@
-﻿# UC 13/08: Notizvorlage erstellen
+# UC 13/08: Notizvorlage erstellen
 
 ## Metadaten
 
@@ -36,15 +36,15 @@ Eine neue Notizvorlage anlegen, die bei der Erstellung von Notizen ausgewählt w
 10. Das System speichert die Vorlage persistent.
 11. Das System aktualisiert die Vorlagenliste gemäß definierter Sortierlogik.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder fehlen → Validierungsfehler, keine Persistierung.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Persistierung.
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Persistierung.
 - Technischer Fehler → HTTP 500, keine Persistierung.
 - Abbruch durch den Akteur → Keine Persistierung.
-
-## Alternativen
 
 
 ## Ergebnis

@@ -1,4 +1,4 @@
-﻿# UC 13/17: Wochen-Notizen in Druckausgabe der Kalenderwoche ausgeben
+# UC 13/17: Wochen-Notizen in Druckausgabe der Kalenderwoche ausgeben
 
 ## Metadaten
 
@@ -30,14 +30,14 @@ Sicherstellen, dass alle einer Kalenderwoche zugeordneten Notizen in der Druckau
 5. Jede Notiz wird in der Druckausgabe mit Titel und Beschreibung dargestellt.
 6. Das System erzeugt die Druckausgabe und stellt sie dem Akteur bereit.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Druckausgabe.
 - Der Akteur besitzt keine Leserechte → HTTP 403, keine Druckausgabe.
 - Es existieren keine Wochen-Notizen → Der Notizbereich in der Druckausgabe bleibt leer oder wird ausgeblendet; kein Fehler.
 - Technischer Fehler → HTTP 500, keine Druckausgabe.
-
-## Alternativen
 
 
 ## Ergebnis

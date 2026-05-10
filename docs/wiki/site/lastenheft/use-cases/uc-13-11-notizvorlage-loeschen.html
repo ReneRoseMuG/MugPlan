@@ -52,9 +52,8 @@
 <ol><li>Der Akteur öffnet die Vorlagenverwaltung.</li><li>Der Akteur wählt eine bestehende Vorlage aus.</li><li>Der Akteur wählt die Funktion „Löschen&quot;.</li><li>Das System zeigt eine Sicherheitsabfrage an.</li><li>Der Akteur bestätigt das Löschen.</li><li>Das System prüft serverseitig:</li></ol>
 <ul><li>Authentifizierung,</li><li>Berechtigung,</li><li>Übereinstimmung des Versionsmerkmals.</li></ul>
 <ol><li>Stimmen die Versionsinformationen überein, löscht das System die Vorlage endgültig aus der Persistenz.</li><li>Das System aktualisiert die Vorlagenliste.</li></ol>
-<h3 class="wiki-h3">Alternativabläufe</h3>
-<ul><li>Der Akteur bricht die Sicherheitsabfrage ab → Die Vorlage bleibt unverändert bestehen.</li><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.</li><li>Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.</li><li>Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.</li><li>Technischer Fehler → HTTP 500, keine Löschung.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Der Akteur bricht die Sicherheitsabfrage ab → Die Vorlage bleibt unverändert bestehen.</li><li>Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.</li><li>Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.</li><li>Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.</li><li>Technischer Fehler → HTTP 500, keine Löschung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Die Vorlage ist im Erfolgsfall vollständig aus dem System entfernt.</li><li>Gelöschte Vorlagen erscheinen nicht mehr in der Vorlagenverwaltung und nicht in der Auswahlliste bei der Notizerstellung.</li><li>Bereits erstellte Notizen bleiben unverändert bestehen.</li><li>Es entstehen keine verwaisten Referenzen oder Seiteneffekte in bestehenden Notizen.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">

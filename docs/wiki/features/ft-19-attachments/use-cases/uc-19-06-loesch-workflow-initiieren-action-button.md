@@ -1,4 +1,4 @@
-﻿# UC 19/06: Lösch-Workflow initiieren (Action Button)
+# UC 19/06: Lösch-Workflow initiieren (Action Button)
 
 ## Metadaten
 
@@ -29,7 +29,8 @@ Ein Attachment über den Action-Button am Attachment-Badge gezielt entfernen —
 6. Das System prüft serverseitig Authentifizierung, Berechtigung und Existenz von Attachment und Parent.
 7. Das System aktualisiert die Attachmentliste in der UI.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Akteur bricht den Dialog ab → keine Aktion, Attachment bleibt unverändert.
 - Attachment existiert nicht → System antwortet mit 404.

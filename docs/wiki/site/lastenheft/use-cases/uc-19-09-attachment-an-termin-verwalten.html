@@ -48,18 +48,17 @@
 <p>Eine Datei einem bestehenden Termin als Attachment hinzufügen, die Anhangsliste anzeigen und Attachments herunterladen. Termin-Attachments folgen denselben technischen Regeln wie Attachments anderer Domänen, haben aber eine termineigene Besonderheit: Sie bleiben am Termin erhalten, unabhängig von Änderungen an Mitarbeiterliste, Tourzuordnung oder Datum.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Der Termin existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Für Upload: Der Akteur besitzt die Rolle Disponent oder Administrator.</li><li>Für Anzeige/Download: Der Akteur besitzt mindestens Leserechte.</li></ul>
-<p><strong>Ablauf — Upload</strong></p>
-<ol><li>Der Akteur öffnet die Detailansicht eines Termins.</li><li>Der Akteur wählt die Funktion „Attachment hinzufügen&quot;.</li><li>Das System prüft serverseitig Authentifizierung, Berechtigung (Disponent oder Administrator) und Existenz des Termins.</li><li>Das System führt den Upload-Prozess gemäß UC 19/01 und UC 19/05 durch.</li><li>Das System legt einen Attachment-Datensatz mit Referenz auf den Termin an.</li><li>Das System aktualisiert die Attachmentliste in der Termindetailansicht.</li></ol>
-<p><strong>Ablauf — Anzeige und Download</strong></p>
-<ol><li>Der Akteur öffnet die Termindetailansicht.</li><li>Das System lädt alle dem Termin zugeordneten Attachments.</li><li>Der Akteur öffnet oder lädt ein Attachment gemäß UC 19/03 und UC 19/04.</li></ol>
-<p><strong>Besonderheit Termin-Attachments</strong></p>
-<ul><li>Termin-Attachments bleiben beim Termin, wenn Mitarbeiter zugewiesen oder entfernt werden.</li><li>Termin-Attachments bleiben beim Termin, wenn die Tourzuordnung geändert oder entfernt wird.</li><li>Termin-Attachments bleiben beim Termin, wenn das Datum verschoben wird.</li><li>Termin-Attachments werden erst entfernt, wenn der Termin selbst gelöscht wird (CASCADE).</li><li>Historische Termine sind read-only — Uploads auf historische Termine werden serverseitig blockiert (403).</li></ul>
-<p><strong>Alternativabläufe</strong></p>
-<ul><li>Termin existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Berechtigung → System blockiert mit 403.</li><li>Termin ist historisch (Startdatum in der Vergangenheit) → Upload wird blockiert, Anzeige und Download bleiben erlaubt.</li><li>Datei ungültig oder zu groß → System antwortet mit 400, speichert nichts.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
+<h3 class="wiki-h3">Ablauf — Upload</h3>
+<ol><li>Der Akteur öffnet die Detailansicht eines Termins.</li><li>Der Akteur wählt die Funktion „Attachment hinzufügen&quot;.</li><li>Das System prüft serverseitig Authentifizierung, Berechtigung (Disponent oder Administrator) und Existenz des Termins.</li><li>Das System führt den Upload-Prozess gemäß UC 19/01 und UC 19/05 durch.</li><li>Das System legt einen Attachment-Datensatz mit Referenz auf den Termin an.</li><li>Das System aktualisiert die Attachmentliste in der Termindetailansicht.</li></ol>
+<h3 class="wiki-h3">Ablauf — Anzeige und Download</h3>
+<ol><li>Der Akteur öffnet die Termindetailansicht.</li><li>Das System lädt alle dem Termin zugeordneten Attachments.</li><li>Der Akteur öffnet oder lädt ein Attachment gemäß UC 19/03 und UC 19/04.</li></ol>
+<h3 class="wiki-h3">Besonderheit Termin-Attachments</h3>
+<ul><li>Termin-Attachments bleiben beim Termin, wenn Mitarbeiter zugewiesen oder entfernt werden.</li><li>Termin-Attachments bleiben beim Termin, wenn die Tourzuordnung geändert oder entfernt wird.</li><li>Termin-Attachments bleiben beim Termin, wenn das Datum verschoben wird.</li><li>Termin-Attachments werden erst entfernt, wenn der Termin selbst gelöscht wird (CASCADE).</li><li>Historische Termine sind read-only — Uploads auf historische Termine werden serverseitig blockiert (403).</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Termin existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Berechtigung → System blockiert mit 403.</li><li>Termin ist historisch (Startdatum in der Vergangenheit) → Upload wird blockiert, Anzeige und Download bleiben erlaubt.</li><li>Datei ungültig oder zu groß → System antwortet mit 400, speichert nichts.</li><li>Technischer Fehler → System antwortet mit 500.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<ul><li>Das Attachment ist persistent gespeichert und eindeutig dem Termin zugeordnet.</li><li>Die Attachmentliste des Termins ist konsistent.</li><li>Termin-Attachments überleben alle Änderungen am Termin außer der Termerlöschung selbst.</li><li>Historische Termine können nicht mit neuen Attachments versehen werden.</li></ul>
+<ul><li>Das Attachment ist persistent gespeichert und eindeutig dem Termin zugeordnet.</li><li>Die Attachmentliste des Termins ist konsistent.</li><li>Termin-Attachments überleben alle Änderungen am Termin außer der Terminlöschung selbst.</li><li>Historische Termine können nicht mit neuen Attachments versehen werden.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

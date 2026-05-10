@@ -1,4 +1,4 @@
-﻿# UC 07/08: Termin in externen Kalender übertragen
+# UC 07/08: Termin in externen Kalender übertragen
 
 ## Metadaten
 
@@ -12,13 +12,11 @@ System
 
 Neuen Termin im externen Kalender anlegen.
 
-Vorbedingungen:
-
-- Termin wurde neu erstellt.
-- Externer Kalender ist konfiguriert.
 
 ## Vorbedingungen
 
+- Termin wurde neu erstellt.
+- Externer Kalender ist konfiguriert.
 
 ## Ablauf
 

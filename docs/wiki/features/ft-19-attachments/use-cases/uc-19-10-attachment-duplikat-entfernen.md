@@ -1,4 +1,4 @@
-﻿# UC 19/10: Attachment-Duplikat entfernen
+# UC 19/10: Attachment-Duplikat entfernen
 
 ## Metadaten
 
@@ -32,7 +32,8 @@ Ein Attachment, das durch mehrfachen Upload aus unterschiedlichen Kontexten als 
 
 Entkopplung ist empfohlen, wenn nicht sicher ist, ob die physische Datei noch anderweitig benötigt wird. Physische Löschung nur dann, wenn sicher ist, dass es sich nicht um ein Auftragsdokument handelt und keine weitere Referenz besteht.
 
-**Alternativabläufe**
+
+## Alternativen
 
 - Akteur bricht den Dialog ab → keine Aktion, alle Attachments bleiben unverändert.
 - Attachment existiert nicht → System antwortet mit 404.

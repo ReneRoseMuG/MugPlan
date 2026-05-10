@@ -50,7 +50,7 @@
 <ul><li>Das Attachment existiert.</li><li>Das zugehörige Parent-Objekt existiert.</li><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt Änderungsrechte für das Parent-Objekt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
 <ol><li>Der Akteur klickt den Action-Button am Attachment-Badge.</li><li>Das System zeigt einen Bestätigungsdialog mit der Sicherheitsfrage: „Soll nur die Verknüpfung zum [Parent-Typ] entfernt oder auch die physische Datei gelöscht werden? (Nicht empfohlen bei Auftragsdokumenten.)“</li><li>Der Akteur wählt eine der beiden Optionen oder bricht ab.</li><li>Bei Entkopplung: Das System entfernt den Attachment-Datensatz. Die physische Datei bleibt erhalten.</li><li>Bei physischer Löschung: Das System entfernt den Attachment-Datensatz und löscht die physische Datei aus dem Upload-Verzeichnis.</li><li>Das System prüft serverseitig Authentifizierung, Berechtigung und Existenz von Attachment und Parent.</li><li>Das System aktualisiert die Attachmentliste in der UI.</li></ol>
-<p><strong>Alternativabläufe</strong></p>
+<h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Akteur bricht den Dialog ab → keine Aktion, Attachment bleibt unverändert.</li><li>Attachment existiert nicht → System antwortet mit 404.</li><li>Parent-Objekt existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Änderungsrechte → System blockiert mit 403.</li><li>Technischer Fehler → System antwortet mit 500, keine Teillöschung.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
 <h2 class="wiki-h2">Ergebnis</h2>

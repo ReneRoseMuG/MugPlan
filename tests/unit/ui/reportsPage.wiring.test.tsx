@@ -592,4 +592,20 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("md:col-span-2");
     expect(html).toContain("reports-produktionsplanung-categories-category-2-column-1");
   });
+
+  it("renders report load errors as normalized inline messages", () => {
+    installReportsPageQueryMock({
+      "reports-auftragsliste": {
+        data: undefined,
+        error: new Error('422: {"code":"VALIDATION_ERROR"}'),
+        isLoading: false,
+        isError: true,
+      },
+    });
+
+    const html = renderToStaticMarkup(<ReportsPage />);
+
+    expect(html).toContain("Eingaben");
+    expect(html).not.toContain("VALIDATION_ERROR");
+  });
 });

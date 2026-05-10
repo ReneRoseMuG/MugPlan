@@ -1,4 +1,4 @@
-﻿# UC 13/11: Notizvorlage löschen
+# UC 13/11: Notizvorlage löschen
 
 ## Metadaten
 
@@ -33,15 +33,15 @@ Eine bestehende Notizvorlage endgültig aus dem System entfernen, ohne bereits e
 7. Stimmen die Versionsinformationen überein, löscht das System die Vorlage endgültig aus der Persistenz.
 8. Das System aktualisiert die Vorlagenliste.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur bricht die Sicherheitsabfrage ab → Die Vorlage bleibt unverändert bestehen.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Löschung.
 - Der Akteur besitzt keine ausreichende Rolle → HTTP 403, keine Löschung.
 - Versionskonflikt → HTTP 409 Conflict, keine Löschung, Neuladen erforderlich.
 - Technischer Fehler → HTTP 500, keine Löschung.
-
-## Alternativen
 
 
 ## Ergebnis

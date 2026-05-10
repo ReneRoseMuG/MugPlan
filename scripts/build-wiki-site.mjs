@@ -671,6 +671,16 @@ function makeBacklog(rel) {
   };
 }
 
+function isKnownFeatureShellWithoutUseCases(row) {
+  const status = (row.status || "").toLowerCase();
+  const typ = (row.typ || "").toLowerCase();
+  return typ.includes("feature-hülle")
+    || typ.includes("feature-huelle")
+    || status.includes("backlog")
+    || status.includes("nicht spezifiziert")
+    || /Noch keine Use Cases angelegt\./i.test(row.markdown || "");
+}
+
 function makeNfr(rel) {
   const index = loadIndex();
   const markdown = readText(sourceAbs(rel));
@@ -1180,7 +1190,7 @@ function validate(sources) {
       }
       if (row.kind === "feature") {
         const useCases = sources.useCases.filter((itemRow) => itemRow.featureId === row.id);
-        if (!useCases.length) item.warnings.push("Keine lokale Use-Case-Datei zugeordnet");
+        if (!useCases.length && !isKnownFeatureShellWithoutUseCases(row)) item.warnings.push("Keine lokale Use-Case-Datei zugeordnet");
       }
       if (row.kind === "project") {
         const missingTasks = [row.masterTask, ...row.taskRefs].filter((rel) => rel && !sources.tasks.some((task) => task.rel === rel));

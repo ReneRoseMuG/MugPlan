@@ -93,4 +93,26 @@ describe("ReportPresetControls disabled state", () => {
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="reports-test-preset-save"/);
     expect(applyPresetMock).not.toHaveBeenCalled();
   });
+
+  it("renders preset loading errors through the normalized inline message", () => {
+    useQueryMock.mockReturnValue({
+      data: undefined,
+      error: new Error('403: {"code":"FORBIDDEN"}'),
+      isError: true,
+    });
+
+    const html = renderToStaticMarkup(
+      <ReportPresetControls
+        reportKey="vorlaufliste"
+        isAdmin={false}
+        currentConfig={currentConfig}
+        defaultName="Vorlaufliste Preset"
+        onApplyPreset={vi.fn()}
+        testIdPrefix="reports-test"
+      />,
+    );
+
+    expect(html).toContain("Keine Berechtigung");
+    expect(html).not.toContain("FORBIDDEN");
+  });
 });

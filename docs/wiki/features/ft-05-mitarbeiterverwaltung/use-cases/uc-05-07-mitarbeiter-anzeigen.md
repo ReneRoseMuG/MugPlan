@@ -17,7 +17,10 @@ Mitarbeiterdaten in Listen- und Detailansichten anzeigen, rollenbasiert gefilter
 - Der Akteur ist authentifiziert.
 - Der Mitarbeiterbestand ist im System vorhanden.
 
-## Ablauf – Listenansicht
+
+## Ablauf
+
+### Ablauf – Listenansicht
 
 1. Akteur öffnet die Mitarbeiterverwaltung.
 2. System ermittelt die Rolle des Akteurs.
@@ -27,17 +30,13 @@ Mitarbeiterdaten in Listen- und Detailansichten anzeigen, rollenbasiert gefilter
     - Leser erhält ausschließlich Lesedaten gemäß seiner Rolle.
 4. System stellt Daten in Board- oder Tabellenansicht dar.
 
-## Ablauf – Detailansicht
+### Ablauf – Detailansicht
 
 1. Akteur wählt einen Mitarbeiter aus der Liste.
 2. System lädt vollständige Stammdaten.
 3. System lädt zugehörige Anhänge.
 4. System lädt Terminübersicht gemäß UC 03.
 5. System zeigt Detailansicht an.
-
-## Ablauf
-
-
 ## Alternativen
 
 - Mitarbeiter existiert nicht →

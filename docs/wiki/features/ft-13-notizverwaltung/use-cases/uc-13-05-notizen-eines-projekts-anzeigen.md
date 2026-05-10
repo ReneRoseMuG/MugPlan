@@ -1,4 +1,4 @@
-﻿# UC 13/05: Notizen eines Projekts anzeigen
+# UC 13/05: Notizen eines Projekts anzeigen
 
 ## Metadaten
 
@@ -34,14 +34,14 @@ Alle einem Projekt eindeutig zugeordneten Notizen vollständig und konsistent ei
     - ggf. Pin-Symbol.
 7. Die Darstellung enthält keine Bearbeitungselemente, sofern der Akteur ausschließlich Leserechte besitzt.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Anzeige.
 - Der Akteur besitzt keine Leserechte → HTTP 403, keine Anzeige.
 - Es existieren keine Notizen → Das System zeigt eine leere Liste ohne Fehler an.
 - Technischer Fehler → HTTP 500, keine Anzeige.
-
-## Alternativen
 
 
 ## Ergebnis

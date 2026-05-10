@@ -1,4 +1,4 @@
-﻿# UC 13/15: Wochen-Notiz bearbeiten
+# UC 13/15: Wochen-Notiz bearbeiten
 
 ## Metadaten
 
@@ -34,7 +34,9 @@ Eine bestehende Wochen-Notiz ändern, ohne parallele Änderungen anderer Akteure
 8. Das System erhöht das Versionsmerkmal und setzt `updated_at` auf den aktuellen Zeitstempel.
 9. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder ungültig → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
@@ -42,8 +44,6 @@ Eine bestehende Wochen-Notiz ändern, ohne parallele Änderungen anderer Akteure
 - Versionskonflikt → HTTP 409 Conflict, keine Änderung, Neuladen erforderlich.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → HTTP 500, keine Änderung wird gespeichert.
-
-## Alternativen
 
 
 ## Ergebnis

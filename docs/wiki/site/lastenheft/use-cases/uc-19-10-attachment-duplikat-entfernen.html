@@ -52,7 +52,7 @@
 <ol><li>Der Akteur öffnet die Detailansicht des Parent-Objekts und sichtet die Attachmentliste.</li><li>Der Akteur identifiziert das zu entfernende Duplikat anhand von Dateiname, Dateigröße und Erstellungszeitpunkt.</li><li>Der Akteur klickt den Action-Button am betreffenden Attachment-Badge.</li><li>Das System zeigt den Bestätigungsdialog gemäß UC 19/06 mit der Sicherheitsfrage: „Soll nur die Verknüpfung zum [Parent-Typ] entfernt oder auch die physische Datei gelöscht werden? (Nicht empfohlen bei Auftragsdokumenten.)“</li><li>Der Akteur wählt die gewünschte Löschstufe (Entkopplung oder physische Löschung) oder bricht ab.</li><li>Das System führt die gewählte Operation gemäß UC 19/06 aus.</li><li>Das System aktualisiert die Attachmentliste in der UI.</li></ol>
 <p><strong>Hinweis zur Entscheidung</strong></p>
 <p>Entkopplung ist empfohlen, wenn nicht sicher ist, ob die physische Datei noch anderweitig benötigt wird. Physische Löschung nur dann, wenn sicher ist, dass es sich nicht um ein Auftragsdokument handelt und keine weitere Referenz besteht.</p>
-<p><strong>Alternativabläufe</strong></p>
+<h2 class="wiki-h2">Alternativen</h2>
 <ul><li>Akteur bricht den Dialog ab → keine Aktion, alle Attachments bleiben unverändert.</li><li>Attachment existiert nicht → System antwortet mit 404.</li><li>Parent-Objekt existiert nicht → System antwortet mit 404.</li><li>Akteur ohne Änderungsrechte → System blockiert mit 403.</li><li>Technischer Fehler → System antwortet mit 500, keine Teillöschung.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
 <h2 class="wiki-h2">Ergebnis</h2>

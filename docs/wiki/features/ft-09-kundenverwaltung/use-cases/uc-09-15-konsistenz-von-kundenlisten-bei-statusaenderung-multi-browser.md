@@ -1,4 +1,4 @@
-﻿# UC 09/15: Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)
+# UC 09/15: Konsistenz von Kundenlisten bei Statusänderung (Multi-Browser)
 
 ## Metadaten
 
@@ -20,6 +20,7 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 
 ---
 
+## Ablauf
 ### Ablauf – Beispiel: Deaktivieren in Browser A
 
 1. Browser A (Administrator) öffnet die Kundendetailansicht eines aktiven Kunden.
@@ -49,9 +50,6 @@ Sicherstellen, dass Kundenlisten bei Statusänderungen (Deaktivieren / Reaktivie
 - Es ist nicht erforderlich, dass andere Browser aktiv gepusht werden; Konsistenz ist spätestens bei der nächsten Serverabfrage garantiert.
 
 ---
-
-## Ablauf
-
 
 ## Alternativen
 

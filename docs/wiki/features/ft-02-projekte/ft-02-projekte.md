@@ -84,7 +84,6 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 - [UC 02/17: Projekt-Mengenlogik-Konsistenz (Projektübersicht)](use-cases/uc-02-17-projekt-mengenlogik-konsistenz-projektuebersicht.md)
 - [UC 02/18: Race Condition bei Projektlöschung](use-cases/uc-02-18-race-condition-bei-projektloeschung.md)
 - [UC 02/19: Projekt in abhängigen Sichten anzeigen (Quer­sicht-Vertrag)](use-cases/uc-02-19-projekt-in-abhaengigen-sichten-anzeigen-quer-sicht-vertrag.md)
-- [UC 02/20: ENTFERNT — Duplikat von UC 02/13](use-cases/uc-02-20-entfernt-duplikat-von-uc-02-13.md)
 - [UC 02/21: Termin für Projekt ohne Termine anlegen (über Kalendersicht)](use-cases/uc-02-21-termin-fuer-projekt-ohne-termine-anlegen-ueber-kalendersicht.md)
 - [UC 02/22: Notiz von Projekt entfernen](use-cases/uc-02-22-notiz-von-projekt-entfernen.md)
 - [UC 02/23: Notiz anpinnen / lospinnen](use-cases/uc-02-23-notiz-anpinnen-lospinnen.md)
@@ -158,4 +157,4 @@ Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifisch
 - **BEHOBEN**: UC 02/06 alt beschrieb „Anhangslöschung nicht vorgesehen“ — Code und FT 19 erlauben Löschung. UC 02/06 wurde korrigiert.
 - **BEHOBEN**: `order_number` war im Feature-Dokument nicht als Pflichtfeld erwähnt, ist aber im Code 422-validiert. UC 02/01 wurde korrigiert.
 - **BEHOBEN**: Notiz-Endpunkt für Update läuft über generische `notesRoutes` (PUT), nicht über `projectNotesRoutes`. UC 02/05 dokumentiert dies jetzt.
-- **OFFEN**: UC 02/19 und UC 02/20 waren Duplikate von UC 02/12 / 02/13 und sind als ENTFERNT markiert.
+- **BEHOBEN**: Ein entferntes Duplikat der denormalisierten Projektanzeige wurde aus der lokalen Use-Case-Liste entfernt. UC 02/19 bleibt als eigener Quersicht-Vertrag dokumentiert.

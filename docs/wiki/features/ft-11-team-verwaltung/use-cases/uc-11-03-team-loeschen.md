@@ -1,4 +1,4 @@
-﻿# UC 11/03: Team löschen
+# UC 11/03: Team löschen
 
 ## Metadaten
 
@@ -32,13 +32,13 @@ Der Akteur wählt ein Team zum Löschen aus.
 5. Das System setzt bei allen Mitarbeitern dieses Teams das Feld `team_id = null`.
 6. Das System löscht das Team.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Versionskonflikt → Das System antwortet mit 409 Conflict, keine Löschung.
 - Abbruch durch den Akteur → Keine Löschung.
 - Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung.
-
-## Alternativen
 
 
 ## Ergebnis

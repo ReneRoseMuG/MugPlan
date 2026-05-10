@@ -1,4 +1,4 @@
-﻿# UC 02/06: Projektanhänge verwalten
+# UC 02/06: Projektanhänge verwalten
 
 ## Metadaten
 
@@ -18,6 +18,7 @@ Dokumente zu einem Projekt hinzufügen, einsehen, herunterladen und bei Bedarf e
 - Der Akteur ist authentifiziert.
 - Der Akteur besitzt Änderungsrechte (für Upload und Löschung) bzw. mindestens Leserechte (für Anzeige und Download).
 
+## Ablauf
 ### Ablauf — Anhang hochladen
 
 1. Der Akteur öffnet das Projekt und wählt „Attachment hinzufügen".
@@ -42,9 +43,6 @@ Dokumente zu einem Projekt hinzufügen, einsehen, herunterladen und bei Bedarf e
     - **Entkopplung:** Das System entfernt den Attachment-Datensatz. Die physische Datei verbleibt im Upload-Verzeichnis.
     - **Physische Löschung:** Das System entfernt Datensatz und physische Datei vollständig.
 4. Das System aktualisiert die Anhangsliste.
-
-## Ablauf
-
 
 ## Alternativen
 

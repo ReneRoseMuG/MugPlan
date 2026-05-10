@@ -1,4 +1,4 @@
-﻿# UC 13/13: Wochen-Notiz anlegen
+# UC 13/13: Wochen-Notiz anlegen
 
 ## Metadaten
 
@@ -37,15 +37,15 @@ Eine neue Notiz erstellen und einer Kalenderwoche eindeutig zuordnen.
 12. Das System speichert die Notiz und den Eintrag in `calendar_week_note` persistent.
 13. Das System aktualisiert die Notizliste im Kalenderwochen-Kontext gemäß Sortierlogik.
 
-### Alternativabläufe
+
+## Alternativen
+
 
 - Pflichtfelder fehlen → Das System verweigert die Speicherung und zeigt Validierungsfehler an.
 - Der Akteur ist nicht authentifiziert → HTTP 401, keine Speicherung.
 - Der Akteur besitzt Leser-Rolle → HTTP 403, keine Speicherung.
 - Abbruch durch den Akteur → Keine Persistierung.
 - Technischer Fehler → HTTP 500, keine persistente Notiz entsteht.
-
-## Alternativen
 
 
 ## Ergebnis

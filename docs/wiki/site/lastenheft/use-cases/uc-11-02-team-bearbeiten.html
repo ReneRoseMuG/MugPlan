@@ -56,9 +56,8 @@
 <ol><li>Der Akteur verändert die Mitarbeiterliste.</li><li>Der Akteur bestätigt die Änderungen.</li><li>Das System prüft serverseitig:</li></ol>
 <ul><li>Versionskennung ist unverändert.</li><li>Jeder neu hinzugefügte Mitarbeiter existiert.</li><li>Jeder neu hinzugefügte Mitarbeiter ist aktiv.</li><li>Kein neu hinzugefügter Mitarbeiter ist einem anderen Team zugeordnet.</li></ul>
 <ol><li>Das System entfernt <code>team_id</code> bei Mitarbeitern, die aus dem Team entfernt wurden.</li><li>Das System setzt <code>team_id</code> bei neu hinzugefügten Mitarbeitern auf die Team-ID.</li><li>Das System erhöht die Versionskennung des Teams.</li><li>Das System persistiert die Änderungen atomar.</li></ol>
-<h3 class="wiki-h3">Alternativabläufe</h3>
-<ul><li>Versionskennung hat sich zwischenzeitlich geändert → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Ein neu hinzugefügter Mitarbeiter wurde parallel einem anderen Team zugeordnet → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Abbruch durch den Akteur → Keine Persistierung.</li><li>Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.</li></ul>
 <h2 class="wiki-h2">Alternativen</h2>
+<ul><li>Versionskennung hat sich zwischenzeitlich geändert → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Ein neu hinzugefügter Mitarbeiter wurde parallel einem anderen Team zugeordnet → Das System antwortet mit 409 Conflict, keine Persistierung.</li><li>Abbruch durch den Akteur → Keine Persistierung.</li><li>Technischer Fehler → Das System antwortet mit 500, keine Teilpersistierung erfolgt.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Die Mitarbeiterliste des Teams ist aktualisiert.</li><li>Kein Mitarbeiter ist mehreren Teams zugeordnet.</li><li>Die Team-Version ist erhöht.</li><li>Der Datenzustand ist konsistent.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">
