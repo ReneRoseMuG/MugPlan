@@ -2,17 +2,19 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Regulaere, nicht blockierte Kalendereintraege bleiben in Monats- und Wochenansicht drag-faehig.
- * - Historische Parkplatz-Termine bleiben in Monats- und Wochenansicht drag-faehig.
+ * - Reguläre, nicht blockierte Kalendereinträge bleiben in Monats- und Wochenansicht drag-fähig.
+ * - Historische Parkplatz-Termine bleiben in Monats- und Wochenansicht drag-fähig.
  * - Der positive Drag-Start-Pfad reicht die appointmentId in beide Kalenderansichten an dataTransfer weiter.
+ * - Die Wochenansicht schneidet Termine über die Karten-Menüaktion aus, nicht mehr über Pointer-Press.
  *
- * Fehlerfaelle:
- * - Regulaere Termine verlieren ihren Drag-Start bereits in der Verdrahtung.
+ * Fehlerfälle:
+ * - Reguläre Termine verlieren ihren Drag-Start bereits in der Verdrahtung.
  * - Monats- und Wochenansicht setzen keine appointmentId in dataTransfer.
  * - Historische Parkplatz-Termine verlieren ihre Drag-Freigabe.
+ * - Wochenkarten aktivieren die Move-Auswahl wieder durch direktes Anklicken.
  *
  * Ziel:
- * Die positive Drag-Start-Verdrahtung fuer normale Termine und historische Parkplatz-Termine in Monat und Woche regressionssicher absichern.
+ * Die positive Drag-Start-Verdrahtung und die neue explizite Wochenkarten-Ausschneiden-Aktion regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -288,12 +290,11 @@ describe("calendar drag and drop regular draggable wiring", () => {
     expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 61, tourId: 7 }));
   });
 
-  it("marks week-view appointments for move after a long left pointer press", async () => {
-    vi.useFakeTimers();
-    Object.assign(window, { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout });
+  it("wires week-view cut actions through card menus instead of pointer presses", async () => {
     const onSelectMoveAppointment = vi.fn();
     configureDefaults([
       createAppointment({ id: 62, startDate: "2099-07-01", endDate: null }),
+      createAppointment({ id: 63, startDate: "2099-07-01", endDate: "2099-07-02" }),
     ]);
 
     const { CalendarWeekView } = await import("../../../client/src/components/calendar/CalendarWeekView");
@@ -305,16 +306,19 @@ describe("calendar drag and drop regular draggable wiring", () => {
     );
 
     const weekPanel = weekPanelCalls.find((entry) => (entry.appointment as { id: number }).id === 62);
-    expect(typeof weekPanel?.onPointerDown).toBe("function");
+    expect(weekPanel?.onPointerDown).toBeUndefined();
+    expect(typeof weekPanel?.onCutAppointment).toBe("function");
 
-    (weekPanel?.onPointerDown as (event: { button: number; pointerId: number; clientX: number; clientY: number }) => void)({
-      button: 0,
-      pointerId: 1,
-      clientX: 10,
-      clientY: 10,
-    });
-    vi.advanceTimersByTime(650);
+    (weekPanel?.onCutAppointment as () => void)();
 
     expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 62, tourId: 7 }));
+
+    const spanningTile = weekSpanningTileCalls.find((entry) => (entry.appointment as { id: number }).id === 63);
+    expect(spanningTile?.onPointerDown).toBeUndefined();
+    expect(typeof spanningTile?.onCutAppointment).toBe("function");
+
+    (spanningTile?.onCutAppointment as () => void)();
+
+    expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 63, tourId: 7 }));
   });
 });

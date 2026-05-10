@@ -81,6 +81,26 @@ async function loginReaderAgent(): Promise<SuperAgentTest> {
   return agent;
 }
 
+async function loginDispatcherAgent(): Promise<SuperAgentTest> {
+  const username = nextId("NOTE-DISPATCHER");
+  const password = "note-dispatcher-password";
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "Note",
+    lastName: "Dispatcher",
+    passwordHash: await hashPassword(password),
+    roleCode: "DISPATCHER",
+  });
+
+  const agent = request.agent(app);
+  await agent
+    .post("/api/auth/login")
+    .send({ username, password })
+    .expect(200);
+  return agent;
+}
+
 async function createCustomer(agent: SuperAgentTest, marker: string): Promise<number> {
   const created = await createCustomerEntity(agent, marker);
   return created.id;
@@ -452,6 +472,76 @@ describe("FT09/FT13 integration: note joins and template integrity", () => {
     expect(defaultIds).not.toContain(inactive.id);
     expect(allIds).toContain(active.id);
     expect(allIds).toContain(inactive.id);
+  });
+
+  it("enforces note template management roles and admin-only template color", async () => {
+    const admin = await loginAdminAgent();
+    const dispatcher = await loginDispatcherAgent();
+    const reader = await loginReaderAgent();
+
+    await reader.get("/api/note-templates").expect(200);
+    await reader
+      .get("/api/note-templates?active=false")
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+    await reader
+      .post("/api/note-templates")
+      .send({
+        title: nextId("TPL-READER"),
+        body: "<p>Reader</p>",
+        sortOrder: 0,
+        isActive: true,
+      })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+
+    await dispatcher
+      .post("/api/note-templates")
+      .send({
+        title: nextId("TPL-DISPATCHER-COLOR"),
+        body: "<p>Dispatcher Color</p>",
+        cardColor: "#22c55e",
+        sortOrder: 0,
+        isActive: true,
+      })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+
+    const dispatcherCreated = await dispatcher
+      .post("/api/note-templates")
+      .send({
+        title: nextId("TPL-DISPATCHER"),
+        body: "<p>Dispatcher</p>",
+        sortOrder: 0,
+        isActive: true,
+      })
+      .expect(201);
+    expect(dispatcherCreated.body.cardColor).toBeNull();
+
+    const dispatcherUpdated = await dispatcher
+      .put(`/api/note-templates/${dispatcherCreated.body.id}`)
+      .send({
+        title: nextId("TPL-DISPATCHER-UPD"),
+        version: dispatcherCreated.body.version,
+      })
+      .expect(200);
+
+    await dispatcher
+      .put(`/api/note-templates/${dispatcherCreated.body.id}`)
+      .send({
+        cardColor: "#0ea5e9",
+        version: dispatcherUpdated.body.version,
+      })
+      .expect(403)
+      .expect(({ body }) => expect(body.code).toBe("FORBIDDEN"));
+
+    await dispatcher
+      .delete(`/api/note-templates/${dispatcherCreated.body.id}`)
+      .send({ version: dispatcherUpdated.body.version })
+      .expect(204);
+
+    const adminTemplate = await createTemplate(admin, { marker: "TPL-ADMIN-COLOR", isActive: true, cardColor: "#f97316" });
+    expect(adminTemplate.cardColor).toBe("#f97316");
   });
 
   it("must not delete foreign customer note via parent-mismatch path", async () => {

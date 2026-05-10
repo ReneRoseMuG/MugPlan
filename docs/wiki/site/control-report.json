@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 29,
-      "generated_count": 29,
+      "source_count": 26,
+      "generated_count": 26,
       "warnings": 0,
       "errors": 0
     },
@@ -20,8 +20,8 @@
       "errors": 0
     },
     "use_cases": {
-      "source_count": 237,
-      "generated_count": 237,
+      "source_count": 239,
+      "generated_count": 239,
       "warnings": 63,
       "errors": 0
     },
@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 54,
-      "generated_count": 54,
+      "source_count": 55,
+      "generated_count": 55,
       "warnings": 0,
       "errors": 0
     }
@@ -672,33 +672,6 @@
         "title": "Projekte- und Dokumentextraktion-Dialoge",
         "source": "tasks/projekte-und-dokumentextraktion-dialoge.md",
         "output": "projekt/aufgaben/projekte-und-dokumentextraktion-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-22",
-        "title": "Kunden-Dialoge",
-        "source": "tasks/kunden-dialoge.md",
-        "output": "projekt/aufgaben/kunden-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-23",
-        "title": "Mitarbeiter-Dialoge",
-        "source": "tasks/mitarbeiter-dialoge.md",
-        "output": "projekt/aufgaben/mitarbeiter-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-25",
-        "title": "Notizen-Dialoge",
-        "source": "tasks/notizen-dialoge.md",
-        "output": "projekt/aufgaben/notizen-dialoge.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -1625,6 +1598,24 @@
         "title": "Tour-KW-Wochenplanung anzeigen und anwenden",
         "source": "features/ft-04-tourenplanung/use-cases/uc-04-15-tour-kw-wochenplanung-anzeigen-und-anwenden.md",
         "output": "lastenheft/use-cases/uc-04-15-tour-kw-wochenplanung-anzeigen-und-anwenden.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "UC-04/16",
+        "title": "Tour-KW blockieren und Termine parken",
+        "source": "features/ft-04-tourenplanung/use-cases/uc-04-16-tour-kw-blockieren-und-termine-parken.md",
+        "output": "lastenheft/use-cases/uc-04-16-tour-kw-blockieren-und-termine-parken.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "UC-04/17",
+        "title": "Tour-KW freigeben",
+        "source": "features/ft-04-tourenplanung/use-cases/uc-04-17-tour-kw-freigeben.md",
+        "output": "lastenheft/use-cases/uc-04-17-tour-kw-freigeben.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -3507,6 +3498,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen",
+        "title": "10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge",
+        "source": "journal/10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "09-05-26-p01-dialog-basiskomponenten-abgeschlossen",
         "title": "09.05.26 | Abschluss | P01 Dialog-Basiskomponenten",

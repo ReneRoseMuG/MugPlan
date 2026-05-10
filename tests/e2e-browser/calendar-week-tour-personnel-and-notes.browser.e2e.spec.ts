@@ -553,15 +553,14 @@ test("Inline-Notizen an der Terminkarte lassen sich bearbeiten und löschen", as
     return notes.find((note) => note.id === appointmentNote.id)?.title;
   }).toBe("Termin Browser Bearbeitet");
 
-  page.once("dialog", async (dialog) => {
-    expect(dialog.message()).toContain("Projekt Browser Löschen");
-    await dialog.accept();
-  });
   const deleteResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "DELETE"
     && new URL(response.url()).pathname === `/api/projects/${project.id}/notes/${projectNote.id}`
   ));
   await page.getByTestId(`week-appointment-inline-note-delete-${appointmentId}-project-${projectNote.id}`).click();
+  const deleteDialog = page.getByTestId("dialog-delete-inline-note");
+  await expect(deleteDialog).toContainText("Projekt Browser Löschen");
+  await deleteDialog.getByRole("button", { name: "Notiz löschen" }).click();
   const deleteResponse = await deleteResponsePromise;
   expect(deleteResponse.ok()).toBeTruthy();
   await expect(page.getByTestId(`week-appointment-inline-note-${appointmentId}-${projectNote.id}`)).toHaveCount(0);

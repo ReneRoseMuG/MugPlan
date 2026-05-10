@@ -32,9 +32,6 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die v
 | A-19 | [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md) | Implementierung | `offen` |
 | A-20 | [Termine- und Kalenderdialoge](termine-und-kalenderdialoge.md) | Implementierung | `offen` |
 | A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `offen` |
-| A-22 | [Kunden-Dialoge](kunden-dialoge.md) | Implementierung | `offen` |
-| A-23 | [Mitarbeiter-Dialoge](mitarbeiter-dialoge.md) | Implementierung | `offen` |
-| A-25 | [Notizen-Dialoge](notizen-dialoge.md) | Implementierung | `offen` |
 | A-27 | [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md) | Implementierung | `offen` |
 | A-29 | [Reports- und Druck-Dialoge](reports-und-druck-dialoge.md) | Implementierung | `offen` |
 

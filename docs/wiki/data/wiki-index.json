@@ -238,9 +238,6 @@
       "master_task": "tasks/dialog-rollout-masterplan.md",
       "aufgaben": [
         "tasks/reports-und-druck-dialoge.md",
-        "tasks/kunden-dialoge.md",
-        "tasks/mitarbeiter-dialoge.md",
-        "tasks/notizen-dialoge.md",
         "tasks/projekte-und-dokumentextraktion-dialoge.md",
         "tasks/benutzer-und-sicherheit-dialoge.md",
         "tasks/termin-tour-kw-mutationsdialoge.md",

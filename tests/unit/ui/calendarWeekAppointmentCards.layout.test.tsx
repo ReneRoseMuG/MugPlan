@@ -487,6 +487,32 @@ describe("calendar week appointment card layout", () => {
     expect(html.match(/Termin löschen/g)).toHaveLength(2);
   });
 
+  it("renders the cut menu action for editable week appointments on both card types", () => {
+    const appointment = createAppointment();
+    const onCutAppointment = vi.fn();
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanel
+          appointment={appointment}
+          context="week-calendar"
+          onCutAppointment={onCutAppointment}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+          onCutAppointment={onCutAppointment}
+        />
+      </>,
+    );
+
+    expect(html).toContain('data-testid="week-appointment-cut-42"');
+    expect(html).toContain('data-testid="week-spanning-tile-cut-42"');
+    expect(html.match(/Ausschneiden/g)).toHaveLength(2);
+  });
+
   it("renders the same note and employee assignment menu actions on regular and spanning week cards", () => {
     const appointment = createAppointment();
     const onCreateAppointmentNote = vi.fn();

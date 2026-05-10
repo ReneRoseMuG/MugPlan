@@ -32,6 +32,27 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/dialog-base", () => ({
+  ConfirmDialogBase: ({ open, title }: { open: boolean; title?: React.ReactNode }) => (
+    open ? <div data-testid="dialog-delete-employee-absence">{title}</div> : null
+  ),
+  DialogBaseFooter: ({
+    primaryAction,
+    secondaryAction,
+  }: {
+    primaryAction?: { label: string; testId?: string };
+    secondaryAction?: { label: string; testId?: string };
+  }) => (
+    <>
+      {secondaryAction ? <button type="button" data-testid={secondaryAction.testId}>{secondaryAction.label}</button> : null}
+      {primaryAction ? <button type="button" data-testid={primaryAction.testId}>{primaryAction.label}</button> : null}
+    </>
+  ),
+  DialogBaseShell: ({ children, open, testId, title }: { children?: React.ReactNode; open: boolean; testId?: string; title?: React.ReactNode }) => (
+    open ? <section data-testid={testId}><h2>{title}</h2>{children}</section> : null
+  ),
+}));
+
 vi.mock("@/components/ui/input", () => ({
   Input: (props: Record<string, unknown>) => <input {...props} />,
 }));

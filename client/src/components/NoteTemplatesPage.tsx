@@ -11,8 +11,10 @@ import type { NoteTemplate } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { joinEditFormContext } from "@/lib/edit-form-context";
 import { ColorSelectEntityEditDialog } from "@/components/ui/color-select-entity-edit-dialog";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import { getReadableNoteTextColors } from "@/lib/note-colors";
 
 const fallbackCardColor = "#f8fafc";
@@ -93,14 +95,20 @@ export function NoteTemplatesPage() {
   const [formPrint, setFormPrint] = useState(true);
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const [pendingDeleteTemplate, setPendingDeleteTemplate] = useState<NoteTemplate | null>(null);
+  const [mutationError, setMutationError] = useState<NormalizedServerError | null>(null);
   const templateEditContext = editingTemplate
     ? joinEditFormContext([formTitle.trim() || editingTemplate.title])
     : null;
 
-  const extractApiCode = (error: unknown): string | null => {
-    if (!(error instanceof Error)) return null;
-    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
-    return match?.[1] ?? null;
+  const showMutationError = (error: unknown, title: string) => {
+    const normalized = normalizeServerError(error, { title });
+    setMutationError(normalized);
+    toast({
+      title: normalized.title,
+      description: normalized.description,
+      variant: "destructive",
+    });
   };
 
   const invalidateNoteTemplateQueries = async () => {
@@ -122,7 +130,11 @@ export function NoteTemplatesPage() {
     },
     onSuccess: () => {
       void invalidateNoteTemplateQueries();
+      setMutationError(null);
       handleCloseDialog();
+    },
+    onError: (error) => {
+      showMutationError(error, "Notizvorlage konnte nicht angelegt werden");
     },
   });
 
@@ -132,17 +144,11 @@ export function NoteTemplatesPage() {
     },
     onSuccess: () => {
       void invalidateNoteTemplateQueries();
+      setMutationError(null);
       handleCloseDialog();
     },
     onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Speichern nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
+      showMutationError(error, "Notizvorlage konnte nicht gespeichert werden");
     },
   });
 
@@ -152,16 +158,11 @@ export function NoteTemplatesPage() {
     },
     onSuccess: () => {
       void invalidateNoteTemplateQueries();
+      setMutationError(null);
+      setPendingDeleteTemplate(null);
     },
     onError: (error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-      }
+      showMutationError(error, "Notizvorlage konnte nicht gelöscht werden");
     },
   });
 
@@ -173,6 +174,7 @@ export function NoteTemplatesPage() {
     setFormPrint(true);
     setFormSortOrder(0);
     setFormIsActive(true);
+    setMutationError(null);
     setDialogOpen(true);
   };
 
@@ -184,6 +186,7 @@ export function NoteTemplatesPage() {
     setFormPrint(template.print);
     setFormSortOrder(template.sortOrder ?? 0);
     setFormIsActive(template.isActive);
+    setMutationError(null);
     setDialogOpen(true);
   };
 
@@ -200,6 +203,7 @@ export function NoteTemplatesPage() {
 
   const handleSave = () => {
     if (!formTitle.trim()) return;
+    setMutationError(null);
 
     const payload = {
       title: formTitle,
@@ -221,9 +225,7 @@ export function NoteTemplatesPage() {
   };
 
   const handleDelete = (template: NoteTemplate) => {
-    if (window.confirm(`Wollen Sie die Notiz Vorlage ${template.title} wirklich löschen?`)) {
-      deleteMutation.mutate({ id: template.id, version: template.version });
-    }
+    setPendingDeleteTemplate(template);
   };
 
   return (
@@ -245,26 +247,31 @@ export function NoteTemplatesPage() {
           </Button>
         )}
         contentSlot={(
-          <BoardView
-            gridTestId="list-templates"
-            gridCols="2"
-            isEmpty={templates.length === 0}
-            emptyState={(
-              <p className="col-span-2 py-8 text-center text-sm text-slate-400">
-                Keine Vorlagen vorhanden
-              </p>
-            )}
-          >
-            {templates.map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onEdit={() => handleOpenEdit(template)}
-                onDelete={() => handleDelete(template)}
-                isDeleting={deleteMutation.isPending}
-              />
-            ))}
-          </BoardView>
+          <>
+            {mutationError ? (
+              <DialogBaseInlineMessage className="mb-3" error={mutationError} />
+            ) : null}
+            <BoardView
+              gridTestId="list-templates"
+              gridCols="2"
+              isEmpty={templates.length === 0}
+              emptyState={(
+                <p className="col-span-2 py-8 text-center text-sm text-slate-400">
+                  Keine Vorlagen vorhanden
+                </p>
+              )}
+            >
+              {templates.map((template) => (
+                <TemplateCard
+                  key={template.id}
+                  template={template}
+                  onEdit={() => handleOpenEdit(template)}
+                  onDelete={() => handleDelete(template)}
+                  isDeleting={deleteMutation.isPending}
+                />
+              ))}
+            </BoardView>
+          </>
         )}
       />
 
@@ -345,6 +352,29 @@ export function NoteTemplatesPage() {
           </Label>
         </div>
       </ColorSelectEntityEditDialog>
+      <ConfirmDialogBase
+        open={pendingDeleteTemplate !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteTemplate(null);
+        }}
+        icon={<FileText className="h-5 w-5" />}
+        title="Notizvorlage löschen"
+        description={
+          pendingDeleteTemplate
+            ? `Soll die Notizvorlage „${pendingDeleteTemplate.title}“ endgültig gelöscht werden? Bereits erstellte Notizen bleiben unverändert.`
+            : undefined
+        }
+        confirmLabel="Löschen"
+        pendingLabel="Löschen..."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!pendingDeleteTemplate) return;
+          setMutationError(null);
+          deleteMutation.mutate({ id: pendingDeleteTemplate.id, version: pendingDeleteTemplate.version });
+        }}
+        testId="dialog-delete-note-template"
+        variant="destructive"
+      />
     </>
   );
 }

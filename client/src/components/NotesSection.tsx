@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialogBase } from "@/components/ui/dialog-base";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { HelpIcon } from "@/components/ui/help/help-icon";
@@ -144,6 +145,7 @@ export function NotesSection({
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [cardColorLocked, setCardColorLocked] = useState(false);
+  const [pendingDeleteNote, setPendingDeleteNote] = useState<Note | null>(null);
 
   const { data: templates = [], isLoading: templatesLoading } = useQuery<NoteTemplate[]>({
     queryKey: ["/api/note-templates"],
@@ -233,9 +235,7 @@ export function NotesSection({
 
   const handleDelete = (note: Note) => {
     if (!onDelete) return;
-    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich löschen?`)) {
-      onDelete(note.id);
-    }
+    setPendingDeleteNote(note);
   };
 
   const isEditMode = editingNoteId !== null;
@@ -380,6 +380,27 @@ export function NotesSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialogBase
+        open={pendingDeleteNote !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteNote(null);
+        }}
+        icon={<StickyNote className="h-5 w-5" />}
+        title="Notiz löschen"
+        description={
+          pendingDeleteNote
+            ? `Soll die Notiz „${pendingDeleteNote.title}“ endgültig gelöscht werden?`
+            : undefined
+        }
+        confirmLabel="Notiz löschen"
+        onConfirm={() => {
+          if (!pendingDeleteNote) return;
+          onDelete?.(pendingDeleteNote.id);
+          setPendingDeleteNote(null);
+        }}
+        testId="dialog-delete-note"
+        variant="destructive"
+      />
     </div>
   );
 }

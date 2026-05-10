@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus } from "lucide-react";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -139,6 +139,7 @@ export function CalendarWeekAppointmentPanel({
   onDeleteInlineNote,
   onAssignAppointmentEmployees,
   onRemoveAppointmentEmployee,
+  onCutAppointment,
 }: {
   appointment: CalendarAppointment;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
@@ -181,6 +182,7 @@ export function CalendarWeekAppointmentPanel({
   onDeleteInlineNote?: (note: CalendarWeekInlineNote) => void;
   onAssignAppointmentEmployees?: (appointmentId: number) => void;
   onRemoveAppointmentEmployee?: (appointmentId: number, employeeId: number) => void;
+  onCutAppointment?: () => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -429,6 +431,16 @@ export function CalendarWeekAppointmentPanel({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          {onCutAppointment ? (
+            <DropdownMenuItem
+              onClick={onCutAppointment}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-appointment-cut-${appointment.id}`}
+            >
+              <Scissors className="h-3.5 w-3.5 shrink-0" />
+              Ausschneiden
+            </DropdownMenuItem>
+          ) : null}
           {onCreateAppointmentNote && !isPastStartDate(appointment.startDate) ? (
             <DropdownMenuItem
               onClick={() => onCreateAppointmentNote(appointment.id)}

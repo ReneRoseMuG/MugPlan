@@ -32,9 +32,9 @@ Die Reihenfolge folgt der Hybrid-Strategie aus Planung und Testsuite: zuerst die
 | 6 | [Hilfetexte-, Import- und Export-Dialoge](../tasks/closed/hilfetexte-import-export-dialoge.md) | Abgeschlossen: Hilfetextpflege, Hilfetext-Import-/Export-Dialog und Importfehlermeldungen nutzen gemeinsame Dialog- und Inline-Meldungspfade. |
 | 7 | [Einstellungen-, Monitoring- und Admin-Dialoge](../tasks/closed/einstellungen-monitoring-admin-dialoge.md) | Abgeschlossen: Dump-Löschung, Dump-Import-Anwendung und administrative Korrekturworkflows verlangen gemeinsame Bestätigungen und zeigen normalisierte Inline-Fehler. |
 | 8 | [Reports- und Druck-Dialoge](../tasks/reports-und-druck-dialoge.md) | Overlays, Druckvorschau und Report-Fehlerkommunikation. |
-| 9 | [Kunden-Dialoge](../tasks/kunden-dialoge.md) | Domain-Objekt mit überschaubaren Dialog- und Anhangspfaden. |
-| 10 | [Mitarbeiter-Dialoge](../tasks/mitarbeiter-dialoge.md) | Domain-Objekt mit Abwesenheiten und Auslastung, aber ohne Tour-KW-Mutationsumbau. |
-| 11 | [Notizen-Dialoge](../tasks/notizen-dialoge.md) | Domänenübergreifende Notiz- und Workflow-Dialoge. |
+| 9 | [Kunden-Dialoge](../tasks/closed/kunden-dialoge.md) | Abgeschlossen: Kundenformular, Kundennotizen, Rollenprüfung und normalisierte Meldungen nutzen gemeinsame P-01-Strukturen. |
+| 10 | [Mitarbeiter-Dialoge](../tasks/closed/mitarbeiter-dialoge.md) | Abgeschlossen: Mitarbeiterformular, Abwesenheitsdialoge, Mitarbeiterlöschung und Mitarbeiternotizen nutzen gemeinsame P-01-Strukturen. |
+| 11 | [Notizen-Dialoge](../tasks/closed/notizen-dialoge.md) | Abgeschlossen: Notizlöschungen, Notizvorlagen, Kalender-Inline-Notizen und Vorlagen-Rollenpfade nutzen gemeinsame P-01-Strukturen. |
 | 12 | [Projekte- und Dokumentextraktion-Dialoge](../tasks/projekte-und-dokumentextraktion-dialoge.md) | Projektpfade plus komplexere Dokumentextraktion. |
 | 13 | [Benutzer- und Sicherheitsdialoge](../tasks/benutzer-und-sicherheit-dialoge.md) | Sicherheitsnaher Bereich mit bewusst später Umsetzung. |
 | 14 | [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](../tasks/termin-tour-kw-mutationsdialoge.md) | Analyse vor den komplexesten Mutationsdialogen. |

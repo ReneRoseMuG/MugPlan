@@ -64,6 +64,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
+import { ConfirmDialogBase } from "@/components/ui/dialog-base";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Input } from "@/components/ui/input";
@@ -202,8 +203,6 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
 const MIN_COLLAPSED_WEEK_CARD_HEIGHT_PX = 180;
-const MOVE_SELECTION_LONG_PRESS_MS = 650;
-const MOVE_SELECTION_POINTER_TOLERANCE_PX = 8;
 
 function usesCompactDayWidthForCalendarMarker(marker: { type: string }): boolean {
   return marker.type === "public_holiday" || marker.type === "company_holiday";
@@ -479,6 +478,7 @@ export function CalendarWeekView({
   const [hoveredAppointmentId, setHoveredAppointmentId] = useState<number | null>(null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; appointmentId: number; noteId: number; noteVersion: number } | null>(null);
+  const [pendingInlineNoteDelete, setPendingInlineNoteDelete] = useState<CalendarWeekInlineNote | null>(null);
   const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
   const [workflowNoteEditorOpen, setWorkflowNoteEditorOpen] = useState(false);
   const [workflowNoteEditorAppointmentId, setWorkflowNoteEditorAppointmentId] = useState<number | null>(null);
@@ -534,13 +534,6 @@ export function CalendarWeekView({
   const weekScrollContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const weekPersonnelBadgeMeasurementRef = useRef<HTMLDivElement | null>(null);
   const pendingLaneCorrectionRef = useRef<string | null>(null);
-  const moveSelectionLongPressRef = useRef<{
-    appointmentId: number;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    timer: number;
-  } | null>(null);
   const [, setAppointmentHeightVersion] = useState(0);
   const [weekHeaderHeightsByWeek, setWeekHeaderHeightsByWeek] = useState<Record<string, number>>({});
   const [measuredPersonnelColumnWidthsByWeek, setMeasuredPersonnelColumnWidthsByWeek] = useState<Record<string, string>>({});
@@ -1290,59 +1283,12 @@ export function CalendarWeekView({
     onOpenAppointment?.(appointmentId, { scrollLeft: weekScrollLeft, scrollTop: weekScrollTop });
   };
 
-  const clearMoveSelectionLongPress = () => {
-    const current = moveSelectionLongPressRef.current;
-    if (!current) return;
-    window.clearTimeout(current.timer);
-    moveSelectionLongPressRef.current = null;
+  const handleCutAppointment = (appointment: CalendarAppointment) => {
+    if (!onSelectMoveAppointment) return;
+    onSelectMoveAppointment(toCalendarMoveSelection(appointment));
   };
-
-  useEffect(() => clearMoveSelectionLongPress, []);
-
-  const handleMoveSelectionPointerDown = (
-    event: React.PointerEvent,
-    appointment: CalendarAppointment,
-    canSelectForMove: boolean,
-  ) => {
-    if (!canSelectForMove || !onSelectMoveAppointment || event.button !== 0) return;
-    clearMoveSelectionLongPress();
-    const selection = toCalendarMoveSelection(appointment);
-    const timer = window.setTimeout(() => {
-      moveSelectionLongPressRef.current = null;
-      onSelectMoveAppointment(selection);
-    }, MOVE_SELECTION_LONG_PRESS_MS);
-    moveSelectionLongPressRef.current = {
-      appointmentId: appointment.id,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      timer,
-    };
-  };
-
-  const handleMoveSelectionPointerMove = (event: React.PointerEvent) => {
-    const current = moveSelectionLongPressRef.current;
-    if (!current || current.pointerId !== event.pointerId) return;
-    const deltaX = Math.abs(event.clientX - current.startX);
-    const deltaY = Math.abs(event.clientY - current.startY);
-    if (deltaX > MOVE_SELECTION_POINTER_TOLERANCE_PX || deltaY > MOVE_SELECTION_POINTER_TOLERANCE_PX) {
-      clearMoveSelectionLongPress();
-    }
-  };
-
-  const buildMoveSelectionPointerHandlers = (appointment: CalendarAppointment, canSelectForMove: boolean) => (
-    canSelectForMove
-      ? {
-          onPointerDown: (event: React.PointerEvent) => handleMoveSelectionPointerDown(event, appointment, canSelectForMove),
-          onPointerMove: handleMoveSelectionPointerMove,
-          onPointerUp: clearMoveSelectionLongPress,
-          onPointerCancel: clearMoveSelectionLongPress,
-        }
-      : {}
-  );
 
   const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
-    clearMoveSelectionLongPress();
     setDraggedAppointmentId(appointmentId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(appointmentId));
@@ -1761,6 +1707,7 @@ export function CalendarWeekView({
     },
     onSuccess: async (_data, note) => {
       await invalidateInlineNoteQueries(note.sourceType, note.parentId);
+      setPendingInlineNoteDelete(null);
     },
     onError: (error: Error) => {
       toast({ title: "Notiz konnte nicht gelöscht werden", description: error.message, variant: "destructive" });
@@ -1768,9 +1715,7 @@ export function CalendarWeekView({
   });
 
   const handleDeleteInlineNote = (note: CalendarWeekInlineNote) => {
-    if (window.confirm(`Wollen Sie die Notiz ${note.title} wirklich löschen?`)) {
-      deleteInlineNoteMutation.mutate(note);
-    }
+    setPendingInlineNoteDelete(note);
   };
 
   const getWorkflowNoteSuggestionKey = (appointmentId: number, templateTitle: string) =>
@@ -3092,7 +3037,7 @@ export function CalendarWeekView({
                                     }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                    {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
+                                    onCutAppointment={canSelectForMove ? () => handleCutAppointment(appointment) : undefined}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                     onMouseLeave={() =>
                                       setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
@@ -3191,7 +3136,7 @@ export function CalendarWeekView({
                                     }
                                     onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                     onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                    {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
+                                    onCutAppointment={canSelectForMove ? () => handleCutAppointment(appointment) : undefined}
                                     onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                     onMouseLeave={() =>
                                       setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
@@ -3303,7 +3248,7 @@ export function CalendarWeekView({
                                         }
                                         onDragStart={canDragSegment ? (event) => handleDragStart(event, appointment.id) : undefined}
                                         onDragEnd={canDragSegment ? handleDragEnd : undefined}
-                                          {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
+                                          onCutAppointment={canSelectForMove ? () => handleCutAppointment(appointment) : undefined}
                                           onMouseEnter={() => setHoveredAppointmentId(appointment.id)}
                                           onMouseLeave={() =>
                                             setHoveredAppointmentId((prev) => (prev === appointment.id ? null : prev))
@@ -3495,6 +3440,28 @@ export function CalendarWeekView({
           });
           setNoteRemovalDialog(null);
         }}
+      />
+      <ConfirmDialogBase
+        open={pendingInlineNoteDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingInlineNoteDelete(null);
+        }}
+        icon={<StickyNote className="h-5 w-5" />}
+        title="Notiz löschen"
+        description={
+          pendingInlineNoteDelete
+            ? `Soll die Notiz „${pendingInlineNoteDelete.title}“ endgültig gelöscht werden?`
+            : undefined
+        }
+        confirmLabel="Notiz löschen"
+        pendingLabel="Löschen..."
+        isPending={deleteInlineNoteMutation.isPending}
+        onConfirm={() => {
+          if (!pendingInlineNoteDelete) return;
+          deleteInlineNoteMutation.mutate(pendingInlineNoteDelete);
+        }}
+        testId="dialog-delete-inline-note"
+        variant="destructive"
       />
       <Dialog open={workflowNoteEditorOpen} onOpenChange={setWorkflowNoteEditorOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100dvw-2rem)] max-w-lg overflow-y-auto">

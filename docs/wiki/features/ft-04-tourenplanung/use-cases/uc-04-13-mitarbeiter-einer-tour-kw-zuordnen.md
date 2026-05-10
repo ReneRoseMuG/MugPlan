@@ -23,11 +23,11 @@ Einen Mitarbeiter einer Tour-Kalenderwoche zuordnen und nach selektiver Bestäti
 
 1. Der Akteur öffnet den Tab „Wochenplanung“ der Tour.
 2. Der Akteur klickt im Kartenheader auf das Plus.
-3. Das System zeigt aktive Mitarbeiter, die in dieser Kalenderwoche keiner anderen Tour zugeordnet sind.
-4. Mitarbeiter des Typs 1 werden nicht angezeigt.
+3. Das System zeigt aktive Mitarbeiter, für die in dieser Kalenderwoche kein Typ-1-Konflikt besteht.
+4. Ein Typ-1-Konflikt liegt vor, wenn der Mitarbeiter in derselben Kalenderwoche bereits einer anderen Tour zugeordnet ist; solche Mitarbeiter werden nicht angezeigt.
 5. Der Akteur wählt einen Mitarbeiter.
 6. Das System ermittelt Termine der Tour in dieser Kalenderwoche.
-7. Das System prüft die Überschneidungsfreiheit für Typ-2-Mitarbeiter.
+7. Das System prüft je betroffenen Termin, ob beim Ausrollen ein Typ-2-Konflikt durch eine zeitliche Terminüberschneidung entstehen würde.
 8. Das System zeigt eine Vorschau je Termin mit Datum, Projekt, Kunde, aktuellem Mitarbeiterbestand und Status.
 9. Konfliktfreie Termine sind vorausgewählt, Konflikte sind deaktiviert.
 10. Der Akteur kann vorausgewählte Termine abwählen.

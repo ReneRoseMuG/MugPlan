@@ -19,16 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialogBase, DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { invalidateTourWeekQueries } from "@/lib/tour-week-queries";
@@ -37,6 +28,7 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { useToast } from "@/hooks/use-toast";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { resolveEmployeeEditLabel } from "@/lib/edit-form-context";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import type { EmployeeRevenueOverviewResponse } from "@shared/routes";
 import type { Employee, Note, Tag, Team, Tour } from "@shared/schema";
@@ -143,6 +135,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [activeTab, setActiveTab] = useState("stammdaten");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [mutationError, setMutationError] = useState<NormalizedServerError | null>(null);
   const draftEmployeeNoteIdRef = useRef(-1);
 
   const invalidateEmployees = () => {
@@ -151,6 +144,16 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
         const key = query.queryKey;
         return Array.isArray(key) && key[0] === "/api/employees";
       },
+    });
+  };
+
+  const showMutationError = (error: unknown, title: string) => {
+    const normalized = normalizeServerError(error, { title });
+    setMutationError(normalized);
+    toast({
+      title: normalized.title,
+      description: normalized.description,
+      variant: "destructive",
     });
   };
 
@@ -278,6 +281,12 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       const response = await apiRequest("POST", "/api/employees", data);
       return response.json() as Promise<Employee>;
     },
+    onSuccess: () => {
+      setMutationError(null);
+    },
+    onError: (error: Error) => {
+      showMutationError(error, "Mitarbeiter konnte nicht angelegt werden");
+    },
   });
 
   const updateMutation = useMutation({
@@ -291,27 +300,11 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       return apiRequest("PUT", `/api/employees/${id}`, data);
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateEmployees();
     },
     onError: (error: Error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Speichern nicht möglich",
-          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (code === "FORBIDDEN") {
-        toast({
-          title: "Speichern nicht möglich",
-          description: "Änderung nicht erlaubt.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Speichern fehlgeschlagen", variant: "destructive" });
+      showMutationError(error, "Mitarbeiter konnte nicht gespeichert werden");
     },
   });
 
@@ -320,30 +313,14 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       return apiRequest("PATCH", `/api/employees/${id}/active`, { isActive, version });
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateEmployees();
       if (employeeId) {
         void queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
       }
     },
     onError: (error: Error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Aktiv-Status nicht möglich",
-          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (code === "FORBIDDEN") {
-        toast({
-          title: "Aktiv-Status nicht möglich",
-          description: "Nur Admin darf den Aktiv-Status ändern.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Aktiv-Status konnte nicht geändert werden", variant: "destructive" });
+      showMutationError(error, "Aktiv-Status konnte nicht geändert werden");
     },
   });
 
@@ -355,6 +332,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       await apiRequest("DELETE", `/api/employees/${employeeId}`, { version });
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateEmployees();
       void queryClient.invalidateQueries({ queryKey: ["appointments-list"] });
       void queryClient.invalidateQueries({
@@ -371,24 +349,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       onCancel?.();
     },
     onError: (error: Error) => {
-      const code = extractApiCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Mitarbeiter wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (code === "FORBIDDEN") {
-        toast({
-          title: "Löschen nicht möglich",
-          description: "Nur Admin darf Mitarbeiter löschen.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Mitarbeiter konnte nicht gelöscht werden", variant: "destructive" });
+      showMutationError(error, "Mitarbeiter konnte nicht gelöscht werden");
     },
   });
 
@@ -727,6 +688,8 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       return;
     }
 
+    setMutationError(null);
+
     if (isEditing && employeeId && employeeDetails) {
       const version = employeeDetails.employee.version;
       if (!Number.isInteger(version) || (version ?? 0) < 1) {
@@ -1045,6 +1008,10 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               ) : null}
             </TabsList>
 
+            {mutationError ? (
+              <DialogBaseInlineMessage error={mutationError} />
+            ) : null}
+
           <TabsContent value="stammdaten" className="min-h-[620px]">
             <div className="w-full space-y-6 min-h-0">
               <div className="sub-panel space-y-4">
@@ -1250,28 +1217,23 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
           </div>
         ) : null}
       </EntityFormShell>
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mitarbeiter wirklich löschen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Diese Aktion ist endgültig. Termine bleiben erhalten; Notizen, Anhänge und Zuordnungen dieses Mitarbeiters werden gelöscht.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setDeleteConfirmOpen(false);
-                void deleteEmployeeMutation.mutateAsync();
-              }}
-              data-testid="button-confirm-delete-employee"
-            >
-              Mitarbeiter löschen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialogBase
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        icon={<Trash2 className="h-5 w-5" />}
+        title="Mitarbeiter löschen"
+        description="Diese Aktion ist endgültig. Termine bleiben erhalten; Notizen, Anhänge und Zuordnungen dieses Mitarbeiters werden gelöscht."
+        confirmLabel="Mitarbeiter löschen"
+        pendingLabel="Löschen..."
+        isPending={deleteEmployeeMutation.isPending}
+        onConfirm={() => {
+          setMutationError(null);
+          setDeleteConfirmOpen(false);
+          void deleteEmployeeMutation.mutateAsync();
+        }}
+        testId="dialog-delete-employee"
+        variant="destructive"
+      />
       </div>
     </Tabs>
   );

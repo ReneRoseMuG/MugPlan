@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties, DragEvent, MouseEvent, PointerEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus } from "lucide-react";
+import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -135,6 +135,7 @@ type CalendarWeekSpanningTileProps = {
   onDeleteInlineNote?: (note: CalendarWeekInlineNote) => void;
   onAssignAppointmentEmployees?: (appointmentId: number) => void;
   onRemoveAppointmentEmployee?: (appointmentId: number, employeeId: number) => void;
+  onCutAppointment?: () => void;
   testId?: string;
 };
 
@@ -178,6 +179,7 @@ export function CalendarWeekSpanningTile({
   onDeleteInlineNote,
   onAssignAppointmentEmployees,
   onRemoveAppointmentEmployee,
+  onCutAppointment,
   testId,
 }: CalendarWeekSpanningTileProps) {
   const { toast } = useToast();
@@ -410,6 +412,16 @@ export function CalendarWeekSpanningTile({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          {onCutAppointment ? (
+            <DropdownMenuItem
+              onClick={onCutAppointment}
+              className="gap-2 text-xs cursor-pointer"
+              data-testid={`week-spanning-tile-cut-${appointment.id}`}
+            >
+              <Scissors className="h-3.5 w-3.5 shrink-0" />
+              Ausschneiden
+            </DropdownMenuItem>
+          ) : null}
           {onCreateAppointmentNote && !isPastStartDate(appointment.startDate) ? (
             <DropdownMenuItem
               onClick={() => onCreateAppointmentNote(appointment.id)}

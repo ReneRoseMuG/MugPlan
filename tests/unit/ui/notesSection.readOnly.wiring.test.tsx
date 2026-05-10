@@ -42,6 +42,12 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
+vi.mock("@/components/ui/dialog-base", () => ({
+  ConfirmDialogBase: ({ open, title }: { open: boolean; title?: React.ReactNode }) => (
+    open ? <div data-testid="dialog-delete-note">{title}</div> : null
+  ),
+}));
+
 vi.mock("@/components/ui/input", () => ({
   Input: (props: Record<string, unknown>) => <input {...props} />,
 }));

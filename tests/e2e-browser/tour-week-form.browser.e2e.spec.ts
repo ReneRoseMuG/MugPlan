@@ -546,8 +546,8 @@ test("tour scope week form filters appointments by KW, keeps week notes isolated
   await expect(weekCard).toContainText(getCompactEmployeeLabel(pickerEmployee));
 
   const noteToDelete = page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: "TWF Zielnotiz aktualisiert" }).first();
-  page.once("dialog", (dialog) => dialog.accept());
   await noteToDelete.getByTestId(/button-delete-note-/).click();
+  await page.getByTestId("dialog-delete-note").getByRole("button", { name: "Notiz löschen" }).click();
   await expect(noteToDelete).toHaveCount(0);
   await expect(weekCard.locator('[data-testid$="-notes"]')).toContainText("0");
 });

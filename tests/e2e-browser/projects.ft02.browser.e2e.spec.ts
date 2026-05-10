@@ -539,8 +539,8 @@ test("creates and deletes a project note in the edit form", async ({ page }) => 
   await expect(page.getByTestId(`note-card-${resolvedNoteId}`)).toBeVisible();
   await expect(page.getByTestId(`text-note-title-${resolvedNoteId}`)).toContainText("Browser Notiz");
 
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByTestId(`button-delete-note-${resolvedNoteId}`).click();
+  await page.getByTestId("dialog-delete-note").getByRole("button", { name: "Notiz löschen" }).click();
   await expect(page.getByText("Keine Notizen vorhanden")).toBeVisible();
 });
 

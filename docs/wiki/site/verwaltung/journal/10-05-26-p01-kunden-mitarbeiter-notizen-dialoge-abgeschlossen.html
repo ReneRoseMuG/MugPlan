@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen: 10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen 10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge</span></nav>
+        <h1 class="wiki-h1">10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen: 10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>10.05.26</div>
+    <p class="wiki-lead">Die P-01-Schritte Kunden-Dialoge, Mitarbeiter-Dialoge und Notizen-Dialoge sind technisch umgesetzt und als Wiki-Aufgaben abgeschlossen. Kunden- und Mitarbeiterformulare zeigen normalisierte Inline-Fehler, Notizlöschungen nutzen den gemeinsamen Bestätigungsdialog, Mitarbeiterlösch</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die P-01-Schritte Kunden-Dialoge, Mitarbeiter-Dialoge und Notizen-Dialoge sind technisch umgesetzt und als Wiki-Aufgaben abgeschlossen. Kunden- und Mitarbeiterformulare zeigen normalisierte Inline-Fehler, Notizlöschungen nutzen den gemeinsamen Bestätigungsdialog, Mitarbeiterlöschung und Abwesenheitskonflikte laufen über die gemeinsame Dialogbasis, und Notizvorlagen sind serverseitig rollenbeschränkt.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>Unit-Tests: <code>npm run test:unit -- tests/unit/ui/customerData.layoutShellIntegration.test.tsx tests/unit/ui/customersPage.controlled-state.test.tsx tests/unit/ui/customersPage.readerReadonly.smoke.test.tsx tests/unit/ui/employeeForm.layoutShellIntegration.test.tsx tests/unit/ui/employeesPage.controlled-state.test.tsx tests/unit/ui/employeesPage.readerReadonly.test.tsx tests/unit/ui/employeeUtilizationView.wiring.test.tsx tests/unit/ui/employeeAppointmentAbsencesPanel.dateFormat.test.tsx tests/unit/ui/workflowNoteDialogs.behavior.test.tsx tests/unit/ui/notesSection.prefillDraft.behavior.test.tsx tests/unit/ui/notesSection.readOnly.wiring.test.tsx tests/unit/ui/notesPreviewInvalidation.wiring.test.tsx</code> erfolgreich mit 30 bestandenen Tests in 12 Dateien.</li><li>Integrationstests: <code>npm run test:integration -- tests/integration/server/customers.paged-list.integration.test.ts tests/integration/server/customers.visibility.by-role.test.ts tests/integration/server/appointments.customer.sidebar-vs-all.integration.test.ts tests/integration/server/employees.lifecycle.ft05.integration.test.ts tests/integration/server/employees.visibility.by-role.test.ts tests/integration/server/employeeAppointmentAbsences.integration.test.ts tests/integration/server/notes.create.transactional-readback.integration.test.ts tests/integration/server/notes.joins-and-template-integrity.integration.test.ts tests/integration/server/calendar-week-notes.integration.test.ts tests/integration/server/employee.notes.integration.test.ts --reporter=verbose</code> erfolgreich mit 83 bestandenen Tests in 10 Dateien.</li><li>Browser-E2E: Der P-01-Browserlauf für Kunden, Mitarbeiter und Notizen bestand in allen fachlichen Pfaden; ein Kalender-Inline-Notiztest wurde nach der bewusst geänderten Dialogerwartung aktualisiert und anschließend mit <code>npm run test:e2e:browser -- tests/e2e-browser/calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts</code> erfolgreich mit 6 bestandenen Tests erneut geprüft.</li><li>Ergänzende Browser-E2E: Der durch <code>NotesSection</code> betroffene Projektnotiz-Löschtest wurde mit <code>npm run test:e2e:browser -- tests/e2e-browser/projects.ft02.browser.e2e.spec.ts -g &quot;creates and deletes a project note in the edit form&quot;</code> erfolgreich geprüft.</li><li>Ergänzende Browser-E2E: Der durch <code>NotesSection</code> betroffene Tour-Wochenformular-Notizpfad war im Zusatzlauf erfolgreich; derselbe Zusatzlauf brach davor in einem bestehenden Produktdialog-Test der Projektdatei ab.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>Wiki-Build: <code>node scripts/build-wiki-site.mjs</code> am 10.05.26 erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> darf Kunden und Mitarbeiter gemäß bestehenden Regeln verwalten, Mitarbeiter löschen, Aktivstatus ändern, Notizen verwalten, Notizvorlagen inklusive Vorlagenfarbe verwalten und Abwesenheiten im bestehenden Regelrahmen pflegen.</li><li><code>DISPONENT</code> darf Kunden und Mitarbeiter gemäß bestehenden Regeln bearbeiten, Tags und Notizen verwalten, Abwesenheiten im bestehenden Regelrahmen pflegen und Notizvorlagen ohne Vorlagenfarbe verwalten.</li><li><code>LESER</code> darf Kunden, Mitarbeiter, aktive Notizvorlagen und Notizen lesen, erhält aber keine Kunden-, Mitarbeiter-, Notiz-, Notizvorlagen- oder Abwesenheitsmutation.</li><li>Die neue Notizvorlagen-Serverregel lässt aktive Vorlagen rollenübergreifend lesbar, blockiert aber <code>active=false</code>-Verwaltungslisten und Mutationen für <code>LESER</code>.</li><li>UI-Sichtbarkeit bleibt reine Bedienführung; die serverseitigen Guards sind die verbindliche Durchsetzung.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Aufgabe: <a href="../../../tasks/closed/kunden-dialoge.md">Kunden-Dialoge</a></li><li>Aufgabe: <a href="../../../tasks/closed/mitarbeiter-dialoge.md">Mitarbeiter-Dialoge</a></li><li>Aufgabe: <a href="../../../tasks/closed/notizen-dialoge.md">Notizen-Dialoge</a></li><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout Masterplan</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-05-mitarbeiterverwaltung.html">FT-05</a><a href="../../lastenheft/features/ft-02-projekte.html">FT-02</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

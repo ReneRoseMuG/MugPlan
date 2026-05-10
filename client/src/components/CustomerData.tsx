@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { LayoutList, Mail, MapPin, Phone, ScrollText, User, X } from "lucide-react";
@@ -28,6 +29,7 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { JournalRecordsView } from "@/components/JournalRecordsView";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
+import { normalizeServerError, type NormalizedServerError } from "@/lib/error-normalization";
 import type { Customer, Note, Tag } from "@shared/schema";
 
 interface CustomerDataProps {
@@ -89,6 +91,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
+  const [mutationError, setMutationError] = useState<NormalizedServerError | null>(null);
   const [draftCustomerTags, setDraftCustomerTags] = useState<TagRelationItem[]>([]);
   const [draftCustomerNotes, setDraftCustomerNotes] = useState<DraftCustomerNote[]>([]);
   const [draftCustomerAttachments, setDraftCustomerAttachments] = useState<PendingCustomerAttachmentItem[]>([]);
@@ -149,16 +152,27 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     ],
   );
 
+  const showMutationError = (error: unknown, title: string) => {
+    const normalized = normalizeServerError(error, { title });
+    setMutationError(normalized);
+    toast({
+      title: normalized.title,
+      description: normalized.description,
+      variant: "destructive",
+    });
+  };
+
   const createNoteMutation = useMutation({
     mutationFn: async ({ title, body, cardColor, print, templateId }: { title: string; body: string; cardColor?: string | null; print: boolean; templateId?: number }) => {
       const res = await apiRequest('POST', `/api/customers/${customerId}/notes`, { title, body, cardColor, print, templateId });
       return res.json();
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Notiz konnte nicht angelegt werden");
     },
   });
 
@@ -168,19 +182,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Notiz konnte nicht aktualisiert werden");
     },
   });
 
@@ -198,19 +204,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Notiz konnte nicht aktualisiert werden",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Notiz konnte nicht aktualisiert werden");
     },
   });
 
@@ -219,19 +217,11 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await apiRequest('DELETE', `/api/customers/${customerId}/notes/${noteId}`, { version });
     },
     onSuccess: () => {
+      setMutationError(null);
       void invalidateCustomerNotesQueries();
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({
-          title: "Notiz konnte nicht gelöscht werden",
-          description: "Datensatz wurde zwischenzeitlich geändert. Bitte neu laden.",
-          variant: "destructive",
-        });
-        return;
-      }
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Notiz konnte nicht gelöscht werden");
     },
   });
 
@@ -264,25 +254,20 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
     }
   }, [isEditMode, customerId]);
 
-  const extractErrorCode = (error: unknown): string | null => {
-    if (!(error instanceof Error)) return null;
-    const match = error.message.match(/"code"\s*:\s*"([A-Z_]+)"/);
-    return match?.[1] ?? null;
-  };
-
   const createMutation = useMutation({
     mutationFn: async (data: CustomerSubmitPayload) => {
       const res = await apiRequest('POST', '/api/customers', data);
       return res.json();
     },
     onSuccess: () => {
+      setMutationError(null);
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
       void invalidateAppointmentProjectionQueries();
       toast({ title: "Kunde angelegt", description: "Der Kunde wurde erfolgreich angelegt." });
     },
     onError: (error: Error) => {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Kunde konnte nicht angelegt werden");
     },
   });
 
@@ -300,6 +285,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return res.json();
     },
     onSuccess: () => {
+      setMutationError(null);
       void queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       void queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
       void queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
@@ -307,20 +293,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       toast({ title: "Gespeichert", description: "Die Kundendaten wurden erfolgreich aktualisiert." });
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      if (code === "VERSION_CONFLICT") {
-        toast({ title: "Speichern nicht möglich", description: "Kunde wurde zwischenzeitlich geändert. Bitte neu laden.", variant: "destructive" });
-        return;
-      }
-      if (code === "FORBIDDEN") {
-        toast({ title: "Speichern nicht möglich", description: "Änderung des Aktiv-Status ist nur für Admin erlaubt.", variant: "destructive" });
-        return;
-      }
-      if (code === "VALIDATION_ERROR") {
-        toast({ title: "Speichern nicht möglich", description: "Ungültige Kundendaten. Bitte neu laden.", variant: "destructive" });
-        return;
-      }
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
+      showMutationError(error, "Kunde konnte nicht gespeichert werden");
     },
   });
   const addCustomerTagMutation = useMutation({
@@ -329,6 +302,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       return response.json();
     },
     onSuccess: async () => {
+      setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'tags'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
       await queryClient.invalidateQueries({ queryKey: ['/api/customers/list'] });
@@ -336,12 +310,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      toast({
-        title: code === "FORBIDDEN" ? "Tag kann nicht zugewiesen werden" : "Tag-Zuweisung fehlgeschlagen",
-        description: code === "FORBIDDEN" ? "Keine Berechtigung für Tag-Änderungen." : error.message,
-        variant: "destructive",
-      });
+      showMutationError(error, "Tag konnte nicht zugewiesen werden");
     },
   });
   const removeCustomerTagMutation = useMutation({
@@ -349,6 +318,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await apiRequest('DELETE', `/api/customers/${customerId}/tags/${item.tag.id}`, { version: item.relationVersion });
     },
     onSuccess: async () => {
+      setMutationError(null);
       await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId, 'tags'] });
       await queryClient.invalidateQueries({ queryKey: ['/api/customers', customerId] });
       await queryClient.invalidateQueries({ queryKey: ['/api/customers/list'] });
@@ -356,12 +326,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       await invalidateAppointmentProjectionQueries();
     },
     onError: (error: Error) => {
-      const code = extractErrorCode(error);
-      toast({
-        title: code === "VERSION_CONFLICT" ? "Tag wurde zwischenzeitlich geändert" : "Tag konnte nicht entfernt werden",
-        description: error.message,
-        variant: "destructive",
-      });
+      showMutationError(error, "Tag konnte nicht entfernt werden");
     },
   });
   const addDraftCustomerTag = (tagId: number) => {
@@ -527,6 +492,8 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       });
       return;
     }
+
+    setMutationError(null);
 
     const submitData: CustomerSubmitPayload & { isActive: boolean } = {
       customerNumber: formData.customerNumber.trim(),
@@ -892,6 +859,10 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
       >
         {activeMainTab === "details" ? (
           <div className="w-full space-y-6" data-testid="customer-form-main-column">
+              {mutationError ? (
+                <DialogBaseInlineMessage error={mutationError} />
+              ) : null}
+
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <User className="w-4 h-4" />

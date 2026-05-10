@@ -13,3 +13,5 @@
 - [UC 04/13: Mitarbeiter einer Tour-KW zuordnen](uc-04-13-mitarbeiter-einer-tour-kw-zuordnen.md)
 - [UC 04/14: Mitarbeiter aus einer Tour-KW entfernen](uc-04-14-mitarbeiter-aus-einer-tour-kw-entfernen.md)
 - [UC 04/15: Tour-KW-Wochenplanung anzeigen und anwenden](uc-04-15-tour-kw-wochenplanung-anzeigen-und-anwenden.md)
+- [UC 04/16: Tour-KW blockieren und Termine parken](uc-04-16-tour-kw-blockieren-und-termine-parken.md)
+- [UC 04/17: Tour-KW freigeben](uc-04-17-tour-kw-freigeben.md)

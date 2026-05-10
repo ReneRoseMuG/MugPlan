@@ -9,17 +9,8 @@ import {
   type AbsenceType,
 } from "@shared/absenceAppointments";
 import type { EmployeeAppointmentAbsenceResponse } from "@shared/routes";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialogBase, DialogBaseFooter, DialogBaseShell } from "@/components/ui/dialog-base";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -200,6 +191,7 @@ export function EmployeeAppointmentAbsencesPanel({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<AbsenceFormState>(defaultFormState);
   const [pendingEmployeeRemovalConfirmation, setPendingEmployeeRemovalConfirmation] = useState<PendingEmployeeRemovalConfirmation | null>(null);
+  const [pendingDeleteAbsence, setPendingDeleteAbsence] = useState<EmployeeAppointmentAbsenceResponse | null>(null);
 
   const queryKey = useMemo(() => ["/api/employees", employeeId, "absence-appointments"], [employeeId]);
 
@@ -330,6 +322,7 @@ export function EmployeeAppointmentAbsencesPanel({
     },
     onSuccess: async () => {
       await invalidateAbsenceQueries();
+      setPendingDeleteAbsence(null);
       toast({ title: "Abwesenheit gelöscht" });
     },
     onError: (error: Error) => handleMutationError(error, "Löschen"),
@@ -570,7 +563,7 @@ export function EmployeeAppointmentAbsencesPanel({
                                 size="icon"
                                 variant="ghost"
                                 disabled={deleteMutation.isPending}
-                                onClick={() => deleteMutation.mutate(item)}
+                                onClick={() => setPendingDeleteAbsence(item)}
                                 title="Löschen"
                                 data-testid={`button-delete-employee-absence-${item.id}`}
                               >
@@ -588,22 +581,60 @@ export function EmployeeAppointmentAbsencesPanel({
           </TableBody>
         </Table>
       </div>
-      <AlertDialog
+      <ConfirmDialogBase
+        open={pendingDeleteAbsence !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteAbsence(null);
+        }}
+        icon={<Trash2 className="h-5 w-5" />}
+        title="Abwesenheit löschen"
+        description={
+          pendingDeleteAbsence
+            ? `Soll die Abwesenheit ${formatListDateRange(pendingDeleteAbsence.startDate, pendingDeleteAbsence.endDate)} endgültig gelöscht werden?`
+            : undefined
+        }
+        confirmLabel="Abwesenheit löschen"
+        pendingLabel="Löschen..."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (!pendingDeleteAbsence) return;
+          deleteMutation.mutate(pendingDeleteAbsence);
+        }}
+        testId="dialog-delete-employee-absence"
+        variant="destructive"
+      />
+      <DialogBaseShell
         open={pendingEmployeeRemovalConfirmation !== null}
         onOpenChange={(open) => {
           if (!open) setPendingEmployeeRemovalConfirmation(null);
         }}
+        icon={<Trash2 className="h-5 w-5" />}
+        title="Mitarbeiter aus Planung entfernen?"
+        description={
+          <>
+            Für den gewählten Zeitraum bestehen bereits Termine dieses Mitarbeiters. Der Mitarbeiter wird aus diesen Terminen entfernt; die Termine bleiben in ihrer bisherigen Tour.
+            <br />
+            Betroffene Tour-KW-Planungen werden ebenfalls entfernt.
+          </>
+        }
+        footer={(
+          <DialogBaseFooter
+            secondaryAction={{
+              disabled: createMutation.isPending || updateMutation.isPending,
+              label: "Abbrechen",
+              onClick: () => setPendingEmployeeRemovalConfirmation(null),
+            }}
+            primaryAction={{
+              isPending: createMutation.isPending || updateMutation.isPending,
+              label: "Mitarbeiter entfernen und Abwesenheit speichern",
+              onClick: confirmEmployeeRemovalAndSave,
+              testId: "button-confirm-absence-employee-removal",
+            }}
+          />
+        )}
+        size="lg"
+        testId="dialog-absence-employee-removal-confirmation"
       >
-        <AlertDialogContent data-testid="dialog-absence-employee-removal-confirmation">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mitarbeiter aus Planung entfernen?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Für den gewählten Zeitraum bestehen bereits Termine dieses Mitarbeiters. Der Mitarbeiter wird aus diesen Terminen entfernt; die Termine bleiben in ihrer bisherigen Tour.
-            </AlertDialogDescription>
-            <p className="text-sm text-muted-foreground">
-              Betroffene Tour-KW-Planungen werden ebenfalls entfernt.
-            </p>
-          </AlertDialogHeader>
           <div className="max-h-80 space-y-3 overflow-auto">
             {(pendingEmployeeRemovalConfirmation?.appointmentConflicts.length ?? 0) > 0 ? (
               <div className="rounded-md border border-border" data-testid="absence-employee-removal-appointments">
@@ -650,17 +681,7 @@ export function EmployeeAppointmentAbsencesPanel({
               </div>
             ) : null}
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmEmployeeRemovalAndSave}
-              data-testid="button-confirm-absence-employee-removal"
-            >
-              Mitarbeiter entfernen und Abwesenheit speichern
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </DialogBaseShell>
     </div>
   );
 }
