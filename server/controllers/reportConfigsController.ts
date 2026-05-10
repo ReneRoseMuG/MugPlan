@@ -24,9 +24,43 @@ function resolveRoleKey(req: Request, res: Response) {
   return roleKey;
 }
 
+function resolveValidationMessage(error: ZodError): string {
+  const paths = error.issues.map((issue) => issue.path.join("."));
+  const containsPath = (token: string) => paths.some((path) => path.includes(token));
+
+  if (containsPath("scope")) {
+    return "Globale Presets sind deaktiviert. Presets werden nur noch persönlich pro Benutzer gespeichert.";
+  }
+  if (containsPath("name")) {
+    return "Der Presetname darf nicht leer sein und maximal 120 Zeichen haben.";
+  }
+  if (containsPath("config.range.start")) {
+    return "Start KW muss eine Zahl zwischen 1 und 52 sein. 1 bedeutet kommende Woche Montag.";
+  }
+  if (containsPath("config.range.weeks")) {
+    return "Anzahl KW muss eine Zahl zwischen 1 und 52 sein.";
+  }
+  if (containsPath("config.selectedTourIds")) {
+    return "Mindestens eine Tour im Preset ist ungültig. Wählen Sie die Touren neu aus und speichern Sie erneut.";
+  }
+  if (
+    containsPath("config.tagIds")
+    || containsPath("config.productCategoryIds")
+    || containsPath("config.componentCategoryIds")
+    || containsPath("config.saunaModels")
+  ) {
+    return "Mindestens ein gespeicherter Filterwert ist ungültig. Prüfen Sie die Filterauswahl und speichern Sie erneut.";
+  }
+  if (paths.some((path) => path.length === 0)) {
+    return "Report-Key oder Preset-ID ist ungültig. Verwenden Sie einen gültigen Report und einen Namen ohne Sonderzeichen.";
+  }
+
+  return "Presetdaten sind ungültig. Prüfen Sie Presetname, Start KW, Anzahl KW und die Auswahlfelder dieses Reports.";
+}
+
 function handleKnownError(error: unknown, res: Response): boolean {
   if (error instanceof ZodError) {
-    res.status(422).json({ code: "VALIDATION_ERROR" });
+    res.status(422).json({ code: "VALIDATION_ERROR", message: resolveValidationMessage(error) });
     return true;
   }
   if (error instanceof reportConfigsService.ReportConfigsError) {

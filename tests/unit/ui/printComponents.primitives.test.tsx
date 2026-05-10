@@ -26,6 +26,7 @@ import { MeasuredPrintCardMeasurement } from "../../../client/src/components/pri
 import { PrintDocumentRoot } from "../../../client/src/components/print/PrintDocumentRoot";
 import { PrintPageShell } from "../../../client/src/components/print/PrintPageShell";
 import { PrintPreviewDialog } from "../../../client/src/components/print/PrintPreviewDialog";
+import { ReportPrintPreviewDialog } from "../../../client/src/components/print/ReportPrintPreviewDialog";
 
 vi.mock("react-dom", async () => {
   const actual = await vi.importActual<typeof import("react-dom")>("react-dom");
@@ -45,6 +46,8 @@ vi.mock("@/components/ui/dialog", () => ({
 vi.mock("lucide-react", () => ({
   ChevronLeft: () => <span>prev-icon</span>,
   ChevronRight: () => <span>next-icon</span>,
+  Printer: () => <span>print-icon</span>,
+  RefreshCw: () => <span>refresh-icon</span>,
 }));
 
 describe("generisches Print-System", () => {
@@ -126,7 +129,7 @@ describe("generisches Print-System", () => {
     expect(html).toContain(">b<");
   });
 
-  it("PrintDocumentRoot uebernimmt bei Bedarf Hochformat", () => {
+  it("PrintDocumentRoot übernimmt bei Bedarf Hochformat", () => {
     vi.stubGlobal("document", { body: {} });
 
     const html = renderToStaticMarkup(
@@ -186,6 +189,69 @@ describe("generisches Print-System", () => {
     );
 
     expect(html).toContain("Drucken");
+  });
+
+  it("ReportPrintPreviewDialog rendert die einheitlichen Refresh- und Druck-Aktionen", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <ReportPrintPreviewDialog
+        open
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+        onRefresh={() => undefined}
+        onPrint={() => undefined}
+        pageOrientation="landscape"
+        onPageOrientationChange={() => undefined}
+        orientationTestIdPrefix="button-report-orientation"
+        refreshTestId="button-report-print-refresh"
+        printTestId="button-report-print"
+        extraActions={<button type="button" data-testid="button-report-extra">Extra</button>}
+      />,
+    );
+
+    expect(html).toContain("button-report-print-refresh");
+    expect(html).toContain("Aktualisieren");
+    expect(html).toContain("button-report-orientation-landscape");
+    expect(html).toContain("button-report-orientation-portrait");
+    expect(html).toContain("Querformat");
+    expect(html).toContain("Hochformat");
+    expect(html).toContain("button-report-extra");
+    expect(html).toContain("button-report-print");
+    expect(html).toContain("Drucken");
+  });
+
+  it("ReportPrintPreviewDialog sperrt Drucken während der Messung", () => {
+    vi.stubGlobal("document", { body: {} });
+
+    const html = renderToStaticMarkup(
+      <ReportPrintPreviewDialog
+        open
+        onOpenChange={() => undefined}
+        title="Print Vorschau"
+        pages={[{ pageNumber: 1, title: "Seite 1" }]}
+        activePageIndex={0}
+        onPageChange={() => undefined}
+        getPageKey={(page) => page.pageNumber}
+        getPageTitle={(page) => page.title}
+        renderPage={(page) => <div>{`page-${page.pageNumber}`}</div>}
+        onRefresh={() => undefined}
+        onPrint={() => undefined}
+        refreshTestId="button-report-print-refresh"
+        printTestId="button-report-print"
+        isRefreshing
+        printDisabled
+      />,
+    );
+
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="button-report-print-refresh"/);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*data-testid="button-report-print"/);
   });
 
   it("PrintPreviewDialog reicht die Seitenausrichtung an den Druckroot weiter", () => {

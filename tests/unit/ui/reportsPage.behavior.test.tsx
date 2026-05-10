@@ -6,13 +6,13 @@
  * - Die Default-Range leitet Enddatum und KW-Reichweite aus dem letzten verfügbaren Projektermin ab.
  * - Der URL-Aufbau der Reports bleibt beim optionalen toDate-Parameter technisch korrekt.
  * - Der Produktionsplanung-URL-Aufbau enthaelt nur noch Kategorien, Zeitraum und Shortcodes.
- * - Die Auftragsliste uebergibt Kategorien und Shortcodes ueber einen eigenen URL-Builder.
+ * - Die Auftragsliste übergibt Kategorien und Shortcodes über einen eigenen URL-Builder.
  *
  * Fehlerfaelle:
  * - Reports lassen sich trotz leerem Von-Datum starten.
- * - Datum Ende oder KW-Anzahl fallen trotz spaetem Projektermin auf den alten 5-Wochen-Default zurueck.
+ * - Datum Ende oder KW-Anzahl fallen trotz spätem Projektermin auf den alten 5-Wochen-Default zurück.
  * - Der URL-Builder setzt einen toDate-Parameter trotz fehlendem Wert.
- * - Der Produktionsplanung-Request uebernimmt versehentlich entfernte Sonderblock-Parameter.
+ * - Der Produktionsplanung-Request übernimmt versehentlich entfernte Sonderblock-Parameter.
  * - Der Auftragslisten-Request verliert Komponentenkategorien oder den Shortcode-Schalter.
  *
  * Ziel:
@@ -104,6 +104,7 @@ vi.mock("@/components/ui/dialog", () => ({
   DialogContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DialogDescription: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogFooter: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -129,6 +130,12 @@ vi.mock("@/components/ui/badge", () => ({
 
 vi.mock("@/components/ui/help/help-icon", () => ({
   HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 }));
 
 import {
@@ -348,5 +355,39 @@ describe("FT26 UI: ReportsPage behavior", () => {
     expect(url).toContain("tagIds=8");
     expect(url).toContain("saunaModels=Modell+Alpha");
     expect(url).toContain("useShortCodes=true");
+  });
+
+  it("builds the standalone Tourenplan URL with tour and print options", () => {
+    const url = buildStandaloneReportUrl({
+      reportType: "tourenplan",
+      activeTab: "date",
+      fromDate: "2026-03-30",
+      toDate: "2026-04-05",
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
+      useShortCodes: true,
+      allToursSelected: false,
+      selectedTourIds: [7, 9],
+      includeWithoutTour: true,
+      printMode: "spardruck",
+      fontSize: "large",
+      orientation: "portrait",
+    });
+
+    expect(url).toContain("/standalone/reports?");
+    expect(url).toContain("reportType=tourenplan");
+    expect(url).toContain("activeTab=date");
+    expect(url).toContain("fromDate=2026-03-30");
+    expect(url).toContain("toDate=2026-04-05");
+    expect(url).toContain("useShortCodes=true");
+    expect(url).toContain("allToursSelected=false");
+    expect(url).toContain("selectedTourIds=7");
+    expect(url).toContain("selectedTourIds=9");
+    expect(url).toContain("includeWithoutTour=true");
+    expect(url).toContain("printMode=spardruck");
+    expect(url).toContain("fontSize=large");
+    expect(url).toContain("orientation=portrait");
   });
 });

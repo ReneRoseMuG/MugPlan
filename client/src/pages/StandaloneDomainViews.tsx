@@ -55,12 +55,18 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
   const tagIds = params.getAll("tagIds")
     .map((value) => Number(value))
     .filter((value) => Number.isInteger(value) && value > 0);
+  const selectedTourIds = params.getAll("selectedTourIds")
+    .map((value) => Number(value))
+    .filter((value) => Number.isInteger(value) && value > 0);
   const saunaModels = params.getAll("saunaModels")
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
+  const printMode = params.get("printMode");
+  const fontSize = params.get("fontSize");
+  const orientation = params.get("orientation");
 
   if (
-    (reportType !== "vorlaufliste" && reportType !== "produktionsplanung" && reportType !== "auftragsliste")
+    (reportType !== "vorlaufliste" && reportType !== "produktionsplanung" && reportType !== "auftragsliste" && reportType !== "tourenplan")
     || (activeTab !== "date" && activeTab !== "calendarWeek")
     || !fromDate
   ) {
@@ -79,6 +85,12 @@ function parseStandaloneReportLaunch(search: string): StandaloneReportLaunch | n
     tagIds,
     saunaModels,
     useShortCodes: params.get("useShortCodes") === "true",
+    allToursSelected: params.get("allToursSelected") !== "false",
+    selectedTourIds,
+    includeWithoutTour: params.get("includeWithoutTour") === "true",
+    printMode: printMode === "spardruck" ? "spardruck" : printMode === "farbdruck" ? "farbdruck" : undefined,
+    fontSize: fontSize === "small" || fontSize === "medium" || fontSize === "large" ? fontSize : undefined,
+    orientation: orientation === "portrait" || orientation === "landscape" ? orientation : undefined,
   };
 }
 
@@ -92,6 +104,8 @@ function resolveStandaloneReportTitle(launch: StandaloneReportLaunch | null): st
       return "Produktionsplanung";
     case "auftragsliste":
       return "Auftragsliste";
+    case "tourenplan":
+      return "Tourenplan";
     default:
       return "Reports";
   }

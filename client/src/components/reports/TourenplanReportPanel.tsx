@@ -1,12 +1,14 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { addWeeks, differenceInCalendarDays, endOfISOWeek, format, getISOWeek, getISOWeeksInYear, startOfISOWeek } from "date-fns";
 import type { z } from "zod";
-import { api, type ReportPreset, type ReportPresetConfig, type ReportPresetRange } from "@shared/routes";
-import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { api } from "@shared/routes";
+import { ReportPrintPreviewDialog } from "@/components/print/ReportPrintPreviewDialog";
 import { TourenplanPaginationMeasurement } from "@/components/reports/TourenplanPaginationMeasurement";
 import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/reports/ReportConfigPanel";
-import { ReportPresetControls } from "@/components/reports/ReportPresetControls";
+import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
+import { ReportResultOverlayShell } from "@/components/reports/ReportResultOverlayShell";
 import { TourenplanPrintPage } from "@/components/reports/TourenplanPrintPage";
 import {
   buildTourenplanPrintPagesForSections,
@@ -28,7 +30,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { normalizeServerError } from "@/lib/error-normalization";
-import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
+import { normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
 type TourEntity = z.infer<typeof api.tours.list.responses[200]>[number];
@@ -50,6 +52,29 @@ type TourenplanReportPanelProps = {
   defaultIsoWeek: number;
   defaultIsoWeekYear: number;
   isAdmin: boolean;
+  overlayHost?: HTMLElement | null;
+  standaloneLaunch?: TourenplanStandaloneLaunch | null;
+  buildStandaloneReportUrl: (launch: TourenplanStandaloneLaunch) => string;
+};
+
+type TourenplanStandaloneLaunch = {
+  reportType: "tourenplan";
+  activeTab: ReportConfigPanelMode;
+  fromDate: string;
+  toDate?: string;
+  kwStart?: number;
+  weekCount?: number;
+  productCategoryIds: number[];
+  componentCategoryIds: number[];
+  tagIds: number[];
+  saunaModels: string[];
+  useShortCodes: boolean;
+  allToursSelected?: boolean;
+  selectedTourIds?: number[];
+  includeWithoutTour?: boolean;
+  printMode?: TourenplanPrintMode;
+  fontSize?: TourenplanFontSize;
+  orientation?: TourenplanOrientation;
 };
 
 type TourenplanSelectionItem =
@@ -61,8 +86,6 @@ type TourenplanSectionRequestData = {
   previewData: TourenplanPreviewResponse;
   appointmentItems: TourenplanAppointmentListItem[];
 };
-
-const REPORT_PRESETS_TEMPORARILY_DISABLED = true;
 
 function parseDateOnlyInput(value: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -82,7 +105,7 @@ function resolveRequiredToDate(value: string | undefined, fallback: string): str
 
 function buildQuickRangeLabel(referenceDate: Date, offsetWeeks: number): string {
   const monday = startOfISOWeek(addWeeks(referenceDate, offsetWeeks));
-  return `Mo. ${formatDisplayDate(monday, format(monday, "yyyy-MM-dd"))}`;
+  return `Mo. ${formatDisplayDate(monday)}`;
 }
 
 function buildQuickRange(referenceDate: Date, offsetWeeks: number) {
@@ -201,6 +224,9 @@ export function TourenplanReportPanel({
   defaultIsoWeek,
   defaultIsoWeekYear,
   isAdmin,
+  overlayHost,
+  standaloneLaunch,
+  buildStandaloneReportUrl,
 }: TourenplanReportPanelProps) {
   const [allToursSelected, setAllToursSelected] = React.useState(true);
   const [selectedTourIds, setSelectedTourIds] = React.useState<number[]>([]);
@@ -214,10 +240,14 @@ export function TourenplanReportPanel({
   const [printMode, setPrintMode] = React.useState<TourenplanPrintMode>("farbdruck");
   const [fontSize, setFontSize] = React.useState<TourenplanFontSize>("medium");
   const [orientation, setOrientation] = React.useState<TourenplanOrientation>("landscape");
+  const [isReportOpen, setIsReportOpen] = React.useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
   const [activePageIndex, setActivePageIndex] = React.useState(0);
+  const [reportRequestId, setReportRequestId] = React.useState(0);
+  const hasAppliedStandaloneLaunchRef = React.useRef(false);
 
   React.useEffect(() => {
+    if (standaloneLaunch) return;
     setFromDate(defaultReportRange.fromDate);
     setToDate(defaultReportRange.toDate);
     setKwStart(defaultIsoWeek);
@@ -227,6 +257,7 @@ export function TourenplanReportPanel({
     defaultReportRange.fromDate,
     defaultReportRange.toDate,
     defaultReportRange.weekCount,
+    standaloneLaunch,
   ]);
 
   const persistRangeConfig = React.useCallback(async (next: Partial<TourenplanRangeConfig>) => {
@@ -244,64 +275,26 @@ export function TourenplanReportPanel({
     referenceDate: defaultReportRange.referenceDate,
   }), [defaultReportRange.referenceDate, kwStart, weekCount]);
 
-  const nextIsoWeek = React.useMemo(() => getISOWeek(addWeeks(defaultReportRange.referenceDate, 1)), [defaultReportRange.referenceDate]);
-
-  const buildPresetRange = (): ReportPresetRange => {
-    if (activeTab !== "calendarWeek") {
-      return {
-        mode: "date",
-        fromDate: normalizePersistedDate(fromDate) ?? defaultReportRange.fromDate,
-        toDate: resolveRequiredToDate(toDate, defaultReportRange.toDate),
-      };
+  React.useEffect(() => {
+    if (!standaloneLaunch || hasAppliedStandaloneLaunchRef.current) {
+      return;
     }
-
-    const normalizedKwStart = normalizeKwStart(kwStart);
-    const weeks = normalizeWeekCount(weekCount);
-    if (normalizedKwStart === nextIsoWeek) {
-      return { mode: "calendarWeek", start: "next", weeks };
-    }
-    if (normalizedKwStart === defaultIsoWeek) {
-      return { mode: "calendarWeek", start: "current", weeks };
-    }
-
-    return {
-      mode: "date",
-      fromDate: kwRange?.fromDate ?? defaultReportRange.fromDate,
-      toDate: kwRange?.toDate ?? defaultReportRange.toDate,
-    };
-  };
-
-  const buildPresetConfig = (): ReportPresetConfig => ({
-    range: buildPresetRange(),
-    activeTab,
-    useShortCodes,
-    allToursSelected,
-    selectedTourIds,
-    includeWithoutTour,
-    printMode,
-    fontSize,
-    orientation,
-  });
-
-  const applyPreset = (preset: ReportPreset) => {
-    const config = preset.config;
-    if (config.range.mode === "calendarWeek") {
-      setActiveTab("calendarWeek");
-      setKwStart(config.range.start === "next" ? nextIsoWeek : defaultIsoWeek);
-      setWeekCount(normalizeWeekCount(config.range.weeks));
-    } else {
-      setActiveTab("date");
-      setFromDate(config.range.fromDate);
-      setToDate(config.range.toDate ?? config.range.fromDate);
-    }
-    setUseShortCodes(config.useShortCodes ?? false);
-    setAllToursSelected(config.allToursSelected ?? true);
-    setSelectedTourIds(config.selectedTourIds ?? []);
-    setIncludeWithoutTour(config.includeWithoutTour ?? false);
-    setPrintMode(config.printMode ?? "farbdruck");
-    setFontSize(config.fontSize ?? "medium");
-    setOrientation(config.orientation ?? "landscape");
-  };
+    hasAppliedStandaloneLaunchRef.current = true;
+    setActiveTab(standaloneLaunch.activeTab);
+    setFromDate(standaloneLaunch.fromDate);
+    setToDate(standaloneLaunch.toDate ?? standaloneLaunch.fromDate);
+    if (typeof standaloneLaunch.kwStart === "number") setKwStart(standaloneLaunch.kwStart);
+    if (typeof standaloneLaunch.weekCount === "number") setWeekCount(standaloneLaunch.weekCount);
+    setUseShortCodes(standaloneLaunch.useShortCodes);
+    setAllToursSelected(standaloneLaunch.allToursSelected ?? true);
+    setSelectedTourIds(standaloneLaunch.selectedTourIds ?? []);
+    setIncludeWithoutTour(standaloneLaunch.includeWithoutTour ?? false);
+    setPrintMode(standaloneLaunch.printMode ?? "farbdruck");
+    setFontSize(standaloneLaunch.fontSize ?? "medium");
+    setOrientation(standaloneLaunch.orientation ?? "landscape");
+    setIsReportOpen(true);
+    setReportRequestId((current) => current + 1);
+  }, [standaloneLaunch]);
 
   const previewRequest = React.useMemo(() => {
     if (activeTab === "calendarWeek") {
@@ -372,8 +365,8 @@ export function TourenplanReportPanel({
     isLoading: isPreviewLoading,
     isError: isPreviewError,
   } = useQuery<TourenplanSectionRequestData[]>({
-    queryKey: ["reports-tourenplan-preview", selectedItemsKey, previewRequest.fromDate, previewRequest.weekCount],
-    enabled: isPreviewOpen && selectedItems.length > 0 && previewRequest.fromDate.length > 0,
+    queryKey: ["reports-tourenplan-preview", selectedItemsKey, previewRequest.fromDate, previewRequest.weekCount, reportRequestId],
+    enabled: (isReportOpen || isPreviewOpen) && selectedItems.length > 0 && previewRequest.fromDate.length > 0,
     queryFn: () => fetchTourenplanSections({
       items: selectedItems,
       fromDate: previewRequest.fromDate,
@@ -396,7 +389,7 @@ export function TourenplanReportPanel({
 
   React.useEffect(() => {
     setPaginationMeasurement(null);
-  }, [fontSize, measuredSections, orientation, printMode, useShortCodes]);
+  }, [fontSize, measuredSections, orientation, printMode, reportRequestId, useShortCodes]);
 
   const measuredPages = React.useMemo(
     () => (
@@ -432,6 +425,77 @@ export function TourenplanReportPanel({
   const normalizedPreviewError = isPreviewError
     ? normalizeServerError(previewError, { title: "Druckvorschau konnte nicht geladen werden" })
     : null;
+  const rangeMetaLabel = React.useMemo(() => {
+    const from = activeTab === "calendarWeek" ? kwRange?.fromDate : fromDate;
+    const to = activeTab === "calendarWeek" ? kwRange?.toDate : toDate;
+    if (!from) return "";
+    if (to && to !== from) {
+      return `${formatDisplayDate(from)} bis ${formatDisplayDate(to)}`;
+    }
+    return formatDisplayDate(from);
+  }, [activeTab, fromDate, kwRange?.fromDate, kwRange?.toDate, toDate]);
+  const selectedToursLabel = allToursSelected
+    ? "Alle Touren"
+    : `${selectedItems.length} Auswahl`;
+
+  const resolveStandaloneLaunch = React.useCallback((): TourenplanStandaloneLaunch | null => {
+    const from = activeTab === "calendarWeek" ? (kwRange?.fromDate ?? "") : fromDate;
+    const to = activeTab === "calendarWeek" ? kwRange?.toDate : toDate;
+    if (from.trim().length === 0) return null;
+    return {
+      reportType: "tourenplan",
+      activeTab,
+      fromDate: from,
+      toDate: to && to.trim().length > 0 ? to : undefined,
+      kwStart: activeTab === "calendarWeek" ? kwStart : undefined,
+      weekCount: activeTab === "calendarWeek" ? weekCount : undefined,
+      productCategoryIds: [],
+      componentCategoryIds: [],
+      tagIds: [],
+      saunaModels: [],
+      useShortCodes,
+      allToursSelected,
+      selectedTourIds: allToursSelected ? [] : selectedTourIds,
+      includeWithoutTour,
+      printMode,
+      fontSize,
+      orientation,
+    };
+  }, [
+    activeTab,
+    allToursSelected,
+    fontSize,
+    fromDate,
+    includeWithoutTour,
+    kwRange?.fromDate,
+    kwRange?.toDate,
+    kwStart,
+    orientation,
+    printMode,
+    selectedTourIds,
+    toDate,
+    useShortCodes,
+    weekCount,
+  ]);
+
+  const openReport = React.useCallback((openPrintPreview = false) => {
+    if (!resolveStandaloneLaunch()) return;
+    setIsReportOpen(true);
+    setIsPreviewOpen(openPrintPreview);
+    setReportRequestId((current) => current + 1);
+  }, [resolveStandaloneLaunch]);
+
+  const openReportInTab = React.useCallback(() => {
+    const launch = resolveStandaloneLaunch();
+    if (!launch) return;
+    window.open(buildStandaloneReportUrl(launch), "_blank");
+  }, [buildStandaloneReportUrl, resolveStandaloneLaunch]);
+
+  const refreshReport = React.useCallback(() => {
+    setPaginationMeasurement(null);
+    setReportRequestId((current) => current + 1);
+  }, []);
+
   const quickRangeOptions = (
     <div className="hidden" data-testid="reports-tourenplan-quick-range-options">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Termine ab:</div>
@@ -599,26 +663,14 @@ export function TourenplanReportPanel({
             </div>
           </>
         )}
-        secondaryOptionsSlot={(
-          <ReportPresetControls
-            reportKey="tourenplan"
-            isAdmin={isAdmin}
-            currentConfig={buildPresetConfig()}
-            defaultName="Tourenplan Preset"
-            onApplyPreset={applyPreset}
-            testIdPrefix="reports-tourenplan"
-            disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
-          />
-        )}
         footer={(
-          <Button
-            type="button"
-            onClick={() => setIsPreviewOpen(true)}
+          <ReportOpenToggle
             disabled={isGenerateDisabled}
-            data-testid="button-reports-tourenplan-preview"
-          >
-            Druckvorschau
-          </Button>
+            onOpen={() => openReport(false)}
+            onOpenInTab={openReportInTab}
+            openTestId="button-reports-tourenplan-generate"
+            openInTabTestId="button-reports-tourenplan-open-tab"
+          />
         )}
         testId="reports-tourenplan-config-panel"
       >
@@ -663,6 +715,72 @@ export function TourenplanReportPanel({
         />
       </ReportConfigPanel>
 
+      {overlayHost ? createPortal(
+        <ReportResultOverlayShell
+          open={isReportOpen}
+          title="Tourenplan"
+          metaLabel={`${rangeMetaLabel}${selectedToursLabel ? ` · ${selectedToursLabel}` : ""}`}
+          onRefresh={refreshReport}
+          onOpenPrintPreview={() => setIsPreviewOpen(true)}
+          onBack={() => {
+            setIsReportOpen(false);
+            setIsPreviewOpen(false);
+          }}
+          isRefreshing={isPreviewLoading}
+          printPreviewDisabled={isGenerateDisabled}
+          testId="reports-tourenplan-overlay"
+          refreshTestId="button-reports-tourenplan-refresh"
+          printPreviewTestId="button-reports-tourenplan-print-preview"
+          backTestId="button-reports-tourenplan-back"
+          contentClassName="overflow-auto bg-slate-100 p-6"
+        >
+          {isPreviewLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground">
+                <span>Report wird geladen...</span>
+              </div>
+            </div>
+          ) : normalizedPreviewError ? (
+            <DialogBaseInlineMessage className="bg-white text-sm" error={normalizedPreviewError} />
+          ) : (
+            <section className="space-y-4" data-testid="reports-tourenplan-result">
+              {measuredSections.length > 0 ? measuredSections.map((section) => (
+                <article key={section.sectionKey} className="rounded-md border border-border/60 bg-background/70 p-4" data-testid={`reports-tourenplan-result-${section.sectionKey}`}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-3">
+                    <h4 className="text-sm font-semibold text-foreground">{section.tourName}</h4>
+                    <span className="text-xs text-muted-foreground">
+                      {section.weeks.reduce((count, week) => count + week.appointments.length, 0)} Termine
+                    </span>
+                  </div>
+                  <div className="mt-3 space-y-3">
+                    {section.weeks.map((week) => (
+                      <div key={week.weekStart} className="space-y-2">
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">KW {week.weekNumber}</div>
+                        {week.appointments.length > 0 ? (
+                          <div className="grid gap-2">
+                            {week.appointments.map((appointment) => (
+                              <div key={appointment.id} className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                                <span className="font-medium text-slate-900">{appointment.projectName}</span>
+                                {appointment.customer.fullName ? <span className="ml-2 text-slate-500">{appointment.customer.fullName}</span> : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Keine Termine.</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              )) : (
+                <p className="text-sm text-muted-foreground">Keine Tourenplan-Daten für die aktuelle Auswahl gefunden.</p>
+              )}
+            </section>
+          )}
+        </ReportResultOverlayShell>,
+        overlayHost,
+      ) : null}
+
       {isPreviewOpen && sectionData.length > 0 ? (
         <TourenplanPaginationMeasurement
           sections={measuredSections}
@@ -685,10 +803,10 @@ export function TourenplanReportPanel({
         />
       ) : null}
 
-      <PrintPreviewDialog
+      <ReportPrintPreviewDialog
         open={isPreviewOpen}
         onOpenChange={setIsPreviewOpen}
-        title="Druckvorschau Tourenplan"
+        title="Druckvorschau - Tourenplan"
         dialogWidthClassName={dialogWidthClassName}
         pages={pages}
         activePageIndex={activePageIndex}
@@ -697,38 +815,15 @@ export function TourenplanReportPanel({
         dialogTestId="dialog-tourenplan-print-preview"
         showPageMetaBar={false}
         pageOrientation={orientation}
+        onPageOrientationChange={setOrientation}
+        orientationTestIdPrefix="button-reports-tourenplan-orientation"
         getPageKey={(page) => page.pageNumber}
-        headerActions={(
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant={orientation === "landscape" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setOrientation("landscape")}
-              data-testid="button-reports-tourenplan-orientation-landscape"
-            >
-              Querformat
-            </Button>
-            <Button
-              type="button"
-              variant={orientation === "portrait" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setOrientation("portrait")}
-              data-testid="button-reports-tourenplan-orientation-portrait"
-            >
-              Hochformat
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => window.print()}
-              data-testid="button-reports-tourenplan-print"
-            >
-              Drucken
-            </Button>
-          </div>
-        )}
+        onRefresh={refreshReport}
+        onPrint={() => window.print()}
+        isRefreshing={isPreviewLoading || isPaginationMeasuring}
+        printDisabled={pages.length === 0 || isPaginationMeasuring}
+        refreshTestId="button-reports-tourenplan-print-preview-refresh"
+        printTestId="button-reports-tourenplan-print"
         renderPage={(page) => (
           <TourenplanPrintPage
             page={page}

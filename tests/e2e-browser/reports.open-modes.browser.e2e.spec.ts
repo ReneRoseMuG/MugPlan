@@ -2,12 +2,12 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Jeder Report laesst sich sowohl im aktuellen Tab als auch isoliert im neuen Tab oeffnen.
+ * - Jeder Report lässt sich sowohl im aktuellen Tab als auch isoliert im neuen Tab öffnen.
  * - Beide Oeffnungsvarianten zeigen jeweils echte Reportdaten statt nur Container oder Popup-Chrome.
  * - Die Standalone-Reports rendern ohne Sidebar, aber mit Standalone-Header.
  *
  * Fehlerfaelle:
- * - Der neue Tab oeffnet ohne passenden Report oder ohne die ausgewaehlten Filter.
+ * - Der neue Tab öffnet ohne passenden Report oder ohne die ausgewählten Filter.
  * - Die gleiche Reportkonfiguration zeigt im Overlay und im neuen Tab unterschiedliche Ergebnisse.
  * - Browser-Tests wuerden nur den Overlay-Container oder einen Popup-Wechsel erkennen, aber keine echten Reportinhalte.
  *
@@ -312,5 +312,43 @@ test("opens the auftragsliste both inline and in a standalone tab with real proj
   await expect(popupCards).toContainText("OpenMode Auftrag Fenster");
   await expect(popupCards).toContainText(tour.name);
   await expect(popupCards).not.toContainText(hiddenProject.customer.fullName ?? "");
+  await popup.close();
+});
+
+test("opens the Tourenplan both inline and in a standalone tab with real tour appointments", async ({ page }) => {
+  const inRangeDate = getRelativeBerlinDate(5);
+  const outOfRangeDate = getRelativeBerlinDate(60);
+  const tour = await createTourFixture("#335577");
+  const visibleProject = await createReportProject({
+    prefix: "OPEN-TP-SICHTBAR",
+    appointmentDate: inRangeDate,
+    tourId: tour.id,
+  });
+  const hiddenProject = await createReportProject({
+    prefix: "OPEN-TP-SPAETER",
+    appointmentDate: outOfRangeDate,
+    tourId: tour.id,
+  });
+
+  await openReports(page);
+  await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
+  await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
+  await fillReportDateRange(page, "reports-tourenplan", inRangeDate);
+  await page.getByTestId("button-reports-tourenplan-generate").click();
+
+  const result = page.getByTestId("reports-tourenplan-result");
+  await expect(result).toContainText(tour.name);
+  await expect(result).toContainText(visibleProject.project.name);
+  await expect(result).toContainText(visibleProject.customer.fullName ?? "");
+  await expect(result).not.toContainText(hiddenProject.customer.fullName ?? "");
+
+  await page.getByTestId("button-reports-tourenplan-back").click();
+
+  const popup = await openReportPopup(page, "button-reports-tourenplan-open-tab");
+  const popupResult = popup.getByTestId("reports-tourenplan-result");
+  await expect(popupResult).toContainText(tour.name);
+  await expect(popupResult).toContainText(visibleProject.project.name);
+  await expect(popupResult).toContainText(visibleProject.customer.fullName ?? "");
+  await expect(popupResult).not.toContainText(hiddenProject.customer.fullName ?? "");
   await popup.close();
 });

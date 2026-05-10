@@ -7,17 +7,22 @@
  * - Die alte Projekt-Tabelle und der Sonderblock-Abschnitt entfallen vollstaendig.
  *
  * Fehlerfaelle:
- * - Die Druckansicht faellt auf Tabelle oder Sonderblock-Bereich zurueck.
+ * - Die Druckansicht fällt auf Tabelle oder Sonderblock-Bereich zurück.
  * - Projektkarten verlieren Gruende, Artikellisten oder Footer-Informationen.
  *
  * Ziel:
- * Die FT26-Druckkomponente in Isolation ueber statisches Markup regressionssicher absichern.
+ * Die FT26-Druckkomponente in Isolation über statisches Markup regressionssicher absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ProduktionsplanungPrintLayout } from "../../../client/src/components/reports/ProduktionsplanungPrintLayout";
+import {
+  buildProduktionsplanungPrintBlocks,
+  paginateMeasuredProduktionsplanungPrintPages,
+  ProduktionsplanungPrintLayout,
+  PRODUKTIONSPLANUNG_PRINT_BLOCK_GAP_PX,
+} from "../../../client/src/components/reports/ProduktionsplanungPrintLayout";
 
 describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
   beforeEach(() => {
@@ -123,5 +128,60 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("Notizen 3");
     expect(html).toContain("Anhänge 1");
     expect(html).toContain("Info");
+  });
+
+  it("paginates measured production blocks without duplicating or losing project cards", () => {
+    const projectRow = (projectId: number) => ({
+      projectId,
+      customerId: projectId + 100,
+      appointmentId: projectId + 200,
+      projectName: `Projekt ${projectId}`,
+      orderNumber: `ORD-${projectId}`,
+      customerNumber: `C-${projectId}`,
+      customerFullName: `Kunde ${projectId}`,
+      actualDate: "2099-11-05",
+      durationDays: 1,
+      tourName: "Tour Nord",
+      employees: [],
+      customerNotesCount: 0,
+      projectNotesCount: 0,
+      appointmentNotesCount: 0,
+      notesCount: 0,
+      customerAttachmentsCount: 0,
+      projectAttachmentsCount: 0,
+      appointmentAttachmentsCount: 0,
+      attachmentsCount: 0,
+      tags: [],
+      reportCardReasonTags: [],
+      articleValues: [],
+      projectDescription: `Lange Druckbeschreibung ${projectId}`,
+    });
+
+    const blocks = buildProduktionsplanungPrintBlocks({
+      productCategoryGroups: [{
+        categoryId: 10,
+        categoryName: "Fass Saunen",
+        items: [{ itemName: "Sauna Alpha", totalQuantity: 3 }],
+      }],
+      componentCategoryGroups: [],
+      projectRows: [projectRow(1), projectRow(2), projectRow(3)],
+    }, [{ categoryId: 10, block: 1, columns: 1 }]);
+    const blockHeights = Object.fromEntries(blocks.map((block) => [
+      block.key,
+      block.kind === "project" ? 220 : 80,
+    ]));
+
+    const pages = paginateMeasuredProduktionsplanungPrintPages(blocks, 360, blockHeights);
+    const printedKeys = pages.flatMap((page) => page.blocks.map((block) => block.key));
+    const expectedKeys = blocks.map((block) => block.key);
+
+    expect(pages.length).toBeGreaterThan(1);
+    expect(printedKeys).toEqual(expectedKeys);
+    for (const page of pages) {
+      const usedHeight = page.blocks.reduce((sum, block, index) => (
+        sum + blockHeights[block.key] + (index > 0 ? PRODUKTIONSPLANUNG_PRINT_BLOCK_GAP_PX : 0)
+      ), 0);
+      expect(usedHeight).toBeLessThanOrEqual(360);
+    }
   });
 });

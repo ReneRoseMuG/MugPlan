@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 57,
-      "generated_count": 57,
+      "source_count": 58,
+      "generated_count": 58,
       "warnings": 0,
       "errors": 0
     }
@@ -2918,6 +2918,15 @@
         "title": "10.05.26 | Abschluss | P01 Reports- und Druck-Dialoge",
         "source": "journal/10-05-26-p01-reports-druck-dialoge-abgeschlossen.md",
         "output": "verwaltung/journal/10-05-26-p01-reports-druck-dialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "10-05-26-reports-vereinheitlicht-preset-ui-entfernt",
+        "title": "10.05.26 | Reports | Vereinheitlichung und Preset-UI entfernt",
+        "source": "journal/10-05-26-reports-vereinheitlicht-preset-ui-entfernt.md",
+        "output": "verwaltung/journal/10-05-26-reports-vereinheitlicht-preset-ui-entfernt.html",
         "ok": true,
         "warnings": [],
         "errors": []

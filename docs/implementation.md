@@ -373,10 +373,18 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 ### Leser
 
 - erhält ausschließlich lesenden Zugriff
-- keine schreibenden Endpunkte verfügbar
+- keine schreibenden Endpunkte verfügbar, mit Ausnahme benutzereigener Report-Presets
 - erhält aktive Kalendermarker über `/api/calendar/markers`
 - erhält keinen Zugriff auf die Admin-Pflege unter `/api/admin/calendar-markers`
 - kein Zugriff auf FT31-Monitoring-Endpunkte oder Monitoring-Konfiguration
+
+### Report-Presets
+
+- `/api/report-configs/:reportKey` liefert für `ADMIN`, `DISPONENT` und `LESER` ausschließlich Presets im Scope `USER` des angemeldeten Benutzers.
+- `/api/report-configs/:reportKey/presets/:presetId` speichert und löscht für `ADMIN`, `DISPONENT` und `LESER` ausschließlich benutzereigene `USER`-Presets.
+- `GLOBAL`-Presets werden im Report-Preset-Contract nicht mehr akzeptiert und nicht mehr aus der Preset-Persistenz gelesen.
+- Preset-Aktionen wie Report öffnen oder Druckvorschau öffnen werden serverseitig nicht mehr persistiert; ein Preset speichert nur Konfigurationswerte.
+- Die globale Produktionsplanung-Kategorie-Layout-Einstellung `reports.categoryLayout` bleibt davon unberührt und weiterhin `ADMIN`-verwaltet.
 
 ### Listenfilter (serverseitig)
 

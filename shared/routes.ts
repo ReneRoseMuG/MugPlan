@@ -996,7 +996,7 @@ export const reportConfigReportKeySchema = z.enum([
   "tourenplan",
 ]);
 
-export const reportPresetScopeSchema = z.enum(["USER", "GLOBAL"]);
+export const reportPresetScopeSchema = z.literal("USER");
 export const reportPresetActionSchema = z.enum(["GENERATE_REPORT", "OPEN_PRINT_PREVIEW"]);
 export const reportPresetIdSchema = z.string().regex(/^[A-Za-z0-9._-]+$/);
 
@@ -1008,7 +1008,7 @@ export const reportPresetRangeSchema = z.discriminatedUnion("mode", [
   }).strict(),
   z.object({
     mode: z.literal("calendarWeek"),
-    start: z.enum(["current", "next"]),
+    start: z.union([z.enum(["current", "next"]), z.number().int().min(0).max(52)]),
     weeks: z.number().int().min(1).max(52),
   }).strict(),
 ]);
@@ -1055,6 +1055,11 @@ export const reportPresetFileSchema = z.object({
   presets: z.array(reportPresetSchema),
 }).strict();
 
+const reportConfigValidationErrorResponseSchema = z.object({
+  code: z.literal("VALIDATION_ERROR"),
+  message: z.string().optional(),
+});
+
 const reportConfigPresetsResponseSchema = z.object({
   reportKey: reportConfigReportKeySchema,
   presets: z.array(reportPresetSchema),
@@ -1062,7 +1067,7 @@ const reportConfigPresetsResponseSchema = z.object({
 
 const reportPresetUpsertInputSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  scope: reportPresetScopeSchema,
+  scope: reportPresetScopeSchema.default("USER"),
   config: reportPresetConfigSchema,
   actions: z.array(reportPresetActionSchema).default([]),
 }).strict();
@@ -4494,7 +4499,7 @@ export const api = {
       responses: {
         200: reportConfigPresetsResponseSchema,
         403: z.object({ code: z.literal("FORBIDDEN") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        422: reportConfigValidationErrorResponseSchema,
       },
     },
     set: {
@@ -4504,7 +4509,7 @@ export const api = {
       responses: {
         200: reportPresetSchema,
         403: z.object({ code: z.literal("FORBIDDEN") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        422: reportConfigValidationErrorResponseSchema,
       },
     },
     delete: {
@@ -4514,7 +4519,7 @@ export const api = {
       responses: {
         200: z.object({ ok: z.literal(true) }),
         403: z.object({ code: z.literal("FORBIDDEN") }),
-        422: z.object({ code: z.literal("VALIDATION_ERROR") }),
+        422: reportConfigValidationErrorResponseSchema,
       },
     },
   },

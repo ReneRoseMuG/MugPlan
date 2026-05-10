@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [10.05.26 - Reports: Vereinheitlichung und Preset-UI entfernt](10-05-26-reports-vereinheitlicht-preset-ui-entfernt.md)
 - [10.05.26 - Wiki: Use-Case-Warnungen bereinigt](10-05-26-wiki-use-case-warnungen-bereinigt.md)
 - [10.05.26 - P01: Reports- und Druck-Dialoge abgeschlossen](10-05-26-p01-reports-druck-dialoge-abgeschlossen.md)
 - [10.05.26 - P01: Kunden-, Mitarbeiter- und Notizen-Dialoge abgeschlossen](10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen.md)

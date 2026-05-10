@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>10-05-26-reports-vereinheitlicht-preset-ui-entfernt: 10.05.26 | Reports | Vereinheitlichung und Preset-UI entfernt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 10-05-26-reports-vereinheitlicht-preset-ui-entfernt">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">10-05-26-reports-vereinheitlicht-preset-ui-entfernt 10.05.26 | Reports | Vereinheitlichung und Preset-UI entfernt</span></nav>
+        <h1 class="wiki-h1">10-05-26-reports-vereinheitlicht-preset-ui-entfernt: 10.05.26 | Reports | Vereinheitlichung und Preset-UI entfernt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>10.05.26</div>
+    <p class="wiki-lead">Die Report-Oberflächen wurden weiter vereinheitlicht. Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan folgen nun dem gleichen Ablauf: erst Konfiguration, dann Reportansicht, danach eine gemeinsame Druckvorschau-Schicht mit einheitlicher Kopfzeile, Aktualisieren, Dr</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Report-Oberflächen wurden weiter vereinheitlicht. Vorlaufliste, Produktionsplanung, Auftragsliste und Tourenplan folgen nun dem gleichen Ablauf: erst Konfiguration, dann Reportansicht, danach eine gemeinsame Druckvorschau-Schicht mit einheitlicher Kopfzeile, Aktualisieren, Drucken und Ausrichtungswahl.</p>
+<p>Die Produktionsplanung nutzt eine Druckvorschau mit gemessenen druckbaren Blöcken, damit Kategorie- und Projektcontainer bei der Seitenbildung nicht am Seitenrand abgeschnitten werden. Tourenplan und Standalone-Report-URLs wurden in den gemeinsamen Öffnungs- und Vorschaufluss eingebunden.</p>
+<p>Nach der UI-Nacharbeit wurde die komplette Preset-Funktion aus der sichtbaren Report-UI entfernt. Es gibt keine Preset-Auswahl, keine Preset-Eingabefelder und keine Speichern- oder Löschen-Aktionen mehr in den Report-Konfigurationscontainern. Die serverseitigen Preset-Strukturen bleiben bestehen, werden aber aus der Report-Oberfläche nicht mehr angeboten.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>UI-Unit-Tests: <code>npm run test:unit -- tests/unit/ui/reportsPage.wiring.test.tsx tests/unit/ui/reportsPage.behavior.test.tsx tests/unit/ui/tourenplanReportPanel.smoke.test.tsx</code> erfolgreich mit 21 bestandenen Tests in 3 Dateien.</li><li>Gesamtcheck: <code>npm run check</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code> sehen weiterhin die für sie erlaubten Reports nach bestehender Serverlogik.</li><li>Für keine Rolle werden Preset-Aktionen in der Report-UI mehr sichtbar oder bedienbar gemacht.</li><li>Die serverseitige Durchsetzung für Reports, Report-Konfigurationen und bestehende Preset-Endpunkte wurde nicht aufgeweicht.</li><li>Das globale Kategorie-Layout der Produktionsplanung bleibt weiterhin über die bestehenden Serverregeln geschützt.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Report-Komponenten: <code>client/src/components/ReportsPage.tsx</code></li><li>Tourenplan-Panel: <code>client/src/components/reports/TourenplanReportPanel.tsx</code></li><li>Druckvorschau-Schicht: <code>client/src/components/print/ReportPrintPreviewDialog.tsx</code></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

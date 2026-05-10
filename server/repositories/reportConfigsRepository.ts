@@ -21,17 +21,14 @@ type StoredPresetFile = {
   presets: ReportPreset[];
 };
 
-function resolveUserId(scope: ReportPresetScope, userId: number | undefined): string | undefined {
-  if (scope !== "USER") {
-    return undefined;
-  }
+function resolveUserId(userId: number | undefined): string | undefined {
   return typeof userId === "number" && Number.isInteger(userId) && userId > 0 ? String(userId) : undefined;
 }
 
 async function readPresetFile(request: ScopeRequest): Promise<StoredPresetFile> {
   const stored = await store.readJson<StoredPresetFile>({
     scope: request.scope as FileScope,
-    userId: resolveUserId(request.scope, request.userId),
+    userId: resolveUserId(request.userId),
     namespace,
     key: request.reportKey,
     schema: reportPresetFileSchema,
@@ -46,7 +43,7 @@ async function readPresetFile(request: ScopeRequest): Promise<StoredPresetFile> 
 async function writePresetFile(request: ScopeRequest, presets: ReportPreset[]): Promise<void> {
   await store.writeJson({
     scope: request.scope as FileScope,
-    userId: resolveUserId(request.scope, request.userId),
+    userId: resolveUserId(request.userId),
     namespace,
     key: request.reportKey,
     data: {
@@ -61,15 +58,11 @@ export async function listReportPresets(params: {
   reportKey: ReportConfigReportKey;
   userId: number;
 }): Promise<ReportPreset[]> {
-  const [globalFile, userFile] = await Promise.all([
-    readPresetFile({ reportKey: params.reportKey, scope: "GLOBAL" }),
-    readPresetFile({ reportKey: params.reportKey, scope: "USER", userId: params.userId }),
-  ]);
+  const userFile = await readPresetFile({ reportKey: params.reportKey, scope: "USER", userId: params.userId });
 
-  return [...globalFile.presets, ...userFile.presets]
+  return userFile.presets
     .sort((left, right) =>
-      left.scope.localeCompare(right.scope, "de")
-      || left.name.localeCompare(right.name, "de")
+      left.name.localeCompare(right.name, "de")
       || left.id.localeCompare(right.id, "de"));
 }
 

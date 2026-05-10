@@ -1,9 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
-import { addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
+import { differenceInCalendarDays, format, getISOWeek, getISOWeekYear, getISOWeeksInYear, startOfISOWeek, endOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
-import { ArrowDown, ArrowUp, Columns3, FileText, LayoutGrid, Loader2, Lock, Printer, RotateCcw, Table2 } from "lucide-react";
+import { Columns3, FileText, LayoutGrid, Loader2, Table2 } from "lucide-react";
 import {
   isManagedRemarksTagName,
   isManagedSpecialMeasureTagName,
@@ -11,7 +11,7 @@ import {
   type AppointmentCancellationReportState,
 } from "@shared/appointmentCancellation";
 import { isReportSaunaProductCategoryName } from "@shared/projectArticleList";
-import type { ReportAuftragslisteResponse, ReportPreset, ReportPresetConfig, ReportPresetRange, ReportProduktionsplanungResponse } from "@shared/routes";
+import type { ReportAuftragslisteResponse, ReportProduktionsplanungResponse } from "@shared/routes";
 import type { ComponentCategory, Product, ProductCategory, Tag } from "@shared/schema";
 
 import { AuftragslisteProjectCard } from "@/components/reports/AuftragslisteProjectCard";
@@ -21,25 +21,29 @@ import { ReportConfigPanel, type ReportConfigPanelMode } from "@/components/repo
 import { DateRangeKwRangePanel } from "@/components/ui/DateRangeKwRangePanel";
 import { TagFilterInput } from "@/components/filters/tag-filter-input";
 import { ReportOpenToggle } from "@/components/reports/ReportOpenToggle";
-import { ReportPresetControls } from "@/components/reports/ReportPresetControls";
+import { ReportResultOverlayShell } from "@/components/reports/ReportResultOverlayShell";
 import { SpaltenDialog } from "@/components/reports/SpaltenDialog";
 import { TourenplanReportPanel } from "@/components/reports/TourenplanReportPanel";
 import {
   ProduktionsplanungCategoryLayoutEditor,
   type CategoryLayoutCategoryOption,
 } from "@/components/reports/ProduktionsplanungCategoryLayoutEditor";
-import { ProduktionsplanungPrintLayout, type ProduktionsplanungPrintCategory } from "@/components/reports/ProduktionsplanungPrintLayout";
+import {
+  buildProduktionsplanungPrintBlocks,
+  paginateMeasuredProduktionsplanungPrintPages,
+  type ProduktionsplanungPrintCategory,
+  renderProduktionsplanungPrintBlock,
+} from "@/components/reports/ProduktionsplanungPrintLayout";
 import {
   areMeasuredPrintCardMeasurementsEqual,
   MeasuredPrintCardMeasurement,
   type MeasuredPrintCardMeasurementResult,
 } from "@/components/print/MeasuredPrintCardMeasurement";
 import { PrintPageShell } from "@/components/print/PrintPageShell";
-import { PrintPreviewDialog } from "@/components/print/PrintPreviewDialog";
+import { ReportPrintPreviewDialog } from "@/components/print/ReportPrintPreviewDialog";
 import { PrintSectionHeader } from "@/components/print/PrintSectionHeader";
 import { PrintSlimFooter } from "@/components/print/PrintSlimFooter";
 import { PrintSlimHeader } from "@/components/print/PrintSlimHeader";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { ListEmptyState } from "@/components/ui/list-empty-state";
@@ -63,7 +67,6 @@ import {
   distributeSortedItemsIntoColumns,
   getCategoryLayoutIds,
   orderCategoriesByLayout,
-  resolveCategoryLayoutConfig,
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
@@ -71,7 +74,7 @@ import {
   paginateAuftragslistePrintPages,
   paginateMeasuredAuftragslistePrintPages,
 } from "@/lib/auftragsliste-print-model";
-import { normalizeKwStart, normalizeWeekCount, resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
+import { resolveReportRangeFromKw } from "@/lib/reportRangeFromKw";
 import { cn } from "@/lib/utils";
 import {
   buildVorlauflistePrintPages,
@@ -80,7 +83,9 @@ import {
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { normalizeServerError } from "@/lib/error-normalization";
 
-type ReportType = "vorlaufliste" | "produktionsplanung" | "auftragsliste";
+type ConfiguredReportType = "vorlaufliste" | "produktionsplanung" | "auftragsliste";
+type ReportType = ConfiguredReportType | "tourenplan";
+type ReportPrintOrientation = "portrait" | "landscape";
 
 type VorlauflisteCategory = {
   id: number;
@@ -143,7 +148,7 @@ type ReportRangeTab = ReportConfigPanelMode;
 type VorlauflistePanelTab = ReportRangeTab;
 
 type SubmittedFilters = {
-  reportType: ReportType;
+  reportType: ConfiguredReportType;
   fromDate: string;
   toDate?: string;
   productCategoryIds: number[];
@@ -153,10 +158,17 @@ type SubmittedFilters = {
   useShortCodes: boolean;
 };
 
-export type StandaloneReportLaunch = SubmittedFilters & {
+export type StandaloneReportLaunch = Omit<SubmittedFilters, "reportType"> & {
+  reportType: ReportType;
   activeTab: ReportRangeTab;
   kwStart?: number;
   weekCount?: number;
+  allToursSelected?: boolean;
+  selectedTourIds?: number[];
+  includeWithoutTour?: boolean;
+  printMode?: "farbdruck" | "spardruck";
+  fontSize?: "small" | "medium" | "large";
+  orientation?: "portrait" | "landscape";
 };
 
 type VorlauflisteSelection = {
@@ -235,15 +247,17 @@ type AuftragslisteRequestParams = {
 
 const REPORT_PAGE_SIZE = 100;
 const PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY = "reports.categoryLayout";
-const MIN_REPORT_COLUMN_WIDTH = 80;
 const MAX_REPORT_COLUMN_WIDTH = 960;
 const VORLAUFLISTE_INDICATOR_COLUMN_ID = "__indicator";
 const VORLAUFLISTE_PRINT_ROWS_PER_PAGE = 12;
 const VORLAUFLISTE_PRINT_WIDTH_PX = 1000;
 const AUFTRAGSLISTE_PRINT_AVAILABLE_HEIGHT_PX = 920;
-const REPORT_PRESETS_TEMPORARILY_DISABLED = true;
 function toTestIdToken(value: string): string {
   return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
+}
+
+function resolvePrintPreviewDialogWidthClassName(orientation: ReportPrintOrientation): string | undefined {
+  return orientation === "portrait" ? "w-[calc(210mm+88px)]" : undefined;
 }
 
 function formatDate(value: string | null): string {
@@ -301,23 +315,6 @@ function formatAmount(value: string | null): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(normalized);
-}
-
-function normalizeColumnWidths(value: unknown): Record<string, number> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key, width]) =>
-        key.trim().length > 0
-        && typeof width === "number"
-        && Number.isInteger(width)
-        && width >= MIN_REPORT_COLUMN_WIDTH
-        && width <= MAX_REPORT_COLUMN_WIDTH)
-      .map(([key, width]) => [key, width]),
-  );
 }
 
 const VORLAUFLISTE_MIN_COLUMN_WIDTH = 50;
@@ -451,6 +448,12 @@ export function buildStandaloneReportUrl(params: StandaloneReportLaunch): string
   for (const id of params.tagIds) searchParams.append("tagIds", String(id));
   for (const model of params.saunaModels) searchParams.append("saunaModels", model);
   if (params.useShortCodes) searchParams.set("useShortCodes", "true");
+  if (typeof params.allToursSelected === "boolean") searchParams.set("allToursSelected", String(params.allToursSelected));
+  for (const id of params.selectedTourIds ?? []) searchParams.append("selectedTourIds", String(id));
+  if (typeof params.includeWithoutTour === "boolean") searchParams.set("includeWithoutTour", String(params.includeWithoutTour));
+  if (params.printMode) searchParams.set("printMode", params.printMode);
+  if (params.fontSize) searchParams.set("fontSize", params.fontSize);
+  if (params.orientation) searchParams.set("orientation", params.orientation);
   return `/standalone/reports?${searchParams.toString()}`;
 }
 
@@ -518,16 +521,6 @@ function renderGroupedCategoryList(
       {content}
     </div>
   );
-}
-
-function normalizeColumnIdList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return Array.from(new Set(
-    value
-      .filter((entry): entry is string => typeof entry === "string")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0 && entry !== VORLAUFLISTE_INDICATOR_COLUMN_ID),
-  ));
 }
 
 function resolveOrderedColumnIds(defaultOrder: string[], configuredOrder: string[]): string[] {
@@ -598,7 +591,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   );
   const defaultIsoWeek = useMemo(() => getISOWeek(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
   const defaultIsoWeekYear = useMemo(() => getISOWeekYear(defaultReportRange.referenceDate), [defaultReportRange.referenceDate]);
-  const nextIsoWeek = useMemo(() => getISOWeek(addWeeks(defaultReportRange.referenceDate, 1)), [defaultReportRange.referenceDate]);
   const defaultKwStartMax = useMemo(() => getISOWeeksInYear(new Date(defaultIsoWeekYear, 0, 4)), [defaultIsoWeekYear]);
   const [vorlauflisteFromDate, setVorlauflisteFromDate] = useState(defaultReportRange.fromDate);
   const [vorlauflisteToDate, setVorlauflisteToDate] = useState(defaultReportRange.toDate);
@@ -624,8 +616,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
 
   const categoryLayoutConfig = useSetting(PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY) as CategoryLayoutConfig | undefined;
   const { isSaving, setSetting } = useSettings();
-  const [produktionsplanungPresetCategoryLayout, setProduktionsplanungPresetCategoryLayout] = useState<CategoryLayoutConfig | null>(null);
-  const activeProduktionsplanungCategoryLayoutConfig = produktionsplanungPresetCategoryLayout ?? categoryLayoutConfig ?? [];
+  const activeProduktionsplanungCategoryLayoutConfig = categoryLayoutConfig ?? [];
   const { data: productCategories = [] } = useQuery<ProductCategory[]>({
     queryKey: ["/api/admin/master-data/product-categories?active=all"],
     queryFn: () => fetchJson("/api/admin/master-data/product-categories?active=all"),
@@ -670,10 +661,14 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [vorlauflisteColumnWidths, setVorlauflisteColumnWidths] = useState<Record<string, number>>({});
   const [vorlauflisteColumnOrder, setVorlauflisteColumnOrder] = useState<string[]>([]);
   const [vorlauflisteHiddenColumns, setVorlauflisteHiddenColumns] = useState<string[]>([]);
-  const [isVorlauflisteColumnsPopoverOpen, setIsVorlauflisteColumnsPopoverOpen] = useState(false);
   const [isVorlauflistePrintPreviewOpen, setIsVorlauflistePrintPreviewOpen] = useState(false);
   const [activeVorlauflistePrintPageIndex, setActiveVorlauflistePrintPageIndex] = useState(0);
+  const [vorlauflistePrintOrientation, setVorlauflistePrintOrientation] = useState<ReportPrintOrientation>("landscape");
   const [useProduktionsplanungShortCodes, setUseProduktionsplanungShortCodes] = useState(false);
+  const [isProduktionsplanungPrintPreviewOpen, setIsProduktionsplanungPrintPreviewOpen] = useState(false);
+  const [activeProduktionsplanungPrintPageIndex, setActiveProduktionsplanungPrintPageIndex] = useState(0);
+  const [produktionsplanungPaginationMeasurement, setProduktionsplanungPaginationMeasurement] = useState<MeasuredPrintCardMeasurementResult | null>(null);
+  const [produktionsplanungPrintOrientation, setProduktionsplanungPrintOrientation] = useState<ReportPrintOrientation>("landscape");
   const [useAuftragslisteShortCodes, setUseAuftragslisteShortCodes] = useState(false);
   const [selectedAuftragslisteProductCategoryIds, setSelectedAuftragslisteProductCategoryIds] = useState<number[]>([]);
   const [selectedAuftragslisteComponentCategoryIds, setSelectedAuftragslisteComponentCategoryIds] = useState<number[]>([]);
@@ -685,6 +680,8 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const [isAuftragslistePrintPreviewOpen, setIsAuftragslistePrintPreviewOpen] = useState(false);
   const [activeAuftragslistePrintPageIndex, setActiveAuftragslistePrintPageIndex] = useState(0);
   const [auftragslistePaginationMeasurement, setAuftragslistePaginationMeasurement] = useState<MeasuredPrintCardMeasurementResult | null>(null);
+  const [auftragslistePrintOrientation, setAuftragslistePrintOrientation] = useState<ReportPrintOrientation>("portrait");
+  const [reportOverlayHost, setReportOverlayHost] = useState<HTMLDivElement | null>(null);
   const hasAppliedStandaloneLaunchRef = useRef(false);
 
   useEffect(() => {
@@ -708,6 +705,10 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       return;
     }
     hasAppliedStandaloneLaunchRef.current = true;
+
+    if (standaloneLaunch.reportType === "tourenplan") {
+      return;
+    }
 
     if (standaloneLaunch.reportType === "vorlaufliste") {
       setActiveVorlauflisteTab(standaloneLaunch.activeTab);
@@ -834,7 +835,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     [activeProduktionsplanungCategoryLayoutConfig, allActiveProduktionsplanungCategories],
   );
 
-  const persistSelection = async (_reportType: ReportType, _next: VorlauflisteSelection | ProduktionsplanungSelection | AuftragslisteSelection) => undefined;
+  const persistSelection = async (_reportType: ConfiguredReportType, _next: VorlauflisteSelection | ProduktionsplanungSelection | AuftragslisteSelection) => undefined;
   const persistVorlauflisteSelection = async (_next?: Partial<VorlauflisteSelection>) => undefined;
   const persistAuftragslisteSelection = async (_next?: Partial<AuftragslisteSelection>) => undefined;
   const persistVorlauflisteRangeConfig = async (_next: Partial<VorlauflisteRangeConfig>) => undefined;
@@ -1008,162 +1009,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     referenceDate: defaultReportRange.referenceDate,
   }), [auftragslisteKwStart, auftragslisteWeekCount, defaultReportRange.referenceDate]);
 
-  const buildPresetRange = (params: {
-    activeTab: ReportRangeTab;
-    fromDate: string;
-    toDate: string;
-    kwStart: number | undefined;
-    weekCount: number;
-    kwRange: { fromDate: string; toDate: string } | null;
-  }): ReportPresetRange => {
-    if (params.activeTab !== "calendarWeek") {
-      return {
-        mode: "date",
-        fromDate: normalizePersistedDate(params.fromDate) ?? defaultReportRange.fromDate,
-        toDate: resolveRequiredToDate(params.toDate, defaultReportRange.toDate),
-      };
-    }
-
-    const normalizedKwStart = normalizeKwStart(params.kwStart);
-    const weeks = normalizeWeekCount(params.weekCount);
-    if (normalizedKwStart === nextIsoWeek) {
-      return { mode: "calendarWeek", start: "next", weeks };
-    }
-    if (normalizedKwStart === defaultIsoWeek) {
-      return { mode: "calendarWeek", start: "current", weeks };
-    }
-
-    return {
-      mode: "date",
-      fromDate: params.kwRange?.fromDate ?? defaultReportRange.fromDate,
-      toDate: params.kwRange?.toDate ?? defaultReportRange.toDate,
-    };
-  };
-
-  const buildVorlauflistePresetConfig = (): ReportPresetConfig => ({
-    range: buildPresetRange({
-      activeTab: activeVorlauflisteTab,
-      fromDate: vorlauflisteFromDate,
-      toDate: vorlauflisteToDate,
-      kwStart: vorlauflisteKwStart,
-      weekCount: vorlauflisteWeekCount,
-      kwRange: vorlauflisteKwRange,
-    }),
-    activeTab: activeVorlauflisteTab,
-    useShortCodes: useVorlauflisteShortCodes,
-    columnWidths: normalizeColumnWidths(vorlauflisteColumnWidths),
-    columnOrder: normalizeColumnIdList(vorlauflisteColumnOrder),
-    hiddenColumns: normalizeColumnIdList(vorlauflisteHiddenColumns),
-  });
-
-  const buildProduktionsplanungPresetConfig = (): ReportPresetConfig => ({
-    range: buildPresetRange({
-      activeTab: activeProduktionsplanungTab,
-      fromDate: produktionsplanungFromDate,
-      toDate: produktionsplanungToDate,
-      kwStart: produktionsplanungKwStart,
-      weekCount: produktionsplanungWeekCount,
-      kwRange: produktionsplanungKwRange,
-    }),
-    activeTab: activeProduktionsplanungTab,
-    useShortCodes: useProduktionsplanungShortCodes,
-    productCategoryIds: effectiveProduktionsplanungProductCategoryIds,
-    componentCategoryIds: effectiveProduktionsplanungComponentCategoryIds,
-    categoryLayout: activeProduktionsplanungCategoryLayoutConfig,
-  });
-
-  const buildAuftragslistePresetConfig = (): ReportPresetConfig => ({
-    range: buildPresetRange({
-      activeTab: activeAuftragslisteTab,
-      fromDate: auftragslisteFromDate,
-      toDate: auftragslisteToDate,
-      kwStart: auftragslisteKwStart,
-      weekCount: auftragslisteWeekCount,
-      kwRange: auftragslisteKwRange,
-    }),
-    activeTab: activeAuftragslisteTab,
-    useShortCodes: useAuftragslisteShortCodes,
-    productCategoryIds: effectiveAuftragslisteProductCategoryIds,
-    componentCategoryIds: effectiveAuftragslisteComponentCategoryIds,
-    tagIds: effectiveAuftragslisteTagIds,
-    saunaModels: effectiveAuftragslisteSaunaModels,
-  });
-
-  const resolvePresetKwStart = (range: ReportPresetRange): number => {
-    if (range.mode !== "calendarWeek") {
-      return defaultIsoWeek;
-    }
-    return range.start === "next" ? nextIsoWeek : defaultIsoWeek;
-  };
-
-  const applyPresetRange = (
-    config: ReportPresetConfig,
-    setters: {
-      setActiveTab: (value: ReportRangeTab) => void;
-      setFromDate: (value: string) => void;
-      setToDate: (value: string) => void;
-      setKwStart: (value: number | undefined) => void;
-      setWeekCount: (value: number) => void;
-    },
-  ) => {
-    if (config.range.mode === "calendarWeek") {
-      setters.setActiveTab("calendarWeek");
-      setters.setKwStart(resolvePresetKwStart(config.range));
-      setters.setWeekCount(normalizeWeekCount(config.range.weeks));
-      return;
-    }
-
-    setters.setActiveTab("date");
-    setters.setFromDate(config.range.fromDate);
-    setters.setToDate(config.range.toDate ?? config.range.fromDate);
-  };
-
-  const applyVorlauflistePreset = (preset: ReportPreset) => {
-    const config = preset.config;
-    applyPresetRange(config, {
-      setActiveTab: setActiveVorlauflisteTab,
-      setFromDate: setVorlauflisteFromDate,
-      setToDate: setVorlauflisteToDate,
-      setKwStart: setVorlauflisteKwStart,
-      setWeekCount: setVorlauflisteWeekCount,
-    });
-    setUseVorlauflisteShortCodes(config.useShortCodes ?? false);
-    setVorlauflisteColumnWidths(normalizeColumnWidths(config.columnWidths));
-    setVorlauflisteColumnOrder(normalizeColumnIdList(config.columnOrder));
-    setVorlauflisteHiddenColumns(normalizeColumnIdList(config.hiddenColumns));
-  };
-
-  const applyProduktionsplanungPreset = (preset: ReportPreset) => {
-    const config = preset.config;
-    applyPresetRange(config, {
-      setActiveTab: setActiveProduktionsplanungTab,
-      setFromDate: setProduktionsplanungFromDate,
-      setToDate: setProduktionsplanungToDate,
-      setKwStart: setProduktionsplanungKwStart,
-      setWeekCount: setProduktionsplanungWeekCount,
-    });
-    setUseProduktionsplanungShortCodes(config.useShortCodes ?? false);
-    setProduktionsplanungPresetCategoryLayout(
-      config.categoryLayout ? resolveCategoryLayoutConfig(config.categoryLayout) : null,
-    );
-  };
-
-  const applyAuftragslistePreset = (preset: ReportPreset) => {
-    const config = preset.config;
-    applyPresetRange(config, {
-      setActiveTab: setActiveAuftragslisteTab,
-      setFromDate: setAuftragslisteFromDate,
-      setToDate: setAuftragslisteToDate,
-      setKwStart: setAuftragslisteKwStart,
-      setWeekCount: setAuftragslisteWeekCount,
-    });
-    setUseAuftragslisteShortCodes(config.useShortCodes ?? false);
-    setSelectedAuftragslisteProductCategoryIds(config.productCategoryIds ?? []);
-    setSelectedAuftragslisteComponentCategoryIds(config.componentCategoryIds ?? []);
-    setSelectedAuftragslisteTagIds(config.tagIds ?? []);
-    setSelectedAuftragslisteSaunaModels(config.saunaModels ?? []);
-  };
-
   const persistCategoryLayoutConfig = async (nextConfig: CategoryLayoutConfig) => {
     await setSetting({
       key: PRODUKTIONSPLANUNG_CATEGORY_LAYOUT_SETTING_KEY,
@@ -1178,7 +1023,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
       return;
     }
     setActiveVorlauflistePrintPageIndex(0);
-  }, [isVorlauflistePrintPreviewOpen, vorlauflistePrintPreviewData]);
+  }, [isVorlauflistePrintPreviewOpen, vorlauflistePrintOrientation, vorlauflistePrintPreviewData]);
 
   useEffect(() => {
     if (!isAuftragslistePrintPreviewOpen) {
@@ -1188,7 +1033,23 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     }
     setActiveAuftragslistePrintPageIndex(0);
     setAuftragslistePaginationMeasurement(null);
-  }, [auftragslisteData, effectiveAuftragslisteCategories, isAuftragslistePrintPreviewOpen]);
+  }, [auftragslisteData, auftragslistePrintOrientation, effectiveAuftragslisteCategories, isAuftragslistePrintPreviewOpen]);
+
+  useEffect(() => {
+    if (!isProduktionsplanungPrintPreviewOpen) {
+      setActiveProduktionsplanungPrintPageIndex(0);
+      setProduktionsplanungPaginationMeasurement(null);
+      return;
+    }
+    setActiveProduktionsplanungPrintPageIndex(0);
+    setProduktionsplanungPaginationMeasurement(null);
+  }, [
+    activeProduktionsplanungCategoryLayoutConfig,
+    effectiveProduktionsplanungPrintCategories,
+    isProduktionsplanungPrintPreviewOpen,
+    produktionsplanungPrintOrientation,
+    produktionsplanungData,
+  ]);
 
   const resolvePersistedColumnWidth = (columnId: string, defaultWidth: number, minWidth = VORLAUFLISTE_MIN_COLUMN_WIDTH) => {
     if (columnId === VORLAUFLISTE_INDICATOR_COLUMN_ID) {
@@ -1369,6 +1230,29 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     && isAuftragslistePrintPreviewOpen
     && auftragslisteItems.length > 0
     && auftragslistePaginationMeasurement === null;
+  const produktionsplanungPrintData = produktionsplanungData ?? {
+    productCategoryGroups: [],
+    componentCategoryGroups: [],
+    projectRows: [],
+  };
+  const produktionsplanungPrintBlocks = useMemo(
+    () => buildProduktionsplanungPrintBlocks(produktionsplanungPrintData, activeProduktionsplanungCategoryLayoutConfig),
+    [activeProduktionsplanungCategoryLayoutConfig, produktionsplanungPrintData],
+  );
+  const produktionsplanungPrintPages = useMemo(
+    () => produktionsplanungPaginationMeasurement
+      ? paginateMeasuredProduktionsplanungPrintPages(
+          produktionsplanungPrintBlocks,
+          produktionsplanungPaginationMeasurement.pageCapacityPx,
+          produktionsplanungPaginationMeasurement.cardHeights,
+        )
+      : [],
+    [produktionsplanungPaginationMeasurement, produktionsplanungPrintBlocks],
+  );
+  const isProduktionsplanungPaginationMeasuring = typeof window !== "undefined"
+    && isProduktionsplanungPrintPreviewOpen
+    && produktionsplanungPrintBlocks.length > 0
+    && produktionsplanungPaginationMeasurement === null;
 
   const totalPages = vorlauflisteData?.totalPages ?? 0;
   const canGoPrev = page > 1;
@@ -1403,7 +1287,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
   const isAuftragslisteGenerateDisabled = activeAuftragslisteTab === "calendarWeek"
     ? !auftragslisteKwRange
     : auftragslisteFromDate.trim().length === 0;
-  const resolveStandaloneLaunch = (reportType: ReportType): StandaloneReportLaunch | null => {
+  const resolveStandaloneLaunch = (reportType: ConfiguredReportType): StandaloneReportLaunch | null => {
     const isVorlaufliste = reportType === "vorlaufliste";
     const isAuftragsliste = reportType === "auftragsliste";
     const activeTab = isVorlaufliste
@@ -1458,9 +1342,11 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     };
   };
 
-  const handleGenerateReport = (reportType: ReportType) => {
-    const launch = resolveStandaloneLaunch(reportType);
-    if (!launch) return;
+  const openGeneratedReport = (launch: StandaloneReportLaunch, openPrintPreview = false) => {
+    if (launch.reportType === "tourenplan") return;
+    setIsVorlauflistePrintPreviewOpen(false);
+    setIsProduktionsplanungPrintPreviewOpen(false);
+    setIsAuftragslistePrintPreviewOpen(false);
     setPage(1);
     setSubmittedFilters({
       reportType: launch.reportType,
@@ -1474,35 +1360,41 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
     });
     setReportRequestId((current) => current + 1);
     setIsReportOverlayOpen(true);
+    if (openPrintPreview) {
+      if (launch.reportType === "vorlaufliste") setIsVorlauflistePrintPreviewOpen(true);
+      if (launch.reportType === "produktionsplanung") setIsProduktionsplanungPrintPreviewOpen(true);
+      if (launch.reportType === "auftragsliste") setIsAuftragslistePrintPreviewOpen(true);
+    }
   };
 
-  const handleOpenReportInTab = (reportType: ReportType) => {
+  const handleGenerateReport = (reportType: ConfiguredReportType) => {
+    const launch = resolveStandaloneLaunch(reportType);
+    if (!launch) return;
+    openGeneratedReport(launch);
+  };
+
+  const handleOpenReportInTab = (reportType: ConfiguredReportType) => {
     const launch = resolveStandaloneLaunch(reportType);
     if (!launch) return;
     window.open(buildStandaloneReportUrl(launch), "_blank");
   };
 
+  const handleRefreshReport = (reportType: ConfiguredReportType) => {
+    if (submittedFilters?.reportType !== reportType) return;
+    if (reportType === "produktionsplanung") setProduktionsplanungPaginationMeasurement(null);
+    if (reportType === "auftragsliste") setAuftragslistePaginationMeasurement(null);
+    setReportRequestId((current) => current + 1);
+  };
+
   const closeOverlay = () => {
     setIsReportOverlayOpen(false);
-    setIsVorlauflisteColumnsPopoverOpen(false);
     setIsVorlauflistePrintPreviewOpen(false);
+    setIsProduktionsplanungPrintPreviewOpen(false);
     setIsAuftragslisteCategoryDialogOpen(false);
     setIsAuftragslistePrintPreviewOpen(false);
     setIsProduktionsplanungCategoryLayoutDialogOpen(false);
   };
   const handleVorlauflistePrint = () => window.print();
-  const fixedVorlauflisteColumnIds = useMemo(
-    () => configurableVorlauflisteColumns
-      .filter((column) => !column.id.startsWith("product-") && !column.id.startsWith("component-"))
-      .map((column) => column.id),
-    [configurableVorlauflisteColumns],
-  );
-  const categoryVorlauflisteColumnIds = useMemo(
-    () => configurableVorlauflisteColumns
-      .filter((column) => column.id.startsWith("product-") || column.id.startsWith("component-"))
-      .map((column) => column.id),
-    [configurableVorlauflisteColumns],
-  );
   const vorlauflisteColumnById = useMemo(
     () => new Map(configurableVorlauflisteColumns.map((column) => [column.id, column] as const)),
     [configurableVorlauflisteColumns],
@@ -1560,10 +1452,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
         contentClassName="min-h-0"
         contentSlot={(
           <div
-            className={cn(
-              "relative h-full overflow-hidden",
-              isProduktionsplanungLayout ? "reports-print-produktionsplanung-active" : undefined,
-            )}
+            className="relative h-full overflow-hidden"
             data-testid="reports-panel"
           >
             <style>
@@ -1575,16 +1464,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   [data-testid="print-document-root"],
                   [data-testid="print-document-root"] * {
                     visibility: visible !important;
-                  }
-                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"],
-                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"] * {
-                    visibility: visible !important;
-                  }
-                  .reports-print-produktionsplanung-active [data-testid="reports-produktionsplanung-overlay"] {
-                    position: absolute !important;
-                    inset: 0 !important;
-                    overflow: visible !important;
-                    background: white !important;
                   }
                 }
               `}
@@ -1745,17 +1624,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       </label>
                     </div>
                   )}
-                  secondaryOptionsSlot={(
-                    <ReportPresetControls
-                      reportKey="vorlaufliste"
-                      isAdmin={isAdmin}
-                      currentConfig={buildVorlauflistePresetConfig()}
-                      defaultName="Vorlaufliste Preset"
-                      onApplyPreset={applyVorlauflistePreset}
-                      testIdPrefix="reports-vorlaufliste"
-                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
-                    />
-                  )}
                   footer={(
                     <ReportOpenToggle
                       disabled={isVorlauflisteGenerateDisabled}
@@ -1839,17 +1707,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                         <span className="text-sm text-slate-600">Shortcodes verwenden</span>
                       </label>
                     </div>
-                  )}
-                  secondaryOptionsSlot={(
-                    <ReportPresetControls
-                      reportKey="produktionsplanung"
-                      isAdmin={isAdmin}
-                      currentConfig={buildProduktionsplanungPresetConfig()}
-                      defaultName="Produktionsplanung Preset"
-                      onApplyPreset={applyProduktionsplanungPreset}
-                      testIdPrefix="reports-produktionsplanung"
-                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
-                    />
                   )}
                   footer={(
                     <ReportOpenToggle
@@ -2003,17 +1860,6 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       </div>
                     </div>
                   )}
-                  secondaryOptionsSlot={(
-                    <ReportPresetControls
-                      reportKey="auftragsliste"
-                      isAdmin={isAdmin}
-                      currentConfig={buildAuftragslistePresetConfig()}
-                      defaultName="Auftragsliste Preset"
-                      onApplyPreset={applyAuftragslistePreset}
-                      testIdPrefix="reports-auftragsliste"
-                      disabled={REPORT_PRESETS_TEMPORARILY_DISABLED}
-                    />
-                  )}
                   footer={(
                     <ReportOpenToggle
                       disabled={isAuftragslisteGenerateDisabled}
@@ -2071,122 +1917,40 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                   defaultIsoWeek={defaultIsoWeek}
                   defaultIsoWeekYear={defaultIsoWeekYear}
                   isAdmin={isAdmin}
+                  overlayHost={reportOverlayHost}
+                  standaloneLaunch={standaloneLaunch?.reportType === "tourenplan" ? { ...standaloneLaunch, reportType: "tourenplan" as const } : null}
+                  buildStandaloneReportUrl={buildStandaloneReportUrl}
                 />
               </div>
             </div>
 
-            <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isVorlauflisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-overlay">
-              <div className="flex h-full flex-col">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
-                  <div className="flex min-w-0 items-baseline gap-3">
-                    <h3 className="shrink-0 text-base font-semibold text-foreground">Vorlaufliste</h3>
-                    <span className="truncate text-sm text-muted-foreground">{vorlauflisteRangeMetaLabel}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Popover open={isVorlauflisteColumnsPopoverOpen} onOpenChange={setIsVorlauflisteColumnsPopoverOpen}>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" data-testid="button-reports-vorlaufliste-columns">
-                          <Columns3 className="h-4 w-4" />
-                          Spalten
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[420px] p-0" align="end">
-                        <div className="border-b border-border px-4 py-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div>
-                              <h4 className="text-sm font-semibold text-foreground">Spalten konfigurieren</h4>
-                              <p className="text-xs text-muted-foreground">Sichtbarkeit und Reihenfolge der Vorlaufliste anpassen.</p>
-                            </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={resetVorlauflisteColumns} data-testid="button-reports-vorlaufliste-columns-reset">
-                              <RotateCcw className="h-4 w-4" />
-                              Reset
-                            </Button>
-                          </div>
-                        </div>
-                        <div className="max-h-[70vh] space-y-4 overflow-auto px-4 py-4">
-                          <section data-testid="reports-vorlaufliste-columns-fixed-indicator">
-                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feststehend</h5>
-                            <div className="mt-2 flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
-                              <div className="flex items-center gap-3">
-                                <Lock className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm text-foreground">Statusindikator</span>
-                              </div>
-                              <span className="text-xs text-muted-foreground">Fix</span>
-                            </div>
-                          </section>
-                          <section data-testid="reports-vorlaufliste-columns-fixed-columns">
-                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Festspalten</h5>
-                            <div className="mt-2 space-y-2">
-                              {fixedVorlauflisteColumnIds.map((columnId) => {
-                                const column = vorlauflisteColumnById.get(columnId);
-                                if (!column) return null;
-                                const label = typeof column.header === "string" ? column.header : columnId;
-                                const index = resolvedVorlauflisteColumnOrder.indexOf(columnId);
-                                return (
-                                  <div key={columnId} className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
-                                    <label className="flex min-w-0 items-center gap-3 text-sm text-foreground">
-                                      <Checkbox
-                                        checked={!resolvedVorlauflisteHiddenColumns.includes(columnId)}
-                                        onCheckedChange={(checked) => updateVorlauflisteColumnVisibility(columnId, Boolean(checked))}
-                                        data-testid={`checkbox-reports-vorlaufliste-column-${columnId}`}
-                                      />
-                                      <span className="truncate">{label}</span>
-                                    </label>
-                                    <div className="flex items-center gap-1">
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, -1)} disabled={index <= 0} data-testid={`button-reports-vorlaufliste-column-${columnId}-up`}>
-                                        <ArrowUp className="h-4 w-4" />
-                                      </Button>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, 1)} disabled={index === -1 || index >= resolvedVorlauflisteColumnOrder.length - 1} data-testid={`button-reports-vorlaufliste-column-${columnId}-down`}>
-                                        <ArrowDown className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </section>
-                          <section data-testid="reports-vorlaufliste-columns-categories">
-                            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Artikel-Kategorien</h5>
-                            <div className="mt-2 space-y-2">
-                              {categoryVorlauflisteColumnIds.map((columnId) => {
-                                const column = vorlauflisteColumnById.get(columnId);
-                                if (!column) return null;
-                                const label = typeof column.header === "string" ? column.header : columnId;
-                                const index = resolvedVorlauflisteColumnOrder.indexOf(columnId);
-                                return (
-                                  <div key={columnId} className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2">
-                                    <label className="flex min-w-0 items-center gap-3 text-sm text-foreground">
-                                      <Checkbox
-                                        checked={!resolvedVorlauflisteHiddenColumns.includes(columnId)}
-                                        onCheckedChange={(checked) => updateVorlauflisteColumnVisibility(columnId, Boolean(checked))}
-                                        data-testid={`checkbox-reports-vorlaufliste-column-${columnId}`}
-                                      />
-                                      <span className="truncate">{label}</span>
-                                    </label>
-                                    <div className="flex items-center gap-1">
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, -1)} disabled={index <= 0} data-testid={`button-reports-vorlaufliste-column-${columnId}-up`}>
-                                        <ArrowUp className="h-4 w-4" />
-                                      </Button>
-                                      <Button type="button" variant="ghost" size="icon" onClick={() => moveVorlauflisteColumn(columnId, 1)} disabled={index === -1 || index >= resolvedVorlauflisteColumnOrder.length - 1} data-testid={`button-reports-vorlaufliste-column-${columnId}-down`}>
-                                        <ArrowDown className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </section>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Button type="button" variant="outline" onClick={() => setIsVorlauflistePrintPreviewOpen(true)} data-testid="button-reports-vorlaufliste-print-preview">
-                      <Printer className="h-4 w-4" />
-                      Druckvorschau
-                    </Button>
-                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-back">Zurück</Button>
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-hidden">
+            <ReportResultOverlayShell
+              open={isVorlauflisteOverlay}
+              title="Vorlaufliste"
+              metaLabel={vorlauflisteRangeMetaLabel}
+              onRefresh={() => handleRefreshReport("vorlaufliste")}
+              onOpenPrintPreview={() => setIsVorlauflistePrintPreviewOpen(true)}
+              onBack={closeOverlay}
+              isRefreshing={isVorlauflisteLoading}
+              testId="reports-overlay"
+              refreshTestId="button-reports-vorlaufliste-refresh"
+              printPreviewTestId="button-reports-vorlaufliste-print-preview"
+              backTestId="button-reports-back"
+              footer={(
+                <ListPagingFooter
+                  summaryText={`${vorlauflisteData?.total ?? 0} Einträge`}
+                  page={page}
+                  totalPages={totalPages}
+                  canGoPrev={canGoPrev}
+                  canGoNext={canGoNext}
+                  onPrev={() => canGoPrev && setPage((current) => current - 1)}
+                  onNext={() => canGoNext && setPage((current) => current + 1)}
+                  prevTestId="button-reports-vorlaufliste-page-prev"
+                  nextTestId="button-reports-vorlaufliste-page-next"
+                  stateTestId="text-reports-vorlaufliste-page-state"
+                />
+              )}
+            >
                   {isVorlauflisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : normalizedVorlauflisteError ? (
@@ -2235,44 +1999,32 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       </div>
                     </div>
                   )}
-                </div>
-                <div className="border-t border-border px-6 py-4">
-                  <ListPagingFooter
-                    summaryText={`${vorlauflisteData?.total ?? 0} Einträge`}
-                    page={page}
-                    totalPages={totalPages}
-                    canGoPrev={canGoPrev}
-                    canGoNext={canGoNext}
-                    onPrev={() => canGoPrev && setPage((current) => current - 1)}
-                    onNext={() => canGoNext && setPage((current) => current + 1)}
-                    prevTestId="button-reports-vorlaufliste-page-prev"
-                    nextTestId="button-reports-vorlaufliste-page-next"
-                    stateTestId="text-reports-vorlaufliste-page-state"
-                  />
-                </div>
-              </div>
-            </div>
+            </ReportResultOverlayShell>
 
-            <PrintPreviewDialog
+            <ReportPrintPreviewDialog
               open={isVorlauflistePrintPreviewOpen}
               onOpenChange={setIsVorlauflistePrintPreviewOpen}
-              title="Druckvorschau Vorlaufliste"
+              title="Druckvorschau - Vorlaufliste"
+              dialogWidthClassName={resolvePrintPreviewDialogWidthClassName(vorlauflistePrintOrientation)}
               pages={vorlauflistePrintPages}
               activePageIndex={activeVorlauflistePrintPageIndex}
               onPageChange={setActiveVorlauflistePrintPageIndex}
               testIdPrefix="vorlaufliste-print-preview"
               dialogTestId="dialog-vorlaufliste-print-preview"
               showPageMetaBar={false}
+              pageOrientation={vorlauflistePrintOrientation}
+              onPageOrientationChange={setVorlauflistePrintOrientation}
+              orientationTestIdPrefix="button-reports-vorlaufliste-orientation"
               getPageKey={(page) => page.pageNumber}
-              headerActions={vorlauflistePrintPages.length > 0 ? (
-                <Button type="button" variant="outline" onClick={handleVorlauflistePrint} data-testid="button-reports-vorlaufliste-print">
-                  <Printer className="h-4 w-4" />
-                  Drucken
-                </Button>
-              ) : null}
+              onRefresh={() => handleRefreshReport("vorlaufliste")}
+              onPrint={handleVorlauflistePrint}
+              isRefreshing={isVorlauflistePrintPreviewLoading}
+              printDisabled={vorlauflistePrintPages.length === 0}
+              refreshTestId="button-reports-vorlaufliste-print-preview-refresh"
+              printTestId="button-reports-vorlaufliste-print"
               renderPage={(page) => (
                 <PrintPageShell
-                  orientation="landscape"
+                  orientation={vorlauflistePrintOrientation}
                   paddingMm={10}
                   testId={`vorlaufliste-print-page-${page.pageNumber}`}
                   footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`vorlaufliste-print-page-footer-${page.pageNumber}`} />}
@@ -2356,22 +2108,21 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               ) : null}
             />
 
-            <div className={cn("absolute inset-0 z-10 bg-slate-100 transition-opacity", isAuftragslisteOverlay ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-auftragsliste-overlay">
-              <div className="flex h-full flex-col">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
-                  <div className="flex min-w-0 items-baseline gap-3">
-                    <h3 className="shrink-0 text-base font-semibold text-foreground">Auftragsliste</h3>
-                    <span className="truncate text-sm text-muted-foreground">{auftragslisteRangeMetaLabel}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="outline" onClick={() => setIsAuftragslistePrintPreviewOpen(true)} data-testid="button-reports-auftragsliste-print-preview">
-                      <Printer className="h-4 w-4" />
-                      Druckvorschau
-                    </Button>
-                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-auftragsliste-back">Zurück</Button>
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-6">
+            <ReportResultOverlayShell
+              open={isAuftragslisteOverlay}
+              title="Auftragsliste"
+              metaLabel={auftragslisteRangeMetaLabel}
+              onRefresh={() => handleRefreshReport("auftragsliste")}
+              onOpenPrintPreview={() => setIsAuftragslistePrintPreviewOpen(true)}
+              onBack={closeOverlay}
+              isRefreshing={isAuftragslisteLoading}
+              className="bg-slate-100"
+              contentClassName="overflow-auto bg-slate-100 p-6"
+              testId="reports-auftragsliste-overlay"
+              refreshTestId="button-reports-auftragsliste-refresh"
+              printPreviewTestId="button-reports-auftragsliste-print-preview"
+              backTestId="button-reports-auftragsliste-back"
+            >
                   {isAuftragslisteLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : normalizedAuftragslisteError ? (
@@ -2393,15 +2144,13 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                       )}
                     </section>
                   )}
-                </div>
-              </div>
-            </div>
+            </ReportResultOverlayShell>
 
             {isAuftragslistePrintPreviewOpen && auftragslisteItems.length > 0 ? (
               <MeasuredPrintCardMeasurement
                 items={auftragslisteItems}
                 getItemKey={(row) => row.projectId}
-                measurementKey={auftragslisteRangeMetaLabel}
+                measurementKey={`${auftragslisteRangeMetaLabel}-${auftragslistePrintOrientation}`}
                 testId="auftragsliste-print-measurement"
                 renderCard={(row) => (
                   <AuftragslisteProjectCard
@@ -2412,7 +2161,7 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                 )}
                 renderMeasurementLayout={({ contentRef, cards }) => (
                   <PrintPageShell
-                    orientation="portrait"
+                    orientation={auftragslistePrintOrientation}
                     paddingMm={10}
                     footer={<PrintSlimFooter pageNumber={1} />}
                   >
@@ -2441,28 +2190,30 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               />
             ) : null}
 
-            <PrintPreviewDialog
+            <ReportPrintPreviewDialog
               open={isAuftragslistePrintPreviewOpen}
               onOpenChange={setIsAuftragslistePrintPreviewOpen}
-              title="Druckvorschau Auftragsliste"
-              dialogWidthClassName="w-[calc(210mm+88px)]"
+              title="Druckvorschau - Auftragsliste"
+              dialogWidthClassName={resolvePrintPreviewDialogWidthClassName(auftragslistePrintOrientation)}
               pages={auftragslistePrintPages}
               activePageIndex={activeAuftragslistePrintPageIndex}
               onPageChange={setActiveAuftragslistePrintPageIndex}
               testIdPrefix="auftragsliste-print-preview"
               dialogTestId="dialog-auftragsliste-print-preview"
               showPageMetaBar={false}
-              pageOrientation="portrait"
+              pageOrientation={auftragslistePrintOrientation}
+              onPageOrientationChange={setAuftragslistePrintOrientation}
+              orientationTestIdPrefix="button-reports-auftragsliste-orientation"
               getPageKey={(page) => page.pageNumber}
-              headerActions={auftragslistePrintPages.length > 0 ? (
-                <Button type="button" variant="outline" onClick={handleVorlauflistePrint} data-testid="button-reports-auftragsliste-print">
-                  <Printer className="h-4 w-4" />
-                  Drucken
-                </Button>
-              ) : null}
+              onRefresh={() => handleRefreshReport("auftragsliste")}
+              onPrint={handleVorlauflistePrint}
+              isRefreshing={isAuftragslisteLoading || isAuftragslistePaginationMeasuring}
+              printDisabled={auftragslistePrintPages.length === 0 || isAuftragslistePaginationMeasuring}
+              refreshTestId="button-reports-auftragsliste-print-preview-refresh"
+              printTestId="button-reports-auftragsliste-print"
               renderPage={(page) => (
                 <PrintPageShell
-                  orientation="portrait"
+                  orientation={auftragslistePrintOrientation}
                   paddingMm={10}
                   testId={`auftragsliste-print-page-${page.pageNumber}`}
                   footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`auftragsliste-print-page-footer-${page.pageNumber}`} />}
@@ -2490,25 +2241,26 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
               ) : null}
             />
 
-            <div className={cn("absolute inset-0 z-10 bg-card transition-opacity", isProduktionsplanungLayout ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0")} data-testid="reports-produktionsplanung-overlay">
-              <div className="flex h-full flex-col">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 print:hidden">
-                  <div className="flex min-w-0 items-baseline gap-3">
-                    <h3 className="shrink-0 text-base font-semibold text-foreground">Produktionsplanung</h3>
-                    <span className="truncate text-sm text-muted-foreground">{produktionsplanungRangeMetaLabel}</span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button type="button" variant="outline" onClick={closeOverlay} data-testid="button-reports-produktionsplanung-back">Zurück</Button>
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 overflow-auto p-6">
+            <ReportResultOverlayShell
+              open={isProduktionsplanungLayout}
+              title="Produktionsplanung"
+              metaLabel={produktionsplanungRangeMetaLabel}
+              onRefresh={() => handleRefreshReport("produktionsplanung")}
+              onOpenPrintPreview={() => setIsProduktionsplanungPrintPreviewOpen(true)}
+              onBack={closeOverlay}
+              isRefreshing={isProduktionsplanungLoading}
+              contentClassName="overflow-auto p-6"
+              testId="reports-produktionsplanung-overlay"
+              refreshTestId="button-reports-produktionsplanung-refresh"
+              printPreviewTestId="button-reports-produktionsplanung-print-preview"
+              backTestId="button-reports-produktionsplanung-back"
+            >
                   {isProduktionsplanungLoading ? (
                     <div className="flex h-full items-center justify-center"><div className="flex items-center gap-3 rounded-md border border-border/60 bg-background/80 px-6 py-5 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /><span>Report wird geladen...</span></div></div>
                   ) : normalizedProduktionsplanungError ? (
                     <DialogBaseInlineMessage className="bg-white text-sm" error={normalizedProduktionsplanungError} />
                   ) : (
-                    <>
-                      <div className="space-y-6 print:hidden">
+                    <div className="space-y-6">
                       {isAdmin && !isProduktionsplanungCategoryLayoutConfigured ? (
                         <section className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900" data-testid="reports-produktionsplanung-layout-warning">
                           Kategorie-Layout noch nicht konfiguriert. Bildschirm- und Druckansicht nutzen aktuell die Standardkategorien.
@@ -2541,21 +2293,99 @@ export function ReportsPage({ onCancel, standaloneLaunch = null }: ReportsPagePr
                           <p className="mt-3 text-sm text-muted-foreground">Keine passenden Projekte im gewählten Zeitraum gefunden.</p>
                         )}
                       </section>
-                      </div>
-                      <ProduktionsplanungPrintLayout
-                        data={produktionsplanungData ?? {
-                          productCategoryGroups: [],
-                          componentCategoryGroups: [],
-                          projectRows: [],
-                        }}
-                        categories={effectiveProduktionsplanungPrintCategories}
-                        layoutConfig={activeProduktionsplanungCategoryLayoutConfig}
-                      />
-                    </>
+                    </div>
                   )}
-                </div>
-              </div>
-            </div>
+            </ReportResultOverlayShell>
+
+            {isProduktionsplanungPrintPreviewOpen && produktionsplanungPrintBlocks.length > 0 ? (
+              <MeasuredPrintCardMeasurement
+                items={produktionsplanungPrintBlocks}
+                getItemKey={(block) => block.key}
+                measurementKey={`${produktionsplanungRangeMetaLabel}-${produktionsplanungPrintOrientation}-${activeProduktionsplanungCategoryLayoutConfig.length}-${effectiveProduktionsplanungPrintCategories.length}`}
+                testId="produktionsplanung-print-measurement"
+                renderCard={(block) => renderProduktionsplanungPrintBlock(block, effectiveProduktionsplanungPrintCategories)}
+                renderMeasurementLayout={({ contentRef, cards }) => (
+                  <PrintPageShell
+                    orientation={produktionsplanungPrintOrientation}
+                    paddingMm={10}
+                    footer={<PrintSlimFooter pageNumber={1} />}
+                  >
+                    <PrintSlimHeader
+                      label="Produktionsplanung"
+                      context={
+                        submittedFilters?.toDate
+                          ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
+                          : formatDate(submittedFilters?.fromDate ?? null)
+                      }
+                    />
+                    <div ref={contentRef} className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+                      {cards}
+                    </div>
+                  </PrintPageShell>
+                )}
+                onMeasured={(nextMeasurement) => {
+                  setProduktionsplanungPaginationMeasurement((currentMeasurement) => (
+                    areMeasuredPrintCardMeasurementsEqual(currentMeasurement, nextMeasurement)
+                      ? currentMeasurement
+                      : nextMeasurement
+                  ));
+                }}
+              />
+            ) : null}
+
+            <ReportPrintPreviewDialog
+              open={isProduktionsplanungPrintPreviewOpen}
+              onOpenChange={setIsProduktionsplanungPrintPreviewOpen}
+              title="Druckvorschau - Produktionsplanung"
+              dialogWidthClassName={resolvePrintPreviewDialogWidthClassName(produktionsplanungPrintOrientation)}
+              pages={produktionsplanungPrintPages}
+              activePageIndex={activeProduktionsplanungPrintPageIndex}
+              onPageChange={setActiveProduktionsplanungPrintPageIndex}
+              testIdPrefix="produktionsplanung-print-preview"
+              dialogTestId="dialog-produktionsplanung-print-preview"
+              showPageMetaBar={false}
+              pageOrientation={produktionsplanungPrintOrientation}
+              onPageOrientationChange={setProduktionsplanungPrintOrientation}
+              orientationTestIdPrefix="button-reports-produktionsplanung-orientation"
+              getPageKey={(page) => page.pageNumber}
+              onRefresh={() => handleRefreshReport("produktionsplanung")}
+              onPrint={handleVorlauflistePrint}
+              isRefreshing={isProduktionsplanungLoading || isProduktionsplanungPaginationMeasuring}
+              printDisabled={produktionsplanungPrintPages.length === 0 || isProduktionsplanungPaginationMeasuring}
+              refreshTestId="button-reports-produktionsplanung-print-preview-refresh"
+              printTestId="button-reports-produktionsplanung-print"
+              renderPage={(page) => (
+                <PrintPageShell
+                  orientation={produktionsplanungPrintOrientation}
+                  paddingMm={10}
+                  testId={`produktionsplanung-print-page-${page.pageNumber}`}
+                  footer={<PrintSlimFooter pageNumber={page.pageNumber} testId={`produktionsplanung-print-page-footer-${page.pageNumber}`} />}
+                >
+                  <PrintSlimHeader
+                    label="Produktionsplanung"
+                    context={
+                      submittedFilters?.toDate
+                        ? `${formatDate(submittedFilters.fromDate)} bis ${formatDate(submittedFilters.toDate)}`
+                        : formatDate(submittedFilters?.fromDate ?? null)
+                    }
+                    testId={`produktionsplanung-print-page-header-${page.pageNumber}`}
+                  />
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+                    {page.blocks.map((block) => (
+                      <div key={block.key} data-testid={`produktionsplanung-print-block-${block.key}`}>
+                        {renderProduktionsplanungPrintBlock(block, effectiveProduktionsplanungPrintCategories)}
+                      </div>
+                    ))}
+                  </div>
+                </PrintPageShell>
+              )}
+              loadingState={isProduktionsplanungLoading || isProduktionsplanungPaginationMeasuring ? <div className="text-sm text-slate-700">Druckdaten werden geladen...</div> : null}
+              errorState={normalizedProduktionsplanungError ? (
+                <DialogBaseInlineMessage className="mx-auto max-w-xl bg-white text-sm" error={normalizedProduktionsplanungError} />
+              ) : null}
+            />
+
+            <div ref={setReportOverlayHost} />
           </div>
         )}
       />

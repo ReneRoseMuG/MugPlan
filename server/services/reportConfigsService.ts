@@ -6,7 +6,6 @@ import type {
   ReportPresetAction,
   ReportPresetConfig,
   ReportPresetRange,
-  ReportPresetScope,
   ReportPresetUpsertInput,
 } from "@shared/routes";
 
@@ -35,11 +34,8 @@ function assertReportPresetReadRole(roleKey: CanonicalRoleKey): void {
   }
 }
 
-function assertReportPresetWriteRole(roleKey: CanonicalRoleKey, scope: ReportPresetScope): void {
+function assertReportPresetWriteRole(roleKey: CanonicalRoleKey): void {
   assertReportPresetReadRole(roleKey);
-  if (scope === "GLOBAL" && roleKey !== "ADMIN") {
-    throw new ReportConfigsError(403, "FORBIDDEN");
-  }
 }
 
 function assertUserId(userId: number | undefined): number {
@@ -49,8 +45,8 @@ function assertUserId(userId: number | undefined): number {
   return userId;
 }
 
-function normalizeActions(actions: ReportPresetAction[]): ReportPresetAction[] {
-  return Array.from(new Set(actions));
+function normalizeActions(_actions: ReportPresetAction[]): ReportPresetAction[] {
+  return [];
 }
 
 export function resolveReportPresetRange(
@@ -65,7 +61,12 @@ export function resolveReportPresetRange(
   }
 
   const firstWeekStart = startOfISOWeek(referenceDate);
-  const rangeStart = range.start === "next" ? addWeeks(firstWeekStart, 1) : firstWeekStart;
+  const weekOffset = typeof range.start === "number"
+    ? range.start
+    : range.start === "next"
+      ? 1
+      : 0;
+  const rangeStart = addWeeks(firstWeekStart, weekOffset);
   const rangeEnd = addDays(addWeeks(rangeStart, range.weeks), -1);
 
   return {
@@ -99,19 +100,19 @@ export async function upsertReportPreset(params: {
   roleKey: CanonicalRoleKey;
   input: ReportPresetUpsertInput;
 }): Promise<ReportPreset> {
-  assertReportPresetWriteRole(params.roleKey, params.input.scope);
+  assertReportPresetWriteRole(params.roleKey);
   const userId = assertUserId(params.userId);
   const existing = await reportConfigsRepository.findReportPreset({
     reportKey: params.reportKey,
     presetId: params.presetId,
-    scope: params.input.scope,
-    userId: params.input.scope === "USER" ? userId : undefined,
+    scope: "USER",
+    userId,
   });
   const now = new Date().toISOString();
   const preset: ReportPreset = {
     id: params.presetId,
     reportKey: params.reportKey,
-    scope: params.input.scope,
+    scope: "USER",
     name: params.input.name,
     config: params.input.config as ReportPresetConfig,
     actions: normalizeActions(params.input.actions),
@@ -121,8 +122,8 @@ export async function upsertReportPreset(params: {
 
   return reportConfigsRepository.upsertReportPreset({
     reportKey: params.reportKey,
-    scope: params.input.scope,
-    userId: params.input.scope === "USER" ? userId : undefined,
+    scope: "USER",
+    userId,
     preset,
   });
 }
@@ -132,14 +133,14 @@ export async function deleteReportPreset(params: {
   presetId: string;
   userId: number | undefined;
   roleKey: CanonicalRoleKey;
-  scope: ReportPresetScope;
+  scope: "USER";
 }): Promise<void> {
-  assertReportPresetWriteRole(params.roleKey, params.scope);
+  assertReportPresetWriteRole(params.roleKey);
   const userId = assertUserId(params.userId);
   await reportConfigsRepository.deleteReportPreset({
     reportKey: params.reportKey,
     presetId: params.presetId,
-    scope: params.scope,
-    userId: params.scope === "USER" ? userId : undefined,
+    scope: "USER",
+    userId,
   });
 }

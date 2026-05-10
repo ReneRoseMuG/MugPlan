@@ -12,6 +12,10 @@ import {
   buildProjectRowArticleItems,
   type ProduktionsplanungArticleCategory,
 } from "@/components/reports/produktionsplanungProjectCard.shared";
+import {
+  paginateMeasuredPrintCards,
+  type MeasuredPrintCardHeights,
+} from "@/lib/measured-print-pages";
 import { renderProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
 import { formatDisplayDate } from "@/lib/date-display-format";
 import { cn } from "@/lib/utils";
@@ -28,6 +32,24 @@ type ProduktionsplanungCategoryGroup = {
 };
 
 export type ProduktionsplanungPrintCategory = ProduktionsplanungArticleCategory;
+export type ProduktionsplanungPrintBlock =
+  | { key: string; kind: "category-empty" }
+  | {
+      key: string;
+      kind: "category-layout";
+      blockIndex: number;
+      categories: Array<{ group: ProduktionsplanungCategoryGroup; columns: 1 | 2 | 3 }>;
+    }
+  | { key: string; kind: "category-card"; group: ProduktionsplanungCategoryGroup }
+  | { key: string; kind: "section-heading"; label: string }
+  | { key: string; kind: "project"; row: ReportProduktionsplanungProjectRow }
+  | { key: string; kind: "projects-empty" };
+export type ProduktionsplanungPrintPage = {
+  pageNumber: number;
+  blocks: ProduktionsplanungPrintBlock[];
+};
+
+export const PRODUKTIONSPLANUNG_PRINT_BLOCK_GAP_PX = 16;
 
 function formatDate(value: string | null): string {
   return formatDisplayDate(value, "-");
@@ -203,6 +225,111 @@ function PrintProjectCard({
       <PrintProjectCardFooter row={row} />
     </article>
   );
+}
+
+export function buildProduktionsplanungPrintBlocks(
+  data: ReportProduktionsplanungResponse,
+  layoutConfig: CategoryLayoutConfig,
+): ProduktionsplanungPrintBlock[] {
+  const blocks: ProduktionsplanungPrintBlock[] = [];
+  const groups = [
+    ...data.productCategoryGroups,
+    ...data.componentCategoryGroups,
+  ];
+  const layoutBlocks = buildCategoryLayoutBlocks(groups, layoutConfig);
+
+  if (groups.length === 0) {
+    blocks.push({ key: "category-empty", kind: "category-empty" });
+  } else if (layoutBlocks.length > 0) {
+    layoutBlocks.forEach((block, blockIndex) => {
+      blocks.push({
+        key: `category-layout-${blockIndex}`,
+        kind: "category-layout",
+        blockIndex,
+        categories: block.categories,
+      });
+    });
+  } else {
+    groups.forEach((group) => {
+      blocks.push({ key: `category-card-${group.categoryId}`, kind: "category-card", group });
+    });
+  }
+
+  blocks.push({ key: "projects-heading", kind: "section-heading", label: "Projekte" });
+  if (data.projectRows.length > 0) {
+    data.projectRows.forEach((row) => {
+      blocks.push({ key: `project-${row.projectId}`, kind: "project", row });
+    });
+  } else {
+    blocks.push({ key: "projects-empty", kind: "projects-empty" });
+  }
+
+  return blocks;
+}
+
+export function renderProduktionsplanungPrintBlock(
+  block: ProduktionsplanungPrintBlock,
+  categories: ProduktionsplanungPrintCategory[],
+) {
+  switch (block.kind) {
+    case "category-empty":
+      return <p className="text-xs text-slate-500">Keine Einträge.</p>;
+    case "category-layout":
+      return (
+        <div
+          className="grid grid-cols-3 gap-4 rounded-xl border border-slate-300 bg-slate-100/80 p-4"
+          data-testid={`print-produktionsplanung-category-layout-${block.blockIndex}`}
+        >
+          {block.categories.map(({ group, columns }) => (
+            <div
+              key={group.categoryId}
+              className={cn("rounded-lg border border-slate-300 bg-white p-4", CATEGORY_LAYOUT_CATEGORY_SPAN_CLASS_BY_COLUMNS[columns])}
+            >
+              <h4 className="text-sm font-semibold text-slate-900">{group.categoryName}</h4>
+              <div className={cn("mt-3 grid gap-3 text-xs text-slate-700", CATEGORY_LAYOUT_GRID_CLASS_BY_COLUMNS[columns])}>
+                {distributeSortedItemsIntoColumns(group.items, columns, (item) => item.itemName).map((columnItems, columnIndex) => (
+                  <ul key={`${group.categoryId}-column-${columnIndex}`} className="space-y-2">
+                    {columnItems.map((item) => (
+                      <li key={`${group.categoryId}-${item.itemName}`} className="flex min-h-[44px] items-center justify-between gap-3 rounded-md bg-slate-100 px-3 py-1.5">
+                        <span className="truncate">{item.itemName}</span>
+                        <span className="font-semibold">{item.totalQuantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    case "category-card":
+      return renderCategoryCard(block.group);
+    case "section-heading":
+      return <h2 className="text-lg font-semibold text-slate-900">{block.label}</h2>;
+    case "project":
+      return <PrintProjectCard row={block.row} categories={categories} />;
+    case "projects-empty":
+      return <p className="text-xs text-slate-500">Keine passenden Projekte im gewählten Zeitraum.</p>;
+    default:
+      return null;
+  }
+}
+
+export function paginateMeasuredProduktionsplanungPrintPages(
+  blocks: ProduktionsplanungPrintBlock[],
+  pageCapacityPx: number,
+  blockHeights: MeasuredPrintCardHeights,
+): ProduktionsplanungPrintPage[] {
+  return paginateMeasuredPrintCards({
+    items: blocks,
+    pageCapacityPx,
+    cardHeights: blockHeights,
+    getItemKey: (block) => block.key,
+    itemGapPx: PRODUKTIONSPLANUNG_PRINT_BLOCK_GAP_PX,
+  }).map((page) => ({
+    pageNumber: page.pageNumber,
+    blocks: page.items,
+  }));
 }
 
 export function ProduktionsplanungPrintLayout({

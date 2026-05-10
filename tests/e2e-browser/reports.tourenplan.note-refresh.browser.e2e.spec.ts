@@ -3,14 +3,14 @@
  *
  * Abgedeckte Regeln:
  * - Eine zunaechst nicht druckbare Terminnotiz fehlt in der Tourenplan-Druckvorschau.
- * - Wird die `Drucken`-Flag im Termin gesetzt und sowohl Notiz als auch Termin gespeichert, erscheint die Notiz in der erneut geoeffneten Vorschau.
+ * - Wird die `Drucken`-Flag im Termin gesetzt und sowohl Notiz als auch Termin gespeichert, erscheint die Notiz in der erneut geöffneten Vorschau.
  *
  * Fehlerfaelle:
  * - Die Tourenplan-Vorschau bleibt nach dem Speichern eines Terminnotiz-Updates stale.
  * - Die UI speichert das print-Flag sichtbar, verwendet beim erneuten Oeffnen der Druckvorschau aber weiterhin alte Reportdaten.
  *
  * Ziel:
- * Den echten Browser-Workflow fuer nachtraeglich aktivierte Drucknotizen im Tourenplan regressionssicher absichern.
+ * Den echten Browser-Workflow für nachträglich aktivierte Drucknotizen im Tourenplan regressionssicher absichern.
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -39,6 +39,14 @@ async function fillTourenplanDateRange(page: Page, fromDate: string, toDate = fr
   }
   await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
   await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
+}
+
+async function openTourenplanReportPreview(page: Page) {
+  await page.getByTestId("button-reports-tourenplan-generate").click();
+  await expect(page.getByTestId("reports-tourenplan-overlay")).toBeVisible();
+  await expect(page.getByTestId("button-reports-tourenplan-print-preview")).toBeVisible();
+  await page.getByTestId("button-reports-tourenplan-print-preview").click();
+  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 }
 
 test("refreshes the Tourenplan preview after enabling print on an existing appointment note", async ({ page }) => {
@@ -100,14 +108,14 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
   await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
   await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await fillTourenplanDateRange(page, fromDate, toDate);
-  await page.getByTestId("button-reports-tourenplan-preview").click();
-  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+  await openTourenplanReportPreview(page);
 
   const firstPreviewPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
   await expect(firstPreviewPage).not.toContainText("Sonderanfertigung");
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeHidden();
+  await page.getByTestId("button-reports-tourenplan-back").click();
 
   await page.getByTestId("nav-wochenuebersicht").click();
   const appointmentPanel = page.getByTestId(`week-appointment-panel-${appointment.id}`);
@@ -134,8 +142,7 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
   await page.getByTestId("checkbox-reports-tourenplan-all-tours").click();
   await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await fillTourenplanDateRange(page, fromDate, toDate);
-  await page.getByTestId("button-reports-tourenplan-preview").click();
-  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+  await openTourenplanReportPreview(page);
 
   const refreshedPreviewPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
   await expect(refreshedPreviewPage).toContainText("Sonderanfertigung");

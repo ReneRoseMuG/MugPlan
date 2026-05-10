@@ -93,6 +93,16 @@ vi.mock("@/components/reports/TourenplanPrintPage", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/help/help-icon", () => ({
+  HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
 import { TourenplanReportPanel } from "../../../client/src/components/reports/TourenplanReportPanel";
 
 describe("UI: TourenplanReportPanel smoke", () => {
@@ -269,7 +279,11 @@ describe("UI: TourenplanReportPanel smoke", () => {
       .mockImplementationOnce(() => ["medium", vi.fn()])
       .mockImplementationOnce(() => [orientation, vi.fn()])
       .mockImplementationOnce(() => [true, vi.fn()])
-      .mockImplementationOnce(() => [0, vi.fn()]);
+      .mockImplementationOnce(() => [true, vi.fn()])
+      .mockImplementationOnce(() => [0, vi.fn()])
+      .mockImplementationOnce(() => [1, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()])
+      .mockImplementationOnce(() => [null, vi.fn()]);
     return useStateSpy;
   }
 
@@ -286,6 +300,7 @@ describe("UI: TourenplanReportPanel smoke", () => {
         defaultIsoWeek={16}
         defaultIsoWeekYear={2026}
         isAdmin
+        buildStandaloneReportUrl={() => "/standalone/reports?reportType=tourenplan"}
       />,
     );
     landscapeSpy.mockRestore();
@@ -295,12 +310,15 @@ describe("UI: TourenplanReportPanel smoke", () => {
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-all-tours");
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-tour-7");
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-without-tour");
-    expect(landscapeHtml).toContain("button-reports-tourenplan-preview");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-generate");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-open-tab");
     expect(landscapeHtml).toContain("checkbox-reports-tourenplan-use-shortcodes");
     expect(landscapeHtml).toContain("reports-tourenplan-font-size-option");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-farbdruck");
     expect(landscapeHtml).toContain("button-reports-tourenplan-print-mode-spardruck");
     expect(landscapeHtml).toContain("print-preview-dialog-marker");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-print-preview-refresh");
+    expect(landscapeHtml).toContain("button-reports-tourenplan-print");
     expect(landscapeHtml).toContain("tourenplan-print-page-1");
     expect(landscapeHtml).toContain('data-page-orientation="landscape"');
     expect(landscapeHtml).toContain('data-print-orientation="landscape"');
@@ -318,6 +336,7 @@ describe("UI: TourenplanReportPanel smoke", () => {
         defaultIsoWeek={16}
         defaultIsoWeekYear={2026}
         isAdmin
+        buildStandaloneReportUrl={() => "/standalone/reports?reportType=tourenplan"}
       />,
     );
     portraitSpy.mockRestore();

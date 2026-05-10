@@ -72,10 +72,10 @@ export function PrintPreviewDialog<TPage>({
           data-testid={dialogTestId ?? `${testIdPrefix}-dialog`}
         >
           <div className="flex max-h-[calc(100vh-32px)] flex-col">
-            <DialogHeader className="border-b border-border px-6 py-4">
-              <div className="flex items-center justify-between gap-3">
-                <DialogTitle>{title}</DialogTitle>
-                {headerActions ? <div className="pr-8">{headerActions}</div> : null}
+            <DialogHeader className="border-b border-border py-4 pl-6 pr-16">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <DialogTitle className="min-w-0 pt-1">{title}</DialogTitle>
+                {headerActions ? <div className="min-w-0">{headerActions}</div> : null}
               </div>
             </DialogHeader>
 
@@ -187,4 +187,3 @@ export function PrintPreviewDialog<TPage>({
     </>
   );
 }
-

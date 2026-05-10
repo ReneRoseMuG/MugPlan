@@ -128,12 +128,14 @@ vi.mock("@/components/print/PrintPreviewDialog", () => ({
     renderPage,
     dialogWidthClassName,
     pageOrientation,
+    headerActions,
   }: {
     title: string;
     pages?: unknown[];
     renderPage?: (page: unknown, index: number) => React.ReactNode;
     dialogWidthClassName?: string;
     pageOrientation?: string;
+    headerActions?: React.ReactNode;
   }) => (
     <div
       data-testid="print-preview-dialog-marker"
@@ -141,6 +143,7 @@ vi.mock("@/components/print/PrintPreviewDialog", () => ({
       data-page-orientation={pageOrientation ?? ""}
     >
       {title}
+      {headerActions}
       {pages.length > 0 && renderPage ? renderPage(pages[0], 0) : null}
     </div>
   ),
@@ -204,6 +207,12 @@ vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsHover", () => (
 
 vi.mock("@/components/ui/help/help-icon", () => ({
   HelpIcon: ({ helpKey }: { helpKey: string }) => <span data-help-key={helpKey}>help</span>,
+}));
+
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
 }));
 
 vi.mock("@/components/ui/badge", () => ({
@@ -361,6 +370,7 @@ describe("FT26 UI: ReportsPage wiring", () => {
     expect(html).toContain("button-reports-vorlaufliste-open-tab");
     expect(html).toContain("button-reports-produktionsplanung-open-tab");
     expect(html).toContain("button-reports-auftragsliste-open-tab");
+    expect(html).toContain("button-reports-tourenplan-open-tab");
     expect(html).toContain("button-reports-vorlaufliste-print-preview");
     expect(html).not.toContain("tab-reports-vorlaufliste-columns");
     expect(html).not.toContain("button-reports-vorlaufliste-clear-to-date");
@@ -481,10 +491,16 @@ describe("FT26 UI: ReportsPage wiring", () => {
       />,
     );
 
-    expect(html).toContain("Druckvorschau Auftragsliste");
+    expect(html).toContain("Druckvorschau - Auftragsliste");
     expect(html).toContain('data-page-orientation="portrait"');
     expect(html).toContain('data-dialog-width="w-[calc(210mm+88px)]"');
     expect(html).toContain('data-print-orientation="portrait"');
+    expect(html).toContain("button-reports-vorlaufliste-orientation-landscape");
+    expect(html).toContain("button-reports-vorlaufliste-orientation-portrait");
+    expect(html).toContain("button-reports-auftragsliste-orientation-landscape");
+    expect(html).toContain("button-reports-auftragsliste-orientation-portrait");
+    expect(html).toContain("button-reports-produktionsplanung-orientation-landscape");
+    expect(html).toContain("button-reports-produktionsplanung-orientation-portrait");
   });
 
   it("passes an indicator column to the table and no rowClassName callback", () => {

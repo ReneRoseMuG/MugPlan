@@ -487,11 +487,15 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await page.getByTestId("checkbox-reports-produktionsplanung-use-shortcodes").click();
   await expect(page.getByTestId("checkbox-reports-produktionsplanung-use-shortcodes")).toBeChecked();
 
-  await vorlauflisteGenerateButton.click();
-  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+  await page.getByTestId("button-reports-vorlaufliste-open-columns-dialog").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeVisible();
   await page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`).click();
   await page.getByTestId("button-reports-vorlaufliste-column-actualDate-up").click();
-  await page.getByTestId("button-reports-vorlaufliste-columns").click();
+  await page.getByTestId("button-reports-vorlaufliste-columns-dialog-apply").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeHidden();
+
+  await vorlauflisteGenerateButton.click();
+  await expect(page.getByTestId("button-reports-vorlaufliste-columns")).toHaveCount(0);
 
   await expect(vorlauflisteTable).toContainText("KOL");
   await expect(vorlauflisteTable).toContainText("TG");
@@ -549,12 +553,15 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await page.getByTestId("toggle-reports-produktionsplanung-date").click();
 
   await fillReportDateRange(page, "reports-vorlaufliste", inRangeDate);
+  await page.getByTestId("button-reports-vorlaufliste-open-columns-dialog").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeVisible();
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
+  await page.getByTestId("button-reports-vorlaufliste-columns-dialog-reset").click();
+  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
+  await page.getByTestId("button-reports-vorlaufliste-columns-dialog-apply").click();
+  await expect(page.getByTestId("dialog-reports-vorlaufliste-columns")).toBeHidden();
+
   await vorlauflisteGenerateButton.click();
-  await page.getByTestId("button-reports-vorlaufliste-columns").click();
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
-  await page.getByTestId("button-reports-vorlaufliste-columns-reset").click();
-  await expect(page.getByTestId(`checkbox-reports-vorlaufliste-column-component-${controlComponent.categoryId}`)).toBeChecked();
-  await page.getByTestId("button-reports-vorlaufliste-columns").click();
 
   await expect(vorlauflisteTable).toContainText("Steuerung Pro Voll");
   const resetHeaders = await getHeaderTexts(vorlauflisteTable);
@@ -574,6 +581,38 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   await expect(page.getByTestId("reports-produktionsplanung-project-cards")).toContainText("Sondermass Sauna");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Teilglas Browser");
   await expect(page.getByTestId("reports-produktionsplanung-categories")).toContainText("Panorama Browser");
+
+  await page.getByTestId("button-reports-produktionsplanung-print-preview").click();
+  await expect(page.getByTestId("dialog-produktionsplanung-print-preview")).toBeVisible();
+  await expect(page.getByTestId("produktionsplanung-print-preview-active-page-shell")).toContainText("Produktionsplanung");
+  await expect(page.locator('[data-testid="print-document-root"]')).toContainText(specialProject.customer.fullName ?? "");
+  const produktionsplanungPrintLayout = await page.locator('[data-testid="print-document-root"]').evaluate((root) => {
+    const pages = Array.from(root.querySelectorAll<HTMLElement>('[data-testid^="produktionsplanung-print-page-"][data-print-orientation="landscape"]'));
+    const blocks = Array.from(root.querySelectorAll<HTMLElement>('[data-testid^="produktionsplanung-print-block-"]'));
+    const overflowingBlocks: string[] = [];
+
+    for (const block of blocks) {
+      const pageNode = block.closest<HTMLElement>('[data-testid^="produktionsplanung-print-page-"]');
+      if (!pageNode) {
+        overflowingBlocks.push(block.getAttribute("data-testid") ?? "");
+        continue;
+      }
+      const pageRect = pageNode.getBoundingClientRect();
+      const blockRect = block.getBoundingClientRect();
+      if (blockRect.top < pageRect.top - 1 || blockRect.bottom > pageRect.bottom + 1) {
+        overflowingBlocks.push(block.getAttribute("data-testid") ?? "");
+      }
+    }
+
+    return {
+      pageCount: pages.length,
+      blockCount: blocks.length,
+      overflowingBlocks,
+    };
+  });
+  expect(produktionsplanungPrintLayout.pageCount).toBeGreaterThan(0);
+  expect(produktionsplanungPrintLayout.blockCount).toBeGreaterThan(0);
+  expect(produktionsplanungPrintLayout.overflowingBlocks).toEqual([]);
 });
 
 test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay, print preview and browser print", async ({ page }) => {

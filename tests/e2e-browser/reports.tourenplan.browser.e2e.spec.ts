@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Der neue Tourenplan-Report nutzt echte Tour-, Termin-, Artikel- und Notizdaten im Browser.
  * - Tagfaelle Reklamation, Sondermass, Messe und Neutral erscheinen als eigene Karten.
- * - Shortcodes, schmale Seitenchrome sowie Admin-Optionen fuer Druckmodus, Schriftgröße und Orientierung wirken auf Vorschau und dedizierten Browser-Print-Pfad identisch.
+ * - Shortcodes, schmale Seitenchrome sowie Admin-Optionen für Druckmodus, Schriftgröße und Orientierung wirken auf Vorschau und dedizierten Browser-Print-Pfad identisch.
  *
  * Fehlerfaelle:
  * - Der Tourenplan-Block fehlt oder kann mit echten Daten keine Vorschau laden.
@@ -67,6 +67,14 @@ async function fillTourenplanDateRange(page: Page, fromDate: string, toDate = fr
   }
   await page.getByTestId("reports-tourenplan-from-date").fill(fromDate);
   await page.getByTestId("reports-tourenplan-to-date").fill(toDate);
+}
+
+async function openTourenplanReportPreview(page: Page) {
+  await page.getByTestId("button-reports-tourenplan-generate").click();
+  await expect(page.getByTestId("reports-tourenplan-overlay")).toBeVisible();
+  await expect(page.getByTestId("button-reports-tourenplan-print-preview")).toBeVisible();
+  await page.getByTestId("button-reports-tourenplan-print-preview").click();
+  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
 }
 
 test.describe.configure({ mode: "serial" });
@@ -286,8 +294,7 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
   await page.getByTestId(`checkbox-reports-tourenplan-tour-${tour.id}`).click();
   await fillTourenplanDateRange(page, monday, finalPreviewDate);
 
-  await page.getByTestId("button-reports-tourenplan-preview").click();
-  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+  await openTourenplanReportPreview(page);
 
   const firstPage = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
   await expect(page.locator('[data-testid="print-document-root"]')).toHaveCount(1);
@@ -319,13 +326,13 @@ test("renders the Tourenplan report with real tag, shortcode and print-note data
 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeHidden();
+  await page.getByTestId("button-reports-tourenplan-back").click();
 
   await page.getByTestId("checkbox-reports-tourenplan-use-shortcodes").click();
   await page.getByTestId("button-reports-tourenplan-print-mode-spardruck").click();
   await page.getByTestId("select-reports-tourenplan-font-size").click();
   await page.getByRole("option", { name: "Large" }).click();
-  await page.getByTestId("button-reports-tourenplan-preview").click();
-  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+  await openTourenplanReportPreview(page);
 
   const firstPageShortcodes = page.getByTestId("tourenplan-print-preview-active-page-shell").getByTestId("tourenplan-print-page-1");
   await expect(firstPageShortcodes).toContainText("H20");
@@ -438,8 +445,7 @@ test("builds a multi-tour print preview with hard page breaks between tour secti
   await page.getByTestId("checkbox-reports-tourenplan-without-tour").click();
   await fillTourenplanDateRange(page, reportDate);
 
-  await page.getByTestId("button-reports-tourenplan-preview").click();
-  await expect(page.getByTestId("dialog-tourenplan-print-preview")).toBeVisible();
+  await openTourenplanReportPreview(page);
 
   const printPages = page.locator('[data-testid="print-document-root"] [data-testid="print-document-page"]');
   await expect(printPages).toHaveCount(3);

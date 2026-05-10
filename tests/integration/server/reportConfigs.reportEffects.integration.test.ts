@@ -5,7 +5,7 @@
  *
  * Abgedeckte Regeln:
  * - Jeder Report kann ein USER-Preset speichern, laden und mit echten Fixture-Daten ausführen.
- * - KW-basierte Presets unterstützen Start aktuelle KW, Start kommende KW und die Anzahl der KW als Zeitraum.
+ * - KW-basierte Presets unterstützen Start-KW als Wochenversatz und die Anzahl der KW als Zeitraum.
  * - Produktionsplanung-Presets dürfen ein Kategorie-Layout enthalten.
  * - Produktionsplanung erzeugt Projektkacheln nur noch über Sondermaß-Tags.
  * - Tourenplan-Presets wirken auf den bestehenden Druckvorschau-Endpunkt.
@@ -97,15 +97,12 @@ async function saveUserPresetAndLoad(params: {
   presetId: string;
   name: string;
   config: ReportPresetConfig;
-  actions?: Array<"GENERATE_REPORT" | "OPEN_PRINT_PREVIEW">;
 }): Promise<ReportPreset> {
   await params.agent
     .put(`/api/report-configs/${params.reportKey}/presets/${params.presetId}`)
     .send({
       name: params.name,
-      scope: "USER",
       config: params.config,
-      actions: params.actions ?? ["GENERATE_REPORT"],
     })
     .expect(200);
 
@@ -158,7 +155,7 @@ async function createProjectWithAppointment(params: {
 describe("integration: report presets affect concrete reports", () => {
   it("applies a Vorlaufliste preset to real report rows", async () => {
     const reader = await createRoleAgent("READER");
-    const range: ReportPresetRange = { mode: "calendarWeek", start: "current", weeks: 1 };
+    const range: ReportPresetRange = { mode: "calendarWeek", start: 1, weeks: 1 };
     const resolvedRange = resolveReportPresetRange(range, new Date("2110-03-03T12:00:00"));
     const fixture = await createProjectWithAppointment({
       prefix: "PRESET-VL",
@@ -180,7 +177,7 @@ describe("integration: report presets affect concrete reports", () => {
       agent: reader,
       reportKey: "vorlaufliste",
       presetId: nextPresetId("vorlaufliste"),
-      name: "Vorlauf aktuelle KW",
+      name: "Vorlauf kommende KW",
       config: {
         range,
         activeTab: "calendarWeek",
@@ -188,7 +185,6 @@ describe("integration: report presets affect concrete reports", () => {
         columnOrder: ["projectName", "actualDate", "articleValues"],
         hiddenColumns: ["notesCount"],
       },
-      actions: ["GENERATE_REPORT", "OPEN_PRINT_PREVIEW"],
     });
     const appliedRange = resolveReportPresetRange(preset.config.range, new Date("2110-03-03T12:00:00"));
 
@@ -218,7 +214,7 @@ describe("integration: report presets affect concrete reports", () => {
     const dispatcher = await createRoleAgent("DISPATCHER");
     const specialMeasureTag = await ensureExactTag(MANAGED_SPECIAL_MEASURE_TAG_NAME, MANAGED_SPECIAL_MEASURE_TAG_COLOR);
     const remarksTag = await ensureExactTag(MANAGED_REMARKS_TAG_NAME, "#888780");
-    const range: ReportPresetRange = { mode: "calendarWeek", start: "next", weeks: 2 };
+    const range: ReportPresetRange = { mode: "calendarWeek", start: 1, weeks: 2 };
     const resolvedRange = resolveReportPresetRange(range, new Date("2110-04-06T12:00:00"));
     const product = await createProductFixture({
       categoryName: "Preset Produktion Produkte",
@@ -303,7 +299,7 @@ describe("integration: report presets affect concrete reports", () => {
 
   it("applies an Auftragsliste preset with tag, model and shortcode filters", async () => {
     const reader = await createRoleAgent("READER");
-    const range: ReportPresetRange = { mode: "calendarWeek", start: "current", weeks: 2 };
+    const range: ReportPresetRange = { mode: "calendarWeek", start: 1, weeks: 2 };
     const resolvedRange = resolveReportPresetRange(range, new Date("2110-05-10T12:00:00"));
     const filterTag = await ensureExactTag("Preset Auftragsliste Filter", "#0f766e");
     const modelAlpha = await createProductFixture({
@@ -377,7 +373,7 @@ describe("integration: report presets affect concrete reports", () => {
 
   it("applies a Tourenplan preset to the real print preview", async () => {
     const reader = await createRoleAgent("READER");
-    const range: ReportPresetRange = { mode: "calendarWeek", start: "next", weeks: 1 };
+    const range: ReportPresetRange = { mode: "calendarWeek", start: 1, weeks: 1 };
     const resolvedRange = resolveReportPresetRange(range, new Date("2110-06-08T12:00:00"));
     const tour = await createTourFixture("#2266aa");
     const fixture = await createProjectWithAppointment({
@@ -401,7 +397,6 @@ describe("integration: report presets affect concrete reports", () => {
         fontSize: "large",
         orientation: "landscape",
       },
-      actions: ["GENERATE_REPORT", "OPEN_PRINT_PREVIEW"],
     });
     expect(preset.config).toEqual(expect.objectContaining({
       selectedTourIds: [tour.id],
