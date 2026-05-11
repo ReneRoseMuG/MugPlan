@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import {
   getSetupStatus,
   getQuickLoginTargets,
@@ -212,7 +213,7 @@ export default function Login({ onAuthenticated }: LoginProps) {
         setTwoFactorCode("");
         setError("Die 2FA-Prüfung ist abgelaufen. Bitte erneut anmelden.");
       } else {
-        setError("2FA-Pruefung fehlgeschlagen.");
+        setError("2FA-Prüfung fehlgeschlagen.");
       }
     } finally {
       setIsSubmitting(false);
@@ -246,9 +247,11 @@ export default function Login({ onAuthenticated }: LoginProps) {
         />
       </div>
       {error && (
-        <div className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
+        <DialogBaseInlineMessage
+          title="Anmeldung nicht möglich"
+          description={error}
+          tone="error"
+        />
       )}
       <Button className="w-full" type="submit" disabled={isSubmitting}>
         Anmelden
@@ -263,11 +266,15 @@ export default function Login({ onAuthenticated }: LoginProps) {
         void handleTwoFactorSubmit(event);
       }}
     >
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-        {step.kind === "setup"
-          ? "2FA ist global aktiviert. Sie müssen jetzt Ihre Authenticator-App einrichten."
-          : "2FA ist global aktiviert. Bitte bestätigen Sie die Anmeldung mit Ihrem 6-stelligen Code."}
-      </div>
+      <DialogBaseInlineMessage
+        title={step.kind === "setup" ? "2FA-Einrichtung erforderlich" : "2FA-Prüfung erforderlich"}
+        description={
+          step.kind === "setup"
+            ? "2FA ist global aktiviert. Sie müssen jetzt Ihre Authenticator-App einrichten."
+            : "2FA ist global aktiviert. Bitte bestätigen Sie die Anmeldung mit Ihrem 6-stelligen Code."
+        }
+        tone="info"
+      />
 
       {step.kind === "setup" ? (
         <div className="space-y-3">
@@ -298,9 +305,11 @@ export default function Login({ onAuthenticated }: LoginProps) {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
+        <DialogBaseInlineMessage
+          title="2FA-Prüfung nicht möglich"
+          description={error}
+          tone="error"
+        />
       )}
 
       <div className="flex gap-2">
@@ -372,9 +381,11 @@ export default function Login({ onAuthenticated }: LoginProps) {
               </div>
 
               {quickError && (
-                <div className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {quickError}
-                </div>
+                <DialogBaseInlineMessage
+                  title="Schnelllogin nicht möglich"
+                  description={quickError}
+                  tone="error"
+                />
               )}
             </div>
           )}

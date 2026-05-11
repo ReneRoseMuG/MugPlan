@@ -4,7 +4,7 @@ Die Mitarbeiter-Auswahl-Komponente, die Board und Checked List rendern kann und 
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Refactoring | 07.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Refactoring | 07.05.26 |
 
 ---
 
@@ -42,9 +42,14 @@ Nach Nutzerhinweis gibt es bereits eine Komponente, die zwischen Board-Darstellu
 
 ## Blocker und offene Fragen
 
-- Die konkrete Komponente muss vor Umsetzung im Code identifiziert werden.
-- Es ist zu klären, ob Board und Checked List denselben Auswahlzustand oder getrennte Darstellungsmodelle verwenden.
-- Ohne FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente darf keine finale Anpassung an eine Dialog-Shell behauptet werden.
+Keine bekannt.
+
+## Abschluss
+
+- Abgeschlossen am: 11.05.26
+- Ergebnis: `EmployeePickerDialogList` ist als app-weite Basiskomponente für Mitarbeiter-Auswahl stabilisiert; Single- und Multiple-Auswahl, kontrollierte Auswahlzustände und bestehende Konsumenten sind angepasst.
+- Verifikation: Unit-Tests, Typecheck, Encoding-Check und relevante Browser-E2E-Suiten erfolgreich.
+- Folgeaufgaben: FT-04-Bestätigungs- und Multistep-Flows bleiben in den eigenen Aufgaben.
 
 ---
 
@@ -53,4 +58,4 @@ Nach Nutzerhinweis gibt es bereits eine Komponente, die zwischen Board-Darstellu
 - Features: FT-04 Tourenplanung
 - Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
 - Entscheidungen: —
-- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md)
+- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](../ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](../ft04-multistep-tour-kw-dialog.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](../ft04-multiselect-kw-planung-wochenkalender.md)

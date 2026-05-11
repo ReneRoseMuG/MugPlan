@@ -17,6 +17,7 @@ import { expect, test } from "@playwright/test";
 import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 const suitePath = "tests/e2e-browser/users-management-scroll.browser.e2e.spec.ts";
+let userBatchCounter = 0;
 
 test.describe.configure({ mode: "serial" });
 
@@ -29,10 +30,11 @@ async function createVisibleUsers(count: number) {
   const { hashPassword } = await import("../../server/security/passwordHash");
   const passwordHash = await hashPassword("browser-user-scroll-password");
   const createdUsers: Array<{ id: number; username: string; fullName: string }> = [];
+  userBatchCounter += 1;
 
   for (let index = 1; index <= count; index += 1) {
     const suffix = String(index).padStart(2, "0");
-    const username = `browser-scroll-user-${suffix}`;
+    const username = `browser-scroll-user-${userBatchCounter}-${suffix}`;
     const firstName = "Scroll";
     const lastName = `Benutzer ${suffix}`;
     const created = await createUser({
@@ -68,4 +70,27 @@ test("untere Benutzerzeilen sind auf kleinem Bildschirm per Scroll erreichbar", 
   await expect(lastRow).toBeVisible();
   await expect(lastRow).toContainText(lastUser.username);
   await expect(lastRow).toContainText(lastUser.fullName);
+});
+
+test("Benutzerverwaltungsdialoge nutzen die gemeinsame P-01-Struktur", async ({ page }) => {
+  const [targetUser] = await createVisibleUsers(1);
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-benutzer").click();
+  await expect(page.getByTestId("users-management-table")).toBeVisible();
+
+  await page.getByTestId("users-create-open").click();
+  await expect(page.getByTestId("users-create-dialog")).toContainText("Neuen Benutzer anlegen");
+  await expect(page.getByTestId("users-create-dialog")).toContainText("serverseitige Admin-Prüfung");
+  await page.getByRole("button", { name: "Abbrechen" }).click();
+
+  await page.getByTestId(`users-edit-open-${targetUser!.id}`).click();
+  await expect(page.getByTestId("users-edit-dialog")).toContainText("Benutzer bearbeiten");
+  await expect(page.getByTestId("users-edit-dialog")).toContainText("letzte aktive Admin");
+  await page.getByRole("button", { name: "Abbrechen" }).click();
+
+  await page.getByTestId(`users-reset-2fa-${targetUser!.id}`).click();
+  await expect(page.getByTestId("users-reset-2fa-confirm")).toContainText("2FA zurücksetzen?");
+  await expect(page.getByTestId("users-reset-2fa-confirm")).toContainText("Passwort und Rolle bleiben unverändert");
+  await page.getByRole("button", { name: "Abbrechen" }).click();
 });

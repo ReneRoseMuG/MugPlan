@@ -238,9 +238,7 @@
       "master_task": "tasks/dialog-rollout-masterplan.md",
       "aufgaben": [
         "tasks/projekte-und-dokumentextraktion-dialoge.md",
-        "tasks/benutzer-und-sicherheit-dialoge.md",
         "tasks/termin-tour-kw-mutationsdialoge.md",
-        "tasks/mitarbeiter-auswahl-dialogstruktur.md",
         "tasks/ft04-dialog-basiskomponente.md",
         "tasks/tour-kw-termin-mutationsdialoge.md",
         "tasks/ft04-multistep-tour-kw-dialog.md",

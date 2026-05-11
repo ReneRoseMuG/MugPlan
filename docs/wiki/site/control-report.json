@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 26,
-      "generated_count": 26,
+      "source_count": 24,
+      "generated_count": 24,
       "warnings": 0,
       "errors": 0
     },
@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 60,
-      "generated_count": 60,
+      "source_count": 61,
+      "generated_count": 61,
       "warnings": 0,
       "errors": 0
     }
@@ -159,15 +159,6 @@
         "errors": []
       },
       {
-        "id": "A-14",
-        "title": "Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren",
-        "source": "tasks/mitarbeiter-auswahl-dialogstruktur.md",
-        "output": "projekt/aufgaben/mitarbeiter-auswahl-dialogstruktur.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-15",
         "title": "FT-26 gemeinsame Print-Basiskomponente für Kartenreports",
         "source": "tasks/ft26-report-print-basiskomponente.md",
@@ -208,15 +199,6 @@
         "title": "Projekte- und Dokumentextraktion-Dialoge",
         "source": "tasks/projekte-und-dokumentextraktion-dialoge.md",
         "output": "projekt/aufgaben/projekte-und-dokumentextraktion-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-27",
-        "title": "Benutzer- und Sicherheitsdialoge",
-        "source": "tasks/benutzer-und-sicherheit-dialoge.md",
-        "output": "projekt/aufgaben/benutzer-und-sicherheit-dialoge.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -2909,6 +2891,15 @@
         "title": "11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente",
         "source": "journal/11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.md",
         "output": "verwaltung/journal/11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen",
+        "title": "11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge",
+        "source": "journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.html",
         "ok": true,
         "warnings": [],
         "errors": []

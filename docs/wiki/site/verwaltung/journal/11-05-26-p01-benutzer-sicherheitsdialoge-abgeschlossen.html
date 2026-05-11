@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen: 11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen 11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge</span></nav>
+        <h1 class="wiki-h1">11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen: 11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>11.05.26</div>
+    <p class="wiki-lead">Der P-01-Schritt Benutzer- und Sicherheitsdialoge ist technisch umgesetzt und als Wiki-Aufgabe abgeschlossen. Benutzeranlage und Benutzerbearbeitung nutzen die gemeinsame Dialogbasis, der 2FA-Reset läuft über einen kontrollierten Bestätigungsdialog, und die sicherheitsnahen Login</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der P-01-Schritt Benutzer- und Sicherheitsdialoge ist technisch umgesetzt und als Wiki-Aufgabe abgeschlossen. Benutzeranlage und Benutzerbearbeitung nutzen die gemeinsame Dialogbasis, der 2FA-Reset läuft über einen kontrollierten Bestätigungsdialog, und die sicherheitsnahen Login-, Schnelllogin-, 2FA- und Admin-Setup-Meldungen sind auf die gemeinsame Inline-Meldungsstruktur ausgerichtet.</p>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>Unit-Tests: <code>npm run test:unit -- tests/unit/ui/usersPage.dialogs.test.tsx tests/unit/ui/dialogBaseComponents.test.tsx tests/unit/auth/twoFactorFlow.test.ts tests/unit/auth/quickLogin.test.ts tests/unit/auth/loginIdentifier.test.ts tests/unit/authorization/roleGuards.test.ts tests/unit/authorization/userCreate.test.ts</code> erfolgreich mit 30 bestandenen Tests in 7 Dateien.</li><li>Integrationstests: <code>npm run test:integration -- tests/integration/server/auth.session.integration.test.ts tests/integration/server/auth.two-factor.integration.test.ts tests/integration/server/users.two-factor-admin.integration.test.ts --reporter=verbose</code> erfolgreich mit 10 bestandenen Tests in 3 Dateien.</li><li>Browser-E2E: <code>npm run test:e2e:browser -- tests/e2e-browser/users-management-scroll.browser.e2e.spec.ts</code> erfolgreich mit 2 bestandenen Tests.</li><li>Encoding: <code>npm run check:encoding</code> erfolgreich.</li><li>Diff-Prüfung: <code>git diff --check</code> erfolgreich.</li><li>Wiki-Build: <code>node scripts/build-wiki-site.mjs</code> am 11.05.26 erfolgreich.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> darf die Benutzerverwaltung sehen und Benutzer anlegen, bearbeiten, Rollen ändern, Aktivstatus ändern, optionale Passwortänderungen setzen und benutzerspezifische 2FA-Zustände zurücksetzen.</li><li><code>DISPONENT</code> darf keine Benutzerlisten, Benutzeranlage, Benutzerbearbeitung, Rollenänderung oder 2FA-Reset ausführen.</li><li><code>READER</code> darf keine Benutzerlisten, Benutzeranlage, Benutzerbearbeitung, Rollenänderung oder 2FA-Reset ausführen.</li><li>Die serverseitigen Benutzer-Service-Guards bleiben die verbindliche Durchsetzung. UI-Sichtbarkeit und Dialoge dienen nur der Benutzerführung.</li><li>Login und Admin-Setup bleiben unauthentifizierte beziehungsweise initiale Sicherheitsflächen und bauen keine eigene Rollenlogik nach.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Aufgabe: <a href="../../../tasks/closed/benutzer-und-sicherheit-dialoge.md">Benutzer- und Sicherheitsdialoge</a></li><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout</a></li></ul>
+    
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

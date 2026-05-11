@@ -51,4 +51,4 @@ Im Wochenkalender-Pfad ist nach aktuellem Befund nur Einzelauswahl möglich. Fü
 - Features: FT-04 Tourenplanung · FT-03 Kalenderansichten
 - Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
 - Entscheidungen: —
-- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md)
+- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](closed/mitarbeiter-auswahl-dialogstruktur.md)

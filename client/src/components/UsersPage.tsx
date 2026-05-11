@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { UsersRound } from "lucide-react";
+import { KeyRound, UserCog, UserPlus, UsersRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListLayout } from "@/components/ui/list-layout";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialogBase, DialogBaseFooter, DialogBaseInlineMessage, DialogBaseShell } from "@/components/ui/dialog-base";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
@@ -99,6 +99,7 @@ export function UsersPage() {
   const [resetError, setResetError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [resetConfirmUser, setResetConfirmUser] = useState<UserRow | null>(null);
   const [newUser, setNewUser] = useState<NewUserForm>(EMPTY_NEW_USER_FORM);
   const [editUser, setEditUser] = useState<EditUserForm | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -224,9 +225,15 @@ export function UsersPage() {
     }
   };
 
-  const handleResetTwoFactor = async (user: UserRow) => {
-    const confirmed = window.confirm(`2FA für "${user.username}" zurücksetzen? Passwort und Rollen bleiben unverändert.`);
-    if (!confirmed) {
+  const handleOpenResetTwoFactor = (user: UserRow) => {
+    setResetError(null);
+    setTableError(null);
+    setResetConfirmUser(user);
+  };
+
+  const handleConfirmResetTwoFactor = async () => {
+    const user = resetConfirmUser;
+    if (!user) {
       return;
     }
 
@@ -255,8 +262,10 @@ export function UsersPage() {
 
       const users = (await response.json()) as UserRow[];
       setRows(users);
+      setResetConfirmUser(null);
     } catch (resetTwoFactorError) {
       setResetError(resetTwoFactorError instanceof Error ? resetTwoFactorError.message : "2FA konnte nicht zurückgesetzt werden.");
+      setResetConfirmUser(null);
     } finally {
       setResettingUserId(null);
     }
@@ -333,10 +342,10 @@ export function UsersPage() {
                               size="sm"
                               variant="outline"
                               disabled={isSaving || isResetting}
-                              onClick={() => void handleResetTwoFactor(user)}
+                              onClick={() => handleOpenResetTwoFactor(user)}
                               data-testid={`users-reset-2fa-${user.id}`}
                             >
-                              {isResetting ? "2FA-Reset..." : "2FA zurücksetzen"}
+                              {isResetting ? "Setzt 2FA zurück..." : "2FA zurücksetzen"}
                             </Button>
                           </div>
                         </TableCell>
@@ -353,13 +362,21 @@ export function UsersPage() {
               </TableBody>
             </Table>
             {tableError ? (
-              <div className="border-t border-slate-200 px-4 py-3 text-sm text-destructive" data-testid="users-management-error">
-                {tableError}
+              <div className="border-t border-slate-200 px-4 py-3" data-testid="users-management-error">
+                <DialogBaseInlineMessage
+                  title="Benutzerliste konnte nicht geladen werden"
+                  description={tableError}
+                  tone="error"
+                />
               </div>
             ) : null}
             {resetError ? (
-              <div className="border-t border-slate-200 px-4 py-3 text-sm text-destructive" data-testid="users-reset-error">
-                {resetError}
+              <div className="border-t border-slate-200 px-4 py-3" data-testid="users-reset-error">
+                <DialogBaseInlineMessage
+                  title="2FA konnte nicht zurückgesetzt werden"
+                  description={resetError}
+                  tone="error"
+                />
               </div>
             ) : null}
             <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
@@ -369,73 +386,207 @@ export function UsersPage() {
         )}
       />
 
-      <Dialog
+      <DialogBaseShell
         open={createDialogOpen}
+        closeDisabled={isCreating}
         onOpenChange={(open) => {
           setCreateDialogOpen(open);
           if (!open) {
             setCreateError(null);
           }
         }}
+        title="Neuen Benutzer anlegen"
+        description="Lege ein Benutzerkonto mit Rolle und Initialpasswort an. Die serverseitige Admin-Prüfung bleibt maßgeblich."
+        icon={<UserPlus />}
+        testId="users-create-dialog"
+        footer={(
+          <DialogBaseFooter
+            secondaryAction={{
+              label: "Abbrechen",
+              disabled: isCreating,
+              onClick: () => {
+                setCreateDialogOpen(false);
+                setCreateError(null);
+              },
+            }}
+            primaryAction={{
+              label: "Benutzer anlegen",
+              pendingLabel: "Benutzer wird angelegt...",
+              isPending: isCreating,
+              onClick: () => void handleCreateUser(),
+            }}
+          />
+        )}
       >
-        <DialogContent className="max-w-lg" data-testid="users-create-dialog">
-          <DialogHeader>
-            <DialogTitle>Neuen Benutzer anlegen</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            {createError ? (
-              <div
-                className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                data-testid="users-create-error"
-              >
-                {createError}
-              </div>
-            ) : null}
+        <div className="space-y-3">
+          {createError ? (
+            <DialogBaseInlineMessage
+              className="mb-1"
+              title="Benutzer konnte nicht angelegt werden"
+              description={createError}
+              tone="error"
+            />
+          ) : null}
+          <div className="space-y-1">
+            <Label htmlFor="new-user-username">Benutzername *</Label>
+            <Input
+              id="new-user-username"
+              required
+              value={newUser.username}
+              onChange={(event) => setNewUser((current) => ({ ...current, username: event.target.value }))}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="new-user-email">E-Mail *</Label>
+            <Input
+              id="new-user-email"
+              type="email"
+              required
+              value={newUser.email}
+              onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label htmlFor="new-user-username">Benutzername *</Label>
+              <Label htmlFor="new-user-first-name">Vorname *</Label>
               <Input
-                id="new-user-username"
+                id="new-user-first-name"
                 required
-                value={newUser.username}
-                onChange={(event) => setNewUser((current) => ({ ...current, username: event.target.value }))}
+                value={newUser.firstName}
+                onChange={(event) => setNewUser((current) => ({ ...current, firstName: event.target.value }))}
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-user-email">E-Mail *</Label>
+              <Label htmlFor="new-user-last-name">Nachname *</Label>
               <Input
-                id="new-user-email"
-                type="email"
+                id="new-user-last-name"
                 required
-                value={newUser.email}
-                onChange={(event) => setNewUser((current) => ({ ...current, email: event.target.value }))}
+                value={newUser.lastName}
+                onChange={(event) => setNewUser((current) => ({ ...current, lastName: event.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="new-user-first-name">Vorname *</Label>
-                <Input
-                  id="new-user-first-name"
-                  required
-                  value={newUser.firstName}
-                  onChange={(event) => setNewUser((current) => ({ ...current, firstName: event.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="new-user-last-name">Nachname *</Label>
-                <Input
-                  id="new-user-last-name"
-                  required
-                  value={newUser.lastName}
-                  onChange={(event) => setNewUser((current) => ({ ...current, lastName: event.target.value }))}
-                />
-              </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="new-user-role">Rolle</Label>
+            <select
+              id="new-user-role"
+              value={newUser.roleCode}
+              onChange={(event) => setNewUser((current) => ({ ...current, roleCode: event.target.value as DbRoleCode }))}
+              className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
+            >
+              {ROLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="new-user-password">Initialpasswort *</Label>
+            <Input
+              id="new-user-password"
+              type="password"
+              required
+              minLength={10}
+              value={newUser.password}
+              onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))}
+            />
+            <p className="text-xs text-slate-500">Pflichtfeld, mindestens 10 Zeichen.</p>
+          </div>
+        </div>
+      </DialogBaseShell>
+
+      <DialogBaseShell
+        open={editDialogOpen}
+        closeDisabled={savingUserId !== null}
+        onOpenChange={(open) => {
+          setEditDialogOpen(open);
+          if (!open) {
+            setEditError(null);
+            setEditUser(null);
+          }
+        }}
+        title="Benutzer bearbeiten"
+        description="Passe Stammdaten, Status, Rolle oder optional ein neues Passwort an. Der letzte aktive Admin bleibt serverseitig geschützt."
+        icon={<UserCog />}
+        testId="users-edit-dialog"
+        footer={(
+          <DialogBaseFooter
+            secondaryAction={{
+              label: "Abbrechen",
+              disabled: savingUserId !== null,
+              onClick: () => {
+                setEditDialogOpen(false);
+                setEditError(null);
+                setEditUser(null);
+              },
+            }}
+            primaryAction={{
+              label: "Speichern",
+              pendingLabel: "Speichert...",
+              isPending: savingUserId !== null,
+              disabled: !editUser,
+              onClick: () => void handleSaveUser(),
+              testId: "users-edit-save",
+            }}
+          />
+        )}
+      >
+        <div className="space-y-3">
+          {editError ? (
+            <DialogBaseInlineMessage
+              className="mb-1"
+              title="Benutzer konnte nicht gespeichert werden"
+              description={editError}
+              tone="error"
+            />
+          ) : null}
+          <div className="space-y-1">
+            <Label htmlFor="edit-user-username">Benutzername *</Label>
+            <Input
+              id="edit-user-username"
+              required
+              value={editUser?.username ?? ""}
+              onChange={(event) => setEditUser((current) => current ? { ...current, username: event.target.value } : current)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-user-email">E-Mail *</Label>
+            <Input
+              id="edit-user-email"
+              type="email"
+              required
+              value={editUser?.email ?? ""}
+              onChange={(event) => setEditUser((current) => current ? { ...current, email: event.target.value } : current)}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-user-first-name">Vorname *</Label>
+              <Input
+                id="edit-user-first-name"
+                required
+                value={editUser?.firstName ?? ""}
+                onChange={(event) => setEditUser((current) => current ? { ...current, firstName: event.target.value } : current)}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-user-role">Rolle</Label>
+              <Label htmlFor="edit-user-last-name">Nachname *</Label>
+              <Input
+                id="edit-user-last-name"
+                required
+                value={editUser?.lastName ?? ""}
+                onChange={(event) => setEditUser((current) => current ? { ...current, lastName: event.target.value } : current)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="edit-user-role">Rolle</Label>
               <select
-                id="new-user-role"
-                value={newUser.roleCode}
-                onChange={(event) => setNewUser((current) => ({ ...current, roleCode: event.target.value as DbRoleCode }))}
+                id="edit-user-role"
+                value={editUser?.roleCode ?? "READER"}
+                onChange={(event) => setEditUser((current) => current ? { ...current, roleCode: event.target.value as DbRoleCode } : current)}
                 className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
               >
                 {ROLE_OPTIONS.map((option) => (
@@ -446,164 +597,53 @@ export function UsersPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <Label htmlFor="new-user-password">Initialpasswort *</Label>
-              <Input
-                id="new-user-password"
-                type="password"
-                required
-                minLength={10}
-                value={newUser.password}
-                onChange={(event) => setNewUser((current) => ({ ...current, password: event.target.value }))}
-              />
-              <p className="text-xs text-slate-500">Pflichtfeld, mindestens 10 Zeichen.</p>
+              <Label htmlFor="edit-user-status">Status</Label>
+              <select
+                id="edit-user-status"
+                value={editUser?.isActive ? "active" : "inactive"}
+                onChange={(event) => setEditUser((current) => current ? { ...current, isActive: event.target.value === "active" } : current)}
+                className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
+              >
+                <option value="active">Aktiv</option>
+                <option value="inactive">Inaktiv</option>
+              </select>
             </div>
           </div>
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setCreateDialogOpen(false);
-                setCreateError(null);
-              }}
-              disabled={isCreating}
-            >
-              Abbrechen
-            </Button>
-            <Button type="button" onClick={() => void handleCreateUser()} disabled={isCreating}>
-              Benutzer anlegen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-1">
+            <Label htmlFor="edit-user-password">Neues Passwort</Label>
+            <Input
+              id="edit-user-password"
+              type="password"
+              minLength={10}
+              value={editUser?.password ?? ""}
+              onChange={(event) => setEditUser((current) => current ? { ...current, password: event.target.value } : current)}
+            />
+            <p className="text-xs text-slate-500">Optional. Leer lassen, um das bestehende Passwort unverändert zu lassen. Mindestens 10 Zeichen.</p>
+          </div>
+        </div>
+      </DialogBaseShell>
 
-      <Dialog
-        open={editDialogOpen}
+      <ConfirmDialogBase
+        open={resetConfirmUser !== null}
         onOpenChange={(open) => {
-          setEditDialogOpen(open);
-          if (!open) {
-            setEditError(null);
-            setEditUser(null);
+          if (!open && resettingUserId === null) {
+            setResetConfirmUser(null);
           }
         }}
-      >
-        <DialogContent className="max-w-lg" data-testid="users-edit-dialog">
-          <DialogHeader>
-            <DialogTitle>Benutzer bearbeiten</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            {editError ? (
-              <div
-                className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                data-testid="users-edit-error"
-              >
-                {editError}
-              </div>
-            ) : null}
-            <div className="space-y-1">
-              <Label htmlFor="edit-user-username">Benutzername *</Label>
-              <Input
-                id="edit-user-username"
-                required
-                value={editUser?.username ?? ""}
-                onChange={(event) => setEditUser((current) => current ? { ...current, username: event.target.value } : current)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="edit-user-email">E-Mail *</Label>
-              <Input
-                id="edit-user-email"
-                type="email"
-                required
-                value={editUser?.email ?? ""}
-                onChange={(event) => setEditUser((current) => current ? { ...current, email: event.target.value } : current)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="edit-user-first-name">Vorname *</Label>
-                <Input
-                  id="edit-user-first-name"
-                  required
-                  value={editUser?.firstName ?? ""}
-                  onChange={(event) => setEditUser((current) => current ? { ...current, firstName: event.target.value } : current)}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="edit-user-last-name">Nachname *</Label>
-                <Input
-                  id="edit-user-last-name"
-                  required
-                  value={editUser?.lastName ?? ""}
-                  onChange={(event) => setEditUser((current) => current ? { ...current, lastName: event.target.value } : current)}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="edit-user-role">Rolle</Label>
-                <select
-                  id="edit-user-role"
-                  value={editUser?.roleCode ?? "READER"}
-                  onChange={(event) => setEditUser((current) => current ? { ...current, roleCode: event.target.value as DbRoleCode } : current)}
-                  className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
-                >
-                  {ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="edit-user-status">Status</Label>
-                <select
-                  id="edit-user-status"
-                  value={editUser?.isActive ? "active" : "inactive"}
-                  onChange={(event) => setEditUser((current) => current ? { ...current, isActive: event.target.value === "active" } : current)}
-                  className="h-9 w-full rounded border border-slate-300 bg-white px-2 text-sm"
-                >
-                  <option value="active">Aktiv</option>
-                  <option value="inactive">Inaktiv</option>
-                </select>
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="edit-user-password">Neues Passwort</Label>
-              <Input
-                id="edit-user-password"
-                type="password"
-                minLength={10}
-                value={editUser?.password ?? ""}
-                onChange={(event) => setEditUser((current) => current ? { ...current, password: event.target.value } : current)}
-              />
-              <p className="text-xs text-slate-500">Optional. Leer lassen, um das bestehende Passwort unverändert zu lassen. Mindestens 10 Zeichen.</p>
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setEditDialogOpen(false);
-                setEditError(null);
-                setEditUser(null);
-              }}
-              disabled={savingUserId !== null}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void handleSaveUser()}
-              disabled={!editUser || savingUserId !== null}
-              data-testid="users-edit-save"
-            >
-              Speichern
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title="2FA zurücksetzen?"
+        description={
+          resetConfirmUser
+            ? `Der 2FA-Zustand für "${resetConfirmUser.username}" wird zurückgesetzt. Passwort und Rolle bleiben unverändert.`
+            : "Der 2FA-Zustand wird zurückgesetzt. Passwort und Rolle bleiben unverändert."
+        }
+        confirmLabel="2FA zurücksetzen"
+        pendingLabel="Setzt 2FA zurück..."
+        icon={<KeyRound />}
+        disabled={!resetConfirmUser}
+        isPending={resetConfirmUser ? resettingUserId === resetConfirmUser.id : false}
+        onConfirm={() => void handleConfirmResetTwoFactor()}
+        testId="users-reset-2fa-confirm"
+      />
     </>
   );
 }

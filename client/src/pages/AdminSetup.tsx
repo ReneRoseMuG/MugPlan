@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { setupAdmin } from "@/lib/auth";
 
 type AdminSetupProps = {
@@ -80,9 +81,11 @@ export default function AdminSetup({ onCompleted, onSwitchToLogin }: AdminSetupP
               />
             </div>
             {error && (
-              <div className="rounded-md border border-destructive-border bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </div>
+              <DialogBaseInlineMessage
+                title="Admin-Setup nicht möglich"
+                description={error}
+                tone="error"
+              />
             )}
             <Button className="w-full" type="submit" disabled={isSubmitting}>
               Admin anlegen
