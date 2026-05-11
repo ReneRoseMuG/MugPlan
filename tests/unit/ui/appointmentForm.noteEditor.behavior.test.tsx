@@ -564,7 +564,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
       templateId: 5,
     });
 
-    const confirmAction = alertActionProps.get("button-note-suggestion-confirm");
+    const confirmAction = buttonProps.get("button-note-suggestion-confirm");
     expect(confirmAction).toBeTruthy();
     (confirmAction?.onClick as (() => void))();
     await flushMicrotasks();
@@ -633,7 +633,7 @@ describe("FT13 UI: appointment form note editor behavior", () => {
 
     renderToStaticMarkup(<AppointmentForm appointmentId={77} projectId={11} />);
 
-    const skipAction = alertCancelProps.get("button-note-suggestion-skip");
+    const skipAction = buttonProps.get("button-note-suggestion-skip");
     expect(skipAction).toBeTruthy();
     (skipAction?.onClick as (() => void))();
     expect(setterSpies[appointmentFormStateHook.noteSuggestionDialog]).toHaveBeenCalledWith(null);

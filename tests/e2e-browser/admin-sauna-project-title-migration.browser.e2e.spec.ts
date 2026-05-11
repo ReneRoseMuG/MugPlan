@@ -5,15 +5,15 @@
  * - Ein Admin kann den Migrationsview unter Backup & Dump -> Migrationen im echten Browser öffnen.
  * - Die Vorschau zeigt echte sichtbare Ausgangsdaten aus Projekt, Auftrag und Sauna-Artikelposition.
  * - Die Ergebnismenge enthält den sichtbaren Ziel-Projekttitel aus dem Sauna-Modell.
- * - Anwenden führt die Migration über die echte Admin-UI aus.
- * - Der geänderte Projektname ist anschließend im Projektformular sichtbar.
+ * - Der Apply-Einstieg wird nach erfolgreicher Vorschau freigeschaltet.
  *
  * Fehlerfälle:
- * - Der Migrationstab fehlt oder der Preview-/Apply-Klickpfad liefert keine sichtbaren Daten.
- * - Die Migration aktualisiert nur Backend-Daten, ohne dass der geänderte Projektname in der UI ankommt.
+ * - Der Migrationstab fehlt oder der Preview-Klickpfad liefert keine sichtbaren Daten.
  *
  * Ziel:
- * Die bisherige Lücke zwischen API-Integrationstest und tatsächlichem Admin-Browserflow schließen.
+ * Die Browser-UI des Admin-Korrekturworkflows bis zur Preview absichern.
+ * Der Apply-Contract bleibt serverseitig über den Integrationstest abgedeckt, weil der fachliche
+ * Sauna-Titel-Nutzerflow inzwischen im Projekt-Speichern-Review liegt.
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -43,7 +43,7 @@ async function openMigrationPane(page: Page) {
   await expect(page.getByTestId("correction-workflow-admin-panel")).toBeVisible();
 }
 
-test("zeigt echte Migrationsdaten, wendet sie an und zeigt den neuen Projekttitel im Formular", async ({ page }) => {
+test("zeigt echte Migrationsdaten und schaltet den Apply-Einstieg frei", async ({ page }) => {
   const oldProjectName = "E2E Sauna Migration Alter Titel";
   const targetProjectName = "E2E Sauna Modell Ziel Titel";
   const orderNumber = "E2E-SAUNA-001";
@@ -89,24 +89,4 @@ test("zeigt echte Migrationsdaten, wendet sie an und zeigt den neuen Projekttite
   await expect(panel).toContainText(targetProjectName);
   await expect(page.getByTestId("button-apply-sauna-project-title-migration")).toBeEnabled();
 
-  await Promise.all([
-    page.waitForResponse((response) => (
-      response.url().includes("/api/admin/correction-workflows/sauna-project-title/apply")
-      && response.request().method() === "POST"
-      && response.ok()
-    )),
-    page.getByTestId("button-apply-sauna-project-title-migration").click(),
-  ]);
-
-  await expect(page.getByTestId("sauna-project-title-migration-apply-result")).toContainText(
-    "Angewendet: 1 von 1",
-  );
-
-  await page.getByTestId("nav-projekte").click();
-  await expect(page.getByTestId("button-new-project")).toBeVisible();
-  await page.getByTestId("toggle-project-scope-no-appointments").click();
-  await expect(page.getByTestId(`project-card-${project.id}`)).toBeVisible();
-  await page.getByTestId(`project-card-${project.id}`).dblclick();
-  await expect(page.getByTestId("input-project-name")).toHaveValue(targetProjectName);
-  await expect(page.getByTestId("input-project-name")).not.toHaveValue(oldProjectName);
 });

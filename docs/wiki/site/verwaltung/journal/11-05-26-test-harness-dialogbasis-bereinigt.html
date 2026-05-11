@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11-05-26-test-harness-dialogbasis-bereinigt: 11.05.26 | Korrektur | Test-Harness nach Dialogbasis-Rollout bereinigt · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 11-05-26-test-harness-dialogbasis-bereinigt">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">11-05-26-test-harness-dialogbasis-bereinigt 11.05.26 | Korrektur | Test-Harness nach Dialogbasis-Rollout bereinigt</span></nav>
+        <h1 class="wiki-h1">11-05-26-test-harness-dialogbasis-bereinigt: 11.05.26 | Korrektur | Test-Harness nach Dialogbasis-Rollout bereinigt</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>11.05.26</div>
+    <p class="wiki-lead">Mehrere zuvor rote Tests waren fachlich nicht mehr auf dem aktuellen UI-Stand. Die Produktpfade waren inzwischen auf die gemeinsame Dialogbasis beziehungsweise den Projekt-Speichern-Review umgestellt, während einzelne Unit- und Browser-E2E-Tests noch alte direkte Alert- oder Sofo</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Mehrere zuvor rote Tests waren fachlich nicht mehr auf dem aktuellen UI-Stand. Die Produktpfade waren inzwischen auf die gemeinsame Dialogbasis beziehungsweise den Projekt-Speichern-Review umgestellt, während einzelne Unit- und Browser-E2E-Tests noch alte direkte Alert- oder Sofortaktionspfade erwarteten.</p>
+<p>Die Tests wurden gezielt an das bestehende Verhalten angepasst: Employee-Unit-Tests mocken die inzwischen benötigten Dialogbasis-Icons, der Terminnotiz-Test liest die Workflow-Notizaktionen aus dem neuen Button-Pfad, der alte Admin-Sauna-Browsertest wurde auf Preview und freigeschalteten Apply-Einstieg entschärft, und der FT-33-Abwesenheits-Browsertest bestätigt nun den Löschdialog, bevor er den DELETE erwartet.</p>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>tests/unit/ui/employeesPage.importDialog.wiring.test.tsx</code> und <code>tests/unit/ui/employeesPage.scopeUx.test.tsx</code>: lokale <code>lucide-react</code>-Mocks um die Icons der Dialogbasis ergänzt.</li><li><code>tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code>: Workflow-Notiz-Suggestion-Buttons werden aus dem <code>DialogBaseFooter</code>-/<code>Button</code>-Pfad gelesen.</li><li><code>tests/e2e-browser/admin-sauna-project-title-migration.browser.e2e.spec.ts</code>: Browser-Test auf Admin-Preview und freigeschalteten Apply-Einstieg begrenzt; der Apply-Contract bleibt im Integrationstest abgedeckt, während der aktuelle Sauna-Titel-Nutzerflow über den Projekt-Speichern-Review läuft.</li><li><code>tests/e2e-browser/ft33-absence-readonly.browser.e2e.spec.ts</code>: Löschung einer Abwesenheit bestätigt nun den gemeinsamen Bestätigungsdialog, bevor der DELETE erwartet wird.</li></ul>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li><code>npm run test:unit -- tests/unit/ui/employeesPage.importDialog.wiring.test.tsx tests/unit/ui/employeesPage.scopeUx.test.tsx</code> erfolgreich mit 4 Tests in 2 Dateien.</li><li><code>npm run test:unit -- tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code> erfolgreich mit 6 Tests in 1 Datei.</li><li><code>npm run test:unit -- tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx tests/unit/ui/employeesPage.importDialog.wiring.test.tsx tests/unit/ui/employeesPage.scopeUx.test.tsx</code> erfolgreich mit 10 Tests in 3 Dateien.</li><li><code>npm run test:unit</code> erfolgreich mit 1269 Tests in 304 Dateien, 1 Test übersprungen.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/project-form.article-list-save-behavior.browser.e2e.spec.ts --grep &quot;übernimmt den Projektnamen&quot;</code> erfolgreich mit 1 Browser-Test.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/admin-sauna-project-title-migration.browser.e2e.spec.ts</code> erfolgreich mit 1 Browser-Test.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/ft33-absence-readonly.browser.e2e.spec.ts</code> erfolgreich mit 2 Browser-Tests.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/admin-sauna-project-title-migration.browser.e2e.spec.ts tests/e2e-browser/appointments-list.filter-scope.browser.e2e.spec.ts tests/e2e-browser/ft33-absence-readonly.browser.e2e.spec.ts</code> erfolgreich mit 6 Browser-Tests.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Die Änderungen betreffen ausschließlich Testcode und Journaldokumentation.</li><li>Produktrollen, serverseitige Berechtigungen, Endpunkte und Sichtbarkeitsregeln wurden nicht verändert.</li><li>FT-33 bleibt fachlich unverändert: Abwesenheiten sind außerhalb des Mitarbeiterformulars read-only, dürfen im Mitarbeiterformular aber durch berechtigte Rollen bearbeitet und gelöscht werden.</li></ul>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout</a></li><li>Feature: <a href="../../lastenheft/features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT (33): Abwesenheiten über interne Personalplanung</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT-33</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 61,
-      "generated_count": 61,
+      "source_count": 62,
+      "generated_count": 62,
       "warnings": 0,
       "errors": 0
     }
@@ -2900,6 +2900,15 @@
         "title": "11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge",
         "source": "journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.md",
         "output": "verwaltung/journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "11-05-26-test-harness-dialogbasis-bereinigt",
+        "title": "11.05.26 | Korrektur | Test-Harness nach Dialogbasis-Rollout bereinigt",
+        "source": "journal/11-05-26-test-harness-dialogbasis-bereinigt.md",
+        "output": "verwaltung/journal/11-05-26-test-harness-dialogbasis-bereinigt.html",
         "ok": true,
         "warnings": [],
         "errors": []

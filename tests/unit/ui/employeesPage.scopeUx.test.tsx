@@ -156,8 +156,15 @@ vi.mock("lucide-react", () => ({
   ArrowDown: () => <span>down</span>,
   ArrowUp: () => <span>up</span>,
   ArrowUpDown: () => <span>updown</span>,
+  ArrowLeft: () => <span>left</span>,
+  AlertCircle: () => <span>alert-circle</span>,
+  CheckCircle2: () => <span>check-circle</span>,
+  Circle: () => <span>circle</span>,
+  Loader2: () => <span>loader</span>,
+  TriangleAlert: () => <span>triangle-alert</span>,
   Power: () => <span>power</span>,
   PowerOff: () => <span>poweroff</span>,
+  Info: () => <span>info</span>,
 }));
 
 import { EmployeesPage } from "../../../client/src/components/EmployeesPage";

@@ -227,11 +227,15 @@ test("blocks generic absence mutation entrypoints and keeps the employee-form FT
     description: "FT33 Browser Abwesenheit aktualisiert",
   });
 
+  await page.getByTestId(`button-delete-employee-absence-${absenceAppointmentId}`).click();
+  const deleteDialog = page.getByTestId("dialog-delete-employee-absence");
+  await expect(deleteDialog).toBeVisible();
+
   const absenceDeleteResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "DELETE"
     && response.url().includes(`/api/employees/${absenceEmployeeId}/absence-appointments/${absenceAppointmentId}`)
   ));
-  await page.getByTestId(`button-delete-employee-absence-${absenceAppointmentId}`).click();
+  await deleteDialog.getByRole("button", { name: "Abwesenheit löschen" }).click();
   const absenceDeleteResponse = await absenceDeleteResponsePromise;
   expect(absenceDeleteResponse.ok()).toBeTruthy();
   await expect.poll(async () => {
