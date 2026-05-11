@@ -45,7 +45,7 @@ type TourWeekEmployeeMember = {
   fullName: string;
 };
 
-const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ÃŸ/g, "ss");
+const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
 function isParkplatzTourName(value: string | null | undefined): boolean {
   return normalizeTourName(value) === normalizeTourName("Parkplatz");
@@ -722,7 +722,7 @@ export function TourEditForm({
               teams={[]}
               tours={[]}
               isLoading={availableEmployeesLoading}
-              allowBulkSelection
+              selectionMode="multiple"
               viewModeSettingKey="appointmentEmployeePicker.viewMode"
               title="Mitarbeiter auswählen"
               onSelectEmployee={(employeeId) => {

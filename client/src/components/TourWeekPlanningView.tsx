@@ -523,7 +523,7 @@ export function TourWeekPlanningView({
             teams={[] as Team[]}
             tours={[]}
             isLoading={availableEmployeesLoading}
-            allowBulkSelection
+            selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"
             title="Mitarbeiter auswählen"
             onSelectEmployee={(employeeId) => confirmEmployeeSelection([employeeId])}

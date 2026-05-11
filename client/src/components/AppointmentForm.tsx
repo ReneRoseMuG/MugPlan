@@ -3146,7 +3146,7 @@ export function AppointmentForm({
             tours={tours}
             isLoading={employeesLoading}
             title="Mitarbeiter auswählen"
-            allowBulkSelection
+            selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"
             onSelectEmployee={(employeeId) => {
               addEmployees([employeeId]);

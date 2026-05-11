@@ -466,7 +466,7 @@ export function TourWeekForm({
             tours={[]}
             isLoading={availableEmployeesLoading}
             title="Mitarbeiter auswählen"
-            allowBulkSelection
+            selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"
             onSelectEmployee={(employeeId) => {
               if (!onAddWeekEmployees) return;

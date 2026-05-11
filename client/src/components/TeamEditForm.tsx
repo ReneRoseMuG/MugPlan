@@ -220,7 +220,7 @@ export function TeamEditForm({
               teams={[]}
               tours={[]}
               title="Mitarbeiter auswählen"
-              allowBulkSelection
+              selectionMode="multiple"
               viewModeSettingKey="appointmentEmployeePicker.viewMode"
               onSelectEmployee={(employeeId) => {
                 setSelectedMembers((prev) => (prev.includes(employeeId) ? prev : [...prev, employeeId]));

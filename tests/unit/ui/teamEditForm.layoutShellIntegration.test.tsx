@@ -134,7 +134,7 @@ describe("FT06/FT07 team form shell layout integration", () => {
 
     expect(employeePickerCalls).toHaveLength(1);
     expect(employeePickerCalls[0]).toMatchObject({
-      allowBulkSelection: true,
+      selectionMode: "multiple",
       viewModeSettingKey: "appointmentEmployeePicker.viewMode",
       title: "Mitarbeiter auswählen",
     });

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente: 11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente 11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente</span></nav>
+        <h1 class="wiki-h1">11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente: 11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>11.05.26</div>
+    <p class="wiki-lead">Die vorhandene EmployeePickerDialogList wurde als app-weite Basiskomponente für Mitarbeiter-Auswahl stabilisiert. Sie bleibt reine Auswahl-UI für Filterung, Sortierung, Board-Ansicht, Listenansicht, Checkbox-Auswahl und Bestätigung; Dialograhmen, Datenladen, Berechtigungen und Mu</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die vorhandene <code>EmployeePickerDialogList</code> wurde als app-weite Basiskomponente für Mitarbeiter-Auswahl stabilisiert. Sie bleibt reine Auswahl-UI für Filterung, Sortierung, Board-Ansicht, Listenansicht, Checkbox-Auswahl und Bestätigung; Dialograhmen, Datenladen, Berechtigungen und Mutationen bleiben weiterhin bei den aufrufenden Screens beziehungsweise serverseitigen Endpunkten.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Frontend-Refactoring einer bestehenden zentralen Auswahlkomponente.</li><li>Rückwärtskompatible Props-Erweiterung ohne neue API, ohne DB-Änderung, ohne neue Rollenlogik und ohne neue Datenquelle.</li><li>Gezielt erweiterte UI-Wiring-Tests für zentrale Picker-Funktionen und betroffene Konsumenten.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">Dialog-Rollout</a></li><li>Aufgabe: <a href="../../projekt/aufgaben/mitarbeiter-auswahl-dialogstruktur.html">Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren</a></li><li>Angrenzend: <a href="../../projekt/aufgaben/ft04-dialog-basiskomponente.html">FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</a>, <a href="../../projekt/aufgaben/ft04-multistep-tour-kw-dialog.html">FT-04 mehrstufiger Tour-KW-Dialog</a>, <a href="../../projekt/aufgaben/ft04-multiselect-kw-planung-wochenkalender.html">FT-04 Multiselect für KW-Planung im Wochenkalender</a></li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>EmployeePickerDialogList</code> exportiert nun eine klare Props-Schnittstelle mit <code>selectionMode: &quot;single&quot; | &quot;multiple&quot;</code>.</li><li><code>allowBulkSelection</code> bleibt als Kompatibilitätsalias erhalten.</li><li><code>teams</code> und <code>tours</code> sind optional; <code>tours</code> bleibt ohne fachliche Wirkung im Picker.</li><li>Mehrfachauswahl unterstützt kontrollierte und initiale Auswahl über <code>selectedEmployeeIds</code>, <code>defaultSelectedEmployeeIds</code> und <code>onSelectionChange</code>.</li><li>Ungültige, nicht verfügbare oder doppelte Mitarbeiter-IDs werden vor Anzeige, Auswahländerung und Bestätigung bereinigt.</li><li>Bestehende Mehrfachauswahl-Pfade in Terminformular, Teamformular, Tourformular, Tour-KW-Formular und Tour-KW-Planungsansicht nutzen jetzt <code>selectionMode=&quot;multiple&quot;</code>.</li><li>Ein bestehender Mojibake-Literal in der Tournamen-Normalisierung von <code>TourEditForm</code> wurde von <code>/ÃŸ/g</code> auf <code>/ß/g</code> korrigiert.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> und <code>DISPONENT</code> dürfen Mitarbeiter nur in den bereits bestehenden erlaubten Termin-, Team- und Tour-KW-Aktionen auswählen.</li><li><code>READER</code> beziehungsweise <code>LESER</code> erhält durch den Picker keine neue Schreibaktion.</li><li>Die technische Durchsetzung bleibt serverseitig über bestehende Termin-, Tour-KW- und Rollenregeln maßgeblich; UI-Gates wie <code>readOnly</code>, gesperrte Wochen oder ausgeblendete Buttons bleiben nur zusätzliche Bediengrenzen.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li>Unit-Tests: <code>npm run test:unit -- tests/unit/ui/employeePickerDialogList.bulkSelection.wiring.test.tsx tests/unit/ui/teamEditForm.layoutShellIntegration.test.tsx tests/unit/ui/tourEditForm.layoutShellIntegration.test.tsx tests/unit/ui/tourWeekForm.smoke.test.tsx tests/unit/ui/tourWeekPlanningView.render.test.tsx</code> erfolgreich mit 25 Tests in 5 Dateien.</li><li>Typecheck: <code>npm run typecheck</code> erfolgreich.</li><li>Check: <code>npm run check</code> erfolgreich.</li><li>Browser-E2E: <code>npm run test:e2e:browser -- tests/e2e-browser/employee-form-week-planning.browser.e2e.spec.ts tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts</code> erfolgreich mit 5 Chromium-Tests.</li><li>Encoding: gezielte Mojibake-Suche in den berührten Dateien ohne Treffer; <code>npm run check:encoding</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Die FT-04-Bestätigungsbasis, der mehrstufige Tour-KW-Dialog und der Wochenkalender-Multiselect bleiben separate Aufgaben.</li><li>Es wurden keine serverseitigen Berechtigungen, keine Preview-Contracts und keine Mutationsflüsse geändert.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

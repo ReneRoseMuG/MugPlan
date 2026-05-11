@@ -19,6 +19,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const useQueryMock = vi.fn();
 const useSettingMock = vi.fn();
 const setSettingMock = vi.fn();
+const employeePickerCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -60,7 +61,10 @@ vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
 }));
 
 vi.mock("@/components/EmployeePickerDialogList", () => ({
-  EmployeePickerDialogList: () => <section data-testid="employee-picker-marker" />,
+  EmployeePickerDialogList: (props: Record<string, unknown>) => {
+    employeePickerCalls.push(props);
+    return <section data-testid="employee-picker-marker" />;
+  },
 }));
 
 vi.mock("@/components/TourWeekCard", () => ({
@@ -134,6 +138,7 @@ const planningResponse = {
 describe("TourWeekPlanningView render", () => {
   beforeEach(() => {
     vi.stubGlobal("React", React);
+    employeePickerCalls.length = 0;
     useQueryMock.mockReset();
     useSettingMock.mockReset();
     setSettingMock.mockReset();
@@ -174,6 +179,14 @@ describe("TourWeekPlanningView render", () => {
     expect(html).toContain("button-tour-week-planning-add-41-2099-6");
     expect(html).toContain("button-tour-week-planning-apply-41-2099-6");
     expect(html).toContain("Wochenplanung blockieren");
+    expect(employeePickerCalls).toHaveLength(1);
+    expect(employeePickerCalls[0]).toMatchObject({
+      selectionMode: "multiple",
+      viewModeSettingKey: "appointmentEmployeePicker.viewMode",
+      title: "Mitarbeiter auswählen",
+    });
+    expect(employeePickerCalls[0].onSelectEmployee).toEqual(expect.any(Function));
+    expect(employeePickerCalls[0].onConfirmSelection).toEqual(expect.any(Function));
   });
 
   it("renders week notes below the card when enabled", () => {

@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 59,
-      "generated_count": 59,
+      "source_count": 60,
+      "generated_count": 60,
       "warnings": 0,
       "errors": 0
     }
@@ -2904,6 +2904,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente",
+        "title": "11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente",
+        "source": "journal/11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.md",
+        "output": "verwaltung/journal/11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "10-05-26-p01-kunden-mitarbeiter-notizen-dialoge-abgeschlossen",
         "title": "10.05.26 | Abschluss | P01 Kunden-, Mitarbeiter- und Notizen-Dialoge",

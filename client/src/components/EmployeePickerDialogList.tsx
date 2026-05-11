@@ -12,48 +12,96 @@ import { EmployeePickerFilterPanel } from "@/components/ui/filter-panels/employe
 import { useSettings } from "@/hooks/useSettings";
 
 type EmployeePickerViewMode = "board" | "list";
+export type EmployeePickerSelectionMode = "single" | "multiple";
 
 function parseEmployeePickerViewMode(value: unknown): EmployeePickerViewMode {
   return value === "list" ? "list" : "board";
 }
 
-interface EmployeePickerDialogListProps {
+function normalizeEmployeePickerSelection(
+  employeeIds: readonly number[] | undefined,
+  availableEmployeeIds: ReadonlySet<number>,
+): number[] {
+  const result: number[] = [];
+  const emittedIds = new Set<number>();
+
+  for (const employeeId of employeeIds ?? []) {
+    if (!Number.isInteger(employeeId) || employeeId <= 0) continue;
+    if (!availableEmployeeIds.has(employeeId)) continue;
+    if (emittedIds.has(employeeId)) continue;
+
+    emittedIds.add(employeeId);
+    result.push(employeeId);
+  }
+
+  return result;
+}
+
+function areEmployeeIdListsEqual(left: readonly number[], right: readonly number[]): boolean {
+  return left.length === right.length && left.every((employeeId, index) => employeeId === right[index]);
+}
+
+export interface EmployeePickerDialogListProps {
   employees: Employee[];
-  teams: Team[];
-  tours: Tour[];
+  teams?: Team[];
+  tours?: Tour[];
   selectedEmployeeId?: number | null;
+  selectedEmployeeIds?: number[];
+  defaultSelectedEmployeeIds?: number[];
   isLoading?: boolean;
   title?: string;
+  selectionMode?: EmployeePickerSelectionMode;
   allowBulkSelection?: boolean;
   viewModeSettingKey?: string;
   onSelectEmployee?: (employeeId: number) => void;
+  onSelectionChange?: (employeeIds: number[]) => void;
   onConfirmSelection?: (employeeIds: number[]) => void;
   onClose?: () => void;
 }
 
 export function EmployeePickerDialogList({
   employees,
-  teams,
-  tours: _tours,
+  teams = [],
+  tours: _tours = [],
   selectedEmployeeId = null,
+  selectedEmployeeIds,
+  defaultSelectedEmployeeIds,
   isLoading = false,
   title = "Mitarbeiter auswählen",
+  selectionMode,
   allowBulkSelection = false,
   viewModeSettingKey,
   onSelectEmployee,
+  onSelectionChange,
   onConfirmSelection,
   onClose,
 }: EmployeePickerDialogListProps) {
   const { settingsByKey, setSetting } = useSettings();
+  const resolvedSelectionMode: EmployeePickerSelectionMode = selectionMode ?? (allowBulkSelection ? "multiple" : "single");
+  const isMultipleSelection = resolvedSelectionMode === "multiple";
+  const availableEmployeeIds = useMemo(
+    () => new Set(employees.map((employee) => employee.id)),
+    [employees],
+  );
+  const isSelectionControlled = selectedEmployeeIds !== undefined;
   const resolvedViewMode = parseEmployeePickerViewMode(
-    allowBulkSelection && viewModeSettingKey
+    isMultipleSelection && viewModeSettingKey
       ? settingsByKey.get(viewModeSettingKey)?.resolvedValue
       : "board",
   );
   const [nameFilter, setNameFilter] = useState("");
   const [firstNameFilter, setFirstNameFilter] = useState("");
   const [viewMode, setViewMode] = useState<EmployeePickerViewMode>(resolvedViewMode);
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<number[]>([]);
+  const [uncontrolledSelectedEmployeeIds, setUncontrolledSelectedEmployeeIds] = useState<number[]>(() => (
+    normalizeEmployeePickerSelection(defaultSelectedEmployeeIds, availableEmployeeIds)
+  ));
+  const activeSelectedEmployeeIds = isSelectionControlled
+    ? normalizeEmployeePickerSelection(selectedEmployeeIds, availableEmployeeIds)
+    : uncontrolledSelectedEmployeeIds;
+  const teamNameById = useMemo(
+    () => new Map(teams.map((team) => [team.id, team.name])),
+    [teams],
+  );
 
   useEffect(() => {
     setViewMode(resolvedViewMode);
@@ -81,12 +129,29 @@ export function EmployeePickerDialogList({
   }, [employees, nameFilter, firstNameFilter]);
 
   useEffect(() => {
-    const availableIds = new Set(employees.map((employee) => employee.id));
-    setSelectedEmployeeIds((current) => current.filter((employeeId) => availableIds.has(employeeId)));
-  }, [employees]);
+    if (isSelectionControlled) return;
+
+    setUncontrolledSelectedEmployeeIds((current) => {
+      const normalized = normalizeEmployeePickerSelection(current, availableEmployeeIds);
+      if (areEmployeeIdListsEqual(current, normalized)) return current;
+
+      onSelectionChange?.(normalized);
+      return normalized;
+    });
+  }, [availableEmployeeIds, isSelectionControlled, onSelectionChange]);
+
+  const setNextSelectedEmployeeIds = (employeeIds: number[]) => {
+    const normalizedEmployeeIds = normalizeEmployeePickerSelection(employeeIds, availableEmployeeIds);
+
+    if (!isSelectionControlled) {
+      setUncontrolledSelectedEmployeeIds(normalizedEmployeeIds);
+    }
+
+    onSelectionChange?.(normalizedEmployeeIds);
+  };
 
   const handleViewModeChange = (next: string) => {
-    if (!allowBulkSelection) return;
+    if (!isMultipleSelection) return;
     if (next !== "board" && next !== "list") return;
     if (next === viewMode) return;
 
@@ -105,13 +170,13 @@ export function EmployeePickerDialogList({
   };
 
   const toggleEmployeeSelection = (employeeId: number, checked: boolean) => {
-    setSelectedEmployeeIds((current) => {
-      if (checked) {
-        if (current.includes(employeeId)) return current;
-        return [...current, employeeId];
-      }
-      return current.filter((id) => id !== employeeId);
-    });
+    if (checked) {
+      if (activeSelectedEmployeeIds.includes(employeeId)) return;
+      setNextSelectedEmployeeIds([...activeSelectedEmployeeIds, employeeId]);
+      return;
+    }
+
+    setNextSelectedEmployeeIds(activeSelectedEmployeeIds.filter((id) => id !== employeeId));
   };
 
   const emptyState = (
@@ -127,14 +192,14 @@ export function EmployeePickerDialogList({
       onFirstNameFilterChange={setFirstNameFilter}
     />
   );
-  const confirmAction = allowBulkSelection && viewMode === "list" ? (
+  const confirmAction = isMultipleSelection && viewMode === "list" ? (
     <Button
       type="button"
-      onClick={() => onConfirmSelection?.(selectedEmployeeIds)}
-      disabled={selectedEmployeeIds.length === 0}
+      onClick={() => onConfirmSelection?.(activeSelectedEmployeeIds)}
+      disabled={activeSelectedEmployeeIds.length === 0}
       data-testid="button-confirm-employee-picker-selection"
     >
-      Mitarbeiter übernehmen{selectedEmployeeIds.length > 0 ? ` (${selectedEmployeeIds.length})` : ""}
+      Mitarbeiter übernehmen{activeSelectedEmployeeIds.length > 0 ? ` (${activeSelectedEmployeeIds.length})` : ""}
     </Button>
   ) : null;
 
@@ -147,7 +212,7 @@ export function EmployeePickerDialogList({
       onClose={onClose}
       showCloseButton={false}
       contentClassName="min-h-0 overflow-hidden"
-      viewModeToggle={allowBulkSelection ? (
+      viewModeToggle={isMultipleSelection ? (
         <ToggleGroup
           type="single"
           value={viewMode}
@@ -184,7 +249,7 @@ export function EmployeePickerDialogList({
             {rows.length === 0 ? emptyState : (
               <div className="overflow-hidden rounded-lg border border-border bg-card">
                 {rows.map((employee, index) => {
-                  const isChecked = selectedEmployeeIds.includes(employee.id);
+                  const isChecked = activeSelectedEmployeeIds.includes(employee.id);
                   return (
                     <label
                       key={employee.id}
@@ -199,9 +264,9 @@ export function EmployeePickerDialogList({
                         />
                         <span className="truncate text-sm font-medium text-foreground">{employee.fullName}</span>
                       </div>
-                      {teams.find((team) => team.id === employee.teamId)?.name ? (
+                      {employee.teamId && teamNameById.get(employee.teamId) ? (
                         <Badge variant="secondary" className="text-xs">
-                          {teams.find((team) => team.id === employee.teamId)?.name}
+                          {teamNameById.get(employee.teamId)}
                         </Badge>
                       ) : null}
                     </label>
@@ -223,7 +288,8 @@ export function EmployeePickerDialogList({
             )}
           >
             {rows.map((employee) => {
-              const teamName = teams.find((team) => team.id === employee.teamId)?.name ?? null;
+              const teamName = employee.teamId ? teamNameById.get(employee.teamId) ?? null : null;
+              const isSelected = selectedEmployeeId === employee.id || activeSelectedEmployeeIds.includes(employee.id);
 
               return (
                 <EntityCard
@@ -231,7 +297,7 @@ export function EmployeePickerDialogList({
                   testId={`employee-picker-card-${employee.id}`}
                   title={employee.fullName}
                   icon={<Users className="w-4 h-4" />}
-                  className={selectedEmployeeId === employee.id ? "ring-1 ring-primary/30 border-primary/40" : ""}
+                  className={isSelected ? "ring-1 ring-primary/30 border-primary/40" : ""}
                   onClick={() => onSelectEmployee?.(employee.id)}
                   onDoubleClick={() => onSelectEmployee?.(employee.id)}
                 >

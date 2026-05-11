@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [11.05.26 - P01: A-14 Mitarbeiter-Auswahl als Basiskomponente](11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.md)
 - [10.05.26 - Projekt-Speichern-Dialog und Reportkarten-Nacharbeit](10-05-26-projekt-speichern-und-reportkarten-nacharbeit.md)
 - [10.05.26 - Reports: Vereinheitlichung und Preset-UI entfernt](10-05-26-reports-vereinheitlicht-preset-ui-entfernt.md)
 - [10.05.26 - Wiki: Use-Case-Warnungen bereinigt](10-05-26-wiki-use-case-warnungen-bereinigt.md)

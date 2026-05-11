@@ -358,7 +358,7 @@ describe("FT04 tour form shell layout integration", () => {
 
     expect(employeePickerCalls).toHaveLength(1);
     expect(employeePickerCalls[0]).toMatchObject({
-      allowBulkSelection: true,
+      selectionMode: "multiple",
       viewModeSettingKey: "appointmentEmployeePicker.viewMode",
     });
     expect(employeePickerCalls[0].onSelectEmployee).toEqual(expect.any(Function));
