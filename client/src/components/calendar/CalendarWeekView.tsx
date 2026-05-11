@@ -64,7 +64,7 @@ import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
-import { ConfirmDialogBase } from "@/components/ui/dialog-base";
+import { ConfirmDialogBase, type DialogBaseStep } from "@/components/ui/dialog-base";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Input } from "@/components/ui/input";
@@ -146,7 +146,7 @@ type AppointmentEmployeePreviewItem = {
   conflictReason: string | null;
   source?: "week_plan" | "available" | "current";
 };
-type WeekPlanningDialogState = {
+type WeekPlanningDialogOperation = {
   mode: "add" | "remove";
   tourId: number;
   isoYear: number;
@@ -157,7 +157,14 @@ type WeekPlanningDialogState = {
   weekLabel: string;
   previewItems: WeekPlanningPreviewItem[];
   selectedIds: number[];
-  remainingEmployeeIds?: number[];
+  executionStatus?: "pending" | "success" | "error";
+  executionMessage?: string;
+};
+type WeekPlanningDialogState = {
+  mode: "add" | "remove";
+  activeIndex: number;
+  phase: "preview" | "executing" | "partial_error";
+  operations: WeekPlanningDialogOperation[];
 };
 type WeekPersonnelPickerState = {
   tourId: number;
@@ -234,6 +241,16 @@ function resolveSelectablePreviewIds(items: WeekPlanningPreviewItem[]): number[]
   return items
     .filter((item) => item.selectable ?? false)
     .map((item) => item.appointmentId);
+}
+
+function buildWeekPlanningDialogOperation(
+  params: Omit<WeekPlanningDialogOperation, "selectedIds" | "executionStatus" | "executionMessage">,
+): WeekPlanningDialogOperation {
+  return {
+    ...params,
+    selectedIds: resolveSelectablePreviewIds(params.previewItems),
+    executionStatus: "pending",
+  };
 }
 
 export function isWeekPlanningLockedForCalendarRole(
@@ -495,8 +512,16 @@ export function CalendarWeekView({
   const [weekPrintPageIndex, setWeekPrintPageIndex] = useState(0);
   const [weekPersonnelPicker, setWeekPersonnelPicker] = useState<WeekPersonnelPickerState | null>(null);
   const [weekPlanningDialog, setWeekPlanningDialog] = useState<WeekPlanningDialogState | null>(null);
+  const [pendingWeekBlock, setPendingWeekBlock] = useState<{
+    tourId: number;
+    isoYear: number;
+    isoWeek: number;
+    tourLabel: string | null;
+  } | null>(null);
   const [appointmentEmployeeDialog, setAppointmentEmployeeDialog] = useState<{
+    action: "assign" | "remove";
     appointmentId: number;
+    employeeId?: number;
     title: string;
     description: string;
     previewItems: AppointmentEmployeePreviewItem[];
@@ -1047,6 +1072,25 @@ export function CalendarWeekView({
     },
   });
 
+  const confirmPendingWeekBlock = async () => {
+    if (!pendingWeekBlock) return;
+    try {
+      await blockWeekMutation.mutateAsync({
+        tourId: pendingWeekBlock.tourId,
+        isoYear: pendingWeekBlock.isoYear,
+        isoWeek: pendingWeekBlock.isoWeek,
+      });
+      setPendingWeekBlock(null);
+      toast({ title: "Wochenplanung blockiert" });
+    } catch {
+      toast({
+        title: "Wochenplanung konnte nicht blockiert werden",
+        description: "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const previewAddWeekEmployeeMutation = useMutation({
     mutationFn: async (params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number }) => {
       const response = await apiRequest("POST", `/api/tours/${params.tourId}/week-employees/add/preview`, {
@@ -1088,26 +1132,9 @@ export function CalendarWeekView({
       });
       return response.json();
     },
-    onSuccess: async (_data, variables) => {
-      const remainingEmployeeIds = weekPlanningDialog?.mode === "add"
-        && weekPlanningDialog.tourId === variables.tourId
-        && weekPlanningDialog.isoYear === variables.isoYear
-        && weekPlanningDialog.isoWeek === variables.isoWeek
-        ? (weekPlanningDialog.remainingEmployeeIds ?? [])
-        : [];
-      setWeekPlanningDialog(null);
+    onSuccess: async () => {
       await invalidateWeekPlanningViews();
       await refreshMonitoringWithNotification(toast);
-      toast({ title: "Wochenplanung gespeichert" });
-      const [nextEmployeeId, ...nextRemainingEmployeeIds] = remainingEmployeeIds;
-      if (typeof nextEmployeeId === "number") {
-        await openAddWeekPlanningDialogForParams({
-          tourId: variables.tourId,
-          isoYear: variables.isoYear,
-          isoWeek: variables.isoWeek,
-          employeeId: nextEmployeeId,
-        }, nextRemainingEmployeeIds);
-      }
     },
     onError: (error) => {
       toast({
@@ -1128,10 +1155,8 @@ export function CalendarWeekView({
       return response.json();
     },
     onSuccess: async () => {
-      setWeekPlanningDialog(null);
       await invalidateWeekPlanningViews();
       await refreshMonitoringWithNotification(toast);
-      toast({ title: "Wochenplanung aktualisiert" });
     },
     onError: (error) => {
       toast({
@@ -1399,6 +1424,7 @@ export function CalendarWeekView({
         return;
       }
       setAppointmentEmployeeDialog({
+        action: "assign",
         appointmentId,
         title: "Mitarbeiter zuweisen",
         description: preview.hasWeekPlan
@@ -1430,7 +1456,6 @@ export function CalendarWeekView({
 
   async function openAddWeekPlanningDialogForParams(
     params: { tourId: number; isoYear: number; isoWeek: number; employeeId: number },
-    remainingEmployeeIds: number[] = [],
   ) {
     try {
       const preview = await previewAddWeekEmployeeMutation.mutateAsync({
@@ -1442,15 +1467,20 @@ export function CalendarWeekView({
       setWeekPersonnelPicker(null);
       setWeekPlanningDialog({
         mode: "add",
-        tourId: params.tourId,
-        isoYear: preview.isoYear,
-        isoWeek: preview.isoWeek,
-        employeeId: preview.employee.employeeId,
-        employeeName: preview.employee.fullName,
-        weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
-        previewItems: preview.items,
-        selectedIds: resolveSelectablePreviewIds(preview.items),
-        remainingEmployeeIds,
+        activeIndex: 0,
+        phase: "preview",
+        operations: [
+          buildWeekPlanningDialogOperation({
+            mode: "add",
+            tourId: params.tourId,
+            isoYear: preview.isoYear,
+            isoWeek: preview.isoWeek,
+            employeeId: preview.employee.employeeId,
+            employeeName: preview.employee.fullName,
+            weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
+            previewItems: preview.items,
+          }),
+        ],
       });
     } catch (error) {
       toast({
@@ -1473,31 +1503,39 @@ export function CalendarWeekView({
 
   const openApplyWeekPlanningDialog = async (params: { tourId: number; isoYear: number; isoWeek: number; employeeIds: number[] }) => {
     const normalizedEmployeeIds = Array.from(new Set(params.employeeIds.filter((employeeId) => Number.isInteger(employeeId) && employeeId > 0)));
-    const [employeeId, ...remainingEmployeeIds] = normalizedEmployeeIds;
-    if (typeof employeeId !== "number") {
+    if (normalizedEmployeeIds.length === 0) {
       toast({
         title: "Keine Mitarbeiter geplant",
         description: "Für diese Tour-KW gibt es keine Mitarbeiter zum Anwenden.",
       });
       return;
     }
-    await openAddWeekPlanningDialogForParams({ ...params, employeeId }, remainingEmployeeIds);
-  };
-
-  const openRemoveWeekPlanningDialog = async (params: { tourId: number; assignmentId: number }) => {
     try {
-      const preview = await previewRemoveWeekEmployeeMutation.mutateAsync(params);
+      const operations: WeekPlanningDialogOperation[] = [];
+      for (const employeeId of normalizedEmployeeIds) {
+        const preview = await previewAddWeekEmployeeMutation.mutateAsync({
+          tourId: params.tourId,
+          isoYear: params.isoYear,
+          isoWeek: params.isoWeek,
+          employeeId,
+        });
+        operations.push(buildWeekPlanningDialogOperation({
+          mode: "add",
+          tourId: params.tourId,
+          isoYear: preview.isoYear,
+          isoWeek: preview.isoWeek,
+          employeeId: preview.employee.employeeId,
+          employeeName: preview.employee.fullName,
+          weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
+          previewItems: preview.items,
+        }));
+      }
+      setWeekPersonnelPicker(null);
       setWeekPlanningDialog({
-        mode: "remove",
-        tourId: params.tourId,
-        isoYear: preview.isoYear,
-        isoWeek: preview.isoWeek,
-        assignmentId: preview.assignmentId,
-        employeeId: preview.employee.employeeId,
-        employeeName: preview.employee.fullName,
-        weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
-        previewItems: preview.items,
-        selectedIds: resolveSelectablePreviewIds(preview.items),
+        mode: "add",
+        activeIndex: 0,
+        phase: "preview",
+        operations,
       });
     } catch (error) {
       toast({
@@ -1508,26 +1546,99 @@ export function CalendarWeekView({
     }
   };
 
-  const confirmWeekPlanningDialog = () => {
-    if (!weekPlanningDialog) return;
-    if (weekPlanningDialog.mode === "add") {
-      executeAddWeekEmployeeMutation.mutate({
-        tourId: weekPlanningDialog.tourId,
-        isoYear: weekPlanningDialog.isoYear,
-        isoWeek: weekPlanningDialog.isoWeek,
-        employeeId: weekPlanningDialog.employeeId,
-        selectedIds: weekPlanningDialog.selectedIds,
+  const openRemoveWeekPlanningDialog = async (params: { tourId: number; assignmentId: number }) => {
+    try {
+      const preview = await previewRemoveWeekEmployeeMutation.mutateAsync(params);
+      setWeekPlanningDialog({
+        mode: "remove",
+        activeIndex: 0,
+        phase: "preview",
+        operations: [
+          buildWeekPlanningDialogOperation({
+            mode: "remove",
+            tourId: params.tourId,
+            isoYear: preview.isoYear,
+            isoWeek: preview.isoWeek,
+            assignmentId: preview.assignmentId,
+            employeeId: preview.employee.employeeId,
+            employeeName: preview.employee.fullName,
+            weekLabel: buildWeekPlanningLabel(preview.isoYear, preview.isoWeek),
+            previewItems: preview.items,
+          }),
+        ],
       });
+    } catch (error) {
+      toast({
+        title: "Mitarbeitervorschau fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmWeekPlanningDialog = async () => {
+    if (!weekPlanningDialog) return;
+    if (weekPlanningDialog.phase === "preview" && weekPlanningDialog.activeIndex < weekPlanningDialog.operations.length - 1) {
+      setWeekPlanningDialog((current) => current ? { ...current, activeIndex: current.activeIndex + 1 } : current);
       return;
     }
-    if (typeof weekPlanningDialog.assignmentId !== "number") return;
-    executeRemoveWeekEmployeeMutation.mutate({
-      tourId: weekPlanningDialog.tourId,
-      assignmentId: weekPlanningDialog.assignmentId,
-      isoYear: weekPlanningDialog.isoYear,
-      isoWeek: weekPlanningDialog.isoWeek,
-      selectedIds: weekPlanningDialog.selectedIds,
-    });
+
+    setWeekPlanningDialog((current) => current ? { ...current, phase: "executing" } : current);
+    try {
+      for (let index = 0; index < weekPlanningDialog.operations.length; index += 1) {
+        const operation = weekPlanningDialog.operations[index];
+        if (operation.executionStatus === "success") continue;
+        try {
+          if (operation.mode === "add") {
+            await executeAddWeekEmployeeMutation.mutateAsync({
+              tourId: operation.tourId,
+              isoYear: operation.isoYear,
+              isoWeek: operation.isoWeek,
+              employeeId: operation.employeeId,
+              selectedIds: operation.selectedIds,
+            });
+          } else {
+            if (typeof operation.assignmentId !== "number") {
+              throw new Error("Die zu löschende Wochenzuordnung fehlt.");
+            }
+            await executeRemoveWeekEmployeeMutation.mutateAsync({
+              tourId: operation.tourId,
+              assignmentId: operation.assignmentId,
+              isoYear: operation.isoYear,
+              isoWeek: operation.isoWeek,
+              selectedIds: operation.selectedIds,
+            });
+          }
+          setWeekPlanningDialog((current) => current ? {
+            ...current,
+            activeIndex: Math.min(index + 1, current.operations.length - 1),
+            operations: current.operations.map((entry, entryIndex) =>
+              entryIndex === index ? { ...entry, executionStatus: "success", executionMessage: "Ausgeführt" } : entry,
+            ),
+          } : current);
+        } catch (error) {
+          setWeekPlanningDialog((current) => current ? {
+            ...current,
+            phase: "partial_error",
+            activeIndex: index,
+            operations: current.operations.map((entry, entryIndex) =>
+              entryIndex === index
+                ? { ...entry, executionStatus: "error", executionMessage: error instanceof Error ? error.message : "Ausführung fehlgeschlagen." }
+                : entry,
+            ),
+          } : current);
+          return;
+        }
+      }
+      setWeekPlanningDialog(null);
+      toast({ title: weekPlanningDialog.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert" });
+    } catch (error) {
+      toast({
+        title: "Wochenplanung konnte nicht gespeichert werden",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
   };
 
   const assignAppointmentEmployeesMutation = useMutation({
@@ -1567,6 +1678,7 @@ export function CalendarWeekView({
       });
     },
     onSuccess: async () => {
+      setAppointmentEmployeeDialog(null);
       await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
       await queryClient.invalidateQueries({ queryKey: ["calendarWeekLaneEmployeePreviews"] });
       await refreshMonitoringWithNotification(toast);
@@ -1578,8 +1690,57 @@ export function CalendarWeekView({
   });
 
   const handleRemoveAppointmentEmployee = (appointmentId: number, employeeId: number) => {
-    removeAppointmentEmployeeMutation.mutate({ appointmentId, employeeId });
+    const appointment = appointmentsById.get(appointmentId);
+    const employee = appointment?.employees.find((entry) => entry.id === employeeId);
+    if (!appointment || !employee) {
+      toast({ title: "Mitarbeiter entfernen nicht möglich", description: "Termin oder Mitarbeiter wurde nicht gefunden.", variant: "destructive" });
+      return;
+    }
+    setAppointmentEmployeeDialog({
+      action: "remove",
+      appointmentId,
+      employeeId,
+      title: "Mitarbeiter entfernen",
+      description: `${employee.fullName} wird aus diesem Termin entfernt. Die Tour- und KW-Planung bleibt unverändert.`,
+      previewItems: [{
+        employeeId,
+        employeeName: employee.fullName,
+        status: "current_only",
+        selectable: false,
+        conflictReason: "WILL_REMOVE",
+        source: "current",
+      }],
+      currentEmployeeIds: appointment.employees.map((entry) => entry.id),
+      selectedIds: [],
+    });
   };
+
+  const activeWeekPlanningOperation = weekPlanningDialog?.operations[weekPlanningDialog.activeIndex] ?? null;
+  const weekPlanningDialogSteps: DialogBaseStep[] = weekPlanningDialog
+    ? weekPlanningDialog.operations.map((operation, index) => {
+        let state: DialogBaseStep["state"] = index === weekPlanningDialog.activeIndex ? "active" : "pending";
+        if (operation.executionStatus === "success") state = "complete";
+        if (operation.executionStatus === "error") state = "error";
+        if (weekPlanningDialog.phase === "preview" && index < weekPlanningDialog.activeIndex) state = "complete";
+        return {
+          id: `${operation.mode}-${operation.employeeId}-${index}`,
+          title: operation.employeeName,
+          state,
+        };
+      })
+    : [];
+  const weekPlanningConfirmLabel = weekPlanningDialog
+    ? weekPlanningDialog.phase === "partial_error"
+      ? "Offene Schritte erneut ausführen"
+      : weekPlanningDialog.activeIndex < weekPlanningDialog.operations.length - 1
+        ? "Weiter"
+        : "Auswahl ausführen"
+    : "Bestätigen";
+  const weekPlanningExecutionMessage = weekPlanningDialog?.phase === "partial_error"
+    ? "Ein Schritt konnte nicht ausgeführt werden. Bereits erfolgreiche Schritte werden beim erneuten Ausführen übersprungen."
+    : weekPlanningDialog?.phase === "executing"
+      ? "Die bestätigten Entscheidungen werden seriell ausgeführt."
+      : null;
 
   const handleDragEnd = () => {
     if (draggedAppointmentId) {
@@ -2550,18 +2711,11 @@ export function CalendarWeekView({
                                   ) : (
                                     <DropdownMenuItem
                                       onClick={() => {
-                                        void blockWeekMutation.mutateAsync({
+                                        setPendingWeekBlock({
                                           tourId: tourLane.tourId!,
                                           isoYear,
                                           isoWeek,
-                                        }).then(() => {
-                                          toast({ title: "Wochenplanung blockiert" });
-                                        }).catch(() => {
-                                          toast({
-                                            title: "Wochenplanung konnte nicht blockiert werden",
-                                            description: "Bitte erneut versuchen.",
-                                            variant: "destructive",
-                                          });
+                                          tourLabel: tourLane.label,
                                         });
                                       }}
                                       disabled={!canManageWeekPlanning || isLaneWeekLocked || blockWeekMutation.isPending}
@@ -3296,7 +3450,7 @@ export function CalendarWeekView({
           />
         </DialogContent>
       </Dialog>
-      {weekPlanningDialog ? (
+      {weekPlanningDialog && activeWeekPlanningOperation ? (
         <TourEmployeeCascadeDialog
           open
           variant="week"
@@ -3304,18 +3458,29 @@ export function CalendarWeekView({
           title={weekPlanningDialog.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
           description={
             weekPlanningDialog.mode === "add"
-              ? `${weekPlanningDialog.employeeName} wird für ${weekPlanningDialog.weekLabel} eingeplant.`
-              : `${weekPlanningDialog.employeeName} wird für ${weekPlanningDialog.weekLabel} aus der Planung entfernt.`
+              ? `${activeWeekPlanningOperation.employeeName} wird für ${activeWeekPlanningOperation.weekLabel} eingeplant.`
+              : `${activeWeekPlanningOperation.employeeName} wird für ${activeWeekPlanningOperation.weekLabel} aus der Planung entfernt.`
           }
-          weekLabel={weekPlanningDialog.weekLabel}
-          employeeName={weekPlanningDialog.employeeName}
-          previewItems={weekPlanningDialog.previewItems}
-          selectedIds={weekPlanningDialog.selectedIds}
-          isSubmitting={executeAddWeekEmployeeMutation.isPending || executeRemoveWeekEmployeeMutation.isPending}
+          weekLabel={activeWeekPlanningOperation.weekLabel}
+          employeeName={activeWeekPlanningOperation.employeeName}
+          previewItems={activeWeekPlanningOperation.previewItems}
+          selectedIds={activeWeekPlanningOperation.selectedIds}
+          steps={weekPlanningDialogSteps}
+          executionMessage={weekPlanningExecutionMessage}
+          confirmLabel={weekPlanningConfirmLabel}
+          summary={`${weekPlanningDialog.operations.length} Entscheidungsschritt${weekPlanningDialog.operations.length === 1 ? "" : "e"} in dieser Ressourcenplanung.`}
+          isSubmitting={weekPlanningDialog.phase === "executing" || executeAddWeekEmployeeMutation.isPending || executeRemoveWeekEmployeeMutation.isPending}
           onSelectedIdsChange={(selectedIds) => {
-            setWeekPlanningDialog((current) => current ? { ...current, selectedIds } : current);
+            setWeekPlanningDialog((current) => current ? {
+              ...current,
+              operations: current.operations.map((operation, index) =>
+                index === current.activeIndex ? { ...operation, selectedIds } : operation,
+              ),
+            } : current);
           }}
-          onConfirm={confirmWeekPlanningDialog}
+          onConfirm={() => {
+            void confirmWeekPlanningDialog();
+          }}
           onClose={() => setWeekPlanningDialog(null)}
         />
       ) : null}
@@ -3409,12 +3574,19 @@ export function CalendarWeekView({
         description={appointmentEmployeeDialog?.description ?? ""}
         previewItems={appointmentEmployeeDialog?.previewItems ?? []}
         selectedIds={appointmentEmployeeDialog?.selectedIds ?? []}
-        isSubmitting={assignAppointmentEmployeesMutation.isPending}
+        isSubmitting={assignAppointmentEmployeesMutation.isPending || removeAppointmentEmployeeMutation.isPending}
         onSelectedIdsChange={(ids) => {
           setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
         }}
         onConfirm={() => {
           if (!appointmentEmployeeDialog) return;
+          if (appointmentEmployeeDialog.action === "remove" && typeof appointmentEmployeeDialog.employeeId === "number") {
+            removeAppointmentEmployeeMutation.mutate({
+              appointmentId: appointmentEmployeeDialog.appointmentId,
+              employeeId: appointmentEmployeeDialog.employeeId,
+            });
+            return;
+          }
           assignAppointmentEmployeesMutation.mutate({
             appointmentId: appointmentEmployeeDialog.appointmentId,
             employeeIds: Array.from(new Set([
@@ -3424,7 +3596,7 @@ export function CalendarWeekView({
           });
         }}
         onClose={() => setAppointmentEmployeeDialog(null)}
-        confirmLabel="Zuweisen"
+        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Entfernen" : "Zuweisen"}
       />
       <WorkflowNoteRemovalDialog
         open={noteRemovalDialog !== null}
@@ -3440,6 +3612,24 @@ export function CalendarWeekView({
           });
           setNoteRemovalDialog(null);
         }}
+      />
+      <ConfirmDialogBase
+        open={pendingWeekBlock !== null}
+        onOpenChange={(open) => {
+          if (!open && !blockWeekMutation.isPending) setPendingWeekBlock(null);
+        }}
+        icon={<Lock className="h-5 w-5" />}
+        title="Wochenplanung blockieren?"
+        description={pendingWeekBlock
+          ? `${pendingWeekBlock.tourLabel ?? "Diese Tour-KW"} ${buildWeekPlanningLabel(pendingWeekBlock.isoYear, pendingWeekBlock.isoWeek)} wird blockiert. Danach sind Ressourcenänderungen in dieser Tour-KW gesperrt, bis sie wieder freigegeben wird.`
+          : undefined}
+        confirmLabel="Blockieren"
+        pendingLabel="Blockieren..."
+        isPending={blockWeekMutation.isPending}
+        onConfirm={() => {
+          void confirmPendingWeekBlock();
+        }}
+        testId="dialog-tour-week-block-confirm"
       />
       <ConfirmDialogBase
         open={pendingInlineNoteDelete !== null}

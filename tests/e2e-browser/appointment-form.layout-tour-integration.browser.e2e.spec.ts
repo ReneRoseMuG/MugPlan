@@ -49,7 +49,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
 import { MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
-import { tags, tourWeekEmployees, tours } from "../../shared/schema";
+import { appointmentEmployees, tags, tourWeekEmployees, tours } from "../../shared/schema";
 import {
   createAppointmentFixture,
   createCustomerFixture,
@@ -767,6 +767,53 @@ test("rechecks week planning when the start date moves into another ISO week on 
     startDate: targetWeekSecondDate,
     tourId: tour.id,
     employeeIds: [plannedEmployee.id],
+  });
+});
+
+test("shows a resource conflict dialog before saving a pure date move in the same tour week", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "FT04-PURE-DATE-CONFLICT", name: "FT04 Pure Date Conflict" });
+  const tour = await createTourFixture("#b91c1c");
+  const employee = await createEmployeeFixture("FT04-PURE-DATE-EMP");
+  await seedAppointmentFormNoise("FT04-PURE-DATE-CONFLICT", nextWeek.weekSecondDate);
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekStartDate,
+    tourId: tour.id,
+    employeeIds: [employee.id],
+  });
+  const conflictingAppointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [],
+  });
+  await db.insert(appointmentEmployees).values({
+    appointmentId: conflictingAppointment.id,
+    employeeId: employee.id,
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId("input-start-date").fill(nextWeek.weekSecondDate);
+  await page.getByTestId("button-save-appointment").click();
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("Überschneidung im Zielzeitraum");
+  await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).not.toBeChecked();
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      startDate: body.startDate,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id),
+    };
+  }).toEqual({
+    startDate: nextWeek.weekSecondDate,
+    employeeIds: [],
   });
 });
 

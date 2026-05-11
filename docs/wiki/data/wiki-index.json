@@ -237,13 +237,7 @@
       "dringlichkeit_id": "prio-hoch",
       "master_task": "tasks/dialog-rollout-masterplan.md",
       "aufgaben": [
-        "tasks/projekte-und-dokumentextraktion-dialoge.md",
-        "tasks/termin-tour-kw-mutationsdialoge.md",
-        "tasks/ft04-dialog-basiskomponente.md",
-        "tasks/tour-kw-termin-mutationsdialoge.md",
-        "tasks/ft04-multistep-tour-kw-dialog.md",
-        "tasks/ft04-multiselect-kw-planung-wochenkalender.md",
-        "tasks/termine-und-kalenderdialoge.md"
+        "tasks/projekte-und-dokumentextraktion-dialoge.md"
       ],
       "entscheidungen": []
     },

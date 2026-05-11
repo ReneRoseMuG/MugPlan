@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 24,
-      "generated_count": 24,
+      "source_count": 18,
+      "generated_count": 18,
       "warnings": 0,
       "errors": 0
     },
@@ -38,8 +38,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 62,
-      "generated_count": 62,
+      "source_count": 63,
+      "generated_count": 63,
       "warnings": 0,
       "errors": 0
     }
@@ -114,46 +114,10 @@
         "errors": []
       },
       {
-        "id": "A-09",
-        "title": "FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente",
-        "source": "tasks/ft04-dialog-basiskomponente.md",
-        "output": "projekt/aufgaben/ft04-dialog-basiskomponente.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-10",
-        "title": "FT-04 mehrstufiger Tour-KW-Dialog",
-        "source": "tasks/ft04-multistep-tour-kw-dialog.md",
-        "output": "projekt/aufgaben/ft04-multistep-tour-kw-dialog.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-11",
         "title": "FT-19 Attachment-Testlücken schließen",
         "source": "tasks/ft19-attachment-testluecken.md",
         "output": "projekt/aufgaben/ft19-attachment-testluecken.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-12",
-        "title": "Termin- und Tour-KW-Mutationsdialoge vereinheitlichen",
-        "source": "tasks/termin-tour-kw-mutationsdialoge.md",
-        "output": "projekt/aufgaben/termin-tour-kw-mutationsdialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-13",
-        "title": "FT-04 Multiselect für KW-Planung im Wochenkalender",
-        "source": "tasks/ft04-multiselect-kw-planung-wochenkalender.md",
-        "output": "projekt/aufgaben/ft04-multiselect-kw-planung-wochenkalender.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -172,24 +136,6 @@
         "title": "Dialog-Rollout-Masterplan",
         "source": "tasks/dialog-rollout-masterplan.md",
         "output": "projekt/aufgaben/dialog-rollout-masterplan.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-19",
-        "title": "Tour-KW- und Termin-Mutationsdialoge",
-        "source": "tasks/tour-kw-termin-mutationsdialoge.md",
-        "output": "projekt/aufgaben/tour-kw-termin-mutationsdialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-20",
-        "title": "Termine- und Kalenderdialoge",
-        "source": "tasks/termine-und-kalenderdialoge.md",
-        "output": "projekt/aufgaben/termine-und-kalenderdialoge.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -2900,6 +2846,15 @@
         "title": "11.05.26 | Abschluss | P01 Benutzer- und Sicherheitsdialoge",
         "source": "journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.md",
         "output": "verwaltung/journal/11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen",
+        "title": "11.05.26 | Abschluss | P01 Ressourcenplanung-Dialoge",
+        "source": "journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md",
+        "output": "verwaltung/journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.html",
         "ok": true,
         "warnings": [],
         "errors": []

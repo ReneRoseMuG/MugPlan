@@ -36,8 +36,10 @@ const useQueryMock = vi.fn();
 const setEditingTourMock = vi.fn();
 const setIsCreatingMock = vi.fn();
 const setCascadeDialogStateMock = vi.fn();
+const setPendingBlockWeekMock = vi.fn();
 const tourEditFormCalls: Array<Record<string, unknown>> = [];
 const cascadeDialogCalls: Array<Record<string, unknown>> = [];
+const confirmDialogCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("@tanstack/react-query", () => ({
   useQuery: (options: unknown) => useQueryMock(options),
@@ -110,6 +112,13 @@ vi.mock("@/components/ui/button", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/dialog-base", () => ({
+  ConfirmDialogBase: (props: Record<string, unknown>) => {
+    confirmDialogCalls.push(props);
+    return <section data-testid={props.testId as string | undefined}>confirm-dialog</section>;
+  },
+}));
+
 vi.mock("@/components/ui/list-layout", () => ({
   ListLayout: ({ footerSlot, contentSlot }: { footerSlot?: React.ReactNode; contentSlot?: React.ReactNode }) => (
     <section>
@@ -167,6 +176,7 @@ async function loadTourManagement(options?: {
   isCreating?: boolean;
   activeTourWeek?: Record<string, unknown> | null;
   cascadeDialogState?: Record<string, unknown> | null;
+  pendingBlockWeek?: Record<string, unknown> | null;
 }) {
   vi.resetModules();
 
@@ -188,6 +198,9 @@ async function loadTourManagement(options?: {
         }
         if (stateCall === 4) {
           return [options?.cascadeDialogState ?? null, setCascadeDialogStateMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
+        }
+        if (stateCall === 5) {
+          return [options?.pendingBlockWeek ?? null, setPendingBlockWeekMock] as unknown as [T, React.Dispatch<React.SetStateAction<T>>];
         }
         return actual.useState(initial);
       }) as typeof actual.useState,
@@ -226,7 +239,9 @@ describe("FT07 TourManagement behavior", () => {
     setEditingTourMock.mockReset();
     setIsCreatingMock.mockReset();
     setCascadeDialogStateMock.mockReset();
+    setPendingBlockWeekMock.mockReset();
     useQueryMock.mockReset();
+    confirmDialogCalls.length = 0;
     useQueryMock.mockImplementation((options: { queryKey: unknown }) => {
       const key = Array.isArray(options.queryKey) ? options.queryKey[0] : options.queryKey;
       if (key === "/api/tours") return { data: [tour], isLoading: false };
@@ -419,9 +434,18 @@ describe("FT07 TourManagement behavior", () => {
     expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
       open: true,
       mode: "add",
-      isoYear: 2099,
-      isoWeek: 6,
-      selectedIds: [900],
+      activeIndex: 0,
+      phase: "preview",
+      operations: [
+        expect.objectContaining({
+          isoYear: 2099,
+          isoWeek: 6,
+          employeeId: 11,
+          employeeName: "Mia Tour",
+          selectedIds: [900],
+          executionStatus: "pending",
+        }),
+      ],
     }));
   });
 
@@ -476,50 +500,40 @@ describe("FT07 TourManagement behavior", () => {
       isoWeek: 6,
       employeeId: 11,
     });
-    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add/preview", {
+      isoYear: 2099,
+      isoWeek: 6,
+      employeeId: 12,
+    });
+
+    const lastDialogCall = setCascadeDialogStateMock.mock.calls[setCascadeDialogStateMock.mock.calls.length - 1];
+    const dialogState = lastDialogCall[0] as {
+      operations: Array<{ employeeId: number; employeeName: string; selectedIds: number[]; executionStatus?: string }>;
+    };
+    expect(dialogState).toMatchObject({
       open: true,
       mode: "add",
-      employeeId: 11,
-      remainingEmployeeIds: [12],
-    }));
+      activeIndex: 0,
+      phase: "preview",
+    });
+    expect(dialogState.operations).toHaveLength(2);
+    expect(dialogState.operations.map((operation) => operation.employeeId)).toEqual([11, 12]);
+    expect(dialogState.operations.map((operation) => operation.employeeName)).toEqual(["Mia Tour", "Nora Queue"]);
+    expect(dialogState.operations.map((operation) => operation.selectedIds)).toEqual([[900], [900]]);
+    expect(dialogState.operations.map((operation) => operation.executionStatus)).toEqual(["pending", "pending"]);
   });
 
-  it("executes week planning updates, refreshes dependent views and opens the next queued preview", async () => {
+  it("executes queued week planning updates serially after final confirmation", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
       if (method === "POST" && url === "/api/tours/5/week-employees/add") {
         return {
           ok: true,
           json: async () => ({
             updatedAppointmentCount: (payload as { selectedAppointmentIds: number[] }).selectedAppointmentIds.length,
-            skipped: [],
-          }),
-        };
-      }
-      if (method === "POST" && url === "/api/tours/5/week-employees/add/preview") {
-        return {
-          ok: true,
-          json: async () => ({
-            isoYear: 2099,
-            isoWeek: 6,
-            weekStartDate: "2099-02-02",
-            weekEndDate: "2099-02-08",
-            employee: {
-              employeeId: 12,
-              fullName: "Nora Queue",
-            },
-            items: [{
-              appointmentId: 901,
-              startDate: "2099-02-04",
-              endDate: null,
-              customerName: "Kunde Zwei",
-              projectName: "Projekt Zwei",
-              status: "will_add",
-              selectable: true,
-              conflictReason: null,
-            }],
-          }),
-        };
-      }
+          skipped: [],
+        }),
+      };
+    }
       return {
         ok: true,
         json: async () => ({}),
@@ -532,24 +546,52 @@ describe("FT07 TourManagement behavior", () => {
       cascadeDialogState: {
         open: true,
         mode: "add",
-        tourId: 5,
-        isoYear: 2099,
-        isoWeek: 6,
-        weekLabel: "KW 06 / 2099",
-        employeeId: 11,
-        employeeName: "Mia Tour",
-        previewItems: [{
-          appointmentId: 900,
-          startDate: "2099-02-03",
-          endDate: null,
-          customerName: "Kunde Eins",
-          projectName: "Projekt Eins",
-          status: "will_add",
-          selectable: true,
-          conflictReason: null,
-        }],
-        selectedIds: [900],
-        remainingEmployeeIds: [12],
+        activeIndex: 1,
+        phase: "preview",
+        operations: [
+          {
+            mode: "add",
+            tourId: 5,
+            isoYear: 2099,
+            isoWeek: 6,
+            weekLabel: "KW 06 / 2099",
+            employeeId: 11,
+            employeeName: "Mia Tour",
+            previewItems: [{
+              appointmentId: 900,
+              startDate: "2099-02-03",
+              endDate: null,
+              customerName: "Kunde Eins",
+              projectName: "Projekt Eins",
+              status: "will_add",
+              selectable: true,
+              conflictReason: null,
+            }],
+            selectedIds: [900],
+            executionStatus: "pending",
+          },
+          {
+            mode: "add",
+            tourId: 5,
+            isoYear: 2099,
+            isoWeek: 6,
+            weekLabel: "KW 06 / 2099",
+            employeeId: 12,
+            employeeName: "Nora Queue",
+            previewItems: [{
+              appointmentId: 901,
+              startDate: "2099-02-04",
+              endDate: null,
+              customerName: "Kunde Zwei",
+              projectName: "Projekt Zwei",
+              status: "will_add",
+              selectable: true,
+              conflictReason: null,
+            }],
+            selectedIds: [901],
+            executionStatus: "pending",
+          },
+        ],
       },
     });
 
@@ -568,11 +610,14 @@ describe("FT07 TourManagement behavior", () => {
       employeeId: 11,
       selectedAppointmentIds: [900],
     });
-    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add/preview", {
+    expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/week-employees/add", {
       isoYear: 2099,
       isoWeek: 6,
       employeeId: 12,
+      selectedAppointmentIds: [901],
     });
+    const executeCalls = apiRequestMock.mock.calls.filter(([, url]) => url === "/api/tours/5/week-employees/add");
+    expect(executeCalls.map(([, , payload]) => (payload as { employeeId: number }).employeeId)).toEqual([11, 12]);
     const activeMembersInvalidation = invalidateQueriesMock.mock.calls
       .map(([options]) => options as { predicate?: (query: { queryKey: unknown[] }) => boolean })
       .find((options) => typeof options.predicate === "function"
@@ -588,20 +633,16 @@ describe("FT07 TourManagement behavior", () => {
       .find((options) => typeof options.predicate === "function"
         && options.predicate?.({ queryKey: ["calendarWeekLaneEmployeePreviews", "2099-02-02", "2099-02-08"] }));
     expect(lanePreviewInvalidation).toBeTruthy();
-    expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(1);
+    expect(invalidateTagProjectionQueriesMock).toHaveBeenCalledTimes(2);
     expect(invalidateQueriesMock).toHaveBeenCalledWith(expect.objectContaining({
       queryKey: ["/api/tours"],
     }));
     expect(refreshMonitoringWithNotificationMock).toHaveBeenCalledWith(toastMock);
     expect(toastMock).toHaveBeenCalledWith(expect.objectContaining({
       title: "Wochenplanung gespeichert",
-      description: "1 Termine wurden aktualisiert.",
+      description: "2 Termine wurden aktualisiert.",
     }));
-    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(expect.objectContaining({
-      employeeId: 12,
-      employeeName: "Nora Queue",
-      remainingEmployeeIds: [],
-    }));
+    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(null);
   });
 
   it("confirms week blocking without surfacing silent appointment-adjustment counts", async () => {
@@ -626,12 +667,42 @@ describe("FT07 TourManagement behavior", () => {
       editingTour: { ...tour },
       isCreating: false,
       cascadeDialogState: null,
+      pendingBlockWeek: null,
     });
 
     renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
 
     const onBlockWeek = tourEditFormCalls[0].onBlockWeek as (params: { isoYear: number; isoWeek: number }) => Promise<void>;
     await onBlockWeek({ isoYear: 2099, isoWeek: 6 });
+
+    expect(setPendingBlockWeekMock).toHaveBeenCalledWith({
+      tourId: 5,
+      isoYear: 2099,
+      isoWeek: 6,
+    });
+    expect(apiRequestMock).not.toHaveBeenCalled();
+
+    confirmDialogCalls.length = 0;
+    const { TourManagement: TourManagementWithPendingBlock } = await loadTourManagement({
+      editingTour: { ...tour },
+      isCreating: false,
+      cascadeDialogState: null,
+      pendingBlockWeek: { tourId: 5, isoYear: 2099, isoWeek: 6 },
+    });
+
+    renderToStaticMarkup(<TourManagementWithPendingBlock userRole="ADMIN" />);
+
+    expect(confirmDialogCalls[0]).toMatchObject({
+      open: true,
+      title: "Wochenplanung blockieren?",
+      confirmLabel: "Blockieren",
+      testId: "dialog-tour-week-block-confirm",
+    });
+
+    const onConfirmBlockWeek = confirmDialogCalls[0].onConfirm as () => void;
+    onConfirmBlockWeek();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(apiRequestMock).toHaveBeenCalledWith("POST", "/api/tours/5/weeks/2099/6/block");
     expect(toastMock).toHaveBeenCalledWith({

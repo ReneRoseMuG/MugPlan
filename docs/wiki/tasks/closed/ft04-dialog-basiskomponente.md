@@ -4,7 +4,7 @@ Eine wiederverwendbare Bestätigungs-Dialog-Basiskomponente soll die fachlich ve
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Implementierung | 06.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Implementierung | 06.05.26 |
 
 ---
 
@@ -83,9 +83,27 @@ Die Mehrfach-Mitarbeiterzuweisung in der Tour-KW-Wochenplanung läuft derzeit ü
 
 ---
 
+## Abschluss 11.05.26
+
+Die Aufgabe ist im Ressourcenplanungsabschluss umgesetzt. Der neue `ResourcePlanningDialog` stellt die fachliche Bestätigungsbasis für Tour-KW- und Terminressourcen bereit und bündelt Vorschau, Konfliktanzeige, Auswahl, Bestätigung, Ausführungsstand, Erfolg und Fehlerzustände in einem gemeinsamen Rahmen. `TourEmployeeCascadeDialog` bleibt als kompatibler Wrapper erhalten, damit bestehende Aufrufpfade stabil bleiben.
+
+Rollen und Durchsetzung bleiben unverändert: `ADMIN` und `DISPONENT` dürfen die bestehenden Ressourcenmutationen nur im Rahmen der serverseitigen Regeln ausführen; `READER`/`LESER` bleibt auf lesende Pfade beschränkt. UI-Sichtbarkeit ersetzt keine Backend-Prüfung.
+
+### Verifikation
+
+- `npm run check`
+- `npm run test:unit`
+- `npm run test:integration`
+- `npm run test:e2e`
+- gezielte Browser-E2E für Terminformular, Kalender-Drag-&-Drop, Tour-KW-Form, Wochenkalender-Personal, Abwesenheiten und Reader-Readonly
+- `git diff --check`
+
+Verbleibende Lücke: Der vollständige `npm run test:all` wurde versucht, aber durch das Tool-Timeout beendet. Die Testebenen wurden anschließend seriell und die betroffenen Browser-Spezifikationen gezielt erfolgreich ausgeführt.
+
 ## Beziehungen
 
 - Features: FT-04 Tourenplanung · FT-03 Kalenderansichten · FT-01 Kalendertermine
 - Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen · UC 01/03 - Termin verschieben · UC 01/05 - Tour einem Termin zuweisen · UC 01/15 - Optimistic Locking bei paralleler Bearbeitung
 - Entscheidungen: —
+- Journal: [P01 Ressourcenplanung-Dialoge abgeschlossen](../../journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
 - Weitere Bezüge: [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md) · FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender · FT-03 Termin markieren und per Einfügen verschieben

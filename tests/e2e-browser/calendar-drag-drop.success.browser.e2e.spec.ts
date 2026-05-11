@@ -68,6 +68,11 @@ test("moves a regular future appointment onto another future day in the month sh
 
   await appointmentBar.dragTo(targetCalendarDay);
 
+  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(resourceDialog).toBeVisible();
+  await expect(resourceDialog).toContainText("Termin verschieben");
+  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
 

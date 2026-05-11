@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen: 11.05.26 | Abschluss | P01 Ressourcenplanung-Dialoge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen 11.05.26 | Abschluss | P01 Ressourcenplanung-Dialoge</span></nav>
+        <h1 class="wiki-h1">11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen: 11.05.26 | Abschluss | P01 Ressourcenplanung-Dialoge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>11.05.26</div>
+    <p class="wiki-lead">Der P-01-Restblock zur Ressourcenplanung ist umgesetzt. Tour-KW-Planung, Terminänderungen, Kalenderbewegungen, direkte Termin-Mitarbeiteraktionen, Tour-KW-Sperren und Abwesenheitskonflikte nutzen jetzt soweit fachlich passend einen gemeinsamen Ressourcenplanungsrahmen für Vorscha</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der P-01-Restblock zur Ressourcenplanung ist umgesetzt. Tour-KW-Planung, Terminänderungen, Kalenderbewegungen, direkte Termin-Mitarbeiteraktionen, Tour-KW-Sperren und Abwesenheitskonflikte nutzen jetzt soweit fachlich passend einen gemeinsamen Ressourcenplanungsrahmen für Vorschau, Konfliktanzeige, Auswahl, Bestätigung, Ausführungsstand und Fehlerzustände.</p>
+<p>Die Aufgaben A-09, A-10, A-12, A-13, A-19 und A-20 sind als abgeschlossen dokumentiert und in <code>docs/wiki/tasks/closed/</code> verschoben. P-01 bleibt als Projektseite weiterhin die Klammer für die übrigen noch offenen Dialogthemen.</p>
+<h2 class="wiki-h2">Umsetzung</h2>
+<ul><li><code>ResourcePlanningDialog</code> bündelt die gemeinsame Dialogstruktur für Tour-KW- und Terminressourcen.</li><li><code>TourEmployeeCascadeDialog</code> bleibt als kompatibler Wrapper erhalten.</li><li>Tour-KW-Multiselect sammelt Vorschauen und führt bestätigte Schritte erst nach finaler Gesamtbestätigung seriell aus.</li><li>Terminformular und Kalenderbewegungen nutzen vor ressourcenrelevanten Änderungen den Preview-Pfad.</li><li>Reine Terminzeit- und Datumsverschiebungen im gleichen Tour-/KW-Kontext zeigen aktuelle Mitarbeiterkonflikte vor dem Speichern.</li><li>Direkte Termin-Mitarbeiterzuweisung und Entfernung laufen über den Ressourcenplanungsdialog.</li><li>Tour-KW-Blockieren nutzt in Tourformular und Wochenkalender denselben Bestätigungsdialog.</li><li>Abwesenheitsflüsse bleiben in die Ressourcenbereinigung eingebunden.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> und <code>DISPONENT</code> dürfen die bestehenden Ressourcenmutationen ausführen, sofern serverseitige Sperren, Zeitraumregeln, Versionsstände und Fachvalidierungen dies erlauben.</li><li><code>READER</code>/<code>LESER</code> darf die betroffenen Ansichten sehen, aber keine Ressourcenmutation ausführen.</li><li>Die serverseitige Durchsetzung bleibt maßgeblich. UI-Dialoge, ausgeblendete Aktionen und deaktivierte Checkboxen ersetzen keine Backend-Prüfung.</li></ul>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li><code>npm run check</code> erfolgreich.</li><li><code>npm run test:unit</code> erfolgreich mit 305 Dateien, 1273 bestandenen Tests und 1 übersprungenen Test.</li><li><code>npm run test:integration</code> erfolgreich mit 126 Dateien, 704 bestandenen Tests und 4 übersprungenen Tests.</li><li><code>npm run test:e2e</code> erfolgreich.</li><li>Browser-E2E gezielt erfolgreich für Terminformular, Kalender-Drag-&amp;-Drop, Wochenkalender-Personal, Tour-KW-Form, Abwesenheiten und Reader-Readonly.</li><li><code>git diff --check</code> erfolgreich.</li><li>Datumsformat-Suchlauf gemäß Projektregel durchgeführt; verbleibende Treffer sind technische ISO-Kontexte, Testdaten oder bestehende Regeltexte.</li></ul>
+<p><code>npm run test:all</code> wurde versucht, aber nach 20 Minuten durch das Tool-Timeout beendet. Danach wurden die Testebenen seriell und die betroffenen Browser-Spezifikationen gezielt erfolgreich ausgeführt.</p>
+<h2 class="wiki-h2">Verknüpfungen</h2>
+<ul><li>Projekt: <a href="../../projekt/projekte/dialog-rollout.html">P01 Dialog-Rollout</a></li><li>Aufgaben: <a href="../../../tasks/closed/ft04-dialog-basiskomponente.md">A-09 FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente</a> · <a href="../../../tasks/closed/ft04-multistep-tour-kw-dialog.md">A-10 FT-04 mehrstufiger Tour-KW-Dialog</a> · <a href="../../../tasks/closed/termin-tour-kw-mutationsdialoge.md">A-12 Termin- und Tour-KW-Mutationsdialoge vereinheitlichen</a> · <a href="../../../tasks/closed/ft04-multiselect-kw-planung-wochenkalender.md">A-13 FT-04 Multiselect für KW-Planung im Wochenkalender</a> · <a href="../../../tasks/closed/tour-kw-termin-mutationsdialoge.md">A-19 Tour-KW- und Termin-Mutationsdialoge</a> · <a href="../../../tasks/closed/termine-und-kalenderdialoge.md">A-20 Termine- und Kalenderdialoge</a></li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

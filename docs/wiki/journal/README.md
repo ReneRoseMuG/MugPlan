@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [11.05.26 - P01 Ressourcenplanung-Dialoge abgeschlossen](11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
 - [11.05.26 - Test-Harness nach Dialogbasis-Rollout bereinigt](11-05-26-test-harness-dialogbasis-bereinigt.md)
 - [11.05.26 - P01: Benutzer- und Sicherheitsdialoge abgeschlossen](11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.md)
 - [11.05.26 - P01: A-14 Mitarbeiter-Auswahl als Basiskomponente](11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente.md)

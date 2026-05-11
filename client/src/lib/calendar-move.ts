@@ -1,5 +1,11 @@
 import { isAbsenceTourName } from "@shared/absenceAppointments";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
+import {
+  buildEmployeeIdsFromResourcePreviewSelection,
+  getDefaultResourcePreviewSelection,
+  type AppointmentResourcePreviewItem,
+  type AppointmentResourcePreviewResponse,
+} from "@/lib/resource-planning";
 
 export type CalendarMoveSelection = {
   id: number;
@@ -27,22 +33,8 @@ export type CalendarMoveRequest = {
   mode: "drag" | "insert";
 };
 
-export type AppointmentWeekEmployeePreviewItem = {
-  employeeId: number;
-  employeeName: string;
-  status: "will_add" | "conflict" | "already_present" | "current_only";
-  selectable: boolean;
-  conflictReason: string | null;
-  source?: "week_plan" | "available" | "current";
-};
-
-export type AppointmentWeekEmployeePreviewResponse = {
-  isoYear: number;
-  isoWeek: number;
-  hasWeekPlan: boolean;
-  currentEmployeeIds: number[];
-  items: AppointmentWeekEmployeePreviewItem[];
-};
+export type AppointmentWeekEmployeePreviewItem = AppointmentResourcePreviewItem;
+export type AppointmentWeekEmployeePreviewResponse = AppointmentResourcePreviewResponse;
 
 const normalizeTourName = (value: string | null | undefined) =>
   (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
@@ -87,9 +79,7 @@ export function formatCalendarMoveDate(dateValue: string): string {
 }
 
 export function getDefaultPreviewSelection(preview: AppointmentWeekEmployeePreviewResponse): number[] {
-  return preview.items
-    .filter((item) => item.selectable && item.status === "will_add" && (item.source ?? "week_plan") === "week_plan")
-    .map((item) => item.employeeId);
+  return getDefaultResourcePreviewSelection(preview);
 }
 
 export function buildEmployeeIdsFromPreviewSelection(
@@ -97,14 +87,5 @@ export function buildEmployeeIdsFromPreviewSelection(
   selectedIds: number[],
   resolutionMode: "additive" | "replace",
 ): number[] {
-  if (resolutionMode === "additive") {
-    return Array.from(new Set([...preview.currentEmployeeIds, ...selectedIds]));
-  }
-
-  const selectedSet = new Set(selectedIds);
-  return Array.from(new Set(
-    preview.items
-      .filter((item) => item.status === "already_present" || selectedSet.has(item.employeeId))
-      .map((item) => item.employeeId),
-  ));
+  return buildEmployeeIdsFromResourcePreviewSelection(preview, selectedIds, resolutionMode);
 }

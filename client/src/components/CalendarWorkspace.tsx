@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
@@ -15,16 +15,6 @@ import {
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
@@ -52,7 +42,7 @@ type CalendarAbsenceMode = "planning" | "absences";
 type PendingCalendarMove = {
   request: CalendarMoveRequest;
   targetEndDate: string | null;
-  preview: AppointmentWeekEmployeePreviewResponse | null;
+  preview: AppointmentWeekEmployeePreviewResponse;
   selectedIds: number[];
   resolutionMode: "additive" | "replace";
 };
@@ -480,35 +470,15 @@ export function CalendarWorkspace({
       return;
     }
 
-    const sourceWeekKey = `${getISOWeekYear(parseISO(request.appointment.startDate))}-${getISOWeek(parseISO(request.appointment.startDate))}`;
-    const targetWeekKey = `${getISOWeekYear(parseISO(request.targetStartDate))}-${getISOWeek(parseISO(request.targetStartDate))}`;
-    const needsPreview = request.appointment.tourId !== request.targetTourId || sourceWeekKey !== targetWeekKey;
-
     try {
-      if (needsPreview) {
-        const preview = await fetchCalendarMovePreview(request, targetEndDate);
-        setPendingCalendarMove({
-          request,
-          targetEndDate,
-          preview,
-          selectedIds: getDefaultPreviewSelection(preview),
-          resolutionMode: "additive",
-        });
-        return;
-      }
-
-      if (request.mode === "insert") {
-        setPendingCalendarMove({
-          request,
-          targetEndDate,
-          preview: null,
-          selectedIds: [],
-          resolutionMode: "additive",
-        });
-        return;
-      }
-
-      await executeCalendarMove(request, targetEndDate, request.appointment.employeeIds);
+      const preview = await fetchCalendarMovePreview(request, targetEndDate);
+      setPendingCalendarMove({
+        request,
+        targetEndDate,
+        preview,
+        selectedIds: getDefaultPreviewSelection(preview),
+        resolutionMode: "additive",
+      });
     } catch (error) {
       toast({
         title: "Verschieben nicht möglich",
@@ -520,13 +490,11 @@ export function CalendarWorkspace({
 
   const confirmPendingCalendarMove = async () => {
     if (!pendingCalendarMove) return;
-    const employeeIds = pendingCalendarMove.preview
-      ? buildEmployeeIdsFromPreviewSelection(
-          pendingCalendarMove.preview,
-          pendingCalendarMove.selectedIds,
-          pendingCalendarMove.resolutionMode,
-        )
-      : pendingCalendarMove.request.appointment.employeeIds;
+    const employeeIds = buildEmployeeIdsFromPreviewSelection(
+      pendingCalendarMove.preview,
+      pendingCalendarMove.selectedIds,
+      pendingCalendarMove.resolutionMode,
+    );
     await executeCalendarMove(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
   };
 
@@ -753,12 +721,12 @@ export function CalendarWorkspace({
           />
         </div>
       )}
-      {pendingCalendarMove?.preview ? (
+      {pendingCalendarMove ? (
         <TourEmployeeCascadeDialog
           variant="appointment"
           open
           title="Termin verschieben"
-          description="Wählen Sie aus, welche Mitarbeiter aus der Ziel-Tour-KW in den Termin übernommen werden."
+          description="Prüfen Sie vor dem Verschieben, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen."
           previewItems={pendingCalendarMove.preview.items}
           selectedIds={pendingCalendarMove.selectedIds}
           resolutionMode={pendingCalendarMove.resolutionMode}
@@ -779,39 +747,6 @@ export function CalendarWorkspace({
           }}
         />
       ) : null}
-      <AlertDialog
-        open={pendingCalendarMove !== null && pendingCalendarMove.preview === null}
-        onOpenChange={(open) => {
-          if (!open && !isCalendarMoveSubmitting) setPendingCalendarMove(null);
-        }}
-      >
-        <AlertDialogContent data-testid="dialog-calendar-move-confirm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Termin verschieben?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingCalendarMove ? (
-                <>
-                  Der markierte Termin wird nach {pendingCalendarMove.request.targetTourName ?? "Ziel-Tour"} am{" "}
-                  {formatCalendarMoveDate(pendingCalendarMove.request.targetStartDate)} verschoben.
-                </>
-              ) : null}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCalendarMoveSubmitting}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isCalendarMoveSubmitting}
-              onClick={(event) => {
-                event.preventDefault();
-                void confirmPendingCalendarMove();
-              }}
-              data-testid="button-calendar-move-confirm"
-            >
-              {isCalendarMoveSubmitting ? "Verschieben..." : "Verschieben"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

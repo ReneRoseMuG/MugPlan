@@ -64,6 +64,12 @@ import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
 import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import {
+  buildEmployeeIdsFromResourcePreviewSelection,
+  getDefaultResourcePreviewSelection,
+  hasResourcePreviewDecision,
+  type AppointmentResourcePreviewResponse,
+} from "@/lib/resource-planning";
+import {
   createEmptyProjectProductSelections,
   type ProjectProductSelections,
 } from "@/lib/project-product-form";
@@ -206,21 +212,7 @@ type CreateAppointmentNoteMutationVariables = {
   openEditorOnSuccess?: boolean;
 };
 
-type AppointmentWeekEmployeePreviewItem = {
-  employeeId: number;
-  employeeName: string;
-  status: "will_add" | "conflict" | "already_present" | "current_only";
-  selectable: boolean;
-  conflictReason: string | null;
-};
-
-type AppointmentWeekEmployeePreviewResponse = {
-  isoYear: number;
-  isoWeek: number;
-  hasWeekPlan: boolean;
-  currentEmployeeIds: number[];
-  items: AppointmentWeekEmployeePreviewItem[];
-};
+type AppointmentWeekEmployeePreviewResponse = AppointmentResourcePreviewResponse;
 
 type AppointmentWeekPreviewDialogState = {
   open: boolean;
@@ -401,6 +393,31 @@ const buildAppointmentWeekResolutionKey = (tourId: number | null, startDate: str
   return `${tourId}-${buildIsoWeekKey(startDate)}`;
 };
 
+const buildAppointmentResourceResolutionKey = (params: {
+  tourId: number | null;
+  startDate: string;
+  endDate: string | null;
+  startTime: string | null;
+  employeeIds: number[];
+}) => {
+  const weekKey = buildAppointmentWeekResolutionKey(params.tourId, params.startDate)
+    ?? `ohne-tour-${buildIsoWeekKey(params.startDate)}`;
+  const sortedEmployeeIds = [...params.employeeIds].sort((a, b) => a - b).join(",");
+  return [
+    weekKey,
+    params.endDate ?? "",
+    params.startTime ?? "",
+    sortedEmployeeIds,
+  ].join("|");
+};
+
+const areEmployeeIdsEqual = (left: number[], right: number[]) => {
+  if (left.length !== right.length) return false;
+  const leftSorted = [...left].sort((a, b) => a - b);
+  const rightSorted = [...right].sort((a, b) => a - b);
+  return leftSorted.every((value, index) => value === rightSorted[index]);
+};
+
 const shiftEndDateByStartDateChange = (
   currentStartDate: string,
   currentEndDate: string,
@@ -420,28 +437,6 @@ const shiftEndDateByStartDateChange = (
 
   const durationDays = differenceInCalendarDays(parsedCurrentEndDate, parsedCurrentStartDate);
   return format(addDays(parsedNextStartDate, Math.max(0, durationDays)), "yyyy-MM-dd");
-};
-
-const getDefaultPreviewSelection = (preview: AppointmentWeekEmployeePreviewResponse) =>
-  preview.items
-    .filter((item) => item.selectable && item.status === "will_add")
-    .map((item) => item.employeeId);
-
-const buildEmployeeIdsFromPreviewSelection = (
-  preview: AppointmentWeekEmployeePreviewResponse,
-  selectedIds: number[],
-  resolutionMode: "additive" | "replace",
-) => {
-  if (resolutionMode === "additive") {
-    return Array.from(new Set([...preview.currentEmployeeIds, ...selectedIds]));
-  }
-
-  const selectedSet = new Set(selectedIds);
-  return Array.from(new Set(
-    preview.items
-      .filter((item) => item.status === "already_present" || selectedSet.has(item.employeeId))
-      .map((item) => item.employeeId),
-  ));
 };
 
 const fetchJson = async <T,>(url: string) => {
@@ -1182,14 +1177,20 @@ export function AppointmentForm({
     return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
   };
 
-  const loadAppointmentTourChangePreview = async (): Promise<AppointmentWeekEmployeePreviewResponse | null> => {
+  const loadAppointmentTourChangePreview = async (overrides?: {
+    tourId?: number | null;
+    startDate?: string;
+    endDate?: string | null;
+    startTime?: string | null;
+    employeeIds?: number[];
+  }): Promise<AppointmentWeekEmployeePreviewResponse | null> => {
     if (!appointmentId) return null;
     const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tour-change-preview`, {
-      newTourId: selectedTourId,
-      newStartDate: startDate,
-      newEndDate: isEndDateEnabled ? endDate : null,
-      newStartTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
-      currentEmployeeIds: assignedEmployeeIds,
+      newTourId: overrides?.tourId ?? selectedTourId,
+      newStartDate: overrides?.startDate ?? startDate,
+      newEndDate: overrides?.endDate ?? (isEndDateEnabled ? endDate : null),
+      newStartTime: overrides?.startTime ?? (startTimeEnabled ? buildTimeString(startTimeValue) : null),
+      currentEmployeeIds: overrides?.employeeIds ?? assignedEmployeeIds,
     });
     return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
   };
@@ -1204,7 +1205,7 @@ export function AppointmentForm({
       description: params.description,
       preview,
       resolutionKey: params.resolutionKey,
-      selectedIds: getDefaultPreviewSelection(preview),
+      selectedIds: getDefaultResourcePreviewSelection(preview),
       resolutionMode: "additive",
       persistAfterConfirm: params.persistAfterConfirm,
     });
@@ -1233,10 +1234,18 @@ export function AppointmentForm({
       }
 
       try {
-        const resolutionKey = buildAppointmentWeekResolutionKey(tourId, startDate);
-        const preview = await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
+        const resolutionKey = buildAppointmentResourceResolutionKey({
+          tourId,
+          startDate,
+          endDate: isEndDateEnabled ? endDate : null,
+          startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
+          employeeIds: assignedEmployeeIds,
+        });
+        const preview = isEditing && appointmentId
+          ? await loadAppointmentTourChangePreview({ tourId })
+          : await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
         applyTourChange(tourId);
-        if (!preview.hasWeekPlan) {
+        if (!preview || !hasResourcePreviewDecision(preview)) {
           setResolvedAppointmentWeekPlanKey(resolutionKey);
           return;
         }
@@ -1929,33 +1938,51 @@ export function AppointmentForm({
     // Kein Save bei historischen Eingaben.
     if ((isPastDateInput || isPastTimeInput) && !allowHistoricalInput) return;
 
-    const currentResolutionKey = buildAppointmentWeekResolutionKey(selectedTourId, startDate);
-    if (selectedTourId !== null && currentResolutionKey !== null && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
+    const currentEndDate = isEndDateEnabled ? endDate : null;
+    const currentStartTime = startTimeEnabled ? buildTimeString(startTimeValue) : null;
+    const currentResolutionKey = buildAppointmentResourceResolutionKey({
+      tourId: selectedTourId,
+      startDate,
+      endDate: currentEndDate,
+      startTime: currentStartTime,
+      employeeIds: assignedEmployeeIds,
+    });
+    if ((isEditing || selectedTourId !== null) && currentResolutionKey !== null && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
       try {
+        let shouldLoadResourcePreview = !isEditing;
         if (isEditing && appointmentId && appointmentDetail) {
           const originalTourId = appointmentDetail.tourId ?? null;
+          const originalStartDate = normalizeDateInputValue(appointmentDetail.startDate);
+          const originalEndDate = appointmentDetail.endDate ? normalizeDateInputValue(appointmentDetail.endDate) : null;
+          const originalStartTime = appointmentDetail.startTime ? appointmentDetail.startTime.slice(0, 8) : null;
+          const originalEmployeeIds = appointmentDetail.employees.map((employee) => employee.id);
           const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
           const currentWeekKey = buildIsoWeekKey(startDate);
           const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
+          shouldLoadResourcePreview = requiresTourPreview
+            || originalStartDate !== startDate
+            || originalEndDate !== currentEndDate
+            || originalStartTime !== currentStartTime
+            || !areEmployeeIdsEqual(originalEmployeeIds, assignedEmployeeIds);
 
-          if (requiresTourPreview) {
+          if (shouldLoadResourcePreview) {
             const preview = await loadAppointmentTourChangePreview();
-            if (preview?.hasWeekPlan) {
+            if (preview && hasResourcePreviewDecision(preview)) {
               openAppointmentWeekPreviewDialog(preview, {
                 title: "Wochenplanung vor dem Speichern prüfen",
-                description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
+                description: "Prüfen Sie vor dem Speichern, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.",
                 persistAfterConfirm: true,
                 resolutionKey: currentResolutionKey,
               });
               return;
             }
           }
-        } else {
+        } else if (selectedTourId !== null && shouldLoadResourcePreview) {
           const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
-          if (preview.hasWeekPlan) {
+          if (hasResourcePreviewDecision(preview)) {
             openAppointmentWeekPreviewDialog(preview, {
               title: "Wochenplanung vor dem Speichern prüfen",
-              description: "Tour oder Kalenderwoche wurden geändert. Prüfen Sie, welche Mitarbeiter aus der Zielplanung für diesen Termin übernommen werden sollen.",
+              description: "Prüfen Sie vor dem Speichern, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.",
               persistAfterConfirm: true,
               resolutionKey: currentResolutionKey,
             });
@@ -2537,14 +2564,21 @@ export function AppointmentForm({
 
   const handleConfirmAppointmentWeekPreview = async () => {
     if (!appointmentWeekPreviewDialog) return;
-    const nextEmployeeIds = buildEmployeeIdsFromPreviewSelection(
+    const nextEmployeeIds = buildEmployeeIdsFromResourcePreviewSelection(
       appointmentWeekPreviewDialog.preview,
       appointmentWeekPreviewDialog.selectedIds,
       appointmentWeekPreviewDialog.resolutionMode,
     );
     setAssignedEmployeeIds(nextEmployeeIds);
     const persistAfterConfirm = appointmentWeekPreviewDialog.persistAfterConfirm;
-    setResolvedAppointmentWeekPlanKey(appointmentWeekPreviewDialog.resolutionKey);
+    const resolvedResourceKey = buildAppointmentResourceResolutionKey({
+      tourId: selectedTourId,
+      startDate,
+      endDate: isEndDateEnabled ? endDate : null,
+      startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
+      employeeIds: nextEmployeeIds,
+    }) ?? appointmentWeekPreviewDialog.resolutionKey;
+    setResolvedAppointmentWeekPlanKey(resolvedResourceKey);
     setAppointmentWeekPreviewDialog(null);
     if (persistAfterConfirm) {
       await persistAppointment(nextEmployeeIds);

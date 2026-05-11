@@ -4,7 +4,7 @@ Alle Termin- und Tour-KW-bezogenen Mutationspfade, die Konflikte auslösen könn
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Analyse | 07.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Analyse | 07.05.26 |
 
 ---
 
@@ -50,9 +50,25 @@ Terminänderungen können über unterschiedliche Pfade ausgelöst werden, etwa d
 
 ---
 
+## Abschluss 11.05.26
+
+Die Analyse ist abgeschlossen und in die Ressourcenplanungsumsetzung eingeflossen. Die geprüften Pfade umfassen Tour-KW-Mitarbeiter hinzufügen und entfernen, Tour-KW-Multiselect, Termin-Tourwechsel, Termin-KW-Wechsel, reine Terminzeit- und Datumsverschiebungen, Kalender-Drag-&-Drop, Markieren und Einfügen, direkte Termin-Mitarbeiteraktionen, Tour-KW-Sperren und Abwesenheitskonflikte.
+
+Die Pfade nutzen nun soweit fachlich passend denselben Ressourcenplanungsdialog. Bekannte Fachgrenzen bleiben erhalten: Projekt- oder Kundenzuordnung für Termine, blockierende Mitarbeiterüberschneidungen, historische Sperren, Tour-KW-Schreibregeln und serverseitige Rollenprüfung.
+
+### Verifikation
+
+- `npm run check`
+- `npm run test:unit`
+- `npm run test:integration`
+- `npm run test:e2e`
+- gezielte Browser-E2E für Terminformular, Kalenderbewegungen, Wochenkalender, Tour-KW und Abwesenheiten
+- `git diff --check`
+
 ## Beziehungen
 
 - Features: FT-01 Kalendertermine · FT-03 Kalenderansichten · FT-04 Tourenplanung
 - Use Cases: UC 01/03 - Termin verschieben · UC 01/05 - Tour einem Termin zuweisen · UC 01/15 - Optimistic Locking bei paralleler Bearbeitung · UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
 - Entscheidungen: —
-- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](closed/mitarbeiter-auswahl-dialogstruktur.md) · FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender · FT-03 Termin markieren und per Einfügen verschieben
+- Journal: [P01 Ressourcenplanung-Dialoge abgeschlossen](../../journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
+- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md) · FT-03/FT-04 Tourwechsel per Drag & Drop im Wochenkalender · FT-03 Termin markieren und per Einfügen verschieben

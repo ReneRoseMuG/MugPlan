@@ -157,6 +157,12 @@ async function openWeekNotesEditor(page: Page, title: string, body: string) {
   await dialog.getByTestId("button-save-note").click();
 }
 
+async function confirmTourWeekBlockDialog(page: Page) {
+  const dialog = page.getByTestId("dialog-tour-week-block-confirm");
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Blockieren" }).click();
+}
+
 async function navigateToMonthContaining(page: Page, dateString: string) {
   await page.getByTestId("nav-monatsuebersicht").click();
   await expect(page.getByTestId("month-sheet-container")).toBeVisible();
@@ -225,6 +231,7 @@ test("Admins bearbeiten und blockieren die aktuelle Tour-KW im Tour-Formular", a
   ));
   await weekCard.getByTestId(`button-tour-week-menu-${currentWeek.isoYear}-${currentWeek.isoWeek}`).click();
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
+  await confirmTourWeekBlockDialog(page);
   const blockResponse = await blockResponsePromise;
   expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
   await expect(page.getByTestId(`text-tour-week-blocked-${currentWeek.isoYear}-${currentWeek.isoWeek}`)).toContainText("Parkplatz");
@@ -294,6 +301,7 @@ test("blocking from the tour week card parks appointments and keeps the KW visib
   await expect(weekCard).toBeVisible();
   await weekCard.getByTestId(`button-tour-week-menu-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`).click();
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).click({ force: true });
+  await confirmTourWeekBlockDialog(page);
 
   await expect(page.getByTestId(`text-tour-week-blocked-${scenario.targetWeek.isoYear}-${scenario.targetWeek.isoWeek}`)).toContainText("Parkplatz");
   await expectAppointmentParked(page, scenario.appointmentId, scenario.parkplatzTourId);
@@ -321,6 +329,7 @@ test("blocking from the week calendar KW-Plan card parks appointments and keeps 
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
     element.click();
   });
+  await confirmTourWeekBlockDialog(page);
   const blockResponse = await blockResponsePromise;
   expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
 
@@ -354,6 +363,7 @@ test("blocking a week refreshes the parked appointment edit form after the appoi
   await page.getByRole("menuitem", { name: "Wochenplanung blockieren" }).evaluate((element: HTMLElement) => {
     element.click();
   });
+  await confirmTourWeekBlockDialog(page);
   const blockResponse = await blockResponsePromise;
   expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
 

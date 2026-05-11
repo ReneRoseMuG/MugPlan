@@ -427,18 +427,36 @@ async function buildAddPreviewItems(
   });
 }
 
-function buildCurrentOnlyPreviewItems(
-  currentEmployees: Array<{ id: number; fullName: string }>,
-  weekEmployeeIds: Set<number>,
+async function buildCurrentEmployeePreviewItemsTx(
+  tx: Parameters<Parameters<typeof appointmentsRepository.withAppointmentTransaction>[0]>[0],
+  params: {
+    appointmentId?: number;
+    startDate: string;
+    endDate?: string | null;
+    startTime?: string | null;
+    currentEmployees: Array<{ id: number; fullName: string }>;
+    weekEmployeeIds: Set<number>;
+  },
 ) {
-  return currentEmployees
-    .filter((employee) => !weekEmployeeIds.has(employee.id))
+  if (params.currentEmployees.length === 0) return [];
+
+  const conflictingEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
+    employeeIds: params.currentEmployees.map((employee) => employee.id),
+    startDate: parseDateOnly(params.startDate),
+    endDate: params.endDate ? parseDateOnly(params.endDate) : null,
+    startTimeHour: parseStartTimeHour(params.startTime),
+    excludeAppointmentId: params.appointmentId,
+  });
+  const conflictingEmployeeIds = new Set(conflictingEmployees.map((employee) => employee.id));
+
+  return params.currentEmployees
+    .filter((employee) => conflictingEmployeeIds.has(employee.id) || !params.weekEmployeeIds.has(employee.id))
     .map((employee) => ({
       employeeId: employee.id,
       employeeName: employee.fullName,
-      status: "current_only" as const,
-      selectable: false,
-      conflictReason: null,
+      status: conflictingEmployeeIds.has(employee.id) ? "conflict" as const : "current_only" as const,
+      selectable: conflictingEmployeeIds.has(employee.id),
+      conflictReason: conflictingEmployeeIds.has(employee.id) ? "EMPLOYEE_OVERLAP" : null,
       source: "current" as const,
     }));
 }
@@ -501,17 +519,32 @@ async function buildAppointmentEmployeePreview(
   const activeEmployees = params.includeAvailableEmployees ? await employeesRepository.getEmployees("active") : [];
 
   const buildFallbackItems = async (): Promise<AppointmentEmployeePreviewItem[]> => {
-    if (!params.includeAvailableEmployees) {
-      return buildCurrentOnlyPreviewItems(params.currentEmployees, new Set());
-    }
-    return appointmentsRepository.withAppointmentTransaction((tx) => buildAvailableEmployeePreviewItemsTx(tx, {
-      appointmentId: params.appointmentId,
-      startDate: params.startDate,
-      endDate: params.endDate ?? null,
-      startTime: params.startTime ?? null,
-      excludedEmployeeIds: new Set(currentEmployeeIds),
-      activeEmployees,
-    }));
+    return appointmentsRepository.withAppointmentTransaction(async (tx) => {
+      const currentItems = await buildCurrentEmployeePreviewItemsTx(tx, {
+        appointmentId: params.appointmentId,
+        startDate: params.startDate,
+        endDate: params.endDate ?? null,
+        startTime: params.startTime ?? null,
+        currentEmployees: params.currentEmployees,
+        weekEmployeeIds: new Set(),
+      });
+
+      if (!params.includeAvailableEmployees) {
+        return currentItems;
+      }
+
+      return [
+        ...currentItems,
+        ...await buildAvailableEmployeePreviewItemsTx(tx, {
+          appointmentId: params.appointmentId,
+          startDate: params.startDate,
+          endDate: params.endDate ?? null,
+          startTime: params.startTime ?? null,
+          excludedEmployeeIds: new Set(currentEmployeeIds),
+          activeEmployees,
+        }),
+      ];
+    });
   };
 
   if (!params.tourId) {
@@ -564,8 +597,24 @@ async function buildAppointmentEmployeePreview(
   const weekEmployeeIds = new Set(weekAssignments.map((assignment) => assignment.employeeId));
   const items = await appointmentsRepository.withAppointmentTransaction(async (tx) => {
     const nextItems: AppointmentEmployeePreviewItem[] = [];
+    const currentItems = await buildCurrentEmployeePreviewItemsTx(tx, {
+      appointmentId: params.appointmentId,
+      startDate: params.startDate,
+      endDate: params.endDate ?? null,
+      startTime: params.startTime ?? null,
+      currentEmployees: params.currentEmployees,
+      weekEmployeeIds,
+    });
+    const currentConflictEmployeeIds = new Set(
+      currentItems
+        .filter((item) => item.status === "conflict")
+        .map((item) => item.employeeId),
+    );
 
     for (const assignment of weekAssignments) {
+      if (currentConflictEmployeeIds.has(assignment.employeeId)) {
+        continue;
+      }
       if (currentEmployeeIds.includes(assignment.employeeId)) {
         nextItems.push({
           employeeId: assignment.employeeId,
@@ -608,7 +657,7 @@ async function buildAppointmentEmployeePreview(
       }));
     }
 
-    return nextItems;
+    return [...nextItems, ...currentItems];
   });
 
   return {
@@ -616,7 +665,7 @@ async function buildAppointmentEmployeePreview(
     isoWeek: week.isoWeek,
     hasWeekPlan: true,
     currentEmployeeIds,
-    items: [...items, ...buildCurrentOnlyPreviewItems(params.currentEmployees, weekEmployeeIds)],
+    items,
   };
 }
 

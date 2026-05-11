@@ -4,7 +4,7 @@ Wenn ein Disponent mehrere Mitarbeiter für eine Tour-KW übernimmt, soll ein ei
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Implementierung | 07.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Implementierung | 07.05.26 |
 
 ---
 
@@ -48,9 +48,24 @@ Die Mehrfach-Zuweisung kann aus `TourManagement`, `TourEditForm`, `TourWeekForm`
 
 ---
 
+## Abschluss 11.05.26
+
+Die Aufgabe ist umgesetzt. Mehrfachauswahlen in der Tour-KW-Planung erzeugen jetzt einen gemeinsamen Ressourcenplanungsdialog mit mehreren Entscheidungsschritten. Vorschauen werden gesammelt, konfliktfreie Termine sinnvoll vorausgewählt und die bestätigten Schritte erst nach finaler Gesamtbestätigung seriell ausgeführt. Teilfehler bleiben im Dialog sichtbar; bereits erfolgreiche Schritte werden beim erneuten Ausführen übersprungen.
+
+Die Entscheidung aus der Planung ist damit umgesetzt: keine still verketteten Einzeldialoge und keine Teilmutation vor der finalen Bestätigung. Serverseitige Rollen-, Sperr-, Historien- und Konfliktprüfungen bleiben maßgeblich.
+
+### Verifikation
+
+- `npm run check`
+- `npm run test:unit`
+- `npm run test:integration`
+- gezielte Browser-E2E für `tour-week-form.browser.e2e.spec.ts` und `calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts`
+- `git diff --check`
+
 ## Beziehungen
 
 - Features: FT-04 Tourenplanung
 - Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
 - Entscheidungen: —
-- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](closed/mitarbeiter-auswahl-dialogstruktur.md)
+- Journal: [P01 Ressourcenplanung-Dialoge abgeschlossen](../../journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
+- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md) · [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md)

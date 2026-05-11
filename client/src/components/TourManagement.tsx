@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import { AppointmentCountBadge } from "@/components/ui/appointment-count-badge";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
+import { ConfirmDialogBase, type DialogBaseStep } from "@/components/ui/dialog-base";
 import type { TourWeekCardData } from "@/components/TourWeekCard";
 import type { Tour } from "@shared/schema";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
@@ -58,8 +59,7 @@ type TourWeekStatusMutationResponse = {
   affectedAppointmentCount: number;
 };
 
-type WeekDialogState = {
-  open: boolean;
+type WeekDialogOperation = {
   mode: "add" | "remove";
   tourId: number;
   isoYear: number;
@@ -70,7 +70,16 @@ type WeekDialogState = {
   employeeName: string;
   previewItems: WeekPreviewItem[];
   selectedIds: number[];
-  remainingEmployeeIds: number[];
+  executionStatus?: "pending" | "success" | "error";
+  executionMessage?: string;
+};
+
+type WeekDialogState = {
+  open: boolean;
+  mode: "add" | "remove";
+  activeIndex: number;
+  phase: "preview" | "executing" | "partial_error";
+  operations: WeekDialogOperation[];
 };
 
 type WeekExecuteResult = {
@@ -95,11 +104,11 @@ function normalizeEmployeeIds(employeeIds: number[]): number[] {
   return Array.from(new Set(employeeIds.filter((employeeId) => Number.isInteger(employeeId) && employeeId > 0)));
 }
 
-function buildWeekDialogState(params: Omit<WeekDialogState, "selectedIds" | "open" | "mode"> & { mode: "add" | "remove" }): WeekDialogState {
+function buildWeekDialogOperation(params: Omit<WeekDialogOperation, "selectedIds" | "executionStatus" | "executionMessage">): WeekDialogOperation {
   return {
     ...params,
-    open: true,
     selectedIds: params.previewItems.filter((item) => item.selectable).map((item) => item.appointmentId),
+    executionStatus: "pending",
   };
 }
 
@@ -110,6 +119,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const [isCreating, setIsCreating] = useState(false);
   const [activeTourWeek, setActiveTourWeek] = useState<TourWeekCardData | null>(null);
   const [weekDialogState, setWeekDialogState] = useState<WeekDialogState | null>(null);
+  const [pendingBlockWeek, setPendingBlockWeek] = useState<{ tourId: number; isoYear: number; isoWeek: number } | null>(null);
   const [activeOverviewTab, setActiveOverviewTab] = useState<"tours" | "weekPlanning">("tours");
   const effectiveUserRole = (userRole ?? window.localStorage.getItem("userRole") ?? "").toUpperCase();
   const isAdmin = effectiveUserRole === "ADMIN";
@@ -411,12 +421,15 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const openCascadeDialog = (
     mode: "add" | "remove",
-    dialogState: Omit<WeekDialogState, "selectedIds" | "open" | "mode">,
+    operations: WeekDialogOperation[],
   ) => {
-    setWeekDialogState(buildWeekDialogState({
-      ...dialogState,
+    setWeekDialogState({
+      open: true,
       mode,
-    }));
+      activeIndex: 0,
+      phase: "preview",
+      operations,
+    });
   };
 
   const openAddCascadeDialog = (
@@ -426,20 +439,22 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       employee: { employeeId: number; fullName: string };
       items: WeekPreviewItem[];
     },
-    options?: { remainingEmployeeIds?: number[]; tourId?: number },
+    options?: { tourId?: number },
   ) => {
     const targetTourId = options?.tourId ?? editingTour?.id;
     if (!targetTourId) return;
-    openCascadeDialog("add", {
-      tourId: targetTourId,
-      isoYear: preview.isoYear,
-      isoWeek: preview.isoWeek,
-      weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
-      employeeId: preview.employee.employeeId,
-      employeeName: preview.employee.fullName,
-      previewItems: preview.items,
-      remainingEmployeeIds: options?.remainingEmployeeIds ?? [],
-    });
+    openCascadeDialog("add", [
+      buildWeekDialogOperation({
+        mode: "add",
+        tourId: targetTourId,
+        isoYear: preview.isoYear,
+        isoWeek: preview.isoWeek,
+        weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
+        employeeId: preview.employee.employeeId,
+        employeeName: preview.employee.fullName,
+        previewItems: preview.items,
+      }),
+    ]);
   };
 
   const handleCascadePreviewError = (error: unknown, action: "hinzufuegen" | "abziehen") => {
@@ -508,16 +523,27 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
     const normalizedEmployeeIds = normalizeEmployeeIds(params.employeeIds);
     if (normalizedEmployeeIds.length === 0) return;
 
-    const [employeeId, ...remainingEmployeeIds] = normalizedEmployeeIds;
-
     try {
-      const preview = await previewAddCascadeMutation.mutateAsync({
-        tourId: targetTourId,
-        isoYear: params.isoYear,
-        isoWeek: params.isoWeek,
-        employeeId,
-      });
-      openAddCascadeDialog(preview, { remainingEmployeeIds, tourId: targetTourId });
+      const operations: WeekDialogOperation[] = [];
+      for (const employeeId of normalizedEmployeeIds) {
+        const preview = await previewAddCascadeMutation.mutateAsync({
+          tourId: targetTourId,
+          isoYear: params.isoYear,
+          isoWeek: params.isoWeek,
+          employeeId,
+        });
+        operations.push(buildWeekDialogOperation({
+          mode: "add",
+          tourId: targetTourId,
+          isoYear: preview.isoYear,
+          isoWeek: preview.isoWeek,
+          weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
+          employeeId: preview.employee.employeeId,
+          employeeName: preview.employee.fullName,
+          previewItems: preview.items,
+        }));
+      }
+      openCascadeDialog("add", operations);
     } catch (error) {
       handleCascadePreviewError(error, "hinzufuegen");
     }
@@ -531,17 +557,19 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         tourId: targetTourId,
         assignmentId: assignment.assignmentId,
       });
-      openCascadeDialog("remove", {
-        tourId: targetTourId,
-        isoYear: preview.isoYear,
-        isoWeek: preview.isoWeek,
-        assignmentId: preview.assignmentId,
-        weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
-        employeeId: preview.employee.employeeId,
-        employeeName: preview.employee.fullName,
-        previewItems: preview.items,
-        remainingEmployeeIds: [],
-      });
+      openCascadeDialog("remove", [
+        buildWeekDialogOperation({
+          mode: "remove",
+          tourId: targetTourId,
+          isoYear: preview.isoYear,
+          isoWeek: preview.isoWeek,
+          assignmentId: preview.assignmentId,
+          weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
+          employeeId: preview.employee.employeeId,
+          employeeName: preview.employee.fullName,
+          previewItems: preview.items,
+        }),
+      ]);
     } catch (error) {
       handleCascadePreviewError(error, "abziehen");
     }
@@ -586,12 +614,17 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
   const handleBlockWeek = async (params: { tourId?: number; isoYear: number; isoWeek: number }) => {
     const targetTourId = params.tourId ?? editingTour?.id;
     if (!targetTourId) return;
+    setPendingBlockWeek({ tourId: targetTourId, isoYear: params.isoYear, isoWeek: params.isoWeek });
+  };
+
+  const executeBlockWeek = async (params: { tourId: number; isoYear: number; isoWeek: number }) => {
     try {
       await blockWeekMutation.mutateAsync({
-        tourId: targetTourId,
+        tourId: params.tourId,
         isoYear: params.isoYear,
         isoWeek: params.isoWeek,
       });
+      setPendingBlockWeek(null);
       toast({
         title: "Wochenplanung blockiert",
       });
@@ -690,63 +723,145 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
 
   const handleConfirmCascade = async () => {
     if (!weekDialogState) return;
-    const currentDialogState = weekDialogState;
+    if (weekDialogState.phase === "preview" && weekDialogState.activeIndex < weekDialogState.operations.length - 1) {
+      setWeekDialogState((current) => current ? { ...current, activeIndex: current.activeIndex + 1 } : current);
+      return;
+    }
+
     try {
-      let result: WeekExecuteResult;
-      if (currentDialogState.mode === "add") {
-        result = await executeAddCascadeMutation.mutateAsync({
-          tourId: currentDialogState.tourId,
-          isoYear: currentDialogState.isoYear,
-          isoWeek: currentDialogState.isoWeek,
-          employeeId: currentDialogState.employeeId,
-          selectedIds: currentDialogState.selectedIds,
-        });
-      } else {
-        if (!currentDialogState.assignmentId) {
-          toast({
-            title: "Wochenplanung konnte nicht gespeichert werden",
-            description: "Die zu löschende Wochenzuordnung fehlt.",
-            variant: "destructive",
+      setWeekDialogState((current) => current ? { ...current, phase: "executing" } : current);
+      let totalUpdatedAppointmentCount = 0;
+      let totalSkippedCount = 0;
+
+      for (let index = 0; index < weekDialogState.operations.length; index += 1) {
+        const operation = weekDialogState.operations[index];
+        if (operation.executionStatus === "success") continue;
+
+        try {
+          let result: WeekExecuteResult;
+          if (operation.mode === "add") {
+            result = await executeAddCascadeMutation.mutateAsync({
+              tourId: operation.tourId,
+              isoYear: operation.isoYear,
+              isoWeek: operation.isoWeek,
+              employeeId: operation.employeeId,
+              selectedIds: operation.selectedIds,
+            });
+          } else {
+            if (!operation.assignmentId) {
+              throw new Error("Die zu löschende Wochenzuordnung fehlt.");
+            }
+            result = await executeRemoveCascadeMutation.mutateAsync({
+              tourId: operation.tourId,
+              assignmentId: operation.assignmentId,
+              isoYear: operation.isoYear,
+              isoWeek: operation.isoWeek,
+              selectedIds: operation.selectedIds,
+            });
+          }
+
+          totalUpdatedAppointmentCount += result.updatedAppointmentCount;
+          totalSkippedCount += result.skipped.length;
+          setWeekDialogState((current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              activeIndex: Math.min(index + 1, current.operations.length - 1),
+              operations: current.operations.map((entry, entryIndex) =>
+                entryIndex === index
+                  ? {
+                      ...entry,
+                      executionStatus: "success",
+                      executionMessage: `${result.updatedAppointmentCount} Termine aktualisiert`,
+                    }
+                  : entry,
+              ),
+            };
           });
+        } catch (error) {
+          setWeekDialogState((current) => {
+            if (!current) return current;
+            return {
+              ...current,
+              phase: "partial_error",
+              activeIndex: index,
+              operations: current.operations.map((entry, entryIndex) =>
+                entryIndex === index
+                  ? {
+                      ...entry,
+                      executionStatus: "error",
+                      executionMessage: error instanceof Error ? error.message : "Ausführung fehlgeschlagen.",
+                    }
+                  : entry,
+              ),
+            };
+          });
+          handleExecuteCascadeError(error, operation.mode);
           return;
         }
-        result = await executeRemoveCascadeMutation.mutateAsync({
-          tourId: currentDialogState.tourId,
-          assignmentId: currentDialogState.assignmentId,
-          isoYear: currentDialogState.isoYear,
-          isoWeek: currentDialogState.isoWeek,
-          selectedIds: currentDialogState.selectedIds,
-        });
       }
-      const skippedMessage = result.skipped.length > 0
-        ? ` ${result.skipped.length} Termine wurden wegen Konflikten übersprungen.`
+
+      const skippedMessage = totalSkippedCount > 0
+        ? ` ${totalSkippedCount} Termine wurden wegen Konflikten übersprungen.`
         : "";
       toast({
-        title: currentDialogState.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert",
-        description: `${result.updatedAppointmentCount} Termine wurden aktualisiert.${skippedMessage}`,
+        title: weekDialogState.mode === "add" ? "Wochenplanung gespeichert" : "Wochenplanung aktualisiert",
+        description: `${totalUpdatedAppointmentCount} Termine wurden aktualisiert.${skippedMessage}`,
       });
-
-      if (currentDialogState.mode === "add" && currentDialogState.remainingEmployeeIds.length > 0) {
-        const [nextEmployeeId, ...remainingEmployeeIds] = currentDialogState.remainingEmployeeIds;
-        try {
-          const preview = await previewAddCascadeMutation.mutateAsync({
-            tourId: currentDialogState.tourId,
-            isoYear: currentDialogState.isoYear,
-            isoWeek: currentDialogState.isoWeek,
-            employeeId: nextEmployeeId,
-          });
-          openAddCascadeDialog(preview, { remainingEmployeeIds });
-          return;
-        } catch (error) {
-          handleCascadePreviewError(error, "hinzufuegen");
-        }
-      }
 
       setWeekDialogState(null);
     } catch (error) {
-      handleExecuteCascadeError(error, currentDialogState.mode);
+      handleExecuteCascadeError(error, weekDialogState.mode);
     }
   };
+
+  const activeWeekDialogOperation = weekDialogState?.operations[weekDialogState.activeIndex] ?? null;
+  const weekDialogSteps: DialogBaseStep[] = weekDialogState
+    ? weekDialogState.operations.map((operation, index) => {
+        let state: DialogBaseStep["state"] = index === weekDialogState.activeIndex ? "active" : "pending";
+        if (operation.executionStatus === "success") state = "complete";
+        if (operation.executionStatus === "error") state = "error";
+        if (weekDialogState.phase === "preview" && index < weekDialogState.activeIndex) state = "complete";
+        return {
+          id: `${operation.mode}-${operation.employeeId}-${index}`,
+          title: operation.employeeName,
+          state,
+        };
+      })
+    : [];
+  const weekDialogConfirmLabel = weekDialogState
+    ? weekDialogState.phase === "partial_error"
+      ? "Offene Schritte erneut ausführen"
+      : weekDialogState.activeIndex < weekDialogState.operations.length - 1
+        ? "Weiter"
+        : "Auswahl ausführen"
+    : "Bestätigen";
+  const weekDialogExecutionMessage = weekDialogState?.phase === "partial_error"
+    ? "Ein Schritt konnte nicht ausgeführt werden. Bereits erfolgreiche Schritte werden beim erneuten Ausführen übersprungen."
+    : weekDialogState?.phase === "executing"
+      ? "Die bestätigten Entscheidungen werden seriell ausgeführt."
+      : null;
+  const blockWeekConfirmDialog = (
+    <ConfirmDialogBase
+      open={pendingBlockWeek !== null}
+      onOpenChange={(open) => {
+        if (!open && !blockWeekMutation.isPending) setPendingBlockWeek(null);
+      }}
+      icon={<Route />}
+      title="Wochenplanung blockieren?"
+      description={pendingBlockWeek
+        ? `${buildWeekLabel(pendingBlockWeek.isoYear, pendingBlockWeek.isoWeek)} wird blockiert. Danach sind Ressourcenänderungen in dieser Tour-KW gesperrt, bis sie wieder freigegeben wird.`
+        : undefined}
+      confirmLabel="Blockieren"
+      pendingLabel="Blockieren..."
+      isPending={blockWeekMutation.isPending}
+      onConfirm={() => {
+        if (!pendingBlockWeek) return;
+        void executeBlockWeek(pendingBlockWeek);
+      }}
+      testId="dialog-tour-week-block-confirm"
+    />
+  );
 
   const activeTour = editingTour
     ? (tours.find((tour) => tour.id === editingTour.id) ?? editingTour)
@@ -825,22 +940,32 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
             isMutatingWeeks={isMutatingWeeks}
           />
         ) : null}
-        {weekDialogState ? (
+        {blockWeekConfirmDialog}
+        {weekDialogState && activeWeekDialogOperation ? (
           <TourEmployeeCascadeDialog
             variant="week"
             open={weekDialogState.open}
             title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
             description={
               weekDialogState.mode === "add"
-                ? `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} eingeplant.`
-                : `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} aus der Planung entfernt.`
+                ? `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} eingeplant.`
+                : `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} aus der Planung entfernt.`
             }
-            weekLabel={weekDialogState.weekLabel}
-            previewItems={weekDialogState.previewItems}
-            selectedIds={weekDialogState.selectedIds}
-            isSubmitting={executeAddCascadeMutation.isPending || executeRemoveCascadeMutation.isPending}
+            weekLabel={activeWeekDialogOperation.weekLabel}
+            previewItems={activeWeekDialogOperation.previewItems}
+            selectedIds={activeWeekDialogOperation.selectedIds}
+            steps={weekDialogSteps}
+            executionMessage={weekDialogExecutionMessage}
+            confirmLabel={weekDialogConfirmLabel}
+            summary={`${weekDialogState.operations.length} Entscheidungsschritt${weekDialogState.operations.length === 1 ? "" : "e"} in dieser Ressourcenplanung.`}
+            isSubmitting={weekDialogState.phase === "executing" || executeAddCascadeMutation.isPending || executeRemoveCascadeMutation.isPending}
             onSelectedIdsChange={(selectedIds) => {
-              setWeekDialogState((current) => current ? { ...current, selectedIds } : current);
+              setWeekDialogState((current) => current ? {
+                ...current,
+                operations: current.operations.map((operation, index) =>
+                  index === current.activeIndex ? { ...operation, selectedIds } : operation,
+                ),
+              } : current);
             }}
             onConfirm={() => {
               void handleConfirmCascade();
@@ -1033,22 +1158,32 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           isMutatingWeeks={isMutatingWeeks}
         />
       ) : null}
-      {weekDialogState ? (
+      {blockWeekConfirmDialog}
+      {weekDialogState && activeWeekDialogOperation ? (
         <TourEmployeeCascadeDialog
           variant="week"
           open={weekDialogState.open}
           title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
           description={
             weekDialogState.mode === "add"
-              ? `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} eingeplant.`
-              : `${weekDialogState.employeeName} wird für ${weekDialogState.weekLabel} aus der Planung entfernt.`
+              ? `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} eingeplant.`
+              : `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} aus der Planung entfernt.`
           }
-          weekLabel={weekDialogState.weekLabel}
-          previewItems={weekDialogState.previewItems}
-          selectedIds={weekDialogState.selectedIds}
-          isSubmitting={executeAddCascadeMutation.isPending || executeRemoveCascadeMutation.isPending}
+          weekLabel={activeWeekDialogOperation.weekLabel}
+          previewItems={activeWeekDialogOperation.previewItems}
+          selectedIds={activeWeekDialogOperation.selectedIds}
+          steps={weekDialogSteps}
+          executionMessage={weekDialogExecutionMessage}
+          confirmLabel={weekDialogConfirmLabel}
+          summary={`${weekDialogState.operations.length} Entscheidungsschritt${weekDialogState.operations.length === 1 ? "" : "e"} in dieser Ressourcenplanung.`}
+          isSubmitting={weekDialogState.phase === "executing" || executeAddCascadeMutation.isPending || executeRemoveCascadeMutation.isPending}
           onSelectedIdsChange={(selectedIds) => {
-            setWeekDialogState((current) => current ? { ...current, selectedIds } : current);
+            setWeekDialogState((current) => current ? {
+              ...current,
+              operations: current.operations.map((operation, index) =>
+                index === current.activeIndex ? { ...operation, selectedIds } : operation,
+              ),
+            } : current);
           }}
           onConfirm={() => {
             void handleConfirmCascade();

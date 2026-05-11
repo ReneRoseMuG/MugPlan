@@ -4,7 +4,7 @@ Der Wochenkalender-Pfad zum Hinzufügen von Mitarbeitern zu einer KW-Planung sol
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Implementierung | 07.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Implementierung | 07.05.26 |
 
 ---
 
@@ -46,9 +46,23 @@ Im Wochenkalender-Pfad ist nach aktuellem Befund nur Einzelauswahl möglich. Fü
 
 ---
 
+## Abschluss 11.05.26
+
+Die Aufgabe ist umgesetzt. Der Wochenkalender kann mehrere Mitarbeiter für eine Tour-KW auswählen und über denselben mehrstufigen Ressourcenplanungsdialog verarbeiten. Die vorhandene Auswahlstruktur wird weiterverwendet; der Dialog sammelt die Vorschauen und führt bestätigte Änderungen erst nach finaler Bestätigung seriell aus.
+
+`ADMIN` und `DISPONENT` behalten die bestehenden erlaubten Mutationspfade. `READER`/`LESER` erhält keine neue schreibende Aktion. Die serverseitigen Regeln für Rollen, Sperren, historische Grenzen, Tour-KW-Konflikte und Mitarbeiterüberschneidungen bleiben unverändert maßgeblich.
+
+### Verifikation
+
+- `npm run check`
+- `npm run test:unit -- tests/unit/ui/tourManagement.versioning.test.tsx tests/unit/ui/tourEmployeeCascadeDialog.wiring.test.tsx tests/unit/ui/tourEmployeeCascadeDialog.selectionButtons.test.tsx`
+- `npm run test:e2e:browser -- tests/e2e-browser/tour-week-form.browser.e2e.spec.ts tests/e2e-browser/calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts`
+- `git diff --check`
+
 ## Beziehungen
 
 - Features: FT-04 Tourenplanung · FT-03 Kalenderansichten
 - Use Cases: UC 04/13 - Mitarbeiter einer Tour-KW zuordnen
 - Entscheidungen: —
-- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](closed/mitarbeiter-auswahl-dialogstruktur.md)
+- Journal: [P01 Ressourcenplanung-Dialoge abgeschlossen](../../journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
+- Weitere Bezüge: [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md)

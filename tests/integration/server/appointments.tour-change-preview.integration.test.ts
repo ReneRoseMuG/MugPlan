@@ -21,7 +21,7 @@ import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startO
 import { eq } from "drizzle-orm";
 
 import { db } from "../../../server/db";
-import { appointments, tourWeekEmployees } from "../../../shared/schema";
+import { appointmentEmployees, appointments, tourWeekEmployees } from "../../../shared/schema";
 import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
@@ -173,6 +173,60 @@ describe("FT04 integration: appointment tour change preview", () => {
             status: "will_add",
             selectable: true,
             conflictReason: null,
+          }),
+        ]);
+      });
+  });
+
+  it("previews current employee conflicts for pure date moves without tour or KW change", async () => {
+    const admin = await loginAdmin();
+    const targetWeek = resolveNextEditableWeek();
+    const project = await createProjectFixture({ prefix: "FT04-TCP-PURE-DATE" });
+    const tour = await createTourFixture("#991b1b");
+    const employee = await createEmployeeFixture("FT04-TCP-PURE-CONFLICT");
+
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekStartDate,
+      tourId: tour.id,
+      employeeIds: [employee.id],
+    });
+
+    const conflictingAppointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekSecondDate,
+      tourId: tour.id,
+      employeeIds: [],
+    });
+    await db.insert(appointmentEmployees).values({
+      appointmentId: conflictingAppointment.id,
+      employeeId: employee.id,
+    });
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tour-change-preview`)
+      .send({
+        newTourId: tour.id,
+        newStartDate: targetWeek.weekSecondDate,
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [employee.id],
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(expect.objectContaining({
+          isoYear: targetWeek.isoYear,
+          isoWeek: targetWeek.isoWeek,
+          hasWeekPlan: false,
+          currentEmployeeIds: [employee.id],
+        }));
+        expect(body.items).toEqual([
+          expect.objectContaining({
+            employeeId: employee.id,
+            status: "conflict",
+            selectable: true,
+            conflictReason: "EMPLOYEE_OVERLAP",
+            source: "current",
           }),
         ]);
       });
