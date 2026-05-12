@@ -62,6 +62,16 @@ Editorfeld (RTF/HTML-kompatibel):
 - Darstellung als strukturierte HTML-Auflistung.
 - Vollständig editierbar.
 
+### Formular- und Übernahmeführung
+
+Die Dokumentextraktion nutzt das gemeinsame Dialogsystem als geführten Übernahmeprozess. Der Extraktionsdialog zeigt die erkannten Kundendaten, den Projektvorschlag und die strukturierten Auftragspositionen als editierbaren Vorschlag. Warnungen zu unvollständigen oder unsicheren Daten werden im Dialog beziehungsweise direkt am betroffenen Bereich angezeigt. Der Start der Extraktion und die Anzeige des Vorschlags persistieren noch keine fachlichen Kunden-, Projekt- oder Termindaten.
+
+Die Übernahme kopiert bestätigte Extraktionsdaten in das aktuell geöffnete Formular. Im Kontext **Neues Projekt** bleibt das eingelesene PDF danach als Draft-Dokument im Projektformular sichtbar und kann zur manuellen Prüfung in einem neuen Browser-Tab geöffnet werden. Beim späteren Speichern des Projekts werden projektbezogene Entscheidungen wie Artikellistenhinweise, Projekttitel aus Saunamodell, Reklamationsnotiz und PDF-Duplikatentscheidung über den Speichern-Review aus [FT (02): Projekte](../ft-02-projekte/ft-02-projekte.md) gebündelt. Im Kontext **Neuer Termin** werden nur die für den Termin zulässigen Kunden- und Projektvorschläge übernommen; die Terminmutation bleibt an die Regeln aus [FT (01): Kalendertermine](../ft-01-kalendertermine/ft-01-kalendertermine.md) gebunden.
+
+Ein Abbruch im Extraktionsdialog oder das Schließen des Dialogs verwirft den noch nicht übernommenen Vorschlag. Bereits bestehende Formularinhalte werden nur nach ausdrücklicher Bestätigung überschrieben. Erkannte Kundendubletten werden nach den dokumentierten Use Cases behandelt: fehlende Stammdaten dürfen kontrolliert ergänzt werden, unerwartete Überschreibungen ohne Systembestätigung sind nicht zulässig.
+
+Fehlermeldungen aus Parsing, Kategorisierung, ungeeigneten Dokumenten oder gelöschten Parent-Objekten müssen verständlich bleiben und dürfen keine Rohtexte, Prompts, Parserdetails, HTTP-Codes oder technischen JSON-Antworten anzeigen. Die serverseitige Rollen- und Berechtigungsprüfung bleibt maßgeblich; der Dialog dient nur der Benutzerführung und ersetzt keine Validierungs- oder Sicherheitslogik.
+
 ## Regeln & Randbedingungen
 
 - Die Verarbeitung erfolgt ausschließlich serverseitig.

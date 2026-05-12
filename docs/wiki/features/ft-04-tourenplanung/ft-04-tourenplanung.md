@@ -25,6 +25,18 @@ Eine blockierte Tour-KW kann durch Administratoren oder Disponenten wieder freig
 
 Die Tourenverwaltung enthält zusätzlich den Tab **Wochenplanung** als Vier-KW-Übersicht. Diese Ansicht zeigt planbare Touren als Tour-Bahnen mit je einer Kachel pro Kalenderwoche. Ausgeschlossen sind die Systemtouren **Parkplatz**, **Abwesenheiten** und tourlose Pseudo-Bahnen. Die Ansicht ist eine read-only Projektion für die Matrix selbst und nutzt für Mitarbeiter, Notizen, Blockieren, Freigeben und Anwenden die bestehenden Tour-KW-Mutationspfade.
 
+## Benutzerführung über Ressourcenplanungsdialoge und Meldungen
+
+Die ressourcenrelevanten Dialoge für Tour-KW, Termin, Kalenderbewegungen und Mitarbeiterzuweisungen laufen über einen gemeinsamen Ressourcenplanungsrahmen. Einstiegspunkte sind insbesondere die Tour-KW-Wochenplanung im Tourformular, die Tour-KW-Karten im Wochenkalender, das Anwenden einer Wochenplanung auf Termine, Terminänderungen mit Tour-, KW-, Datums- oder Uhrzeitbezug, Kalender-Drag-&-Drop, Markieren und Einfügen sowie direkte Mitarbeiteraktionen an Terminen. Der Dialog macht dieselben fachlichen Prüfungen sichtbar, die serverseitig verbindlich bleiben.
+
+Der Standardablauf beginnt mit einer Vorschau. Diese zeigt je betroffenem Termin oder Planungsschritt, welche Mitarbeiter hinzugefügt oder entfernt würden, welche Einträge unverändert bleiben und welche Konflikte bestehen. Konfliktfreie Termine sind vorausgewählt, konfliktbehaftete Termine bleiben deaktiviert und nennen den Grund. Manuell oder über Team zugewiesene Mitarbeiter werden bei Touränderungen nicht still entfernt, sondern als unverändert ausgewiesen. Bei mehreren ausgewählten Mitarbeitern sammelt der mehrstufige Dialog die einzelnen Vorschauen und führt bestätigte Änderungen erst nach der finalen Gesamtbestätigung seriell aus.
+
+Vor der finalen Bestätigung bleibt der Vorgang abbrechbar, ohne Termine, Tour-KW-Mitarbeiterzuordnungen oder Abwesenheitsfolgen zu verändern. Während der Ausführung zeigt der Dialog Fortschritt, erfolgreiche Schritte und Fehlerzustände nachvollziehbar an. Teilfehler dürfen nicht als vollständiger Erfolg erscheinen; erfolgreiche Schritte bleiben sichtbar, damit der Akteur den verbleibenden Zustand einordnen und den Vorgang kontrolliert fortsetzen oder neu laden kann.
+
+Tour-KW-Blockieren und Freigeben nutzen ebenfalls kontrollierte Bestätigungsdialoge. Beim Blockieren müssen die Folgen vor der Ausführung verständlich sein: betroffene nicht stornierte Termine werden geparkt, Mitarbeiterzuordnungen entfernt und die Tour-KW gesperrt. Beim Freigeben wird nur der Sperrstatus aufgehoben; geparkte Termine oder entfernte Mitarbeiter werden nicht automatisch rekonstruiert.
+
+Meldungen benennen Konflikte in Alltagssprache und unterscheiden fachlich zwischen KW-Tour-Konflikten, Terminüberschneidungen, historischen Sperren, blockierten Tour-KW, Versionskonflikten, fehlenden Datensätzen und fehlenden Rechten. Technische Rohcodes, HTTP-Status oder unformatierte Serverantworten dürfen nicht als Nutzertext erscheinen. `ADMIN` und `DISPONENT` dürfen Ressourcenmutationen nur im Rahmen der bestehenden serverseitigen Rollen-, Sperr-, Historien-, Versions- und Konfliktregeln ausführen. `READER` beziehungsweise `LESER` darf die betroffenen Ansichten sehen, aber keine Ressourcenmutation ausführen.
+
 ## Regeln & Randbedingungen
 
 - Eine Tour dient ausschließlich der organisatorischen Gruppierung von Terminen.

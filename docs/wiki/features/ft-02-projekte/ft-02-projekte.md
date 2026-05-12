@@ -37,6 +37,16 @@ Die Projektliste zeigt den nächsten Termin direkt in der Projektkarte bzw. Tabe
 
 Notizen sind zusätzliche, frei formulierte Texteinträge, die projektspezifische Informationen, Absprachen oder Besonderheiten dokumentieren. Jede Notiz besteht aus einem Titel und einem Inhalt und ist dauerhaft dem Projekt zugeordnet. Ein Projekt kann mehrere Notizen enthalten. Notizen sind unabhängig von Terminplanungen, Tag-Änderungen oder Kundenanpassungen – sie bleiben bestehen und können jederzeit ergänzt oder überarbeitet werden. Notizen sind für alle zum Projekt gehörenden Termine verfügbar und können optional in Druckausgaben oder Exportformaten mitgeführt werden.
 
+## Benutzerführung über Dialoge und Meldungen
+
+Projektbezogene Dialoge folgen dem gemeinsamen Dialogsystem aus dem Dialog-Rollout. Besonders relevant ist der Speichern-Review im Projektformular: Vor der eigentlichen Projektmutation sammelt das System alle fachlichen Hinweise und Entscheidungen, die zu diesem Speichervorgang gehören, in einem gemeinsamen Dialog. Dazu gehören nicht ausgewählte Einträge in der strukturierten Artikelliste, die Entscheidung zur Übernahme eines Sauna-Modellnamens als Projekttitel, eine vorgeschlagene Reklamationsnotiz und eine mögliche Duplikatentscheidung für ein per Dokumentextraktion eingebrachtes PDF.
+
+Der Speichern-Review ist nicht als Kette einzelner Browser-Bestätigungen zu verstehen. Der Akteur prüft die angezeigten Hinweise und Entscheidungen im Dialog, bestätigt danach den gesamten Speichervorgang oder bricht ihn ab. Bei Abbruch wird keine Projektmutation ausgeführt; bereits geprüfte Dialogschritte lösen keine Teilpersistenz aus. Falls nur eine einzelne fachliche Aktion nötig ist, zum Beispiel eine Reklamationsnotiz ohne weitere Speichern-Hinweise, darf der bestehende fachliche Editor verwendet werden. Sobald mehrere Entscheidungen denselben Speichervorgang betreffen, werden sie im gemeinsamen Review gebündelt.
+
+Wenn ein Projekt aus der Dokumentextraktion entsteht, bleibt das eingelesene PDF im Projektformular als Draft-Dokument sichtbar, bis der Speichervorgang abgeschlossen oder verworfen wird. Der Akteur kann dieses Draft-Dokument gezielt in einem neuen Browser-Tab öffnen, um die extrahierten Daten gegen die Quelle zu prüfen. Die dauerhafte Verknüpfung als Projektanhang erfolgt erst im bestätigten Speichern- beziehungsweise Attachment-Flow. Eine nötige Duplikatentscheidung zum PDF wird im Speichern-Review getroffen und nicht zusätzlich als separater Browser-Dialog abgefragt.
+
+Meldungen im Projektformular sollen den fachlichen Kontext nennen: Projekt, Kunde, Artikelliste, Reklamationsnotiz oder Dokument. Technische Rohcodes, HTTP-Status oder unformatierte Serverantworten dürfen nicht als Nutzertext erscheinen. Normale Lade-, Validierungs-, Versions- und Speicherfehler werden als verständliche Inline-Meldungen oder Dialogfehler angezeigt. Die Dialoge ersetzen keine Berechtigungsprüfung: Schreibende Projektmutationen bleiben serverseitig auf `ADMIN` und `DISPONENT` begrenzt; clientseitig entspricht dies den bestehenden schreibberechtigten Rollen. `READER` beziehungsweise `LESER` bleibt lesend.
+
 ## Regeln & Randbedingungen
 
 - Ein Projekt ist immer genau **einem Kunden** zugeordnet.
