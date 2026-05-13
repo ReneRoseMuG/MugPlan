@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [14.05.26 - P02: Feature-Testabdeckung und UC-Lücken abgeschlossen](14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md)
 - [13.05.26 - Doc Extract: S100-Projekttitel für Reklamations-PDFs](13-05-26-doc-extract-s100-projekttitel-reklamation.md)
 - [13.05.26 - Termin-Save-Review: Notizprüfung bei Terminverschiebung](13-05-26-termin-save-review-notizpruefung.md)
 - [13.05.26 - Doc Extract, Projekt- und Termin-Save-Flow](13-05-26-doc-extract-projekt-termin-save-flow.md)

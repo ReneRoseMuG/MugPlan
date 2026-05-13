@@ -84,6 +84,19 @@ describe("calendarMarkersService", () => {
     });
   });
 
+  it("schließt nur teilweise regionale Feiertage aus dem automatischen Seed aus", async () => {
+    await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
+
+    const markers = await listEffectiveCalendarMarkers("ADMIN", {
+      fromDate: "2026-08-08",
+      toDate: "2026-08-15",
+    });
+
+    const names = markers.map((marker) => marker.name);
+    expect(names).not.toContain("Augsburger Friedensfest");
+    expect(names.some((name) => name.includes("Himmelfahrt"))).toBe(false);
+  });
+
   it("kombiniert aktive Admin-Marker und gespeicherte Feiertage", async () => {
     await seedCalendarHolidays({ fromYear: 2026, toYear: 2026 });
 

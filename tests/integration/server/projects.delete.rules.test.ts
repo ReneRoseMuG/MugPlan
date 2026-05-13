@@ -19,8 +19,10 @@
  */
 import express from "express";
 import { createServer } from "http";
+import { eq } from "drizzle-orm";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeEach, beforeAll, describe, expect, it } from "vitest";
+import { db } from "../../../server/db";
 import { registerRoutes } from "../../../server/routes";
 import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
@@ -28,6 +30,7 @@ import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { createUser } from "../../../server/repositories/usersRepository";
 import { hashPassword } from "../../../server/security/passwordHash";
+import { projectAttachments } from "../../../shared/schema";
 import { nextDeterministicToken, resetDeterministicTokens } from "../../helpers/deterministic";
 
 let app: express.Express;
@@ -108,6 +111,36 @@ describe("FT02 integration: project delete rules", () => {
       .delete(`/api/projects/${project.id}`)
       .send({ version: project.version })
       .expect(204);
+  });
+
+  it("removes project attachment references when deleting a project without appointments", async () => {
+    const agent = await loginAdminAgent();
+    const project = await createProjectForTest();
+
+    const upload = await agent
+      .post(`/api/projects/${project.id}/attachments`)
+      .attach("file", Buffer.from("project-delete-cascade"), "project-delete-cascade.txt")
+      .expect(201);
+
+    const attachmentId = Number(upload.body.id);
+    expect(Number.isInteger(attachmentId)).toBe(true);
+
+    const beforeDelete = await db
+      .select()
+      .from(projectAttachments)
+      .where(eq(projectAttachments.id, attachmentId));
+    expect(beforeDelete).toHaveLength(1);
+
+    await agent
+      .delete(`/api/projects/${project.id}`)
+      .send({ version: project.version })
+      .expect(204);
+
+    const afterDelete = await db
+      .select()
+      .from(projectAttachments)
+      .where(eq(projectAttachments.id, attachmentId));
+    expect(afterDelete).toHaveLength(0);
   });
 
   it("returns 409 BUSINESS_CONFLICT when project has at least one appointment", async () => {

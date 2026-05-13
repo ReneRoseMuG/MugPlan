@@ -381,6 +381,11 @@ describe("integration: report presets affect concrete reports", () => {
       appointmentDate: resolvedRange.fromDate,
       tourId: tour.id,
     });
+    const withoutTourFixture = await createProjectWithAppointment({
+      prefix: "PRESET-TP-WITHOUT",
+      appointmentDate: resolvedRange.fromDate,
+      tourId: null,
+    });
 
     const preset = await saveUserPresetAndLoad({
       agent: reader,
@@ -392,7 +397,7 @@ describe("integration: report presets affect concrete reports", () => {
         activeTab: "calendarWeek",
         allToursSelected: false,
         selectedTourIds: [tour.id],
-        includeWithoutTour: false,
+        includeWithoutTour: true,
         printMode: "spardruck",
         fontSize: "large",
         orientation: "landscape",
@@ -400,6 +405,7 @@ describe("integration: report presets affect concrete reports", () => {
     });
     expect(preset.config).toEqual(expect.objectContaining({
       selectedTourIds: [tour.id],
+      includeWithoutTour: true,
       printMode: "spardruck",
       fontSize: "large",
       orientation: "landscape",
@@ -425,5 +431,18 @@ describe("integration: report presets affect concrete reports", () => {
         projectName: fixture.project.name,
       }),
     ]));
+
+    const withoutTourPreviewResponse = await reader
+      .get("/api/tours/0/print-preview")
+      .query({
+        fromDate: appliedRange.fromDate,
+        weekCount: preset.config.range.weeks,
+      })
+      .expect(200);
+
+    const withoutTourAppointmentIds = withoutTourPreviewResponse.body.appointments.map((appointment: { id: number }) => appointment.id);
+    expect(withoutTourPreviewResponse.body.tour).toEqual({ id: 0, name: "Ohne Tour", color: null });
+    expect(withoutTourAppointmentIds).toContain(withoutTourFixture.appointment.id);
+    expect(withoutTourAppointmentIds).not.toContain(fixture.appointment.id);
   });
 });

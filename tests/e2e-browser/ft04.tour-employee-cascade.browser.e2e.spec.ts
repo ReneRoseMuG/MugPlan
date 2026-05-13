@@ -35,6 +35,13 @@ function resolveNextEditableWeek() {
   const nextWeekStart = startOfISOWeek(addWeeks(today, 1));
   const secondDay = addDays(nextWeekStart, 1);
   const nextFreeWeekStart = addWeeks(nextWeekStart, 4);
+  const planningWeeks = Array.from({ length: 4 }, (_entry, index) => {
+    const weekStart = addWeeks(nextWeekStart, index);
+    return {
+      isoYear: getISOWeekYear(weekStart),
+      isoWeek: getISOWeek(weekStart),
+    };
+  });
   return {
     weekStartDate: format(nextWeekStart, "yyyy-MM-dd"),
     weekSecondDate: format(secondDay, "yyyy-MM-dd"),
@@ -42,6 +49,7 @@ function resolveNextEditableWeek() {
     isoWeek: getISOWeek(nextWeekStart),
     nextFreeIsoWeek: getISOWeek(nextFreeWeekStart),
     maxIsoWeek: getISOWeek(new Date(getISOWeekYear(nextWeekStart), 11, 28)),
+    planningWeeks,
   };
 }
 
@@ -112,6 +120,9 @@ test("prefills the next free KW and keeps duplicate/min/max validation intact", 
   const tour = await createTourFixture("#556677");
 
   await openWeekPlanning(page, tour.id);
+  for (const planningWeek of nextWeek.planningWeeks) {
+    await expect(page.getByTestId(`card-tour-week-${planningWeek.isoYear}-${planningWeek.isoWeek}`)).toBeVisible();
+  }
 
   await page.getByTestId("toggle-tour-week-picker").click();
   await expect(page.getByTestId("text-tour-week-dialog-year")).toContainText(String(nextWeek.isoYear));

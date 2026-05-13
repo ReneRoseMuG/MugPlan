@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 16,
-      "generated_count": 16,
+      "source_count": 8,
+      "generated_count": 8,
       "warnings": 0,
       "errors": 0
     },
@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 66,
-      "generated_count": 66,
+      "source_count": 67,
+      "generated_count": 67,
       "warnings": 0,
       "errors": 0
     }
@@ -102,73 +102,10 @@
         "errors": []
       },
       {
-        "id": "A-04",
-        "title": "FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen",
-        "source": "tasks/ft01-ft04-ft33-testabdeckung-uc-luecken.md",
-        "output": "projekt/aufgaben/ft01-ft04-ft33-testabdeckung-uc-luecken.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-05",
-        "title": "FT-26 Reports: verbleibende Testabdeckung schließen",
-        "source": "tasks/ft26-reports-testabdeckung.md",
-        "output": "projekt/aufgaben/ft26-reports-testabdeckung.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-11",
-        "title": "FT-19 Attachment-Testlücken schließen",
-        "source": "tasks/ft19-attachment-testluecken.md",
-        "output": "projekt/aufgaben/ft19-attachment-testluecken.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-15",
         "title": "FT-26 gemeinsame Print-Basiskomponente für Kartenreports",
         "source": "tasks/ft26-report-print-basiskomponente.md",
         "output": "projekt/aufgaben/ft26-report-print-basiskomponente.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-32",
-        "title": "FT-34 Kalendermarker: Testlücken schließen",
-        "source": "tasks/ft34-kalendermarker-testluecken.md",
-        "output": "projekt/aufgaben/ft34-kalendermarker-testluecken.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-33",
-        "title": "Feature-Testabdeckung, UC-Lücken und Präzisierungen koordinieren",
-        "source": "tasks/feature-testabdeckung-uc-luecken-koordinieren.md",
-        "output": "projekt/aufgaben/feature-testabdeckung-uc-luecken-koordinieren.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-34",
-        "title": "Storno historischer Termine fachlich entscheiden",
-        "source": "tasks/storno-historischer-termine-fachlich-entscheiden.md",
-        "output": "projekt/aufgaben/storno-historischer-termine-fachlich-entscheiden.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-35",
-        "title": "Systemgesteuerte Termin-Workflows gezielt generalisieren",
-        "source": "tasks/systemgesteuerte-termin-workflows-generalisieren.md",
-        "output": "projekt/aufgaben/systemgesteuerte-termin-workflows-generalisieren.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -196,15 +133,6 @@
         "title": "FT-07 DB-Dry-Run für Dump-Import vorbereiten",
         "source": "tasks/ft07-db-dry-run-dump-import-vorbereiten.md",
         "output": "projekt/aufgaben/ft07-db-dry-run-dump-import-vorbereiten.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-39",
-        "title": "FT-02 Projekte: Test-Lücken schließen",
-        "source": "tasks/ft02-projekte-testluecken-schliessen.md",
-        "output": "projekt/aufgaben/ft02-projekte-testluecken-schliessen.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -2894,6 +2822,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen",
+        "title": "14.05.26 | Testabdeckung | P02: Feature-Testabdeckung und UC-Lücken abgeschlossen",
+        "source": "journal/14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md",
+        "output": "verwaltung/journal/14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "13-05-26-doc-extract-projekt-termin-save-flow",
         "title": "13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow",

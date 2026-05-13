@@ -22,6 +22,7 @@
  * Die reservierten Termin-Schutzpfade fuer Storno und Planung blockiert ueber die bestehende Tag-Infrastruktur end-to-end absichern.
  */
 import { and, eq } from "drizzle-orm";
+import type { SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { db } from "../../../server/db";
 import { appointmentEmployees, appointmentTags, projectOrder, tags } from "../../../shared/schema";
@@ -34,21 +35,40 @@ import {
   RESERVED_APPOINTMENT_CANCELLATION_TAG_NAME,
 } from "../../../shared/appointmentCancellation";
 import * as projectsService from "../../../server/services/projectsService";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import { applySystemSeed } from "../../../server/services/systemSeedService";
-import { createApiTestApp, loginAdminAgent } from "../../helpers/apiTestHarness";
+import { createApiTestApp, loginAdminAgent, loginAgent } from "../../helpers/apiTestHarness";
 import {
   createAppointmentFixture,
   createCustomerFixture,
   createEmployeeFixture,
   createProjectFixture,
+  createRawAppointmentFixture,
   getRelativeBerlinDate,
 } from "../../helpers/testDataFactory";
 
 let app: Awaited<ReturnType<typeof createApiTestApp>>;
+let userCounter = 1;
 
 beforeAll(async () => {
   app = await createApiTestApp();
 });
+
+async function createRoleAgent(roleCode: "DISPATCHER" | "READER"): Promise<SuperAgentTest> {
+  const idx = userCounter++;
+  const username = `ft01-cancel-${roleCode.toLowerCase()}-${idx}`;
+  const password = `ft01-cancel-${roleCode.toLowerCase()}-password`;
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "FT01",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+  return loginAgent(app, { username, password });
+}
 
 describe("FT01/FT28 integration: appointment cancellation workflow", () => {
   it("filters protected system tags per picker domain, auto-creates them, and keeps them protected in admin master data", async () => {
@@ -323,5 +343,52 @@ describe("FT01/FT28 integration: appointment cancellation workflow", () => {
       .from(appointmentEmployees)
       .where(eq(appointmentEmployees.appointmentId, appointment.id));
     expect(employeeRelationsAfterRepair).toEqual([]);
+  });
+
+  it("allows DISPATCHER cancellation, blocks READER cancellation and keeps historical appointments readonly", async () => {
+    const dispatcher = await createRoleAgent("DISPATCHER");
+    const reader = await createRoleAgent("READER");
+    await applySystemSeed();
+
+    const futureProject = await createProjectFixture({ prefix: "FT01-CANCEL-ROLE" });
+    const futureAppointment = await createAppointmentFixture({
+      projectId: futureProject.id,
+      startDate: getRelativeBerlinDate(2),
+    });
+    await dispatcher
+      .post(`/api/appointments/${futureAppointment.id}/cancel`)
+      .send({ version: futureAppointment.version })
+      .expect(204);
+
+    const futureDetail = await dispatcher.get(`/api/appointments/${futureAppointment.id}`).expect(200);
+    expect(futureDetail.body.isCancelled).toBe(true);
+
+    const readerBlockedAppointment = await createAppointmentFixture({
+      projectId: futureProject.id,
+      startDate: getRelativeBerlinDate(3),
+    });
+    await reader
+      .post(`/api/appointments/${readerBlockedAppointment.id}/cancel`)
+      .send({ version: readerBlockedAppointment.version })
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body.code).toBe("FORBIDDEN");
+      });
+
+    const historicalProject = await createProjectFixture({ prefix: "FT01-CANCEL-HIST" });
+    const historicalAppointmentId = await createRawAppointmentFixture({
+      projectId: historicalProject.id,
+      startDate: "2020-01-10",
+      title: "FT01 historischer Storno",
+    });
+    const historicalDetail = await dispatcher.get(`/api/appointments/${historicalAppointmentId}`).expect(200);
+
+    await dispatcher
+      .post(`/api/appointments/${historicalAppointmentId}/cancel`)
+      .send({ version: historicalDetail.body.version })
+      .expect(409)
+      .expect(({ body }) => {
+        expect(body.code).toBe("PAST_APPOINTMENT_READONLY");
+      });
   });
 });

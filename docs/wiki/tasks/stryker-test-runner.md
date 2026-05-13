@@ -38,4 +38,3 @@ W-16 beschreibt keinen offenen Produktentscheid mehr, sondern einen eng begrenzt
 
 - Features: —
 - Entscheidungen: [W-16 - Stryker Test Runner](../decisions/w-16-stryker-test-runner.md)
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

@@ -4,7 +4,7 @@ Die FT-02-Testlücken rund um Projekt-Integrationstests, Projekt-Notizen, Aktivi
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Feature-Testabdeckung | Testabdeckung | 09.05.26 |
+| `abgeschlossen` | Hoch | Feature-Testabdeckung | Testabdeckung | 09.05.26 |
 
 ---
 
@@ -38,8 +38,14 @@ Der Test-Lücken-Scan für FT-02 Projekte vom 09.05.26 benennt mehrere konkrete 
 
 ## Blocker und offene Fragen
 
-- Für UC 02/07 ist offen, ob der Artikellistenfilter als separater Auftrag formuliert oder bis zur Stabilisierung von UC 02/26 zurückgestellt wird.
-- Für inaktive Projekte in Kalenderansichten ist offen, ob laufende Termine weiterhin sichtbar bleiben sollen.
+Keine bekannt.
+
+## Abschluss
+
+- Abgeschlossen am: 14.05.26
+- Ergebnis: Die FT-02-Testlücken wurden tests-only geschlossen. Projekt-Integrationstests nutzen den zentralen API-Test-Harness, Projekt-Tags, Projektnotizen, Aktivierung/Reaktivierung und Scope-Mengenlogik sind über echte API- und Persistenzpfade abgesichert.
+- Verifikation: `npm run test:integration -- tests/integration/server/ft02.full-uc-coverage.integration.test.ts tests/integration/server/projects.scope.mengenlogik.integration.test.ts --reporter=verbose`; gemeinsamer Abschlusslauf `npm run test:integration -- tests/integration/server/appointments.cancellation.integration.test.ts tests/integration/server/attachmentQueries.ft24.integration.test.ts tests/integration/server/attachments.delete.ft19.integration.test.ts tests/integration/server/customers.attachments.ft19.integration.test.ts tests/integration/server/ft02.full-uc-coverage.integration.test.ts tests/integration/server/projects.delete.rules.test.ts tests/integration/server/projects.scope.mengenlogik.integration.test.ts tests/integration/server/reportConfigs.reportEffects.integration.test.ts tests/integration/server/tour-print-preview.integration.test.ts --reporter=verbose` mit 97 bestandenen Tests.
+- Folgeaufgaben: Keine. Der Artikellistenfilter und inaktive Kalenderansichten wurden nicht als verbleibende P-02-Testlücke weitergeführt.
 
 ---
 
@@ -48,4 +54,5 @@ Der Test-Lücken-Scan für FT-02 Projekte vom 09.05.26 benennt mehrere konkrete 
 - Features: FT-02 Projekte
 - Use Cases: UC 02/04 · UC 02/07 · UC 02/23 · UC 02/24 · UC 02/26
 - Entscheidungen: —
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../../projects/feature-testabdeckung-uc-luecken.md)
+- Journal: [14.05.26 - P02: Feature-Testabdeckung und UC-Lücken abgeschlossen](../../journal/14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md)

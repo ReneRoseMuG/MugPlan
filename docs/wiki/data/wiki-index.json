@@ -174,11 +174,6 @@
       "sortierung": 110
     },
     {
-      "id": "task-topic-termin-workflows",
-      "label": "Termin-Workflows",
-      "sortierung": 120
-    },
-    {
       "id": "task-topic-testinfrastruktur",
       "label": "Testinfrastruktur",
       "sortierung": 130
@@ -243,25 +238,12 @@
       "id": "P-02",
       "datei": "projects/feature-testabdeckung-uc-luecken.md",
       "titel": "Feature-Testabdeckung, UC-Lücken und Präzisierungen",
-      "status_id": "task-status-offen",
+      "status_id": "task-status-abgeschlossen",
       "dringlichkeit_id": "prio-hoch",
-      "master_task": "tasks/feature-testabdeckung-uc-luecken-koordinieren.md",
-      "aufgaben": [
-        "tasks/stryker-test-runner.md",
-        "tasks/ft01-ft04-ft33-testabdeckung-uc-luecken.md",
-        "tasks/ft02-projekte-testluecken-schliessen.md",
-        "tasks/ft19-attachment-testluecken.md",
-        "tasks/ft26-reports-testabdeckung.md",
-        "tasks/ft34-kalendermarker-testluecken.md",
-        "tasks/storno-historischer-termine-fachlich-entscheiden.md",
-        "tasks/systemgesteuerte-termin-workflows-generalisieren.md",
-        "tasks/termintabellen-in-formularen-vereinheitlichen.md"
-      ],
+      "master_task": "",
+      "aufgaben": [],
       "entscheidungen": [
         "decisions/w-08-storno-historischer-termine.md",
-        "decisions/w-09-systemgesteuerte-termin-workflows.md",
-        "decisions/w-11-termintabellen-in-formularen.md",
-        "decisions/w-16-stryker-test-runner.md",
         "decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md",
         "decisions/w-21-ft26-reports-testabdeckung.md"
       ]

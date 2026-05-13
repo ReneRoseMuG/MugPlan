@@ -130,5 +130,23 @@ describe("FT24 integration: attachment query endpoints", () => {
     expect(duplicates.body.summary.customer).toBeGreaterThanOrEqual(1);
     expect(duplicates.body.summary.project).toBeGreaterThanOrEqual(1);
     expect(Array.isArray(duplicates.body.hits)).toBe(true);
+
+    await admin.delete(`/api/project-attachments/${Number(projectUpload.body.id)}`).expect(200);
+
+    const duplicatesAfterProjectRemoval = await admin
+      .post("/api/attachments/duplicates/check-original-name")
+      .send({ originalName: duplicateName })
+      .expect(200);
+    expect(duplicatesAfterProjectRemoval.body.duplicate).toBe(true);
+    expect(duplicatesAfterProjectRemoval.body.summary.customer).toBeGreaterThanOrEqual(1);
+    expect(duplicatesAfterProjectRemoval.body.summary.project).toBe(0);
+    expect(duplicatesAfterProjectRemoval.body.hits).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          domain: "project",
+          attachmentId: Number(projectUpload.body.id),
+        }),
+      ]),
+    );
   });
 });

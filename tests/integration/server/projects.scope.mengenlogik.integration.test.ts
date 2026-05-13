@@ -18,17 +18,15 @@
  * Ziel:
  * Mengenlogik der Projektliste serverseitig explizit absichern.
  */
-import express from "express";
-import { createServer } from "http";
-import request, { type SuperAgentTest } from "supertest";
+import type express from "express";
+import type { SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 
-import { registerRoutes } from "../../../server/routes";
-import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import * as appointmentsRepository from "../../../server/repositories/appointmentsRepository";
+import { createApiTestApp, loginAdminAgent as loginAdminAgentBase } from "../../helpers/apiTestHarness";
 
 let app: express.Express;
 let seq = 1;
@@ -40,21 +38,11 @@ const berlinFormatter = new Intl.DateTimeFormat("en-CA", {
 });
 
 beforeAll(async () => {
-  app = express();
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: false }));
-  const httpServer = createServer(app);
-  await registerRoutes(httpServer, app);
-  app.use(errorHandler);
+  app = await createApiTestApp();
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
-  const agent = request.agent(app);
-  await agent
-    .post("/api/auth/login")
-    .send({ username: "test-admin", password: "test-admin-password" })
-    .expect(200);
-  return agent;
+  return loginAdminAgentBase(app);
 }
 
 async function createCustomer(prefix: string) {
@@ -92,6 +80,7 @@ function relativeBerlinDate(daysFromToday: number): string {
 }
 
 async function insertAppointmentRaw(params: { projectId: number; customerId: number; startDate: string; title: string }) {
+  // Dieser Test braucht rein historische Termine; die fachlichen Mutations-APIs sollen solche Altzustände nicht erzeugen.
   const created = await appointmentsRepository.createAppointment(
     {
       projectId: params.projectId,

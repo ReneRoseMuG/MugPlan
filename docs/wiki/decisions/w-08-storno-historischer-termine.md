@@ -1,8 +1,8 @@
-﻿# W-08 - Storno historischer Termine: Admin-Ausnahme undokumentiert
+# W-08 - Storno historischer Termine: Admin-Ausnahme dokumentiert
 
 ## Metadaten
 
-- Status: offen
+- Status: erledigt
 - Priorität: Mittel
 - Feature: [FT (01): Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Entdeckt: 01.05.26
@@ -10,7 +10,7 @@
 
 ## Befund
 
-Der Code erlaubt Admins, auch historische Termine zu stornieren. Der betroffene Use Case beschreibt die Rollenausnahme nicht eindeutig.
+Der Code erlaubt Admins, auch historische Termine zu stornieren. Die Rollenausnahme ist inzwischen in FT-01 und UC 01/22 dokumentiert.
 
 ## Optionen
 
@@ -19,7 +19,7 @@ Der Code erlaubt Admins, auch historische Termine zu stornieren. Der betroffene 
 
 ## Auswirkungen eines Eingriffs
 
-Eine Anpassung der Spec würde das bestehende Admin-Verhalten fachlich legitimieren. Eine Codeeinschränkung würde Admins eine heute mögliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
+Eine Anpassung der Spec legitimiert das bestehende Admin-Verhalten fachlich. Eine Codeeinschränkung würde Admins eine heute mögliche Storno-Aktion nehmen. Betroffen ist nur die Storno-Regel historischer Termine; andere Mutationen historischer Termine sind hiervon nicht automatisch mitentschieden.
 
 ## Schadenspotential
 
@@ -27,6 +27,10 @@ Mittel. Ein falscher Entscheid oder eine unklare Doku kann dazu führen, dass Ad
 
 ## Vorgeschlagene Maßnahme
 
-Entscheidung treffen: Spec an Admin-Ausnahme anpassen oder Code einschränken.
+Erledigt durch Variante A. Die bestehende Admin-Ausnahme bleibt fachlich gültig: Administratoren dürfen historische Termine stornieren, Disponenten nicht. FT-01 und UC 01/22 dokumentieren diese Rollenregel bereits ausdrücklich; eine Codeeinschränkung ist nicht vorgesehen.
 
 ## Quelle
+
+## Abschluss
+
+Abgeschlossen am 14.05.26. A-34 wurde geschlossen, weil die fachliche Entscheidung dokumentiert und die Lösung ohne Codeänderung eindeutig ist.

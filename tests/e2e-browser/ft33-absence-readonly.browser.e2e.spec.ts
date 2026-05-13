@@ -179,7 +179,12 @@ test("blocks generic absence mutation entrypoints and keeps the employee-form FT
   await page.getByTestId("button-calendar-absence-mode").click();
   const absenceMonthBar = page.locator(`[data-testid="month-compact-bar-${absenceAppointmentId}"]`).first();
   await expect(absenceMonthBar).toBeVisible();
+  await expect(absenceMonthBar).toContainText("Abwesenheit, Aline");
   await expect(page.getByTestId(`month-compact-bar-menu-trigger-${absenceAppointmentId}`)).toHaveCount(0);
+  await page.getByTestId("button-calendar-planning-mode").click();
+  await expect(page.locator(`[data-testid="month-compact-bar-${absenceAppointmentId}"]`)).toHaveCount(0);
+  await page.getByTestId("button-calendar-absence-mode").click();
+  await expect(absenceMonthBar).toBeVisible();
   await absenceMonthBar.dblclick();
   await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
   await expect(page.getByTestId("entity-form-shell")).toHaveCount(0);
@@ -202,10 +207,12 @@ test("blocks generic absence mutation entrypoints and keeps the employee-form FT
   await page.getByTestId("tab-employee-abwesenheiten").click();
   const absenceRow = page.getByTestId(`row-employee-absence-${absenceAppointmentId}`);
   await expect(absenceRow).toBeVisible();
+  await expect(absenceRow).toContainText("Urlaub");
   await expect(page.getByTestId(`button-edit-employee-absence-${absenceAppointmentId}`)).toBeVisible();
   await expect(page.getByTestId(`button-delete-employee-absence-${absenceAppointmentId}`)).toBeVisible();
 
   await page.getByTestId(`button-edit-employee-absence-${absenceAppointmentId}`).click();
+  await page.getByTestId(`select-employee-absence-edit-type-${absenceAppointmentId}`).selectOption("sick");
   await page.getByTestId(`input-employee-absence-edit-start-${absenceAppointmentId}`).fill(absenceEditedStartDate);
   await page.getByTestId(`input-employee-absence-edit-end-${absenceAppointmentId}`).fill(absenceEditedEndDate);
   await page.getByTestId(`textarea-employee-absence-edit-note-${absenceAppointmentId}`).fill("FT33 Browser Abwesenheit aktualisiert");
@@ -218,18 +225,27 @@ test("blocks generic absence mutation entrypoints and keeps the employee-form FT
   expect(absenceUpdateResponse.ok()).toBeTruthy();
   await expect.poll(async () => {
     const response = await page.request.get(`/api/employees/${absenceEmployeeId}/absence-appointments`);
-    const items = await response.json() as Array<{ id: number; startDate: string; endDate: string | null; description: string | null }>;
+    const items = await response.json() as Array<{
+      id: number;
+      startDate: string;
+      endDate: string | null;
+      description: string | null;
+      appointmentTags: Array<{ name: string }>;
+    }>;
     const item = items.find((entry) => entry.id === absenceAppointmentId) ?? null;
     return item ? {
       startDate: item.startDate,
       endDate: item.endDate,
       description: item.description,
+      hasSickTag: item.appointmentTags.some((tag) => tag.name === "Krankheit"),
     } : null;
   }).toEqual({
     startDate: absenceEditedStartDate,
     endDate: absenceEditedEndDate,
     description: "FT33 Browser Abwesenheit aktualisiert",
+    hasSickTag: true,
   });
+  await expect(absenceRow).toContainText("Krankheit");
 
   await page.getByTestId(`button-delete-employee-absence-${absenceAppointmentId}`).click();
   const deleteDialog = page.getByTestId("dialog-delete-employee-absence");

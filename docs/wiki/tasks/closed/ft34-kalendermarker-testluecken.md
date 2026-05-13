@@ -4,7 +4,7 @@ Sieben Testlücken und eine Code-Wiki-Diskrepanz für FT-34 beheben. Nach Abschl
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Mittel | Kalendermarker / Feiertage | Testabdeckung | 08.05.26 |
+| `verworfen` | Mittel | Kalendermarker / Feiertage | Testabdeckung | 08.05.26 |
 
 ---
 
@@ -31,7 +31,14 @@ Ein manueller Testscan vom 08.05.26 hat ergeben, dass die bestehenden Tests für
 
 ## Blocker und offene Fragen
 
-- Keine bekannt.
+Keine bekannt.
+
+## Abschluss
+
+- Abgeschlossen am: 14.05.26
+- Ergebnis: Die Aufgabe wird vorerst verworfen, weil der referenzierte Ursprungsauftrag `.claude/codex-auftrag-ft34-testluecken.md` leer ist und die sieben Punkte nicht belastbar rekonstruierbar sind. Die konkret erkennbare Lücke zu nur teilweise regionalen Feiertagen wurde tests-only in `calendarMarkersService.test.ts` abgesichert.
+- Verifikation: `npm run test:unit -- tests/unit/calendarMarkersService.test.ts --reporter=verbose`; gemeinsamer Abschlusslauf `npm run test:unit -- tests/unit/calendarMarkersService.test.ts tests/unit/settings/useSettings.auftragsliste.test.ts tests/unit/ui/tourManagement.versioning.test.tsx tests/unit/ui/tourWeekPlanningView.render.test.tsx --reporter=verbose` mit 21 bestandenen Tests.
+- Folgeaufgaben: Keine. Falls die sieben Punkte später wieder auftauchen, soll eine neue, konkrete Aufgabe angelegt werden.
 
 ---
 
@@ -39,4 +46,5 @@ Ein manueller Testscan vom 08.05.26 hat ergeben, dass die bestehenden Tests für
 
 - Features: —
 - Entscheidungen: —
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../../projects/feature-testabdeckung-uc-luecken.md)
+- Journal: [14.05.26 - P02: Feature-Testabdeckung und UC-Lücken abgeschlossen](../../journal/14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md)

@@ -97,6 +97,15 @@ describe("FT19 integration: customer attachments", () => {
       .expect(200)
       .expect((res) => {
         expect(String(res.headers["content-type"] ?? "")).toContain("application/pdf");
+        expect(String(res.headers["content-disposition"] ?? "")).toContain("inline");
+      });
+
+    await admin
+      .get(`/api/customer-attachments/${attachmentId}/download?download=1`)
+      .expect(200)
+      .expect((res) => {
+        expect(String(res.headers["content-type"] ?? "")).toContain("application/pdf");
+        expect(String(res.headers["content-disposition"] ?? "")).toContain("attachment");
       });
   });
 
@@ -126,4 +135,3 @@ describe("FT19 integration: customer attachments", () => {
     await admin.get("/api/customer-attachments/999999999/download").expect(404);
   });
 });
-

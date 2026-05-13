@@ -194,7 +194,14 @@ async function createHistoricalAppointmentParent(): Promise<{ id: number }> {
   });
   // Repository direkt verwenden, um Service-Validierung (PAST_APPOINTMENT_READONLY) zu umgehen
   const appointment = await appointmentsRepository.createAppointment(
-    { projectId: project.id, startDate: "2020-01-10", endDate: null, startTime: null },
+    {
+      projectId: project.id,
+      customerId: customer.id,
+      title: `Historischer Termin ${token}`,
+      startDate: "2020-01-10",
+      endDate: null,
+      startTime: null,
+    },
     [],
   );
   return { id: Number(appointment?.id) };
@@ -408,7 +415,7 @@ describe.each(domains)("FT19 Lösch-Workflow: $name", (domain) => {
   });
 });
 
-describe.skip("FT19 Termin-Sonderregel: historischer Termin", () => {
+describe("FT19 Termin-Sonderregel: historischer Termin", () => {
   it("Soft-Delete auf Attachment eines historischen Termins → 403", async () => {
     const admin = await loginAdminAgent();
     const parent = await createHistoricalAppointmentParent();

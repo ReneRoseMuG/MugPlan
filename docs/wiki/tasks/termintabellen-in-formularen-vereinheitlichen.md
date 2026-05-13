@@ -39,4 +39,3 @@ W-11 beschreibt unterschiedliche Termin-Darstellungen in Kunden-, Projekt-, Tour
 
 - Features: Formular- und Detailansichten für Kunden, Projekte, Touren und Mitarbeiter
 - Entscheidungen: [W-11 - Termintabellen in Formularen vereinheitlichen](../decisions/w-11-termintabellen-in-formularen.md)
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

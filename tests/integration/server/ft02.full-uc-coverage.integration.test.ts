@@ -25,7 +25,9 @@ import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
 import { db } from "../../../server/db";
 import { projectOrder } from "../../../shared/schema";
-import { createApiTestApp, loginAdminAgent as loginAdminAgentBase } from "../../helpers/apiTestHarness";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
+import { createApiTestApp, loginAgent, loginAdminAgent as loginAdminAgentBase } from "../../helpers/apiTestHarness";
 import type express from "express";
 import type { SuperAgentTest } from "supertest";
 
@@ -38,6 +40,21 @@ beforeAll(async () => {
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
   return loginAdminAgentBase(app);
+}
+
+async function createRoleAgent(roleCode: "READER" | "DISPATCHER"): Promise<SuperAgentTest> {
+  const username = `ft02-${roleCode.toLowerCase()}-${Date.now()}-${seq++}`;
+  const password = `${username}-password`;
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "FT02",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+
+  return loginAgent(app, { username, password });
 }
 
 async function createCustomer(prefix: string) {
@@ -308,6 +325,121 @@ describe("FT02 integration: full uc coverage", () => {
       .delete(`/api/projects/${project.id}/notes/${noteId}`)
       .send({ version: createdNote.body.version })
       .expect(204);
+  });
+
+  it("UC 02/04: project tags can be added and removed through server-side guarded API paths", async () => {
+    const admin = await loginAdminAgent();
+    const reader = await createRoleAgent("READER");
+    const customer = await createCustomer("UC0204TAGS");
+    const project = await createProject(customer.id, "UC02-04 Tags");
+
+    const tag = await admin
+      .post("/api/admin/master-data/tags")
+      .send({ name: `UC02-TAG-${seq++}`, color: "#2255AA" })
+      .expect(201);
+
+    await reader
+      .post(`/api/projects/${project.id}/tags`)
+      .send({ tagId: tag.body.id })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+
+    const attached = await admin
+      .post(`/api/projects/${project.id}/tags`)
+      .send({ tagId: tag.body.id })
+      .expect(201);
+
+    expect(attached.body.tag.id).toBe(tag.body.id);
+    expect(attached.body.relationVersion).toBe(1);
+
+    const [listed, detail] = await Promise.all([
+      admin.get(`/api/projects/${project.id}/tags`).expect(200),
+      admin.get(`/api/projects/${project.id}`).expect(200),
+    ]);
+
+    expect(listed.body.map((entry: { tag: { id: number } }) => entry.tag.id)).toContain(tag.body.id);
+    expect(detail.body.tags.map((entry: { id: number }) => entry.id)).toContain(tag.body.id);
+
+    await admin
+      .delete(`/api/projects/${project.id}/tags/${tag.body.id}`)
+      .send({ version: attached.body.relationVersion })
+      .expect(204);
+
+    const afterRemove = await admin.get(`/api/projects/${project.id}/tags`).expect(200);
+    expect(afterRemove.body.map((entry: { tag: { id: number } }) => entry.tag.id)).not.toContain(tag.body.id);
+  });
+
+  it("UC 02/23: project notes can be pinned and unpinned through generic note endpoints", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0223");
+    const project = await createProject(customer.id, "UC02-23");
+
+    const firstNote = await admin
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "UC02-23 Normal", body: "<p>Normal</p>" })
+      .expect(201);
+    const secondNote = await admin
+      .post(`/api/projects/${project.id}/notes`)
+      .send({ title: "UC02-23 Pin", body: "<p>Pin</p>" })
+      .expect(201);
+
+    const pinned = await admin
+      .patch(`/api/notes/${secondNote.body.id}/pin`)
+      .send({ isPinned: true, version: secondNote.body.version })
+      .expect(200);
+
+    expect(pinned.body.isPinned).toBe(true);
+
+    const listAfterPin = await admin.get(`/api/projects/${project.id}/notes`).expect(200);
+    expect(listAfterPin.body[0]).toMatchObject({
+      id: secondNote.body.id,
+      isPinned: true,
+    });
+    expect(listAfterPin.body.map((note: { id: number }) => note.id)).toContain(firstNote.body.id);
+
+    const unpinned = await admin
+      .patch(`/api/notes/${secondNote.body.id}/pin`)
+      .send({ isPinned: false, version: pinned.body.version })
+      .expect(200);
+
+    expect(unpinned.body.isPinned).toBe(false);
+  });
+
+  it("UC 02/24: project deactivation and reactivation are reflected by real list endpoints", async () => {
+    const admin = await loginAdminAgent();
+    const customer = await createCustomer("UC0224");
+    const project = await createProject(customer.id, "UC02-24 Active Toggle");
+
+    const initiallyActive = await admin.get("/api/projects?filter=active&scope=all").expect(200);
+    expect(initiallyActive.body.map((row: { id: number }) => row.id)).toContain(project.id);
+
+    const deactivated = await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: project.version, isActive: false })
+      .expect(200);
+
+    const [activeAfterDeactivate, inactiveAfterDeactivate] = await Promise.all([
+      admin.get("/api/projects?filter=active&scope=all").expect(200),
+      admin.get("/api/projects?filter=inactive&scope=all").expect(200),
+    ]);
+
+    expect(activeAfterDeactivate.body.map((row: { id: number }) => row.id)).not.toContain(project.id);
+    expect(inactiveAfterDeactivate.body.map((row: { id: number }) => row.id)).toContain(project.id);
+
+    await admin
+      .patch(`/api/projects/${project.id}`)
+      .send({ version: deactivated.body.version, isActive: true })
+      .expect(200);
+
+    const [activeAfterReactivate, inactiveAfterReactivate] = await Promise.all([
+      admin.get("/api/projects?filter=active&scope=all").expect(200),
+      admin.get("/api/projects?filter=inactive&scope=all").expect(200),
+    ]);
+
+    expect(activeAfterReactivate.body.map((row: { id: number }) => row.id)).toContain(project.id);
+    expect(inactiveAfterReactivate.body.map((row: { id: number }) => row.id)).not.toContain(project.id);
   });
 
   it("UC 02/06 invariant surface: project attachment delete endpoint is active and returns 404 for unknown ids", async () => {

@@ -492,6 +492,7 @@ function layout({ outputRel, title, screenLabel, current, breadcrumbs, body }) {
         })
         .join("")}</nav>`
     : "";
+  const cleanBody = String(body ?? "").trimEnd();
   return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -516,7 +517,7 @@ function layout({ outputRel, title, screenLabel, current, breadcrumbs, body }) {
     <main class="wiki-content" data-screen-label="${escapeHtml(screenLabel ?? title)}">
       <div class="wiki-content__inner">
         ${crumbHtml}
-        ${body}
+        ${cleanBody}
       </div>
     </main>
   </div>
@@ -976,6 +977,55 @@ function tablePage({ outputRel, title, current, lead, rows, columns }) {
   });
 }
 
+function isClosedProject(project) {
+  const status = (project.status ?? "").trim().toLocaleLowerCase("de");
+  return ["abgeschlossen", "erledigt", "entfernt", "verworfen"].includes(status);
+}
+
+function renderProjectTable(rows, outputRel) {
+  const columns = [
+    { label: "ID", render: (row) => entityLink(row, outputRel, row.id) },
+    { label: "Projekt", render: (row) => entityLink(row, outputRel, row.title) },
+    { label: "Status", render: (row) => row.status ? badge(row.status) : "" },
+    { label: "Aufgaben", render: (row) => String(row.taskRefs.length) },
+  ];
+  if (rows.length === 0) {
+    return "<p>Keine Projekte.</p>";
+  }
+  return `<table class="wiki-table">
+      <thead><tr>${columns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${rows
+          .map((row) => `<tr>${columns.map((col, index) => `<td${index === 0 ? ' class="wiki-table__id"' : ""}>${col.render(row)}</td>`).join("")}</tr>`)
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderProjectOverviewPage(sources) {
+  const outputRel = "projekt/projekte.html";
+  const openProjects = sources.projects.filter((project) => !isClosedProject(project));
+  const closedProjects = sources.projects.filter(isClosedProject);
+  const body = `<h1 class="wiki-h1"${headingIconAttr("projekte")}>Projekte</h1>
+    <p class="wiki-lead">Thematisch verwandte Aufgabensammlungen für größere Arbeitsstränge. Projekte haben Aufgaben, aber nicht zwingend eine Masteraufgabe.</p>
+    <h2 class="wiki-h2">Offene Projekte</h2>
+    ${renderProjectTable(openProjects, outputRel)}
+    <h2 class="wiki-h2">Geschlossene Projekte</h2>
+    ${renderProjectTable(closedProjects, outputRel)}`;
+  return layout({
+    outputRel,
+    title: "Projekte",
+    screenLabel: "Projekte",
+    current: "projekte",
+    breadcrumbs: [
+      { label: "MugPlan Wiki", href: "index.html" },
+      { label: "Projekte", href: "index.html" },
+      { label: "Projekte" },
+    ],
+    body,
+  });
+}
+
 function renderUserDocsOverview(userDocs) {
   const outputRel = "benutzerdokumentation.html";
   const readmeRel = "user-docs/README.md";
@@ -1030,7 +1080,7 @@ function renderIndex(sources, index) {
     <section class="wiki-cards" aria-label="Bereiche">
       <article class="wiki-card">
         <h2 class="wiki-card__title"><a href="${relLink(outputRel, "projekt/projekte.html")}">Projekte</a></h2>
-        <p class="wiki-card__desc">Thematisch verwandte Aufgabensammlungen mit Masteraufgaben, Einzelaufgaben und Arbeitsständen.</p>
+        <p class="wiki-card__desc">Thematisch verwandte Aufgabensammlungen mit offenen und geschlossenen Arbeitsständen.</p>
         <ul class="wiki-card__links">
           <li><a href="${relLink(outputRel, "projekt/projekte.html")}">Projekte <span class="wiki-card__count">${sources.projects.length}</span></a></li>
           <li><a href="${relLink(outputRel, "projekt/aufgaben.html")}">Aufgaben <span class="wiki-card__count">${sources.tasks.length}</span></a></li>
@@ -1081,23 +1131,7 @@ function renderIndex(sources, index) {
 
 function renderOverviewPages(sources) {
   writeText(outputAbs("benutzerdokumentation.html"), renderUserDocsOverview(sources.userDocs));
-  writeText(outputAbs("projekt/projekte.html"), tablePage({
-    outputRel: "projekt/projekte.html",
-    title: "Projekte",
-    current: "projekte",
-    lead: "Thematisch verwandte Aufgabensammlungen für größere Arbeitsstränge, jeweils mit Masteraufgabe und zugeordneten Einzelaufgaben.",
-    rows: sources.projects,
-    columns: [
-      { label: "ID", render: (row) => entityLink(row, "projekt/projekte.html", row.id) },
-      { label: "Projekt", render: (row) => entityLink(row, "projekt/projekte.html", row.title) },
-      { label: "Status", render: (row) => row.status ? badge(row.status) : "" },
-      { label: "Masteraufgabe", render: (row) => {
-        const master = sources.tasks.find((item) => item.rel === row.masterTask);
-        return master ? entityLink(master, "projekt/projekte.html", master.title) : "";
-      } },
-      { label: "Einzelaufgaben", render: (row) => String(row.taskRefs.length) },
-    ],
-  }));
+  writeText(outputAbs("projekt/projekte.html"), renderProjectOverviewPage(sources));
   writeText(outputAbs("projekt/aufgaben.html"), tablePage({
     outputRel: "projekt/aufgaben.html",
     title: "Aufgaben",

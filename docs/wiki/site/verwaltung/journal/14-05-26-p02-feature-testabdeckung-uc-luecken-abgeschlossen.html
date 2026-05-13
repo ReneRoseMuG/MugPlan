@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen: 14.05.26 | Testabdeckung | P02: Feature-Testabdeckung und UC-Lücken abgeschlossen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen 14.05.26 | Testabdeckung | P02: Feature-Testabdeckung und UC-Lücken abgeschlossen</span></nav>
+        <h1 class="wiki-h1">14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen: 14.05.26 | Testabdeckung | P02: Feature-Testabdeckung und UC-Lücken abgeschlossen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>14.05.26</div>
+    <p class="wiki-lead">P-02 wurde als tests-only-Arbeitsstrang abgeschlossen. Die zugeordneten Aufgaben zu FT-01, FT-02, FT-04, FT-19, FT-26, FT-33 und FT-34 wurden geschlossen oder bewusst verworfen, ohne Produktionscode zu ändern. Die verbleibenden Blocker wurden fachlich eingeordnet: Kundenlöschung </p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>P-02 wurde als tests-only-Arbeitsstrang abgeschlossen. Die zugeordneten Aufgaben zu FT-01, FT-02, FT-04, FT-19, FT-26, FT-33 und FT-34 wurden geschlossen oder bewusst verworfen, ohne Produktionscode zu ändern. Die verbleibenden Blocker wurden fachlich eingeordnet: Kundenlöschung bleibt außerhalb des Produktumfangs, physische Dateilöschung bei Projektlöschung bleibt unverändert, und für die Auftragsliste wird kein eigener Print-Preview-Endpunkt ergänzt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Testabdeckungsabschluss über Integrationstests, Unit-Tests und Browser-E2E.</li><li>Wiki-Abschluss für P-02, die Masteraufgabe und die zugeordneten Einzelaufgaben.</li><li>Kein Produktionscode, keine Migration und keine neue Abhängigkeit.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-01 Kalendertermine.</li><li>FT-02 Projekte.</li><li>FT-04 Tourenplanung.</li><li>FT-19 Attachments.</li><li>FT-26 Auswertungen und Reports.</li><li>FT-33 Abwesenheiten.</li><li>FT-34 Kalendermarker.</li><li>Notion-Links wurden im Auftrag nicht belastbar angegeben; die lokale Wiki-Projektakte war maßgeblich.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>FT-02-Projekttests nutzen zentrale API-Harness-Pfade und prüfen Projekttags, Projektnotizen, Aktivierung/Reaktivierung sowie Scope-Mengenlogik.</li><li>FT-19-Tests prüfen historische Termin-Attachment-Sperren, Download-Dispositionen, Projekt-Delete-Referenzen und Attachment-Duplikate.</li><li>FT-26-Tests prüfen Preset-Wirkung auf echte Reportdaten, Tourenplan-Print-Preview inklusive Termine ohne Tour und entfernte Auftragslisten-Settings.</li><li>FT-34 erhielt einen Unit-Test für nur teilweise regionale Feiertage; der leere Ursprungsauftrag mit sieben nicht rekonstruierbaren Punkten wurde verworfen.</li><li>FT-01, FT-04 und FT-33 prüfen Rollen-Storno, Vier-KW-Matrix, Tour-KW-Dialogabbruch sowie Abwesenheitsanzeige, Typwechsel und Tour-KW-Abzug.</li><li>P-02, die Masteraufgabe und die fünf Einzelaufgaben wurden in der Wiki-Aufgabenstruktur geschlossen; FT-34 wurde als verworfen geschlossen.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> und <code>DISPATCHER</code> sind für zulässige Testpfade zu Storno, Tour-KW-Planung, Projekt-/Attachment-Mutationen und Reportzugriffen geprüft.</li><li><code>READER</code>/<code>LESER</code> wird bei mutierenden API-Pfaden serverseitig blockiert.</li><li>Reine UI-Sichtbarkeit wurde nicht als Berechtigungsnachweis gewertet.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li>Safety Gate: <code>.env.test</code> vorhanden, <code>NODE_ENV=test</code>, <code>MUGPLAN_MODE=test</code>.</li><li><code>npm run test:integration -- tests/integration/server/appointments.cancellation.integration.test.ts tests/integration/server/attachmentQueries.ft24.integration.test.ts tests/integration/server/attachments.delete.ft19.integration.test.ts tests/integration/server/customers.attachments.ft19.integration.test.ts tests/integration/server/ft02.full-uc-coverage.integration.test.ts tests/integration/server/projects.delete.rules.test.ts tests/integration/server/projects.scope.mengenlogik.integration.test.ts tests/integration/server/reportConfigs.reportEffects.integration.test.ts tests/integration/server/tour-print-preview.integration.test.ts --reporter=verbose</code> erfolgreich mit 97 Tests in 9 Dateien.</li><li><code>npm run test:unit -- tests/unit/calendarMarkersService.test.ts tests/unit/settings/useSettings.auftragsliste.test.ts tests/unit/ui/tourManagement.versioning.test.tsx tests/unit/ui/tourWeekPlanningView.render.test.tsx --reporter=verbose</code> erfolgreich mit 21 Tests in 4 Dateien.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts tests/e2e-browser/ft33-absence-readonly.browser.e2e.spec.ts tests/e2e-browser/ft33-absence-week-planning.browser.e2e.spec.ts --project=chromium</code> erfolgreich mit 8 Tests.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Keine offenen P-02-Aufgaben.</li><li>Der FT-34-Ursprungsauftrag bleibt verworfen, solange keine belastbare Quelle für die sieben Punkte vorliegt.</li><li>Andere offene Wiki-Aufgaben außerhalb P-02 bleiben unverändert.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-24-fahrzeugverwaltung.html">FT-24</a><a href="../../lastenheft/features/ft-19-attachments.html">FT-19</a><a href="../../lastenheft/features/ft-02-projekte.html">FT-02</a><a href="../../lastenheft/features/ft-04-tourenplanung.html">FT-04</a><a href="../../lastenheft/features/ft-33-abwesenheiten-ueber-interne-personalplanung.html">FT-33</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

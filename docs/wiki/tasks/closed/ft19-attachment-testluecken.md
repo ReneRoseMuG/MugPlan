@@ -4,7 +4,7 @@ Die im Änderungsauftrag benannten FT-19-Testlücken sollen fachlich belastbar g
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Attachments | Testabdeckung | 07.05.26 |
+| `abgeschlossen` | Hoch | Attachments | Testabdeckung | 07.05.26 |
 
 ---
 
@@ -41,9 +41,14 @@ Der Import beschreibt mehrere konkrete Test- und Klärungsaufträge. Ein Teil be
 
 ## Blocker und offene Fragen
 
-- Falls die serverseitige Regel für historische Termin-Deletes fehlt, darf sie nicht ohne Rücksprache implementiert werden.
-- Falls kein Kunden-Delete-Endpunkt existiert, ist die Kunden-Kaskade nur als bekannte API-Lücke dokumentierbar.
-- Falls Employee-Downloads bewusst immer als Attachment ausgeliefert werden sollen, braucht diese Abweichung eine fachliche Begründung in Test und Handler.
+Keine bekannt.
+
+## Abschluss
+
+- Abgeschlossen am: 14.05.26
+- Ergebnis: Die FT-19-Testlücken wurden tests-only geschlossen oder fachlich aus dem Produktumfang genommen. Historische Termin-Attachment-Deletes sind aktiv getestet, Download-Dispositionen und Duplikatsuche wurden ergänzt, Projektlöschung bereinigt Attachment-Referenzen. Kundenlöschung ist kein vorgesehener Produktumfang; ein vorhandenes Script als Workaround reicht fachlich aus. Physische Dateien bei Projektlöschung bleiben im aktuellen Verhalten.
+- Verifikation: `npm run test:integration -- tests/integration/server/attachments.delete.ft19.integration.test.ts tests/integration/server/customers.attachments.ft19.integration.test.ts tests/integration/server/projects.delete.rules.test.ts tests/integration/server/attachmentQueries.ft24.integration.test.ts --reporter=verbose`; gemeinsamer Abschlusslauf `npm run test:integration -- tests/integration/server/appointments.cancellation.integration.test.ts tests/integration/server/attachmentQueries.ft24.integration.test.ts tests/integration/server/attachments.delete.ft19.integration.test.ts tests/integration/server/customers.attachments.ft19.integration.test.ts tests/integration/server/ft02.full-uc-coverage.integration.test.ts tests/integration/server/projects.delete.rules.test.ts tests/integration/server/projects.scope.mengenlogik.integration.test.ts tests/integration/server/reportConfigs.reportEffects.integration.test.ts tests/integration/server/tour-print-preview.integration.test.ts --reporter=verbose` mit 97 bestandenen Tests.
+- Folgeaufgaben: Keine.
 
 ---
 
@@ -52,4 +57,5 @@ Der Import beschreibt mehrere konkrete Test- und Klärungsaufträge. Ein Teil be
 - Features: FT-19 Attachments
 - Use Cases: UC 19/01 - Attachment hochladen · UC 19/05 - Größen- und Typvalidierung · UC 19/07 - Attachment-Kaskade bei Parent-Löschung · UC 19/10 - Attachment-Duplikat entfernen
 - Entscheidungen: —
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../../projects/feature-testabdeckung-uc-luecken.md)
+- Journal: [14.05.26 - P02: Feature-Testabdeckung und UC-Lücken abgeschlossen](../../journal/14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md)

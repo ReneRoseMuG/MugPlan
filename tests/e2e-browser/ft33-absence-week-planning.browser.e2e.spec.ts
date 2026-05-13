@@ -168,6 +168,9 @@ test("Dispatcher bestätigt Abwesenheit und entfernt den Mitarbeiter aus Termin 
   const absenceTile = page.locator(`[data-testid="week-spanning-tile-${absence.id}"], [data-testid="week-appointment-panel-${absence.id}"]`).first();
   await expect(absenceTile).toBeVisible();
   await expect(absenceTile).toContainText(employeeLabel);
+  await expect(page.getByTestId(`week-absence-row-${scenario.targetWeek.weekStartDate}`)).toBeVisible();
+  await expect(page.getByTestId(`week-absence-employee-${getRelativeBerlinDate(0)}-${scenario.employee.id}`)).toBeVisible();
+  await expect(page.getByTestId(`week-spanning-tile-menu-trigger-${absence.id}`)).toHaveCount(0);
 
   await page.getByTestId("switch-week-personnel-column").click();
   await expect(targetSection.getByTestId(`week-personnel-employee-tour-${scenario.tour.id}-${scenario.employee.id}`)).toHaveCount(0);

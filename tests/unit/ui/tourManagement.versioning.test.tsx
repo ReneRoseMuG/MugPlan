@@ -523,6 +523,51 @@ describe("FT07 TourManagement behavior", () => {
     expect(dialogState.operations.map((operation) => operation.executionStatus)).toEqual(["pending", "pending"]);
   });
 
+  it("closes a week planning preview without executing when the dialog is cancelled", async () => {
+    const { TourManagement } = await loadTourManagement({
+      editingTour: { ...tour },
+      isCreating: false,
+      cascadeDialogState: {
+        open: true,
+        mode: "add",
+        activeIndex: 0,
+        phase: "preview",
+        operations: [
+          {
+            mode: "add",
+            tourId: 5,
+            isoYear: 2099,
+            isoWeek: 6,
+            weekLabel: "KW 06 / 2099",
+            employeeId: 11,
+            employeeName: "Mia Tour",
+            previewItems: [{
+              appointmentId: 900,
+              startDate: "2099-02-03",
+              endDate: null,
+              customerName: "Kunde Eins",
+              projectName: "Projekt Eins",
+              status: "will_add",
+              selectable: true,
+              conflictReason: null,
+            }],
+            selectedIds: [900],
+            executionStatus: "pending",
+          },
+        ],
+      },
+    });
+
+    renderToStaticMarkup(<TourManagement userRole="ADMIN" />);
+
+    expect(cascadeDialogCalls).toHaveLength(1);
+    const onClose = cascadeDialogCalls[0].onClose as () => void;
+    onClose();
+
+    expect(setCascadeDialogStateMock).toHaveBeenLastCalledWith(null);
+    expect(apiRequestMock).not.toHaveBeenCalled();
+  });
+
   it("executes queued week planning updates serially after final confirmation", async () => {
     apiRequestMock.mockImplementation(async (method: string, url: string, payload?: unknown) => {
       if (method === "POST" && url === "/api/tours/5/week-employees/add") {

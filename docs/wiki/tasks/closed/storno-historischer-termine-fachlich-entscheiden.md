@@ -4,7 +4,7 @@ Die offene Decision zu historischen Storno-Aktionen soll als nachverfolgbare Auf
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Kalender/Touren/Abwesenheiten | Planung | 09.05.26 |
+| `abgeschlossen` | Hoch | Kalender/Touren/Abwesenheiten | Planung | 09.05.26 |
 
 ---
 
@@ -32,13 +32,19 @@ Die Decision W-08 beschreibt eine offene fachliche Abweichung rund um historisch
 
 ## Blocker und offene Fragen
 
-- Fachliche Entscheidung zur Admin-Ausnahme steht aus.
+- Keine bekannt.
+
+## Abschluss
+
+- Abgeschlossen am: 14.05.26
+- Ergebnis: Die fachliche Lösung ist Variante A: Die bestehende Admin-Ausnahme bleibt erhalten. Administratoren dürfen historische Termine stornieren; Disponenten bleiben für historische Storno-Aktionen gesperrt. Die Spezifikation in FT-01 und UC 01/22 beschreibt diese Rollenregel bereits ausdrücklich, deshalb ist keine Codeänderung erforderlich.
+- Verifikation: W-08, UC 01/14, UC 01/22 und FT-01 wurden gezielt geprüft. Die zulässigen Rollen sind dokumentiert: `ADMIN` darf ausführen, `DISPONENT` darf historische Termine nicht stornieren, `READER`/`LESER` bleibt lesend.
+- Folgeaufgaben: Keine.
 
 ---
 
 ## Beziehungen
 
-- Features: [FT-01 - Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
+- Features: [FT-01 - Kalendertermine](../../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Use Cases: UC 01/14 - Historische Termine rollenbasiertes Verhalten · UC 01/22 - Termin stornieren
-- Entscheidungen: [W-08 - Storno historischer Termine](../decisions/w-08-storno-historischer-termine.md)
-- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)
+- Entscheidungen: [W-08 - Storno historischer Termine](../../decisions/w-08-storno-historischer-termine.md)

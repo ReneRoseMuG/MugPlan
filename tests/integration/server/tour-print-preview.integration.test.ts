@@ -215,7 +215,7 @@ describe("FT31 integration: tour print preview", () => {
 
     // Termin mit echter Tour – darf nicht erscheinen
     const tourWithId = await admin.post("/api/tours").send({ color: "#ff0000" }).expect(201);
-    await appointmentsService.createAppointment({
+    const appointmentWithTour = await appointmentsService.createAppointment({
       projectId: project.id,
       startDate: "2099-07-14",
       endDate: "2099-07-14",
@@ -243,7 +243,7 @@ describe("FT31 integration: tour print preview", () => {
 
         const ids = res.body.appointments.map((a: { id: number }) => a.id);
         expect(ids).toContain(appointmentWithoutTour!.id);
-        expect(ids).not.toContain(tourWithId.body.id);
+        expect(ids).not.toContain(appointmentWithTour!.id);
       });
   });
 
