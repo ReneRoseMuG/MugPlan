@@ -99,9 +99,13 @@ async function verifyNoteEditDialog(page: Page, input: { title: string; cardColo
 
 async function saveAppointmentAndClose(page: Page, appointmentId: number) {
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
   await expect(page.getByTestId(`week-appointment-panel-${appointmentId}`)).toBeVisible();
 }

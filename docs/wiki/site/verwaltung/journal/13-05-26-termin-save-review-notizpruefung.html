@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13-05-26-termin-save-review-notizpruefung: 13.05.26 | Nacharbeit | Termin-Save-Review: Notizprüfung bei Terminverschiebung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 13-05-26-termin-save-review-notizpruefung">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">13-05-26-termin-save-review-notizpruefung 13.05.26 | Nacharbeit | Termin-Save-Review: Notizprüfung bei Terminverschiebung</span></nav>
+        <h1 class="wiki-h1">13-05-26-termin-save-review-notizpruefung: 13.05.26 | Nacharbeit | Termin-Save-Review: Notizprüfung bei Terminverschiebung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>13.05.26</div>
+    <p class="wiki-lead">Der neue Termin-Save-Review berücksichtigt jetzt Terminnotizen bei Terminverschiebungen. Wenn Startdatum, Enddatum oder Startzeit geändert werden und der Termin eigene Terminnotizen enthält, erscheint im AppointmentSaveReviewDialog ein eigener Schritt „Terminnotizen prüfen“. Das </p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der neue Termin-Save-Review berücksichtigt jetzt Terminnotizen bei Terminverschiebungen. Wenn Startdatum, Enddatum oder Startzeit geändert werden und der Termin eigene Terminnotizen enthält, erscheint im <code>AppointmentSaveReviewDialog</code> ein eigener Schritt „Terminnotizen prüfen“. Das Speichern bleibt blockiert, bis der Nutzer bestätigt, dass die Terminnotizen geprüft wurden.</p>
+<p>Damit wird die in dieser Session neu aufgebaute Save-Dialogstruktur weiterverwendet. Es wurde kein zusätzlicher Einzelalert neben dem Review-Dialog eingeführt.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Erweiterung des bestehenden Termin-Save-Reviews.</li><li>Keine DB-Migration.</li><li>Keine neue externe Abhängigkeit.</li><li>Keine automatische Änderung von Notizinhalten.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>AppointmentSaveReviewDialog</code> hat einen neuen Step <code>notes</code> erhalten.</li><li>Der Step zeigt bisherigen und neuen Terminzeitraum im Kurzdatum <code>dd.MM.yy</code>.</li><li>Der Step listet die betroffenen Terminnotizen mit Titel.</li><li>Die Checkbox „Terminnotizen geprüft, Termin trotzdem speichern“ ist verpflichtend.</li><li><code>AppointmentForm</code> erzeugt diesen Review-Step nur bei echter Änderung von Startdatum, Enddatum oder Startzeit und vorhandenen Terminnotizen.</li><li>Projekt- und Kundennotizen lösen den Step bewusst nicht aus, weil sie nicht eindeutig an den konkreten Terminzeitraum gebunden sind.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Die Rollenlogik bleibt unverändert.</li><li><code>ADMIN</code> und <code>DISPATCHER</code> dürfen Terminänderungen speichern.</li><li><code>READER</code>/<code>LESER</code> bleibt von Terminmutationen ausgeschlossen.</li><li>Die neue Notizprüfung ist ein zusätzlicher UI-Speicherschritt und ersetzt keine serverseitige Berechtigungsprüfung.</li></ul>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li><code>npx tsc --noEmit</code> erfolgreich.</li><li><code>npx vitest run tests/unit/ui/appointmentSaveReviewDialog.render.test.tsx</code> erfolgreich mit 3 Tests.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/appointment-form.layout-tour-integration.browser.e2e.spec.ts --grep &quot;requires checking appointment notes&quot;</code> erfolgreich.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/appointment-form.layout-tour-integration.browser.e2e.spec.ts</code> erfolgreich mit 18 Tests.</li><li><code>npm run check</code> erfolgreich.</li><li><code>git diff --check</code> erfolgreich.</li><li>Datumsformat-Suchlauf gemäß Projektregel ausgeführt; neue sichtbare Ausgabe nutzt <code>dd.MM.yy</code>, verbleibende Treffer sind technische ISO-/Test-/Regeltext-Kontexte.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Der zuvor angeforderte volle Testlauf ohne Coverage hatte weiterhin unabhängige rote Tests in Unit- und Browser-E2E-Gesamtläufen. Diese wurden nicht in dieser Nacharbeit bereinigt.</li></ul>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -79,7 +79,8 @@ test("keeps project on an existing project appointment and offers no remove acti
   await openExistingAppointment(page, appointment.id);
   await expect(page.getByTestId("slot-project-relation-action-remove")).toHaveCount(0);
   await page.getByTestId("button-save-appointment").click();
-  await page.getByRole("button", { name: "Trotzdem speichern" }).click();
+  await page.getByTestId("checkbox-appointment-save-review-no-employees").click();
+  await page.getByTestId("button-appointment-save-review-confirm").click();
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);

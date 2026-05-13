@@ -26,6 +26,7 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die v
 | A-16 | [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) | Planung | `in Bearbeitung` |
 | A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `in Bearbeitung` |
 | A-40 | [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) | Implementierung | `offen` |
+| A-41 | [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) | Planung | `offen` |
 
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Dialoge. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 
@@ -93,6 +94,7 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Kalender-Performance.
 | :--- | :--- | :--- | :--- |
 | A-05 | [FT-26 Reports: verbleibende Testabdeckung schließen](ft26-reports-testabdeckung.md) | Testabdeckung | `offen` |
 | A-15 | [FT-26 gemeinsame Print-Basiskomponente für Kartenreports](ft26-report-print-basiskomponente.md) | Refactoring | `offen` |
+| A-42 | [FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen](ft26-report-kacheln-vereinheitlichen.md) | Refactoring | `offen` |
 
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Reports. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
 

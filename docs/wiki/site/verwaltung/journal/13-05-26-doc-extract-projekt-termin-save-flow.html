@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13-05-26-doc-extract-projekt-termin-save-flow: 13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 13-05-26-doc-extract-projekt-termin-save-flow">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">13-05-26-doc-extract-projekt-termin-save-flow 13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow</span></nav>
+        <h1 class="wiki-h1">13-05-26-doc-extract-projekt-termin-save-flow: 13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>13.05.26</div>
+    <p class="wiki-lead">Der Doc-Extract-Workflow für Projekt- und Terminformular wurde fachlich vom späteren Speichern getrennt. Der Importdialog sammelt jetzt Kundendaten, Projektvorschau, Mängelhinweise, optionale Dokumenttextübernahme und eine bewusst getroffene Reklamationsentscheidung. Projektbezog</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Doc-Extract-Workflow für Projekt- und Terminformular wurde fachlich vom späteren Speichern getrennt. Der Importdialog sammelt jetzt Kundendaten, Projektvorschau, Mängelhinweise, optionale Dokumenttextübernahme und eine bewusst getroffene Reklamationsentscheidung. Projektbezogene Restentscheidungen laufen anschließend über den <code>ProjectSaveReviewDialog</code>; terminbezogene Restentscheidungen laufen über den neuen <code>AppointmentSaveReviewDialog</code>.</p>
+<p>Der ursprünglich problematische Fall <code>BSP PLZ.pdf</code> ist im Browserpfad abgesichert: Adresse, Ort, Land und die sechsstellige PLZ werden im Dialog angezeigt und übernommen; die auffällige PLZ bleibt ein Mangelhinweis, aber kein Abbruchgrund.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Mehrschichtige Änderung über Doc Extract, Projektformular, Terminformular, Reklamationsnotizen, Kundenauflösung, Rollenprüfung und Tests.</li><li>Keine DB-Migration.</li><li>Keine neue externe Abhängigkeit.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>Projekte und Projektanlage mit Dokumentextraktion.</li><li>Termine mit Projektanlage aus Dokumentextraktion.</li><li>Reklamationsworkflow in Projekt- und Terminformular.</li><li>Kundendatenanlage und Stammdaten-Ergänzung aus extrahierten Dokumenten.</li><li>Termin-Speichern mit Mitarbeiter- und Ressourcenentscheidungen.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>ProjectDocumentExtractionWorkflowDialog</code> wurde in getrennte Schritte für Kunde, Projekt, Mängel, optionale Reklamationsnotiz und Abschluss aufgeteilt.</li><li>Die Kundenauflösung läuft automatisch per Kundennummer; der Button „Kunde prüfen“ wurde entfernt.</li><li>Bestehende Kunden werden verknüpft. Optional und standardmäßig aktiv werden nur leere Stammdaten aus dem Dokument ergänzt; vorhandene Werte bleiben unverändert.</li><li>Neue Kunden werden im Dialog angekündigt und erst beim Übernehmen angelegt.</li><li>Reklamation wird nicht aus einer fehlenden Artikelliste abgeleitet, sondern nur nach bewusster Nutzerentscheidung gesetzt.</li><li>Bei positiver Reklamationsentscheidung fragt der Doc-Extract-Dialog im nächsten Schritt nach der Notiz und zeigt den Editor direkt im Dialog.</li><li><code>ProjectForm</code> übernimmt den Doc-Extract-Draft inklusive Reklamationsnotiz und unterdrückt doppelte Reklamationsfragen beim späteren Speichern.</li><li><code>ProjectSaveReviewDialog</code> bleibt für offene projektbezogene Speicherentscheidungen zuständig: Artikelliste, Projekttitel, Reklamationsnotiz außerhalb abgeschlossener Doc-Extract-Pfade und PDF-Duplikate.</li><li><code>AppointmentForm</code> nutzt denselben Doc-Extract-Projektworkflow und führt nach erfolgreicher Projektspeicherung das Projekt in das Terminformular zurück.</li><li><code>AppointmentSaveReviewDialog</code> bündelt save-relevante Terminentscheidungen, insbesondere „ohne Mitarbeiter speichern“ und Ressourcen-/Wochenplanprüfungen.</li><li>Die Termin-Reklamation bleibt eine Sofortaktion. Wenn das Projekt bereits Reklamation ist, fragt der Terminbutton sichtbar, ob auch der Termin als Reklamation markiert werden soll.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li><code>ADMIN</code> und <code>DISPATCHER</code> dürfen Kunden, Projekte, Termine, Tags, Notizen und Anhänge mutieren.</li><li><code>READER</code>/<code>LESER</code> darf diese Mutationen nicht ausführen.</li><li>Kundenanlage und Kundenaktualisierung sind serverseitig abgesichert; UI-Sichtbarkeit wird nicht als Berechtigung gewertet.</li></ul>
+<h2 class="wiki-h2">Verifikation</h2>
+<ul><li><code>npm run check</code> erfolgreich.</li><li><code>git diff --check</code> erfolgreich.</li><li><code>npx vitest run tests/unit/ui/projectDocumentExtractionWorkflowDialog.render.test.tsx tests/unit/ui/projectSaveReviewDialog.render.test.tsx tests/unit/ui/appointmentSaveReviewDialog.render.test.tsx tests/integration/extraction/documentProcessing.project.fixture.test.ts tests/integration/server/customers.create-duplicate.test.ts</code> erfolgreich mit 22 Tests in 5 Dateien.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts</code> erfolgreich mit 22 Tests.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/project-form.article-list-save-behavior.browser.e2e.spec.ts</code> erfolgreich mit 10 Tests.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts</code> erfolgreich mit 9 Tests.</li><li><code>npx playwright test -c playwright.config.ts tests/e2e-browser/appointment-form.layout-tour-integration.browser.e2e.spec.ts</code> erfolgreich mit 17 Tests.</li><li>Wiki-Render über <code>node scripts/build-wiki-site.mjs</code> erfolgreich; Kontrollbericht mit 0 Fehlern und 0 Warnungsgruppen.</li><li>Audit ohne Coverage gemäß Nutzerwunsch ausgeführt: <code>npm run check</code>, <code>npm run lint</code>, <code>npm run audit</code>, <code>npm run secrets</code>, <code>npm run analyze:arch</code>, <code>npm run analyze:boundaries</code> und <code>npm run analyze:knip</code> liefen mit Exit-Code 0.</li><li><code>npm run analyze:coverage</code> wurde im Audit bewusst nicht ausgeführt, weil der Auftrag ausdrücklich „ohne coverage“ lautete.</li><li>Voller Testlauf ohne Coverage ausgeführt. <code>npm run test:integration</code> und <code>npm run test:e2e</code> waren erfolgreich. <code>npm run test:unit</code> und <code>npm run test:e2e:browser</code> meldeten einzelne Fehlschläge, die im Chatbericht benannt wurden.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li><code>npm run test:unit</code> ist rot: <code>tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code> erwartet im Create-Modus einen Draft-Notiz-Setter-Aufruf, der nicht erfolgt.</li><li><code>npm run test:e2e:browser</code> ist rot mit vier Browser-Fehlschlägen: Multi-Day-Termin speichern, Monatskalender-Drag-Validation, Wochenkalender-Drop-Persistenz und Dispatcher-Tour-Wochenaktion.</li><li><code>npm run analyze:arch</code> meldet bestehende Architektur-Warnungen und <code>npm run analyze:knip</code> meldet Inventarlisten für ungenutzte Dateien, Dependencies und Exports; beide Kommandos beenden mit Exit-Code 0.</li><li>Die bereits vorhandenen Wiki- und Aufgabenänderungen bleiben im Arbeitsbaum erhalten und wurden nicht zurückgesetzt.</li></ul>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

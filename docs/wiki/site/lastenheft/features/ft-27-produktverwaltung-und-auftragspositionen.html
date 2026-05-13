@@ -32,6 +32,11 @@
         <ul class="wiki-sidebar__nav">
           <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
         </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
       </div>
     </aside>
     <main class="wiki-content" data-screen-label="Features FT-27">
@@ -49,9 +54,16 @@
 <p>Ein <strong>Produkt</strong> repräsentiert ein fertiges Saunamodell (z.B. Kolmikko, Suuri, Mini). Jedes Produkt wird genau einer <strong>Produktkategorie</strong> zugeordnet (z.B. &quot;Sauna-Modelle&quot;, &quot;Zubehör&quot;). Produkte haben einen eindeutigen Namen, eine optionale Beschreibung und ein Aktivitätskennzeichen. Nur Admins können Produkte anlegen, bearbeiten oder deaktivieren.</p>
 <h3 class="wiki-h3">Komponenten und Komponentenkategorien</h3>
 <p>Eine <strong>Komponente</strong> ist ein eigenständiges Bauteil (z.B. Rückwand, Ofen, Vorderwand, Fenster, Türen). Jede Komponente wird genau einer <strong>Komponentenkategorie</strong> zugeordnet (z.B. &quot;Wände&quot;, &quot;Heizung&quot;, &quot;Türen&quot;) und kann eine optionale Beschreibung haben. Komponenten und Produkte sind voneinander unabhängige Stammdatenbereiche ohne strukturelle Verknüpfung.</p>
+<h3 class="wiki-h3">Detailseiten und Attachments</h3>
+<p>Für jedes Produkt und jede Komponente steht eine Detailseite bereit, die alle Stammdatenfelder strukturiert darstellt. Die Detailseite ist für Administrator und Disponent sichtbar.</p>
+<p>Produkte und Komponenten können Attachments erhalten (z. B. technische Zeichnungen, Aufstellungspläne, Montageanleitungen). Die Attachment-Infrastruktur entspricht vollständig FT-19. Attachments sind immer genau einem Parent-Objekt zugeordnet (Produkt oder Komponente) und können nicht ohne Parent existieren.</p>
 <h3 class="wiki-h3">Integration mit Auftragsmanagement</h3>
 <p>Auftragspositionen (<code>project_order_items</code>) werden pro Projekt verwaltet, um eine Artikelliste pflegen zu können. Eine Position referenziert entweder ein Produkt oder eine Komponente — beide Felder sind unabhängig voneinander wählbar (kein Cascade-Dropdown). Mindestens eines von beiden muss gesetzt sein. Eine optionale freie Beschreibung kann zusätzlich angegeben werden. Die Zuordnung erfolgt strukturiert über Foreign Keys, nicht als Freitextbeschreibung.</p>
 <h2 class="wiki-h2">Regeln &amp; Randbedingungen</h2>
+<h3 class="wiki-h3">Detailseiten</h3>
+<ul><li>Jedes Produkt und jede Komponente besitzt eine Detailseite.</li><li>Die Detailseite zeigt alle gespeicherten Stammdatenfelder sowie die zugehörige Attachmentliste.</li><li>Sichtbarkeit: Administrator und Disponent.</li></ul>
+<h3 class="wiki-h3">Attachments</h3>
+<ul><li>Produkte und Komponenten können beliebig viele Attachments erhalten.</li><li>Es existieren je eine eigene Attachment-Tabelle für Produkte (<code>product_attachments</code>) und Komponenten (<code>component_attachments</code>).</li><li>Upload und Löschen sind ausschließlich Administratoren vorbehalten.</li><li>Download ist für Administrator und Disponent erlaubt.</li><li>Der Lösch-Workflow folgt dem zweistufigen Verfahren aus FT-19 (Entkopplung und physische Löschung) mit identischer Sicherheitsfrage.</li><li>Alle weiteren Regeln zu Upload, Speicherung, Download und Sicherheit gelten wie in FT-19 definiert.</li></ul>
 <h3 class="wiki-h3">Namensuniqueness und Eindeutigkeit</h3>
 <ul><li>Produktnamen sind global eindeutig (UNIQUE).</li><li>Komponentennamen sind global eindeutig (UNIQUE).</li><li>Kategorienamen sind eindeutig innerhalb ihres Typs.</li></ul>
 <h3 class="wiki-h3">Kategorien</h3>
@@ -63,14 +75,15 @@
 <h3 class="wiki-h3">Referenzintegrität</h3>
 <ul><li>Beim Löschen eines Produkts oder einer Komponente wird geprüft, ob noch aktive Auftragspositionen darauf verweisen; wenn ja, wird das Löschen blockiert.</li></ul>
 <h2 class="wiki-h2">Use Cases</h2>
-<ul><li><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC 27/01: Produktkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC 27/02: Produkt anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC 27/03: Komponentenkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC 27/04: Komponente anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC 27/05: Auftragsposition manuell erfassen (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC 27/06: Auftragsposition bearbeiten (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC 27/07: Auftragsposition löschen (Admin)</a></li></ul>
+<ul><li><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC 27/01: Produktkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC 27/02: Produkt anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC 27/03: Komponentenkategorie anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC 27/04: Komponente anlegen (Admin)</a></li><li><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC 27/05: Auftragsposition manuell erfassen (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC 27/06: Auftragsposition bearbeiten (Disponent / Admin)</a></li><li><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC 27/07: Auftragsposition löschen (Admin)</a></li><li><a href="../use-cases/uc-27-08-detailseite-anzeigen.html">UC 27/08: Detailseite anzeigen (Produkt / Komponente)</a></li><li><a href="../use-cases/uc-27-09-attachment-hochladen-admin.html">UC 27/09: Attachment hochladen (Admin)</a></li><li><a href="../use-cases/uc-27-10-attachment-loeschen-admin.html">UC 27/10: Attachment löschen (Admin)</a></li></ul>
 <h2 class="wiki-h2">Backlogs</h2>
 <h2 class="wiki-h2">Architektur &amp; Kontext</h2>
 <h2 class="wiki-h2">Entscheidungen &amp; Offene Punkte</h2>
+<ul><li>Statistiken (z. B. Verwendungshäufigkeit in Auftragspositionen, beteiligte Projekte) sind bewusst zurückgestellt. Eine spätere Zusammenführung mit dem Produktionsplanung-Report in einer gemeinsamen Basiskomponente ist angedacht.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">
-      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC-27/01</a><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC-27/02</a><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC-27/03</a><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC-27/04</a><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC-27/05</a><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC-27/06</a><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC-27/07</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-27-produktverwaltung-und-auftragspositionen-backlog.html">BL-27</a></div>
+      <div class="wiki-relations__key">Use Cases</div><div class="wiki-relations__val"><a href="../use-cases/uc-27-01-produktkategorie-anlegen-admin.html">UC-27/01</a><a href="../use-cases/uc-27-02-produkt-anlegen-admin.html">UC-27/02</a><a href="../use-cases/uc-27-03-komponentenkategorie-anlegen-admin.html">UC-27/03</a><a href="../use-cases/uc-27-04-komponente-anlegen-admin.html">UC-27/04</a><a href="../use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.html">UC-27/05</a><a href="../use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.html">UC-27/06</a><a href="../use-cases/uc-27-07-auftragsposition-loeschen-admin.html">UC-27/07</a><a href="../use-cases/uc-27-08-detailseite-anzeigen.html">UC-27/08</a><a href="../use-cases/uc-27-09-attachment-hochladen-admin.html">UC-27/09</a><a href="../use-cases/uc-27-10-attachment-loeschen-admin.html">UC-27/10</a></div><div class="wiki-relations__key">Backlogs</div><div class="wiki-relations__val"><a href="../backlogs/ft-27-produktverwaltung-und-auftragspositionen-backlog.html">BL-27</a></div>
     </div>
   </section>
       </div>

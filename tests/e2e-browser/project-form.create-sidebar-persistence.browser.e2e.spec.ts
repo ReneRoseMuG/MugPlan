@@ -161,16 +161,21 @@ async function uploadExtractionFixturePdf(page: Page, fixturePath: string) {
 
 async function completeProjectDocumentExtractionWorkflow(page: Page, options: { acceptReklamation?: boolean } = {}) {
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
   await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
   const reklamoCheckbox = page.getByTestId("checkbox-doc-extract-accept-reklamation");
+  const shouldAccept = options.acceptReklamation === true;
   if (await reklamoCheckbox.isVisible().catch(() => false)) {
-    const shouldAccept = options.acceptReklamation === true;
     const isChecked = await reklamoCheckbox.isChecked();
     if (shouldAccept !== isChecked) await reklamoCheckbox.click();
   }
   await page.getByTestId("button-project-doc-extract-next").click();
+  if (shouldAccept) {
+    await expect(page.getByTestId("doc-extract-reklamation-note-editor")).toBeVisible();
+    await page.getByTestId("button-project-doc-extract-next").click();
+  }
   await page.getByTestId("button-doc-extract-apply-data").click();
 }
 
@@ -404,13 +409,6 @@ async function expectProjectExtractionFixtureDialog(page: Page, fixture: Project
   await uploadExtractionFixturePdf(page, `tests/fixtures/Doc Extract/${fixture.file}`);
 
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await expect(page.getByTestId("input-doc-extract-sauna-model")).toHaveValue(fixture.project.saunaModel);
-  await expect(page.getByTestId("input-doc-extract-order-number")).toHaveValue(fixture.project.orderNumber);
-  await expect(page.getByTestId("input-doc-extract-amount")).toHaveValue(fixture.project.amount);
-  await expect(page.getByTestId("doc-extract-project-step-panel")).toHaveClass(/grid-rows-\[minmax\(0,1fr\)_auto\]/);
-  await expect(page.getByTestId("doc-extract-document-text-option")).toBeVisible();
-
-  await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
   await expect(page.getByTestId("input-doc-extract-customer-number")).toHaveValue(fixture.customer.customerNumber);
   await expect(page.getByTestId("input-doc-extract-phone")).toHaveValue(fixture.customer.phone);
@@ -421,6 +419,13 @@ async function expectProjectExtractionFixtureDialog(page: Page, fixture: Project
   await expect(page.getByTestId("input-doc-extract-postal-code")).toHaveValue(fixture.customer.postalCode);
   await expect(page.getByTestId("input-doc-extract-city")).toHaveValue(fixture.customer.city);
   await expect(page.getByTestId("input-doc-extract-country")).toHaveValue(fixture.customer.country);
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("input-doc-extract-sauna-model")).toHaveValue(fixture.project.saunaModel);
+  await expect(page.getByTestId("input-doc-extract-order-number")).toHaveValue(fixture.project.orderNumber);
+  await expect(page.getByTestId("input-doc-extract-amount")).toHaveValue(fixture.project.amount);
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toHaveClass(/grid-rows-\[minmax\(0,1fr\)_auto\]/);
+  await expect(page.getByTestId("doc-extract-document-text-option")).toBeVisible();
 
   await page.getByTestId("button-project-doc-extract-next").click();
   const missingLabels = fixture.missingLabels ?? [];
@@ -471,19 +476,14 @@ test("persists Reklamation workflow from the new project form with a template no
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
-
-  await page.getByTestId("button-save-note").click();
-  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
-  await expect(
-    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: MANAGED_COMPLAINT_TAG_NAME }).first(),
-  ).toBeVisible();
-
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+  await expect(page.getByTestId("project-save-review-step-reklamation")).toBeVisible();
+  await expect(page.getByTestId("input-project-save-review-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === "/api/projects"
   ));
-  await page.getByTestId("button-save-project").click();
+  await page.getByTestId("button-project-save-review-confirm").click();
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = await createdProjectResponse.json() as { id: number };
@@ -511,15 +511,15 @@ test("does not reopen the Reklamation note suggestion on new project save after 
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
 
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
-  await page.getByTestId("button-cancel-note").click();
-  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
-
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+  await expect(page.getByTestId("project-save-review-step-reklamation")).toBeVisible();
+  await expect(page.getByTestId("input-project-save-review-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("checkbox-project-save-review-create-reklamation-note").click();
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === "/api/projects"
   ));
-  await page.getByTestId("button-save-project").click();
+  await page.getByTestId("button-project-save-review-confirm").click();
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = await createdProjectResponse.json() as { id: number };
@@ -683,8 +683,6 @@ test("extracts BSP PLZ fixture into the project dialog and creates the customer 
   await uploadExtractionFixturePdf(page, "tests/fixtures/Doc Extract/BSP PLZ.pdf");
 
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-project-doc-extract-next").click();
-
   await expect(page.getByTestId("input-doc-extract-customer-number")).toHaveValue("160521");
   await expect(page.getByTestId("input-doc-extract-phone")).toHaveValue("0172-7940641");
   await expect(page.getByTestId("input-doc-extract-first-name")).toHaveValue("Swen");
@@ -695,15 +693,11 @@ test("extracts BSP PLZ fixture into the project dialog and creates the customer 
   await expect(page.getByTestId("input-doc-extract-country")).toHaveValue("Deutschland");
 
   await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("document-extraction-report-issues")).toContainText("PLZ");
   await expect(page.getByTestId("document-extraction-report-issues")).toContainText("989610");
   await expect(page.getByTestId("document-extraction-report-issues")).toContainText("Artikelliste");
-
-  const noteCheckbox = page.getByTestId("checkbox-doc-extract-create-reklamation-note");
-  if (await noteCheckbox.isVisible().catch(() => false)) {
-    const checked = await noteCheckbox.isChecked();
-    if (checked) await noteCheckbox.click();
-  }
 
   await page.getByTestId("button-project-doc-extract-next").click();
   const createCustomerResponsePromise = page.waitForResponse((response) => (
@@ -752,7 +746,7 @@ test("extracts BSP PLZ fixture into the project dialog and creates the customer 
   });
 });
 
-test("opens the prepared Reklamation note editor after accepting a missing article list from Doc Extract", async ({ page }) => {
+test("prepares the Reklamation note inside Doc Extract after accepting a missing article list", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-DOC-REKLAMATION-NOTE");
 
   await mockProjectDocumentExtraction(page, customer.customerNumber, {
@@ -781,13 +775,22 @@ test("opens the prepared Reklamation note editor after accepting a missing artic
 
   await openNewProject(page);
   await uploadExtractionPdf(page, "ft24-doc-reklamation-note.pdf");
-  await completeProjectDocumentExtractionWorkflow(page, { acceptReklamation: true });
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("checkbox-doc-extract-accept-reklamation").click();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("doc-extract-reklamation-note-editor")).toBeVisible();
+  await expect(page.getByTestId("input-doc-extract-reklamation-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("button-doc-extract-apply-data").click();
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
-  const noteDialog = page.getByRole("dialog", { name: "Notiz anlegen" });
-  await expect(noteDialog.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
-  await expect(noteDialog.getByTestId("select-note-template")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
-  await noteDialog.getByTestId("button-cancel-note").click();
+  await expect(page.getByTestId("button-remove-project-reklamation")).toBeVisible();
+  await expect(
+    page.getByTestId("list-notes").getByTestId(/note-card-/).filter({ hasText: MANAGED_COMPLAINT_TAG_NAME }).first(),
+  ).toBeVisible();
 });
 
 test("sets the Anmerkungen tag when an existing project is saved with a newly added description", async ({ page }) => {
@@ -878,9 +881,10 @@ test("links recognized customer data from project extraction and keeps partial i
   await uploadExtractionPdf(page, "ft24-project-partial-customer.pdf");
 
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
   await expect(page.getByTestId("doc-extract-customer-resolution-single")).toContainText(customer.customerNumber);
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toBeVisible();
   await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByText("Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.")).toBeVisible();
   await expect(page.getByText("Keine Strassenzeile erkannt.")).toBeVisible();

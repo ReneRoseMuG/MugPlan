@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-41: Doc Extract und Projekt-Speichern-Flow überarbeiten · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-41">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-41 Doc Extract und Projekt-Speichern-Flow überarbeiten</span></nav>
+        <h1 class="wiki-h1">A-41: Doc Extract und Projekt-Speichern-Flow überarbeiten</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Hoch</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Dialoge</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Planung</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>13.05.26</div>
+    <p class="wiki-lead">Die Aufgabe beschreibt das Zielbild für Doc Extract, Projektformular, Terminformular und Project Save Review. Der Ablauf soll über die relevanten PDF-Importpfade hinweg einheitlich werden, ohne Dialogketten oder doppelte Abfragen zu erzeugen.</p>
+    <p>Der Doc-Extract-Workflow und der Projekt-Speichern-Flow sollen fachlich neu geschnitten werden. Ziel ist ein schlanker Importdialog, der erkannte Daten transparent zeigt und Draft-Entscheidungen sammelt, während offene Folgeentscheidungen gebündelt im Projekt-Speichern-Review behandelt werden.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Hoch</td><td>Dialoge</td><td>Planung</td><td>13.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die Aufgabe beschreibt das Zielbild für Doc Extract, Projektformular, Terminformular und Project Save Review. Der Ablauf soll über die relevanten PDF-Importpfade hinweg einheitlich werden, ohne Dialogketten oder doppelte Abfragen zu erzeugen.</p>
+<p>Doc Extract soll Daten erkennen, erklären und als Draft in das jeweilige Formular übernehmen. Das Projektformular beziehungsweise Terminformular hält diesen Draft-Zustand. Der Project Save Review entscheidet anschließend gesammelt über die noch offenen projektbezogenen Speicherpunkte. Erst danach wird gespeichert.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>Im Zusammenhang mit Doc Extract und Projekt-Speichern gibt es mehrere Pfade, bei denen Darstellung, Folgeentscheidungen und Verarbeitung der Nutzerentscheidung sauber getrennt werden müssen.</p>
+<p>Im Neues-Projekt-Pfad sind diese Varianten relevant:</p>
+<ul><li>Neues Projekt ohne Doc Extract.</li><li>Neues Projekt mit Doc Extract im <code>project_form</code>-Scope.</li><li>Neues Projekt mit Doc Extract, danach werden Projektdaten, Artikelliste oder Anmerkungen manuell geändert.</li><li>Neues Projekt mit Doc Extract, bei dem das extrahierte PDF als Draft-Anhang erhalten bleibt und beim Speichern eine PDF-Duplikatentscheidung nötig werden kann.</li><li>Neues Projekt mit aktivierter Reklamation, wodurch beim Speichern eine Reklamationsnotiz vorbereitet werden kann.</li><li>Neues Projekt mit ausgewähltem Sauna-Modell in der Artikelliste, bei dem beim Speichern angeboten wird, den Projekttitel auf das Sauna-Modell zu setzen.</li></ul>
+<p>Im Bestandsprojekt-Pfad gibt es keinen Doc-Extract-Startpunkt. Dort können bestehende Projektinformationen, Anmerkungen, Artikelliste, Anhänge, Tags und Notizen bearbeitet werden. Der Reklamationsflow kann im Edit-Modus direkt ausgelöst werden; dabei wird die Reklamation per Mutation gesetzt oder aufgehoben und anschließend die passende Notizfrage geöffnet.</p>
+<p>Beim Speichern eines Projekts bündelt der <code>ProjectSaveReviewDialog</code> mehrere mögliche Entscheidungen:</p>
+<ul><li>Hinweis auf offene Artikellisten-Auswahlen.</li><li>Entscheidung, ob der Projektname aus dem Sauna-Modell übernommen werden soll.</li><li>Reklamationsnotiz im Create-Speichern-Flow, falls sie nicht bereits im Doc-Extract-Dialog abgeschlossen wurde.</li><li>PDF-Duplikatentscheidung für ein per Doc Extract eingebrachtes Draft-PDF.</li></ul>
+<h2 class="wiki-h2">Leitprinzipien</h2>
+<p>Doc Extract erkennt und befüllt. Das Formular hält den Draft. Der Save Review entscheidet gebündelt. Die Save-Mutation persistiert erst nach Abschluss aller relevanten Entscheidungen.</p>
+<p>Daraus folgt:</p>
+<ul><li>Der Doc-Extract-Dialog im neuen Projekt bleibt bewusst schmal.</li><li>Im Doc-Extract-Dialog werden erkannte Daten, Hinweise, Warnungen und die Reklamationsentscheidung gezeigt.</li><li>Reklamation wird im Doc-Extract-Flow als eigene Entscheidung gesammelt, nicht als separate Pop-up-Kette gestartet.</li><li>Wenn der Nutzer im Doc-Extract-Dialog entscheidet, dass das Projekt eine Reklamation ist, wird im nächsten Dialogschritt direkt die Notizfrage gestellt. Bei positiver Antwort wird der Notizeditor mit der Vorlage &quot;Reklamation&quot; direkt im Doc-Extract-Dialog eingeblendet. Dadurch ist dieser Schritt vollständig abgearbeitet und erscheint beim Speichern nicht erneut.</li><li>Manuelle Änderungen nach Doc Extract können betroffene Draft-Entscheidungen wieder öffnen. Beispiel: Wenn Artikelliste oder Projektname nachträglich geändert werden, darf der normale Speichern-Review wieder prüfen.</li></ul>
+<h2 class="wiki-h2">Doc-Extract-Pfade</h2>
+<p>Es gibt drei Hauptpfade, über die ein PDF-Dokument importiert werden kann:</p>
+<ul><li>Aufrufpfad Neuer Kunde: nur Kundendatenextraktion.</li><li>Aufrufpfad Neues Projekt: Kundendatenextraktion plus Projektdatenextraktion.</li><li>Aufrufpfad Neuer Termin: fachlich gleicher Ablauf wie Neues Projekt bis zur Projektanlage; nach dem Projektspeichern wird das Projekt dem Terminformular zugeordnet.</li></ul>
+<p>Der Haupt-Workflow soll über alle drei Pfade möglichst gleich ablaufen, gleiche Fehlermeldungen verwenden und gleiche Wahlmöglichkeiten anbieten. Der Unterschied liegt im Zielkontext nach Abschluss.</p>
+<h2 class="wiki-h2">Kundendaten-Flow</h2>
+<p>Das System extrahiert zuerst die Kundendaten. Es sammelt erkannte Felder und stellt diese übersichtlich dar. Nicht erkannte Felder werden als Info hervorgehoben. Auffällige oder fehlerhafte Werte, zum Beispiel eine falsche Postleitzahl, werden als Warnung hervorgehoben. Solche Warnungen dürfen die weitere Verarbeitung nicht abbrechen.</p>
+<p>Sinnvolle Dialogaufteilung:</p>
+<ol><li>Erkennen: erkannte Kundendaten, fehlende Felder und Warnungen zeigen.</li><li>Auflösen: anzeigen, ob ein neuer Kunde angelegt wird oder ein Bestandskunde anhand der Kundennummer geladen wird.</li><li>Prüfen: anbieten, das importierte PDF in einem Browser-Tab zu öffnen.</li></ol>
+<p>Wenn Kundendaten noch nicht vorhanden sind, informiert das System den Nutzer, dass ein neuer Kunde mit der erkannten Kundennummer angelegt wird.</p>
+<p>Wenn Kundendaten vorhanden sind, erkennt das System die vorhandene Kundennummer und informiert den Nutzer, dass dieser Bestandskunde verwendet wird. Bestehende Stammdaten dürfen nicht still überschrieben werden. Wenn der extrahierte Datensatz Werte enthält, die im Bestandskunden noch leer sind, bietet der Dialog per Checkbox an, diese leeren Stammdaten zu ergänzen.</p>
+<p>Diese Checkbox ist standardmäßig aktiv. Der Dialog muss deutlich lesbar erklären: Nur bisher leere Felder im bestehenden Kundensatz werden ergänzt; vorhandene Kundendaten bleiben unverändert.</p>
+<p>Für Kundendaten ist kein eigener späterer Kunden-Save-Review vorgesehen. Die fachliche Prüfung und Entscheidung findet vollständig im Doc-Extract-Kundenschritt statt. Beim Speichern greifen danach nur noch normale Formularvalidierung, serverseitige Rollenprüfung und serverseitige Datenvalidierung.</p>
+<h2 class="wiki-h2">Aufrufpfad Neuer Kunde</h2>
+<p>Im Kundenformular wird nur die Extraktion von Kundendaten ausgeführt. Der mehrteilige Kundendialog wird vollständig durchlaufen.</p>
+<p>Das Resultat ist entweder:</p>
+<ul><li>ein Kundenformular mit den Daten eines neuen Kunden, oder</li><li>ein Kundenformular mit den hinzugeladenen Daten eines Bestandskunden.</li></ul>
+<h2 class="wiki-h2">Projektdaten-Flow</h2>
+<p>Das System sucht Auftragsinhalt, Auftragsnummer, Auftragssumme und weitere Projektdaten. Im Project-Scope wertet Doc Extract die Artikelliste blockweise aus. Der erste relevante Produkt- oder Auftragsblock kann zur Ableitung des Projekttitels verwendet werden. Bei Saunaaufträgen ist das typischerweise das erkannte Sauna-Modell. Bei Reklamationen kann der erste Block entsprechend einen Reklamationsbezug liefern.</p>
+<p>Der extrahierte Titel wird als Projektname in den Projekt-Draft übernommen. Wichtig ist, dass in jedem Fall ein erkennbarer Text für den Projekttitel genutzt wird.</p>
+<p>Die Artikelliste wird nicht automatisch in strukturierte Produktselektionen überführt. Deshalb soll die bloße Information, ob eine Artikelliste erkannt wurde, im Projektdaten-Dialog nicht als zentrale Nutzerentscheidung transportiert werden. Relevant bleiben echte Projektdaten, erkannte Felder, Lücken und grobe Fehler.</p>
+<p>Die erfassten Daten aus dem Hauptbereich werden in einer Vorschau präsentiert, damit der Nutzer bei Bedarf Daten prüfen oder kopieren kann. Das System nennt erkannte Felder, meldet Lücken als Hinweis und grobe Fehler als Fehler, bricht aber nicht ab.</p>
+<p>Wenn Projektdaten noch nicht vorhanden sind, informiert das System über das neu anzulegende Projekt und die vorhandenen Daten. Zusätzlich fragt der Dialog deutlich hervorgehoben, ob das Projekt eine Reklamation ist. Wenn die Reklamation aktiviert wird, folgt im nächsten Dialogschritt die Frage, ob eine Reklamationsnotiz vorbereitet werden soll. Bei positiver Antwort wird der Notizeditor direkt im Doc-Extract-Dialog mit der Vorlage &quot;Reklamation&quot; eingeblendet. Außerdem fragt der Dialog, ob der Inhalt des Auftrags in den Bereich Anmerkungen übernommen werden soll.</p>
+<p>Wenn Projektdaten bereits vorhanden sind, lädt das System die vorhandenen Daten in das Formular. Bestehende Duplikat- und Konfliktpfade bleiben erhalten.</p>
+<h2 class="wiki-h2">Aufrufpfad Neues Projekt</h2>
+<p>Im neuen Projekt wird zuerst die Extraktion der Kundendaten ausgeführt. Danach wird derselbe Dialogpfad um den Projekt-Extract-Flow erweitert.</p>
+<p>Die Möglichkeit, das PDF in einem Browser-Tab zu öffnen, wandert in den letzten Schritt dieses Formularpfades.</p>
+<p>Wurde im Extract-Flow die Entscheidung zu Reklamation positiv getroffen, wird die Reklamation im Projektformular als Draft geführt. Die optionale Reklamationsnotiz ist dann ebenfalls bereits entschieden und bei positiver Antwort als Notiz-Draft vorbereitet. Die Funktion &quot;Reklamation melden&quot; darf danach nicht mehr als aktive zweite Auslösung erscheinen, weil die Entscheidung bereits im Draft enthalten ist.</p>
+<h2 class="wiki-h2">Aufrufpfad Neuer Termin</h2>
+<p>Im Terminformular läuft der Doc-Extract-Pfad bis zur Projektanlage fachlich gleich wie im neuen Projekt. Kundendaten, Projektdaten, Reklamationsentscheidung, Anmerkungsübernahme und PDF-Draft werden nach denselben Regeln behandelt.</p>
+<p>Der Unterschied liegt erst im Abschluss:</p>
+<ul><li>Nach dem Speichern des Projekts wird das Projekt dem Terminformular zugeordnet.</li><li>Der Nutzer landet danach wieder im Terminformular.</li><li>Projektbezogene Entscheidungen sind zu diesem Zeitpunkt erledigt; terminbezogene Entscheidungen bleiben im Terminformular beziehungsweise im Termin-Save-Review.</li><li>Wenn der Nutzer die Reklamationsentscheidung im Doc-Extract-Flow positiv getroffen hat, darf der Reklamationsbutton im Terminformular nicht stumm deaktiviert wirken. Das Formular muss klar zeigen, dass das zugeordnete Projekt bereits als Reklamation gekennzeichnet ist, und bei Klick eine verständliche Reaktion anbieten.</li></ul>
+<h2 class="wiki-h2">Terminformular-Entscheidungen</h2>
+<p>Nicht jede Entscheidung aus dem Termin-Kontext gehört in den Doc-Extract-Dialog oder in den Project Save Review. Terminbezogene Entscheidungen werden nach Zeitpunkt und fachlicher Wirkung verteilt.</p>
+<p>Sofort im Terminformular werden Aktionen behandelt, bei denen der Nutzer direkt eine Reaktion erwartet:</p>
+<ul><li>Reklamation melden.</li><li>Termin stornieren.</li><li>Tourwechsel, wenn daraus unmittelbar eine Wochenplan- oder Ressourcen-Vorschau entsteht.</li></ul>
+<p>In den Termin-Save-Review gehören Entscheidungen, die erst beim Speichern relevant werden:</p>
+<ul><li>Ohne Mitarbeiter speichern.</li><li>Mitarbeiter- oder Ressourcenkonflikte durch Tour, Datum, Kalenderwoche, Uhrzeit oder manuelle Mitarbeiteränderung.</li><li>Hinweise, dass geplante Wochenplan-Mitarbeiter wegen Konflikten nicht übernommen werden können.</li><li>Finale Bestätigung von Termin-Draft-Zuständen, soweit sie nicht bereits durch eine Sofortaktion vollständig entschieden wurden.</li></ul>
+<p>Damit ersetzt der Termin-Save-Review den bisherigen Einzel-Dialog &quot;Ohne Mitarbeiter speichern?&quot;. Diese Frage soll als eigener Step im Speichern-Review erscheinen und nicht mehr als separater Alert-Dialog.</p>
+<p>Ressourcen- und Mitarbeiterkonflikte bleiben zusätzlich serverseitig abgesichert. Auch wenn ein Mitarbeiter im Dialog zunächst konfliktfrei wirkt, kann ein anderer Admin oder Disponent denselben Mitarbeiter während der Bearbeitung anderweitig verplanen. In diesem Fall blockiert die serverseitige Terminmutation weiterhin mit einem Konflikt und nennt die betroffenen Mitarbeiter.</p>
+<h2 class="wiki-h2">Reklamation im Terminformular</h2>
+<p>Der Reklamationsbutton im Terminformular ist eine explizite Nutzeraktion und muss sofort reagieren. Diese Entscheidung darf nicht erst still in einen späteren Save-Review verschoben werden.</p>
+<p>Empfohlener Ablauf:</p>
+<ol><li>Der Nutzer klickt &quot;Reklamation melden&quot; im Terminformular.</li><li>Das Formular öffnet sofort einen Reklamationsschritt oder einen Inline-Bereich.</li><li>Das System fragt, ob eine Reklamationsnotiz vorbereitet werden soll.</li><li>Bei positiver Antwort wird der Notizeditor direkt mit der Vorlage &quot;Reklamation&quot; geöffnet.</li><li>Bei einem neuen Termin wird das Ergebnis als Termin-Draft gehalten. Bei einem bestehenden Termin wird die Reklamation direkt per Mutation gesetzt.</li><li>Beim späteren Speichern wird diese Reklamationsentscheidung nicht erneut abgefragt.</li></ol>
+<p>Wenn das zugeordnete Projekt bereits als Reklamation markiert ist, der Termin aber noch nicht, soll der Button nicht einfach deaktiviert werden. Stattdessen braucht es eine klare Rückmeldung, zum Beispiel: &quot;Das Projekt ist bereits als Reklamation markiert. Soll auch der Termin als Reklamation markiert werden?&quot; Der Nutzer kann dann bewusst entscheiden, ob die Reklamation zusätzlich am Termin geführt werden soll.</p>
+<p>Wenn der Termin selbst bereits als Reklamation markiert ist, wird die Funktion als Status beziehungsweise als vorhandene Reklamation dargestellt. Eine erneute Auslösung ist dann nicht nötig; eine mögliche Entfernung folgt dem bestehenden Reklamations-Entfernungsflow.</p>
+<h2 class="wiki-h2">Project Save Review</h2>
+<p>Der <code>ProjectSaveReviewDialog</code> wird der zentrale Mehrschritt-Dialog für offene Speicherentscheidungen.</p>
+<p>Er sammelt je nach Zustand diese Schritte:</p>
+<ol><li>Artikelliste: Gibt es offene oder nachträglich geänderte Artikellisten-Auswahlen?</li><li>Projektname: Weicht der aus Artikelliste oder erstem Block erkannte Projekttitel vom aktuellen Projektnamen ab?</li><li>Reklamation: Ist Reklamation außerhalb des Doc-Extract-Dialogs als Draft aktiv und soll eine Notiz aus der Vorlage vorbereitet werden?</li><li>PDF-Duplikat: Existiert das per Doc Extract eingebrachte PDF bereits als Datei?</li><li>Speichern: Erst nach den Entscheidungen wird die Mutation ausgeführt.</li></ol>
+<p>Die Titelanpassung auf ein Sauna-Modell oder einen erkannten ersten Block darf nicht während Doc Extract stattfinden. Beim Speichern prüft das System, ob der erkannte Projekttitel vom aktuellen Projektnamen abweicht. Wenn ja, wird dies im Speichern-Review als eigener Schritt angezeigt und kann bestätigt oder abgelehnt werden.</p>
+<p>Ein Kunden-Save-Review ist nicht geplant. Kundendaten werden im Doc-Extract-Dialog geprüft, aufgelöst und entschieden. Der Project Save Review bleibt für projektbezogene Speicherentscheidungen zuständig.</p>
+<p>Der Project Save Review übernimmt keine terminbezogenen Mitarbeiter- oder Ressourcenentscheidungen. Diese gehören in den Termin-Save-Review.</p>
+<h2 class="wiki-h2">Abgrenzungen</h2>
+<ul><li>Bestandsprojekte erhalten keinen neuen Doc-Extract-Startpunkt.</li><li>Die Artikelliste wird durch Doc Extract weiterhin nicht automatisch in Produktselektionen überführt.</li><li>Eine fehlende oder nicht transportierte Artikelliste ist kein Abbruchgrund.</li><li>Bestehende Kunden werden nicht still überschrieben.</li><li>Bestehende Duplikatpfade für Auftragsnummern bleiben erhalten.</li><li>Terminbezogene Mitarbeiter- und Ressourcenentscheidungen werden nicht in den Project Save Review verschoben.</li><li>Keine DB-Migration ist Teil dieser Planungsaufgabe.</li></ul>
+<h2 class="wiki-h2">Rollen und Sicherheitsgrenzen</h2>
+<p>Die Aufgabe selbst ändert keine Rollenlogik. Die spätere Umsetzung muss die bestehenden Grenzen ausdrücklich einhalten:</p>
+<ul><li>ADMIN und DISPONENT dürfen Kunden, Projekte und Termine anlegen.</li><li>LESER dürfen diese Mutationen weder über die UI noch über direkte API-Aufrufe ausführen.</li><li>UI-Deaktivierung oder Ausblendung reicht nicht als Berechtigungsdurchsetzung.</li><li>Serverguards für Kundenanlage, Projektanlage, Terminzuordnung, Projektänderung, Notizen und Anhänge bleiben maßgeblich.</li></ul>
+<h2 class="wiki-h2">Erwartete Umsetzungshinweise</h2>
+<p>Relevante Einstiegspunkte:</p>
+<ul><li><code>client/src/components/DocumentExtractionDialog.tsx</code></li><li><code>client/src/components/ProjectDocumentExtractionWorkflowDialog.tsx</code></li><li><code>client/src/components/ProjectSaveReviewDialog.tsx</code></li><li><code>client/src/components/ProjectForm.tsx</code></li><li><code>client/src/components/AppointmentForm.tsx</code></li><li><code>client/src/components/TourEmployeeCascadeDialog.tsx</code></li><li><code>client/src/components/CustomerData.tsx</code></li><li><code>server/services/documentProcessingService.ts</code></li><li><code>server/services/documentHeaderDeterministicParser.ts</code></li><li><code>server/services/extractionValidator.ts</code></li><li><code>server/controllers/customersController.ts</code></li><li><code>server/controllers/projectsController.ts</code></li><li><code>server/controllers/appointmentsController.ts</code></li></ul>
+<p>Die Umsetzung soll möglichst gemeinsame Unterkomponenten für Kundendaten, Mängelhinweise, Projektdatenvorschau und PDF-Öffnen verwenden. Projekt- und Terminpfad sollen fachlich denselben Doc-Extract-Workflow nutzen; nur der Zielkontext nach dem Speichern unterscheidet sich.</p>
+<h2 class="wiki-h2">Erwartete Tests</h2>
+<ul><li>Unit-Tests für Draft-Entscheidungslogik: Doc Extract befüllt, Save Review entscheidet, Save persistiert.</li><li>Unit-Tests für Kundendatenauflösung: neuer Kunde, bestehender Kunde, standardmäßig aktive Stammdaten-Ergänzung per Checkbox, deutlicher Infotext, keine stille Überschreibung.</li><li>Unit-Tests für Project Save Review: Artikelliste, Projekttitel, Reklamation außerhalb des abgeschlossenen Doc-Extract-Pfads, PDF-Duplikat und Kombinationen ohne doppelte Dialoge.</li><li>Unit-Tests für Termin-Save-Review: Ohne-Mitarbeiter-Step, Ressourcen-Konflikt-Step, Kombination mit Termin-Draft-Zuständen ohne separaten Alert-Dialog.</li><li>Render-Tests für Doc-Extract-Dialoge in Kunden-, Projekt- und Terminpfad.</li><li>Render-Tests für den Termin-Reklamationspfad: Projekt bereits Reklamation, Termin noch nicht Reklamation, Termin bereits Reklamation.</li><li>Browser-E2E Neuer Kunde: PDF importieren, Kundendaten prüfen, neuen oder bestehenden Kunden ins Formular übernehmen.</li><li>Browser-E2E Neues Projekt: PDF importieren, Kunde auflösen, Projektdaten übernehmen, Reklamation entscheiden, Notizfrage im Doc-Extract-Dialog beantworten, Notizeditor im Doc-Extract-Dialog verwenden, Save Review öffnen und speichern.</li><li>Browser-E2E Neuer Termin: gleicher Doc-Extract-Flow wie neues Projekt, Projekt speichern, Projekt dem Termin zuordnen, Reklamationsstatus im Terminformular verständlich anzeigen.</li><li>Browser-E2E Termin-Save-Review: Ohne Mitarbeiter speichern als Step im Save-Review, kein separater Alert-Dialog.</li><li>Browser-E2E Termin-Save-Review: Ressourcen- oder Mitarbeiterkonflikt wird vor dem Speichern im Review sichtbar; parallele Änderungen werden serverseitig weiterhin blockiert.</li><li>Browser-E2E manuelle Änderung nach Doc Extract: geänderte Projektdaten oder Artikelliste öffnen die passenden Save-Review-Fragen wieder.</li><li>Browser-E2E Leser: keine Erstellpfade und direkte API-Versuche bleiben serverseitig verboten.</li></ul>
+<h2 class="wiki-h2">Festgelegte Entscheidungen</h2>
+<ul><li>Die Checkbox zur Ergänzung leerer Bestandskunden-Stammdaten ist standardmäßig aktiv und erhält einen deutlichen Infotext, dass nur leere Felder ergänzt und vorhandene Werte nicht überschrieben werden.</li><li>Wenn Reklamation im Doc-Extract-Dialog positiv entschieden wird, wird die Notizfrage im nächsten Dialogschritt gestellt. Bei positiver Antwort wird der vorbefüllte Notizeditor direkt im Doc-Extract-Dialog eingeblendet.</li><li>Für Kundendaten gibt es keinen separaten Kunden-Save-Review; der Kundenteil wird im Doc-Extract-Dialog vollständig entschieden.</li><li>&quot;Ohne Mitarbeiter speichern?&quot; ist eine Termin-Save-Review-Entscheidung und kein separater Alert-Dialog.</li><li>Reklamation im Terminformular bleibt eine Sofortaktion mit direkter Reaktion. Ein bereits als Reklamation markiertes Projekt führt nicht zu einem stummen deaktivierten Button, sondern zu klarer Status- oder Entscheidungsanzeige.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Keine bekannt.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Projekt: <a href="../projekte/dialog-rollout.html">Dialog-Rollout</a></li><li>Features: <a href="../../lastenheft/features/ft-02-projekte.html">FT-02 - Projekte</a> · <a href="../../lastenheft/features/ft-21-dokumentenextraktion.html">FT-21 - Dokumentenextraktion</a></li><li>Use Cases: UC 21/05 · UC 21/07 · UC 21/09 · UC 21/10 · UC 21/17</li><li>Weitere Bezüge: <a href="projekte-und-dokumentextraktion-dialoge.html">Projekte- und Dokumentextraktion-Dialoge</a> · <a href="projekt-speichern-dialog-artikelliste-saunatitel.html">Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel</a> · <a href="dialog-rollout-masterplan.html">Dialog-Rollout-Masterplan</a></li></ul>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

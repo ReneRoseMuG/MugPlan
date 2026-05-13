@@ -52,10 +52,14 @@ async function closeAppointmentForm(page: Parameters<typeof test>[0]["page"]) {
 }
 
 async function confirmAppointmentSaveIfNeeded(page: Parameters<typeof test>[0]["page"]) {
-  const confirmButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  await confirmButton.waitFor({ state: "visible", timeout: 2_000 }).catch(() => undefined);
-  if (await confirmButton.isVisible().catch(() => false)) {
-    await confirmButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  await saveReview.waitFor({ state: "visible", timeout: 2_000 }).catch(() => undefined);
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
 }
 

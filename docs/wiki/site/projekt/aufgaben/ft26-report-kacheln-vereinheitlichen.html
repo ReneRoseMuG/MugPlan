@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-42: FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekte.html">Projekte</a></li><li><a href="../aufgaben.html" class="is-active">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Aufgaben A-42">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../projekte.html">Projekte</a><span class="wiki-breadcrumb__sep">›</span><a href="../aufgaben.html">Aufgaben</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">A-42 FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen</span></nav>
+        <h1 class="wiki-h1">A-42: FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Status</span><span class="wiki-badge wiki-badge--offen">offen</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Dringlichkeit</span><span class="wiki-badge wiki-badge--neutral">Mittel</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Thema</span><span class="wiki-badge wiki-badge--neutral">Reports</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Typ</span><span class="wiki-badge wiki-badge--neutral">Refactoring</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Erstellt</span>13.05.26</div>
+    <p class="wiki-lead">Die Projektkacheln der Auftragsliste sollen als gemeinsamer Kachelpfad für Auftragsliste und Produktionsplanung verwendet werden. Die Produktionsplanung soll keine eigenständige, fachlich gleichartige Projektkachel mehr pflegen, sondern die gemeinsame Kachelstruktur der Auftragsl</p>
+    <p>Die Auftragsliste und die Produktionsplanung verwenden aktuell ähnliche, aber getrennte Projektkachel-Komponenten. Das erzeugt unnötige Pflegearbeit und erhöht das Risiko, dass Layout, Druckverhalten, Footer, Artikelanzeige oder Tag-Darstellung zwischen beiden Reports auseinanderlaufen.</p>
+<table class="wiki-table"><thead><tr><th>Status</th><th>Dringlichkeit</th><th>Thema</th><th>Typ</th><th>Erstellt</th></tr></thead><tbody><tr><td class="wiki-table__id"><code>offen</code></td><td>Mittel</td><td>Reports</td><td>Refactoring</td><td>13.05.26</td></tr></tbody></table>
+<hr>
+<h2 class="wiki-h2">Ziel</h2>
+<p>Die Projektkacheln der Auftragsliste sollen als gemeinsamer Kachelpfad für Auftragsliste und Produktionsplanung verwendet werden. Die Produktionsplanung soll keine eigenständige, fachlich gleichartige Projektkachel mehr pflegen, sondern die gemeinsame Kachelstruktur der Auftragsliste nutzen und nur report-spezifische Daten, Artikelwerte und Darstellungsschalter zuliefern.</p>
+<h2 class="wiki-h2">Ausgangslage</h2>
+<p>In der Bildschirmansicht nutzen beide Reports bereits dieselbe Basiskomponente <code>ReportProjectCard</code>, aber weiterhin unterschiedliche Wrapper:</p>
+<ul><li><code>client/src/components/reports/AuftragslisteProjectCard.tsx</code></li><li><code>client/src/components/reports/ProduktionsplanungProjectCard.tsx</code></li><li><code>client/src/components/reports/ReportProjectCard.tsx</code></li></ul>
+<p>Die Auftragsliste bringt zusätzliche Logik für Highlighting, Shortcodes, Artikelanzeige, Tourfarben und Druckoptionen mit. Die Produktionsplanung nutzt eine eigene Wrapper-Komponente mit eigenen Artikeldaten und neutralem Styling.</p>
+<p>Im Druck ist die Trennung noch stärker: Die Auftragsliste verwendet ihre Kachel weiter, während die Produktionsplanung eine eigene Druckkarte in <code>ProduktionsplanungPrintLayout.tsx</code> rendert. Dadurch gibt es mehrere Stellen für sehr ähnliche Kartenstruktur.</p>
+<h2 class="wiki-h2">Umfang</h2>
+<ul><li>Zur Aufgabe gehören:</li><li>den Auftragslisten-Kachelpfad so zuschneiden oder extrahieren, dass Auftragsliste und Produktionsplanung dieselbe Projektkachel verwenden können</li><li>report-spezifische Unterschiede als Props, Adapterdaten oder kleine konfigurierte Teilstücke abbilden</li><li>Produktionsplanung-Kacheln im Overlay auf den gemeinsamen Kachelpfad umstellen</li><li>Produktionsplanung-Druckkarten prüfen und möglichst ebenfalls auf denselben Kachelpfad beziehungsweise dieselbe Kartenbasis umstellen</li><li>Artikelanzeige der Produktionsplanung aus <code>articleValues</code> und Kategorie-Layout weiterhin korrekt abbilden</li><li>Auftragslisten-spezifisches Highlighting nur dort aktivieren, wo es fachlich zur Auftragsliste gehört</li><li>Sondermaß als Auslöser für Produktionsplanung-Kacheln unverändert lassen</li><li>bestehende Summenbereiche der Produktionsplanung unverändert lassen</li><li>Nicht Teil der Aufgabe sind:</li><li>neue Report-Endpunkte</li><li>Änderungen an Report-Contracts</li><li>Änderungen an Datenbank-Schema oder Persistenz</li><li>Änderung der fachlichen Filterlogik von Auftragsliste oder Produktionsplanung</li><li>Änderung der Sondermaß-, Reklamation- oder Storniert-Regeln</li><li>freie Neugestaltung der Kacheln ohne Bezug zur bestehenden Auftragslisten-Kachel</li><li>Änderung der Rollen- oder Berechtigungslogik</li></ul>
+<h2 class="wiki-h2">Umsetzungshinweise</h2>
+<ul><li>Relevante Einstiegspunkte:</li><li><code>client/src/components/reports/AuftragslisteProjectCard.tsx</code></li><li><code>client/src/components/reports/ProduktionsplanungProjectCard.tsx</code></li><li><code>client/src/components/reports/ReportProjectCard.tsx</code></li><li><code>client/src/components/reports/produktionsplanungProjectCard.shared.ts</code></li><li><code>client/src/components/reports/AuftragslistePrintLayout.tsx</code></li><li><code>client/src/components/reports/ProduktionsplanungPrintLayout.tsx</code></li><li><code>client/src/components/ReportsPage.tsx</code></li><li><code>tests/unit/ui/auftragslisteProjectCard.wiring.test.tsx</code></li><li><code>tests/unit/ui/produktionsplanungProjectCard.wiring.test.tsx</code></li><li><code>tests/unit/ui/auftragslistePrintLayout.wiring.test.tsx</code></li><li><code>tests/unit/ui/produktionsplanungPrintLayout.wiring.test.tsx</code></li><li><code>tests/e2e-browser/reports.ft26.browser.e2e.spec.ts</code></li></ul>
+<p>Die spätere Umsetzung soll zuerst die Datenanforderungen beider Reports vergleichen. Wenn die Auftragslisten-Kachel nicht direkt passt, soll sie gezielt zu einer gemeinsamen Report-Projektkachel erweitert oder in eine gemeinsame konfigurierbare Karte und report-spezifische Adapter zerlegt werden. Ziel bleibt, dass Auftragsliste und Produktionsplanung denselben Kachelpfad nutzen.</p>
+<p>Die Produktionsplanung darf dabei weiterhin ihre fachliche Semantik behalten: Der Summenbereich aggregiert Produkt- und Komponentenwerte, der untere Kachelbereich enthält nur Sondermaß-Projekte beziehungsweise Sondermaß-Termine. Anmerkungen oder Gespiegelt allein dürfen keine Produktionsplanung-Kachel erzeugen.</p>
+<h2 class="wiki-h2">Rollen und Sicherheitsgrenzen</h2>
+<p>Die Aufgabe selbst ist ein Frontend-Refactoring und soll keine Rechte verändern.</p>
+<ul><li>Betroffene Rollen: <code>ADMIN</code>, <code>DISPONENT</code> und <code>LESER</code>, soweit sie die bestehenden Reports sehen dürfen.</li><li>Erlaubte Sichtbarkeit: unverändert gemäß bestehender Reports-Navigation und bestehender serverseitiger Report-Endpunkte.</li><li>Erlaubte Aktionen: Report öffnen, Report erzeugen, Druckvorschau öffnen und drucken bleiben unverändert.</li><li>Technische Durchsetzung: Die serverseitige Rollenprüfung in <code>reportsService</code> bleibt maßgeblich. Eine gemeinsame Kachelkomponente darf keine neuen Daten laden, keine Endpunkte umgehen und keine UI-Sichtbarkeit als Berechtigungsersatz einführen.</li></ul>
+<h2 class="wiki-h2">Erwartete Tests</h2>
+<ul><li>Unit- oder Wiring-Test, dass Auftragsliste und Produktionsplanung denselben gemeinsamen Kachelpfad verwenden.</li><li>Regressionstest für Auftragslisten-Highlighting, damit Produktionsplanung nicht versehentlich Auftragslisten-Farblogik übernimmt.</li><li>Regressionstest für Produktionsplanung-Artikelwerte aus Kategorie-Layout und <code>articleValues</code>.</li><li>Regressionstest, dass Produktionsplanung-Kacheln weiterhin nur über Sondermaß entstehen.</li><li>Drucktest oder Wiring-Test, dass die Produktionsplanung-Druckkarte keine abweichende parallele Projektkartenstruktur mehr pflegt oder die verbleibende Abweichung fachlich begründet ist.</li><li>Bestehende Browser-E2E-Flows für FT-26 Reports müssen weiter sichtbar passende Auftragslisten- und Produktionsplanungskacheln prüfen.</li></ul>
+<h2 class="wiki-h2">Blocker und offene Fragen</h2>
+<ul><li>Zu klären ist, ob die gemeinsame Kachel auch im Produktionsplanung-Druck vollständig verwendet werden kann oder ob der Druck aus technischen Gründen eine dünne eigene Hülle behalten muss.</li><li>Zu klären ist, ob die bestehende Aufgabe zur gemeinsamen Print-Basiskomponente mit dieser Aufgabe zusammen umgesetzt werden sollte oder bewusst getrennt bleibt.</li></ul>
+<hr>
+<h2 class="wiki-h2">Beziehungen</h2>
+<ul><li>Features: <a href="../../lastenheft/features/ft-26-auswertungen-und-reports.html">FT-26 - Auswertungen und Reports</a></li><li>Use Cases: UC 26/03 · UC 26/05 · UC 26/06 · UC 26/07</li><li>Weitere Bezüge: <a href="ft26-report-print-basiskomponente.html">FT-26 gemeinsame Print-Basiskomponente für Kartenreports</a></li></ul>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

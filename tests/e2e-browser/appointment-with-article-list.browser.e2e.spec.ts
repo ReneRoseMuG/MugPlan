@@ -127,9 +127,13 @@ async function assignProjectWithoutAppointments(page: Page, project: { id: numbe
 }
 
 async function confirmSaveIfNeeded(page: Page) {
-  const confirmButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmButton.isVisible().catch(() => false)) {
-    await confirmButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
 }
 

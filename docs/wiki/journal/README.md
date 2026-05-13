@@ -4,6 +4,8 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [13.05.26 - Termin-Save-Review: Notizprüfung bei Terminverschiebung](13-05-26-termin-save-review-notizpruefung.md)
+- [13.05.26 - Doc Extract, Projekt- und Termin-Save-Flow](13-05-26-doc-extract-projekt-termin-save-flow.md)
 - [11.05.26 - P01 Ressourcenplanung-Dialoge abgeschlossen](11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
 - [11.05.26 - Test-Harness nach Dialogbasis-Rollout bereinigt](11-05-26-test-harness-dialogbasis-bereinigt.md)
 - [11.05.26 - P01: Benutzer- und Sicherheitsdialoge abgeschlossen](11-05-26-p01-benutzer-sicherheitsdialoge-abgeschlossen.md)

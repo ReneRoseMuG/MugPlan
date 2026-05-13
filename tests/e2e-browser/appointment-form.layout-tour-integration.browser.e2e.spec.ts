@@ -130,9 +130,13 @@ async function saveAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
@@ -146,9 +150,13 @@ async function saveExistingAppointment(page: Page, appointmentId: number) {
     && new URL(response.url()).pathname === `/api/appointments/${appointmentId}`
   ));
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
   const response = await saveResponsePromise;
   expect(response.ok()).toBeTruthy();
@@ -271,7 +279,8 @@ test("shows the tour picker inside the employee panel and persists a newly selec
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
 
   await page.getByTestId("button-save-appointment").click();
-  await page.getByRole("button", { name: "Trotzdem speichern" }).click();
+  await page.getByTestId("checkbox-appointment-save-review-no-employees").click();
+  await page.getByTestId("button-appointment-save-review-confirm").click();
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -305,7 +314,8 @@ test("renders an existing tour as a separate badge and restores the picker after
   await expect(page.locator('[data-testid="badge-tour"]')).toHaveCount(0);
 
   await page.getByTestId("button-save-appointment").click();
-  await page.getByRole("button", { name: "Trotzdem speichern" }).click();
+  await page.getByTestId("checkbox-appointment-save-review-no-employees").click();
+  await page.getByTestId("button-appointment-save-review-confirm").click();
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -740,7 +750,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
   ));
   await page.getByTestId("button-save-appointment").click();
 
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
@@ -750,7 +760,7 @@ test("rechecks week planning when the start date moves into another ISO week on 
     "Kann aus der Wochenplanung übernommen werden",
   );
   await page.getByTestId("button-appointment-week-mode-replace").click();
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
 
   const saveResponse = await saveResponsePromise;
   expect(saveResponse.ok()).toBeTruthy();
@@ -798,11 +808,14 @@ test("shows a resource conflict dialog before saving a pure date move in the sam
   await page.getByTestId("input-start-date").fill(nextWeek.weekSecondDate);
   await page.getByTestId("button-save-appointment").click();
 
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId(`appointment-week-preview-status-${employee.id}`)).toContainText("Überschneidung im Zielzeitraum");
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).not.toBeChecked();
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await dialog.getByTestId("button-appointment-save-review-next").click();
+  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
+  await dialog.getByTestId("checkbox-appointment-save-review-no-employees").click();
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -854,6 +867,53 @@ test("allows manually adding an employee to an existing appointment through the 
     version: beforePayload.version + 1,
     employeeIds: [replacementEmployee.id],
   });
+});
+
+test("requires checking appointment notes when an existing appointment is moved", async ({ page }) => {
+  const customer = await createCustomerFixture("FT01-MOVE-NOTE-CUST");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: getRelativeBerlinDate(4),
+    employeeIds: [],
+  });
+  const targetDate = getRelativeBerlinDate(5);
+  await seedAppointmentFormNoise("FT01-MOVE-NOTE", targetDate);
+
+  await openExistingAppointment(page, appointment.id);
+  await createAppointmentNoteViaDialog(page, {
+    title: "Terminnotiz mit altem Datum",
+    body: "Bitte die Info zum bisherigen Termin prüfen.",
+  });
+  await expect(page.getByTestId("list-notes")).toContainText("Terminnotiz mit altem Datum");
+
+  await page.getByTestId("input-start-date").fill(targetDate);
+  await page.getByTestId("button-save-appointment").click();
+
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("appointment-save-review-step-notes")).toBeVisible();
+  await expect(dialog.getByTestId("appointment-save-review-note-list")).toContainText("Terminnotiz mit altem Datum");
+  await expect(dialog.getByTestId("button-appointment-save-review-next")).toBeDisabled();
+
+  await dialog.getByTestId("checkbox-appointment-save-review-notes-reviewed").click();
+  await expect(dialog.getByTestId("button-appointment-save-review-next")).toBeEnabled();
+  await dialog.getByTestId("button-appointment-save-review-next").click();
+
+  await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
+  await dialog.getByTestId("checkbox-appointment-save-review-no-employees").click();
+  const saveResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/appointments/${appointment.id}`
+  ));
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return body.startDate;
+  }).toBe(targetDate);
 });
 
 test("keeps existing employees when removing the tour from an existing appointment", async ({ page }) => {

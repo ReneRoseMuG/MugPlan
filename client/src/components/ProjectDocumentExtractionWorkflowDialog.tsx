@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { ExternalLink, FileText, Loader2 } from "lucide-react";
 import type { Customer } from "@shared/schema";
 import {
   DialogBaseFooter,
@@ -9,12 +9,16 @@ import {
   type DialogBaseStep,
 } from "@/components/ui/dialog-base";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DocumentExtractionCustomerSection,
   type ExtractionCustomerEditableFields,
 } from "@/components/document-extraction/DocumentExtractionCustomerSection";
 import { DocumentExtractionProjectSection } from "@/components/document-extraction/DocumentExtractionProjectSection";
 import type { ExtractionCustomerDraft, ExtractionDialogData } from "@/components/DocumentExtractionDialog";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import type { ProjectSaveReviewNoteDraft } from "@/components/ProjectSaveReviewDialog";
 
 export type DocumentExtractionCustomerResolution =
   | { resolution: "none"; count: 0; customer: null }
@@ -32,6 +36,7 @@ export type ProjectDocumentExtractionWorkflowResult = {
   appendDocumentText: boolean;
   acceptMissingArticleListAsReklamation: boolean;
   createReklamationNote: boolean;
+  reklamationNote: ProjectSaveReviewNoteDraft | null;
   articleListReviewed: boolean;
 };
 
@@ -106,7 +111,7 @@ function buildCustomerBackfillLabelText(existingCustomer: Customer, extractedCus
   return labels.length > 0 ? labels.join(", ") : null;
 }
 
-type StepId = "project" | "customer" | "articles" | "summary";
+type StepId = "customer" | "project" | "issues" | "reklamation" | "summary";
 
 type ProjectDocumentExtractionWorkflowDialogProps = {
   open: boolean;
@@ -116,17 +121,28 @@ type ProjectDocumentExtractionWorkflowDialogProps = {
   onApply: (result: ProjectDocumentExtractionWorkflowResult) => Promise<void>;
   onCreateCustomer: (customer: ExtractionCustomerDraft) => Promise<Customer>;
   onUpdateExistingCustomer?: (existingCustomer: Customer, extractedCustomer: ExtractionCustomerDraft) => Promise<Customer>;
+  onOpenDocument?: () => void;
   onOpenChange: (open: boolean) => void;
   onResolveCustomerByNumber: (customerNumber: string) => Promise<DocumentExtractionCustomerResolution>;
   onValidateProject?: (project: { orderNumber: string }) => Promise<boolean>;
+  reklamationNoteDraft?: ProjectSaveReviewNoteDraft | null;
 };
 
 const stepTitles: Record<StepId, string> = {
-  project: "Projekt",
   customer: "Kunde",
-  articles: "Mängel",
+  project: "Projekt",
+  issues: "Mängel",
+  reklamation: "Reklamation",
   summary: "Abschluss",
 };
+
+function buildFallbackReklamationNoteDraft(): ProjectSaveReviewNoteDraft {
+  return {
+    title: "Reklamation",
+    body: "",
+    print: true,
+  };
+}
 
 function toEditableCustomer(value: ExtractionCustomerDraft): ExtractionCustomerEditableFields {
   return {
@@ -168,9 +184,11 @@ export function ProjectDocumentExtractionWorkflowDialog({
   onApply,
   onCreateCustomer,
   onUpdateExistingCustomer,
+  onOpenDocument,
   onOpenChange,
   onResolveCustomerByNumber,
   onValidateProject,
+  reklamationNoteDraft = null,
 }: ProjectDocumentExtractionWorkflowDialogProps) {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [customerFields, setCustomerFields] = useState<ExtractionCustomerEditableFields | null>(null);
@@ -181,6 +199,10 @@ export function ProjectDocumentExtractionWorkflowDialog({
   const [appendDocumentText, setAppendDocumentText] = useState(false);
   const [acceptMissingArticleListAsReklamation, setAcceptMissingArticleListAsReklamation] = useState(false);
   const [createReklamationNote, setCreateReklamationNote] = useState(true);
+  const [updateExistingCustomerData, setUpdateExistingCustomerData] = useState(true);
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteBody, setNoteBody] = useState("");
+  const [notePrint, setNotePrint] = useState(true);
   const [customerResolution, setCustomerResolution] = useState<DocumentExtractionCustomerResolution | null>(null);
   const [customerError, setCustomerError] = useState<string | null>(null);
   const [isResolvingCustomer, setIsResolvingCustomer] = useState(false);
@@ -204,15 +226,16 @@ export function ProjectDocumentExtractionWorkflowDialog({
     setAmount(data.amount ?? "");
     setArticleListHtml(data.articleListHtml ?? "");
     setAppendDocumentText(false);
-    setAcceptMissingArticleListAsReklamation(
-      data.articleItems.length === 0
-      || (data.articleListHtml ?? "").trim().length === 0
-      || (data.fieldReport.issues ?? []).some((item) => item.key === "articleListMissing"),
-    );
+    setAcceptMissingArticleListAsReklamation(false);
     setCreateReklamationNote(true);
+    setUpdateExistingCustomerData(true);
+    const nextNoteDraft = reklamationNoteDraft ?? buildFallbackReklamationNoteDraft();
+    setNoteTitle(nextNoteDraft.title);
+    setNoteBody(nextNoteDraft.body);
+    setNotePrint(nextNoteDraft.print);
     setCustomerResolution(null);
     setCustomerError(null);
-  }, [data, open]);
+  }, [data, open, reklamationNoteDraft]);
 
   const customer = useMemo(() => {
     if (!data || !customerFields) return null;
@@ -220,17 +243,39 @@ export function ProjectDocumentExtractionWorkflowDialog({
   }, [customerFields, data]);
 
   const steps = useMemo<DialogBaseStep[]>(() => {
-    const ids: StepId[] = ["project", "customer", "articles", "summary"];
+    const ids: StepId[] = [
+      "customer",
+      "project",
+      "issues",
+      ...(acceptMissingArticleListAsReklamation ? (["reklamation"] as StepId[]) : []),
+      "summary",
+    ];
     return ids.map((id, index) => ({
       id,
       title: stepTitles[id],
       state: index < activeStepIndex ? "complete" : index === activeStepIndex ? "active" : "pending",
     }));
-  }, [activeStepIndex]);
+  }, [acceptMissingArticleListAsReklamation, activeStepIndex]);
+
+  useEffect(() => {
+    if (activeStepIndex >= steps.length) {
+      setActiveStepIndex(Math.max(steps.length - 1, 0));
+    }
+  }, [activeStepIndex, steps.length]);
 
   const activeStepId = steps[activeStepIndex]?.id as StepId | undefined;
   const isLastStep = activeStepIndex >= steps.length - 1;
   const disableActions = isBusy || isResolvingCustomer || isApplying;
+  const customerBackfillLabelText = customerResolution?.resolution === "single" && customer
+    ? buildCustomerBackfillLabelText(customerResolution.customer, customer)
+    : null;
+  const canBackfillExistingCustomer = Boolean(
+    customerResolution?.resolution === "single"
+    && customerBackfillLabelText
+    && canCreateCustomer
+    && onUpdateExistingCustomer,
+  );
+  const noteTitleInvalid = activeStepId === "reklamation" && createReklamationNote && noteTitle.trim().length === 0;
 
   const resolveCustomer = useCallback(async (): Promise<DocumentExtractionCustomerResolution | null> => {
     if (!customer) return null;
@@ -272,7 +317,7 @@ export function ProjectDocumentExtractionWorkflowDialog({
     const resolution = customerResolution ?? await resolveCustomer();
     if (!resolution) return null;
     if (resolution.resolution === "single") {
-      if (!canCreateCustomer || !onUpdateExistingCustomer) {
+      if (!canBackfillExistingCustomer || !updateExistingCustomerData || !onUpdateExistingCustomer) {
         return resolution.customer;
       }
       return onUpdateExistingCustomer(resolution.customer, customer);
@@ -296,6 +341,9 @@ export function ProjectDocumentExtractionWorkflowDialog({
           return;
         }
       }
+      if (activeStepId === "reklamation" && noteTitleInvalid) {
+        return;
+      }
       setActiveStepIndex((current) => Math.min(current + 1, steps.length - 1));
       return;
     }
@@ -309,6 +357,14 @@ export function ProjectDocumentExtractionWorkflowDialog({
       }
       const resolvedCustomer = await resolveOrCreateCustomer();
       if (!resolvedCustomer) return;
+      const nextReklamationNote = acceptMissingArticleListAsReklamation && createReklamationNote
+        ? {
+            ...(reklamationNoteDraft ?? buildFallbackReklamationNoteDraft()),
+            title: noteTitle.trim(),
+            body: noteBody,
+            print: notePrint,
+          }
+        : null;
       await onApply({
         saunaModel: saunaModel.trim(),
         orderNumber: orderNumber.trim(),
@@ -319,7 +375,8 @@ export function ProjectDocumentExtractionWorkflowDialog({
         resolvedCustomer,
         appendDocumentText,
         acceptMissingArticleListAsReklamation,
-        createReklamationNote: Boolean(acceptMissingArticleListAsReklamation && createReklamationNote),
+        createReklamationNote: Boolean(nextReklamationNote),
+        reklamationNote: nextReklamationNote,
         articleListReviewed: true,
       });
     } catch (error) {
@@ -350,7 +407,7 @@ export function ProjectDocumentExtractionWorkflowDialog({
             variant: "outline",
           }}
           primaryAction={{
-            disabled: disableActions || !data || !customer,
+            disabled: disableActions || !data || !customer || noteTitleInvalid,
             isPending: disableActions,
             label: isLastStep ? "Daten übernehmen" : "Weiter",
             onClick: () => {
@@ -407,6 +464,11 @@ export function ProjectDocumentExtractionWorkflowDialog({
 
         {data && customerFields && customer && activeStepId === "customer" ? (
           <div className="space-y-5">
+            <DialogBaseInlineMessage
+              tone="info"
+              title="Kundendaten prüfen"
+              description="Erkannte Kundendaten werden automatisch über die Kundennummer aufgelöst."
+            />
             <DocumentExtractionCustomerSection
               value={customerFields}
               onChange={(next) => {
@@ -425,11 +487,6 @@ export function ProjectDocumentExtractionWorkflowDialog({
               {customerResolution?.resolution === "single" ? (
                 <div className="text-sm text-emerald-700" data-testid="doc-extract-customer-resolution-single">
                   <p>Bestehender Kunde wird verknüpft: {customerResolution.customer.customerNumber}</p>
-                  {canCreateCustomer && buildCustomerBackfillLabelText(customerResolution.customer, customer) ? (
-                    <p>
-                      Leere Kundendaten werden ergänzt: {buildCustomerBackfillLabelText(customerResolution.customer, customer)}
-                    </p>
-                  ) : null}
                 </div>
               ) : null}
               {customerResolution?.resolution === "none" && canCreateCustomer ? (
@@ -438,13 +495,28 @@ export function ProjectDocumentExtractionWorkflowDialog({
                 </span>
               ) : null}
             </div>
+            {canBackfillExistingCustomer && customerBackfillLabelText ? (
+              <label
+                className="flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-950"
+                data-testid="doc-extract-customer-backfill-option"
+              >
+                <Checkbox
+                  checked={updateExistingCustomerData}
+                  onCheckedChange={(checked) => setUpdateExistingCustomerData(checked === true)}
+                  data-testid="checkbox-doc-extract-update-existing-customer"
+                />
+                <span>
+                  Leere Stammdaten aus dem Dokument ergänzen: {customerBackfillLabelText}. Vorhandene Kundendaten bleiben unverändert.
+                </span>
+              </label>
+            ) : null}
             {customerError ? (
               <DialogBaseInlineMessage tone="error" title="Kundenprüfung" description={customerError} />
             ) : null}
           </div>
         ) : null}
 
-        {data && activeStepId === "articles" ? (
+        {data && activeStepId === "issues" ? (
           <div className="space-y-5">
             {data.warnings.length > 0 ? (
               <DialogBaseInlineMessage
@@ -480,29 +552,79 @@ export function ProjectDocumentExtractionWorkflowDialog({
               </section>
             ) : null}
             {missingArticleList ? (
-              <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3">
-                <label className="flex items-start gap-3 text-sm text-amber-950">
-                  <Checkbox
-                    checked={acceptMissingArticleListAsReklamation}
-                    onCheckedChange={(checked) => setAcceptMissingArticleListAsReklamation(checked === true)}
-                    data-testid="checkbox-doc-extract-accept-reklamation"
-                  />
-                  <span>Als Reklamation ohne Artikelliste übernehmen.</span>
-                </label>
-                {acceptMissingArticleListAsReklamation ? (
-                  <label className="flex items-start gap-3 text-sm text-amber-950">
-                    <Checkbox
-                      checked={createReklamationNote}
-                      onCheckedChange={(checked) => setCreateReklamationNote(checked === true)}
-                      data-testid="checkbox-doc-extract-create-reklamation-note"
-                    />
-                    <span>Reklamationsnotiz vorbereiten.</span>
-                  </label>
-                ) : null}
-              </div>
+              <DialogBaseInlineMessage tone="warning" title="Artikelliste nicht erkannt" description="Das Dokument kann trotzdem übernommen werden." />
             ) : (
               <DialogBaseInlineMessage tone="success" title="Artikelliste wurde erkannt." />
             )}
+            <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3">
+              <div>
+                <h3 className="text-sm font-semibold text-amber-950">Reklamation</h3>
+                <p className="mt-1 text-sm text-amber-950">
+                  Markieren Sie das Projekt nur dann als Reklamation, wenn das Dokument fachlich eine Reklamation beschreibt.
+                </p>
+              </div>
+              <label className="flex items-start gap-3 text-sm text-amber-950">
+                <Checkbox
+                  checked={acceptMissingArticleListAsReklamation}
+                  onCheckedChange={(checked) => setAcceptMissingArticleListAsReklamation(checked === true)}
+                  data-testid="checkbox-doc-extract-accept-reklamation"
+                />
+                <span>
+                  {missingArticleList
+                    ? "Dieses Dokument als Reklamation ohne Artikelliste übernehmen."
+                    : "Dieses Dokument als Reklamation übernehmen."}
+                </span>
+              </label>
+            </div>
+          </div>
+        ) : null}
+
+        {data && activeStepId === "reklamation" ? (
+          <div className="space-y-5" data-testid="doc-extract-reklamation-step">
+            <DialogBaseInlineMessage
+              tone="info"
+              title="Reklamationsnotiz"
+              description="Die Notiz wird als Draft vorbereitet und mit dem Projekt gespeichert."
+            />
+            <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
+              <Checkbox
+                checked={createReklamationNote}
+                onCheckedChange={(checked) => setCreateReklamationNote(checked === true)}
+                data-testid="checkbox-doc-extract-create-reklamation-note"
+              />
+              <span>Reklamationsnotiz vorbereiten.</span>
+            </label>
+            {createReklamationNote ? (
+              <div className="space-y-4" data-testid="doc-extract-reklamation-note-editor">
+                <div className="space-y-2">
+                  <Label htmlFor="doc-extract-reklamation-note-title">Titel *</Label>
+                  <Input
+                    id="doc-extract-reklamation-note-title"
+                    value={noteTitle}
+                    onChange={(event) => setNoteTitle(event.target.value)}
+                    data-testid="input-doc-extract-reklamation-note-title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Inhalt</Label>
+                  <RichTextEditor
+                    value={noteBody}
+                    onChange={setNoteBody}
+                    className="min-h-[150px]"
+                  />
+                </div>
+                <label className="flex items-start gap-3 text-sm text-amber-950">
+                  <input
+                    checked={notePrint}
+                    className="mt-0.5 h-4 w-4 shrink-0"
+                    data-testid="checkbox-doc-extract-reklamation-note-print"
+                    onChange={(event) => setNotePrint(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span>In Druckausgaben berücksichtigen.</span>
+                </label>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -517,8 +639,22 @@ export function ProjectDocumentExtractionWorkflowDialog({
               <p><span className="font-medium">Auftragsnummer:</span> {orderNumber || "nicht erkannt"}</p>
               <p><span className="font-medium">Kunde:</span> {customer?.customerNumber || "nicht erkannt"}</p>
               <p><span className="font-medium">Artikelliste:</span> {missingArticleList ? "als Mangel behandelt" : "erkannt"}</p>
+              {acceptMissingArticleListAsReklamation ? (
+                <p>Projekt wird als Reklamation vorbereitet{createReklamationNote ? " und erhält eine Reklamationsnotiz" : ""}.</p>
+              ) : null}
               {appendDocumentText ? <p>Dokumenttext wird in die Anmerkungen übernommen.</p> : null}
             </div>
+            {onOpenDocument ? (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+                onClick={onOpenDocument}
+                data-testid="button-doc-extract-open-document"
+              >
+                <ExternalLink className="h-4 w-4" />
+                PDF im Browser-Tab öffnen
+              </button>
+            ) : null}
             {customerError ? (
               <DialogBaseInlineMessage tone="error" title="Übernahme nicht möglich" description={customerError} />
             ) : null}

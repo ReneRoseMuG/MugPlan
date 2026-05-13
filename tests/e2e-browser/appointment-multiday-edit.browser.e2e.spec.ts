@@ -123,9 +123,13 @@ async function saveAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();

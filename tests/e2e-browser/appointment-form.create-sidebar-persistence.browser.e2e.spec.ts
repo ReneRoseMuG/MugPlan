@@ -154,14 +154,19 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
 async function completeProjectDocumentExtractionWorkflow(page: Page, options: { acceptReklamation?: boolean } = {}) {
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toBeVisible();
   await page.getByTestId("button-project-doc-extract-next").click();
   const reklamoCheckbox = page.getByTestId("checkbox-doc-extract-accept-reklamation");
+  const shouldAccept = options.acceptReklamation === true;
   if (await reklamoCheckbox.isVisible().catch(() => false)) {
-    const shouldAccept = options.acceptReklamation === true;
     const isChecked = await reklamoCheckbox.isChecked();
     if (shouldAccept !== isChecked) await reklamoCheckbox.click();
   }
   await page.getByTestId("button-project-doc-extract-next").click();
+  if (shouldAccept) {
+    await expect(page.getByTestId("doc-extract-reklamation-note-editor")).toBeVisible();
+    await page.getByTestId("button-project-doc-extract-next").click();
+  }
   await page.getByTestId("button-doc-extract-apply-data").click();
 }
 
@@ -280,9 +285,13 @@ async function saveNewAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
@@ -453,9 +462,13 @@ test("persists tag, note and appointment attachment from the new appointment for
   await expect(page.getByTestId("appointment-form-sidebar").getByText(attachmentName)).toBeVisible();
 
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
 
   await expect.poll(async () => {
@@ -679,9 +692,13 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await expect(page.getByTestId("badge-project-order-number")).toContainText(existingProject.orderNumber ?? "");
 
   await page.getByTestId("button-save-appointment").click();
-  const confirmSaveButton = page.getByRole("button", { name: "Trotzdem speichern" });
-  if (await confirmSaveButton.isVisible().catch(() => false)) {
-    await confirmSaveButton.click();
+  const saveReview = page.getByTestId("dialog-appointment-save-review");
+  if (await saveReview.isVisible().catch(() => false)) {
+    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
+    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
+      await noEmployeesCheckbox.click();
+    }
+    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
   }
 
   await expect.poll(async () => {

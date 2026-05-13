@@ -128,6 +128,8 @@ function removeMarkdownLinks(text) {
   return String(text ?? "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
     .trim();
 }
 
@@ -178,6 +180,15 @@ function formatDate(value) {
   match = raw.match(/^(\d{2})\.(\d{2})\.(\d{2})$/);
   if (match) return raw;
   return raw;
+}
+
+function standValue(markdown) {
+  const match = markdown.match(/^\*Stand:\s*([^*]+)\*$/im);
+  return match ? match[1].trim() : "";
+}
+
+function stripStandFooter(markdown) {
+  return markdown.replace(/\n---+\s*\n\s*\*Stand:\s*[^*]+\*\s*$/im, "").trim();
 }
 
 function dateKeyFromJournalRel(rel) {
@@ -452,6 +463,12 @@ function layout({ outputRel, title, screenLabel, current, breadcrumbs, body }) {
         ["Kontrollbericht", "control-report.html", "control"],
       ],
     },
+    {
+      title: "Benutzerdoku",
+      links: [
+        ["Übersicht", "benutzerdokumentation.html", "user-docs"],
+      ],
+    },
   ];
   const sidebar = nav
     .map(
@@ -557,12 +574,16 @@ function collectSources() {
     .filter((rel) => rel.startsWith("nfrs/") && posix.basename(rel) !== "README.md")
     .map(makeNfr)
     .sort((a, b) => a.id.localeCompare(b.id));
+  const userDocs = files
+    .filter((rel) => rel.startsWith("user-docs/") && posix.basename(rel) !== "README.md")
+    .map(makeUserDoc)
+    .sort((a, b) => `${a.category}/${a.title}`.localeCompare(`${b.category}/${b.title}`));
   const journal = files
     .filter((rel) => rel.startsWith("journal/") && posix.dirname(rel) === "journal" && posix.basename(rel) !== "README.md")
     .map(makeJournal)
     .sort((a, b) => b.dateKey.localeCompare(a.dateKey));
 
-  return { projects, tasks, features, useCases, backlogs, nfrs, journal };
+  return { projects, tasks, features, useCases, backlogs, nfrs, userDocs, journal };
 }
 
 function makeProject(rel) {
@@ -723,6 +744,29 @@ function makeJournal(rel) {
   };
 }
 
+function makeUserDoc(rel) {
+  const markdown = readText(sourceAbs(rel));
+  const heading = firstHeading(markdown);
+  const userDocRel = posix.relative("user-docs", rel);
+  const categoryPath = posix.dirname(userDocRel);
+  const category = categoryPath === "."
+    ? "Allgemein"
+    : categoryPath.split("/").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" / ");
+  const outputRel = `benutzerdokumentation/${userDocRel.replace(/\.md$/, ".html")}`;
+  sourceToOutput.set(rel, outputRel);
+  return {
+    kind: "user-doc",
+    id: slugBase(rel),
+    title: heading || slugBase(rel),
+    rel,
+    outputRel,
+    markdown,
+    category,
+    stand: standValue(markdown),
+    beschreibung: firstParagraph(stripFirstHeading(stripStandFooter(markdown))),
+  };
+}
+
 function registerStaticMappings() {
   sourceToOutput.set("features/README.md", "lastenheft/features.html");
   sourceToOutput.set("use-cases.md", "lastenheft/use-cases.html");
@@ -731,6 +775,7 @@ function registerStaticMappings() {
   sourceToOutput.set("journal/README.md", "verwaltung/journal.html");
   sourceToOutput.set("projects/README.md", "projekt/projekte.html");
   sourceToOutput.set("tasks/README.md", "projekt/aufgaben.html");
+  sourceToOutput.set("user-docs/README.md", "benutzerdokumentation.html");
 }
 
 function renderEntityPage(entity, sources) {
@@ -746,17 +791,36 @@ function renderEntityPage(entity, sources) {
             ? "backlogs"
             : entity.kind === "nfr"
               ? "nfrs"
-              : "journal";
-  const area = current === "journal" ? "Verwaltung" : ["projekte", "aufgaben"].includes(current) ? "Projekte" : "Lastenheft";
-  const areaHref = current === "journal" ? "verwaltung/journal.html" : ["projekte", "aufgaben"].includes(current) ? "projekt/projekte.html" : "lastenheft/features.html";
+              : entity.kind === "user-doc"
+                ? "user-docs"
+                : "journal";
+  const area = current === "journal"
+    ? "Verwaltung"
+    : current === "user-docs"
+      ? "Benutzerdokumentation"
+      : ["projekte", "aufgaben"].includes(current)
+        ? "Projekte"
+        : "Lastenheft";
+  const areaHref = current === "journal"
+    ? "verwaltung/journal.html"
+    : current === "user-docs"
+      ? "benutzerdokumentation.html"
+      : ["projekte", "aufgaben"].includes(current)
+        ? "projekt/projekte.html"
+        : "lastenheft/features.html";
   const breadcrumbs = [
     { label: "MugPlan Wiki", href: "index.html" },
     { label: area, href: areaHref },
     { label: navLabel(current), href: indexHrefFor(current) },
-    { label: `${entity.id ? `${entity.id} ` : ""}${entity.title}`.trim() },
+    { label: `${entity.id && entity.kind !== "user-doc" ? `${entity.id} ` : ""}${entity.title}`.trim() },
   ];
   const meta = entity.kind === "journal"
     ? metaLine([{ label: "Datum", value: entity.datum }])
+    : entity.kind === "user-doc"
+      ? metaLine([
+          { label: "Bereich", value: entity.category, badge: "neutral" },
+          { label: "Stand", value: entity.stand },
+        ])
     : metaLine([
         { label: "Status", value: entity.status, badge: "neutral" },
         { label: "Dringlichkeit", value: entity.dringlichkeit, badge: "neutral" },
@@ -766,12 +830,15 @@ function renderEntityPage(entity, sources) {
         { label: "Feature", value: entity.featureId, badge: "neutral" },
         { label: "Erstellt", value: entity.erstellt },
       ]);
-  const titlePrefix = entity.id ? `${entity.id}: ` : "";
+  const titlePrefix = entity.id && entity.kind !== "user-doc" ? `${entity.id}: ` : "";
   const related = relatedRows(entity, sources);
+  const markdownBody = entity.kind === "user-doc"
+    ? stripStandFooter(stripFirstHeading(entity.markdown))
+    : stripFirstHeading(entity.markdown);
   const body = `<h1 class="wiki-h1">${escapeHtml(titlePrefix)}${escapeHtml(entity.title)}</h1>
     ${meta}
     ${entity.beschreibung ? `<p class="wiki-lead">${escapeHtml(entity.beschreibung)}</p>` : ""}
-    ${markdownToHtml(stripFirstHeading(entity.markdown), entity.rel, entity.outputRel)}
+    ${markdownToHtml(markdownBody, entity.rel, entity.outputRel)}
     ${relationsBlock(related)}`;
   return layout({
     outputRel: entity.outputRel,
@@ -833,6 +900,7 @@ function navLabel(current) {
     control: "Kontrollbericht",
     aufgaben: "Aufgaben",
     projekte: "Projekte",
+    "user-docs": "Benutzerdokumentation",
   }[current] ?? current;
 }
 
@@ -847,6 +915,7 @@ function iconKeyForCurrent(current) {
     journal: "journal",
     metadaten: "metadaten",
     control: "control",
+    "user-docs": "user-docs",
   }[current] ?? "";
 }
 
@@ -864,6 +933,7 @@ function indexHrefFor(current) {
     backlogs: "lastenheft/backlogs.html",
     nfrs: "lastenheft/nfrs.html",
     journal: "verwaltung/journal.html",
+    "user-docs": "benutzerdokumentation.html",
   }[current] ?? "index.html";
 }
 
@@ -906,6 +976,52 @@ function tablePage({ outputRel, title, current, lead, rows, columns }) {
   });
 }
 
+function renderUserDocsOverview(userDocs) {
+  const outputRel = "benutzerdokumentation.html";
+  const readmeRel = "user-docs/README.md";
+  const readmePath = sourceAbs(readmeRel);
+  const readmeMarkdown = fs.existsSync(readmePath) ? readText(readmePath) : "";
+  const categories = [...new Set(userDocs.map((doc) => doc.category))];
+  const readmeBody = readmeMarkdown
+    ? markdownToHtml(stripStandFooter(stripFirstHeading(readmeMarkdown)), readmeRel, outputRel)
+    : "<p>Für diesen Bereich ist noch keine Einleitung hinterlegt.</p>";
+  const sections = categories
+    .map((category) => {
+      const docs = userDocs.filter((doc) => doc.category === category);
+      return `<section class="wiki-doc-section">
+        <h2 class="wiki-h2">${escapeHtml(category)}</h2>
+        <div class="wiki-doc-grid">
+          ${docs
+            .map((doc) => `<article class="wiki-doc-card">
+              <p class="wiki-card__eyebrow">${escapeHtml(doc.category)}</p>
+              <h3 class="wiki-doc-card__title">${entityLink(doc, outputRel, doc.title)}</h3>
+              ${doc.beschreibung ? `<p class="wiki-doc-card__desc">${escapeHtml(doc.beschreibung)}</p>` : ""}
+              <div class="wiki-doc-card__meta">
+                ${doc.stand ? `<span>Stand ${escapeHtml(doc.stand)}</span>` : ""}
+              </div>
+            </article>`)
+            .join("")}
+        </div>
+      </section>`;
+    })
+    .join("");
+  const body = `<h1 class="wiki-h1"${headingIconAttr("user-docs")}>Benutzerdokumentation</h1>
+    ${metaLine([{ label: "Unterseiten", value: String(userDocs.length) }, { label: "Stand", value: standValue(readmeMarkdown) }])}
+    <div class="wiki-user-docs-intro">${readmeBody}</div>
+    ${sections}`;
+  return layout({
+    outputRel,
+    title: "Benutzerdokumentation",
+    screenLabel: "Benutzerdokumentation",
+    current: "user-docs",
+    breadcrumbs: [
+      { label: "MugPlan Wiki", href: "index.html" },
+      { label: "Benutzerdokumentation" },
+    ],
+    body,
+  });
+}
+
 function renderIndex(sources, index) {
   const outputRel = "index.html";
   const lastJournal = sources.journal[0];
@@ -931,6 +1047,13 @@ function renderIndex(sources, index) {
         </ul>
       </article>
       <article class="wiki-card">
+        <h2 class="wiki-card__title"><a href="${relLink(outputRel, "benutzerdokumentation.html")}">Benutzerdokumentation</a></h2>
+        <p class="wiki-card__desc">Praxisnahe Anleitungen für Anwenderinnen und Anwender, aus den Markdown-Dateien der User-Docs generiert.</p>
+        <ul class="wiki-card__links">
+          <li><a href="${relLink(outputRel, "benutzerdokumentation.html")}">Übersicht <span class="wiki-card__count">${sources.userDocs.length}</span></a></li>
+        </ul>
+      </article>
+      <article class="wiki-card">
         <h2 class="wiki-card__title"><a href="${relLink(outputRel, "verwaltung/journal.html")}">Verwaltung</a></h2>
         <p class="wiki-card__desc">Journal und Kontrollberichte zur generierten Wiki-Ausgabe.</p>
         <ul class="wiki-card__links">
@@ -948,6 +1071,8 @@ function renderIndex(sources, index) {
       <span class="wiki-status-line__sep">·</span>
       <span class="wiki-status-line__item"><span class="wiki-status-line__num">${sources.useCases.length}</span> Use Cases</span>
       <span class="wiki-status-line__sep">·</span>
+      <span class="wiki-status-line__item"><span class="wiki-status-line__num">${sources.userDocs.length}</span> User-Docs</span>
+      <span class="wiki-status-line__sep">·</span>
       <span class="wiki-status-line__item"><span class="wiki-status-line__num">${formatDate(index._meta?.aktualisiert)}</span> Indexstand</span>
       ${lastJournal ? `<span class="wiki-status-line__sep">·</span><span class="wiki-status-line__item">Letzter Eintrag <span class="wiki-status-line__num">${escapeHtml(lastJournal.datum)}</span></span>` : ""}
     </div>`;
@@ -955,6 +1080,7 @@ function renderIndex(sources, index) {
 }
 
 function renderOverviewPages(sources) {
+  writeText(outputAbs("benutzerdokumentation.html"), renderUserDocsOverview(sources.userDocs));
   writeText(outputAbs("projekt/projekte.html"), tablePage({
     outputRel: "projekt/projekte.html",
     title: "Projekte",
@@ -1154,6 +1280,7 @@ function validate(sources) {
       use_cases: [],
       backlogs: [],
       nfrs: [],
+      user_docs: [],
       journal: [],
     },
   };
@@ -1164,6 +1291,7 @@ function validate(sources) {
     ["use_cases", sources.useCases, ["id", "title", "featureId"]],
     ["backlogs", sources.backlogs, ["id", "title", "featureId"]],
     ["nfrs", sources.nfrs, ["id", "title", "status", "kategorie", "beschreibung"]],
+    ["user_docs", sources.userDocs, ["title", "category", "beschreibung"]],
     ["journal", sources.journal, ["title", "datum"]],
   ];
   for (const [key, rows, required] of sourceGroups) {
@@ -1271,6 +1399,8 @@ function writeCss() {
   --wiki-area-lastenheft-bg: oklch(0.96 0.022 275);
   --wiki-area-verwaltung: oklch(0.50 0.060 205);
   --wiki-area-verwaltung-bg: oklch(0.96 0.020 205);
+  --wiki-area-userdocs: oklch(0.46 0.085 145);
+  --wiki-area-userdocs-bg: oklch(0.96 0.026 145);
   --wiki-status-offen-fg: #44403c;
   --wiki-status-offen-bg: #f1f0ee;
   --wiki-status-offen-border: #e0ddd9;
@@ -1374,6 +1504,12 @@ a:hover { color: var(--wiki-accent-hover); text-decoration: underline; }
   background: var(--wiki-area-verwaltung-bg);
   border-color: color-mix(in oklab, var(--wiki-area-verwaltung) 25%, transparent);
 }
+.wiki-sidebar__group:nth-of-type(4) .wiki-sidebar__group-title {
+  color: var(--wiki-fg);
+  --wiki-section-icon-color: var(--wiki-area-userdocs);
+  background: var(--wiki-area-userdocs-bg);
+  border-color: color-mix(in oklab, var(--wiki-area-userdocs) 25%, transparent);
+}
 .wiki-sidebar__nav { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
 .wiki-sidebar__nav a { display: flex; align-items: center; gap: 8px; padding: 6px var(--wiki-space-3); border-radius: 4px; color: var(--wiki-accent); position: relative; }
 .wiki-sidebar__nav a::before {
@@ -1417,6 +1553,7 @@ a:hover { color: var(--wiki-accent-hover); text-decoration: underline; }
 .wiki-h1[data-icon="journal"],
 .wiki-h1[data-icon="metadaten"],
 .wiki-h1[data-icon="control"] { --wiki-heading-icon-color: var(--wiki-area-verwaltung); }
+.wiki-h1[data-icon="user-docs"] { --wiki-heading-icon-color: var(--wiki-area-userdocs); }
 .wiki-h2 { font-size: 24px; font-weight: 600; letter-spacing: 0; line-height: 1.3; margin: var(--wiki-space-7) 0 var(--wiki-space-3); padding-top: var(--wiki-space-5); border-top: 1px solid var(--wiki-border); color: var(--wiki-fg); }
 .wiki-h3 { font-size: 19px; font-weight: 600; letter-spacing: 0; line-height: 1.35; margin: var(--wiki-space-6) 0 var(--wiki-space-2); color: var(--wiki-fg); }
 .wiki-lead { font-size: 17px; color: var(--wiki-fg-muted); margin: 0 0 var(--wiki-space-6); max-width: 760px; }
@@ -1482,6 +1619,16 @@ a:hover { color: var(--wiki-accent-hover); text-decoration: underline; }
 .wiki-checklist__text { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
 .wiki-callout { border: 1px solid var(--wiki-border-strong); border-radius: 8px; padding: var(--wiki-space-4); background: var(--wiki-bg-subtle); margin: var(--wiki-space-5) 0; }
 .wiki-callout__title { font-weight: 600; margin: 0 0 4px; }
+.wiki-user-docs-intro { max-width: 760px; }
+.wiki-doc-section { margin-top: var(--wiki-space-6); }
+.wiki-doc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--wiki-space-4); margin-top: var(--wiki-space-4); }
+.wiki-doc-card { border: 1px solid var(--wiki-border); border-radius: 8px; padding: var(--wiki-space-5); background: var(--wiki-bg); min-height: 180px; display: flex; flex-direction: column; gap: var(--wiki-space-2); }
+.wiki-doc-card:hover { border-color: var(--wiki-area-userdocs); box-shadow: 0 10px 28px rgba(28, 27, 26, 0.08); }
+.wiki-doc-card__title { font-size: 20px; line-height: 1.3; margin: 0; }
+.wiki-doc-card__title a { color: var(--wiki-accent); }
+.wiki-doc-card__title a:hover { color: var(--wiki-accent-hover); text-decoration: none; }
+.wiki-doc-card__desc { color: var(--wiki-fg-muted); margin: 0; }
+.wiki-doc-card__meta { color: var(--wiki-fg-subtle); font-size: 13px; margin-top: auto; }
 code { font-family: var(--wiki-font-mono); font-size: 0.92em; background: var(--wiki-bg-code); border: 1px solid var(--wiki-border); border-radius: 4px; padding: 1px 4px; }
 pre { overflow-x: auto; background: var(--wiki-bg-code); border: 1px solid var(--wiki-border); border-radius: 8px; padding: var(--wiki-space-4); }
 pre code { border: 0; padding: 0; background: transparent; }
@@ -1495,6 +1642,9 @@ hr { border: 0; border-top: 1px solid var(--wiki-border); margin: var(--wiki-spa
 }
 .wiki-sidebar__group:nth-of-type(3) .wiki-sidebar__group-title {
   --wiki-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='20' height='5' x='2' y='3' rx='1'/><path d='M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8'/><path d='M10 12h4'/></svg>");
+}
+.wiki-sidebar__group:nth-of-type(4) .wiki-sidebar__group-title {
+  --wiki-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7v14'/><path d='M16 12h2'/><path d='M16 8h2'/><path d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'/></svg>");
 }
 .wiki-sidebar__nav a[href$="projekte.html"],
 .wiki-card__title a[href$="projekte.html"],
@@ -1542,6 +1692,12 @@ hr { border: 0; border-top: 1px solid var(--wiki-border); margin: var(--wiki-spa
 .wiki-sidebar__nav a[href$="control-report.html"],
 .wiki-h1[data-icon="control"] {
   --wiki-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect width='8' height='4' x='8' y='2' rx='1'/><path d='M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2'/><path d='m9 14 2 2 4-4'/></svg>");
+}
+.wiki-sidebar__nav a[href$="benutzerdokumentation.html"],
+.wiki-card__title a[href$="benutzerdokumentation.html"],
+.wiki-card__links a[href$="benutzerdokumentation.html"],
+.wiki-h1[data-icon="user-docs"] {
+  --wiki-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 7v14'/><path d='M16 12h2'/><path d='M16 8h2'/><path d='M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z'/></svg>");
 }
 .wiki-card__title a::before {
   content: "";
@@ -1610,7 +1766,7 @@ function main() {
   renderOverviewPages(sources);
   renderMetadataPage(index);
 
-  for (const group of [sources.projects, sources.tasks, sources.features, sources.useCases, sources.backlogs, sources.nfrs, sources.journal]) {
+  for (const group of [sources.projects, sources.tasks, sources.features, sources.useCases, sources.backlogs, sources.nfrs, sources.userDocs, sources.journal]) {
     for (const entity of group) {
       writeText(outputAbs(entity.outputRel), renderEntityPage(entity, sources));
     }
@@ -1629,6 +1785,7 @@ function main() {
   console.log(`Use Cases: ${sources.useCases.length}`);
   console.log(`Backlogs: ${sources.backlogs.length}`);
   console.log(`NFRs: ${sources.nfrs.length}`);
+  console.log(`Benutzerdokumentation: ${sources.userDocs.length}`);
   console.log(`Journal: ${sources.journal.length}`);
   console.log(`Kontrolle: ${errorCount} Fehler, ${warningCount} Warnungsgruppen`);
   if (errorCount > 0) process.exitCode = 1;

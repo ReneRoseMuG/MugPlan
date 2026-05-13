@@ -32,6 +32,11 @@
         <ul class="wiki-sidebar__nav">
           <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
         </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
       </div>
     </aside>
     <main class="wiki-content" data-screen-label="Backlogs BL-27">
@@ -39,8 +44,16 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../backlogs.html">Backlogs</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">BL-27 FT (27) Backlog</span></nav>
         <h1 class="wiki-h1">BL-27: FT (27) Backlog</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-27</span></div>
-    <p class="wiki-lead">In der lokalen FT-27-Exportdatei wurde kein eigener Backlog-Abschnitt gefunden.</p>
-    <p>In der lokalen FT-27-Exportdatei wurde kein eigener Backlog-Abschnitt gefunden.</p>
+    <p class="wiki-lead">Produkte und Komponenten erhalten jeweils eine Detailseite, die alle Stammdatenfelder strukturiert darstellt. Zusätzlich wird eine Attachment-Funktion integriert, über die technische Dokumente (z. B. Zeichnungen, Montageanleitungen, Aufstellungspläne) pro Produkt oder Komponente </p>
+    <h2 class="wiki-h2">BL-27-01: Detailseiten und Attachments für Produkte und Komponenten</h2>
+<ul><li><strong>Status:</strong> Offen</li><li><strong>Priorität:</strong> Mittel</li></ul>
+<h3 class="wiki-h3">Beschreibung</h3>
+<p>Produkte und Komponenten erhalten jeweils eine Detailseite, die alle Stammdatenfelder strukturiert darstellt. Zusätzlich wird eine Attachment-Funktion integriert, über die technische Dokumente (z. B. Zeichnungen, Montageanleitungen, Aufstellungspläne) pro Produkt oder Komponente abgelegt werden können.</p>
+<p>Die Attachment-Infrastruktur basiert vollständig auf FT-19. Es sind zwei neue Tabellen erforderlich (<code>product_attachments</code>, <code>component_attachments</code>). Upload und Löschen sind Administratoren vorbehalten, Download steht auch Disponenten zur Verfügung.</p>
+<h3 class="wiki-h3">Betroffene Use Cases</h3>
+<ul><li>UC 27/08: Detailseite anzeigen (Produkt / Komponente)</li><li>UC 27/09: Attachment hochladen (Admin)</li><li>UC 27/10: Attachment löschen (Admin)</li></ul>
+<h3 class="wiki-h3">Abhängigkeiten</h3>
+<ul><li>FT-19 (Attachments): Infrastruktur wird übernommen, neue Domänen <code>product</code> und <code>component</code> werden ergänzt.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -77,6 +77,10 @@ vi.mock("@/components/document-extraction/DocumentExtractionProjectSection", () 
   },
 }));
 
+vi.mock("@/components/RichTextEditor", () => ({
+  RichTextEditor: ({ value }: { value?: string }) => <div data-testid="richtext-editor">{value}</div>,
+}));
+
 const customerDraft: ExtractionCustomerDraft = {
   customerNumber: "C-100",
   firstName: "Ina",
@@ -148,6 +152,10 @@ async function loadWorkflowDialog(state: {
         .mockImplementationOnce(() => [Boolean(state.appendDocumentText), vi.fn()])
         .mockImplementationOnce(() => [state.acceptMissingArticleListAsReklamation ?? true, vi.fn()])
         .mockImplementationOnce(() => [state.createReklamationNote ?? true, vi.fn()])
+        .mockImplementationOnce(() => [true, vi.fn()])
+        .mockImplementationOnce(() => ["Reklamation", vi.fn()])
+        .mockImplementationOnce(() => ["Vorbereitete Notiz", vi.fn()])
+        .mockImplementationOnce(() => [true, vi.fn()])
         .mockImplementationOnce(() => [state.customerResolution ?? null, vi.fn()])
         .mockImplementationOnce(() => [null, vi.fn()])
         .mockImplementationOnce(() => [false, vi.fn()])
@@ -166,6 +174,7 @@ function renderWorkflow(Component: React.ComponentType<any>) {
       canCreateCustomer
       onApply={async () => undefined}
       onCreateCustomer={async () => ({ id: 10, customerNumber: "C-100" })}
+      onUpdateExistingCustomer={async (_existing: unknown, _customer: unknown) => ({ id: 10, customerNumber: "C-100" })}
       onOpenChange={() => undefined}
       onResolveCustomerByNumber={async () => ({ resolution: "single", count: 1, customer: { id: 10, customerNumber: "C-100" } })}
     />,
@@ -180,7 +189,7 @@ describe("FT21 project document extraction workflow dialog", () => {
   });
 
   it("renders the project step with extracted project fields and optional document text adoption", async () => {
-    const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({ activeStepIndex: 0 });
+    const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({ activeStepIndex: 1 });
     const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
 
     expect(html).toContain("document-extraction-overlay");
@@ -200,7 +209,7 @@ describe("FT21 project document extraction workflow dialog", () => {
 
   it("renders the customer step with automatic existing-customer resolution", async () => {
     const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({
-      activeStepIndex: 1,
+      activeStepIndex: 0,
       customerResolution: {
         resolution: "single",
         count: 1,
@@ -214,7 +223,9 @@ describe("FT21 project document extraction workflow dialog", () => {
     expect(html).not.toContain("Kunde prüfen");
     expect(html).toContain("Bestehender Kunde");
     expect(html).toContain("C-100");
-    expect(html).toContain("Leere Kundendaten");
+    expect(html).toContain("Leere Stammdaten");
+    expect(html).toContain("Vorhandene Kundendaten bleiben");
+    expect(html).toContain("checkbox-doc-extract-update-existing-customer");
     expect(customerSectionCalls[0]).toMatchObject({
       value: expect.objectContaining({ customerNumber: "C-100", postalCode: "123456" }),
     });
@@ -232,8 +243,8 @@ describe("FT21 project document extraction workflow dialog", () => {
     expect(html).toContain("PLZ hat nicht das erwartete Format.");
     expect(html).toContain("Es konnte keine Artikelliste erkannt werden.");
     expect(html).toContain("checkbox-doc-extract-accept-reklamation");
-    expect(html).toContain("Als Reklamation ohne Artikelliste übernehmen.");
-    expect(html).toContain("checkbox-doc-extract-create-reklamation-note");
+    expect(html).toContain("Dieses Dokument als Reklamation ohne Artikelliste");
+    expect(html).not.toContain("checkbox-doc-extract-create-reklamation-note");
 
     const warningIndex = html.indexOf("Kundendaten konnten nur teilweise erkannt werden.");
     const missingIndex = html.indexOf("document-extraction-report-missing");
@@ -245,10 +256,22 @@ describe("FT21 project document extraction workflow dialog", () => {
     expect(reklamationIndex).toBeGreaterThan(issuesIndex);
   });
 
+  it("renders the embedded reklamation note editor after the reklamation decision", async () => {
+    const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({ activeStepIndex: 3 });
+    const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
+
+    expect(html).toContain("doc-extract-reklamation-step");
+    expect(html).toContain("checkbox-doc-extract-create-reklamation-note");
+    expect(html).toContain("doc-extract-reklamation-note-editor");
+    expect(html).toContain("input-doc-extract-reklamation-note-title");
+    expect(html).toContain("Vorbereitete Notiz");
+  });
+
   it("renders the summary without the no-duplicate-review sentence", async () => {
     const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({
       activeStepIndex: 3,
       appendDocumentText: true,
+      acceptMissingArticleListAsReklamation: false,
     });
     const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
 

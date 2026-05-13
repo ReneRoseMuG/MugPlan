@@ -46,6 +46,12 @@ import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import { AppointmentCancelConfirmDialog } from "@/components/AppointmentCancelConfirmDialog";
 import {
+  AppointmentSaveReviewDialog,
+  type AppointmentSaveReviewNoteReview,
+  type AppointmentSaveReviewResourceRequest,
+  type AppointmentSaveReviewResult,
+} from "@/components/AppointmentSaveReviewDialog";
+import {
   type ExtractionCustomerDraft,
   type ExtractionDialogData,
 } from "@/components/DocumentExtractionDialog";
@@ -198,6 +204,7 @@ type ExtractedProjectDraft =
       documentExtractionReklamation?: {
         enabled: boolean;
         createNote: boolean;
+        noteDraft?: ProjectDocumentExtractionWorkflowResult["reklamationNote"];
       };
     }
   | {
@@ -205,6 +212,18 @@ type ExtractedProjectDraft =
       projectId: number;
       documentFile: File | null;
     };
+
+type AppointmentSaveReviewRequest = {
+  resourceRequest: AppointmentSaveReviewResourceRequest | null;
+  noteReview: AppointmentSaveReviewNoteReview | null;
+};
+
+type AppointmentFormSnapshotData = {
+  startDate: string;
+  endDate: string | null;
+  startTimeEnabled: boolean;
+  startTimeValue: string;
+};
 
 type ProjectOrderNumberResolutionResponse = {
   resolution: "none" | "single" | "multiple";
@@ -294,6 +313,11 @@ const buildTimeString = (timeValue: string) => {
   return `${normalized}:00`;
 };
 
+const normalizeComparableTime = (value: string | null | undefined): string | null => {
+  const normalized = normalizeTimeInput((value ?? "").slice(0, 5));
+  return normalized ? `${normalized}:00` : null;
+};
+
 const getBerlinCurrentTimeString = () => {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Berlin",
@@ -327,6 +351,22 @@ const normalizeDateInputValue = (value: string | null | undefined): string => {
   const month = String(parsed.getMonth() + 1).padStart(2, "0");
   const day = String(parsed.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const parseAppointmentFormSnapshotData = (snapshot: string | null): AppointmentFormSnapshotData | null => {
+  if (!snapshot) return null;
+  try {
+    const parsed = JSON.parse(snapshot) as Partial<AppointmentFormSnapshotData>;
+    if (typeof parsed.startDate !== "string") return null;
+    return {
+      startDate: parsed.startDate,
+      endDate: typeof parsed.endDate === "string" ? parsed.endDate : null,
+      startTimeEnabled: parsed.startTimeEnabled === true,
+      startTimeValue: typeof parsed.startTimeValue === "string" ? parsed.startTimeValue : "",
+    };
+  } catch {
+    return null;
+  }
 };
 
 const buildApiError = (message: string, status?: number, code?: string): AppointmentApiError => {
@@ -498,8 +538,8 @@ export function AppointmentForm({
   const [projectPickerOpen, setProjectPickerOpen] = useState(false);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
   const [employeePickerOpen, setEmployeePickerOpen] = useState(false);
-  const [employeeConfirmOpen, setEmployeeConfirmOpen] = useState(false);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [projectReklamationConfirmOpen, setProjectReklamationConfirmOpen] = useState(false);
   const [parkConfirmOpen, setParkConfirmOpen] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number | null } | null>(null);
   const [noteRemovalDialog, setNoteRemovalDialog] = useState<{ templateTitle: string; noteId: number; noteVersion: number } | null>(null);
@@ -522,6 +562,7 @@ export function AppointmentForm({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
+  const [appointmentSaveReviewRequest, setAppointmentSaveReviewRequest] = useState<AppointmentSaveReviewRequest | null>(null);
   const [resolvedAppointmentWeekPlanKey, setResolvedAppointmentWeekPlanKey] = useState<string | null>(null);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [isSaving, setIsSaving] = useState(false);
@@ -543,6 +584,24 @@ export function AppointmentForm({
     attachment.originalName === file.name &&
     attachment.file.size === file.size &&
     attachment.file.lastModified === file.lastModified;
+  const documentExtractionFileUrl = useMemo(() => {
+    if (!documentExtractionFile) return null;
+    if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return null;
+    return URL.createObjectURL(documentExtractionFile);
+  }, [documentExtractionFile]);
+
+  useEffect(() => {
+    return () => {
+      if (documentExtractionFileUrl && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+        URL.revokeObjectURL(documentExtractionFileUrl);
+      }
+    };
+  }, [documentExtractionFileUrl]);
+
+  const openDocumentExtractionFileInTab = () => {
+    if (!documentExtractionFileUrl || typeof window === "undefined") return;
+    window.open(documentExtractionFileUrl, "_blank", "noopener,noreferrer");
+  };
 
   const buildFormSnapshot = (input: {
     projectId: number | null;
@@ -672,6 +731,15 @@ export function AppointmentForm({
     queryKey: ["/api/note-templates"],
     queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
+  const documentExtractionReklamationNoteDraft = useMemo(() => {
+    const template = findWorkflowNoteTemplate(noteTemplates, "Reklamation");
+    if (template) return buildWorkflowNoteDraft(template);
+    return {
+      title: "Reklamation",
+      body: "",
+      print: true,
+    };
+  }, [noteTemplates]);
   const clearWorkflowNoteSuggestionSeen = (templateTitle: string) => {
     workflowNoteSuggestionSeenRef.current.delete(normalizeWorkflowNoteTitle(templateTitle));
   };
@@ -1037,7 +1105,52 @@ export function AppointmentForm({
   );
   const visibleAppointmentTags = isEditing ? appointmentTagRelations : draftAppointmentTags;
   const visibleAppointmentNotes = isEditing ? appointmentNotes : draftAppointmentNotes;
+  const buildAppointmentNoteReviewRequest = (
+    currentEndDate: string | null,
+    currentStartTime: string | null,
+  ): AppointmentSaveReviewNoteReview | null => {
+    const notes = visibleAppointmentNotes
+      .map((note) => ({ id: note.id, title: note.title }))
+      .filter((note) => Number.isFinite(note.id));
+    if (notes.length === 0) return null;
+
+    const previousTiming = isEditing && appointmentDetail
+      ? {
+          startDate: normalizeDateInputValue(appointmentDetail.startDate),
+          endDate: appointmentDetail.endDate ? normalizeDateInputValue(appointmentDetail.endDate) : null,
+          startTime: normalizeComparableTime(appointmentDetail.startTime),
+        }
+      : (() => {
+          const snapshot = parseAppointmentFormSnapshotData(initialFormSnapshot);
+          if (!snapshot) return null;
+          return {
+            startDate: normalizeDateInputValue(snapshot.startDate),
+            endDate: snapshot.endDate ? normalizeDateInputValue(snapshot.endDate) : null,
+            startTime: snapshot.startTimeEnabled ? normalizeComparableTime(snapshot.startTimeValue) : null,
+          };
+        })();
+
+    if (!previousTiming || !previousTiming.startDate) return null;
+    const nextEndDate = currentEndDate ? normalizeDateInputValue(currentEndDate) : null;
+    const timingChanged = previousTiming.startDate !== startDate
+      || previousTiming.endDate !== nextEndDate
+      || previousTiming.startTime !== currentStartTime;
+    if (!timingChanged) return null;
+
+    return {
+      previousStartDate: previousTiming.startDate,
+      previousEndDate: previousTiming.endDate,
+      previousStartTime: previousTiming.startTime,
+      nextStartDate: startDate,
+      nextEndDate,
+      nextStartTime: currentStartTime,
+      notes,
+    };
+  };
   const hasReklamationTag = visibleAppointmentTags.some((item) => isManagedComplaintTagName(item.tag.name));
+  const hasProjectReklamationTag = (
+    isEditing ? (appointmentDetail?.projectTags ?? []) : (selectedProject?.tags ?? [])
+  ).some((tag) => isManagedComplaintTagName(tag.name));
   const availableComplaintTag = useMemo(
     () => availableTags.find((tag) => isManagedComplaintTagName(tag.name)) ?? null,
     [availableTags],
@@ -1363,6 +1476,27 @@ export function AppointmentForm({
       return;
     }
     setDraftAppointmentReklamation();
+  };
+
+  const executeAppointmentReklamationAction = () => {
+    if (!isEditing) {
+      toggleDraftAppointmentReklamation();
+      return;
+    }
+    const version = appointmentDetail?.version;
+    if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+      toast({ title: "Reklamation nicht möglich", description: "Terminversion fehlt. Bitte neu laden.", variant: "destructive" });
+      return;
+    }
+    reklamationAppointmentMutation.mutate({ action: hasReklamationTag ? "remove" : "set", version });
+  };
+
+  const requestAppointmentReklamationAction = () => {
+    if (!hasReklamationTag && hasProjectReklamationTag) {
+      setProjectReklamationConfirmOpen(true);
+      return;
+    }
+    executeAppointmentReklamationAction();
   };
 
   const addDraftAppointmentAttachment = (file: File) => {
@@ -1733,7 +1867,7 @@ export function AppointmentForm({
           reklamationReviewed: payload.acceptMissingArticleListAsReklamation,
         },
         documentExtractionReklamation: payload.acceptMissingArticleListAsReklamation
-          ? { enabled: true, createNote: payload.createReklamationNote }
+          ? { enabled: true, createNote: payload.createReklamationNote, noteDraft: payload.reklamationNote }
           : undefined,
       });
       setDocumentExtractionOpen(false);
@@ -1941,6 +2075,7 @@ export function AppointmentForm({
       startTime: currentStartTime,
       employeeIds: assignedEmployeeIds,
     });
+    let saveReviewResourceRequest: AppointmentSaveReviewResourceRequest | null = null;
     if ((isEditing || selectedTourId !== null) && currentResolutionKey !== null && currentResolutionKey !== resolvedAppointmentWeekPlanKey) {
       try {
         let shouldLoadResourcePreview = !isEditing;
@@ -1962,29 +2097,29 @@ export function AppointmentForm({
           if (shouldLoadResourcePreview) {
             const preview = await loadAppointmentTourChangePreview();
             if (preview && hasResourcePreviewDecision(preview)) {
-              openAppointmentWeekPreviewDialog(preview, {
-                title: "Wochenplanung vor dem Speichern prüfen",
-                description: "Prüfen Sie vor dem Speichern, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.",
-                persistAfterConfirm: true,
+              saveReviewResourceRequest = {
+                preview,
                 resolutionKey: currentResolutionKey,
-              });
-              return;
+                selectedIds: getDefaultResourcePreviewSelection(preview),
+                resolutionMode: "additive",
+              };
             }
           }
         } else if (selectedTourId !== null && shouldLoadResourcePreview) {
           const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
           if (hasResourcePreviewDecision(preview)) {
-            openAppointmentWeekPreviewDialog(preview, {
-              title: "Wochenplanung vor dem Speichern prüfen",
-              description: "Prüfen Sie vor dem Speichern, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.",
-              persistAfterConfirm: true,
+            saveReviewResourceRequest = {
+              preview,
               resolutionKey: currentResolutionKey,
-            });
-            return;
+              selectedIds: getDefaultResourcePreviewSelection(preview),
+              resolutionMode: "additive",
+            };
           }
         }
 
-        setResolvedAppointmentWeekPlanKey(currentResolutionKey);
+        if (!saveReviewResourceRequest) {
+          setResolvedAppointmentWeekPlanKey(currentResolutionKey);
+        }
       } catch (error) {
         const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
         toast({
@@ -1996,9 +2131,25 @@ export function AppointmentForm({
       }
     }
 
-    if (assignedEmployeeIds.length === 0) {
-      console.info(`${logPrefix} save requires confirmation: no employees`);
-      setEmployeeConfirmOpen(true);
+    const employeeIdsAfterResourceReview = saveReviewResourceRequest
+      ? buildEmployeeIdsFromResourcePreviewSelection(
+        saveReviewResourceRequest.preview,
+        saveReviewResourceRequest.selectedIds,
+        saveReviewResourceRequest.resolutionMode,
+      )
+      : assignedEmployeeIds;
+    const noteReviewRequest = buildAppointmentNoteReviewRequest(currentEndDate, currentStartTime);
+
+    if (saveReviewResourceRequest || noteReviewRequest || employeeIdsAfterResourceReview.length === 0) {
+      console.info(`${logPrefix} save requires review`, {
+        hasResourceReview: Boolean(saveReviewResourceRequest),
+        hasNoteReview: Boolean(noteReviewRequest),
+        employeeCount: employeeIdsAfterResourceReview.length,
+      });
+      setAppointmentSaveReviewRequest({
+        resourceRequest: saveReviewResourceRequest,
+        noteReview: noteReviewRequest,
+      });
       return;
     }
 
@@ -2579,6 +2730,20 @@ export function AppointmentForm({
     }
   };
 
+  const handleAppointmentSaveReviewCancel = () => {
+    if (isSaving) return;
+    setAppointmentSaveReviewRequest(null);
+  };
+
+  const handleAppointmentSaveReviewConfirm = (result: AppointmentSaveReviewResult) => {
+    setAppointmentSaveReviewRequest(null);
+    setAssignedEmployeeIds(result.employeeIds);
+    if (result.resourceResolutionKey) {
+      setResolvedAppointmentWeekPlanKey(result.resourceResolutionKey);
+    }
+    void persistAppointment(result.employeeIds);
+  };
+
   return (
     <Tabs
       value={isEditing ? activeMainTab : "details"}
@@ -2687,18 +2852,7 @@ export function AppointmentForm({
                         "--action-border-hover": MANAGED_COMPLAINT_TAG_COLOR + "99",
                         "--action-fg": MANAGED_COMPLAINT_TAG_COLOR,
                       } as React.CSSProperties}
-                      onClick={() => {
-                        if (!isEditing) {
-                          toggleDraftAppointmentReklamation();
-                          return;
-                        }
-                        const version = appointmentDetail?.version;
-                        if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
-                          toast({ title: "Reklamation nicht möglich", description: "Terminversion fehlt. Bitte neu laden.", variant: "destructive" });
-                          return;
-                        }
-                        reklamationAppointmentMutation.mutate({ action: hasReklamationTag ? "remove" : "set", version });
-                      }}
+                      onClick={requestAppointmentReklamationAction}
                       disabled={isMutationLocked || (isEditing && reklamationAppointmentMutation.isPending)}
                       data-testid={hasReklamationTag ? "button-remove-appointment-reklamation" : "button-set-appointment-reklamation"}
                     >
@@ -3065,6 +3219,42 @@ export function AppointmentForm({
         />
       ) : null}
 
+      <AppointmentSaveReviewDialog
+        open={appointmentSaveReviewRequest !== null}
+        currentEmployeeIds={assignedEmployeeIds}
+        resourceRequest={appointmentSaveReviewRequest?.resourceRequest ?? null}
+        noteReview={appointmentSaveReviewRequest?.noteReview ?? null}
+        isBusy={isSaving}
+        onOpenChange={(open) => {
+          if (!open) handleAppointmentSaveReviewCancel();
+        }}
+        onCancel={handleAppointmentSaveReviewCancel}
+        onConfirm={handleAppointmentSaveReviewConfirm}
+      />
+
+      <AlertDialog open={projectReklamationConfirmOpen} onOpenChange={setProjectReklamationConfirmOpen}>
+        <AlertDialogContent data-testid="dialog-project-reklamation-appointment-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Projekt ist bereits Reklamation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Das Projekt ist bereits als Reklamation markiert. Soll auch der Termin als Reklamation markiert werden?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setProjectReklamationConfirmOpen(false);
+                executeAppointmentReklamationAction();
+              }}
+              data-testid="button-confirm-project-reklamation-appointment"
+            >
+              Termin markieren
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ProjectDocumentExtractionWorkflowDialog
         open={documentExtractionOpen}
         onOpenChange={(open) => {
@@ -3079,8 +3269,10 @@ export function AppointmentForm({
         onResolveCustomerByNumber={resolveCustomerByNumber}
         onCreateCustomer={createCustomerFromDraft}
         onUpdateExistingCustomer={updateExistingCustomerFromDraft}
+        onOpenDocument={openDocumentExtractionFileInTab}
         onValidateProject={validateProjectDocumentExtractionTarget}
         onApply={applyExtractedProject}
+        reklamationNoteDraft={documentExtractionReklamationNoteDraft}
       />
 
       <ProjectDuplicateResolutionDialog
@@ -3195,28 +3387,6 @@ export function AppointmentForm({
           />
         </DialogContent>
       </Dialog>
-
-      <AlertDialog open={employeeConfirmOpen} onOpenChange={setEmployeeConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Ohne Mitarbeiter speichern?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der Termin wird ohne zugewiesene Mitarbeiter gespeichert. Möchten Sie fortfahren?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setEmployeeConfirmOpen(false);
-                void persistAppointment();
-              }}
-            >
-              Trotzdem speichern
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AppointmentCancelConfirmDialog
         open={cancelConfirmOpen}

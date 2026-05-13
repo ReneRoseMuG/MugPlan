@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 18,
-      "generated_count": 18,
+      "source_count": 20,
+      "generated_count": 20,
       "warnings": 0,
       "errors": 0
     },
@@ -20,8 +20,8 @@
       "errors": 0
     },
     "use_cases": {
-      "source_count": 238,
-      "generated_count": 238,
+      "source_count": 241,
+      "generated_count": 241,
       "warnings": 0,
       "errors": 0
     },
@@ -37,9 +37,15 @@
       "warnings": 0,
       "errors": 0
     },
+    "user_docs": {
+      "source_count": 4,
+      "generated_count": 4,
+      "warnings": 0,
+      "errors": 0
+    },
     "journal": {
-      "source_count": 63,
-      "generated_count": 63,
+      "source_count": 65,
+      "generated_count": 65,
       "warnings": 0,
       "errors": 0
     }
@@ -226,6 +232,24 @@
         "title": "Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel",
         "source": "tasks/projekt-speichern-dialog-artikelliste-saunatitel.md",
         "output": "projekt/aufgaben/projekt-speichern-dialog-artikelliste-saunatitel.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "A-41",
+        "title": "Doc Extract und Projekt-Speichern-Flow überarbeiten",
+        "source": "tasks/doc-extract-und-projekt-speichern-flow-ueberarbeiten.md",
+        "output": "projekt/aufgaben/doc-extract-und-projekt-speichern-flow-ueberarbeiten.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "A-42",
+        "title": "FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen",
+        "source": "tasks/ft26-report-kacheln-vereinheitlichen.md",
+        "output": "projekt/aufgaben/ft26-report-kacheln-vereinheitlichen.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -2377,6 +2401,33 @@
         "errors": []
       },
       {
+        "id": "UC-27/08",
+        "title": "Detailseite anzeigen (Produkt / Komponente)",
+        "source": "features/ft-27-produktverwaltung-und-auftragspositionen/use-cases/uc-27-08-detailseite-anzeigen.md",
+        "output": "lastenheft/use-cases/uc-27-08-detailseite-anzeigen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "UC-27/09",
+        "title": "Attachment an Produkt oder Komponente hochladen (Admin)",
+        "source": "features/ft-27-produktverwaltung-und-auftragspositionen/use-cases/uc-27-09-attachment-hochladen-admin.md",
+        "output": "lastenheft/use-cases/uc-27-09-attachment-hochladen-admin.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "UC-27/10",
+        "title": "Attachment an Produkt oder Komponente löschen (Admin)",
+        "source": "features/ft-27-produktverwaltung-und-auftragspositionen/use-cases/uc-27-10-attachment-loeschen-admin.md",
+        "output": "lastenheft/use-cases/uc-27-10-attachment-loeschen-admin.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
         "id": "UC-28/01",
         "title": "Tag anlegen",
         "source": "features/ft-28-universelles-tagging-system/use-cases/uc-28-01-tag-anlegen.md",
@@ -2831,7 +2882,63 @@
         "errors": []
       }
     ],
+    "user_docs": [
+      {
+        "id": "reklamation",
+        "title": "Reklamation",
+        "source": "user-docs/reklamation.md",
+        "output": "benutzerdokumentation/reklamation.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "projekte",
+        "title": "Projekte (Aufträge) – Disponent",
+        "source": "user-docs/disponent/projekte.md",
+        "output": "benutzerdokumentation/disponent/projekte.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "reports",
+        "title": "Reports – Disponent",
+        "source": "user-docs/disponent/reports.md",
+        "output": "benutzerdokumentation/disponent/reports.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "termine",
+        "title": "Termine – Disponent",
+        "source": "user-docs/disponent/termine.md",
+        "output": "benutzerdokumentation/disponent/termine.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      }
+    ],
     "journal": [
+      {
+        "id": "13-05-26-doc-extract-projekt-termin-save-flow",
+        "title": "13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow",
+        "source": "journal/13-05-26-doc-extract-projekt-termin-save-flow.md",
+        "output": "verwaltung/journal/13-05-26-doc-extract-projekt-termin-save-flow.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "13-05-26-termin-save-review-notizpruefung",
+        "title": "13.05.26 | Nacharbeit | Termin-Save-Review: Notizprüfung bei Terminverschiebung",
+        "source": "journal/13-05-26-termin-save-review-notizpruefung.md",
+        "output": "verwaltung/journal/13-05-26-termin-save-review-notizpruefung.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "11-05-26-p01-a14-mitarbeiter-auswahl-basiskomponente",
         "title": "11.05.26 | Implementierung | P01 Dialog-Rollout: A-14 Mitarbeiter-Auswahl als Basiskomponente",

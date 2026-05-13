@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reklamation · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../projekt/projekte.html">Projekte</a></li><li><a href="../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../lastenheft/features.html">Features</a></li><li><a href="../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../verwaltung/journal.html">Journal</a></li><li><a href="../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../benutzerdokumentation.html" class="is-active">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Benutzerdokumentation reklamation">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><a href="../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">Reklamation</span></nav>
+        <h1 class="wiki-h1">Reklamation</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Bereich</span><span class="wiki-badge wiki-badge--neutral">Allgemein</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Stand</span>13.05.26</div>
+    <p class="wiki-lead">Eine Reklamation ist ein besonderer Zustand, den ein Termin oder ein Auftrag (Projekt) erhalten kann. Er kennzeichnet, dass ein Auftrag beanstandet wurde und gesondert behandelt werden muss.</p>
+    <p>Eine Reklamation ist ein besonderer Zustand, den ein Termin oder ein Auftrag (Projekt) erhalten kann. Er kennzeichnet, dass ein Auftrag beanstandet wurde und gesondert behandelt werden muss.</p>
+<p>Reklamationen werden in Reports und Auswertungen grundsätzlich nicht angezeigt.</p>
+<hr>
+<h2 class="wiki-h2">Fragen &amp; Antworten</h2>
+<h3 class="wiki-h3">Wie setze ich einen Termin oder Auftrag auf Reklamation?</h3>
+<p>Am geöffneten Termin oder Auftrag gibt es eine eigene Funktion zum Setzen der Reklamation. Sie ist getrennt von der normalen Tag-Verwaltung und kann nicht über den Tag-Picker gesetzt werden.</p>
+<p>Nach dem Setzen schlägt MugPlan vor, eine Reklamationsnotiz anzulegen. Die Notiz enthält eine vorbereitete Vorlage. Sie können die Notiz übernehmen, anpassen oder überspringen — die Reklamation selbst wird unabhängig davon gespeichert.</p>
+<hr>
+<h3 class="wiki-h3">Wie hebe ich eine Reklamation wieder auf?</h3>
+<p>Über dieselbe Funktion am Termin oder Auftrag kann die Reklamation aufgehoben werden. Wenn eine Reklamationsnotiz vorhanden ist, fragt MugPlan, ob diese Notiz entfernt oder als Dokumentation behalten werden soll. Beides ist möglich — die Entscheidung liegt bei Ihnen.</p>
+<hr>
+<h3 class="wiki-h3">Wo sehe ich, dass ein Termin oder Auftrag als Reklamation markiert ist?</h3>
+<p>Reklamationen sind in der Kalenderansicht und in den Auftragslisten entsprechend gekennzeichnet. In Reports erscheinen sie nicht.</p>
+<hr>
+<h2 class="wiki-h2">Hinweise</h2>
+<p>Die Reklamation ist kein gewöhnlicher Tag und kann nicht versehentlich über die Tag-Auswahl gesetzt oder entfernt werden. Dieser Schutz stellt sicher, dass der Reklamationsworkflow immer vollständig durchlaufen wird.</p>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

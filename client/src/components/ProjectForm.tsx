@@ -126,6 +126,7 @@ interface ProjectFormProps {
     documentExtractionReklamation?: {
       enabled: boolean;
       createNote: boolean;
+      noteDraft?: ProjectNoteDraft | null;
     };
   } | null;
   onProjectCreated?: (projectId: number, result?: { attachmentLinked: boolean }) => void;
@@ -332,6 +333,15 @@ export function ProjectForm({
     queryKey: ["/api/note-templates"],
     queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
   });
+  const documentExtractionReklamationNoteDraft = useMemo<ProjectNoteDraft>(() => {
+    const template = findWorkflowNoteTemplate(noteTemplates, "Reklamation");
+    if (template) return buildWorkflowNoteDraft(template);
+    return {
+      title: "Reklamation",
+      body: "",
+      print: true,
+    };
+  }, [noteTemplates]);
   const clearWorkflowNoteSuggestionSeen = (templateTitle: string) => {
     workflowNoteSuggestionSeenRef.current.delete(normalizeWorkflowNoteTitle(templateTitle));
   };
@@ -1162,6 +1172,14 @@ export function ProjectForm({
     }
   };
 
+  const addDraftProjectNoteIfMissing = (draft: ProjectNoteDraft) => {
+    const alreadyExists = visibleProjectNotes.some(
+      (note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(draft.title),
+    );
+    if (alreadyExists) return;
+    addDraftProjectNote(draft);
+  };
+
   const openDraftReklamationNoteEditorFromTemplate = async () => {
     const templates = noteTemplates.length > 0
       ? noteTemplates
@@ -1195,7 +1213,10 @@ export function ProjectForm({
     if (!initialReklamation?.enabled) return;
     didApplyInitialDraftReklamationRef.current = true;
     setDraftProjectReklamation();
-    if (initialReklamation.createNote) {
+    if (initialReklamation.noteDraft) {
+      addDraftProjectNoteIfMissing(initialReklamation.noteDraft);
+      setPendingDraftReklamationTemplateTitle(null);
+    } else if (initialReklamation.createNote) {
       void openDraftReklamationNoteEditorFromTemplate();
     } else {
       setPendingDraftReklamationTemplateTitle(null);
@@ -1944,13 +1965,6 @@ export function ProjectForm({
       const hasTitleStep = reviewRequest.saunaModelName !== null;
       const hasAttachmentStep = reviewRequest.duplicateAttachmentSummary !== null;
       const hasReklamationStep = reviewRequest.reklamationNoteDraft !== null;
-      const needsCombinedDialog = hasArticleStep || hasTitleStep || hasAttachmentStep;
-
-      if (hasReklamationStep && !needsCombinedDialog) {
-        setSuggestedProjectNoteDraft(reviewRequest.reklamationNoteDraft);
-        setPendingDraftReklamationTemplateTitle(null);
-        return;
-      }
 
       if (hasArticleStep || hasTitleStep || hasReklamationStep || hasAttachmentStep) {
         setSaveReviewRequest(reviewRequest);
@@ -2075,7 +2089,10 @@ export function ProjectForm({
       }
       if (payload.acceptMissingArticleListAsReklamation) {
         setDraftProjectReklamation();
-        if (payload.createReklamationNote) {
+        if (payload.reklamationNote) {
+          addDraftProjectNoteIfMissing(payload.reklamationNote);
+          setPendingDraftReklamationTemplateTitle(null);
+        } else if (payload.createReklamationNote) {
           await openDraftReklamationNoteEditorFromTemplate();
         } else {
           setPendingDraftReklamationTemplateTitle(null);
@@ -2474,8 +2491,10 @@ export function ProjectForm({
         onResolveCustomerByNumber={resolveCustomerByNumber}
         onCreateCustomer={createCustomerFromDraft}
         onUpdateExistingCustomer={updateExistingCustomerFromDraft}
+        onOpenDocument={openDocumentExtractionFileInTab}
         onValidateProject={validateProjectDocumentExtractionTarget}
         onApply={applyProjectDocumentExtractionWorkflow}
+        reklamationNoteDraft={documentExtractionReklamationNoteDraft}
       />
 
       <ProjectDuplicateResolutionDialog

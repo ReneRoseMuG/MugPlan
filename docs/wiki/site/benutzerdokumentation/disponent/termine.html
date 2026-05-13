@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termine – Disponent · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../verwaltung/journal.html">Journal</a></li><li><a href="../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html" class="is-active">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Benutzerdokumentation termine">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><a href="../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">Termine – Disponent</span></nav>
+        <h1 class="wiki-h1">Termine – Disponent</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Bereich</span><span class="wiki-badge wiki-badge--neutral">Disponent</span><span class="wiki-meta__sep">·</span><span class="wiki-meta__label">Stand</span>13.05.26</div>
+    <p class="wiki-lead">Ein Termin ist die zentrale Planungseinheit in MugPlan. Jeder Termin ist einem Auftrag (Projekt) und damit einem Kunden zugeordnet. Mitarbeiter und Touren werden am Termin hinterlegt.</p>
+    <p>Ein Termin ist die zentrale Planungseinheit in MugPlan. Jeder Termin ist einem Auftrag (Projekt) und damit einem Kunden zugeordnet. Mitarbeiter und Touren werden am Termin hinterlegt.</p>
+<hr>
+<h2 class="wiki-h2">Fragen &amp; Antworten</h2>
+<h3 class="wiki-h3">Wo lege ich einen neuen Termin an?</h3>
+<p>Es gibt zwei gleichwertige Einstiegspunkte:</p>
+<ol><li><strong>Im Kalender</strong> — über die Schaltfläche zum Anlegen eines neuen Termins direkt in der Kalenderansicht. Danach wird dem Termin ein Auftrag oder ein Kunde zugewiesen.</li><li><strong>Im Auftrag (Projekt)</strong> — innerhalb eines geöffneten Auftrags kann direkt ein neuer Termin angelegt werden. Auftrag und Kunde sind dann bereits zugeordnet.</li></ol>
+<p>Ein Termin ist erst gültig, wenn ihm ein Auftrag oder mindestens ein Kunde zugeordnet ist.</p>
+<hr>
+<h3 class="wiki-h3">Was muss ich angeben, wenn ich einen Termin anlege?</h3>
+<p>Pflichtangabe ist ein Datum und entweder ein Auftrag oder ein Kunde. Alle weiteren Felder sind optional:</p>
+<ul><li><strong>Enddatum</strong> — für Termine, die mehrere Tage umfassen</li><li><strong>Uhrzeit</strong> — wenn der Termin nicht als ganztägig gelten soll</li><li><strong>Tour</strong> — zur organisatorischen Einordnung</li><li><strong>Mitarbeiter</strong> — einzeln oder über ein Team</li></ul>
+<hr>
+<h3 class="wiki-h3">Wie weise ich einem Termin Mitarbeiter zu?</h3>
+<p>Mitarbeiter können auf zwei Wegen zugewiesen werden:</p>
+<ul><li><strong>Einzeln</strong> — direkt am Termin über die Mitarbeiterauswahl</li><li><strong>Über ein Team</strong> — das Team wird am Termin ausgewählt, und seine Mitglieder werden als konkrete Mitarbeiterliste übernommen</li></ul>
+<p>In beiden Fällen prüft MugPlan automatisch, ob ein Mitarbeiter im gewählten Zeitraum bereits für einen anderen Termin eingeplant ist. Ist das der Fall, wird der Mitarbeiter nicht zugewiesen und eine Meldung erscheint.</p>
+<hr>
+<h3 class="wiki-h3">Was passiert, wenn ein Mitarbeiter bereits verplant ist?</h3>
+<p>MugPlan lässt keine Doppelbelegung zu. Wenn ein Mitarbeiter im Zeitraum des Termins bereits einem anderen Termin zugeordnet ist, wird die Zuweisung blockiert und eine Meldung mit dem Namen des betroffenen Mitarbeiters angezeigt.</p>
+<hr>
+<h3 class="wiki-h3">Wie weise ich einem Termin eine Tour zu?</h3>
+<p>Die Tour wird am Termin in der Tourauswahl gesetzt. Wenn für die Kalenderwoche des Termins in dieser Tour bereits eine Wochenplanung hinterlegt ist, zeigt MugPlan einen Vorschau-Dialog: welche Mitarbeiter aus der Planung hinzugefügt würden und ob dabei Konflikte bestehen. Erst nach Ihrer Bestätigung werden die Mitarbeiter übernommen.</p>
+<p>Wenn keine Wochenplanung für die Woche hinterlegt ist, ändert sich die Mitarbeiterliste des Termins durch die Tourzuweisung nicht.</p>
+<p>Das Entfernen einer Tour von einem Termin hat keine Auswirkung auf die bereits zugeordneten Mitarbeiter.</p>
+<hr>
+<h3 class="wiki-h3">Wie verschiebe ich einen Termin?</h3>
+<p>Das Datum eines Termins kann im Bearbeitungsdialog geändert werden. MugPlan prüft dabei für alle dem Termin zugeordneten Mitarbeiter, ob sie am neuen Datum verfügbar sind.</p>
+<p>Sind einzelne Mitarbeiter am neuen Datum bereits anderweitig verplant, erscheint eine Meldung mit den betroffenen Namen. Sie entscheiden, ob der Termin trotzdem verschoben werden soll — in diesem Fall werden die betroffenen Mitarbeiter vom Termin entfernt. Wenn Sie nicht bestätigen, bleibt der Termin am bisherigen Datum.</p>
+<hr>
+<h3 class="wiki-h3">Kann ich einen vergangenen Termin noch ändern?</h3>
+<p>Termine, deren Startdatum in der Vergangenheit liegt, können von Disponenten nicht mehr bearbeitet, verschoben oder gelöscht werden. Sie sind schreibgeschützt und dienen der Nachvollziehbarkeit.</p>
+<hr>
+<h3 class="wiki-h3">Wie storniere ich einen Termin?</h3>
+<p>Storno ist über die Terminansicht möglich, solange der Termin noch nicht in der Vergangenheit liegt. Ein Storno ist nicht umkehrbar und bewirkt Folgendes:</p>
+<ul><li>Alle zugeordneten Mitarbeiter werden vom Termin abgezogen und sind danach für andere Termine wieder verfügbar.</li><li>Der Auftragswert des zugehörigen Auftrags wird auf 0 gesetzt.</li><li>Der Termin erhält den Zustand <strong>Storniert</strong> und ist danach gesperrt — er kann weder bearbeitet noch gelöscht noch erneut storniert werden.</li></ul>
+<p>Ein stornierter Termin bleibt in allen Ansichten sichtbar, geht aber nicht in Reports und Auswertungen ein.</p>
+<hr>
+<h3 class="wiki-h3">Wie füge ich eine Notiz zu einem Termin hinzu?</h3>
+<p>Am geöffneten Termin können Notizen mit einem Titel und einem Inhalt angelegt werden. Notizen bleiben erhalten, wenn der Termin später bearbeitet wird — etwa wenn sich Datum, Mitarbeiter oder Tour ändern. Eine Notiz wird nur entfernt, wenn sie gezielt gelöscht oder der gesamte Termin gelöscht wird.</p>
+<hr>
+<h3 class="wiki-h3">Kann ich einen Termin löschen?</h3>
+<p>Vergangene Termine können von Disponenten nicht gelöscht werden. Zukünftige und aktuelle Termine können gelöscht werden. Beim Löschen werden auch alle zugehörigen Notizen entfernt.</p>
+<p>Wenn ein Termin nicht mehr stattfinden soll, aber erhalten bleiben soll, ist Storno die richtige Wahl.</p>
+<hr>
+<h3 class="wiki-h3">Was tue ich, wenn ein Auftrag reklamiert wird?</h3>
+<p>Reklamation ist ein eigener Workflow, der sowohl am Termin als auch am Auftrag ausgelöst werden kann. Siehe: <a href="../reklamation.html">Reklamation</a></p>
+<hr>
+<h2 class="wiki-h2">Hinweise</h2>
+<p>Termine ohne Tourzuordnung werden in einer Standardfarbe dargestellt. Die Farbe eines Termins richtet sich nach der zugeordneten Tour.</p>
+<p>Ein Termin kann mehrere Tage umfassen. Die zugeordneten Mitarbeiter gelten für den gesamten Zeitraum, nicht nur für einen einzelnen Tag.</p>
+<p>Wenn ein Mitarbeiter manuell oder über ein Team einem Termin zugewiesen wurde, wird er durch spätere Tour-Änderungen nicht automatisch entfernt.</p>
+
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>
