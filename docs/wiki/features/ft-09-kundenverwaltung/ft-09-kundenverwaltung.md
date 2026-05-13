@@ -13,6 +13,8 @@ Dieses Feature stellt die Verwaltung von Kundenstammdaten bereit, damit Termine 
 
 Die Kundenverwaltung ermöglicht das Anlegen, Bearbeiten und Anzeigen von Kunden. Pro Kunde werden Stammdaten gespeichert, insbesondere **Name/Firma**, **Kundennummer**, **Adresse** und **Telefonnummer**.
 
+Kundendaten können auch aus der Dokumentextraktion übernommen werden. Dabei gilt die Kundennummer als primärer Schlüssel zur Auflösung. Wird ein bestehender Kunde gefunden, wird er verknüpft beziehungsweise ins Formular geladen. Enthält das Dokument Stammdaten, die im bestehenden Kundensatz noch leer sind, dürfen ausschließlich diese leeren Felder nach sichtbarer Nutzerentscheidung ergänzt werden. Vorhandene Kundendaten werden nicht still überschrieben.
+
 Ein Kunde kann beliebig viele Projekte und damit indirekt beliebig viele Termine besitzen. In der Kundendetailansicht wird eine **Projektliste** angezeigt, die alle dem Kunden zugeordneten Projekte umfasst (z. B. Aufbau, Service, Nachbesserung).
 
 Disponenten erhalten serverseitig nur aktive Kunden und können daher nur aktive Kunden für neue Projekte auswählen. Die Verwaltung von aktiven und inaktiven Kunden (Deaktivieren, Reaktivieren) ist eine Admin-Funktion und nicht Teil dieser Dokumentation für Disponenten.
@@ -24,6 +26,7 @@ In der Kundendetailansicht können dem Kunden zusätzlich Dokumente als Anhänge
 ## Regeln & Randbedingungen
 
 - Kundendaten (Name, Kundennummer, Adresse, Telefon) werden **zentral** am Kunden gepflegt.
+- Bei Übernahme aus Doc Extract dürfen nur leere Bestandsfelder ergänzt werden, wenn der Akteur dies im Dialog bestätigt. Vorhandene Werte bleiben unverändert.
 - Kunden dürfen **nicht gelöscht** werden, wenn sie in Projekten verwendet werden.
 - Disponenten erhalten serverseitig nur aktive Kunden und können nur aktive Kunden für neue Projekte auswählen.
 - Pflichtfelder:

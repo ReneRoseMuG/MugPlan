@@ -54,11 +54,11 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Extraktionsvorschlag mit Projektdaten liegt vor.</li><li>Das Formular „Neues Projekt“ ist geöffnet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur wählt die Übernahme der Projektdaten.</li><li>Wenn Titel und Beschreibung leer sind:</li><li>Das System setzt den Titel auf das erkannte Modell oder den erkannten Projektnamen.</li><li>Das System fügt die extrahierte Artikelliste als HTML in das Beschreibungsfeld ein.</li><li>Wenn Felder bereits befüllt sind:</li><li>Das System zeigt einen Warnhinweis vor dem Überschreiben.</li><li>Bei Bestätigung ersetzt das System die bestehenden Inhalte.</li></ol>
+<ol><li>Der Akteur prüft Projekttitel, Auftragsnummer, Betrag, Auftragsinhalt und Warnungen im Doc-Extract-Dialog.</li><li>Der Akteur entscheidet optional, ob der extrahierte Dokumenttext in die Anmerkungen übernommen wird.</li><li>Der Akteur entscheidet optional, ob das Dokument als Reklamation behandelt wird. Die Notizfrage und der optionale Notizeditor laufen direkt im Dialog.</li><li>Der Akteur wählt die Übernahme der Projektdaten.</li><li>Das System setzt die bestätigten Projektdaten im Projektformular.</li><li>Wenn Formularfelder bereits befüllt sind, dürfen sie nur nach sichtbarer Bestätigung ersetzt oder ergänzt werden.</li><li>Das eingelesene PDF bleibt als Draft-Dokument am Projektformular, bis der Projekt-Speichern-Flow abgeschlossen oder verworfen wird.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Der Akteur lehnt das Überschreiben ab → Bestehende Inhalte bleiben unverändert.</li></ul>
+<ul><li>Der Akteur lehnt das Überschreiben ab → Bestehende Inhalte bleiben unverändert.</li><li>Eine Artikelliste fehlt → Das System zeigt einen Hinweis, übernimmt aber die übrigen verwertbaren Projektdaten.</li><li>Eine Auftragsnummer existiert bereits → Die spätere Projektübernahme muss als Duplikatkonflikt behandelt werden.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Das Projektformular enthält die übernommenen Projektdaten gemäß Bestätigung des Akteurs. Anschließend wird die Dokumentendatei als Projekt-Attachment verknüpft (siehe UC 21/17)</p>
+<p>Das Projektformular enthält die übernommenen Projektdaten gemäß Bestätigung des Akteurs. Persistenz, Projekttitel-Entscheidung, PDF-Duplikatentscheidung und weitere projektbezogene Speicherfragen laufen anschließend über den Projekt-Speichern-Flow.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

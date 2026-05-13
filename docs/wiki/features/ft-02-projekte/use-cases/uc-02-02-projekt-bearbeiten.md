@@ -28,11 +28,12 @@ Projektdaten ändern, mit strikter Kundenkonsistenz und Schutz vor parallelen Ü
     2. Falls **JA:** Das System blockiert den Kundenwechsel mit Fehlermeldung. Der Kundenwert ist readonly.
     3. Falls **NEIN:** Der Akteur wählt einen neuen Kunden. Das System prüft Existenz und Aktivstatus des neuen Kunden. Das System speichert die Kundenänderung und aktualisiert den `customer_id`-Wert aller zugeordneten Termine kaskadierend.
 4. Optional ändert der Akteur strukturierte Auftragspositionen, darunter das Artikellistenfeld **Sauna**.
-    1. Wenn dadurch ein anderes Sauna-Modell gewählt wird und der Projektname nicht bereits dem neuen Modell entspricht, fragt das System, ob der Projektname angepasst werden soll.
+    1. Wenn dadurch ein anderes Sauna-Modell gewählt wird und der Projektname nicht bereits dem neuen Modell entspricht, bietet der Projekt-Speichern-Review an, den Projektname anzupassen.
     2. Bestätigt der Akteur, setzt das System den Projektnamen auf den Namen des gewählten Sauna-Modells.
     3. Lehnt der Akteur ab, bleibt der bisherige Projektname unverändert.
 5. Optional ändert der Akteur projektbezogene Tag-Zuordnungen gemäß FT (28).
-6. Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.
+6. Wenn das Projekt aus einem Doc-Extract-Draft stammt und der Akteur nachträglich Projektdaten, Artikelliste oder Projekttitel manuell geändert hat, zeigt der Projekt-Speichern-Review nur die dadurch erneut offenen Speicherentscheidungen.
+7. Das System prüft das Versionsmerkmal serverseitig. Bei Übereinstimmung speichert das System die Änderungen und erhöht die Version.
 
 ## Alternativen
 

@@ -47,6 +47,20 @@ Unabhängig vom Einstiegspunkt gilt:
 
 **Ein Termin ist erst fachlich gültig, wenn ihm ein Projekt oder ein Kunde zugeordnet ist.**
 
+## Benutzerführung über Dialoge und Meldungen
+
+Terminbezogene Speicherentscheidungen laufen über den Termin-Speichern-Review. Dieser Review bündelt Entscheidungen, die fachlich zum Speichern eines Termins gehören, und ersetzt einzelne Alert-Dialoge, sofern die Entscheidung logisch bis zum Speichern warten kann.
+
+Der Termin-Speichern-Review kann insbesondere folgende Schritte enthalten:
+
+- Speichern ohne Mitarbeiter: Wenn einem Termin keine Mitarbeiter zugeordnet sind, verlangt das System eine bewusste Bestätigung.
+- Ressourcen- oder Wochenplanprüfung: Wenn eine Tour- oder Wochenplanänderung save-relevante Mitarbeiterfolgen hat, werden Vorschau, Konflikte und resultierende Mitarbeiterliste im Review behandelt.
+- Terminnotizen prüfen: Wenn Startdatum, Enddatum oder Startzeit eines bestehenden Termins geändert werden und der Termin eigene Terminnotizen besitzt, verlangt das System eine bewusste Bestätigung, dass diese Notizen geprüft wurden.
+
+Terminnotizen werden durch eine Terminverschiebung nicht automatisch geändert oder gelöscht. Der Review weist nur darauf hin, dass datum- oder uhrzeitbezogene Inhalte in den Notizen fachlich veraltet sein könnten.
+
+Sofortaktionen bleiben möglich, wenn der Akteur direkt eine fachliche Reaktion erwartet. Dazu gehören insbesondere direkte Touränderungen mit unmittelbarer Wochenplanvorschau und der Reklamationsbutton im Terminformular.
+
 ## Regeln & Randbedingungen
 
 **Abgrenzung zu Kalendermarkern**
@@ -102,6 +116,7 @@ Kalendermarker aus FT (34) sind keine Termine. Feiertage, Betriebsfeiertage und 
 - Ein Termin kann null, eine oder mehrere Notizen haben.
 - Jede Notiz besitzt einen Titel und einen Inhalt (Body), beide sind Pflichtfelder.
 - Notizen sind unabhängig vom Termin; Änderungen am Termin (Datum, Projekt, Tour, Mitarbeiter) wirken sich nicht auf die Notizen aus.
+- Werden Startdatum, Enddatum oder Startzeit eines Termins geändert und besitzt der Termin eigene Terminnotizen, fordert der Termin-Speichern-Review eine bewusste Prüfung dieser Notizen.
 - Notizen werden nicht automatisch gelöscht, wenn ein Termin bearbeitet wird. Sie bleiben solange erhalten, bis sie explizit entfernt oder der gesamte Termin gelöscht wird.
 - Eine Reklamationsnotiz kann beim Setzen des Systemzustands **Reklamation** vorgeschlagen werden. Beim Aufheben der Reklamation entscheidet der Akteur ausdrücklich, ob eine vorhandene Reklamationsnotiz entfernt oder behalten wird.
 - Wenn ein Termin gelöscht wird, werden auch seine zugeordneten Notizen entfernt.

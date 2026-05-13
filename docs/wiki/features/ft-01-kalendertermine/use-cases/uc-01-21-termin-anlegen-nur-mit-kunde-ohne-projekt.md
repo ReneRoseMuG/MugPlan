@@ -31,8 +31,9 @@ Einen neuen Termin direkt für einen Kunden anlegen, ohne ein Projekt zu wählen
 7. Der Akteur weist dem Termin optional ein Team zu.
 8. Der Akteur weist dem Termin optional Mitarbeiter manuell zu.
 9. Das System prüft Mitarbeiter-Überschneidungen im Zeitraum. Mitarbeiter dürfen keine überschneidenden Termine haben. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.
-10. Das System speichert den Termin mit `customer_id` (vom Akteur gewählt), `project_id = NULL`.
-11. Das System zeigt den Termin im Kalender an, entweder mit Tourfarbe (falls zugeordnet) oder mit Standardfarbe.
+10. Falls dem Termin keine Mitarbeiter zugeordnet sind, zeigt das System im Termin-Speichern-Review den Schritt „Ohne Mitarbeiter speichern“ und verlangt eine bewusste Bestätigung.
+11. Das System speichert den Termin mit `customer_id` (vom Akteur gewählt), `project_id = NULL`.
+12. Das System zeigt den Termin im Kalender an, entweder mit Tourfarbe (falls zugeordnet) oder mit Standardfarbe.
 
 ## Alternativen
 

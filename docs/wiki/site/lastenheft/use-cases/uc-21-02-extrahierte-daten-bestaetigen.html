@@ -44,21 +44,21 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/02 Extrahierte Daten bestätigen</span></nav>
         <h1 class="wiki-h1">UC-21/02: Extrahierte Daten bestätigen</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-21</span></div>
-    <p class="wiki-lead">Einen durch Parsing erzeugten Extraktionsvorschlag prüfen, anpassen und in die entsprechenden Domänenobjekte übernehmen.</p>
+    <p class="wiki-lead">Einen durch Parsing erzeugten Extraktionsvorschlag prüfen, anpassen und in den passenden Formular- oder Draft-Zustand übernehmen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-21-dokumentenextraktion.html">FT (21): Dokumentenextraktion</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
 <p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
-<p>Einen durch Parsing erzeugten Extraktionsvorschlag prüfen, anpassen und in die entsprechenden Domänenobjekte übernehmen.</p>
+<p>Einen durch Parsing erzeugten Extraktionsvorschlag prüfen, anpassen und in den passenden Formular- oder Draft-Zustand übernehmen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
-<ul><li>Ein validierter Extraktionsvorschlag liegt vor.</li><li>Der Akteur ist berechtigt, Kunden, Projekte oder Termine anzulegen oder zu verändern.</li></ul>
+<ul><li>Ein Extraktionsvorschlag mit erkannten Feldern, Hinweisen und Warnungen liegt vor.</li><li>Der Akteur ist berechtigt, Kunden, Projekte oder Termine anzulegen oder zu verändern.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur prüft die vorbefüllten Kundendaten.</li><li>Der Akteur passt bei Bedarf einzelne Felder an.</li><li>Der Akteur prüft die extrahierte Artikelliste.</li><li>Der Akteur bestätigt die Übernahme.</li><li>Das System validiert die Daten gemäß den jeweiligen Domänenregeln.</li><li>Das System persistiert die Daten transaktional in den betroffenen Domänenobjekten.</li><li>Das System aktualisiert betroffene Sichten und Auswahlkomponenten.</li></ol>
+<ol><li>Der Akteur prüft die vorbefüllten Kundendaten, fehlende Felder und Warnungen.</li><li>Das System löst die Kundennummer automatisch auf.</li><li>Bei einem bestehenden Kunden zeigt das System die Verknüpfung an und bietet optional an, ausschließlich leere Stammdaten aus dem Dokument zu ergänzen.</li><li>Bei einem neuen Kunden zeigt das System an, dass dieser Kunde beim Übernehmen angelegt wird.</li><li>Der Akteur prüft Projektdaten, Auftragsinhalt und optional die extrahierte Artikelliste.</li><li>Der Akteur entscheidet optional, ob der Dokumenttext in die Anmerkungen übernommen wird.</li><li>Der Akteur entscheidet im Projekt- oder Terminpfad optional, ob das Dokument als Reklamation behandelt wird. Bei Zustimmung wird die Notizfrage direkt im Dialog gestellt.</li><li>Der Akteur bestätigt die Übernahme.</li><li>Das System übernimmt bestätigte Daten in Formular- und Draft-Zustand. Projekt- und Terminpersistenz erfolgen erst im jeweiligen Speichern-Flow.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Der Akteur bricht den Vorgang ab → Es erfolgt keine Speicherung; bestehende Daten bleiben unverändert.</li><li>Bei der Persistierung tritt ein Validierungsfehler auf → Das System zeigt eine Fehlermeldung an; es werden keine Teilzustände gespeichert.</li><li>Während der Persistierung tritt ein Versionskonflikt auf → Das System bricht ab und informiert den Akteur; es erfolgt keine Speicherung.</li></ul>
+<ul><li>Der Akteur bricht den Vorgang ab → Es erfolgt keine Speicherung; bestehende Daten bleiben unverändert.</li><li>Fehlende oder mehrdeutige Kundennummer → Der Dialog blockiert die Übernahme und zeigt den konkreten Grund.</li><li>Bei der späteren Persistierung tritt ein Validierungsfehler auf → Das System zeigt eine Fehlermeldung an; es werden keine Teilzustände gespeichert.</li><li>Während der Persistierung tritt ein Versionskonflikt auf → Das System bricht ab und informiert den Akteur; es erfolgt keine Speicherung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Die bestätigten Daten sind persistent gespeichert und fachlich korrekt den jeweiligen Domänenobjekten zugeordnet.</p>
+<p>Die bestätigten Daten sind im jeweiligen Formular- oder Draft-Zustand fachlich korrekt vorbereitet. Spätere Speicherentscheidungen werden im Project Save Review oder Termin-Save-Review getroffen, ohne bereits im Doc-Extract-Dialog abgeschlossene Entscheidungen doppelt abzufragen.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

@@ -20,23 +20,24 @@ Sicherstellen, dass extrahierte Kundendaten im Kontext „Neuer Termin" korrekt 
 
 ## Ablauf
 
-1. Der Akteur wählt die Übernahme der extrahierten Kundendaten.
-2. Das System führt eine Duplikatsprüfung durch.
-3. Falls die extrahierten Kundendaten zu dem bereits gesetzten Kunden matchen (gleiche Identifikationskriterien):
-    - Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).
-    - Der bereits gesettzte Kunde bleibt im Terminformular erhalten.
-    - Keine Warnung oder Bestätigungsdialog wird angezeigt.
-4. Falls die extrahierten Kundendaten nicht zu dem bereits gesetzten Kunden matchen:
-    - Das System führt eine erneute Duplikatsprüfung für die extrahierten Daten durch.
-    - Wenn ein anderer existierender Kunde matcht: Das System aktualisiert fehlende Felder bei diesem Kunden still und ersetzt die Kundenreferenz im Terminformular still.
-    - Wenn kein Duplikat matcht: Das System legt einen neuen Kunden an und ersetzt die Kundenreferenz im Terminformular still.
-5. Das System aktualisiert das Terminformular.
+1. Das System löst die extrahierte Kundennummer automatisch auf.
+2. Falls die extrahierten Kundendaten zu dem bereits gesetzten Kunden passen:
+    - Das System zeigt an, dass der bereits gesetzte Kunde weiterverwendet wird.
+    - Das System bietet eine standardmäßig aktive Checkbox an, um ausschließlich bisher leere Stammdatenfelder aus dem Dokument zu ergänzen.
+    - Vorhandene Werte am Kunden bleiben unverändert.
+3. Falls die extrahierten Kundendaten nicht zu dem bereits gesetzten Kunden passen:
+    - Das System zeigt die Abweichung im Dialog an.
+    - Wenn genau ein anderer existierender Kunde gefunden wird, kann dieser nach sichtbarer Bestätigung verwendet werden.
+    - Wenn kein Kunde gefunden wird, zeigt das System an, dass ein neuer Kunde mit der extrahierten Kundennummer angelegt werden kann.
+4. Der Akteur bestätigt die Übernahme oder bricht ab.
+5. Das System aktualisiert das Terminformular beziehungsweise den Projektentwurf im Termin-Kontext.
 
 ## Alternativen
 
 - Der Akteur bricht ab → Die bestehende Kundenreferenz bleibt unverändert, keine neuen Kunden werden angelegt.
+- Kundennummer fehlt oder ist mehrdeutig → Der Dialog blockiert die Übernahme und verlangt Klärung.
 - Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert und die bestehende Kundenreferenz bleibt unverändert.
 
 ## Ergebnis
 
-Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Es existieren keine stillen oder unerwarteten Überschreibungen ohne explizite Bestätigung durch das System.
+Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden nur nach sichtbarer Nutzerentscheidung ergänzt. Es existieren keine unerwarteten Überschreibungen.

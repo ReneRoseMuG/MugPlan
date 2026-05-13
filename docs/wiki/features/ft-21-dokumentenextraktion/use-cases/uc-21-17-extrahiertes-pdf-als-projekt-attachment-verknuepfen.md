@@ -10,7 +10,7 @@ System
 
 ## Ziel
 
-Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_attachment` des neu angelegten Projekts persistieren. Duplikat-Verdacht transparent prüfen und dem Administrator ggf. eine Entscheidungsmöglichkeit bieten.
+Nach erfolgreicher Projektanlage das extrahierte PDF als `project_attachment` des neu angelegten Projekts persistieren. Duplikat-Verdacht transparent prüfen und dem Akteur im Projekt-Speichern-Review eine Entscheidungsmöglichkeit bieten.
 
 ## Vorbedingungen
 
@@ -23,11 +23,11 @@ Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_at
 
 1. Das System hat ein neues Projekt erfolgreich persistiert (UC 21/09 oder UC 21/10)
 2. Das System greift auf das extrahierte PDF zu (Dateiname und Dateigröße sind bekannt)
-3. Das System führt eine Duplikat-Prüfung durch:
+3. Das System führt im Projekt-Speichern-Review eine Duplikat-Prüfung durch:
     - Query `customer_attachment`: Existiert ein Eintrag mit gleichem `original_filename`?
     - Query `project_attachment`: Existiert ein Eintrag mit gleichem `original_filename`?
     - Query `employee_attachment`: Existiert ein Eintrag mit gleichem `original_filename`?
-4. Falls Duplikat gefunden: Das System zeigt dem Administrator einen Dialog: „Eine Datei mit diesem Namen existiert bereits bei [Kunde/Projekt/Mitarbeiter]. Trotzdem verknüpfen?"
+4. Falls Duplikat gefunden: Das System zeigt dem schreibberechtigten Akteur einen Review-Schritt: „Eine Datei mit diesem Namen existiert bereits bei [Kunde/Projekt/Mitarbeiter]. Trotzdem verknüpfen?"
 5. Bei Button „Ja, verknüpfen": Das System fährt mit Schritt 7 fort
 6. Bei Button „Nein, abbrechen": Das System zeigt Info-Nachricht „Projekt angelegt. Dokumentverknüpfung wurde übersprungen." und beendet den Prozess ohne Attachment-Persistierung
 7. Falls kein Duplikat gefunden: Das System persistiert das Attachment direkt
@@ -45,8 +45,8 @@ Nach erfolgreicher Projektanlage das extrahierte PDF automatisch als `project_at
 - PDF-Datei existiert nicht mehr → System loggt Fehler, zeigt Warnung: „Projekt angelegt, aber Dokumentverknüpfung nicht möglich (Datei nicht erreichbar). Sie können das Dokument manuell hochladen."
 - Duplikat-Query schlägt fehl (Datenbankfehler) → System loggt Fehler, Attachment wird trotzdem versucht zu persistieren (fail-safe), User-Feedback: „Projekt angelegt, Dokumentprüfung fehlgeschlagen, Dokument wurde trotzdem verknüpft."
 - Attachment-Persistierung schlägt fehl → System loggt Fehler, zeigt Warnung: „Projekt angelegt, aber Dokumentverknüpfung ist fehlgeschlagen. Sie können das Dokument manuell hochladen."
-- Administrator lehnt Duplikat ab → Kein Attachment wird persistiert, Projekt bleibt bestehen
+- Akteur lehnt Duplikat ab → Kein Attachment wird persistiert, Projekt bleibt bestehen
 
 ## Ergebnis
 
-Das extrahierte PDF ist als `project_attachment` des neu angelegten Projekts persistiert. `original_filename` und Metadaten sind korrekt gespeichert. Das Attachment ist im Projekt-Sidebar abrufbar (Phase 1: Projektformular – Attachment Panel). Es entstehen keine doppelten Attachments (Duplikat-Prüfung aktiv). Administrator hat volle Kontrolle über Duplikat-Entscheidungen.
+Das extrahierte PDF ist als `project_attachment` des neu angelegten Projekts persistiert. `original_filename` und Metadaten sind korrekt gespeichert. Das Attachment ist im Projekt-Sidebar abrufbar. Es entstehen keine unbewusst doppelten Attachments. Der schreibberechtigte Akteur hat volle Kontrolle über Duplikat-Entscheidungen.

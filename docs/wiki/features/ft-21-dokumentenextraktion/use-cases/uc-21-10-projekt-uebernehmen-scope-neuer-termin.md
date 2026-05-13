@@ -19,19 +19,22 @@ Extrahierte Projektinformationen im Kontext „Neuer Termin“ übernehmen und e
 
 ## Ablauf
 
-1. Der Akteur wählt die Übernahme der Projektdaten.
-2. Das System legt ein neues Projekt an.
-3. Das System setzt den Projekttitel auf das erkannte Modell oder den erkannten Projektnamen.
-4. Das System setzt die Projektbeschreibung auf die extrahierte HTML-Artikelliste.
-5. Das System verknüpft das neue Projekt mit dem Termin.
-6. Das System verknüpft den zugehörigen Kunden mit dem Projekt.
-7. Das System speichert alle Änderungen transaktional.
+1. Der Akteur prüft Projekttitel, Auftragsnummer, Betrag, Auftragsinhalt und Warnungen im Doc-Extract-Dialog.
+2. Der Akteur entscheidet optional, ob der extrahierte Dokumenttext in die Projektanmerkungen übernommen wird.
+3. Der Akteur entscheidet optional, ob das Dokument als Reklamation behandelt wird. Die Notizfrage und der optionale Notizeditor laufen direkt im Dialog.
+4. Der Akteur wählt die Übernahme der Projektdaten.
+5. Das System öffnet den Projektentwurf im Termin-Kontext und übernimmt die bestätigten Daten.
+6. Der Akteur speichert das Projekt.
+7. Nach erfolgreichem Projektspeichern verknüpft das System das neue Projekt mit dem Terminformular.
+8. Der Termin selbst wird erst durch den Termin-Speichern-Flow persistiert.
 
 ## Alternativen
 
 - Der Akteur bricht vor Bestätigung ab → Kein Projekt wird angelegt; das Terminformular bleibt unverändert.
-- Während der Anlage tritt ein Validierungs- oder Versionskonflikt auf → Das System bricht ab; es werden keine Teilzustände gespeichert.
+- Während der Projektanlage tritt ein Validierungs- oder Versionskonflikt auf → Das System bricht ab; es werden keine Teilzustände gespeichert.
+- Eine Artikelliste fehlt → Das System zeigt einen Hinweis, übernimmt aber die übrigen verwertbaren Projektdaten.
+- Eine Auftragsnummer existiert bereits → Die Projektanlage muss als Duplikatkonflikt behandelt werden.
 
 ## Ergebnis
 
-Ein neues Projekt ist persistent angelegt und korrekt mit Termin und Kunde verknüpft. Alle Referenzen sind konsistent. Anschließend wird die Dokumentendatei als Projekt-Attachment verknüpft (siehe UC 21/17)
+Ein neues Projekt ist persistent angelegt und im Terminformular korrekt auswählbar. Alle Referenzen sind konsistent. Das extrahierte PDF wird im Projekt-Attachment-Flow behandelt (siehe UC 21/17).

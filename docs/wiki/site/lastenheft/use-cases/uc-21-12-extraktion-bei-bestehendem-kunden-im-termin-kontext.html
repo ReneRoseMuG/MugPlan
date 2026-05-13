@@ -54,15 +54,15 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Das Formular „Neuer Termin&quot; ist geöffnet.</li><li>Ein Kunde ist bereits im Terminformular ausgewählt.</li><li>Ein Extraktionsvorschlag mit Kundendaten liegt vor.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur wählt die Übernahme der extrahierten Kundendaten.</li><li>Das System führt eine Duplikatsprüfung durch.</li><li>Falls die extrahierten Kundendaten zu dem bereits gesetzten Kunden matchen (gleiche Identifikationskriterien):</li></ol>
-<ul><li>Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).</li><li>Der bereits gesettzte Kunde bleibt im Terminformular erhalten.</li><li>Keine Warnung oder Bestätigungsdialog wird angezeigt.</li></ul>
-<ol><li>Falls die extrahierten Kundendaten nicht zu dem bereits gesetzten Kunden matchen:</li></ol>
-<ul><li>Das System führt eine erneute Duplikatsprüfung für die extrahierten Daten durch.</li><li>Wenn ein anderer existierender Kunde matcht: Das System aktualisiert fehlende Felder bei diesem Kunden still und ersetzt die Kundenreferenz im Terminformular still.</li><li>Wenn kein Duplikat matcht: Das System legt einen neuen Kunden an und ersetzt die Kundenreferenz im Terminformular still.</li></ul>
-<ol><li>Das System aktualisiert das Terminformular.</li></ol>
+<ol><li>Das System löst die extrahierte Kundennummer automatisch auf.</li><li>Falls die extrahierten Kundendaten zu dem bereits gesetzten Kunden passen:</li></ol>
+<ul><li>Das System zeigt an, dass der bereits gesetzte Kunde weiterverwendet wird.</li><li>Das System bietet eine standardmäßig aktive Checkbox an, um ausschließlich bisher leere Stammdatenfelder aus dem Dokument zu ergänzen.</li><li>Vorhandene Werte am Kunden bleiben unverändert.</li></ul>
+<ol><li>Falls die extrahierten Kundendaten nicht zu dem bereits gesetzten Kunden passen:</li></ol>
+<ul><li>Das System zeigt die Abweichung im Dialog an.</li><li>Wenn genau ein anderer existierender Kunde gefunden wird, kann dieser nach sichtbarer Bestätigung verwendet werden.</li><li>Wenn kein Kunde gefunden wird, zeigt das System an, dass ein neuer Kunde mit der extrahierten Kundennummer angelegt werden kann.</li></ul>
+<ol><li>Der Akteur bestätigt die Übernahme oder bricht ab.</li><li>Das System aktualisiert das Terminformular beziehungsweise den Projektentwurf im Termin-Kontext.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Der Akteur bricht ab → Die bestehende Kundenreferenz bleibt unverändert, keine neuen Kunden werden angelegt.</li><li>Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert und die bestehende Kundenreferenz bleibt unverändert.</li></ul>
+<ul><li>Der Akteur bricht ab → Die bestehende Kundenreferenz bleibt unverändert, keine neuen Kunden werden angelegt.</li><li>Kundennummer fehlt oder ist mehrdeutig → Der Dialog blockiert die Übernahme und verlangt Klärung.</li><li>Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert und die bestehende Kundenreferenz bleibt unverändert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Es existieren keine stillen oder unerwarteten Überschreibungen ohne explizite Bestätigung durch das System.</p>
+<p>Die Kundenreferenz im Terminformular ist eindeutig definiert und konsistent. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden nur nach sichtbarer Nutzerentscheidung ergänzt. Es existieren keine unerwarteten Überschreibungen.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

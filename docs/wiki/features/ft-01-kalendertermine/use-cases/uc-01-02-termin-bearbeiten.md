@@ -50,7 +50,9 @@ Einen bestehenden Termin ändern, ohne fachliche Inkonsistenzen zu erzeugen. Der
     1. Mitarbeiter dürfen keine überschneidenden Termine haben.
     2. Die Überschneidungsprüfung erfolgt tagesbasiert für alle zugeordneten Mitarbeiter und für alle Tage, die der Termin umfasst.
     3. Die Überschneidungsprüfung wird bei jeder Änderung der Termin-Mitarbeiterliste erneut ausgeführt.
-10. Das System speichert die Änderungen am Termin und aktualisiert die Darstellung in allen relevanten Sichten.
+10. Falls Startdatum, Enddatum oder Startzeit geändert wurden und der Termin eigene Terminnotizen besitzt, zeigt das System im Termin-Speichern-Review einen Schritt „Terminnotizen prüfen“. Der Akteur muss bestätigen, dass die Notizen trotz Terminverschiebung geprüft wurden.
+11. Falls dem Termin keine Mitarbeiter zugeordnet sind, zeigt das System im Termin-Speichern-Review den Schritt „Ohne Mitarbeiter speichern“.
+12. Das System speichert die Änderungen am Termin und aktualisiert die Darstellung in allen relevanten Sichten.
 
 ## Alternativen
 
@@ -59,6 +61,7 @@ Einen bestehenden Termin ändern, ohne fachliche Inkonsistenzen zu erzeugen. Der
 - **Historischer Termin (nur Disponent):** Wenn ein Disponent einen Termin mit Startdatum in der Vergangenheit zu ändern versucht, blockiert das System mit HTTP 409 PAST_APPOINTMENT_READONLY. Administratoren dürfen historische Termine ohne Einschränkung bearbeiten.
 - **Überschneidung erkannt:** Das System blockiert das Speichern und zeigt einen Konflikt an, der den betroffenen Mitarbeiter und den kollidierenden Zeitraum verständlich benennt.
 - **Abbruch:** Der Akteur bricht die Bearbeitung ab. Das System speichert keine Änderungen am Termin und es entstehen keine Teiländerungen, also insbesondere keine neuen oder gelöschten Einträge in der Join-Tabelle Termin–Mitarbeiter.
+- **Abbruch im Termin-Speichern-Review:** Das System speichert keine Änderungen. Der Formularzustand bleibt zur weiteren Bearbeitung erhalten.
 - **Speichern ohne Kundenzuordnung:** Falls der Akteur versucht zu speichern, ohne dass ein Kunde zugeordnet ist, blockiert das System den Vorgang und zeigt eine eindeutige Fehlermeldung an, zum Beispiel: „Kunde erforderlich – Termin kann nicht ohne Kundenkontext gespeichert werden."
 - **Kundenmismatch bei Projektzuordnung:** Das System blockiert mit Fehlermeldung (siehe Punkt 4.3 oben).
 - **Kundenwechsel mit bestehendem Projekt:** Das System blockiert mit Fehlermeldung (siehe Punkt 3.3 oben).

@@ -51,6 +51,24 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 5. Nach erfolgreicher Anlage setzt das System die Reklamation über den dedizierten Reklamationspfad auf dem neu erzeugten Objekt.
 6. Eine vorbereitete Reklamationsnotiz wird anschließend am neu erzeugten Objekt gespeichert oder bleibt bei Abbruch des Notizeditors aus.
 
+### Reklamation aus Doc Extract vorbereiten
+
+1. Der Akteur importiert ein Dokument im Projekt- oder Terminpfad über Doc Extract.
+2. Der Akteur entscheidet im Doc-Extract-Dialog, dass das Dokument als Reklamation behandelt werden soll.
+3. Das System fragt im nächsten Dialogschritt, ob eine Reklamationsnotiz vorbereitet werden soll.
+4. Bestätigt der Akteur den Vorschlag, öffnet das System den Notizeditor mit der Vorlage **Reklamation** direkt im Doc-Extract-Dialog.
+5. Überspringt der Akteur den Vorschlag, bleibt die Reklamation als Draft gesetzt, ohne dass eine Notiz vorbereitet wird.
+6. Beim späteren Speichern wird diese Reklamations- und Notizentscheidung nicht erneut abgefragt.
+
+### Reklamation im Terminformular bei bereits reklamierendem Projekt
+
+1. Der Akteur öffnet einen Termin, dessen zugeordnetes Projekt bereits als Reklamation markiert ist.
+2. Der Termin selbst ist noch nicht als Reklamation markiert.
+3. Der Akteur wählt **Reklamation melden** am Termin.
+4. Das System zeigt sofort die Rückfrage, ob auch der Termin als Reklamation markiert werden soll.
+5. Bestätigt der Akteur, läuft der normale Reklamationsnotiz-Vorschlag für den Termin.
+6. Lehnt der Akteur ab, bleibt nur das Projekt als Reklamation markiert.
+
 ### Reklamation aufheben
 
 1. Der Akteur wählt am Termin oder Projekt **Reklamation aufheben**.
@@ -67,6 +85,7 @@ Der Akteur markiert einen Termin oder ein Projekt als Reklamation und erhält da
 - Wenn das System-Tag **Reklamation** oder die Notizvorlage **Reklamation** fehlt, kann der jeweilige Folgefluss nicht vollständig ausgeführt werden und muss als fachlicher bzw. technischer Fehler behandelt werden.
 - Wenn das Objekt durch Optimistic Locking veraltet ist, wird die Aktion abgewiesen und muss nach Neuladen erneut ausgeführt werden.
 - Wenn das Speichern im Create-Modus fehlschlägt, werden Reklamations-Draft und Notiz-Draft nicht über generische Tag-Pfade persistiert.
+- Wenn die Reklamationsnotizfrage bereits im Doc-Extract-Dialog abgeschlossen wurde, wird beim Speichern keine zweite Notizfrage angezeigt.
 - Wenn der Akteur keine ausreichende Rolle besitzt, ist die Reklamationsaktion nicht sichtbar bzw. serverseitig verboten.
 
 ## Ergebnis

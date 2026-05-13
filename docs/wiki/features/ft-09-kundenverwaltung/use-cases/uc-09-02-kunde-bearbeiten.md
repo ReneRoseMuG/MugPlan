@@ -30,15 +30,16 @@ Bestehende Kundendaten werden aktualisiert, ohne referenzierende Projekte oder T
 3. Der Akteur startet die Funktion „Bearbeiten“.
 4. Das System zeigt ein editierbares Formular mit den aktuellen Werten.
 5. Der Akteur ändert zulässige Felder (z. B. Adresse, Telefonnummer, Kundennummer, Name).
-6. Der Akteur bestätigt die Änderungen.
-7. Das System prüft:
+6. Optional stammen neue Werte aus der Dokumentextraktion. In diesem Fall darf das System nur bisher leere Stammdatenfelder ergänzen, wenn der Akteur dies sichtbar bestätigt hat. Vorhandene Werte werden nicht automatisch überschrieben.
+7. Der Akteur bestätigt die Änderungen.
+8. Das System prüft:
     - Berechtigung,
     - Pflichtfelder,
     - formale Validierung,
     - Versionskennung (Konfliktprüfung).
-8. Bei erfolgreicher Prüfung speichert das System die Änderungen.
-9. Das System erhöht die Versionskennung.
-10. Das System aktualisiert abhängige Ansichten.
+9. Bei erfolgreicher Prüfung speichert das System die Änderungen.
+10. Das System erhöht die Versionskennung.
+11. Das System aktualisiert abhängige Ansichten.
 
 ## Alternativen
 

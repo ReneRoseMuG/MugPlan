@@ -20,8 +20,8 @@
       "errors": 0
     },
     "use_cases": {
-      "source_count": 241,
-      "generated_count": 241,
+      "source_count": 242,
+      "generated_count": 242,
       "warnings": 0,
       "errors": 0
     },
@@ -2243,6 +2243,15 @@
         "title": "Extrahiertes PDF als Projekt-Attachment verknüpfen",
         "source": "features/ft-21-dokumentenextraktion/use-cases/uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.md",
         "output": "lastenheft/use-cases/uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "UC-21/18",
+        "title": "Dokumentextraktion im Formular „Neuer Kunde“ starten",
+        "source": "features/ft-21-dokumentenextraktion/use-cases/uc-21-18-dokumentextraktion-im-formular-neuer-kunde-starten.md",
+        "output": "lastenheft/use-cases/uc-21-18-dokumentextraktion-im-formular-neuer-kunde-starten.html",
         "ok": true,
         "warnings": [],
         "errors": []

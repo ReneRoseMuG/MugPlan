@@ -17,6 +17,8 @@ Ein Schwerpunkt des Features liegt auf einheitlichen Folgeaktionen für Systemzu
 
 Der Zustand **Reklamation** wird als geschützter Systemzustand behandelt. Er wird nicht über den generischen Tag-Picker gesetzt oder entfernt, sondern über explizite Reklamationsfunktionen am Termin oder am Projekt. Diese Funktionen setzen bzw. entfernen das System-Tag **Reklamation** und können anschließend einen optionalen Notizfluss starten. Beim Setzen wird eine Reklamationsnotiz aus der passenden Notizvorlage vorgeschlagen, sofern noch keine passende Notiz vorhanden ist. Beim Aufheben einer Reklamation kann eine vorhandene Reklamationsnotiz auf Wunsch entfernt oder bewusst beibehalten werden. In Create-Formularen kann die Reklamation als Draft vorbereitet werden; technisch wird sie erst nach erfolgreicher Anlage über die dedizierte Reklamationsfunktion persistiert.
 
+Wird ein Dokument über Doc Extract als Reklamation behandelt, läuft die Reklamationsentscheidung im Doc-Extract-Dialog. Der Dialog fragt direkt danach, ob eine Reklamationsnotiz vorbereitet werden soll, und blendet bei Zustimmung den Notizeditor mit der Vorlage **Reklamation** im selben Dialog ein. Eine dort abgeschlossene Entscheidung wird beim Speichern nicht erneut abgefragt.
+
 Das Feature beschreibt fachliche Regeln, nicht technische Implementierungsdetails. Maßgeblich ist, dass dieselbe fachliche Situation überall in der Anwendung zu demselben Ergebnis führt, unabhängig davon, an welcher Oberfläche sie ausgelöst wurde.
 
 ## Regeln & Randbedingungen
@@ -29,6 +31,8 @@ Das Feature beschreibt fachliche Regeln, nicht technische Implementierungsdetail
 - Reklamationsnotizen werden nur vorgeschlagen. Die Reklamation selbst wird unabhängig davon gesetzt oder aufgehoben, ob der Akteur die Notiz anlegt, überspringt, löscht oder behält.
 - Im Create-Modus dürfen Reklamations-Drafts nicht über generische Tag-Persistenz gespeichert werden. Nach erfolgreicher Anlage des Projekts oder Termins muss der dedizierte Reklamationspfad verwendet werden.
 - Für Reklamationen darf pro Objekt kein unbeabsichtigter Notizduplikatfluss entstehen. Existiert bereits eine passende Reklamationsnotiz, wird kein weiterer Vorschlag geöffnet.
+- Eine im Doc-Extract-Dialog abgeschlossene Reklamationsnotizentscheidung darf im Project Save Review oder Termin-Save-Review nicht erneut erscheinen.
+- Im Terminformular bleibt **Reklamation melden** eine Sofortaktion. Wenn das zugeordnete Projekt bereits Reklamation ist, der Termin selbst aber noch nicht, muss der Klick eine klare Rückfrage anzeigen, ob auch der Termin als Reklamation markiert werden soll.
 - Beim Aufheben einer Reklamation wird eine vorhandene Reklamationsnotiz nicht stillschweigend gelöscht. Der Akteur entscheidet explizit, ob die Notiz entfernt oder als Dokumentation behalten wird.
 - Die Systemtour **Parkplatz** ist von der Wochenplanung ausgeschlossen.
 - Automatische Folgeänderungen müssen fachlich konsistent sein und dürfen keine widersprüchlichen Zustände hinterlassen.

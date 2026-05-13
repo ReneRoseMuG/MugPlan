@@ -10,7 +10,7 @@ Disponent, Administrator
 
 ## Ziel
 
-Extrahierte Kundendaten im Kontext „Neuer Termin" übernehmen und korrekt mit Termin und ggf. Projekt verknüpfen.
+Extrahierte Kundendaten im Kontext „Neuer Termin" übernehmen und korrekt mit Termin und ggf. Projekt verknüpfen, ohne bestehende Stammdaten still zu überschreiben.
 
 ## Vorbedingungen
 
@@ -20,23 +20,24 @@ Extrahierte Kundendaten im Kontext „Neuer Termin" übernehmen und korrekt mit 
 
 ## Ablauf
 
-1. Der Akteur wählt die Übernahme der Kundendaten.
-2. Das System führt eine Duplikatsprüfung gemäß Kundenregeln durch.
-3. Falls ein Duplikat gefunden wird (Kunde mit gleichen Identifikationskriterien existiert):
-    - Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).
-    - Das System setzt den aktualisierten Kunden im Terminformular.
-    - Keine Benachrichtigung oder Bestätigungsdialog wird angezeigt.
-4. Falls kein Duplikat gefunden wird:
-    - Das System legt einen neuen Kunden mit den extrahierten Daten an.
-    - Das System setzt den neu angelegten Kunden im Terminformular.
-5. Das System aktualisiert das Terminformular, um die Kundenverknüpfung widerzuspiegeln.
+1. Das System löst die erkannte Kundennummer automatisch auf.
+2. Falls genau ein Bestandskunde gefunden wird:
+    - Das System zeigt an, dass dieser Kunde für den Termin- bzw. Projektpfad verwendet wird.
+    - Das System bietet eine standardmäßig aktive Checkbox an, um ausschließlich bisher leere Stammdatenfelder aus dem Dokument zu ergänzen.
+    - Vorhandene Werte am Bestandskunden bleiben immer unverändert.
+3. Falls kein Bestandskunde gefunden wird:
+    - Das System zeigt an, dass beim Übernehmen ein neuer Kunde mit der erkannten Kundennummer angelegt wird.
+    - Das System legt den neuen Kunden erst bei Bestätigung der Übernahme an.
+    - Das System setzt den neu angelegten Kunden im Termin- bzw. Projektentwurf.
+4. Das System aktualisiert das Terminformular, um die Kundenverknüpfung widerzuspiegeln.
 
 ## Alternativen
 
 - Der Akteur bricht ab → Keine Kundenanlage, keine Formularänderung.
-- Kunde existiert bereits und alle Felder sind bereits befüllt → Das System setzt den bestehenden Kunden still im Terminformular, ohne Aktualisierungen vorzunehmen.
+- Kunde existiert bereits und alle Felder sind bereits befüllt → Das System setzt den bestehenden Kunden im Terminformular, ohne Aktualisierungen vorzunehmen.
+- Kundennummer fehlt oder ist mehrdeutig → Der Dialog blockiert die Übernahme und verlangt Klärung.
 - Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert.
 
 ## Ergebnis
 
-Der Terminentwurf referenziert einen Kunden (neu angelegt oder aktualisiert). Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Es existieren keine verwaisten Referenzen.
+Der Terminentwurf oder der im Termin-Kontext erzeugte Projektentwurf referenziert einen Kunden. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden nur nach sichtbarer Nutzerentscheidung ergänzt. Es existieren keine verwaisten Referenzen.

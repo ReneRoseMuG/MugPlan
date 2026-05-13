@@ -54,13 +54,13 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Der Akteur ist authentifiziert.</li><li>Der Akteur besitzt die Berechtigung zur Anlage von Kunden.</li><li>Pflichtfelder sind im System definiert.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur startet die Funktion „Kunde anlegen“.</li><li>Das System zeigt ein Formular zur Erfassung der Kundendaten an.</li><li>Der Akteur erfasst mindestens:</li></ol>
+<ol><li>Der Akteur startet die Funktion „Kunde anlegen“.</li><li>Das System zeigt ein Formular zur Erfassung der Kundendaten an.</li><li>Optional startet der Akteur die Dokumentextraktion im Kundenformular. Das System zeigt erkannte Kundendaten, fehlende Felder und Warnungen als Vorschlag an.</li><li>Der Akteur erfasst oder bestätigt mindestens:</li></ol>
 <ul><li>Kundenname bzw. Firma,</li><li>Telefonnummer,</li><li>Kundennummer,</li><li>Adresse (sofern für Planung oder Druck erforderlich).</li></ul>
 <ol><li>Der Akteur bestätigt die Eingabe.</li><li>Das System validiert:</li></ol>
 <ul><li>Pflichtfelder,</li><li>formale Korrektheit der Daten,</li><li>optionale Dublettenprüfung anhand Name/Adresse/Kundennummer.</li></ul>
 <ol><li>Bei erfolgreicher Validierung speichert das System den Kunden mit <code>is_active = true</code>.</li><li>Das System erzeugt eine Versionskennung (z. B. <code>version</code> oder <code>updated_at</code>).</li><li>Das System zeigt die Kundendetailansicht des neu angelegten Kunden an.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Pflichtfeld fehlt → System antwortet mit Validierungsfehler, kein Persistieren.</li><li>Formale Validierung schlägt fehl → System lehnt ab und markiert Feld.</li><li>Dublettenprüfung schlägt an → System warnt oder blockiert gemäß Regel.</li><li>Technischer Fehler → System antwortet mit 500, kein Kunde wird angelegt.</li></ul>
+<ul><li>Pflichtfeld fehlt → System antwortet mit Validierungsfehler, kein Persistieren.</li><li>Formale Validierung schlägt fehl → System lehnt ab und markiert Feld.</li><li>Dublettenprüfung schlägt an → System warnt oder blockiert gemäß Regel.</li><li>Dokumentextraktion erkennt eine bestehende Kundennummer → System lädt den Bestandskunden statt einen zweiten Datensatz anzulegen.</li><li>Technischer Fehler → System antwortet mit 500, kein Kunde wird angelegt.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <ul><li>Ein neuer Kundendatensatz existiert persistent.</li><li><code>is_active = true</code>.</li><li>Der Kunde erscheint:</li><li>in Kundenlisten,</li><li>in Projektauswahldialogen (nur für aktive Kunden),</li><li>in Filterkomponenten für aktive Kunden.</li><li>Es existieren noch keine Projekte, Termine oder Notizen für diesen Kunden.</li></ul>
     <section class="wiki-relations" aria-label="Beziehungen">

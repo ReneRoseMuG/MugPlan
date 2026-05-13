@@ -111,6 +111,7 @@ Notizen haben keine fachliche Wirkung auf Termine, Status oder Planungslogik. Si
 - Alle Rollen (Leser, Disponent, Administrator) dürfen Termin-Notizen lesen.
 - Disponenten und Administratoren dürfen Termin-Notizen anlegen, bearbeiten und löschen.
 - Termin-Notizen erscheinen in allen Terminkontexten: Terminformular, Kalenderansichten, Terminkarten und Previews.
+- Wenn Startdatum, Enddatum oder Startzeit eines bestehenden Termins geändert werden und der Termin eigene Notizen besitzt, kann der Termin-Speichern-Review eine bewusste Prüfung dieser Notizen verlangen. Die Notiztexte werden dadurch nicht automatisch verändert.
 - Das Löschen eines Termins entfernt kaskadierend alle zugehörigen Termin-Notizen (CASCADE).
 - Historische Termine sind read-only; Notizen an historischen Terminen können weder angelegt noch bearbeitet noch gelöscht werden.
 - Pinning, Vorlagen und `color`-Übernahme gelten analog zu Projekt- und Kundennotizen.

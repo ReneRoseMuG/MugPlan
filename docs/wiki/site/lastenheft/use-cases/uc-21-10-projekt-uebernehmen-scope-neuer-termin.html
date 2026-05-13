@@ -54,11 +54,11 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Extraktionsvorschlag mit Projektdaten liegt vor.</li><li>Kein Projekt ist im Terminformular ausgewählt.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur wählt die Übernahme der Projektdaten.</li><li>Das System legt ein neues Projekt an.</li><li>Das System setzt den Projekttitel auf das erkannte Modell oder den erkannten Projektnamen.</li><li>Das System setzt die Projektbeschreibung auf die extrahierte HTML-Artikelliste.</li><li>Das System verknüpft das neue Projekt mit dem Termin.</li><li>Das System verknüpft den zugehörigen Kunden mit dem Projekt.</li><li>Das System speichert alle Änderungen transaktional.</li></ol>
+<ol><li>Der Akteur prüft Projekttitel, Auftragsnummer, Betrag, Auftragsinhalt und Warnungen im Doc-Extract-Dialog.</li><li>Der Akteur entscheidet optional, ob der extrahierte Dokumenttext in die Projektanmerkungen übernommen wird.</li><li>Der Akteur entscheidet optional, ob das Dokument als Reklamation behandelt wird. Die Notizfrage und der optionale Notizeditor laufen direkt im Dialog.</li><li>Der Akteur wählt die Übernahme der Projektdaten.</li><li>Das System öffnet den Projektentwurf im Termin-Kontext und übernimmt die bestätigten Daten.</li><li>Der Akteur speichert das Projekt.</li><li>Nach erfolgreichem Projektspeichern verknüpft das System das neue Projekt mit dem Terminformular.</li><li>Der Termin selbst wird erst durch den Termin-Speichern-Flow persistiert.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Der Akteur bricht vor Bestätigung ab → Kein Projekt wird angelegt; das Terminformular bleibt unverändert.</li><li>Während der Anlage tritt ein Validierungs- oder Versionskonflikt auf → Das System bricht ab; es werden keine Teilzustände gespeichert.</li></ul>
+<ul><li>Der Akteur bricht vor Bestätigung ab → Kein Projekt wird angelegt; das Terminformular bleibt unverändert.</li><li>Während der Projektanlage tritt ein Validierungs- oder Versionskonflikt auf → Das System bricht ab; es werden keine Teilzustände gespeichert.</li><li>Eine Artikelliste fehlt → Das System zeigt einen Hinweis, übernimmt aber die übrigen verwertbaren Projektdaten.</li><li>Eine Auftragsnummer existiert bereits → Die Projektanlage muss als Duplikatkonflikt behandelt werden.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Ein neues Projekt ist persistent angelegt und korrekt mit Termin und Kunde verknüpft. Alle Referenzen sind konsistent. Anschließend wird die Dokumentendatei als Projekt-Attachment verknüpft (siehe UC 21/17)</p>
+<p>Ein neues Projekt ist persistent angelegt und im Terminformular korrekt auswählbar. Alle Referenzen sind konsistent. Das extrahierte PDF wird im Projekt-Attachment-Flow behandelt (siehe UC 21/17).</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

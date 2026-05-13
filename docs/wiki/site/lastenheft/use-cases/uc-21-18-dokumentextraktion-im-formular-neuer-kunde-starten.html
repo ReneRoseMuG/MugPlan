@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UC-21/05: Dokumentextraktion im Formular „Neues Projekt“ starten · MugPlan Wiki</title>
+  <title>UC-21/18: Dokumentextraktion im Formular „Neuer Kunde“ starten · MugPlan Wiki</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -39,26 +39,26 @@
         </ul>
       </div>
     </aside>
-    <main class="wiki-content" data-screen-label="Use Cases UC-21/05">
+    <main class="wiki-content" data-screen-label="Use Cases UC-21/18">
       <div class="wiki-content__inner">
-        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/05 Dokumentextraktion im Formular „Neues Projekt“ starten</span></nav>
-        <h1 class="wiki-h1">UC-21/05: Dokumentextraktion im Formular „Neues Projekt“ starten</h1>
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/18 Dokumentextraktion im Formular „Neuer Kunde“ starten</span></nav>
+        <h1 class="wiki-h1">UC-21/18: Dokumentextraktion im Formular „Neuer Kunde“ starten</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-21</span></div>
-    <p class="wiki-lead">Innerhalb des Formulars „Neues Projekt“ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.</p>
+    <p class="wiki-lead">Innerhalb des Formulars „Neuer Kunde“ ein Dokument mittels Parsing analysieren und einen Kundendatenvorschlag erzeugen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-21-dokumentenextraktion.html">FT (21): Dokumentenextraktion</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
 <p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
-<p>Innerhalb des Formulars „Neues Projekt“ ein Dokument mittels Parsing analysieren und einen Vorschlag erzeugen.</p>
+<p>Innerhalb des Formulars „Neuer Kunde“ ein Dokument mittels Parsing analysieren und einen Kundendatenvorschlag erzeugen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
-<ul><li>Das Formular „Neues Projekt“ ist geöffnet.</li><li>Der Akteur besitzt die Berechtigung zur Projektanlage.</li><li>Ein PDF-Dokument ist verfügbar.</li></ul>
+<ul><li>Das Formular „Neuer Kunde“ ist geöffnet.</li><li>Der Akteur besitzt die Berechtigung zur Kundenanlage.</li><li>Ein PDF-Dokument ist verfügbar.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur lädt ein PDF in den definierten Extraktionsbereich des Formulars.</li><li>Das System startet die regelbasierte Dokumentextraktion gemäß UC 21/01.</li><li>Das System zeigt einen mehrstufigen Ergebnisdialog mit Kundendaten, Projektdaten, Warnungen und Abschluss an.</li><li>Das System löst erkannte Kundendaten automatisch auf und zeigt an, ob ein Kunde verknüpft, neu angelegt oder durch fehlende bzw. mehrdeutige Kundennummer blockiert wird.</li><li>Das System zeigt erkannte Projektdaten und bietet optional an, den extrahierten Dokumenttext in die Anmerkungen zu übernehmen.</li><li>Der Akteur kann das Dokument im Dialog als Reklamation markieren. In diesem Fall wird die Notizfrage direkt im Dialog gestellt und bei Zustimmung der Notizeditor eingeblendet.</li></ol>
+<ol><li>Der Akteur lädt ein PDF in den definierten Extraktionsbereich des Kundenformulars.</li><li>Das System startet die regelbasierte Dokumentextraktion gemäß UC 21/01.</li><li>Das System zeigt einen Kundendaten-Dialog mit erkannten Feldern, fehlenden Feldern und Warnungen an.</li><li>Das System löst die erkannte Kundennummer automatisch auf.</li><li>Falls genau ein Bestandskunde gefunden wird, zeigt das System an, dass dieser Kunde geladen wird.</li><li>Falls kein Bestandskunde gefunden wird, zeigt das System an, dass die Daten als neuer Kunde übernommen werden.</li><li>Der Akteur bestätigt die Übernahme oder bricht ab.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Das Dokument ist nicht geeignet → Das System zeigt eine Fehlermeldung; das Projektformular bleibt unverändert.</li><li>Das Dokument enthält nur teilweise verwertbare Daten → Das System zeigt die verwertbaren Bereiche und markiert fehlende oder auffällige Felder als Hinweis oder Warnung.</li></ul>
+<ul><li>Das Dokument ist nicht geeignet → Das System zeigt eine Fehlermeldung; das Kundenformular bleibt unverändert.</li><li>Das Dokument enthält nur teilweise verwertbare Kundendaten → Das System zeigt die verwertbaren Felder und markiert fehlende oder auffällige Felder als Hinweis oder Warnung.</li><li>Kundennummer fehlt oder ist mehrdeutig → Der Dialog blockiert die Übernahme und verlangt Klärung.</li><li>Der Akteur bricht ab → Keine Kundenanlage und keine Formularänderung.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Ein editierbarer Extraktionsvorschlag steht im Kontext des Formulars „Neues Projekt“ zur Verfügung. Es wurden keine Projektdaten gespeichert. Nach Übernahme liegen Projekt-, Kunden-, Reklamations- und PDF-Draft-Daten im Formularzustand bereit; endgültige projektbezogene Entscheidungen erfolgen beim Speichern.</p>
+<p>Das Kundenformular enthält die bestätigten Kundendaten oder lädt den erkannten Bestandskunden. Es wurden keine Projekt- oder Termindaten erzeugt.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

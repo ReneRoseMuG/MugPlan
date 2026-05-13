@@ -44,25 +44,25 @@
         <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../features.html">Lastenheft</a><span class="wiki-breadcrumb__sep">›</span><a href="../use-cases.html">Use Cases</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">UC-21/07 Kundendaten übernehmen – Scope Neues Projekt</span></nav>
         <h1 class="wiki-h1">UC-21/07: Kundendaten übernehmen – Scope Neues Projekt</h1>
     <div class="wiki-meta"><span class="wiki-meta__label">Feature</span><span class="wiki-badge wiki-badge--neutral">FT-21</span></div>
-    <p class="wiki-lead">Extrahierte Kundendaten im Kontext „Neues Projekt&quot; übernehmen und einen Kunden korrekt anlegen oder aktualisieren.</p>
+    <p class="wiki-lead">Extrahierte Kundendaten im Kontext „Neues Projekt&quot; übernehmen und einen Kunden korrekt anlegen, verknüpfen oder kontrolliert ergänzen.</p>
     <h2 class="wiki-h2">Metadaten</h2>
 <ul><li>Feature: <a href="../features/ft-21-dokumentenextraktion.html">FT (21): Dokumentenextraktion</a></li></ul>
 <h2 class="wiki-h2">Akteur</h2>
 <p>Disponent, Administrator</p>
 <h2 class="wiki-h2">Ziel</h2>
-<p>Extrahierte Kundendaten im Kontext „Neues Projekt&quot; übernehmen und einen Kunden korrekt anlegen oder aktualisieren.</p>
+<p>Extrahierte Kundendaten im Kontext „Neues Projekt&quot; übernehmen und einen Kunden korrekt anlegen, verknüpfen oder kontrolliert ergänzen.</p>
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Ein Extraktionsvorschlag mit Kundendaten liegt vor.</li><li>Das Formular „Neues Projekt&quot; ist geöffnet.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur wählt die Übernahme der Kundendaten.</li><li>Das System führt eine Duplikatsprüfung gemäß Kundenregeln durch.</li><li>Falls ein Duplikat gefunden wird (Kunde mit gleichen Identifikationskriterien existiert):</li></ol>
-<ul><li>Das System aktualisiert fehlende Felder am bestehenden Kunden still (z. B. Telefon, E-Mail, Adressteile, sofern diese leer sind).</li><li>Das System verknüpft den aktualisierten Kunden mit dem Projekt.</li><li>Keine Benachrichtigung oder Bestätigungsdialog wird angezeigt.</li></ul>
-<ol><li>Falls kein Duplikat gefunden wird:</li></ol>
-<ul><li>Das System legt einen neuen Kunden mit den extrahierten Daten an.</li><li>Das System verknüpft den neu angelegten Kunden mit dem Projekt.</li></ul>
+<ol><li>Das System löst die erkannte Kundennummer automatisch auf.</li><li>Falls genau ein Bestandskunde gefunden wird:</li></ol>
+<ul><li>Das System zeigt an, dass dieser Kunde mit dem Projekt verknüpft wird.</li><li>Das System bietet eine standardmäßig aktive Checkbox an, um ausschließlich bisher leere Stammdatenfelder aus dem Dokument zu ergänzen.</li><li>Vorhandene Werte am Bestandskunden bleiben immer unverändert.</li></ul>
+<ol><li>Falls kein Bestandskunde gefunden wird:</li></ol>
+<ul><li>Das System zeigt an, dass beim Übernehmen ein neuer Kunde mit der erkannten Kundennummer angelegt wird.</li><li>Das System legt den neuen Kunden erst bei Bestätigung der Übernahme an.</li><li>Das System verknüpft den neu angelegten Kunden mit dem Projektentwurf.</li></ul>
 <ol><li>Das System aktualisiert das Projektformular, um die Kundenverknüpfung widerzuspiegeln.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Der Akteur bricht ab → Es erfolgt keine Kundenanlage und keine Änderung der Projektzuordnung.</li><li>Kunde existiert bereits und alle Felder sind bereits befüllt → Das System verknüpft den bestehenden Kunden still mit dem Projekt, ohne Aktualisierungen vorzunehmen.</li><li>Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert.</li></ul>
+<ul><li>Der Akteur bricht ab → Es erfolgt keine Kundenanlage und keine Änderung der Projektzuordnung.</li><li>Kunde existiert bereits und alle Felder sind bereits befüllt → Das System verknüpft den bestehenden Kunden mit dem Projekt, ohne Aktualisierungen vorzunehmen.</li><li>Kundennummer fehlt oder ist mehrdeutig → Der Dialog blockiert die Übernahme und verlangt Klärung.</li><li>Validierung der Kundendaten schlägt fehl → Das System zeigt eine Fehlermeldung an; es werden keine Daten persistiert.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
-<p>Der Projektentwurf ist mit einem Kunden verknüpft (neu angelegt oder aktualisiert). Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden still aufgefüllt. Alle Referenzen sind konsistent.</p>
+<p>Der Projektentwurf ist mit einem Kunden verknüpft. Es entstehen keine doppelten Kundeneinträge. Fehlende Kundenfelder wurden nur nach sichtbarer Nutzerentscheidung ergänzt. Alle Referenzen sind konsistent.</p>
     <section class="wiki-relations" aria-label="Beziehungen">
     <h2 class="wiki-relations__title">Beziehungen</h2>
     <div class="wiki-relations__grid">

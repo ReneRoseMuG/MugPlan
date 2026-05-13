@@ -14,8 +14,10 @@ Aus einem textbasierten Auftragsdokument (PDF) sollen automatisiert folgende Dat
 - Kundendaten gemäß bestehendem Kundenschema
 - Saunamodell (als Projekttitel-Vorschlag)
 - Artikelliste (Menge + Beschreibung, mehrzeilig möglich, ohne Preise)
+- Auftragsnummer, Auftragssumme und Auftragsinhalt, sofern im Dokument erkennbar
+- Dokumentvolltext als optionaler Vorschlag für Anmerkungen
 
-Die extrahierten Daten werden als editierbarer Vorschlag präsentiert und können in das aktuelle Formular (Neues Projekt oder Neuer Termin) übernommen werden.
+Die extrahierten Daten werden als geführter, mehrstufiger Vorschlag präsentiert und können in den aktuellen Formularpfad übernommen werden.
 
 Das Feature dient ausschließlich der Arbeitserleichterung.
 
@@ -23,8 +25,9 @@ Es ersetzt keine bestehende Validierungs- oder Sicherheitslogik.
 
 ## Fachliche Beschreibung
 
-Die Extraktionsfunktion ist ausschließlich in folgenden Kontexten verfügbar:
+Die Extraktionsfunktion ist in folgenden Kontexten verfügbar:
 
+- Formular **Neuer Kunde** (nur Kundendaten)
 - Formular **Neues Projekt**
 - Formular **Neuer Termin**
 
@@ -35,38 +38,45 @@ Das System:
 1. Extrahiert den Text aus dem Dokument.
 2. Segmentiert strukturelle Bereiche (Kunde, Artikelliste, Auftragsblock).
 3. Extrahiert strukturierte Kundendaten.
-4. Extrahiert eine Artikelliste.
-5. Erkennt das Saunamodell.
-6. Kategorisiert die Artikelliste semantisch.
-7. Liefert ein validiertes Ergebnis zurück.
+4. Extrahiert projektbezogene Informationen wie Auftragsnummer, Auftragssumme, Projekttitel und Auftragsinhalt.
+5. Extrahiert eine Artikelliste, sofern sie im Dokument vorhanden ist.
+6. Erkennt nach Möglichkeit das Saunamodell oder einen ersten fachlich nutzbaren Projektblock als Projekttitel-Vorschlag.
+7. Kategorisiert die Artikelliste semantisch, sofern genügend strukturierte Positionen vorhanden sind.
+8. Liefert ein Ergebnis mit erkannten Feldern, Warnungen und Hinweisen zurück.
 
 ## Präsentation
 
-Nach erfolgreicher Extraktion erscheint ein schwebender Dialog.
+Nach erfolgreicher Extraktion erscheint ein geführter Dialog. Der Dialog zeigt je nach Aufrufpfad nur Kundendaten oder zusätzlich Projektdaten.
 
-### Bereich 1 – Kundendaten
+### Kundenschritt
 
-Nachbildung des Kunden-Edit-Formulars mit vorbefüllten Feldern.
+Der Kundenschritt zeigt erkannte Kundendaten, nicht erkannte Felder und Warnungen. Auffällige Werte, etwa eine formal falsche Postleitzahl, werden als Warnung angezeigt und trotzdem übernommen, solange der Nutzer den Vorschlag bestätigt.
 
-Alle Felder sind editierbar.
+Die Kundenauflösung erfolgt automatisch anhand der Kundennummer. Existiert genau ein Kunde, wird dieser Kunde verknüpft. Bestehende Stammdaten werden nicht still überschrieben. Enthält der extrahierte Datensatz Werte, die im Bestandskunden noch leer sind, bietet der Dialog eine standardmäßig aktive Checkbox an, um nur diese leeren Stammdaten zu ergänzen. Die Checkbox muss deutlich erklären, dass vorhandene Werte unverändert bleiben.
 
-### Bereich 2 – Projektvorschlag
+Existiert kein Kunde, wird klar angezeigt, dass beim Übernehmen ein neuer Kunde angelegt wird. Fehlt die Kundennummer oder ist die Auflösung mehrdeutig, blockiert der Dialog die Übernahme und nennt den Grund.
 
-Titelfeld:
+### Projektschritt
 
-- Vorgefüllt mit erkanntem Saunamodell.
+Der Projektschritt zeigt Projekttitel, Auftragsnummer, Auftragssumme und Auftragsinhalt als editierbaren Vorschlag. Der extrahierte Dokumenttext kann auf ausdrückliche Auswahl in die Anmerkungen übernommen werden. Vorhandene Anmerkungen werden dabei nicht still überschrieben.
 
-Editorfeld (RTF/HTML-kompatibel):
+Eine fehlende Artikelliste ist ein Hinweis beziehungsweise Mangel, aber kein Abbruchgrund. Der Nutzer soll die nutzbaren Projektdaten trotzdem übernehmen können. Die Information, dass keine Artikelliste erkannt wurde, dient nur der fachlichen Prüfung und ersetzt keine spätere manuelle Artikellistenpflege.
 
-- Extrahierte, sortierte Artikelliste.
-- Darstellung als strukturierte HTML-Auflistung.
-- Vollständig editierbar.
+### Reklamationsschritt
+
+Im Projekt- und Terminpfad kann der Nutzer entscheiden, ob das importierte Dokument als Reklamation behandelt werden soll. Wird dies bejaht, fragt der Dialog direkt im nächsten Schritt, ob eine Reklamationsnotiz vorbereitet werden soll. Bei Zustimmung wird der Notizeditor mit der Vorlage **Reklamation** im selben Dialog eingeblendet. Diese Entscheidung gilt als abgeschlossen und wird beim späteren Speichern nicht erneut abgefragt.
+
+### Abschluss
+
+Der Abschluss zeigt eine knappe Zusammenfassung der übernommenen Daten und bietet an, das importierte PDF in einem Browser-Tab zu öffnen.
 
 ### Formular- und Übernahmeführung
 
-Die Dokumentextraktion nutzt das gemeinsame Dialogsystem als geführten Übernahmeprozess. Der Extraktionsdialog zeigt die erkannten Kundendaten, den Projektvorschlag und die strukturierten Auftragspositionen als editierbaren Vorschlag. Warnungen zu unvollständigen oder unsicheren Daten werden im Dialog beziehungsweise direkt am betroffenen Bereich angezeigt. Der Start der Extraktion und die Anzeige des Vorschlags persistieren noch keine fachlichen Kunden-, Projekt- oder Termindaten.
+Die Dokumentextraktion nutzt das gemeinsame Dialogsystem als geführten Übernahmeprozess. Der Extraktionsdialog zeigt erkannte Kundendaten, Projektdaten, Warnungen und Hinweise als editierbaren Vorschlag. Der Start der Extraktion und die Anzeige des Vorschlags persistieren noch keine fachlichen Projekt- oder Termindaten. Kundendaten werden im Kundenschritt fachlich vollständig aufgelöst: Es wird ein bestehender Kunde verknüpft, ein neuer Kunde zur Anlage vorbereitet oder eine mehrdeutige bzw. fehlende Kundennummer als Blocker angezeigt.
 
-Die Übernahme kopiert bestätigte Extraktionsdaten in das aktuell geöffnete Formular. Im Kontext **Neues Projekt** bleibt das eingelesene PDF danach als Draft-Dokument im Projektformular sichtbar und kann zur manuellen Prüfung in einem neuen Browser-Tab geöffnet werden. Beim späteren Speichern des Projekts werden projektbezogene Entscheidungen wie Artikellistenhinweise, Projekttitel aus Saunamodell, Reklamationsnotiz und PDF-Duplikatentscheidung über den Speichern-Review aus [FT (02): Projekte](../ft-02-projekte/ft-02-projekte.md) gebündelt. Im Kontext **Neuer Termin** werden nur die für den Termin zulässigen Kunden- und Projektvorschläge übernommen; die Terminmutation bleibt an die Regeln aus [FT (01): Kalendertermine](../ft-01-kalendertermine/ft-01-kalendertermine.md) gebunden.
+Die Übernahme kopiert bestätigte Extraktionsdaten in das aktuell geöffnete Formular. Im Kontext **Neues Projekt** bleibt das eingelesene PDF danach als Draft-Dokument im Projektformular sichtbar und kann zur manuellen Prüfung in einem neuen Browser-Tab geöffnet werden. Beim späteren Speichern des Projekts werden projektbezogene Entscheidungen wie Artikellistenhinweise, Projekttitel aus Saunamodell oder erstem Projektblock und PDF-Duplikatentscheidung über den Speichern-Review aus [FT (02): Projekte](../ft-02-projekte/ft-02-projekte.md) gebündelt. Eine im Doc-Extract-Dialog bereits vollständig entschiedene Reklamation inklusive Notizfrage erscheint dort nicht erneut.
+
+Im Kontext **Neuer Termin** läuft der Kundendaten- und Projektvorschlagsdialog fachlich gleich wie im Kontext **Neues Projekt**. Nach Übernahme wird das Projektformular im Termin-Kontext geöffnet. Erst nach erfolgreichem Projektspeichern wird das Projekt dem Termin zugeordnet. Terminbezogene Entscheidungen bleiben im Termin-Speichern-Review aus [FT (01): Kalendertermine](../ft-01-kalendertermine/ft-01-kalendertermine.md).
 
 Ein Abbruch im Extraktionsdialog oder das Schließen des Dialogs verwirft den noch nicht übernommenen Vorschlag. Bereits bestehende Formularinhalte werden nur nach ausdrücklicher Bestätigung überschrieben. Erkannte Kundendubletten werden nach den dokumentierten Use Cases behandelt: fehlende Stammdaten dürfen kontrolliert ergänzt werden, unerwartete Überschreibungen ohne Systembestätigung sind nicht zulässig.
 
@@ -84,9 +94,10 @@ Fehlermeldungen aus Parsing, Kategorisierung, ungeeigneten Dokumenten oder gelö
 - FT (21) verändert das Attachment-Modell aus FT (19) nicht.
 - FT (21) verändert keine bestehenden Domänenmodelle.
 - Das Feature darf keine impliziten Datenänderungen auslösen.
-- Bei strukturell ungeeigneten Dokumenten muss der Prozess sauber abbrechen.
-- DIe Kundennummer gilt als Duplikat Key für Kunden
-- Erkannte Duplikate werden zum stillen Auffüllen von Kundenstammdaten verwendet
+- Bei strukturell ungeeigneten Dokumenten bricht der Prozess nur dann ab, wenn weder verwertbare Kundendaten noch verwertbare Projektdaten erkannt werden.
+- Die Kundennummer gilt als primärer Schlüssel zur Kundenauflösung.
+- Erkannte Bestandskunden werden verknüpft. Leere Stammdaten dürfen nur nach sichtbarer Nutzerentscheidung ergänzt werden; vorhandene Kundendaten werden nicht still überschrieben.
+- Fehlende Artikellisten, nicht erkannte optionale Felder und auffällige Feldformate wie eine falsche Postleitzahl werden als Hinweise oder Warnungen gemeldet, dürfen aber die Übernahme der übrigen verwertbaren Daten nicht blockieren.
 
 ## Use Cases
 
@@ -105,6 +116,7 @@ Fehlermeldungen aus Parsing, Kategorisierung, ungeeigneten Dokumenten oder gelö
 - [UC 21/13: Wiederholte Extraktion desselben Dokuments](use-cases/uc-21-13-wiederholte-extraktion-desselben-dokuments.md)
 - [UC 21/14: Extraktion bei zwischenzeitlich gelöschtem Parent-Objekt](use-cases/uc-21-14-extraktion-bei-zwischenzeitlich-geloeschtem-parent-objekt.md)
 - [UC 21/17: Extrahiertes PDF als Projekt-Attachment verknüpfen](use-cases/uc-21-17-extrahiertes-pdf-als-projekt-attachment-verknuepfen.md)
+- [UC 21/18: Dokumentextraktion im Formular „Neuer Kunde“ starten](use-cases/uc-21-18-dokumentextraktion-im-formular-neuer-kunde-starten.md)
 
 ## Backlogs
 

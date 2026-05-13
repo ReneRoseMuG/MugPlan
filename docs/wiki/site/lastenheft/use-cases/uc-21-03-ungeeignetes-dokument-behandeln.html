@@ -54,9 +54,9 @@
 <h2 class="wiki-h2">Vorbedingungen</h2>
 <ul><li>Das Dokument enthält keine ausreichend strukturierbaren Daten oder entspricht nicht dem erwarteten Format.</li><li>Der Akteur startet die Dokumentextraktion.</li></ul>
 <h2 class="wiki-h2">Ablauf</h2>
-<ol><li>Der Akteur startet die Extraktion.</li><li>Das System extrahiert den Text.</li><li>Das System führt die Parsing-Regeln aus.</li><li>Das System erkennt, dass keine hinreichend verwertbaren strukturierten Daten erzeugt werden können.</li><li>Das System bricht den Prozess mit einer klaren Fehlermeldung ab.</li></ol>
+<ol><li>Der Akteur startet die Extraktion.</li><li>Das System extrahiert den Text.</li><li>Das System führt die Parsing-Regeln aus.</li><li>Das System erkennt, ob zumindest Kundendaten oder Projektdaten verwertbar sind.</li><li>Wenn keine hinreichend verwertbaren strukturierten Daten erzeugt werden können, bricht das System den Prozess mit einer klaren Fehlermeldung ab.</li></ol>
 <h2 class="wiki-h2">Alternativen</h2>
-<ul><li>Das Dokument enthält teilweise verwertbare Daten → Das System zeigt nur valide Teilbereiche als Vorschlag an und kennzeichnet unvollständige Felder.</li></ul>
+<ul><li>Das Dokument enthält teilweise verwertbare Daten → Das System zeigt nur valide Teilbereiche als Vorschlag an und kennzeichnet unvollständige oder auffällige Felder.</li><li>Einzelne fachliche Bereiche fehlen, etwa die Artikelliste → Das System behandelt dies als Hinweis oder Warnung, solange andere verwertbare Daten vorhanden sind.</li></ul>
 <h2 class="wiki-h2">Ergebnis</h2>
 <p>Es erfolgt keine Persistierung fachlicher Daten. Das System bleibt konsistent.</p>
     <section class="wiki-relations" aria-label="Beziehungen">

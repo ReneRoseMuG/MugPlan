@@ -38,6 +38,7 @@ Der Disponent ist der operative Hauptnutzer der Anwendung.
 
 Er darf:
 
+- Kunden anlegen und bearbeiten
 - Projekte anlegen, bearbeiten und deaktivieren
 - Termine anlegen, verschieben, bearbeiten und löschen
 - Mitarbeiter zuweisen
@@ -85,6 +86,7 @@ Die Oberfläche für Leser ist funktional reduziert und enthält keine aktiven B
 - Der Mitarbeiterbereich darf für Leser sichtbar sein, bleibt dort aber vollständig read-only.
 - Das Journal bleibt für Leser unsichtbar und serverseitig gesperrt.
 - Der letzte Admin darf nicht entfernt oder herabgestuft werden.
+- Dokumentextraktion eröffnet keine zusätzlichen Rechte. Kunden-, Projekt- und Terminanlage aus einem Extraktionsdialog sind serverseitig nach denselben Rollenregeln zu prüfen wie die manuelle Anlage.
 
 ## Use Cases
 

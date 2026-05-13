@@ -25,11 +25,17 @@ Ein neues Projekt erfassen, einem aktiven Kunden zuordnen und mit einer Auftrags
 2. Der Akteur wählt einen Kunden aus der Liste aktiver Kunden.
 3. Der Akteur erfasst Titel, Auftragsnummer (Pflicht) und optional eine Beschreibung (Markdown).
 4. Optional vergibt der Akteur projektbezogene Tags gemäß FT (28).
-5. Das System validiert serverseitig:
+5. Optional liegen Projektdaten aus der Dokumentextraktion als Draft vor, inklusive PDF-Draft, Artikellistenhinweisen, Projekttitel-Vorschlag und ggf. bereits entschiedener Reklamationsnotiz.
+6. Vor der Persistenz zeigt das System bei Bedarf den Projekt-Speichern-Review:
+    - offene Artikellistenhinweise,
+    - Projekttitel-Vorschlag aus Sauna-Modell oder erstem Projektblock,
+    - offene Reklamationsnotizentscheidung, sofern sie nicht bereits im Doc-Extract-Dialog abgeschlossen wurde,
+    - PDF-Duplikatentscheidung für ein per Dokumentextraktion eingebrachtes Draft-PDF.
+7. Das System validiert serverseitig:
     - Authentifizierung und Berechtigung,
     - Existenz und Aktivstatus des Kunden,
     - Auftragsnummer nicht leer.
-6. Das System legt das Projekt an und persistiert Projektreferenz, Auftrag und Kundenzuordnung atomar.
+8. Das System legt das Projekt an und persistiert Projektreferenz, Auftrag und Kundenzuordnung atomar.
 
 ## Alternativen
 
@@ -39,6 +45,7 @@ Ein neues Projekt erfassen, einem aktiven Kunden zuordnen und mit einer Auftrags
 - Gewählter Kunde ist inaktiv → HTTP 409, keine Persistenz.
 - Auftragsnummer fehlt oder ist leer → HTTP 422, keine Persistenz.
 - Abbruch durch den Akteur → keine Persistenz.
+- Abbruch im Projekt-Speichern-Review → keine Persistenz; der Formular-Draft bleibt erhalten.
 - Technischer Fehler → HTTP 500, keine Persistenz.
 
 ## Ergebnis
