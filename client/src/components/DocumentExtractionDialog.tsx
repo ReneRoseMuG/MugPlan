@@ -46,9 +46,18 @@ export type ExtractionFieldReportMissingItem = {
   reason: string;
 };
 
+export type ExtractionFieldReportIssueItem = {
+  key: string;
+  label: string;
+  section: "customer" | "project";
+  severity: "warning" | "error";
+  reason: string;
+};
+
 export type ExtractionFieldReport = {
   recognized: ExtractionFieldReportRecognizedItem[];
   missing: ExtractionFieldReportMissingItem[];
+  issues?: ExtractionFieldReportIssueItem[];
 };
 
 export type ExtractionDialogData = {
@@ -61,6 +70,7 @@ export type ExtractionDialogData = {
   articleListHtml: string;
   fieldReport: ExtractionFieldReport;
   warnings: string[];
+  documentText?: string;
 };
 
 interface DocumentExtractionDialogProps {
@@ -252,6 +262,23 @@ export function DocumentExtractionDialog({
                         <div key={`${item.section}-${item.key}`} className="space-y-1">
                           <p className="font-medium">{item.label}</p>
                           <p className="text-muted-foreground">{item.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ) : null}
+
+                {(data.fieldReport.issues ?? []).length > 0 ? (
+                  <section
+                    className="rounded-md border border-amber-300 bg-amber-50 p-3"
+                    data-testid="document-extraction-report-issues"
+                  >
+                    <h3 className="text-sm font-bold tracking-wider text-amber-950">Mängel</h3>
+                    <div className="mt-3 space-y-3 text-sm text-amber-950">
+                      {(data.fieldReport.issues ?? []).map((item) => (
+                        <div key={`${item.section}-${item.key}`} className="space-y-1">
+                          <p className="font-medium">{item.label}</p>
+                          <p>{item.reason}</p>
                         </div>
                       ))}
                     </div>

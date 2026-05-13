@@ -44,6 +44,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.phone}
             onChange={(event) => onChange({ ...value, phone: event.target.value })}
+            data-testid="input-doc-extract-phone"
           />
         </div>
         <div className="space-y-1">
@@ -51,6 +52,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.firstName}
             onChange={(event) => onChange({ ...value, firstName: event.target.value })}
+            data-testid="input-doc-extract-first-name"
           />
         </div>
         <div className="space-y-1">
@@ -58,6 +60,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.lastName}
             onChange={(event) => onChange({ ...value, lastName: event.target.value })}
+            data-testid="input-doc-extract-last-name"
           />
         </div>
         <div className="space-y-1 col-span-2">
@@ -65,6 +68,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.company}
             onChange={(event) => onChange({ ...value, company: event.target.value })}
+            data-testid="input-doc-extract-company"
           />
         </div>
         <div className="space-y-1">
@@ -72,6 +76,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.email}
             onChange={(event) => onChange({ ...value, email: event.target.value })}
+            data-testid="input-doc-extract-email"
           />
         </div>
         <div className="space-y-1">
@@ -79,6 +84,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.addressLine1}
             onChange={(event) => onChange({ ...value, addressLine1: event.target.value })}
+            data-testid="input-doc-extract-address-line-1"
           />
         </div>
         <div className="space-y-1">
@@ -86,6 +92,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.postalCode}
             onChange={(event) => onChange({ ...value, postalCode: event.target.value })}
+            data-testid="input-doc-extract-postal-code"
           />
         </div>
         <div className="space-y-1">
@@ -93,6 +100,7 @@ export function DocumentExtractionCustomerSection({
           <Input
             value={value.city}
             onChange={(event) => onChange({ ...value, city: event.target.value })}
+            data-testid="input-doc-extract-city"
           />
         </div>
         <div className="space-y-1">

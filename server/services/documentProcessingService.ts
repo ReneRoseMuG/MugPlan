@@ -1,4 +1,5 @@
 import type { Customer, InsertCustomer, Project } from "@shared/schema";
+import type { CanonicalRoleKey } from "../settings/registry";
 import type { ExtractionScope } from "./aiExtractionService";
 import { extractTextFromPdfBuffer } from "./documentTextExtractor";
 import {
@@ -22,6 +23,7 @@ import * as projectsService from "./projectsService";
 
 export type DocumentExtractionResult = ValidatedExtraction & {
   fieldReport: ExtractionFieldReport;
+  documentText: string;
 };
 
 export type CustomerNumberResolution =
@@ -92,6 +94,7 @@ function buildExtractionDescription(name: string, description: string | null): s
 function buildLegacyExtractionContent(extractedText: string): {
   saunaModel: string;
   articleItems: Array<{ quantity: string; description: string; category: string }>;
+  warnings: string[];
 } {
   const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
   return {
@@ -101,12 +104,14 @@ function buildLegacyExtractionContent(extractedText: string): {
       description: item.description,
       category: "Artikel",
     })),
+    warnings: [],
   };
 }
 
 function buildMiningExtractionContent(extractedText: string): {
   saunaModel: string;
   articleItems: Array<{ quantity: string; description: string; category: string }>;
+  warnings: string[];
 } {
   const parsed = parseMasterDataArticleItemsDeterministically(extractedText);
   return {
@@ -116,6 +121,7 @@ function buildMiningExtractionContent(extractedText: string): {
       description: buildExtractionDescription(item.name, item.description),
       category: item.kind === "product" ? "Produkt" : "Komponente",
     })),
+    warnings: [],
   };
 }
 
@@ -125,16 +131,34 @@ function buildExtractionContentFromDocument(
 ): {
   saunaModel: string;
   articleItems: Array<{ quantity: string; description: string; category: string }>;
+  warnings: string[];
 } {
   const preferMiningParser = scope === "project_form" || scope === "appointment_form";
   if (!preferMiningParser) {
-    return buildLegacyExtractionContent(extractedText);
+    try {
+      return buildLegacyExtractionContent(extractedText);
+    } catch {
+      return {
+        saunaModel: "Projektinformationen aus Dokument",
+        articleItems: [],
+        warnings: ["Artikelliste konnte nicht erkannt werden."],
+      };
+    }
   }
 
   try {
     return buildMiningExtractionContent(extractedText);
-  } catch {
-    return buildLegacyExtractionContent(extractedText);
+  } catch (miningError) {
+    const details = miningError instanceof Error ? miningError.message : String(miningError);
+    return {
+      saunaModel: "Projektinformationen aus Dokument",
+      articleItems: [],
+      warnings: [
+        details
+          ? `Artikelliste konnte nicht erkannt werden: ${details}`
+          : "Artikelliste konnte nicht erkannt werden.",
+      ],
+    };
   }
 }
 
@@ -145,7 +169,7 @@ export async function extractFromPdf(params: {
   const extractedText = await extractTextFromPdfBuffer(params.fileBuffer);
 
   try {
-    const headerResult = params.scope === "project_form"
+    const headerResult = params.scope === "project_form" || params.scope === "appointment_form"
       ? parseDocumentHeaderForProjectExtraction(extractedText)
       : {
           header: parseDocumentHeaderDeterministically(extractedText),
@@ -173,12 +197,13 @@ export async function extractFromPdf(params: {
       amount,
       saunaModel: extractionContent.saunaModel,
       articleItems: extractionContent.articleItems,
-      warnings: headerResult.warnings,
+      warnings: [...headerResult.warnings, ...extractionContent.warnings],
     });
 
     return {
       ...extraction,
       fieldReport: buildExtractionFieldReport(extraction, params.scope),
+      documentText: extractedText,
     };
   } catch (error) {
     if (error instanceof DocumentExtractionOrderConflictError) {
@@ -232,6 +257,9 @@ export async function checkCustomerDuplicate(customerNumber: string): Promise<{ 
   };
 }
 
-export async function createCustomerFromExtractionDraft(customerDraft: InsertCustomer): Promise<Customer> {
-  return customersService.createCustomer(customerDraft);
+export async function createCustomerFromExtractionDraft(
+  customerDraft: InsertCustomer,
+  roleKey?: CanonicalRoleKey,
+): Promise<Customer> {
+  return customersService.createCustomer(customerDraft, roleKey);
 }

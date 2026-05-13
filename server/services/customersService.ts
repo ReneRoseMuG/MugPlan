@@ -101,7 +101,10 @@ export async function getCustomersByCustomerNumber(
   return customersRepository.getCustomersByCustomerNumber(customerNumber);
 }
 
-export async function createCustomer(data: InsertCustomer): Promise<Customer> {
+export async function createCustomer(data: InsertCustomer, roleKey?: CanonicalRoleKey): Promise<Customer> {
+  if (roleKey) {
+    requireDispatcherOrAdmin(roleKey);
+  }
   const normalizedData: InsertCustomer = {
     ...data,
     firstName: normalizeOptionalText(data.firstName),
@@ -131,6 +134,8 @@ export async function updateCustomer(
   data: UpdateCustomer & { version: number },
   roleKey: CanonicalRoleKey,
 ): Promise<Customer | null> {
+  requireDispatcherOrAdmin(roleKey);
+
   if (!Number.isInteger(data.version) || data.version < 1) {
     throw new CustomersError(422, "VALIDATION_ERROR");
   }

@@ -321,7 +321,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     ]);
   });
 
-  it("falls back to the legacy article parser when the mining parser cannot derive a product", async () => {
+  it("keeps project extraction usable without articles when the mining parser cannot derive a product", async () => {
     extractTextFromPdfBufferMock.mockResolvedValue("doc text");
     parseDocumentHeaderDeterministicallyMock.mockReturnValue({
       orderNumber: "A-3",
@@ -338,10 +338,6 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     parseMasterDataArticleItemsDeterministicallyMock.mockImplementation(() => {
       throw new Error("Produktmarker konnte nicht erkannt werden");
     });
-    parseDocumentArticleItemsDeterministicallyMock.mockReturnValue([
-      { quantity: "1", description: "Sauna Modell Z" },
-      { quantity: "2", description: "Ofenrohr Set" },
-    ]);
 
     const result = await extractFromPdf({
       scope: "project_form",
@@ -349,11 +345,15 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
     });
 
     expect(result.customer.customerNumber).toBe("K-3");
-    expect(result.saunaModel).toBe("Sauna Modell Z");
-    expect(result.articleItems).toEqual([
-      { quantity: "1", description: "Sauna Modell Z", category: "Artikel" },
-      { quantity: "2", description: "Ofenrohr Set", category: "Artikel" },
-    ]);
+    expect(result.saunaModel).toBe("Projektinformationen aus Dokument");
+    expect(result.articleItems).toEqual([]);
+    expect(result.articleListHtml).toBe("");
+    expect(result.fieldReport.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: "articleListMissing", section: "project" }),
+      ]),
+    );
+    expect(parseDocumentArticleItemsDeterministicallyMock).not.toHaveBeenCalled();
   });
 
   it("throws deterministic extraction error when parser fails", async () => {

@@ -99,7 +99,12 @@ export async function getCustomer(req: Request, res: Response, next: NextFunctio
 export async function createCustomer(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const input = api.customers.create.input.parse(req.body);
-    const customer = await customersService.createCustomer(input);
+    const roleKey = getRoleKeyFromRequest(req);
+    if (!roleKey) {
+      res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+      return;
+    }
+    const customer = await customersService.createCustomer(input, roleKey);
     await journalService.recordJournalEntry({
       tableName: "customer",
       recordId: customer.id,

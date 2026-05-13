@@ -26,6 +26,8 @@ import { errorHandler } from "../../../server/middleware/errorHandler";
 import * as customersService from "../../../server/services/customersService";
 import * as projectsService from "../../../server/services/projectsService";
 import * as appointmentsService from "../../../server/services/appointmentsService";
+import { createUser } from "../../../server/repositories/usersRepository";
+import { hashPassword } from "../../../server/security/passwordHash";
 import { nextDeterministicToken, resetDeterministicTokens } from "../../helpers/deterministic";
 
 let app: express.Express;
@@ -41,6 +43,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   resetDeterministicTokens("projects-delete-rules");
+  resetDeterministicTokens("projects-delete-rules-role");
 });
 
 async function loginAdminAgent(): Promise<SuperAgentTest> {
@@ -49,6 +52,25 @@ async function loginAdminAgent(): Promise<SuperAgentTest> {
     .post("/api/auth/login")
     .send({ username: "test-admin", password: "test-admin-password" })
     .expect(200);
+  return agent;
+}
+
+async function loginRoleAgent(roleCode: "DISPATCHER" | "READER"): Promise<SuperAgentTest> {
+  const token = nextDeterministicToken("projects-delete-rules-role");
+  const username = `project-delete-${roleCode.toLowerCase()}-${token}`;
+  const password = `project-delete-${roleCode.toLowerCase()}-password`;
+
+  await createUser({
+    username,
+    email: `${username}@local.test`,
+    firstName: "Projekt",
+    lastName: roleCode,
+    passwordHash: await hashPassword(password),
+    roleCode,
+  });
+
+  const agent = request.agent(app);
+  await agent.post("/api/auth/login").send({ username, password }).expect(200);
   return agent;
 }
 
@@ -129,5 +151,34 @@ describe("FT02 integration: project delete rules", () => {
       .expect((res) => {
         expect(res.body.code).toBe("NOT_FOUND");
       });
+  });
+
+  it("allows DISPONENT and blocks LESER when deleting projects directly via API", async () => {
+    const dispatcher = await loginRoleAgent("DISPATCHER");
+    const reader = await loginRoleAgent("READER");
+    const dispatcherProject = await createProjectForTest();
+    const readerProject = await createProjectForTest();
+
+    await dispatcher
+      .delete(`/api/projects/${dispatcherProject.id}`)
+      .send({ version: dispatcherProject.version })
+      .expect(204);
+
+    await reader
+      .delete(`/api/projects/${readerProject.id}`)
+      .send({ version: readerProject.version })
+      .expect(403)
+      .expect((res) => {
+        expect(res.body.code).toBe("FORBIDDEN");
+      });
+  });
+
+  it("returns 401 when deleting a project without a session", async () => {
+    const project = await createProjectForTest();
+
+    await request(app)
+      .delete(`/api/projects/${project.id}`)
+      .send({ version: project.version })
+      .expect(401);
   });
 });

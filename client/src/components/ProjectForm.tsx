@@ -10,10 +10,15 @@ import { ProjectOrderForm, ProjectProductFields, type ArticleCreateInput } from 
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
-  DocumentExtractionDialog,
   type ExtractionDialogData,
   type ExtractionCustomerDraft,
 } from "@/components/DocumentExtractionDialog";
+import {
+  buildCustomerBackfillUpdatePayload,
+  ProjectDocumentExtractionWorkflowDialog,
+  type DocumentExtractionCustomerResolution,
+  type ProjectDocumentExtractionWorkflowResult,
+} from "@/components/ProjectDocumentExtractionWorkflowDialog";
 import {
   ProjectDuplicateResolutionDialog,
   type ProjectDuplicateLatestAppointment,
@@ -113,8 +118,15 @@ interface ProjectFormProps {
     orderNumber?: string;
     amount?: string;
     customerId?: number | null;
+    customer?: Customer | null;
     extractedArticleListHtml?: string;
+    descriptionMd?: string;
     productSelections?: ProjectProductSelections;
+    documentExtractionDecisions?: DocumentExtractionDecisionState | null;
+    documentExtractionReklamation?: {
+      enabled: boolean;
+      createNote: boolean;
+    };
   } | null;
   onProjectCreated?: (projectId: number, result?: { attachmentLinked: boolean }) => void;
 }
@@ -136,6 +148,11 @@ type ProjectSaveReviewRequest = {
   saunaModelName: string | null;
   reklamationNoteDraft: ProjectSaveReviewNoteDraft | null;
   duplicateAttachmentSummary: ProjectSaveReviewDuplicateSummary | null;
+};
+
+type DocumentExtractionDecisionState = {
+  articleListReviewed: boolean;
+  reklamationReviewed: boolean;
 };
 
 type ExtractionAttachmentDuplicateDecision = "allow" | "skip" | "not-needed" | "check";
@@ -212,6 +229,8 @@ export function ProjectForm({
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
   const [documentExtractionFile, setDocumentExtractionFile] = useState<File | null>(initialDocumentExtractionFile ?? null);
+  const [documentExtractionDecisions, setDocumentExtractionDecisions] = useState<DocumentExtractionDecisionState | null>(null);
+  const [documentExtractionSelectedCustomer, setDocumentExtractionSelectedCustomer] = useState<Customer | null>(initialDraft?.customer ?? null);
   const [saveReviewRequest, setSaveReviewRequest] = useState<ProjectSaveReviewRequest | null>(null);
   const [isPreparingSaveReview, setIsPreparingSaveReview] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string } | null>(null);
@@ -224,6 +243,7 @@ export function ProjectForm({
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
+  const didApplyInitialDraftReklamationRef = useRef(false);
   const didInitializeCreateFormRef = useRef(false);
   const initializedEditProjectIdRef = useRef<number | null>(null);
   const hydratedEditProjectFormIdRef = useRef<number | null>(null);
@@ -234,6 +254,7 @@ export function ProjectForm({
   const isAdmin = userRole === "ADMIN";
   const isReader = isReaderRole(userRole);
   const isReadOnlyView = isReader;
+  const canCreateFromDocumentExtraction = userRole === "ADMIN" || userRole === "DISPATCHER";
   const canManageProjectTags = !isReader && (isAdmin || userRole === "DISPATCHER");
   const canDeleteAttachments = !isReader && (isAdmin || userRole === "DISPATCHER");
   const matchesAttachmentFileSignature = (attachment: PendingProjectAttachmentItem, file: File) =>
@@ -436,6 +457,8 @@ export function ProjectForm({
       setExtractedArticleListHtml("");
       setArticleListTouched(false);
       setCustomerId(projectData.project.customerId);
+      setDocumentExtractionDecisions(null);
+      setDocumentExtractionSelectedCustomer(null);
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: projectName,
@@ -462,6 +485,8 @@ export function ProjectForm({
       setDynamicProductSelections(createEmptyDynamicProjectProductSelections(dynamicCategorySlots));
       setArticleListTouched(false);
       setExtractedArticleListHtml("");
+      setDocumentExtractionDecisions(null);
+      setDocumentExtractionSelectedCustomer(null);
       setInitialFormSnapshot(
         buildFormSnapshot({
           name: "",
@@ -508,7 +533,10 @@ export function ProjectForm({
     setName(initialDraft.name ?? "");
     setOrderNumber(initialDraft.orderNumber ?? "");
     setAmount(initialDraft.amount ?? "");
+    setDescriptionMd(initialDraft.descriptionMd ?? "");
     setCustomerId(initialDraft.customerId ?? null);
+    setDocumentExtractionSelectedCustomer(initialDraft.customer ?? null);
+    setDocumentExtractionDecisions(initialDraft.documentExtractionDecisions ?? null);
     setProductSelections(nextSelections);
     setDynamicProductSelections(nextDynamicSelections);
     setArticleListTouched(false);
@@ -520,7 +548,7 @@ export function ProjectForm({
         amount: initialDraft.amount ?? "",
         plannedDateText: "",
         plannedWeek: "",
-        descriptionMd: "",
+        descriptionMd: initialDraft.descriptionMd ?? "",
         productSelections: nextSelections,
         dynamicProductSelections: nextDynamicSelections,
         extractedArticleListHtml: initialDraft.extractedArticleListHtml ?? "",
@@ -531,7 +559,9 @@ export function ProjectForm({
     setDidApplyInitialDraft(true);
   }, [didApplyInitialDraft, dynamicCategorySlots, emptyCreateSidebarDraftSignature, initialDraft, isEditing]);
 
-  const selectedCustomer = customers.find(c => c.id === customerId) || projectData?.customer;
+  const selectedCustomer = customers.find(c => c.id === customerId)
+    || projectData?.customer
+    || (documentExtractionSelectedCustomer?.id === customerId ? documentExtractionSelectedCustomer : undefined);
   const selectedCustomerNumber = selectedCustomer?.customerNumber?.trim() ?? "";
   const projectNamePreview = name.trim();
   const projectEditContext = useMemo(
@@ -566,6 +596,122 @@ export function ProjectForm({
       }),
     );
   }, [componentCategories, components, dynamicCategorySlots, isEditing, products, projectData, projectOrderItems]);
+
+  const mapExtractionCustomerToPayload = (customer: ExtractionCustomerDraft) => ({
+    customerNumber: customer.customerNumber.trim(),
+    firstName: customer.firstName?.trim() || null,
+    lastName: customer.lastName?.trim() || null,
+    company: customer.company?.trim() || null,
+    email: customer.email?.trim() || null,
+    phone: customer.phone?.trim() || null,
+    addressLine1: customer.addressLine1?.trim() || null,
+    addressLine2: customer.addressLine2?.trim() || null,
+    postalCode: customer.postalCode?.trim() || null,
+    city: customer.city?.trim() || null,
+    country: customer.country?.trim() || null,
+  });
+
+  const resolveCustomerByNumber = async (customerNumber: string): Promise<DocumentExtractionCustomerResolution> => {
+    const response = await fetch("/api/document-extraction/resolve-customer-by-number", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ customerNumber: customerNumber.trim() }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.message ?? "Kundennummer konnte nicht aufgelöst werden");
+    }
+    return (await response.json()) as DocumentExtractionCustomerResolution;
+  };
+
+  const createCustomerFromDraft = async (customerDraft: ExtractionCustomerDraft): Promise<Customer> => {
+    const response = await fetch("/api/customers", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(mapExtractionCustomerToPayload(customerDraft)),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(payload?.code === "CUSTOMER_NUMBER_CONFLICT" ? "Kundennummer ist bereits vergeben." : (payload?.message ?? "Kunde konnte nicht angelegt werden"));
+    }
+    const customer = payload as Customer;
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
+    return customer;
+  };
+
+  const updateExistingCustomerFromDraft = async (
+    existingCustomer: Customer,
+    customerDraft: ExtractionCustomerDraft,
+  ): Promise<Customer> => {
+    const backfill = buildCustomerBackfillUpdatePayload(existingCustomer, customerDraft);
+    if (Object.keys(backfill).length === 0) {
+      return existingCustomer;
+    }
+
+    const sendUpdate = async (customer: Customer, version: number) =>
+      fetch(`/api/customers/${customer.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...backfill, version }),
+      });
+
+    let response = await sendUpdate(existingCustomer, existingCustomer.version);
+    if (response.status === 409) {
+      const freshResponse = await fetch(`/api/customers/${existingCustomer.id}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!freshResponse.ok) {
+        throw new Error("Kunde konnte vor der Ergänzung nicht neu geladen werden.");
+      }
+      const freshCustomer = (await freshResponse.json()) as Customer;
+      const retryBackfill = buildCustomerBackfillUpdatePayload(freshCustomer, customerDraft);
+      if (Object.keys(retryBackfill).length === 0) {
+        return freshCustomer;
+      }
+      response = await fetch(`/api/customers/${freshCustomer.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...retryBackfill, version: freshCustomer.version }),
+      });
+    }
+
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(payload?.message ?? "Kunde konnte nicht ergänzt werden.");
+    }
+    const updatedCustomer = payload as Customer;
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/customers/list"] });
+    return updatedCustomer;
+  };
+
+  const escapeDescriptionHtml = (value: string): string =>
+    value
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
+  const buildDocumentTextDescriptionHtml = (documentText: string): string => {
+    const escaped = escapeDescriptionHtml(documentText.trim());
+    if (!escaped) return "";
+    return `<p><strong>Extrahierter Dokumenttext</strong></p><pre>${escaped}</pre>`;
+  };
 
   const resolveProjectByOrderNumber = async (value: string) => {
     const response = await fetch("/api/document-extraction/resolve-project-by-order-number", {
@@ -620,6 +766,7 @@ export function ProjectForm({
         articleListHtml: string;
         fieldReport: ExtractionDialogData["fieldReport"];
         warnings: string[];
+        documentText?: string;
       };
       setDocumentExtractionData({
         customer: {
@@ -643,6 +790,7 @@ export function ProjectForm({
         articleListHtml: extraction.articleListHtml ?? "",
         fieldReport: extraction.fieldReport,
         warnings: extraction.warnings ?? [],
+        documentText: extraction.documentText ?? "",
       });
       setDocumentExtractionOpen(true);
       toast({ title: "Dokument erfolgreich extrahiert" });
@@ -659,6 +807,7 @@ export function ProjectForm({
 
   const handleFieldSelection = (fieldKey: ProjectProductFieldKey, selectedValue: string) => {
     setArticleListTouched(true);
+    setDocumentExtractionDecisions((current) => current ? { ...current, articleListReviewed: false } : current);
     if (!selectedValue) {
       setProductSelections((current) => ({ ...current, [fieldKey]: createEmptySelection() }));
       return;
@@ -690,6 +839,7 @@ export function ProjectForm({
 
   const handleDynamicFieldSelection = (slotId: string, selectedValue: string) => {
     setArticleListTouched(true);
+    setDocumentExtractionDecisions((current) => current ? { ...current, articleListReviewed: false } : current);
     const slot = dynamicCategorySlots.find((entry) => entry.slotId === slotId);
     if (!slot) return;
 
@@ -1012,6 +1162,46 @@ export function ProjectForm({
     }
   };
 
+  const openDraftReklamationNoteEditorFromTemplate = async () => {
+    const templates = noteTemplates.length > 0
+      ? noteTemplates
+      : await queryClient.ensureQueryData({
+        queryKey: ["/api/note-templates"],
+        queryFn: () => fetchJson<NoteTemplate[]>("/api/note-templates"),
+      });
+    const template = findWorkflowNoteTemplate(templates, "Reklamation");
+    if (!template) {
+      toast({
+        title: "Notizvorlage fehlt",
+        description: "Die Notizvorlage „Reklamation“ wurde nicht gefunden.",
+        variant: "destructive",
+      });
+      setPendingDraftReklamationTemplateTitle(null);
+      return;
+    }
+    const draft = buildWorkflowNoteDraft(template);
+    const alreadyExists = visibleProjectNotes.some(
+      (note) => normalizeWorkflowNoteTitle(note.title) === normalizeWorkflowNoteTitle(draft.title),
+    );
+    if (!alreadyExists) {
+      setSuggestedProjectNoteDraft(draft);
+    }
+    setPendingDraftReklamationTemplateTitle(null);
+  };
+
+  useEffect(() => {
+    if (isEditing || !didApplyInitialDraft || didApplyInitialDraftReklamationRef.current) return;
+    const initialReklamation = initialDraft?.documentExtractionReklamation;
+    if (!initialReklamation?.enabled) return;
+    didApplyInitialDraftReklamationRef.current = true;
+    setDraftProjectReklamation();
+    if (initialReklamation.createNote) {
+      void openDraftReklamationNoteEditorFromTemplate();
+    } else {
+      setPendingDraftReklamationTemplateTitle(null);
+    }
+  }, [didApplyInitialDraft, initialDraft, isEditing]);
+
   const updateDraftProjectNote = (
     noteId: number,
     data: { title: string; body: string; cardColor?: string | null; print: boolean },
@@ -1282,7 +1472,7 @@ export function ProjectForm({
       if (code === "BUSINESS_CONFLICT") {
         toast({
           title: "Projekt kann nicht gelöscht werden",
-          description: "Projekt kann nicht gelöscht werden, weil Termine vorhanden sind.",
+          description: "Das Projekt hat zugeordnete Termine und kann deshalb nicht gelöscht werden. Bitte Termine zuerst entfernen oder neu zuordnen.",
           variant: "destructive",
         });
         return;
@@ -1589,18 +1779,22 @@ export function ProjectForm({
   };
 
   const buildProjectSaveReviewRequest = async (projectNameForReview: string): Promise<ProjectSaveReviewRequest> => ({
-    missingArticleLabels: collectMissingProjectArticleLabels({
-      productSelections,
-      dynamicSelections: dynamicProductSelections,
-      dynamicSlots: dynamicCategorySlots,
-      articleListTouched,
-      extractedArticleListHtml,
-    }),
+    missingArticleLabels: documentExtractionDecisions?.articleListReviewed
+      ? []
+      : collectMissingProjectArticleLabels({
+        productSelections,
+        dynamicSelections: dynamicProductSelections,
+        dynamicSlots: dynamicCategorySlots,
+        articleListTouched,
+        extractedArticleListHtml,
+      }),
     saunaModelName: resolveSaunaTitleSuggestion({
       projectName: projectNameForReview,
       productSelections,
     }),
-    reklamationNoteDraft: await resolvePendingReklamationNoteDraft(),
+    reklamationNoteDraft: documentExtractionDecisions?.reklamationReviewed
+      ? null
+      : await resolvePendingReklamationNoteDraft(),
     duplicateAttachmentSummary: await resolveExtractionDuplicateAttachmentSummary(),
   });
 
@@ -1797,13 +1991,27 @@ export function ProjectForm({
     });
   };
 
-  const applyExtractedData = async (payload: {
-    saunaModel: string;
-    orderNumber: string;
-    amount: string;
-    articleListHtml: string;
-    customer: ExtractionCustomerDraft;
-  }) => {
+  const validateProjectDocumentExtractionTarget = async ({ orderNumber: extractedOrderNumber }: { orderNumber: string }) => {
+    const normalizedOrderNumber = extractedOrderNumber.trim();
+    if (normalizedOrderNumber.length === 0) return true;
+    const projectResolution = await resolveProjectByOrderNumber(normalizedOrderNumber);
+    if (projectResolution.resolution === "multiple") {
+      throw new Error("Dateninkonsistenz: Auftragsnummer ist mehrfach vorhanden. Prozess wurde abgebrochen.");
+    }
+    if (projectResolution.resolution === "single") {
+      if (!projectResolution.project) {
+        throw new Error("Dateninkonsistenz: Vorhandenes Projekt konnte nicht geladen werden.");
+      }
+      setProjectDuplicateResolution({
+        project: projectResolution.project,
+        latestAppointment: projectResolution.latestAppointment,
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const applyProjectDocumentExtractionWorkflow = async (payload: ProjectDocumentExtractionWorkflowResult) => {
     try {
       const extractedOrderNumber = payload.orderNumber.trim();
       if (extractedOrderNumber.length > 0) {
@@ -1830,6 +2038,8 @@ export function ProjectForm({
       }
       setName(payload.saunaModel.trim());
       setExtractedArticleListHtml(payload.articleListHtml.trim());
+      setCustomerId(payload.customerId);
+      setDocumentExtractionSelectedCustomer(payload.resolvedCustomer);
       if (extractedOrderNumber.length > 0) {
         const currentOrderNumber = orderNumber.trim();
         if (!currentOrderNumber) {
@@ -1850,25 +2060,36 @@ export function ProjectForm({
           setAmount(extractedAmount);
         } else if (currentAmount !== extractedAmount) {
           const shouldOverwrite = window.confirm(
-            `Es ist bereits ein abweichender Betrag gesetzt (${currentAmount}). Mit extrahiertem Betrag (${extractedAmount}) ueberschreiben?`,
+            `Es ist bereits ein abweichender Betrag gesetzt (${currentAmount}). Mit extrahiertem Betrag (${extractedAmount}) überschreiben?`,
           );
           if (shouldOverwrite) {
             setAmount(extractedAmount);
           }
         }
       }
-      setDocumentExtractionOpen(false);
-      if (customerId && selectedCustomer) {
-        toast({
-          title: "Auftragsdaten übernommen",
-          description: "Der aktuell ausgewählte Kunde bleibt unverändert.",
-        });
-      } else {
-        toast({
-          title: "Auftragsdaten übernommen",
-          description: "Zum Speichern muss noch ein Kunde ausgewählt werden.",
-        });
+      if (payload.appendDocumentText && documentExtractionData?.documentText?.trim()) {
+        const documentTextHtml = buildDocumentTextDescriptionHtml(documentExtractionData.documentText);
+        if (documentTextHtml) {
+          setDescriptionMd((current) => current.trim() ? `${current}\n${documentTextHtml}` : documentTextHtml);
+        }
       }
+      if (payload.acceptMissingArticleListAsReklamation) {
+        setDraftProjectReklamation();
+        if (payload.createReklamationNote) {
+          await openDraftReklamationNoteEditorFromTemplate();
+        } else {
+          setPendingDraftReklamationTemplateTitle(null);
+        }
+      }
+      setDocumentExtractionDecisions({
+        articleListReviewed: payload.articleListReviewed,
+        reklamationReviewed: payload.acceptMissingArticleListAsReklamation,
+      });
+      setDocumentExtractionOpen(false);
+      toast({
+        title: "Dokumentdaten übernommen",
+        description: "Projekt- und Kundendaten wurden vorbereitet.",
+      });
     } catch (error) {
       toast({
         title: "Daten konnten nicht übernommen werden",
@@ -2239,7 +2460,7 @@ export function ProjectForm({
 
       </EntityFormShell>
 
-      <DocumentExtractionDialog
+      <ProjectDocumentExtractionWorkflowDialog
         open={documentExtractionOpen}
         onOpenChange={(open) => {
           setDocumentExtractionOpen(open);
@@ -2249,9 +2470,12 @@ export function ProjectForm({
         }}
         data={documentExtractionData}
         isBusy={documentExtractionLoading}
-        dataApplyLabel="Auftragsdaten übernehmen"
-        showCustomerSection={false}
-        onApplyData={applyExtractedData}
+        canCreateCustomer={canCreateFromDocumentExtraction}
+        onResolveCustomerByNumber={resolveCustomerByNumber}
+        onCreateCustomer={createCustomerFromDraft}
+        onUpdateExistingCustomer={updateExistingCustomerFromDraft}
+        onValidateProject={validateProjectDocumentExtractionTarget}
+        onApply={applyProjectDocumentExtractionWorkflow}
       />
 
       <ProjectDuplicateResolutionDialog
@@ -2362,7 +2586,7 @@ export function ProjectForm({
             <AlertDialogAction
               onClick={() => {
                 setDeleteConfirmOpen(false);
-                void deleteProjectMutation.mutateAsync();
+                deleteProjectMutation.mutate();
               }}
               data-testid="button-confirm-delete-project"
             >

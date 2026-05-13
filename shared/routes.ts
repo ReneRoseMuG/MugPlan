@@ -83,9 +83,18 @@ const extractedFieldMissingSchema = z.object({
   reason: z.string().min(1),
 });
 
+const extractedFieldIssueSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  section: extractedFieldReportSectionSchema,
+  severity: z.enum(["warning", "error"]),
+  reason: z.string().min(1),
+});
+
 const extractedFieldReportSchema = z.object({
   recognized: z.array(extractedFieldRecognizedSchema),
   missing: z.array(extractedFieldMissingSchema),
+  issues: z.array(extractedFieldIssueSchema),
 });
 
 const dateOnlySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -1455,9 +1464,10 @@ export const api = {
             saunaModel: z.string().min(1),
             articleItems: z.array(extractedArticleItemSchema),
             categorizedItems: z.array(extractedArticleCategorySchema),
-            articleListHtml: z.string().min(1),
+            articleListHtml: z.string(),
             fieldReport: extractedFieldReportSchema,
             warnings: z.array(z.string()),
+            documentText: z.string(),
         }),
         400: errorSchemas.validation,
         409: z.object({
@@ -3610,6 +3620,7 @@ export const api = {
       input: insertProjectSchema,
       responses: {
         201: projectWithOrderSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
         409: z.object({ code: z.literal("INACTIVE_ENTITY_ASSIGNMENT") }),
       },
@@ -3622,9 +3633,10 @@ export const api = {
       }),
       responses: {
         200: projectWithOrderSchema,
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({
-          code: z.enum(["VERSION_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]),
+          code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]),
         }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
       },
@@ -3637,6 +3649,7 @@ export const api = {
       }),
       responses: {
         204: z.void(),
+        403: z.object({ code: z.literal("FORBIDDEN") }),
         404: errorSchemas.notFound,
         409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT"]) }),
         422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3710,6 +3723,7 @@ export const api = {
         input: insertProjectOrderItemSchema,
         responses: {
           201: z.custom<typeof projectOrderItems.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3723,6 +3737,7 @@ export const api = {
         }).strict(),
         responses: {
           200: z.custom<typeof projectOrderItems.$inferSelect>(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.enum(["VERSION_CONFLICT", "BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3736,6 +3751,7 @@ export const api = {
         }).strict(),
         responses: {
           204: z.void(),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.literal("VERSION_CONFLICT") }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),
@@ -3749,6 +3765,7 @@ export const api = {
         }).strict(),
         responses: {
           200: z.array(z.custom<typeof projectOrderItems.$inferSelect>()),
+          403: z.object({ code: z.literal("FORBIDDEN") }),
           404: errorSchemas.notFound,
           409: z.object({ code: z.enum(["BUSINESS_CONFLICT", "INACTIVE_ENTITY_ASSIGNMENT"]) }),
           422: z.object({ code: z.literal("VALIDATION_ERROR") }),

@@ -127,14 +127,16 @@ async function mockAppointmentDocumentExtraction(page: Page, customerNumber: str
         orderNumber: options?.orderNumber ?? `AO-${customerNumber}`,
         amount: options?.amount ?? "14700.00",
         saunaModel: options?.saunaModel ?? `Doc Projekt ${customerNumber}`,
-        articleItems: [],
-        categorizedItems: [],
+        articleItems: [{ quantity: "1", description: "Extrahierter Artikel", category: "Artikel" }],
+        categorizedItems: [{ category: "Artikel", items: [{ quantity: "1", description: "Extrahierter Artikel", category: "Artikel" }] }],
         articleListHtml: "<p>Extrahierte Artikelliste</p>",
         fieldReport: {
           recognized: [],
           missing: [],
+          issues: [],
         },
         warnings: [],
+        documentText: "Extrahierter PDF-Volltext",
       }),
     });
   });
@@ -147,6 +149,20 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF", "utf8"),
   });
+}
+
+async function completeProjectDocumentExtractionWorkflow(page: Page, options: { acceptReklamation?: boolean } = {}) {
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  const reklamoCheckbox = page.getByTestId("checkbox-doc-extract-accept-reklamation");
+  if (await reklamoCheckbox.isVisible().catch(() => false)) {
+    const shouldAccept = options.acceptReklamation === true;
+    const isChecked = await reklamoCheckbox.isChecked();
+    if (shouldAccept !== isChecked) await reklamoCheckbox.click();
+  }
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("button-doc-extract-apply-data").click();
 }
 
 async function assertAppointmentFormShell(page: Page) {
@@ -506,8 +522,7 @@ test("shows an extracted document only as project attachment after successful pr
   await openNewAppointmentFromWeek(page);
   await uploadExtractionPdf(page, extractionFileName);
 
-  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("button-save-project")).toBeVisible();
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByTestId("project-description-editor-panel").getByTestId("richtext-editor").fill("Extrahierte Projektbeschreibung fuer den Overlay-Save");
@@ -593,11 +608,11 @@ test("keeps the extracted document as appointment draft when the project form is
   await openNewAppointmentFromWeek(page);
   await uploadExtractionPdf(page, extractionFileName);
 
-  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("button-save-project")).toBeVisible();
 
-  await page.getByTestId("button-cancel-project").click();
+  await page.mouse.move(20, 20);
+  await page.getByTestId("button-cancel-project").last().dispatchEvent("click");
   const discardProjectButton = page.getByRole("button", { name: "Verwerfen und schließen" });
   if (await discardProjectButton.isVisible().catch(() => false)) {
     await discardProjectButton.click();
@@ -636,7 +651,7 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await page.mouse.click(10, 10);
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
   await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText("09:00 - 04.05.99");
   await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText(tour.name);

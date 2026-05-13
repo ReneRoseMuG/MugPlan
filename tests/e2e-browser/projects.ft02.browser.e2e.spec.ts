@@ -578,10 +578,19 @@ test("deletes projects without appointments and keeps projects with appointments
   });
 
   await openProjectById(page, blockedProject.id);
+  const deleteConflictPageErrors: string[] = [];
+  page.on("pageerror", (error) => {
+    deleteConflictPageErrors.push(error.message);
+  });
   await page.getByTestId("button-delete-project").click();
   await page.getByTestId("button-confirm-delete-project").click();
   await expect(page.getByText("Projekt kann nicht gelöscht werden", { exact: true })).toBeVisible();
-  await expect(page.getByText("Projekt kann nicht gelöscht werden, weil Termine vorhanden sind.", { exact: true })).toBeVisible();
+  await expect(page.getByText(
+    "Das Projekt hat zugeordnete Termine und kann deshalb nicht gelöscht werden. Bitte Termine zuerst entfernen oder neu zuordnen.",
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.getByText("[plugin:runtime-error-plugin]")).toHaveCount(0);
+  expect(deleteConflictPageErrors).toEqual([]);
   await expect.poll(async () => {
     const response = await page.request.get(`/api/projects/${blockedProject.id}`);
     return response.status();

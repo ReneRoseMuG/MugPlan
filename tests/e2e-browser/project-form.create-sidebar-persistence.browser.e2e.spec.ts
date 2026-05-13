@@ -102,9 +102,16 @@ async function mockProjectDocumentExtraction(page: Page, customerNumber: string,
   fieldReport?: {
     recognized: Array<{ key: string; label: string; section: "customer" | "project"; value: string }>;
     missing: Array<{ key: string; label: string; section: "customer" | "project"; reason: string }>;
+    issues?: Array<{ key: string; label: string; section: "customer" | "project"; severity: "warning" | "error"; reason: string }>;
   };
+  articleItems?: Array<{ quantity: string; description: string; category: string }>;
+  categorizedItems?: Array<{ category: string; items: Array<{ quantity: string; description: string; category: string }> }>;
+  articleListHtml?: string;
+  documentText?: string;
   warnings?: string[];
 }) {
+  const articleItems = options?.articleItems ?? [{ quantity: "1", description: "Extrahierter Artikel", category: "Artikel" }];
+  const categorizedItems = options?.categorizedItems ?? [{ category: "Artikel", items: articleItems }];
   await page.route("**/api/document-extraction/extract?scope=project_form", async (route) => {
     await route.fulfill({
       status: 200,
@@ -125,14 +132,14 @@ async function mockProjectDocumentExtraction(page: Page, customerNumber: string,
         orderNumber: options?.orderNumber ?? `PRJ-${customerNumber}`,
         amount: options?.amount ?? "14700.00",
         saunaModel: options?.saunaModel ?? `Projekt ${customerNumber}`,
-        articleItems: [],
-        categorizedItems: [],
-        articleListHtml: "<p>Extrahierte Artikelliste</p>",
-        fieldReport: options?.fieldReport ?? {
-          recognized: [],
-          missing: [],
-        },
+        articleItems,
+        categorizedItems,
+        articleListHtml: options?.articleListHtml ?? "<p>Extrahierte Artikelliste</p>",
+        fieldReport: options?.fieldReport
+          ? { ...options.fieldReport, issues: options.fieldReport.issues ?? [] }
+          : { recognized: [], missing: [], issues: [] },
         warnings: options?.warnings ?? [],
+        documentText: options?.documentText ?? "Extrahierter PDF-Volltext",
       }),
     });
   });
@@ -145,6 +152,46 @@ async function uploadExtractionPdf(page: Page, fileName: string) {
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF", "utf8"),
   });
+}
+
+async function uploadExtractionFixturePdf(page: Page, fixturePath: string) {
+  const fileInput = page.locator('[data-testid="dropzone-document-extraction"] input[type="file"]');
+  await fileInput.setInputFiles(fixturePath);
+}
+
+async function completeProjectDocumentExtractionWorkflow(page: Page, options: { acceptReklamation?: boolean } = {}) {
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
+  await page.getByTestId("button-project-doc-extract-next").click();
+  const reklamoCheckbox = page.getByTestId("checkbox-doc-extract-accept-reklamation");
+  if (await reklamoCheckbox.isVisible().catch(() => false)) {
+    const shouldAccept = options.acceptReklamation === true;
+    const isChecked = await reklamoCheckbox.isChecked();
+    if (shouldAccept !== isChecked) await reklamoCheckbox.click();
+  }
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await page.getByTestId("button-doc-extract-apply-data").click();
+}
+
+async function readCustomerByNumber(page: Page, customerNumber: string) {
+  const response = await page.request.post("/api/document-extraction/resolve-customer-by-number", {
+    data: { customerNumber },
+  });
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return response.json() as Promise<{
+    resolution: "none" | "single" | "multiple";
+    customer: null | {
+      customerNumber: string;
+      firstName: string | null;
+      lastName: string | null;
+      phone: string | null;
+      addressLine1: string | null;
+      postalCode: string | null;
+      city: string | null;
+      country: string | null;
+    };
+  }>;
 }
 
 async function readProjectTagNames(page: Page, projectId: number) {
@@ -162,6 +209,250 @@ async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ 
   const response = await page.request.get(`/api/projects/${projectId}/notes`);
   expect(response.ok()).toBeTruthy();
   return response.json() as Promise<Array<{ title: string }>>;
+}
+
+type ProjectDocExtractFixtureDialogCase = {
+  file: string;
+  project: {
+    saunaModel: string;
+    orderNumber: string;
+    amount: string;
+  };
+  customer: {
+    customerNumber: string;
+    firstName: string;
+    lastName: string;
+    company: string;
+    phone: string;
+    addressLine1: string;
+    postalCode: string;
+    city: string;
+    country: string;
+  };
+  missingLabels?: string[];
+  issueTexts?: string[];
+};
+
+const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] = [
+  {
+    file: "BSP CompanyName Only.pdf",
+    project: {
+      saunaModel: "Projektinformationen aus Dokument",
+      orderNumber: "A0218253A",
+      amount: "6264.50",
+    },
+    customer: {
+      customerNumber: "161979",
+      firstName: "",
+      lastName: "",
+      company: "B&E Wohnprojekte GmbH",
+      phone: "01520-5613413",
+      addressLine1: "Carl-Reuther-Str. 1",
+      postalCode: "68305",
+      city: "Mannheim",
+      country: "Deutschland",
+    },
+    missingLabels: ["Vorname", "Nachname"],
+    issueTexts: ["Artikelliste"],
+  },
+  {
+    file: "BSP Country.pdf",
+    project: {
+      saunaModel: "Exklusiv Sauna",
+      orderNumber: "A0218277A",
+      amount: "19515.00",
+    },
+    customer: {
+      customerNumber: "160673",
+      firstName: "Tom",
+      lastName: "Voosen",
+      company: "",
+      phone: "00352-621222479",
+      addressLine1: "1 Tommesknapp",
+      postalCode: "7419",
+      city: "Brouch",
+      country: "Luxemburg",
+    },
+    missingLabels: ["Firma"],
+  },
+  {
+    file: "BSP Customer CompanyName.pdf",
+    project: {
+      saunaModel: "Projektinformationen aus Dokument",
+      orderNumber: "BE19322",
+      amount: "54.40",
+    },
+    customer: {
+      customerNumber: "163180",
+      firstName: "Lars",
+      lastName: "Bartilla",
+      company: "Fahrrad Meinhold GmbH",
+      phone: "",
+      addressLine1: "Hannoversche Straße 164",
+      postalCode: "30823",
+      city: "Garbsen",
+      country: "Deutschland",
+    },
+    missingLabels: ["Telefon"],
+    issueTexts: ["Artikelliste"],
+  },
+  {
+    file: "BSP Customer.pdf",
+    project: {
+      saunaModel: "Suuri Sauna",
+      orderNumber: "A0118067A",
+      amount: "8850.00",
+    },
+    customer: {
+      customerNumber: "163033",
+      firstName: "Leif",
+      lastName: "Döpking",
+      company: "",
+      phone: "0152-53500769",
+      addressLine1: "Ellerdamm 28",
+      postalCode: "27339",
+      city: "Riede, Kreis Verden",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+  },
+  {
+    file: "BSP default.pdf",
+    project: {
+      saunaModel: "FassSauna",
+      orderNumber: "A0117990A",
+      amount: "7000.00",
+    },
+    customer: {
+      customerNumber: "163059",
+      firstName: "Holger",
+      lastName: "Haake",
+      company: "",
+      phone: "0172-4540748",
+      addressLine1: "Uhlhornskamp 12",
+      postalCode: "27243",
+      city: "Harpstedt",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+  },
+  {
+    file: "BSP Mobil.pdf",
+    project: {
+      saunaModel: "FassSauna",
+      orderNumber: "A0117990A",
+      amount: "7000.00",
+    },
+    customer: {
+      customerNumber: "163059",
+      firstName: "Holger",
+      lastName: "Haake",
+      company: "",
+      phone: "0172-4540748",
+      addressLine1: "Uhlhornskamp 12",
+      postalCode: "27243",
+      city: "Harpstedt",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+  },
+  {
+    file: "BSP PLZ.pdf",
+    project: {
+      saunaModel: "Projektinformationen aus Dokument",
+      orderNumber: "A0418684A",
+      amount: "150.00",
+    },
+    customer: {
+      customerNumber: "160521",
+      firstName: "Swen",
+      lastName: "Wischnowsky",
+      company: "",
+      phone: "0172-7940641",
+      addressLine1: "Ulmenweg 8",
+      postalCode: "989610",
+      city: "Sömmerda",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+    issueTexts: ["PLZ", "989610", "Artikelliste"],
+  },
+  {
+    file: "BSP Tel.pdf",
+    project: {
+      saunaModel: "FassSauna",
+      orderNumber: "A0118045A",
+      amount: "7600.00",
+    },
+    customer: {
+      customerNumber: "163053",
+      firstName: "Christoph",
+      lastName: "Becker",
+      company: "",
+      phone: "024614068760",
+      addressLine1: "Vogelsangstr. 5 a",
+      postalCode: "52428",
+      city: "Jülich",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+  },
+];
+
+async function expectProjectExtractionFixtureDialog(page: Page, fixture: ProjectDocExtractFixtureDialogCase) {
+  await openNewProject(page);
+  await uploadExtractionFixturePdf(page, `tests/fixtures/Doc Extract/${fixture.file}`);
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await expect(page.getByTestId("input-doc-extract-sauna-model")).toHaveValue(fixture.project.saunaModel);
+  await expect(page.getByTestId("input-doc-extract-order-number")).toHaveValue(fixture.project.orderNumber);
+  await expect(page.getByTestId("input-doc-extract-amount")).toHaveValue(fixture.project.amount);
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toHaveClass(/grid-rows-\[minmax\(0,1fr\)_auto\]/);
+  await expect(page.getByTestId("doc-extract-document-text-option")).toBeVisible();
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
+  await expect(page.getByTestId("input-doc-extract-customer-number")).toHaveValue(fixture.customer.customerNumber);
+  await expect(page.getByTestId("input-doc-extract-phone")).toHaveValue(fixture.customer.phone);
+  await expect(page.getByTestId("input-doc-extract-first-name")).toHaveValue(fixture.customer.firstName);
+  await expect(page.getByTestId("input-doc-extract-last-name")).toHaveValue(fixture.customer.lastName);
+  await expect(page.getByTestId("input-doc-extract-company")).toHaveValue(fixture.customer.company);
+  await expect(page.getByTestId("input-doc-extract-address-line-1")).toHaveValue(fixture.customer.addressLine1);
+  await expect(page.getByTestId("input-doc-extract-postal-code")).toHaveValue(fixture.customer.postalCode);
+  await expect(page.getByTestId("input-doc-extract-city")).toHaveValue(fixture.customer.city);
+  await expect(page.getByTestId("input-doc-extract-country")).toHaveValue(fixture.customer.country);
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  const missingLabels = fixture.missingLabels ?? [];
+  if (missingLabels.length > 0) {
+    const missingReport = page.getByTestId("document-extraction-report-missing");
+    await expect(missingReport).toBeVisible();
+    for (const label of missingLabels) {
+      await expect(missingReport).toContainText(label);
+    }
+  } else {
+    await expect(page.getByTestId("document-extraction-report-missing")).toHaveCount(0);
+  }
+
+  const issueTexts = fixture.issueTexts ?? [];
+  if (issueTexts.length > 0) {
+    const issuesReport = page.getByTestId("document-extraction-report-issues");
+    await expect(issuesReport).toBeVisible();
+    for (const text of issueTexts) {
+      await expect(issuesReport).toContainText(text);
+    }
+  } else {
+    await expect(page.getByTestId("document-extraction-report-issues")).toHaveCount(0);
+  }
+
+  await page.getByTestId("button-project-doc-extract-cancel").click();
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+}
+
+for (const fixture of projectDocExtractFixtureDialogCases) {
+  test(`renders Doc Extract result dialog fields for ${fixture.file}`, async ({ page }) => {
+    await expectProjectExtractionFixtureDialog(page, fixture);
+  });
 }
 
 test("persists Reklamation workflow from the new project form with a template note draft", async ({ page }) => {
@@ -357,12 +648,10 @@ test("shows an extracted document as pending project attachment before save and 
   await openNewProject(page);
   await uploadExtractionPdf(page, extractionFileName);
 
-  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
   await expect(page.getByTestId("button-open-extraction-pdf-tab")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
-  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
-  await openCustomerPickerAndSelect(page, customer.customerNumber);
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
 
   const createdProjectResponsePromise = page.waitForResponse((response) => (
@@ -370,8 +659,6 @@ test("shows an extracted document as pending project attachment before save and 
     && new URL(response.url()).pathname === "/api/projects"
   ));
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
-  await page.getByTestId("button-project-save-review-confirm").click();
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
@@ -389,6 +676,118 @@ test("shows an extracted document as pending project attachment before save and 
 
   await openProjectById(page, createdProjectId, "noAppointments");
   await expect(page.getByTestId("project-form-sidebar").getByText(extractionFileName)).toBeVisible();
+});
+
+test("extracts BSP PLZ fixture into the project dialog and creates the customer with the suspicious PLZ", async ({ page }) => {
+  await openNewProject(page);
+  await uploadExtractionFixturePdf(page, "tests/fixtures/Doc Extract/BSP PLZ.pdf");
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
+
+  await expect(page.getByTestId("input-doc-extract-customer-number")).toHaveValue("160521");
+  await expect(page.getByTestId("input-doc-extract-phone")).toHaveValue("0172-7940641");
+  await expect(page.getByTestId("input-doc-extract-first-name")).toHaveValue("Swen");
+  await expect(page.getByTestId("input-doc-extract-last-name")).toHaveValue("Wischnowsky");
+  await expect(page.getByTestId("input-doc-extract-address-line-1")).toHaveValue("Ulmenweg 8");
+  await expect(page.getByTestId("input-doc-extract-postal-code")).toHaveValue("989610");
+  await expect(page.getByTestId("input-doc-extract-city")).toHaveValue("Sömmerda");
+  await expect(page.getByTestId("input-doc-extract-country")).toHaveValue("Deutschland");
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("document-extraction-report-issues")).toContainText("PLZ");
+  await expect(page.getByTestId("document-extraction-report-issues")).toContainText("989610");
+  await expect(page.getByTestId("document-extraction-report-issues")).toContainText("Artikelliste");
+
+  const noteCheckbox = page.getByTestId("checkbox-doc-extract-create-reklamation-note");
+  if (await noteCheckbox.isVisible().catch(() => false)) {
+    const checked = await noteCheckbox.isChecked();
+    if (checked) await noteCheckbox.click();
+  }
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  const createCustomerResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/customers"
+  ));
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  const createCustomerResponse = await createCustomerResponsePromise;
+  expect(createCustomerResponse.ok(), await createCustomerResponse.text()).toBeTruthy();
+  const createdCustomer = await createCustomerResponse.json() as {
+    customerNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string | null;
+  };
+
+  expect(createdCustomer).toMatchObject({
+    customerNumber: "160521",
+    firstName: "Swen",
+    lastName: "Wischnowsky",
+    phone: "0172-7940641",
+    addressLine1: "Ulmenweg 8",
+    postalCode: "989610",
+    city: "Sömmerda",
+    country: "Deutschland",
+  });
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("badge-customer")).toContainText("160521");
+
+  await expect.poll(async () => {
+    const result = await readCustomerByNumber(page, "160521");
+    return result.customer;
+  }).toMatchObject({
+    customerNumber: "160521",
+    firstName: "Swen",
+    lastName: "Wischnowsky",
+    phone: "0172-7940641",
+    addressLine1: "Ulmenweg 8",
+    postalCode: "989610",
+    city: "Sömmerda",
+    country: "Deutschland",
+  });
+});
+
+test("opens the prepared Reklamation note editor after accepting a missing article list from Doc Extract", async ({ page }) => {
+  const customer = await createCustomerFixture("FT24-DOC-REKLAMATION-NOTE");
+
+  await mockProjectDocumentExtraction(page, customer.customerNumber, {
+    saunaModel: "FT24 Reklamation ohne Artikelliste",
+    orderNumber: "FT24-DOC-REKLAMATION-NOTE-001",
+    articleItems: [],
+    categorizedItems: [],
+    articleListHtml: "",
+    fieldReport: {
+      recognized: [
+        { key: "customerNumber", label: "Kundennummer", section: "customer", value: customer.customerNumber },
+        { key: "orderNumber", label: "Auftragsnummer", section: "project", value: "FT24-DOC-REKLAMATION-NOTE-001" },
+      ],
+      missing: [],
+      issues: [
+        {
+          key: "articleListMissing",
+          label: "Artikelliste",
+          section: "project",
+          severity: "warning",
+          reason: "Es konnte keine Artikelliste erkannt werden.",
+        },
+      ],
+    },
+  });
+
+  await openNewProject(page);
+  await uploadExtractionPdf(page, "ft24-doc-reklamation-note.pdf");
+  await completeProjectDocumentExtractionWorkflow(page, { acceptReklamation: true });
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  const noteDialog = page.getByRole("dialog", { name: "Notiz anlegen" });
+  await expect(noteDialog.getByTestId("input-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
+  await expect(noteDialog.getByTestId("select-note-template")).toContainText(MANAGED_COMPLAINT_TAG_NAME);
+  await noteDialog.getByTestId("button-cancel-note").click();
 });
 
 test("sets the Anmerkungen tag when an existing project is saved with a newly added description", async ({ page }) => {
@@ -433,9 +832,8 @@ test("keeps article dropdown selections stable in create mode after document ext
   await openNewProject(page);
   await uploadExtractionPdf(page, "ft24-project-create-selection.pdf");
 
-  await expect(page.getByTestId("button-doc-extract-apply-data")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
-  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+  await completeProjectDocumentExtractionWorkflow(page);
+  await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
 
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("project-product-fields")).toBeVisible();
@@ -448,7 +846,7 @@ test("keeps article dropdown selections stable in create mode after document ext
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
 });
 
-test("keeps project extraction usable without a selected customer and blocks save transparently until one is chosen", async ({ page }) => {
+test("links recognized customer data from project extraction and keeps partial issues visible", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-PROJECT-PARTIAL");
 
   await mockProjectDocumentExtraction(page, customer.customerNumber, {
@@ -479,18 +877,22 @@ test("keeps project extraction usable without a selected customer and blocks sav
   await openNewProject(page);
   await uploadExtractionPdf(page, "ft24-project-partial-customer.pdf");
 
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("button-doc-extract-resolve-customer")).toHaveCount(0);
+  await expect(page.getByTestId("doc-extract-customer-resolution-single")).toContainText(customer.customerNumber);
+  await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByText("Kundendaten konnten nur teilweise erkannt werden. Projektdaten koennen trotzdem uebernommen werden.")).toBeVisible();
   await expect(page.getByText("Keine Strassenzeile erkannt.")).toBeVisible();
+  await page.getByTestId("button-project-doc-extract-next").click();
   await page.getByTestId("button-doc-extract-apply-data").click();
 
   await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
-  await expect(page.getByTestId("badge-customer")).toHaveCount(0);
+  await expect(page.getByTestId("badge-customer")).toContainText(customer.customerNumber);
   await expect(page.getByTestId("input-project-name")).toHaveValue("FT24 Partieller Auftrag");
   await expect(page.getByTestId("input-project-order-number")).toHaveValue("FT24-PROJECT-PARTIAL-001");
-  await expect(page.getByText("Zum Speichern muss noch ein Kunde ausgewählt werden.", { exact: true })).toBeVisible();
-
   await page.getByTestId("button-save-project").click();
-  await expect(page.getByText("Kunde muss ausgewählt werden", { exact: true })).toBeVisible();
+  await expect(page.getByText("Kunde muss ausgewählt werden", { exact: true })).toHaveCount(0);
 });
 
 test("opens an existing project in edit mode for duplicate order numbers and keeps the overlay path stable", async ({ page }) => {
@@ -522,7 +924,7 @@ test("opens an existing project in edit mode for duplicate order numbers and kee
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
   await page.mouse.click(10, 10);
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
   await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText("14:00 - 03.05.99");
   await expect(page.getByTestId("project-duplicate-resolution-latest-appointment")).toContainText(tour.name);
@@ -564,7 +966,7 @@ test("keeps the extraction overlay open when a duplicate project without appoint
   await uploadExtractionPdf(page, "ft24-project-duplicate-cancel.pdf");
 
   await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
-  await page.getByTestId("button-doc-extract-apply-data").click();
+  await completeProjectDocumentExtractionWorkflow(page);
   await expect(page.getByTestId("project-duplicate-resolution-dialog")).toBeVisible();
   await expect(page.getByTestId("project-duplicate-resolution-no-appointment")).toContainText("noch keine Terminplanung");
   await page.getByTestId("button-project-duplicate-cancel").click();

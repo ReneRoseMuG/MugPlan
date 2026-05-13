@@ -19,11 +19,32 @@ Ein **Produkt** repräsentiert ein fertiges Saunamodell (z.B. Kolmikko, Suuri, M
 
 Eine **Komponente** ist ein eigenständiges Bauteil (z.B. Rückwand, Ofen, Vorderwand, Fenster, Türen). Jede Komponente wird genau einer **Komponentenkategorie** zugeordnet (z.B. "Wände", "Heizung", "Türen") und kann eine optionale Beschreibung haben. Komponenten und Produkte sind voneinander unabhängige Stammdatenbereiche ohne strukturelle Verknüpfung.
 
+### Detailseiten und Attachments
+
+Für jedes Produkt und jede Komponente steht eine Detailseite bereit, die alle Stammdatenfelder strukturiert darstellt. Die Detailseite ist für Administrator und Disponent sichtbar.
+
+Produkte und Komponenten können Attachments erhalten (z. B. technische Zeichnungen, Aufstellungspläne, Montageanleitungen). Die Attachment-Infrastruktur entspricht vollständig FT-19. Attachments sind immer genau einem Parent-Objekt zugeordnet (Produkt oder Komponente) und können nicht ohne Parent existieren.
+
 ### Integration mit Auftragsmanagement
 
 Auftragspositionen (`project_order_items`) werden pro Projekt verwaltet, um eine Artikelliste pflegen zu können. Eine Position referenziert entweder ein Produkt oder eine Komponente — beide Felder sind unabhängig voneinander wählbar (kein Cascade-Dropdown). Mindestens eines von beiden muss gesetzt sein. Eine optionale freie Beschreibung kann zusätzlich angegeben werden. Die Zuordnung erfolgt strukturiert über Foreign Keys, nicht als Freitextbeschreibung.
 
 ## Regeln & Randbedingungen
+
+### Detailseiten
+
+- Jedes Produkt und jede Komponente besitzt eine Detailseite.
+- Die Detailseite zeigt alle gespeicherten Stammdatenfelder sowie die zugehörige Attachmentliste.
+- Sichtbarkeit: Administrator und Disponent.
+
+### Attachments
+
+- Produkte und Komponenten können beliebig viele Attachments erhalten.
+- Es existieren je eine eigene Attachment-Tabelle für Produkte (`product_attachments`) und Komponenten (`component_attachments`).
+- Upload und Löschen sind ausschließlich Administratoren vorbehalten.
+- Download ist für Administrator und Disponent erlaubt.
+- Der Lösch-Workflow folgt dem zweistufigen Verfahren aus FT-19 (Entkopplung und physische Löschung) mit identischer Sicherheitsfrage.
+- Alle weiteren Regeln zu Upload, Speicherung, Download und Sicherheit gelten wie in FT-19 definiert.
 
 ### Namensuniqueness und Eindeutigkeit
 
@@ -63,6 +84,9 @@ Auftragspositionen (`project_order_items`) werden pro Projekt verwaltet, um eine
 - [UC 27/05: Auftragsposition manuell erfassen (Disponent / Admin)](use-cases/uc-27-05-auftragsposition-manuell-erfassen-disponent-admin.md)
 - [UC 27/06: Auftragsposition bearbeiten (Disponent / Admin)](use-cases/uc-27-06-auftragsposition-bearbeiten-disponent-admin.md)
 - [UC 27/07: Auftragsposition löschen (Admin)](use-cases/uc-27-07-auftragsposition-loeschen-admin.md)
+- [UC 27/08: Detailseite anzeigen (Produkt / Komponente)](use-cases/uc-27-08-detailseite-anzeigen.md)
+- [UC 27/09: Attachment hochladen (Admin)](use-cases/uc-27-09-attachment-hochladen-admin.md)
+- [UC 27/10: Attachment löschen (Admin)](use-cases/uc-27-10-attachment-loeschen-admin.md)
 
 ## Backlogs
 
@@ -71,3 +95,5 @@ Auftragspositionen (`project_order_items`) werden pro Projekt verwaltet, um eine
 
 
 ## Entscheidungen & Offene Punkte
+
+- Statistiken (z. B. Verwendungshäufigkeit in Auftragspositionen, beteiligte Projekte) sind bewusst zurückgestellt. Eine spätere Zusammenführung mit dem Produktionsplanung-Report in einer gemeinsamen Basiskomponente ist angedacht.

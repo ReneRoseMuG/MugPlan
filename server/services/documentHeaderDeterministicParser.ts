@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const START_MARKER = "Menge Art.Nr.";
-const POSTAL_CITY_REGEX = /^(\d{4,5})\s+(.+)$/;
+const POSTAL_CITY_REGEX = /^(\d{4,6})\s+(.+)$/;
 const COUNTRY_LINE_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ .'-]*(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ .'-]*)*$/;
 
 type HeaderField = "orderNumber" | "customerNumber" | "mobile" | "phone";
@@ -391,6 +391,14 @@ function pickPreferredPhone(mobileValues: string[], phoneValues: string[]): stri
   return pickFirstValue(phoneValues);
 }
 
+function buildHeaderWarnings(header: DeterministicHeaderExtraction): string[] {
+  const warnings: string[] = [];
+  if (header.postalCode && !/^\d{4,5}$/.test(header.postalCode)) {
+    warnings.push(`PLZ „${header.postalCode}“ hat nicht das erwartete vier- oder fünfstellige Format.`);
+  }
+  return warnings;
+}
+
 export function parseDocumentHeaderDeterministically(sourceText: string): DeterministicHeaderExtraction {
   const allLines = extractHeaderLines(sourceText);
   const addressRegionLines = extractAddressRegionLines(sourceText);
@@ -457,9 +465,10 @@ export function parseDocumentHeaderDeterministically(sourceText: string): Determ
 
 export function parseDocumentHeaderForProjectExtraction(sourceText: string): ProjectHeaderPartialExtraction {
   try {
+    const header = parseDocumentHeaderDeterministically(sourceText);
     return {
-      header: parseDocumentHeaderDeterministically(sourceText),
-      warnings: [],
+      header,
+      warnings: buildHeaderWarnings(header),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -491,20 +500,21 @@ export function parseDocumentHeaderForProjectExtraction(sourceText: string): Pro
       ? normalizeIdentityLine(postalContext?.identityLineB ?? null)
       : null;
     const postalCityMatch = postalContext ? POSTAL_CITY_REGEX.exec(postalContext.postalCityLine.trim()) : null;
+    const header = {
+      orderNumber,
+      customerNumber,
+      mobile,
+      firstName: person?.firstName?.trim() ?? null,
+      lastName: person?.lastName?.trim() ?? null,
+      company: companyA ?? companyB,
+      addressLine1: null,
+      postalCode: postalCityMatch?.[1]?.trim() ?? null,
+      city: postalCityMatch?.[2]?.trim() ?? null,
+      country: normalizeCountryLine(postalContext?.countryLine ?? null),
+    };
 
     return {
-      header: {
-        orderNumber,
-        customerNumber,
-        mobile,
-        firstName: person?.firstName?.trim() ?? null,
-        lastName: person?.lastName?.trim() ?? null,
-        company: companyA ?? companyB,
-        addressLine1: null,
-        postalCode: postalCityMatch?.[1]?.trim() ?? null,
-        city: postalCityMatch?.[2]?.trim() ?? null,
-        country: normalizeCountryLine(postalContext?.countryLine ?? null),
-      },
+      header,
       warnings: [
         "Kundendaten konnten nur teilweise erkannt werden. Projektdaten können trotzdem übernommen werden.",
       ],

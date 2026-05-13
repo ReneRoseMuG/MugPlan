@@ -24,6 +24,7 @@
  */
 import express from "express";
 import { createServer } from "http";
+import { readFileSync } from "node:fs";
 import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -176,8 +177,10 @@ describe("FT20 integration: document extraction routes", () => {
       fieldReport: {
         recognized: [{ key: "customerNumber", label: "Kundennummer", section: "customer", value: "1001" }],
         missing: [{ key: "phone", label: "Telefon", section: "customer", reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt." }],
+        issues: [],
       },
       warnings: [],
+      documentText: "PDF Text",
     });
 
     await agent
@@ -221,8 +224,10 @@ describe("FT20 integration: document extraction routes", () => {
       fieldReport: {
         recognized: [{ key: "customerNumber", label: "Kundennummer", section: "customer", value: "1001" }],
         missing: [{ key: "phone", label: "Telefon", section: "customer", reason: "Kein gueltiges Mobil- oder Telefonfeld erkannt." }],
+        issues: [],
       },
       warnings: [],
+      documentText: "PDF Text",
     });
 
     await agent
@@ -232,6 +237,33 @@ describe("FT20 integration: document extraction routes", () => {
       .expect((res) => {
         expect(res.body.customer.customerNumber).toBe("1001");
         expect(res.body.fieldReport.missing[0].key).toBe("phone");
+      });
+  });
+
+  it("extracts BSP PLZ as project data with issues instead of aborting", async () => {
+    const agent = await loginAdminAgent();
+    const fixture = readFileSync("tests/fixtures/Doc Extract/BSP PLZ.pdf");
+
+    await agent
+      .post("/api/document-extraction/extract?scope=project_form")
+      .attach("file", fixture, { filename: "BSP PLZ.pdf", contentType: "application/pdf" })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body.customer.firstName).toBe("Swen");
+        expect(res.body.customer.lastName).toBe("Wischnowsky");
+        expect(res.body.customer.addressLine1).toBe("Ulmenweg 8");
+        expect(res.body.customer.postalCode).toBe("989610");
+        expect(res.body.customer.city).toBe("Sömmerda");
+        expect(res.body.customer.country).toBe("Deutschland");
+        expect(res.body.articleItems).toEqual([]);
+        expect(res.body.articleListHtml).toBe("");
+        expect(res.body.documentText.length).toBeGreaterThan(0);
+        expect(res.body.fieldReport.issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ key: "postalCodeFormat", section: "customer" }),
+            expect.objectContaining({ key: "articleListMissing", section: "project" }),
+          ]),
+        );
       });
   });
 

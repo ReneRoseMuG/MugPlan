@@ -37,6 +37,19 @@ function sendProjectValidationError(res: Response, err: ZodError): void {
   res.status(422).json({ code: "VALIDATION_ERROR" });
 }
 
+function ensureProjectMutationRole(req: Request, res: Response): boolean {
+  const roleKey = req.userContext?.roleKey;
+  if (!roleKey) {
+    res.status(500).json({ message: "Rollenkontext nicht verfügbar" });
+    return false;
+  }
+  if (roleKey !== "ADMIN" && roleKey !== "DISPONENT") {
+    res.status(403).json({ code: "FORBIDDEN" });
+    return false;
+  }
+  return true;
+}
+
 export async function listProjects(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const listInput = api.projects.list.input.parse(req.query);
@@ -146,6 +159,7 @@ export async function getProject(req: Request, res: Response, next: NextFunction
 
 export async function createProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const input = api.projects.create.input.parse(req.body);
     const project = await projectsService.createProject(input);
     await journalService.recordJournalEntry({
@@ -174,6 +188,7 @@ export async function createProject(req: Request, res: Response, next: NextFunct
 
 export async function updateProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const input = api.projects.update.input.parse(req.body);
     const projectId = Number(req.params.id);
     const before = await projectsService.getProject(projectId);
@@ -209,6 +224,7 @@ export async function updateProject(req: Request, res: Response, next: NextFunct
 
 export async function deleteProject(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const input = api.projects.delete.input.parse(req.body);
     const projectId = Number(req.params.id);
     const project = await projectsService.getProject(projectId);
@@ -257,6 +273,7 @@ export async function listProjectOrderItems(req: Request, res: Response, next: N
 
 export async function createProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const projectId = Number(req.params.id);
     const input = api.projects.orderItems.create.input.parse(req.body);
     const row = await projectsService.createProjectOrderItem(projectId, input);
@@ -288,6 +305,7 @@ export async function createProjectOrderItem(req: Request, res: Response, next: 
 
 export async function updateProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const projectId = Number(req.params.id);
     const itemId = Number(req.params.itemId);
     const input = api.projects.orderItems.update.input.parse(req.body);
@@ -322,6 +340,7 @@ export async function updateProjectOrderItem(req: Request, res: Response, next: 
 
 export async function deleteProjectOrderItem(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const projectId = Number(req.params.id);
     const itemId = Number(req.params.itemId);
     const input = api.projects.orderItems.delete.input.parse(req.body);
@@ -544,6 +563,7 @@ export async function replaceProjectOrderItems(
   next: NextFunction,
 ): Promise<void> {
   try {
+    if (!ensureProjectMutationRole(req, res)) return;
     const projectId = Number(req.params.id);
     if (!Number.isFinite(projectId) || projectId <= 0) {
       res.status(422).json({ code: "VALIDATION_ERROR" });

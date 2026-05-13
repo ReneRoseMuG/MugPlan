@@ -25,7 +25,7 @@ const aiExtractionOutputSchema = z.object({
   orderNumber: z.string().trim().nullable().optional(),
   amount: z.string().trim().nullable().optional(),
   saunaModel: z.string().trim().min(1),
-  articleItems: z.array(articleItemSchema).min(1),
+  articleItems: z.array(articleItemSchema),
   warnings: z.array(z.string().trim()).optional(),
 });
 
@@ -72,9 +72,18 @@ export type ExtractionFieldReportMissingItem = {
   reason: string;
 };
 
+export type ExtractionFieldReportIssueItem = {
+  key: string;
+  label: string;
+  section: "customer" | "project";
+  severity: "warning" | "error";
+  reason: string;
+};
+
 export type ExtractionFieldReport = {
   recognized: ExtractionFieldReportRecognizedItem[];
   missing: ExtractionFieldReportMissingItem[];
+  issues: ExtractionFieldReportIssueItem[];
 };
 
 type ExtractionFieldConfig = {
@@ -135,6 +144,7 @@ function buildCategorizedItems(
 }
 
 function buildSemanticArticleHtml(items: Array<z.infer<typeof articleItemSchema>>): string {
+  if (items.length === 0) return "";
   const listItems = items
     .map((item) => `<li>${escapeHtml(item.quantity)} ${escapeHtml(item.description)}</li>`)
     .join("");
@@ -207,6 +217,7 @@ export function buildExtractionFieldReport(
   const relevantFields = extractionFieldConfigs.filter((field) => field.scopes.includes(scope));
   const recognized: ExtractionFieldReportRecognizedItem[] = [];
   const missing: ExtractionFieldReportMissingItem[] = [];
+  const issues: ExtractionFieldReportIssueItem[] = [];
 
   for (const field of relevantFields) {
     const value = normalizeOptional(readExtractionFieldValue(extraction, field.key));
@@ -228,7 +239,28 @@ export function buildExtractionFieldReport(
     });
   }
 
-  return { recognized, missing };
+  const postalCode = normalizeOptional(extraction.customer.postalCode);
+  if (postalCode && !/^\d{4,5}$/.test(postalCode)) {
+    issues.push({
+      key: "postalCodeFormat",
+      label: "PLZ",
+      section: "customer",
+      severity: "warning",
+      reason: `PLZ „${postalCode}“ hat nicht das erwartete vier- oder fünfstellige Format.`,
+    });
+  }
+
+  if ((scope === "project_form" || scope === "appointment_form") && extraction.articleItems.length === 0) {
+    issues.push({
+      key: "articleListMissing",
+      label: "Artikelliste",
+      section: "project",
+      severity: "warning",
+      reason: "Es konnte keine Artikelliste erkannt werden. Das ist bei Reklamationen zulässig, muss aber bewusst übernommen werden.",
+    });
+  }
+
+  return { recognized, missing, issues };
 }
 
 export function validateAndNormalizeExtraction(raw: unknown): ValidatedExtraction {
