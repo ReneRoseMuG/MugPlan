@@ -56,5 +56,5 @@ Keine bekannt.
 
 - Features: [FT-18 - User Preferences](../../features/ft-18-user-preferences/ft-18-user-preferences.md) · [FT-31 - Dispositions-Monitoring Konflikte](../../features/ft-31-dispositions-monitoring-konflikte/ft-31-dispositions-monitoring-konflikte.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
 - Journal: [09.05.26 - P01: Tags, Hilfetexte und Admin-Dialoge abgeschlossen](../../journal/09-05-26-p01-tags-hilfetexte-admin-dialoge-abgeschlossen.md)

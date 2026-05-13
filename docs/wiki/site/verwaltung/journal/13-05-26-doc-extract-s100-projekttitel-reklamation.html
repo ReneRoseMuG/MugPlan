@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>13-05-26-doc-extract-s100-projekttitel-reklamation: 13.05.26 | Implementierung | Doc Extract: S100-Projekttitel für Reklamations-PDFs · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 13-05-26-doc-extract-s100-projekttitel-reklamation">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">13-05-26-doc-extract-s100-projekttitel-reklamation 13.05.26 | Implementierung | Doc Extract: S100-Projekttitel für Reklamations-PDFs</span></nav>
+        <h1 class="wiki-h1">13-05-26-doc-extract-s100-projekttitel-reklamation: 13.05.26 | Implementierung | Doc Extract: S100-Projekttitel für Reklamations-PDFs</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>13.05.26</div>
+    <p class="wiki-lead">Der Doc-Extract-Projektpfad wurde für Reklamations- und Sonderpositionslisten erweitert. Wenn der Master-Data-Parser keinen Produktmarker findet, sucht der Fallback in der einfachen Positionsliste nach einem Block mit Produktnummer S100... bzw. S 100... und nutzt diesen Block als</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Doc-Extract-Projektpfad wurde für Reklamations- und Sonderpositionslisten erweitert. Wenn der Master-Data-Parser keinen Produktmarker findet, sucht der Fallback in der einfachen Positionsliste nach einem Block mit Produktnummer <code>S100...</code> bzw. <code>S 100...</code> und nutzt diesen Block als Projekttitel.</p>
+<p>Damit wird bei <code>BSP Rekla falsche Reihenfolge.pdf</code> nicht mehr die Liefermodalität <code>eigene Anlieferung</code> als erster Block relevant, sondern der Produktnummernblock <code>S1004637 ...</code>. Die Variante mit richtiger Reihenfolge wird ebenfalls über denselben Pfad abgesichert.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Backend-Parser-Fix im bestehenden deterministischen Doc-Extract-Pfad.</li><li>Testausbau über Unit-, Integration- und Browser-E2E-Ebene.</li><li>Keine DB-Migration, keine neue Abhängigkeit und keine Änderung an Rollen oder Berechtigungen.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT21 / FT24: Dokumentextraktion und Projektanlage aus PDF.</li><li>Notion-Feature-Links wurden für diesen Auftrag nicht zusätzlich herangezogen.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>documentArticleDeterministicParser</code> erkennt und normalisiert Produktnummernblöcke für die Projekttitel-Ableitung.</li><li><code>documentProcessingService</code> nutzt den neuen S100-Fallback nur dann, wenn der Master-Data-Parser für <code>project_form</code> oder <code>appointment_form</code> keinen Produktmarker findet.</li><li>Die echten Fixtures <code>BSP Rekla falsche Reihenfolge.pdf</code> und <code>BSP Rekla richtige Reihenfolge.pdf</code> wurden in die Projekt-Extract-Integrationstests aufgenommen.</li><li>Der bestehende Fixture-Pfad wurde fachlich angepasst: Auch <code>BSP PLZ.pdf</code>, <code>BSP CompanyName Only.pdf</code> und <code>BSP Customer CompanyName.pdf</code> erhalten jetzt konkrete S100-Projekttitel, wenn ein solcher Block vorhanden ist.</li><li>Pro Reklamations-PDF gibt es einen vollständigen Browser-E2E-Pfad: PDF hochladen, Dialogdaten prüfen, übernehmen, Kunde anlegen, Projekt speichern und persistierte Kunden- sowie Projektdaten per API prüfen.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li><code>npm run test:run -- tests/unit/services/documentArticleDeterministicParser.test.ts tests/integration/extraction/documentProcessing.project.fixture.test.ts</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts --grep &quot;renders Doc Extract result dialog fields&quot;</code></li><li><code>npm run test:e2e:browser -- tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts --grep &quot;persists customer and project data from BSP Rekla&quot;</code></li><li><code>npm run check</code></li></ul>
+<p>Alle genannten Prüfungen liefen erfolgreich ohne Coverage-Lauf.</p>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Keine fachlichen Restpunkte aus diesem Fix bekannt.</li><li>Der Arbeitsbaum enthielt bereits weitere Wiki-/Package-/Script-Änderungen aus vorherigen Schritten; sie wurden nicht fachlich neu bewertet.</li></ul>
+    <section class="wiki-relations" aria-label="Beziehungen">
+    <h2 class="wiki-relations__title">Beziehungen</h2>
+    <div class="wiki-relations__grid">
+      <div class="wiki-relations__key">Features</div><div class="wiki-relations__val"><a href="../../lastenheft/features/ft-21-dokumentenextraktion.html">FT-21</a><a href="../../lastenheft/features/ft-24-fahrzeugverwaltung.html">FT-24</a></div>
+    </div>
+  </section>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

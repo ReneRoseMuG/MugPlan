@@ -38,6 +38,7 @@
     "db:migrate:test": "cross-env NODE_ENV=test MUGPLAN_MODE=test tsx script/run-migrations.ts",
     "db:migrate:prod": "cross-env NODE_ENV=production node --env-file=.env.prod ./node_modules/tsx/dist/cli.mjs script/run-migrations.ts",
     "db:migrate:project-names": "tsx script/migrate-project-names-with-customer-number.ts",
+    "lösche Kunde:": "cross-env NODE_ENV=development tsx script/delete-dev-customer.ts",
     "db:seed:roles": "tsx script/seed-roles.ts",
     "test:template-render": "tsx script/test-template-render.ts",
     "test": "cross-env NODE_ENV=test MUGPLAN_MODE=test vitest",

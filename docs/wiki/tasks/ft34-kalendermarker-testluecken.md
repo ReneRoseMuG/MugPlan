@@ -39,3 +39,4 @@ Ein manueller Testscan vom 08.05.26 hat ergeben, dass die bestehenden Tests für
 
 - Features: —
 - Entscheidungen: —
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

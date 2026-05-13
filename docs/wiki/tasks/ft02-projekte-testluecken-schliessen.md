@@ -48,4 +48,4 @@ Der Test-Lücken-Scan für FT-02 Projekte vom 09.05.26 benennt mehrere konkrete 
 - Features: FT-02 Projekte
 - Use Cases: UC 02/04 · UC 02/07 · UC 02/23 · UC 02/24 · UC 02/26
 - Entscheidungen: —
-- Weitere Bezüge: [Feature-Testabdeckung und UC-Lücken](../projects/feature-testabdeckung-uc-luecken.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

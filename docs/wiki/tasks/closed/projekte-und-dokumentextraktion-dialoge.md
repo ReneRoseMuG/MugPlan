@@ -4,7 +4,7 @@ Dialog-, Bestätigungs- und Meldungspfade für Projektbearbeitung, Projektdublet
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `in Bearbeitung` | Hoch | Dialoge | Implementierung | 08.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Implementierung | 08.05.26 |
 
 ---
 
@@ -48,6 +48,13 @@ Im Projektformular existieren mehrere voneinander getrennte Dialog- und Confirm-
 - Eine reine UI-Ausblendung darf nicht als Berechtigungsdurchsetzung gewertet werden; bestehende serverseitige Guards müssen unverändert greifen.
 - Tests sollen die reine Speichern-Review-Logik, die Dialogdarstellung, die Projektformular-Verdrahtung und die geänderten Browser-E2E-Erwartungen für den entfallenden Sauna-Browserdialog abdecken.
 
+## Abschluss
+
+- Abschlussdatum: 13.05.26
+- Ergebnis: Der Projekt-Speichern-Flow nutzt den gemeinsamen `ProjectSaveReviewDialog`; Dokumentextraktions-PDFs bleiben als Draft sichtbar und können aus dem Formular geöffnet werden.
+- Die fachliche Nachschärfung aus [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) wurde im Doc-Extract-, Projekt- und Termin-Save-Flow umgesetzt.
+- Verbleibende rote Gesamtlauf-Tests aus dem Journal vom 13.05.26 werden nicht als P-01-Restaufgabe geführt, sondern bei den passenden P-02-Testaufgaben weiterverfolgt.
+
 ## Blocker und offene Fragen
 
 Keine bekannt.
@@ -56,6 +63,7 @@ Keine bekannt.
 
 ## Beziehungen
 
-- Features: [FT-02 - Projekte](../features/ft-02-projekte/ft-02-projekte.md) · [FT-21 - Dokumentenextraktion](../features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md)
+- Features: [FT-02 - Projekte](../../features/ft-02-projekte/ft-02-projekte.md) · [FT-21 - Dokumentenextraktion](../../features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](closed/fehler-normalisierung.md) · [Dialog-Basiskomponenten](closed/dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) · [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Journal: [10.05.26 - Projekt-Speichern-Dialog und Reportkarten-Nacharbeit](../../journal/10-05-26-projekt-speichern-und-reportkarten-nacharbeit.md) · [13.05.26 - Doc Extract, Projekt- und Termin-Save-Flow](../../journal/13-05-26-doc-extract-projekt-termin-save-flow.md)

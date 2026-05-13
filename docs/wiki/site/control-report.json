@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 20,
-      "generated_count": 20,
+      "source_count": 16,
+      "generated_count": 16,
       "warnings": 0,
       "errors": 0
     },
@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 65,
-      "generated_count": 65,
+      "source_count": 66,
+      "generated_count": 66,
       "warnings": 0,
       "errors": 0
     }
@@ -65,7 +65,7 @@
       },
       {
         "id": "P-02",
-        "title": "Feature-Testabdeckung und UC-Lücken",
+        "title": "Feature-Testabdeckung, UC-Lücken und Präzisierungen",
         "source": "projects/feature-testabdeckung-uc-luecken.md",
         "output": "projekt/projekte/feature-testabdeckung-uc-luecken.html",
         "ok": true,
@@ -138,24 +138,6 @@
         "errors": []
       },
       {
-        "id": "A-16",
-        "title": "Dialog-Rollout-Masterplan",
-        "source": "tasks/dialog-rollout-masterplan.md",
-        "output": "projekt/aufgaben/dialog-rollout-masterplan.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-21",
-        "title": "Projekte- und Dokumentextraktion-Dialoge",
-        "source": "tasks/projekte-und-dokumentextraktion-dialoge.md",
-        "output": "projekt/aufgaben/projekte-und-dokumentextraktion-dialoge.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
         "id": "A-32",
         "title": "FT-34 Kalendermarker: Testlücken schließen",
         "source": "tasks/ft34-kalendermarker-testluecken.md",
@@ -166,7 +148,7 @@
       },
       {
         "id": "A-33",
-        "title": "Feature-Testabdeckung und UC-Lücken koordinieren",
+        "title": "Feature-Testabdeckung, UC-Lücken und Präzisierungen koordinieren",
         "source": "tasks/feature-testabdeckung-uc-luecken-koordinieren.md",
         "output": "projekt/aufgaben/feature-testabdeckung-uc-luecken-koordinieren.html",
         "ok": true,
@@ -223,24 +205,6 @@
         "title": "FT-02 Projekte: Test-Lücken schließen",
         "source": "tasks/ft02-projekte-testluecken-schliessen.md",
         "output": "projekt/aufgaben/ft02-projekte-testluecken-schliessen.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-40",
-        "title": "Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel",
-        "source": "tasks/projekt-speichern-dialog-artikelliste-saunatitel.md",
-        "output": "projekt/aufgaben/projekt-speichern-dialog-artikelliste-saunatitel.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-41",
-        "title": "Doc Extract und Projekt-Speichern-Flow überarbeiten",
-        "source": "tasks/doc-extract-und-projekt-speichern-flow-ueberarbeiten.md",
-        "output": "projekt/aufgaben/doc-extract-und-projekt-speichern-flow-ueberarbeiten.html",
         "ok": true,
         "warnings": [],
         "errors": []
@@ -2935,6 +2899,15 @@
         "title": "13.05.26 | Implementierung | Doc Extract, Projekt- und Termin-Save-Flow",
         "source": "journal/13-05-26-doc-extract-projekt-termin-save-flow.md",
         "output": "verwaltung/journal/13-05-26-doc-extract-projekt-termin-save-flow.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "13-05-26-doc-extract-s100-projekttitel-reklamation",
+        "title": "13.05.26 | Implementierung | Doc Extract: S100-Projekttitel für Reklamations-PDFs",
+        "source": "journal/13-05-26-doc-extract-s100-projekttitel-reklamation.md",
+        "output": "verwaltung/journal/13-05-26-doc-extract-s100-projekttitel-reklamation.html",
         "ok": true,
         "warnings": [],
         "errors": []

@@ -20,21 +20,10 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Attachments. Die verl
 Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
-### Dialoge
-| ID | Aufgabe | Typ | Status |
-| :--- | :--- | :--- | :--- |
-| A-16 | [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) | Planung | `in Bearbeitung` |
-| A-21 | [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) | Implementierung | `in Bearbeitung` |
-| A-40 | [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) | Implementierung | `offen` |
-| A-41 | [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) | Planung | `offen` |
-
-Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Dialoge. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.
-
-
 ### Feature-Testabdeckung
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |
-| A-33 | [Feature-Testabdeckung und UC-Lücken koordinieren](feature-testabdeckung-uc-luecken-koordinieren.md) | Planung | `offen` |
+| A-33 | [Feature-Testabdeckung, UC-Lücken und Präzisierungen koordinieren](feature-testabdeckung-uc-luecken-koordinieren.md) | Planung | `offen` |
 | A-39 | [FT-02 Projekte: Test-Lücken schließen](ft02-projekte-testluecken-schliessen.md) | Testabdeckung | `offen` |
 
 Dieser Themenbereich bündelt mehrere offene Aufgaben mit gemeinsamem fachlichen Bezug zu Feature-Testabdeckung. Die verlinkten Aufgabendateien beschreiben Ziel, Umfang und Umsetzungshinweise; die Übersicht hält Status und Einstiegspunkte zusammen.

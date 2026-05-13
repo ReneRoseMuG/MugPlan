@@ -59,5 +59,5 @@ Keine bekannt.
 - Features: [FT-11 - Team-Verwaltung](../../features/ft-11-team-verwaltung/ft-11-team-verwaltung.md)
 - Use Cases: [UC 11/01 Team anlegen](../../features/ft-11-team-verwaltung/uc-11-01-team-anlegen.md) · [UC 11/02 Team bearbeiten](../../features/ft-11-team-verwaltung/uc-11-02-team-bearbeiten.md) · [UC 11/03 Team löschen](../../features/ft-11-team-verwaltung/uc-11-03-team-loeschen.md) · [UC 11/04 Team anzeigen](../../features/ft-11-team-verwaltung/uc-11-04-team-anzeigen.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
 - Journal: [09.05.26 - P01: Teams-Dialoge abgeschlossen](../../journal/09-05-26-p01-teams-dialoge-abgeschlossen.md)

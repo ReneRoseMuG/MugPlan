@@ -216,6 +216,50 @@ async function readProjectNotes(page: Page, projectId: number): Promise<Array<{ 
   return response.json() as Promise<Array<{ title: string }>>;
 }
 
+async function readProjectById(page: Page, projectId: number): Promise<{
+  project: {
+    id: number;
+    customerId: number;
+    name: string;
+    orderNumber: string | null;
+    amount: string | null;
+  };
+  customer: {
+    id: number;
+    customerNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string | null;
+  };
+}> {
+  const response = await page.request.get(`/api/projects/${projectId}`);
+  expect(response.ok(), await response.text()).toBeTruthy();
+  return response.json() as Promise<{
+    project: {
+      id: number;
+      customerId: number;
+      name: string;
+      orderNumber: string | null;
+      amount: string | null;
+    };
+    customer: {
+      id: number;
+      customerNumber: string;
+      firstName: string | null;
+      lastName: string | null;
+      phone: string | null;
+      addressLine1: string | null;
+      postalCode: string | null;
+      city: string | null;
+      country: string | null;
+    };
+  }>;
+}
+
 type ProjectDocExtractFixtureDialogCase = {
   file: string;
   project: {
@@ -242,7 +286,7 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
   {
     file: "BSP CompanyName Only.pdf",
     project: {
-      saunaModel: "Projektinformationen aus Dokument",
+      saunaModel: "S1004388 Sonderposten Thermoholz D-AB in verschiedenen Abmessungen auf",
       orderNumber: "A0218253A",
       amount: "6264.50",
     },
@@ -258,7 +302,6 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
       country: "Deutschland",
     },
     missingLabels: ["Vorname", "Nachname"],
-    issueTexts: ["Artikelliste"],
   },
   {
     file: "BSP Country.pdf",
@@ -283,7 +326,7 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
   {
     file: "BSP Customer CompanyName.pdf",
     project: {
-      saunaModel: "Projektinformationen aus Dokument",
+      saunaModel: "S1004511 Kopfkissen KARAT 80 x 80",
       orderNumber: "BE19322",
       amount: "54.40",
     },
@@ -299,7 +342,6 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
       country: "Deutschland",
     },
     missingLabels: ["Telefon"],
-    issueTexts: ["Artikelliste"],
   },
   {
     file: "BSP Customer.pdf",
@@ -364,7 +406,7 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
   {
     file: "BSP PLZ.pdf",
     project: {
-      saunaModel: "Projektinformationen aus Dokument",
+      saunaModel: "S1004637 Instandsetzung : Innentür der Exclusiv aus Nov 2024 ist verzogen, bitte nacharbeiten; Ofen zeigt",
       orderNumber: "A0418684A",
       amount: "150.00",
     },
@@ -380,7 +422,47 @@ const projectDocExtractFixtureDialogCases: ProjectDocExtractFixtureDialogCase[] 
       country: "Deutschland",
     },
     missingLabels: ["Firma"],
-    issueTexts: ["PLZ", "989610", "Artikelliste"],
+    issueTexts: ["PLZ", "989610"],
+  },
+  {
+    file: "BSP Rekla falsche Reihenfolge.pdf",
+    project: {
+      saunaModel: "S1004637 Instandsetzung einer XL vom 07.01.2026 : Sikanähte nacharbeiten und neu setzen, da bei Aufbau extreme Kälte",
+      orderNumber: "A0518845A",
+      amount: "0.00",
+    },
+    customer: {
+      customerNumber: "162588",
+      firstName: "Lars",
+      lastName: "Bokop",
+      company: "",
+      phone: "0170-4782658",
+      addressLine1: "Wilhelm-von-Ketteler-Strasse 7",
+      postalCode: "49661",
+      city: "Cloppenburg",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
+  },
+  {
+    file: "BSP Rekla richtige Reihenfolge.pdf",
+    project: {
+      saunaModel: "S1004637 Instandsetzung einer Palkkio aus Oktober 2025 : Sika Nähte nacharbeiten, da Sauna Wasser durchlässt",
+      orderNumber: "A0418771A",
+      amount: "0.00",
+    },
+    customer: {
+      customerNumber: "161658",
+      firstName: "Reimund",
+      lastName: "Wisotzki",
+      company: "",
+      phone: "0162-8832481",
+      addressLine1: "Zörbiger Str. 21",
+      postalCode: "06794",
+      city: "Glebitzsch",
+      country: "Deutschland",
+    },
+    missingLabels: ["Firma"],
   },
   {
     file: "BSP Tel.pdf",
@@ -457,6 +539,116 @@ async function expectProjectExtractionFixtureDialog(page: Page, fixture: Project
 for (const fixture of projectDocExtractFixtureDialogCases) {
   test(`renders Doc Extract result dialog fields for ${fixture.file}`, async ({ page }) => {
     await expectProjectExtractionFixtureDialog(page, fixture);
+  });
+}
+
+const projectDocExtractReklamationPersistenceCases = projectDocExtractFixtureDialogCases.filter((fixture) => (
+  fixture.file === "BSP Rekla falsche Reihenfolge.pdf"
+  || fixture.file === "BSP Rekla richtige Reihenfolge.pdf"
+));
+
+async function expectProjectExtractionFixturePersistence(page: Page, fixture: ProjectDocExtractFixtureDialogCase) {
+  await openNewProject(page);
+  await uploadExtractionFixturePdf(page, `tests/fixtures/Doc Extract/${fixture.file}`);
+
+  await expect(page.getByTestId("document-extraction-overlay")).toBeVisible();
+  await expect(page.getByTestId("doc-extract-customer-resolution-none")).toBeVisible();
+  await expect(page.getByTestId("input-doc-extract-customer-number")).toHaveValue(fixture.customer.customerNumber);
+  await expect(page.getByTestId("input-doc-extract-phone")).toHaveValue(fixture.customer.phone);
+  await expect(page.getByTestId("input-doc-extract-first-name")).toHaveValue(fixture.customer.firstName);
+  await expect(page.getByTestId("input-doc-extract-last-name")).toHaveValue(fixture.customer.lastName);
+  await expect(page.getByTestId("input-doc-extract-address-line-1")).toHaveValue(fixture.customer.addressLine1);
+  await expect(page.getByTestId("input-doc-extract-postal-code")).toHaveValue(fixture.customer.postalCode);
+  await expect(page.getByTestId("input-doc-extract-city")).toHaveValue(fixture.customer.city);
+  await expect(page.getByTestId("input-doc-extract-country")).toHaveValue(fixture.customer.country);
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("input-doc-extract-sauna-model")).toHaveValue(fixture.project.saunaModel);
+  await expect(page.getByTestId("input-doc-extract-order-number")).toHaveValue(fixture.project.orderNumber);
+  await expect(page.getByTestId("input-doc-extract-amount")).toHaveValue(fixture.project.amount);
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toContainText("S1004637");
+  await expect(page.getByTestId("doc-extract-project-step-panel")).toContainText("eigene Anlieferung");
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("document-extraction-report-missing")).toContainText("Firma");
+  await expect(page.getByTestId("document-extraction-report-issues")).toHaveCount(0);
+  await expect(page.getByText("Artikelliste wurde erkannt.")).toBeVisible();
+
+  await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByText(fixture.project.saunaModel)).toBeVisible();
+  await expect(page.getByText(fixture.project.orderNumber)).toBeVisible();
+
+  const createCustomerResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/customers"
+  ));
+  await page.getByTestId("button-doc-extract-apply-data").click();
+  const createCustomerResponse = await createCustomerResponsePromise;
+  expect(createCustomerResponse.ok(), await createCustomerResponse.text()).toBeTruthy();
+  const createdCustomer = await createCustomerResponse.json() as {
+    id: number;
+    customerNumber: string;
+    firstName: string | null;
+    lastName: string | null;
+    phone: string | null;
+    addressLine1: string | null;
+    postalCode: string | null;
+    city: string | null;
+    country: string | null;
+  };
+  expect(createdCustomer).toMatchObject({
+    customerNumber: fixture.customer.customerNumber,
+    firstName: fixture.customer.firstName,
+    lastName: fixture.customer.lastName,
+    phone: fixture.customer.phone,
+    addressLine1: fixture.customer.addressLine1,
+    postalCode: fixture.customer.postalCode,
+    city: fixture.customer.city,
+    country: fixture.customer.country,
+  });
+
+  await expect(page.getByTestId("document-extraction-overlay")).toHaveCount(0);
+  await expect(page.getByTestId("badge-customer")).toContainText(fixture.customer.customerNumber);
+  await expect(page.getByTestId("input-project-name")).toHaveValue(fixture.project.saunaModel);
+  await expect(page.getByTestId("input-project-order-number")).toHaveValue(fixture.project.orderNumber);
+  await expect(page.getByTestId("input-project-amount")).toHaveValue(fixture.project.amount);
+
+  const createdProjectResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "POST"
+    && new URL(response.url()).pathname === "/api/projects"
+  ));
+  await page.getByTestId("button-save-project").click();
+  if (await page.getByTestId("dialog-project-save-review").isVisible({ timeout: 1000 }).catch(() => false)) {
+    await page.getByTestId("button-project-save-review-confirm").click();
+  }
+  const createdProjectResponse = await createdProjectResponsePromise;
+  expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
+  const createdProject = await createdProjectResponse.json() as { id: number };
+  expect(createdProject.id).toBeGreaterThan(0);
+
+  const persistedProject = await readProjectById(page, createdProject.id);
+  expect(persistedProject.project).toMatchObject({
+    customerId: createdCustomer.id,
+    name: fixture.project.saunaModel,
+    orderNumber: fixture.project.orderNumber,
+    amount: fixture.project.amount,
+  });
+  expect(persistedProject.customer).toMatchObject({
+    id: createdCustomer.id,
+    customerNumber: fixture.customer.customerNumber,
+    firstName: fixture.customer.firstName,
+    lastName: fixture.customer.lastName,
+    phone: fixture.customer.phone,
+    addressLine1: fixture.customer.addressLine1,
+    postalCode: fixture.customer.postalCode,
+    city: fixture.customer.city,
+    country: fixture.customer.country,
+  });
+}
+
+for (const fixture of projectDocExtractReklamationPersistenceCases) {
+  test(`persists customer and project data from ${fixture.file}`, async ({ page }) => {
+    await expectProjectExtractionFixturePersistence(page, fixture);
   });
 }
 
@@ -693,11 +885,12 @@ test("extracts BSP PLZ fixture into the project dialog and creates the customer 
   await expect(page.getByTestId("input-doc-extract-country")).toHaveValue("Deutschland");
 
   await page.getByTestId("button-project-doc-extract-next").click();
+  await expect(page.getByTestId("input-doc-extract-sauna-model")).toHaveValue("S1004637 Instandsetzung : Innentür der Exclusiv aus Nov 2024 ist verzogen, bitte nacharbeiten; Ofen zeigt");
   await expect(page.getByTestId("doc-extract-project-step-panel")).toBeVisible();
   await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("document-extraction-report-issues")).toContainText("PLZ");
   await expect(page.getByTestId("document-extraction-report-issues")).toContainText("989610");
-  await expect(page.getByTestId("document-extraction-report-issues")).toContainText("Artikelliste");
+  await expect(page.getByTestId("document-extraction-report-issues")).not.toContainText("Artikelliste");
 
   await page.getByTestId("button-project-doc-extract-next").click();
   const createCustomerResponsePromise = page.waitForResponse((response) => (

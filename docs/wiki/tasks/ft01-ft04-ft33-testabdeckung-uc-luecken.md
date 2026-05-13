@@ -39,3 +39,4 @@ W-19 beschreibt bereits eine konkrete Reihenfolge: zuerst FT-04-Use-Cases vervol
 - Features: FT-01 Kalendertermine · FT-04 Tourenplanung · FT-33 Abwesenheiten
 - Use Cases: UC 04/12 · UC 04/13 · UC 04/14 · Fehlender oder anders einzuordnender UC 04/03
 - Entscheidungen: [W-08 - Storno historischer Termine](../decisions/w-08-storno-historischer-termine.md) · [W-19 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken](../decisions/w-19-ft01-ft04-ft33-testabdeckung-und-uc-luecken.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

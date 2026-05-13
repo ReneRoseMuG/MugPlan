@@ -51,5 +51,5 @@ Keine bekannt.
 
 - Features: [FT-01 - Kalendertermine](../../features/ft-01-kalendertermine/ft-01-kalendertermine.md) · [FT-03 - Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md) · [FT-04 - Tourenplanung](../../features/ft-04-tourenplanung/ft-04-tourenplanung.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](../ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](../ft04-multistep-tour-kw-dialog.md) · [Fehler-Normalisierung](fehler-normalisierung.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](../ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](../ft04-multistep-tour-kw-dialog.md) · [Fehler-Normalisierung](fehler-normalisierung.md)
 - Journal: [09.05.26 - P01: Dialog-Basiskomponenten abgeschlossen](../../journal/09-05-26-p01-dialog-basiskomponenten-abgeschlossen.md)

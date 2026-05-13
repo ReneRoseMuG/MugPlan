@@ -58,5 +58,5 @@ Keine bekannt.
 
 - Features: [FT-27 - Produktverwaltung und Auftragspositionen](../../features/ft-27-produktverwaltung-und-auftragspositionen/ft-27-produktverwaltung-und-auftragspositionen.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
 - Journal: [09.05.26 - P01: Stammdaten-, Produkte- und Komponenten-Dialoge abgeschlossen](../../journal/09-05-26-p01-stammdaten-produkte-komponenten-dialoge-abgeschlossen.md)

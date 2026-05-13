@@ -62,4 +62,4 @@ Nicht verändert wurden fachlich unabhängige Termin-Dialoge außerhalb des Ress
 - Features: [FT-01 - Kalendertermine](../../features/ft-01-kalendertermine/ft-01-kalendertermine.md) · [FT-03 - Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md)
 - Entscheidungen: —
 - Journal: [P01 Ressourcenplanung-Dialoge abgeschlossen](../../journal/11-05-26-p01-ressourcenplanung-dialoge-abgeschlossen.md)
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md) · [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md) · [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md)

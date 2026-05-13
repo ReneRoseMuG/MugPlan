@@ -55,5 +55,5 @@ Keine bekannt.
 
 - Features: [FT-26 - Auswertungen und Reports](../../features/ft-26-auswertungen-und-reports/ft-26-auswertungen-und-reports.md)
 - Entscheidungen: —
-- Weitere Bezüge: [Dialog-Rollout-Masterplan](../dialog-rollout-masterplan.md) · [FT-26 Report-Print-Basiskomponente](../ft26-report-print-basiskomponente.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
+- Weitere Bezüge: [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md) · [FT-26 Report-Print-Basiskomponente](../ft26-report-print-basiskomponente.md) · [Fehler-Normalisierung](fehler-normalisierung.md) · [Dialog-Basiskomponenten](dialog-basiskomponenten.md)
 - Journal: [10.05.26 - P01: Reports- und Druck-Dialoge abgeschlossen](../../journal/10-05-26-p01-reports-druck-dialoge-abgeschlossen.md)

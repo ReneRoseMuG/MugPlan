@@ -1,26 +1,26 @@
 # Dialog-Rollout
 
-Der Dialog-Rollout bündelt die Vereinheitlichung von Bestätigungen, Entscheidungsdialogen, komplexen Mutationsdialogen und dauerhaften Inline-Meldungen. Diese Projektseite ist die operative Klammer für Reihenfolge, Testpflichten, manuelle Prüfung und Journal-Protokollierung der Teilaufgaben.
+Der Dialog-Rollout bündelte die Vereinheitlichung von Bestätigungen, Entscheidungsdialogen, komplexen Mutationsdialogen und dauerhaften Inline-Meldungen. Diese Projektseite bleibt die abgeschlossene Projektakte für Reihenfolge, Testpflichten, manuelle Prüfung und Journal-Protokollierung der Teilaufgaben.
 
 ## Metadaten
 
 - ID: P-01
-- Status: in Bearbeitung
+- Status: abgeschlossen
 - Dringlichkeit: Hoch
-- Masteraufgabe: [Dialog-Rollout-Masterplan](../tasks/dialog-rollout-masterplan.md)
+- Masteraufgabe: [Dialog-Rollout-Masterplan](../tasks/closed/dialog-rollout-masterplan.md)
 - Erstellt: 09.05.26
 
 ## Ziel
 
-Das Projekt soll die bestehenden Dialog- und Meldungspfade in eine koordinierte Rollout-Struktur bringen. Die Umsetzung bleibt auf getrennte Teilaufgaben verteilt, damit zuerst Fehler-Normalisierung und Dialog-Basis entstehen, danach einfache Domain-Objekte bearbeitet werden und erst zum Schluss Tour-KW-, Termin- und Kalenderpfade folgen. Jede Teilaufgabe muss nach Abschluss mit automatisierten Tests, manueller App-Prüfung und Journaleintrag protokolliert werden.
+Das Projekt hat die bestehenden Dialog- und Meldungspfade in eine koordinierte Rollout-Struktur gebracht. Die Umsetzung blieb auf getrennte Teilaufgaben verteilt: zuerst Fehler-Normalisierung und Dialog-Basis, danach einfache Domain-Objekte, danach domänenübergreifende und sicherheitsnahe Bereiche und zuletzt Tour-KW-, Termin-, Kalender-, Projekt- und Dokumentextraktionspfade. Jede Teilaufgabe wurde mit automatisierten Tests, manueller App-Prüfung oder Journaleintrag protokolliert.
 
 ## Masteraufgabe
 
-- [Dialog-Rollout-Masterplan](../tasks/dialog-rollout-masterplan.md)
+- [Dialog-Rollout-Masterplan](../tasks/closed/dialog-rollout-masterplan.md)
 
 ## Rollout-Reihenfolge
 
-Die Reihenfolge folgt der Hybrid-Strategie aus Planung und Testsuite: zuerst die beiden technischen Grundlagen, danach einfache Domain-Objekte mit überschaubaren Dialogpfaden, danach domänenübergreifende oder sicherheitsnahe Dialoge, zuletzt alle Tour-, Tour-KW-, Termin- und Kalenderpfade. Die offenen Aufgaben bleiben in ihren eigenen Aufgabendateien ausführbar; diese Tabelle legt nur die Projekt-Reihenfolge fest.
+Die Reihenfolge folgt der Hybrid-Strategie aus Planung und Testsuite: zuerst die beiden technischen Grundlagen, danach einfache Domain-Objekte mit überschaubaren Dialogpfaden, danach domänenübergreifende oder sicherheitsnahe Dialoge, zuletzt alle Tour-, Tour-KW-, Termin-, Kalender-, Projekt- und Dokumentextraktionspfade. Die Aufgaben bleiben in ihren eigenen Aufgabendateien nachvollziehbar; diese Tabelle hält die abgeschlossene Projekt-Reihenfolge fest.
 
 | Nr. | Aufgabe | Einordnung |
 | :--- | :--- | :--- |
@@ -35,8 +35,8 @@ Die Reihenfolge folgt der Hybrid-Strategie aus Planung und Testsuite: zuerst die
 | 9 | [Kunden-Dialoge](../tasks/closed/kunden-dialoge.md) | Abgeschlossen: Kundenformular, Kundennotizen, Rollenprüfung und normalisierte Meldungen nutzen gemeinsame P-01-Strukturen. |
 | 10 | [Mitarbeiter-Dialoge](../tasks/closed/mitarbeiter-dialoge.md) | Abgeschlossen: Mitarbeiterformular, Abwesenheitsdialoge, Mitarbeiterlöschung und Mitarbeiternotizen nutzen gemeinsame P-01-Strukturen. |
 | 11 | [Notizen-Dialoge](../tasks/closed/notizen-dialoge.md) | Abgeschlossen: Notizlöschungen, Notizvorlagen, Kalender-Inline-Notizen und Vorlagen-Rollenpfade nutzen gemeinsame P-01-Strukturen. |
-| 12 | [Projekte- und Dokumentextraktion-Dialoge](../tasks/projekte-und-dokumentextraktion-dialoge.md) | Projektpfade plus komplexere Dokumentextraktion. |
-| 12a | [Doc Extract und Projekt-Speichern-Flow überarbeiten](../tasks/doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) | Nachschärfung für Doc Extract als Draft-Erkennung, Project Save Review als zentralen Entscheidungsfluss und den gleichlaufenden Terminpfad. |
+| 12 | [Projekte- und Dokumentextraktion-Dialoge](../tasks/closed/projekte-und-dokumentextraktion-dialoge.md) | Abgeschlossen: Projektpfade, Project Save Review, PDF-Draft und Dokumentextraktionsanschluss nutzen gemeinsame Dialogstrukturen. |
+| 12a | [Doc Extract und Projekt-Speichern-Flow überarbeiten](../tasks/closed/doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) | Abgeschlossen: Doc Extract als Draft-Erkennung, Project Save Review und gleichlaufender Terminpfad sind fachlich getrennt und umgesetzt. |
 | 13 | [Benutzer- und Sicherheitsdialoge](../tasks/closed/benutzer-und-sicherheit-dialoge.md) | Abgeschlossen: Sicherheitsnaher Bereich mit Benutzerverwaltung, 2FA-Reset, Login- und Setup-Meldungen. |
 | 14 | [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](../tasks/closed/termin-tour-kw-mutationsdialoge.md) | Abgeschlossen: Ressourcenplanungs-Pfade geprüft und in die einheitliche Dialogstruktur überführt. |
 | 15 | [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](../tasks/closed/mitarbeiter-auswahl-dialogstruktur.md) | Auswahlgrundlage für späte Tour-KW- und Multiselect-Pfade. |
@@ -63,8 +63,8 @@ Nach jeder Teilaufgabe gilt das Must-Pass Safety Gate aus `agents.md`: `.env.tes
 | 9 | Kunden-Dialoge | `npm run test:unit -- tests/unit/ui/customerData.layoutShellIntegration.test.tsx tests/unit/ui/customersPage.controlled-state.test.tsx tests/unit/ui/customersPage.readerReadonly.smoke.test.tsx`; `npm run test:integration -- tests/integration/server/customers.paged-list.integration.test.ts tests/integration/server/customers.visibility.by-role.test.ts tests/integration/server/appointments.customer.sidebar-vs-all.integration.test.ts --reporter=verbose`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/reader-customer-readonly.browser.e2e.spec.ts tests/e2e-browser/customer-tags.persistence.browser.e2e.spec.ts`; manuell Kunde anlegen, bearbeiten, löschen oder blockieren. |
 | 10 | Mitarbeiter-Dialoge | `npm run test:unit -- tests/unit/ui/employeeForm.layoutShellIntegration.test.tsx tests/unit/ui/employeesPage.controlled-state.test.tsx tests/unit/ui/employeesPage.readerReadonly.test.tsx tests/unit/ui/employeeUtilizationView.wiring.test.tsx`; `npm run test:integration -- tests/integration/server/employees.lifecycle.ft05.integration.test.ts tests/integration/server/employees.visibility.by-role.test.ts tests/integration/server/employeeAppointmentAbsences.integration.test.ts --reporter=verbose`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/employee-form.create-sidebar-persistence.browser.e2e.spec.ts tests/e2e-browser/employee-form-week-planning.browser.e2e.spec.ts tests/e2e-browser/reader-employee-readonly.browser.e2e.spec.ts`; manuell Mitarbeiter, Abwesenheit und Readonly prüfen. |
 | 11 | Notizen-Dialoge | `npm run test:unit -- tests/unit/ui/workflowNoteDialogs.behavior.test.tsx tests/unit/ui/notesSection.prefillDraft.behavior.test.tsx tests/unit/ui/notesSection.readOnly.wiring.test.tsx tests/unit/ui/notesPreviewInvalidation.wiring.test.tsx`; `npm run test:integration -- tests/integration/server/notes.create.transactional-readback.integration.test.ts tests/integration/server/notes.joins-and-template-integrity.integration.test.ts tests/integration/server/calendar-week-notes.integration.test.ts tests/integration/server/employee.notes.integration.test.ts --reporter=verbose`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/notes.ft13.browser.e2e.spec.ts tests/e2e-browser/calendar-week-tour-personnel-and-notes.browser.e2e.spec.ts`; manuell Notiz anlegen, bearbeiten, löschen und Pinning prüfen. |
-| 12 | Projekte- und Dokumentextraktion-Dialoge | `npm run test:unit -- tests/unit/ui/projectForm.layoutShellIntegration.test.tsx tests/unit/ui/projectForm.tabs.render.test.tsx tests/unit/ui/projectDuplicateResolutionDialog.ui.test.tsx tests/unit/ui/documentExtractionDialog.ui.test.tsx tests/unit/ui/documentExtractionDialog.overlayRendering.test.tsx tests/unit/ui/projectAttachmentsPanel.grouping.wiring.test.tsx`; `npm run test:integration -- tests/integration/server/projects.paged-list.integration.test.ts tests/integration/server/projects.delete.rules.test.ts tests/integration/server/projectAppointments.sidebar-all.integration.test.ts tests/integration/server/documentExtraction.routes.test.ts tests/integration/server/documentExtraction.projectConflictFlow.integration.test.ts --reporter=verbose`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/projects.ft02.browser.e2e.spec.ts tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts tests/e2e-browser/project-form.article-list-save-behavior.browser.e2e.spec.ts tests/e2e-browser/reader-project-readonly.browser.e2e.spec.ts`; manuell Projekt, Dublette, Attachment und Extraktion prüfen. |
-| 12a | Doc Extract und Projekt-Speichern-Flow überarbeiten | Tests müssen Kunden-, Projekt- und Terminpfad gemeinsam abdecken: Unit-Tests für Draft-Entscheidungen und Save-Review-Kombinationen; Render-Tests für die drei Doc-Extract-Pfade; Browser-E2E für Neuer Kunde, Neues Projekt, Neuer Termin, Reklamations-Draft, Stammdaten-Ergänzung, PDF-Duplikat und Leser-Verbote. |
+| 12 | Projekte- und Dokumentextraktion-Dialoge | Abgeschlossen: Projekt-Speichern-Review, Artikellistenhinweis, Sauna-Titel, Reklamationsnotiz, PDF-Duplikat und Draft-PDF wurden über Unit-, Integration- und Browser-E2E-Pfade geprüft. |
+| 12a | Doc Extract und Projekt-Speichern-Flow überarbeiten | Abgeschlossen am 13.05.26: Kunden-, Projekt- und Terminpfad wurden gemeinsam mit Unit-, Integration- und Browser-E2E-Tests geprüft; der Wiki-Build lief mit 0 Fehlern und 0 Warnungsgruppen. |
 | 13 | [Benutzer- und Sicherheitsdialoge](../tasks/closed/benutzer-und-sicherheit-dialoge.md) | Abgeschlossen: `npm run test:unit -- tests/unit/ui/usersPage.dialogs.test.tsx tests/unit/ui/dialogBaseComponents.test.tsx tests/unit/auth/twoFactorFlow.test.ts tests/unit/auth/quickLogin.test.ts tests/unit/auth/loginIdentifier.test.ts tests/unit/authorization/roleGuards.test.ts tests/unit/authorization/userCreate.test.ts`; `npm run test:integration -- tests/integration/server/auth.session.integration.test.ts tests/integration/server/auth.two-factor.integration.test.ts tests/integration/server/users.two-factor-admin.integration.test.ts --reporter=verbose`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/users-management-scroll.browser.e2e.spec.ts`. |
 | 14 | Termin- und Tour-KW-Mutationsdialoge vereinheitlichen | Abgeschlossen am 11.05.26: Pfade geprüft; Umsetzung und Tests im Ressourcenplanungsabschluss dokumentiert. |
 | 15 | Mitarbeiter-Auswahl-Komponente | `npm run test:unit -- tests/unit/ui/employeePickerDialogList.bulkSelection.wiring.test.tsx tests/unit/ui/tourEmployeeCascadeDialog.selectionButtons.test.tsx`; Browser: `npm run test:e2e:browser -- tests/e2e-browser/employee-form-week-planning.browser.e2e.spec.ts tests/e2e-browser/ft04.tour-employee-cascade.browser.e2e.spec.ts`. |
@@ -76,9 +76,9 @@ Nach jeder Teilaufgabe gilt das Must-Pass Safety Gate aus `agents.md`: `.env.tes
 
 ## Protokollierung
 
-Nach jeder erfolgreich abgeschlossenen Teilaufgabe wird ein Journaleintrag unter `docs/wiki/journal/` erstellt und oben in `docs/wiki/journal/README.md` verlinkt. Die jeweilige Aufgabendatei dokumentiert Abschlussdatum, Ergebnis, automatisierte Tests, manuelle App-Prüfung, verwendete Testdaten, verbleibende Lücken und Folgeaufgaben. Zusätzlich wird der Journalbezug in `## Beziehungen` gepflegt, die Aufgabe bei vollständigem Abschluss nach `docs/wiki/tasks/closed/` verschoben und die generierte Wiki-Ausgabe mit `node scripts/build-wiki-site.mjs` aktualisiert.
+Nach jeder erfolgreich abgeschlossenen Teilaufgabe wurde ein Journaleintrag unter `docs/wiki/journal/` erstellt und oben in `docs/wiki/journal/README.md` verlinkt. Die jeweilige Aufgabendatei dokumentiert Abschlussdatum, Ergebnis, automatisierte Tests, manuelle App-Prüfung, verwendete Testdaten, verbleibende Lücken und Folgeaufgaben. Zusätzlich wurde der Journalbezug in `## Beziehungen` gepflegt, die Aufgabe bei vollständigem Abschluss nach `docs/wiki/tasks/closed/` verschoben oder aus der offenen Aufgabenübersicht entfernt und die generierte Wiki-Ausgabe mit `node scripts/build-wiki-site.mjs` aktualisiert.
 
-Jede Teilumsetzung muss in der Wiki nachvollziehbar machen, ob sie offen, in Bearbeitung, blockiert oder abgeschlossen ist. Ein Abschluss ohne dokumentierte Tests und ohne manuelle App-Prüfung ist für P01 nicht ausreichend.
+P-01 ist abgeschlossen. Verbleibende rote Gesamtlauf-Tests aus dem Journal vom 13.05.26 sind nicht mehr als P-01-Dialogrest klassifiziert, sondern werden bei den passenden P-02-Test- und Präzisierungsaufgaben weiterverfolgt.
 
 ## Abgrenzung
 

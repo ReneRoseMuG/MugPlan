@@ -20,6 +20,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  deriveProjectTitleFromArticleNumberBlock,
   parseDocumentArticleItemsDeterministically,
   parseDocumentTotalAmountDeterministically,
 } from "../../../server/services/documentArticleDeterministicParser";
@@ -71,5 +72,21 @@ describe("FT21 deterministic article parser", () => {
   it("returns null when Gesamtbetrag line is missing or unparsable", () => {
     expect(parseDocumentTotalAmountDeterministically("kein marker text")).toBeNull();
     expect(parseDocumentTotalAmountDeterministically("Gesamtbetrag n/a")).toBeNull();
+  });
+
+  it("prefers a product-number block over a preceding delivery modality for project titles", () => {
+    const title = deriveProjectTitleFromArticleNumberBlock([
+      "eigene Anlieferung",
+      "S 1004637 Instandsetzung einer XL vom 07.01.26 : Sikanähte nacharbeiten",
+    ]);
+
+    expect(title).toBe("S1004637 Instandsetzung einer XL vom 07.01.26 : Sikanähte nacharbeiten");
+  });
+
+  it("does not invent a project title without S100 product-number block", () => {
+    expect(deriveProjectTitleFromArticleNumberBlock([
+      "eigene Anlieferung",
+      "Montage und Transport",
+    ])).toBeNull();
   });
 });

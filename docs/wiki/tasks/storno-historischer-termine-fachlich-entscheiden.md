@@ -41,3 +41,4 @@ Die Decision W-08 beschreibt eine offene fachliche Abweichung rund um historisch
 - Features: [FT-01 - Kalendertermine](../features/ft-01-kalendertermine/ft-01-kalendertermine.md)
 - Use Cases: UC 01/14 - Historische Termine rollenbasiertes Verhalten · UC 01/22 - Termin stornieren
 - Entscheidungen: [W-08 - Storno historischer Termine](../decisions/w-08-storno-historischer-termine.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

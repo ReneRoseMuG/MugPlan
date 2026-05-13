@@ -6,6 +6,8 @@ const PRICE_TAX_LINE_REGEX =
   /(?:\b(?:mwst|e-?preis|g-?preis|gesamtbetrag|gesamt|summe|preis|brutto|netto|inkl\.)\b|€|\beur\b)/i;
 const PRICE_ONLY_REGEX = /^\s*[\d.,\s%]+(?:€|eur)?\s*$/i;
 const TOTAL_AMOUNT_REGEX = /gesamtbetrag\s+([\d.\s]+,\d{2})(?:\s*(?:€|eur))?/i;
+const PROJECT_TITLE_ARTICLE_NUMBER_REGEX = /\bS\s*100[\s-]*(\d+)\b/i;
+const PROJECT_TITLE_ARTICLE_NUMBER_GLOBAL_REGEX = /\bS\s*100[\s-]*(\d+)\b/gi;
 
 export type DeterministicArticleItem = {
   quantity: string;
@@ -34,6 +36,33 @@ function isPriceOrTaxLine(value: string): boolean {
 
 function normalizeQuantity(value: string): string {
   return value.trim();
+}
+
+function normalizeProjectTitleArticleNumbers(value: string): string {
+  return value.replace(PROJECT_TITLE_ARTICLE_NUMBER_GLOBAL_REGEX, (_match, suffix: string) => `S100${suffix}`);
+}
+
+function truncateProjectTitle(value: string): string {
+  if (value.length <= 120) return value;
+
+  const clipped = value.slice(0, 120).trimEnd();
+  const lastSpaceIndex = clipped.lastIndexOf(" ");
+  if (lastSpaceIndex >= 80) {
+    return clipped.slice(0, lastSpaceIndex);
+  }
+  return clipped;
+}
+
+export function deriveProjectTitleFromArticleNumberBlock(descriptions: string[]): string | null {
+  const candidate = descriptions
+    .map((description) => description.replace(/\s+/g, " ").trim())
+    .find((description) => PROJECT_TITLE_ARTICLE_NUMBER_REGEX.test(description));
+
+  if (!candidate) return null;
+  const cleaned = normalizeProjectTitleArticleNumbers(candidate)
+    .replace(/\s+Reklamationsarbeit\b.*$/i, "")
+    .trim();
+  return truncateProjectTitle(cleaned);
 }
 
 export function parseDocumentArticleItemsDeterministically(sourceText: string): DeterministicArticleItem[] {

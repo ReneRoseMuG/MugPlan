@@ -1,0 +1,64 @@
+# Dialog-Rollout-Masterplan
+
+Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und koordiniert die verwandten Einzelaufgaben. Die Umsetzung soll Benutzerkommunikation über Bestätigungen, Entscheidungsdialoge und dauerhafte Inline-Meldungen vereinheitlichen, ohne Toasts als eigenes Rollout-Ziel zu behandeln.
+
+| Status | Dringlichkeit | Thema | Typ | Erstellt |
+| :--- | :--- | :--- | :--- | :--- |
+| `abgeschlossen` | Hoch | Dialoge | Planung | 08.05.26 |
+
+---
+
+## Ziel
+
+Diese Master-Task führt den Dialog-Rollout als lebendiges Koordinationsdokument für Projekt P-01. Sie trennt den Gesamtplan in delegierbare Teilbereiche, hält Abhängigkeiten fest und verweist auf die operative Projektseite mit vollständiger Reihenfolge, Testsuite und Protokollierungsregeln. Besonders komplexe Termin-, Tour- und KW-Mutationen werden bewusst an das Ende gestellt, damit sie nicht mit einfacheren Domain-Dialogen vermischt werden.
+
+## Ausgangslage
+
+Der Strategieplan vom 08.05.26 liegt als Export unter dem Namen PLAN_Dialoge.md vor. Zusätzlich existieren einzelne Dialog-Aufgaben, die über Projekt P-01 in eine fachlich sinnvolle Reihenfolge gebracht wurden. Die Inventurdatei `docs/wiki/tasks/a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md` enthält die erste Gruppierung relevanter Dialog-, Bestätigungs- und Meldungspfade.
+
+## Umfang
+
+- Zur Master-Task gehören die Pflege der P01-Reihenfolge, der Statusüberblick, die statische Inventur und die Verweise auf zugehörige Task-Dateien. Nicht Teil dieser Aufgabe sind UI-Komponenten, API-Änderungen, Schemaänderungen oder konkrete Dialogimplementierungen.
+- Die vollständige Ausführungsreihenfolge und Testsuite steht auf der Projektseite [Dialog-Rollout](../../projects/dialog-rollout.md).
+- Die Grundlagenreihenfolge ist abgeschlossen: [Fehler-Normalisierung](fehler-normalisierung.md), [Dialog-Basiskomponenten](dialog-basiskomponenten.md). Beide Aufgaben wurden mit einem echten Domain-Dialog manuell geprüft.
+- Die ersten und mittleren Domain-Schritte sind abgeschlossen: [Teams-Dialoge](teams-dialoge.md), [Stammdaten-, Produkte- und Komponenten-Dialoge](stammdaten-produkte-komponenten-dialoge.md), [Tags-Dialoge](tags-dialoge.md), [Hilfetexte-, Import- und Export-Dialoge](hilfetexte-import-export-dialoge.md), [Einstellungen-, Monitoring- und Admin-Dialoge](einstellungen-monitoring-admin-dialoge.md), [Reports- und Druck-Dialoge](reports-und-druck-dialoge.md), [Kunden-Dialoge](kunden-dialoge.md), [Mitarbeiter-Dialoge](mitarbeiter-dialoge.md), [Notizen-Dialoge](notizen-dialoge.md), [Benutzer- und Sicherheitsdialoge](benutzer-und-sicherheit-dialoge.md) sowie [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md).
+- Zum Schluss folgen die komplexen Tour-, Tour-KW-, Termin- und Kalenderaufgaben: [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md), [Mitarbeiter-Auswahl-Komponente für Dialogstruktur refaktorieren](mitarbeiter-auswahl-dialogstruktur.md), [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md), [Tour-KW- und Termin-Mutationsdialoge](tour-kw-termin-mutationsdialoge.md), [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md), [FT-04 Multiselect für KW-Planung im Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md), [Termine- und Kalenderdialoge](termine-und-kalenderdialoge.md).
+- Der letzte Nachschärfungsblock ist abgeschlossen: [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) ging im gemeinsamen Project-Save-Review auf; [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) wurde mit dem Projekt- und Termin-Save-Flow umgesetzt.
+- Die abgeschlossenen Teilaufgaben dokumentieren Tests, manuelle App-Prüfung, Journaleintrag, Aufgabenverlinkung und Wiki-Build in ihren jeweiligen Abschlussnotizen oder Journaleinträgen.
+
+## Umsetzungshinweise
+
+- Die Reihenfolge ist absichtlich gegenüber der ersten Stufung korrigiert: nur die generischen Grundlagen zuerst, einfache Domain-Objekte danach, Tour-, Tour-KW-, Termin- und Kalenderpfade zuletzt.
+- Generische Dialograhmen und wiederverwendbare Auswahlrahmen gehören zu Dialog-Basiskomponenten; Domain-Tasks führen fachliche Nutzungsstellen.
+- FT-04-Bestätigungsbasis und Mitarbeiter-Auswahl sind nicht mehr als frühe Grundlagen einsortiert, weil sie fachlich bereits an Tour-KW- und Termin-Konfliktpfade gekoppelt sind.
+- Tour-KW und komplexe Termin-Mutationen bleiben in Tour-KW- und Termin-Mutationsdialoge, auch wenn einzelne Komponenten zusätzlich in Domain-Tasks als angrenzende Kommunikation auftauchen.
+- Die Testsuite folgt der Hybrid-Strategie: gezielte vollständige Suite je Teilaufgabe, voller Testlauf zusätzlich nach den Hochrisiko-Meilensteinen Tour-KW- und Termin-Mutationsdialoge sowie Termine- und Kalenderdialoge.
+- Rollenverhalten wird in dieser Strukturaufgabe nicht geändert. Spätere Umsetzungen müssen `ADMIN`, `DISPONENT` und `READER` beziehungsweise `LESER` ausdrücklich prüfen und serverseitige Guards beibehalten.
+- Nach jeder abgeschlossenen Teilaufgabe wird ein Journaleintrag erstellt, in der Aufgabe verlinkt und durch `node scripts/build-wiki-site.mjs` in die generierte Wiki-Ausgabe übernommen.
+- Folgende Punkte sind vor der Delegation einzelner Teilbereiche zu klären.
+- Notiz-Pflichtentscheidung beim Verschieben: Komfortmerkmal oder blockierender Dialog-Schritt? (FT-01 sagt: Notizen bleiben immer erhalten.)
+- Schritt 4 des Gesamtplans muss aufgeteilt werden: erst Preview-Contract-Erweiterung (Server), dann Verschiebe-Dialog (Client).
+- Fehlerzustand nach partieller Execute-Ausführung im Stepper: Was sieht der Nutzer, was kann er tun?
+- Commit-Zeitpunkt in FT-04 mehrstufiger Tour-KW-Dialog nachtragen: Mutationen erst nach finaler Gesamtbestätigung, seriell über bestehende Execute-Endpunkte.
+- Die abgeschlossenen Vorarbeiten zu Drag & Drop und Mark & Insert müssen auf ihren Integrationsstatus geprüft werden: Läuft der Verschiebevorgang bereits über den Preview-Pfad?
+- ### 08.05.26 — Anlage
+- Masterplan angelegt auf Basis von PLAN_Dialoge.md (Upload 08.05.26) und Planprüfung durch Claude.
+- Teilbereiche 0–3 als Stubs erzeugt. Domain-Objekte (4–N) werden nach statischer Inventur ergänzt.
+
+## Abschluss
+
+- Abschlussdatum: 13.05.26
+- Ergebnis: P-01 ist als Projekt abgeschlossen. Die offenen Dialog-Restaufgaben wurden aus der operativen Aufgabenliste entfernt und als abgeschlossene Aufgaben archiviert.
+- Verbleibende rote Gesamtlauf-Tests aus dem Journal vom 13.05.26 sind keine offenen P-01-Dialogaufgaben; sie werden bei den passenden P-02-Test- und Präzisierungsaufgaben weiterverfolgt.
+
+## Blocker und offene Fragen
+
+- Keine offenen P-01-Blocker.
+
+---
+
+## Beziehungen
+
+- Features: [FT-01 - Kalendertermine](../../features/ft-01-kalendertermine/ft-01-kalendertermine.md) · [FT-03 - Kalenderansichten](../../features/ft-03-kalenderansichten/ft-03-kalenderansichten.md) · [FT-04 - Tourenplanung](../../features/ft-04-tourenplanung/ft-04-tourenplanung.md)
+- Entscheidungen: —
+- Weitere Bezüge: [Dialog-Rollout](../../projects/dialog-rollout.md) · [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) · [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) · [FT-04 gemeinsame Bestätigungs-Dialog-Basiskomponente](ft04-dialog-basiskomponente.md) · [FT-04 mehrstufiger Tour-KW-Dialog](ft04-multistep-tour-kw-dialog.md) · [FT-19 Attachment-Testlücken](../ft19-attachment-testluecken.md) · [Termin- und Tour-KW-Mutationsdialoge vereinheitlichen](termin-tour-kw-mutationsdialoge.md) · [FT-04 Multiselect KW-Planung Wochenkalender](ft04-multiselect-kw-planung-wochenkalender.md) · [Mitarbeiter-Auswahl-Dialogstruktur](mitarbeiter-auswahl-dialogstruktur.md) · [FT-26 Report-Print-Basiskomponente](../ft26-report-print-basiskomponente.md) · [Dialoge und Meldungen - Pfade](../a-16-dialog-rollout-masterplan/dialoge-und-meldungen-pfade.md) · [Relations](../../relations.md) · [Journal](../../journal/README.md)

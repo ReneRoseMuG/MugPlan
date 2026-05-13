@@ -13,6 +13,7 @@ Ziel: Vollstaendiges Inventar aller Pfade mit destruktivem Potenzial und Nachwei
 |---|---|---|---|---|---|
 | `tests/helpers/resetDatabase.ts` | Integration setup | reset + truncate | `mysql.createConnection(...)` | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` | secured |
 | `script/reset-test-db.ts` | manuell / script | reset + truncate | `mysql.createConnection(...)` | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` | secured |
+| `script/delete-dev-customer.ts` | manuell / `npm run "lösche Kunde:"` | gezielter Kunden-Kaskaden-Delete in Dev | `mysql.createConnection(...)` | `assertSafeAdminDestructiveOperationTarget` + `assertSqlDatabaseIdentity` + `--confirm` | secured |
 | `server/controllers/adminController.ts` | API `/admin/reset-database` controller entry | destructive trigger (delegation) | delegiert an `adminService.resetDatabase` | indirekt via `adminService`-Guard-Kette | secured |
 | `server/services/adminService.ts` | API `/admin/reset-database` | reset + delete | `mysql.createConnection(...)` + repos | `assertSafeDestructiveOperationTarget` + `assertSqlDatabaseIdentity` | secured |
 | `server/middleware/adminMaintenancePolicy.ts` | Admin middleware | destructive route gate | runtime config | `assertSafeDestructiveOperationTarget` | secured |

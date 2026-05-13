@@ -52,3 +52,4 @@ Der Import beschreibt mehrere konkrete Test- und Klärungsaufträge. Ein Teil be
 - Features: FT-19 Attachments
 - Use Cases: UC 19/01 - Attachment hochladen · UC 19/05 - Größen- und Typvalidierung · UC 19/07 - Attachment-Kaskade bei Parent-Löschung · UC 19/10 - Attachment-Duplikat entfernen
 - Entscheidungen: —
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

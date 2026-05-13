@@ -4,7 +4,7 @@ Der Projekt-Speichern-Flow soll offene Artikellisten-Auswahlen erkennen und zusa
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Mittel | Dialoge | Implementierung | 10.05.26 |
+| `abgeschlossen` | Mittel | Dialoge | Implementierung | 10.05.26 |
 
 ---
 
@@ -35,6 +35,12 @@ Der Sauna-Modell-Wechsel kann aktuell einen eigenen Projektnamen-Dialog auslöse
 - Die serverseitige Projektmutation darf durch die UI-Dialogänderung keine neuen Rollen, Nebenpfade oder direkten API-Aufrufe freischalten.
 - Tests sollen mindestens den Fall ohne offene Artikellisten-Einträge, den Fall mit "Nicht ausgewählt", den Sauna-Titel-Schritt und die Kombination beider Hinweise ohne doppelte Dialoge abdecken.
 
+## Abschluss
+
+- Abschlussdatum: 13.05.26
+- Ergebnis: Artikellistenhinweis, Projekttitelentscheidung, Reklamationsnotiz und PDF-Duplikatentscheidung sind im Project-Save-Review gebündelt.
+- Die spätere Doc-Extract-Nachschärfung hat den Flow fachlich erweitert; diese Aufgabe bleibt als abgeschlossener Teilauftrag des P-01-Projektabschlusses erhalten.
+
 ## Blocker und offene Fragen
 
 Keine bekannt.
@@ -43,7 +49,8 @@ Keine bekannt.
 
 ## Beziehungen
 
-- Features: [FT-02 - Projekte](../features/ft-02-projekte/ft-02-projekte.md) · [FT-27 - Produktverwaltung und Auftragspositionen](../features/ft-27-produktverwaltung-und-auftragspositionen.md)
+- Features: [FT-02 - Projekte](../../features/ft-02-projekte/ft-02-projekte.md) · [FT-27 - Produktverwaltung und Auftragspositionen](../../features/ft-27-produktverwaltung-und-auftragspositionen/ft-27-produktverwaltung-und-auftragspositionen.md)
 - Use Cases: UC 02/02 · UC 27/05
 - Entscheidungen: —
-- Weitere Bezüge: [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) · [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md)
+- Weitere Bezüge: [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) · [Doc Extract und Projekt-Speichern-Flow überarbeiten](doc-extract-und-projekt-speichern-flow-ueberarbeiten.md) · [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md)
+- Journal: [10.05.26 - Projekt-Speichern-Dialog und Reportkarten-Nacharbeit](../../journal/10-05-26-projekt-speichern-und-reportkarten-nacharbeit.md) · [13.05.26 - Doc Extract, Projekt- und Termin-Save-Flow](../../journal/13-05-26-doc-extract-projekt-termin-save-flow.md)

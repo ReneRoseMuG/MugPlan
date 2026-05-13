@@ -40,3 +40,4 @@ W-09 beschreibt verteilte Regeln rund um Systemkontext, geschützte Workflow-Tag
 
 - Features: FT-06 Automatische Regeln · FT-33 Abwesenheiten
 - Entscheidungen: [W-09 - Systemgesteuerte Termin-Workflows gezielt generalisieren](../decisions/w-09-systemgesteuerte-termin-workflows.md)
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)

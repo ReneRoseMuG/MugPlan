@@ -4,7 +4,7 @@ Der Doc-Extract-Workflow und der Projekt-Speichern-Flow sollen fachlich neu gesc
 
 | Status | Dringlichkeit | Thema | Typ | Erstellt |
 | :--- | :--- | :--- | :--- | :--- |
-| `offen` | Hoch | Dialoge | Planung | 13.05.26 |
+| `abgeschlossen` | Hoch | Dialoge | Planung | 13.05.26 |
 
 ---
 
@@ -237,6 +237,12 @@ Die Umsetzung soll möglichst gemeinsame Unterkomponenten für Kundendaten, Män
 - "Ohne Mitarbeiter speichern?" ist eine Termin-Save-Review-Entscheidung und kein separater Alert-Dialog.
 - Reklamation im Terminformular bleibt eine Sofortaktion mit direkter Reaktion. Ein bereits als Reklamation markiertes Projekt führt nicht zu einem stummen deaktivierten Button, sondern zu klarer Status- oder Entscheidungsanzeige.
 
+## Abschluss
+
+- Abschlussdatum: 13.05.26
+- Ergebnis: Der Doc-Extract-Workflow befüllt Kunden-, Projekt- und Terminformulare als Draft; der Project Save Review entscheidet projektbezogene Restpunkte; der neue Appointment Save Review bündelt terminbezogene Speicherentscheidungen.
+- Verifikation und bekannte rote Gesamtlauf-Tests sind im Journal dokumentiert. Die roten Gesamtlaufpunkte bleiben als Test- und Präzisierungsnachlauf in P-02 verortet, nicht als offene P-01-Dialogaufgabe.
+
 ## Blocker und offene Fragen
 
 - Keine bekannt.
@@ -245,7 +251,8 @@ Die Umsetzung soll möglichst gemeinsame Unterkomponenten für Kundendaten, Män
 
 ## Beziehungen
 
-- Projekt: [Dialog-Rollout](../projects/dialog-rollout.md)
-- Features: [FT-02 - Projekte](../features/ft-02-projekte/ft-02-projekte.md) · [FT-21 - Dokumentenextraktion](../features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md)
+- Projekt: [Dialog-Rollout](../../projects/dialog-rollout.md)
+- Features: [FT-02 - Projekte](../../features/ft-02-projekte/ft-02-projekte.md) · [FT-21 - Dokumentenextraktion](../../features/ft-21-dokumentenextraktion/ft-21-dokumentenextraktion.md)
 - Use Cases: UC 21/05 · UC 21/07 · UC 21/09 · UC 21/10 · UC 21/17
 - Weitere Bezüge: [Projekte- und Dokumentextraktion-Dialoge](projekte-und-dokumentextraktion-dialoge.md) · [Projekt-Speichern-Dialog für Artikellistenprüfung und Saunatitel](projekt-speichern-dialog-artikelliste-saunatitel.md) · [Dialog-Rollout-Masterplan](dialog-rollout-masterplan.md)
+- Journal: [13.05.26 - Doc Extract, Projekt- und Termin-Save-Flow](../../journal/13-05-26-doc-extract-projekt-termin-save-flow.md) · [13.05.26 - Termin-Save-Review: Notizprüfung bei Terminverschiebung](../../journal/13-05-26-termin-save-review-notizpruefung.md)

@@ -13,6 +13,7 @@ import {
   parseDocumentHeaderForProjectExtraction,
 } from "./documentHeaderDeterministicParser";
 import {
+  deriveProjectTitleFromArticleNumberBlock,
   parseDocumentArticleItemsDeterministically,
   parseDocumentTotalAmountDeterministically,
 } from "./documentArticleDeterministicParser";
@@ -108,6 +109,30 @@ function buildLegacyExtractionContent(extractedText: string): {
   };
 }
 
+function buildArticleNumberFallbackExtractionContent(extractedText: string): {
+  saunaModel: string;
+  articleItems: Array<{ quantity: string; description: string; category: string }>;
+  warnings: string[];
+} | null {
+  try {
+    const articleItems = parseDocumentArticleItemsDeterministically(extractedText);
+    const projectTitle = deriveProjectTitleFromArticleNumberBlock(articleItems.map((item) => item.description));
+    if (!projectTitle) return null;
+
+    return {
+      saunaModel: projectTitle,
+      articleItems: articleItems.map((item) => ({
+        quantity: item.quantity,
+        description: item.description,
+        category: "Artikel",
+      })),
+      warnings: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
 function buildMiningExtractionContent(extractedText: string): {
   saunaModel: string;
   articleItems: Array<{ quantity: string; description: string; category: string }>;
@@ -150,6 +175,11 @@ function buildExtractionContentFromDocument(
     return buildMiningExtractionContent(extractedText);
   } catch (miningError) {
     const details = miningError instanceof Error ? miningError.message : String(miningError);
+    const articleNumberFallback = buildArticleNumberFallbackExtractionContent(extractedText);
+    if (articleNumberFallback) {
+      return articleNumberFallback;
+    }
+
     return {
       saunaModel: "Projektinformationen aus Dokument",
       articleItems: [],

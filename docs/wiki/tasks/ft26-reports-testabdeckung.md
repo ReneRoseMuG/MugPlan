@@ -39,3 +39,4 @@ W-21 grenzt erledigte Punkte bereits aus und benennt eine konkrete Liste offener
 
 - Features: —
 - Entscheidungen: —
+- Weitere Bezüge: [Feature-Testabdeckung, UC-Lücken und Präzisierungen](../projects/feature-testabdeckung-uc-luecken.md)
