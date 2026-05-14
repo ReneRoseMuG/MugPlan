@@ -1,35 +1,16 @@
 # MugPlan – Benutzerdokumentation
 
-MugPlan ist eine webbasierte Anwendung zur Disposition und Terminplanung. Sie bündelt Aufträge, Termine, Mitarbeiter und Touren in einem gemeinsamen System.
-
-**Was Sie im Alltag einen Auftrag nennen, heißt in MugPlan Projekt.** Ein Projekt fasst alle Informationen zu einem Auftrag zusammen — Beschreibung, Termine, Mitarbeiter, Dokumente — und ist immer genau einem Kunden zugeordnet.
+Was du im Alltag einen Auftrag nennst, heißt in MugPlan **Projekt**. Ein Projekt fasst alle Informationen zu einem Auftrag zusammen und ist immer genau einem Kunden zugeordnet.
 
 ---
 
 ## Für wen ist diese Dokumentation?
 
-### Disponent
-
-Plant Termine, pflegt die Wochenplanung pro Tour, erstellt und bearbeitet Auftragsdokumente, pflegt Abwesenheiten und ruft Reports ab.
-
-Themen:
-- Termine
-- KW-Planung und Touren
-- Projekte (Aufträge)
-- Mitarbeiter und Abwesenheiten
-- Stammdaten
-- Suche und Navigation
-- Reports
-
-### Leser
-
-Nutzt die Anwendung zur Übersicht: Kalender, Tourenplan, Abwesenheiten.
-
-Themen:
-- Kalender
-- Abwesenheiten
-- Reports
+- **Disponent** — plant Termine, erfasst Aufträge, plant Personal und Touren
+- **Schreinerei** — liest Auftragsdetails, plant Produktionsmengen, prüft Liefertermine
+- **Geschäftsführer** — braucht regelmäßigen Überblick über Aufträge, Auslastung und Personal
+- **Lager** — plant Zusatzartikel und prüft Liefertermine
 
 ---
 
-*Stand: 13.05.26*
+*Stand: 2026-05*
