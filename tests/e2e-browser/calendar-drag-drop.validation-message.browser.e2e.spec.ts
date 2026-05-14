@@ -88,7 +88,6 @@ test("shows the concrete server validation message after dragging an appointment
 
   await appointmentBar.dragTo(todayCalendarDay);
 
-  const patchResponse = await patchResponsePromise.catch(() => null);
   const dndEvents = await page.evaluate(() => (
     (window as Window & { __calendarDndEvents?: CapturedDndEvent[] }).__calendarDndEvents ?? []
   ));
@@ -114,6 +113,13 @@ test("shows the concrete server validation message after dragging an appointment
       `Captured console: ${JSON.stringify(browserConsoleMessages)}`,
     ].join("\n"));
   }
+
+  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(resourceDialog).toBeVisible();
+  await expect(resourceDialog).toContainText("Termin verschieben");
+  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
+  const patchResponse = await patchResponsePromise.catch(() => null);
 
   expect(
     patchResponse,

@@ -106,6 +106,11 @@ test("dispatches a week-view drop with appointment data and persists the new tar
 
   expect(dropObserved).toBe(true);
 
+  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(resourceDialog).toBeVisible();
+  await expect(resourceDialog).toContainText("Termin verschieben");
+  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
 

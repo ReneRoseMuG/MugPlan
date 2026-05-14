@@ -21,7 +21,7 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   createAppointmentBrowserFixture,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { confirmAppointmentSaveReviewIfVisible, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -123,14 +123,7 @@ async function saveAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as { id: number };

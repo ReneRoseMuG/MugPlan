@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>14-05-26-audit-test-report-fixes: 14.05.26 | Teststabilisierung | Audit/Test: Report-Fixes nach Audit · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 14-05-26-audit-test-report-fixes">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">14-05-26-audit-test-report-fixes 14.05.26 | Teststabilisierung | Audit/Test: Report-Fixes nach Audit</span></nav>
+        <h1 class="wiki-h1">14-05-26-audit-test-report-fixes: 14.05.26 | Teststabilisierung | Audit/Test: Report-Fixes nach Audit</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>14.05.26</div>
+    <p class="wiki-lead">Nach einem Audit ohne Coverage und einem vollständigen Test-Report wurden die roten Testursachen aufsteigend nach Schadenspotential bearbeitet. Die Änderungen blieben auf bestehende Tests und Browser-E2E-Helfer begrenzt. Produktionscode, Datenbank-Schema, API-Contracts und Rollen</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Nach einem Audit ohne Coverage und einem vollständigen Test-Report wurden die roten Testursachen aufsteigend nach Schadenspotential bearbeitet. Die Änderungen blieben auf bestehende Tests und Browser-E2E-Helfer begrenzt. Produktionscode, Datenbank-Schema, API-Contracts und Rollenlogik wurden nicht geändert.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Tests-only-Stabilisierung nach Audit- und Test-Report.</li><li>Anpassung veralteter Erwartungen in Dokumentextraktions-Tests.</li><li>Robustere Browser-E2E-Bedienung bestehender Bestätigungsdialoge.</li><li>Keine Migration, keine neue Abhängigkeit und keine Produktionscode-Änderung.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>Dokumentextraktion für Projekt- und Terminformulare.</li><li>Terminnotizen im Terminformular.</li><li>Termin-Save-Review bei Terminen ohne Mitarbeiter und bei Notizprüfung.</li><li>Kalender-Drag-and-Drop in Monats- und Wochenansicht.</li><li>Tour-KW-Blockierung im Dispatcher-Flow.</li><li>Tourenplan-Report mit nachträglich aktivierten Drucknotizen.</li><li>Notion-Links wurden im Auftrag nicht belastbar angegeben; Grundlage waren lokaler Audit, lokaler Testlauf und betroffene Testdateien.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li><code>tests/unit/validation/dtoValidators.test.ts</code> erwartet beim Projektformular-Fallback nun den Aufruf des Artikelnummer-Parsers statt dessen Ausbleiben.</li><li><code>tests/integration/server/documentExtraction.routes.test.ts</code> erwartet für die BSP-PLZ-Fixture die inzwischen erkannten zwei Artikel und weiterhin die PLZ-Formatwarnung.</li><li><code>tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code> prüft Draft-Terminnotizen nicht mehr über einen fragilen festen Hook-Index, sondern über den tatsächlich angelegten Test-State.</li><li><code>tests/helpers/browserE2e.ts</code> enthält mit <code>confirmAppointmentSaveReviewIfVisible</code> einen wiederverwendbaren Helfer für mehrstufige Termin-Save-Review-Dialoge.</li><li><code>tests/e2e-browser/appointment-multiday-edit.browser.e2e.spec.ts</code>, <code>tests/e2e-browser/reports.tourenplan.note-refresh.browser.e2e.spec.ts</code> und <code>tests/e2e-browser/dispatcher-form-data-and-actions.browser.e2e.spec.ts</code> bedienen bestehende Save-Review- und Blockierdialoge explizit.</li><li><code>tests/e2e-browser/calendar-drag-drop.validation-message.browser.e2e.spec.ts</code> und <code>tests/e2e-browser/calendar-week-drag-drop.drop-dispatch.browser.e2e.spec.ts</code> bestätigen den bestehenden Verschiebe-Dialog vor der PATCH-Erwartung.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Keine Rollenlogik wurde geändert.</li><li>Bestehende Browser-Pfade laufen weiterhin mit den vorhandenen Rollen <code>ADMIN</code> und <code>DISPATCHER</code>.</li><li>Die Änderungen bedienen nur bereits vorhandene Dialoge in Tests; serverseitige Berechtigungen und UI-Sichtbarkeitsregeln bleiben unverändert.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li>Safety Gate: <code>.env.test</code> vorhanden, <code>NODE_ENV=test</code>, <code>MUGPLAN_MODE=test</code>.</li><li><code>npm run test:unit -- tests/unit/validation/dtoValidators.test.ts</code> erfolgreich mit 10 Tests.</li><li><code>npm run test:integration -- tests/integration/server/documentExtraction.routes.test.ts</code> erfolgreich mit 16 Tests.</li><li><code>npm run test:unit -- tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code> erfolgreich mit 6 Tests.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/appointment-multiday-edit.browser.e2e.spec.ts tests/e2e-browser/dispatcher-form-data-and-actions.browser.e2e.spec.ts tests/e2e-browser/reports.tourenplan.note-refresh.browser.e2e.spec.ts</code> erfolgreich mit 7 Tests.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/calendar-drag-drop.validation-message.browser.e2e.spec.ts tests/e2e-browser/calendar-week-drag-drop.drop-dispatch.browser.e2e.spec.ts</code> erfolgreich mit 2 Tests.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Nach den gezielten Fixes wurde noch kein vollständiger Audit und kein vollständiger Testlauf erneut ausgeführt.</li><li>Der vorherige Audit ohne Coverage blieb gelb durch Architekturwarnungen und Knip-Findings, unter anderem Dependency-Cruiser-Warnungen, ungenutzte Exports, ungenutzte Typ-Exports und einen Duplicate Export.</li><li>Diese Audit-Findings wurden in dieser Session nur eingeordnet, aber nicht bereinigt.</li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

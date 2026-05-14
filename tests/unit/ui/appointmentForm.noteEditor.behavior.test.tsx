@@ -534,11 +534,13 @@ describe("FT13 UI: appointment form note editor behavior", () => {
     });
 
     expect(createMutation.mutate).not.toHaveBeenCalled();
-    expect(setterSpies[appointmentFormStateHook.draftAppointmentNotes]).toHaveBeenCalledTimes(1);
-    const draftUpdater = setterSpies[appointmentFormStateHook.draftAppointmentNotes].mock.calls[0]?.[0] as ((current: Array<Record<string, unknown>>) => Array<Record<string, unknown>>);
-    const nextDrafts = draftUpdater([]);
+    const nextDrafts = stateStore.find((value): value is Array<Record<string, unknown>> => (
+      Array.isArray(value)
+      && value.some((item) => item.title === "Draftnotiz")
+    ));
+    expect(nextDrafts).toBeDefined();
     expect(nextDrafts).toHaveLength(1);
-    expect(nextDrafts[0]).toMatchObject({
+    expect(nextDrafts?.[0]).toMatchObject({
       title: "Draftnotiz",
       body: "<p>Draft</p>",
       cardColor: "#38bdf8",

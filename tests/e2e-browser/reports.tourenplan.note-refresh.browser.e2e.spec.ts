@@ -23,7 +23,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { confirmAppointmentSaveReviewIfVisible, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -135,6 +135,7 @@ test("refreshes the Tourenplan preview after enabling print on an existing appoi
 
   await expect(noteCard.getByTestId(/badge-note-print-/)).toContainText("Drucken");
   await page.getByTestId("button-save-appointment").click();
+  await confirmAppointmentSaveReviewIfVisible(page);
   await expect(page.getByTestId(`week-appointment-panel-${appointment.id}`)).toBeVisible();
 
   await page.getByTestId("nav-reports").click();

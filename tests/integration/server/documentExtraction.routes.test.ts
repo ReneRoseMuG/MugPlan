@@ -255,12 +255,26 @@ describe("FT20 integration: document extraction routes", () => {
         expect(res.body.customer.postalCode).toBe("989610");
         expect(res.body.customer.city).toBe("Sömmerda");
         expect(res.body.customer.country).toBe("Deutschland");
-        expect(res.body.articleItems).toEqual([]);
-        expect(res.body.articleListHtml).toBe("");
+        expect(res.body.articleItems).toHaveLength(2);
+        expect(res.body.articleItems[0]).toMatchObject({
+          quantity: "1,00",
+          category: "Artikel",
+        });
+        expect(res.body.articleItems[0].description).toContain("S1004637");
+        expect(res.body.articleItems[1]).toMatchObject({
+          quantity: "1,00",
+          description: "eigene Anlieferung",
+          category: "Artikel",
+        });
+        expect(res.body.articleListHtml).toContain("S1004637");
         expect(res.body.documentText.length).toBeGreaterThan(0);
         expect(res.body.fieldReport.issues).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ key: "postalCodeFormat", section: "customer" }),
+          ]),
+        );
+        expect(res.body.fieldReport.issues).not.toEqual(
+          expect.arrayContaining([
             expect.objectContaining({ key: "articleListMissing", section: "project" }),
           ]),
         );

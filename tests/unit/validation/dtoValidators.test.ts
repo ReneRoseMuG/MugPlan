@@ -353,7 +353,7 @@ describe("FT21 Validation & DTO: deterministic extraction", () => {
         expect.objectContaining({ key: "articleListMissing", section: "project" }),
       ]),
     );
-    expect(parseDocumentArticleItemsDeterministicallyMock).not.toHaveBeenCalled();
+    expect(parseDocumentArticleItemsDeterministicallyMock).toHaveBeenCalledWith("doc text");
   });
 
   it("throws deterministic extraction error when parser fails", async () => {

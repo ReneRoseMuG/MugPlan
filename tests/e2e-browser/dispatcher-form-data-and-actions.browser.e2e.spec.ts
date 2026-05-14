@@ -451,13 +451,17 @@ test.describe("Dispatcher form data and actions", () => {
       title: "Dispatcher Wochennotiz Neu",
       body: "Neu angelegt",
     });
+    await page.getByTestId("button-block-tour-week").click();
+    const blockConfirmDialog = page.getByTestId("dialog-tour-week-block-confirm");
+    await expect(blockConfirmDialog).toBeVisible();
     const blockResponsePromise = page.waitForResponse((response) => (
       response.request().method() === "POST"
       && new URL(response.url()).pathname === `/api/tours/${tour.id}/weeks/${week.isoYear}/${week.isoWeek}/block`
     ));
-    await page.getByTestId("button-block-tour-week").click();
+    await blockConfirmDialog.getByRole("button", { name: "Blockieren", exact: true }).click();
     const blockResponse = await blockResponsePromise;
     expect(blockResponse.ok(), await blockResponse.text()).toBeTruthy();
+    await expect(blockConfirmDialog).toBeHidden();
     await expect.poll(async () => page.getByTestId("button-unblock-tour-week").count()).toBe(1);
 
     const unblockResponsePromise = page.waitForResponse((response) => (

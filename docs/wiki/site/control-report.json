@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 67,
-      "generated_count": 67,
+      "source_count": 68,
+      "generated_count": 68,
       "warnings": 0,
       "errors": 0
     }
@@ -2822,6 +2822,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "14-05-26-audit-test-report-fixes",
+        "title": "14.05.26 | Teststabilisierung | Audit/Test: Report-Fixes nach Audit",
+        "source": "journal/14-05-26-audit-test-report-fixes.md",
+        "output": "verwaltung/journal/14-05-26-audit-test-report-fixes.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen",
         "title": "14.05.26 | Testabdeckung | P02: Feature-Testabdeckung und UC-Lücken abgeschlossen",
