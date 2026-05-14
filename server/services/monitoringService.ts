@@ -25,6 +25,7 @@ export type MonitoringItem = {
   startTime: string | null;
   tourId: number | null;
   tourName: string | null;
+  tourColor: string | null;
   orderNumber: string | null;
   projectTitle: string | null;
   projectName: string | null;
@@ -133,6 +134,7 @@ export async function listMonitoringItems(roleKey: CanonicalRoleKey): Promise<Mo
         startTime: row.startTime,
         tourId: row.tourId,
         tourName: row.tourName,
+        tourColor: row.tourColor,
         orderNumber: row.orderNumber,
         projectTitle: row.projectTitle,
         projectName: row.projectName,

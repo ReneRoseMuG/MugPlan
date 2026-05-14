@@ -9,6 +9,7 @@ function item(appointmentId: number, triggerCodes: Array<"TR-01" | "TR-02">): Mo
     startTime: null,
     tourId: null,
     tourName: null,
+    tourColor: null,
     orderNumber: null,
     projectTitle: null,
     projectName: null,

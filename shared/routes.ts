@@ -1106,6 +1106,7 @@ const monitoringItemSchema = z.object({
   startTime: z.string().nullable(),
   tourId: z.number().int().positive().nullable(),
   tourName: z.string().nullable(),
+  tourColor: z.string().nullable(),
   orderNumber: z.string().nullable(),
   projectTitle: z.string().nullable(),
   projectName: z.string().nullable(),

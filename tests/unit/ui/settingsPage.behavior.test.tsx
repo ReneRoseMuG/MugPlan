@@ -72,6 +72,7 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
         ["entityFormShell.sidebarWidthPx", { resolvedValue: 360, resolvedScope: "DEFAULT" }],
         ["entityFormShell.contentMaxWidthPx", { resolvedValue: 760, resolvedScope: "DEFAULT" }],
         ["cardListColumns", { resolvedValue: 4, resolvedScope: "DEFAULT" }],
+        ["dispatcherLogin.conflictLookaheadWeeks", { resolvedValue: 2, resolvedScope: "DEFAULT" }],
         ["backup_enabled", { resolvedValue: true, resolvedScope: "GLOBAL" }],
         ["auth_two_factor_enabled", { resolvedValue: true, resolvedScope: "GLOBAL" }],
       ]),
@@ -153,6 +154,8 @@ describe("FT07/FT16/FT29 UI: SettingsPage behavior", () => {
     // USER-Einstellungen
     expect(html).toContain("select-setting-helpTextPreviewSize");
     expect(html).toContain("button-save-helpTextPreviewSize");
+    expect(html).toContain("input-setting-dispatcherLoginConflictLookaheadWeeks");
+    expect(html).toContain("button-save-dispatcherLoginConflictLookaheadWeeks");
     expect(html).toContain("input-setting-entityFormShellSidebarWidthPx");
     expect(html).toContain("button-save-entityFormShellSidebarWidthPx");
     expect(html).toContain("input-setting-entityFormShellContentMaxWidthPx");

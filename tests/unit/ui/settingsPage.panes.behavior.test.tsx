@@ -86,6 +86,11 @@ describe("Settings Redesign UI: Pane-Inhalte (Oberflaeche-Standardpane)", () => 
           resolvedValue: 4,
           resolvedScope: "DEFAULT",
         }],
+        ["dispatcherLogin.conflictLookaheadWeeks", {
+          label: "Login-Hinweis weitere KWs",
+          resolvedValue: 2,
+          resolvedScope: "DEFAULT",
+        }],
         ["entityFormShell.sidebarWidthPx", {
           label: "Formular Sidebar Breite (px)",
           resolvedValue: 360,
@@ -125,11 +130,12 @@ describe("Settings Redesign UI: Pane-Inhalte (Oberflaeche-Standardpane)", () => 
     expect(html).toContain("settings-pane-oberflaeche");
   });
 
-  it("zeigt alle fuenf USER-Settings im Oberflaeche-Pane", () => {
+  it("zeigt alle sechs USER-Settings im Oberflaeche-Pane", () => {
     const html = renderToStaticMarkup(<SettingsPage />);
     expect(html).toContain("setting-row-attachmentPreviewSize");
     expect(html).toContain("setting-row-helpTextPreviewSize");
     expect(html).toContain("setting-row-cardListColumns");
+    expect(html).toContain("setting-row-dispatcherLoginConflictLookaheadWeeks");
     expect(html).toContain("setting-row-entityFormShellSidebarWidthPx");
     expect(html).toContain("setting-row-entityFormShellContentMaxWidthPx");
   });
@@ -167,6 +173,7 @@ describe("Settings Redesign UI: Pane-Inhalte (Oberflaeche-Standardpane)", () => 
     expect(html).toContain("Datei Vorschau Größe");
     expect(html).toContain("Hilfetext Vorschau Größe");
     expect(html).toContain("Karten Spalten");
+    expect(html).toContain("Login-Hinweis weitere KWs");
     expect(html).toContain("Formular Sidebar Breite (px)");
     expect(html).toContain("Formular Inhalt Max-Breite (px)");
     expect(html).toContain("Toast Position Desktop");

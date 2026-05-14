@@ -29,6 +29,7 @@ function buildMonitoringItem(overrides: Partial<MonitoringListResponse[number]> 
     startTime: "08:00:00",
     tourId: 7,
     tourName: "Tour 7",
+    tourColor: "#225588",
     orderNumber: "ORD-1001",
     projectTitle: "Wintergarten Nord",
     projectName: "Wintergarten Nord",

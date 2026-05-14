@@ -71,6 +71,7 @@ function makeSettingsMock() {
       ["attachmentPreviewSize", { resolvedValue: "large", resolvedScope: "DEFAULT" }],
       ["helpTextPreviewSize", { resolvedValue: "medium", resolvedScope: "DEFAULT" }],
       ["cardListColumns", { resolvedValue: 4, resolvedScope: "DEFAULT" }],
+      ["dispatcherLogin.conflictLookaheadWeeks", { resolvedValue: 2, resolvedScope: "DEFAULT" }],
       ["entityFormShell.sidebarWidthPx", { resolvedValue: 360, resolvedScope: "DEFAULT" }],
       ["entityFormShell.contentMaxWidthPx", { resolvedValue: 760, resolvedScope: "DEFAULT" }],
       ["toastDesktopPosition", { resolvedValue: "bottom-right", resolvedScope: "GLOBAL" }],
@@ -126,6 +127,13 @@ describe("Settings Redesign UI: Steuerelemente Smoke (Oberflaeche-Pane)", () => 
       expect(html).toContain("input-setting-cardListColumns");
       expect(html).toContain("button-save-cardListColumns");
       expect(html).toMatch(/input-setting-cardListColumns[^>]*min="2"[^>]*max="6"/);
+    });
+
+    it("dispatcherLogin.conflictLookaheadWeeks: Number-Input mit korrekten Grenzen (min=0, max=12)", () => {
+      const html = renderToStaticMarkup(<SettingsPage />);
+      expect(html).toContain("input-setting-dispatcherLoginConflictLookaheadWeeks");
+      expect(html).toContain("button-save-dispatcherLoginConflictLookaheadWeeks");
+      expect(html).toMatch(/input-setting-dispatcherLoginConflictLookaheadWeeks[^>]*min="0"[^>]*max="12"/);
     });
 
     it("entityFormShell.sidebarWidthPx: Number-Input mit korrekten Grenzen (min=260, max=480)", () => {

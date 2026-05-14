@@ -268,6 +268,19 @@ export const userSettingsRegistry = {
     validate: (value: unknown): value is number =>
       typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 50,
   },
+  dispatcherLoginConflictLookaheadWeeks: {
+    key: "dispatcherLogin.conflictLookaheadWeeks",
+    label: "Login-Hinweis weitere KWs",
+    description: "Legt fest, wie viele weitere Kalenderwochen ab der aktuellen KW im Login-Hinweis für Termine ohne Mitarbeiter angezeigt werden.",
+    type: "number",
+    defaultValue: 2,
+    min: 0,
+    max: 12,
+    integer: true,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is number =>
+      typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12,
+  },
   backupLaneTourIds: {
     key: "backup_lane_tour_ids",
     label: "Backup Tour-Lanes (CSV)",

@@ -38,14 +38,25 @@ import { api, type MonitoringListResponse } from "@shared/routes";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { canAccessJournal as canAccessJournalRole, canAccessMonitoring as canAccessMonitoringRole, canAccessReports as canAccessReportsRole, canAccessTourPostalPlan, isReaderRole } from "@/lib/auth";
-import { buildMonitoringTriggerSummary } from "@/lib/monitoring-ui";
-import { buildDispatcherLoginConflicts, hasDispatcherLoginConflicts } from "@/lib/dispatcher-login-conflicts";
+import { buildMonitoringTriggerSummary, toAlphaColor } from "@/lib/monitoring-ui";
+import {
+  buildDispatcherLoginConflicts,
+  hasDispatcherLoginConflicts,
+  type DispatcherLoginConflictWeekGroup,
+} from "@/lib/dispatcher-login-conflicts";
 import { useToast } from "@/hooks/use-toast";
 import { isAbsenceAppointmentSummary } from "@shared/absenceAppointments";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { formatListDate, formatListTime } from "@/lib/list-display-format";
+import { HoverPreview } from "@/components/ui/hover-preview";
+import {
+  AppointmentWeeklyPanelPreview,
+  appointmentWeeklyPanelPreviewOptions,
+  resolveAppointmentWeeklyPanelPreviewWidthPx,
+} from "@/components/ui/badge-previews/appointment-weekly-panel-preview";
+import type { CalendarAppointment } from "@/lib/calendar-appointments";
 
 export type ViewType =
   | "month"
@@ -116,37 +127,229 @@ type HomeProps = {
   onLogout: () => void;
 };
 
-function DispatcherConflictRows({ items }: { items: MonitoringListResponse }) {
-  if (items.length === 0) {
+type DispatcherConflictListKind = "withoutEmployees" | "parked";
+
+function DispatcherConflictAppointmentPreview({
+  appointmentId,
+  startDate,
+  widthPx,
+}: {
+  appointmentId: number;
+  startDate: string;
+  widthPx: number;
+}) {
+  const previewQuery = useQuery<CalendarAppointment | null>({
+    queryKey: ["dispatcher-login-conflict-preview", appointmentId, startDate],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        fromDate: startDate,
+        toDate: startDate,
+        detail: "full",
+      });
+      const response = await fetch(`/api/calendar/appointments?${params.toString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Termin-Preview konnte nicht geladen werden");
+      }
+      const payload = (await response.json()) as unknown;
+      const appointments = Array.isArray(payload) ? (payload as CalendarAppointment[]) : [];
+      return appointments.find((appointment) => appointment.id === appointmentId) ?? null;
+    },
+  });
+
+  if (!previewQuery.data) {
     return (
-      <div className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
-        Keine Einträge.
+      <div className="rounded-lg bg-white px-4 py-3 text-sm text-slate-500" style={{ width: widthPx }}>
+        Termin-Preview wird geladen...
+      </div>
+    );
+  }
+
+  return <AppointmentWeeklyPanelPreview appointment={previewQuery.data} widthPx={widthPx} />;
+}
+
+function resolveWeekGroupClassName(urgency: DispatcherLoginConflictWeekGroup["urgency"]): string {
+  if (urgency === "current") {
+    return "border-red-400 bg-red-50 shadow-[inset_4px_0_0_rgba(220,38,38,0.82)]";
+  }
+  if (urgency === "next") {
+    return "border-orange-300 bg-orange-50/80 shadow-[inset_4px_0_0_rgba(249,115,22,0.62)]";
+  }
+  if (urgency === "near") {
+    return "border-amber-300 bg-amber-50/70 shadow-[inset_4px_0_0_rgba(245,158,11,0.45)]";
+  }
+  if (urgency === "past") {
+    return "border-slate-300 bg-white/90 shadow-[inset_4px_0_0_rgba(100,116,139,0.35)]";
+  }
+  return "border-slate-200 bg-slate-50/80 shadow-[inset_4px_0_0_rgba(148,163,184,0.35)]";
+}
+
+function resolveWeekDotClassName(urgency: DispatcherLoginConflictWeekGroup["urgency"]): string {
+  if (urgency === "current") return "bg-red-600 ring-red-200";
+  if (urgency === "next") return "bg-orange-500 ring-orange-200";
+  if (urgency === "near") return "bg-amber-500 ring-amber-200";
+  if (urgency === "past") return "bg-slate-500 ring-slate-200";
+  return "bg-slate-400 ring-slate-200";
+}
+
+function resolveWeekUrgencyLabel(group: DispatcherLoginConflictWeekGroup): string {
+  if (group.urgency === "current") return "Diese KW";
+  if (group.urgency === "next") return "Nächste KW";
+  if (group.urgency === "past") return "Vergangen";
+  return `In ${group.distanceWeeks} KWs`;
+}
+
+function resolveConflictRowStyle(
+  item: MonitoringListResponse[number],
+  listKind: DispatcherConflictListKind,
+) {
+  if (listKind !== "withoutEmployees" || !item.tourColor) {
+    return undefined;
+  }
+
+  return {
+    backgroundColor: toAlphaColor(item.tourColor, 0.12),
+    borderLeftColor: item.tourColor,
+  };
+}
+
+function formatConflictCustomerName(item: MonitoringListResponse[number]): string {
+  return item.customerName
+    ?? ([item.customerLastName, item.customerFirstName].filter(Boolean).join(", ") || item.customerNumber)
+    ?? "-";
+}
+
+function formatConflictTitle(item: MonitoringListResponse[number]): string {
+  return item.projectTitle ?? item.projectName ?? item.orderNumber ?? "-";
+}
+
+function DispatcherConflictRow({
+  item,
+  listKind,
+}: {
+  item: MonitoringListResponse[number];
+  listKind: DispatcherConflictListKind;
+}) {
+  const previewWidthPx = resolveAppointmentWeeklyPanelPreviewWidthPx("sidebarTable");
+  const preview = (
+    <DispatcherConflictAppointmentPreview
+      appointmentId={item.appointmentId}
+      startDate={item.startDate}
+      widthPx={previewWidthPx}
+    />
+  );
+
+  return (
+    <HoverPreview
+      preview={preview}
+      mode={appointmentWeeklyPanelPreviewOptions.mode}
+      openDelay={appointmentWeeklyPanelPreviewOptions.openDelayMs}
+      side={appointmentWeeklyPanelPreviewOptions.side}
+      align={appointmentWeeklyPanelPreviewOptions.align}
+      maxWidth={previewWidthPx}
+      maxHeight={null}
+      cursorOffsetX={appointmentWeeklyPanelPreviewOptions.cursorOffsetX}
+      cursorOffsetY={appointmentWeeklyPanelPreviewOptions.cursorOffsetY}
+      viewportPadding={appointmentWeeklyPanelPreviewOptions.viewportPadding}
+    >
+      <div
+        className="grid min-h-14 grid-cols-[112px_minmax(0,1.25fr)_minmax(0,1fr)_120px] items-center gap-3 rounded-md border border-slate-200 border-l-4 bg-white px-3 py-2 text-sm shadow-sm transition-colors hover:bg-white"
+        data-testid={`dispatcher-login-conflict-${item.appointmentId}`}
+        style={resolveConflictRowStyle(item, listKind)}
+      >
+        <div className="text-xs font-semibold text-slate-700">
+          <div>{formatListDate(item.startDate)}</div>
+          <div className="text-slate-500">{formatListTime(item.startTime) || "ohne Uhrzeit"}</div>
+        </div>
+        <div className="min-w-0">
+          <div className="truncate font-semibold text-slate-900">{formatConflictTitle(item)}</div>
+          {item.orderNumber ? <div className="truncate text-xs text-slate-500">{item.orderNumber}</div> : null}
+        </div>
+        <div className="min-w-0 truncate text-slate-700">{formatConflictCustomerName(item)}</div>
+        <div className="min-w-0 truncate text-xs font-medium text-slate-600">{item.tourName ?? "-"}</div>
+      </div>
+    </HoverPreview>
+  );
+}
+
+function DispatcherConflictWeekSection({
+  group,
+  listKind,
+}: {
+  group: DispatcherLoginConflictWeekGroup;
+  listKind: DispatcherConflictListKind;
+}) {
+  return (
+    <section
+      className={`grid grid-cols-[38px_minmax(0,1fr)] overflow-hidden rounded-lg border ${resolveWeekGroupClassName(group.urgency)}`}
+      data-testid={`dispatcher-login-conflict-week-${listKind}-${group.key}`}
+    >
+      <div className="relative flex justify-center bg-white/40 py-4">
+        <div className="absolute bottom-3 top-3 w-0.5 rounded-sm bg-slate-300" />
+        <div className={`relative z-10 mt-1 h-3 w-3 rounded-full ring-4 ${resolveWeekDotClassName(group.urgency)}`} />
+      </div>
+      <div className="min-w-0 p-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-black text-slate-950">{group.label}</h3>
+              <span className="rounded-full border border-slate-300 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                {resolveWeekUrgencyLabel(group)}
+              </span>
+            </div>
+            <p className="text-xs font-medium text-slate-600">{group.dateRangeLabel}</p>
+          </div>
+          <div className="rounded-full bg-white/85 px-2.5 py-1 text-xs font-black text-slate-800">
+            {group.items.length}
+          </div>
+        </div>
+        <div className="space-y-2">
+          {group.items.map((item) => (
+            <DispatcherConflictRow
+              key={`${listKind}-${item.triggerCode}-${item.appointmentId}`}
+              item={item}
+              listKind={listKind}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DispatcherConflictList({
+  groups,
+  listKind,
+  rangeLabel,
+}: {
+  groups: DispatcherLoginConflictWeekGroup[];
+  listKind: DispatcherConflictListKind;
+  rangeLabel: string;
+}) {
+  if (groups.length === 0) {
+    return (
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-slate-600" data-testid={`dispatcher-login-conflict-range-${listKind}`}>
+          {rangeLabel}
+        </p>
+        <div className="rounded-md border border-dashed border-slate-300 p-4 text-sm text-slate-500">
+          Keine Einträge.
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-h-[52vh] overflow-auto rounded-md border border-border">
-      <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-slate-50 text-left text-xs uppercase text-slate-500">
-          <tr>
-            <th className="px-3 py-2">Datum</th>
-            <th className="px-3 py-2">Termin</th>
-            <th className="px-3 py-2">Kunde</th>
-            <th className="px-3 py-2">Tour</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={`${item.triggerCode}-${item.appointmentId}`} className="border-t border-border" data-testid={`dispatcher-login-conflict-${item.appointmentId}`}>
-              <td className="whitespace-nowrap px-3 py-2">{formatListDate(item.startDate)} {formatListTime(item.startTime)}</td>
-              <td className="px-3 py-2">{item.projectTitle ?? item.projectName ?? item.orderNumber ?? "-"}</td>
-              <td className="px-3 py-2">{item.customerName ?? ([item.customerLastName, item.customerFirstName].filter(Boolean).join(", ") || item.customerNumber) ?? "-"}</td>
-              <td className="px-3 py-2">{item.tourName ?? "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-3">
+      <p className="text-xs font-semibold text-slate-600" data-testid={`dispatcher-login-conflict-range-${listKind}`}>
+        {rangeLabel}
+      </p>
+      <div className="max-h-[56vh] space-y-3 overflow-auto pr-1">
+        {groups.map((group) => (
+          <DispatcherConflictWeekSection key={group.key} group={group} listKind={listKind} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -293,6 +496,7 @@ export default function Home({ onLogout }: HomeProps) {
   const canOpenTourPostalPlan = canAccessTourPostalPlan(userRole);
   const backupEnabled = useSetting("backup_enabled");
   const backupDisabled = backupEnabled === false;
+  const dispatcherLoginConflictLookaheadWeeks = useSetting("dispatcherLogin.conflictLookaheadWeeks");
   const {
     data: monitoringItems,
     isLoading: isMonitoringLoading,
@@ -317,8 +521,8 @@ export default function Home({ onLogout }: HomeProps) {
   }, [canAccessMonitoring, refetchMonitoring, view]);
 
   const dispatcherLoginConflicts = useMemo(
-    () => buildDispatcherLoginConflicts(monitoringItems),
-    [monitoringItems],
+    () => buildDispatcherLoginConflicts(monitoringItems, new Date(), dispatcherLoginConflictLookaheadWeeks),
+    [dispatcherLoginConflictLookaheadWeeks, monitoringItems],
   );
 
   useEffect(() => {
@@ -901,7 +1105,7 @@ export default function Home({ onLogout }: HomeProps) {
         </div>
       )}
       <Dialog open={dispatcherConflictDialogOpen} onOpenChange={setDispatcherConflictDialogOpen}>
-        <DialogContent className="max-w-4xl" data-testid="dialog-dispatcher-login-conflicts">
+        <DialogContent className="max-w-5xl" data-testid="dialog-dispatcher-login-conflicts">
           <DialogHeader>
             <DialogTitle>Offene Konflikte</DialogTitle>
           </DialogHeader>
@@ -915,10 +1119,18 @@ export default function Home({ onLogout }: HomeProps) {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="without-employees" className="mt-4">
-              <DispatcherConflictRows items={dispatcherLoginConflicts.withoutEmployees} />
+              <DispatcherConflictList
+                groups={dispatcherLoginConflicts.withoutEmployeesWeeks}
+                listKind="withoutEmployees"
+                rangeLabel={`Zeitraum: ${dispatcherLoginConflicts.withoutEmployeesRange.label} (${dispatcherLoginConflicts.withoutEmployeesRange.dateRangeLabel})`}
+              />
             </TabsContent>
             <TabsContent value="parked" className="mt-4">
-              <DispatcherConflictRows items={dispatcherLoginConflicts.parked} />
+              <DispatcherConflictList
+                groups={dispatcherLoginConflicts.parkedWeeks}
+                listKind="parked"
+                rangeLabel="Zeitraum: alle Parkplatz-Termine"
+              />
             </TabsContent>
           </Tabs>
           <div className="flex justify-end">

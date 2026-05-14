@@ -5,6 +5,7 @@
  *
  * Abgedeckte Regeln:
  * - Datei-Vorschau-Groesse auf "small" setzen, Speichern, Reload -> Wert bleibt "small".
+ * - Dispatcher-Login-KW-Spanne ändern, Speichern, Reload -> Wert bleibt erhalten.
  * - Formular-Sidebar-Breite aendern, Speichern, Reload -> Wert bleibt erhalten.
  * - 2FA-Toggle umschalten, Speichern, Reload -> Wert bleibt erhalten (Sicherheits-Pane).
  * - Kalender-Wochenende-Spaltenbreite aendern, Speichern, Reload -> Wert bleibt erhalten.
@@ -70,6 +71,25 @@ test.describe("Settings Redesign: Steuerelement-Persistenz", () => {
     await page.getByTestId("input-setting-entityFormShellSidebarWidthPx").fill("360");
     await page.getByTestId("button-save-entityFormShellSidebarWidthPx").click();
     await expect(page.locator("[data-testid='setting-row-entityFormShellSidebarWidthPx']")).toContainText("Gespeichert.");
+  });
+
+  test("Oberflaeche: Dispatcher-Login-KW-Spanne ändern und persistieren", async ({ page }) => {
+    await openSettings(page);
+    await expect(page.getByTestId("settings-pane-oberflaeche")).toBeVisible();
+
+    await page.getByTestId("input-setting-dispatcherLoginConflictLookaheadWeeks").fill("4");
+    await page.getByTestId("button-save-dispatcherLoginConflictLookaheadWeeks").click();
+    await expect(page.locator("[data-testid='setting-row-dispatcherLoginConflictLookaheadWeeks']")).toContainText("Gespeichert.");
+
+    await page.reload();
+    await page.getByTestId("nav-einstellungen").click();
+    await expect(page.getByTestId("settings-pane-oberflaeche")).toBeVisible();
+    await expect(page.getByTestId("input-setting-dispatcherLoginConflictLookaheadWeeks")).toHaveValue("4");
+
+    // Zurücksetzen auf bisherigen Default
+    await page.getByTestId("input-setting-dispatcherLoginConflictLookaheadWeeks").fill("2");
+    await page.getByTestId("button-save-dispatcherLoginConflictLookaheadWeeks").click();
+    await expect(page.locator("[data-testid='setting-row-dispatcherLoginConflictLookaheadWeeks']")).toContainText("Gespeichert.");
   });
 
   test("Sicherheit: 2FA-Toggle umschalten und persistieren", async ({ page }) => {

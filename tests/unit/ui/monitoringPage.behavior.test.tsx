@@ -136,6 +136,7 @@ describe("FT31 UI: MonitoringPage behavior", () => {
             startTime: null,
             tourId: 7,
             tourName: "Tour 7",
+            tourColor: "#225588",
             orderNumber: "ORD-77",
             projectTitle: "Projekt 77",
             projectName: null,

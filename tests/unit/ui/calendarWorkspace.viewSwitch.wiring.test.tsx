@@ -32,6 +32,7 @@ const monitoringItems = [
     startTime: null,
     tourId: 9,
     tourName: "Tour 9",
+    tourColor: "#225588",
     orderNumber: null,
     projectTitle: null,
     projectName: null,

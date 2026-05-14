@@ -20,6 +20,7 @@ export type UserSettingKey =
   | "monitoring.tr01.allAppointments"
   | "monitoring.tr01.horizonDays"
   | "monitoring.tr01.minimumEmployees"
+  | "dispatcherLogin.conflictLookaheadWeeks"
   | "calendarWeekendColumnPercent"
   | "calendarWeekScrollRange"
   | "calendarMonthScrollRange"
@@ -48,6 +49,7 @@ type UserSettingValueByKey = {
   "monitoring.tr01.allAppointments": boolean;
   "monitoring.tr01.horizonDays": number;
   "monitoring.tr01.minimumEmployees": number;
+  "dispatcherLogin.conflictLookaheadWeeks": number;
   calendarWeekendColumnPercent: number;
   calendarWeekScrollRange: number;
   calendarMonthScrollRange: number;
@@ -177,6 +179,13 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
         return value as UserSettingValueByKey[K];
       }
       return 1 as UserSettingValueByKey[K];
+    }
+    if (key === "dispatcherLogin.conflictLookaheadWeeks") {
+      const value = setting?.resolvedValue;
+      if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12) {
+        return value as UserSettingValueByKey[K];
+      }
+      return 2 as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekLanes.expandedLaneId" || key === "tourWeekPlanning.weekLanes.expandedLaneId") {
       return (typeof setting?.resolvedValue === "string" ? setting.resolvedValue : "") as UserSettingValueByKey[K];

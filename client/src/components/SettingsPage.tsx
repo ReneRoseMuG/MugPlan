@@ -35,6 +35,7 @@ const defaultWeekScrollRange = 4;
 const defaultMonthScrollRange = 3;
 const defaultHoverPreviewOpenDelayMs = 380;
 const defaultCardListColumns = 4;
+const defaultDispatcherLoginConflictLookaheadWeeks = 2;
 const defaultEntityFormShellSidebarWidthPx = 360;
 const defaultEntityFormShellContentMaxWidthPx = 760;
 const defaultToastDesktopPosition: ToastDesktopPosition = "bottom-right";
@@ -210,6 +211,7 @@ export function SettingsPage() {
   const monthScrollRangeSetting = settingsByKey.get("calendarMonthScrollRange");
   const hoverPreviewOpenDelaySetting = settingsByKey.get("hoverPreviewOpenDelayMs");
   const cardListColumnsSetting = settingsByKey.get("cardListColumns");
+  const dispatcherLoginConflictLookaheadWeeksSetting = settingsByKey.get("dispatcherLogin.conflictLookaheadWeeks");
   const backupEnabledSetting = settingsByKey.get("backup_enabled");
   const authTwoFactorEnabledSetting = settingsByKey.get("auth_two_factor_enabled");
 
@@ -371,6 +373,13 @@ export function SettingsPage() {
     }
     return defaultCardListColumns;
   }, [cardListColumnsSetting?.resolvedValue]);
+  const resolvedDispatcherLoginConflictLookaheadWeeks = useMemo(() => {
+    const value = dispatcherLoginConflictLookaheadWeeksSetting?.resolvedValue;
+    if (typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 12) {
+      return value;
+    }
+    return defaultDispatcherLoginConflictLookaheadWeeks;
+  }, [dispatcherLoginConflictLookaheadWeeksSetting?.resolvedValue]);
 
   const resolvedBackupEnabled = useMemo(() => {
     const value = backupEnabledSetting?.resolvedValue;
@@ -391,6 +400,7 @@ export function SettingsPage() {
   const [monthScrollRangeValue, setMonthScrollRangeValue] = useState<string>(String(resolvedMonthScrollRange));
   const [hoverPreviewOpenDelayValue, setHoverPreviewOpenDelayValue] = useState<string>(String(resolvedHoverPreviewOpenDelay));
   const [cardListColumnsValue, setCardListColumnsValue] = useState<string>(String(resolvedCardListColumns));
+  const [dispatcherLoginConflictLookaheadWeeksValue, setDispatcherLoginConflictLookaheadWeeksValue] = useState<string>(String(resolvedDispatcherLoginConflictLookaheadWeeks));
   const [backupEnabledValue, setBackupEnabledValue] = useState<boolean>(resolvedBackupEnabled);
   const [authTwoFactorEnabledValue, setAuthTwoFactorEnabledValue] = useState<boolean>(resolvedAuthTwoFactorEnabled);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -403,6 +413,7 @@ export function SettingsPage() {
   const [monthScrollRangeError, setMonthScrollRangeError] = useState<string | null>(null);
   const [hoverPreviewOpenDelayError, setHoverPreviewOpenDelayError] = useState<string | null>(null);
   const [cardListColumnsError, setCardListColumnsError] = useState<string | null>(null);
+  const [dispatcherLoginConflictLookaheadWeeksError, setDispatcherLoginConflictLookaheadWeeksError] = useState<string | null>(null);
   const [backupEnabledError, setBackupEnabledError] = useState<string | null>(null);
   const [authTwoFactorEnabledError, setAuthTwoFactorEnabledError] = useState<string | null>(null);
   const [previewSaved, setPreviewSaved] = useState(false);
@@ -415,6 +426,7 @@ export function SettingsPage() {
   const [monthScrollRangeSaved, setMonthScrollRangeSaved] = useState(false);
   const [hoverPreviewOpenDelaySaved, setHoverPreviewOpenDelaySaved] = useState(false);
   const [cardListColumnsSaved, setCardListColumnsSaved] = useState(false);
+  const [dispatcherLoginConflictLookaheadWeeksSaved, setDispatcherLoginConflictLookaheadWeeksSaved] = useState(false);
   const [backupEnabledSaved, setBackupEnabledSaved] = useState(false);
   const [authTwoFactorEnabledSaved, setAuthTwoFactorEnabledSaved] = useState(false);
   const [systemSeedError, setSystemSeedError] = useState<string | null>(null);
@@ -480,6 +492,10 @@ export function SettingsPage() {
   useEffect(() => {
     setCardListColumnsValue(String(resolvedCardListColumns));
   }, [resolvedCardListColumns]);
+
+  useEffect(() => {
+    setDispatcherLoginConflictLookaheadWeeksValue(String(resolvedDispatcherLoginConflictLookaheadWeeks));
+  }, [resolvedDispatcherLoginConflictLookaheadWeeks]);
 
   useEffect(() => {
     setBackupEnabledValue(resolvedBackupEnabled);
@@ -701,6 +717,27 @@ export function SettingsPage() {
       setCardListColumnsSaved(true);
     } catch (error) {
       setCardListColumnsError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
+    }
+  };
+
+  const handleSaveDispatcherLoginConflictLookaheadWeeks = async () => {
+    setDispatcherLoginConflictLookaheadWeeksError(null);
+    setDispatcherLoginConflictLookaheadWeeksSaved(false);
+    const parsed = Number(dispatcherLoginConflictLookaheadWeeksValue);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 12) {
+      setDispatcherLoginConflictLookaheadWeeksError("Bitte eine ganze Zahl von 0 bis 12 eingeben.");
+      return;
+    }
+
+    try {
+      await setSetting({
+        key: "dispatcherLogin.conflictLookaheadWeeks",
+        scopeType: "USER",
+        value: parsed,
+      });
+      setDispatcherLoginConflictLookaheadWeeksSaved(true);
+    } catch (error) {
+      setDispatcherLoginConflictLookaheadWeeksError(error instanceof Error ? error.message : "Speichern fehlgeschlagen");
     }
   };
 
@@ -1058,6 +1095,24 @@ export function SettingsPage() {
                     </div>
                     {cardListColumnsSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
                     {cardListColumnsError && <p className="mt-1 text-xs text-destructive">{cardListColumnsError}</p>}
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-dispatcherLoginConflictLookaheadWeeks">
+                    <p className="font-semibold text-slate-900 text-sm">{dispatcherLoginConflictLookaheadWeeksSetting?.label ?? "Login-Hinweis weitere KWs"}</p>
+                    <p className="mb-3 text-xs text-slate-500">{dispatcherLoginConflictLookaheadWeeksSetting?.description ?? "Anzahl weiterer Kalenderwochen im Dispatcher-Login-Hinweis (0-12)."}</p>
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <Input
+                        type="number" min={0} max={12} step={1}
+                        value={dispatcherLoginConflictLookaheadWeeksValue}
+                        onChange={(event) => setDispatcherLoginConflictLookaheadWeeksValue(event.target.value)}
+                        data-testid="input-setting-dispatcherLoginConflictLookaheadWeeks"
+                      />
+                      <Button size="sm" onClick={() => void handleSaveDispatcherLoginConflictLookaheadWeeks()} disabled={isSaving} data-testid="button-save-dispatcherLoginConflictLookaheadWeeks">
+                        Speichern
+                      </Button>
+                    </div>
+                    {dispatcherLoginConflictLookaheadWeeksSaved && <p className="mt-1 text-xs text-emerald-700">Gespeichert.</p>}
+                    {dispatcherLoginConflictLookaheadWeeksError && <p className="mt-1 text-xs text-destructive">{dispatcherLoginConflictLookaheadWeeksError}</p>}
                   </div>
 
                   <div className="rounded-md border border-slate-200 bg-slate-50 p-4" data-testid="setting-row-entityFormShellSidebarWidthPx">
