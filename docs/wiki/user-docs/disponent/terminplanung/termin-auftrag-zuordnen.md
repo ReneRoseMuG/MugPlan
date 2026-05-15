@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-auftrag-zuordnen
 related: [termin-anlegen, auftrag-anlegen]
 ---
-
-<!-- Inhalt folgt -->

@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: pruefliste
 related: [sondermass-erkennen, gespiegelt-erkennen, produktionsplanung-lesen]
 ---
-
-<!-- Inhalt folgt -->

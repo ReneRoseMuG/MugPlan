@@ -5,5 +5,3 @@ section: personal
 helpkey: konflikt-doppelbelegung
 related: [mitarbeiter-zuweisen, verfuegbarkeit-pruefen, termin-verschieben]
 ---
-
-<!-- Inhalt folgt -->

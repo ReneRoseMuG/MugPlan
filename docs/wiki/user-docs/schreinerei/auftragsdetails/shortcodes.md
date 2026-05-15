@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: shortcodes
 related: [mengenzusammenfassung, produktionsplanung-lesen]
 ---
-
-<!-- Inhalt folgt -->

@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: sondermass-erkennen
 related: [artikelliste-auftrag, pruefliste, gespiegelt-erkennen]
 ---
-
-<!-- Inhalt folgt -->

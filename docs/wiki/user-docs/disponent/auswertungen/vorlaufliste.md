@@ -5,5 +5,3 @@ section: auswertungen
 helpkey: vorlaufliste
 related: [welcher-report, produktionsplanung, report-drucken]
 ---
-
-<!-- Inhalt folgt -->

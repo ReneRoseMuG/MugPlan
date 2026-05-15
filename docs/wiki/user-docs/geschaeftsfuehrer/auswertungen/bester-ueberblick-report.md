@@ -5,5 +5,3 @@ section: auswertungen
 helpkey: bester-ueberblick-report
 related: [naechste-lieferungen, auftraege-ueberblick]
 ---
-
-<!-- Inhalt folgt -->

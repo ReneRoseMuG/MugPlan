@@ -5,5 +5,3 @@ section: auswertungen
 helpkey: auftragsliste
 related: [welcher-report, tourenplan, report-drucken]
 ---
-
-<!-- Inhalt folgt -->

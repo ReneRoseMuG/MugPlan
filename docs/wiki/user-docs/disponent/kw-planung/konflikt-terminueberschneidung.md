@@ -5,5 +5,3 @@ section: kw-planung
 helpkey: konflikt-terminueberschneidung
 related: [konflikt-kw-tour, konflikt-doppelbelegung, tour-kw-anwenden]
 ---
-
-<!-- Inhalt folgt -->

@@ -5,5 +5,3 @@ section: personal
 helpkey: verfuegbarkeit-woche
 related: [urlaube-abwesenheiten, kapazitaet-woche]
 ---
-
-<!-- Inhalt folgt -->

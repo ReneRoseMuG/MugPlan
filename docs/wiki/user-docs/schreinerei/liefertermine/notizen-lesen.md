@@ -5,5 +5,3 @@ section: liefertermine
 helpkey: notizen-lesen
 related: [artikelliste-auftrag, auftrag-vollstaendig]
 ---
-
-<!-- Inhalt folgt -->

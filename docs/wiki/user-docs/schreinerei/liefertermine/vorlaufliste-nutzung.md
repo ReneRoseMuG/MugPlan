@@ -5,5 +5,3 @@ section: liefertermine
 helpkey: vorlaufliste-nutzung
 related: [auftrag-liefertermin, termine-woche, produktionsplanung-lesen]
 ---
-
-<!-- Inhalt folgt -->

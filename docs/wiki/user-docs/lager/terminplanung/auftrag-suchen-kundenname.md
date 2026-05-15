@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: auftrag-suchen-kundenname
 related: [liefertermin-auftrag, termin-verschoben]
 ---
-
-<!-- Inhalt folgt -->

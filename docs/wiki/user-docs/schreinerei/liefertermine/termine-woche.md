@@ -5,5 +5,3 @@ section: liefertermine
 helpkey: termine-woche
 related: [auftrag-liefertermin, vorlaufliste-nutzung, mitarbeiter-tour-woche]
 ---
-
-<!-- Inhalt folgt -->

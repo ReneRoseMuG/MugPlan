@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-notiz
 related: [termin-anlegen, notiz-auftrag]
 ---
-
-<!-- Inhalt folgt -->

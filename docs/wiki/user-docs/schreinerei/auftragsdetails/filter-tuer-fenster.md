@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: filter-tuer-fenster
 related: [filter-ofentyp, artikelliste-auftrag]
 ---
-
-<!-- Inhalt folgt -->

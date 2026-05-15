@@ -5,5 +5,3 @@ section: kunden
 helpkey: kunde-suchen
 related: [kunde-bearbeiten, auftrag-suchen]
 ---
-
-<!-- Inhalt folgt -->

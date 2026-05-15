@@ -1,9 +1,15 @@
-# Lager – Themenübersicht
+---
+title: "Lager"
+---
 
-- [Bedarfsplanung](bedarfsplanung/)
-- [Termine und Lieferung](terminplanung/)
-- [Datenpflege](datenpflege/)
+## ↑ Übergeordnet
+
+[MugPlan Benutzerdokumentation](../README.md)
 
 ---
 
-*Stand: 2026-05*
+## Unterbereiche
+
+- [Bedarfsplanung](bedarfsplanung/README.md)
+- [Datenpflege](datenpflege/README.md)
+- [Terminplanung](terminplanung/README.md)

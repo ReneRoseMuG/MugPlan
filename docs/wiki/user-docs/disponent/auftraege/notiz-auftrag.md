@@ -5,5 +5,3 @@ section: auftraege
 helpkey: notiz-auftrag
 related: [auftrag-anlegen, dokument-hochladen]
 ---
-
-<!-- Inhalt folgt -->

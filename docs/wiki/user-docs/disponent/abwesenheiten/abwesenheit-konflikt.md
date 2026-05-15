@@ -5,5 +5,3 @@ section: abwesenheiten
 helpkey: abwesenheit-konflikt
 related: [urlaub-erfassen, konflikt-doppelbelegung, mitarbeiter-zuweisen]
 ---
-
-<!-- Inhalt folgt -->

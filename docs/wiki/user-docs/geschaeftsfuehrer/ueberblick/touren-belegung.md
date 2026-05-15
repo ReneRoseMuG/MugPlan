@@ -5,5 +5,3 @@ section: ueberblick
 helpkey: touren-belegung
 related: [auftraege-ueberblick, kapazitaet-woche]
 ---
-
-<!-- Inhalt folgt -->

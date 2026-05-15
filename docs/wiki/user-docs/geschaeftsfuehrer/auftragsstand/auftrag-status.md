@@ -5,5 +5,3 @@ section: auftragsstand
 helpkey: auftrag-status
 related: [auftraege-ueberblick, stornierte-auftraege, reklamationen-uebersicht]
 ---
-
-<!-- Inhalt folgt -->

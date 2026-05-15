@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-verschieben
 related: [termin-anlegen, konflikt-doppelbelegung, termin-gesperrt-geparkt]
 ---
-
-<!-- Inhalt folgt -->

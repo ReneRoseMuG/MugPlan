@@ -5,5 +5,3 @@ section: personal
 helpkey: verfuegbarkeit-pruefen
 related: [mitarbeiter-zuweisen, abwesenheiten-uebersicht, wochenplanung-uebersicht]
 ---
-
-<!-- Inhalt folgt -->

@@ -5,5 +5,3 @@ section: ueberblick
 helpkey: termine-woche-gf
 related: [auftraege-ueberblick, touren-belegung]
 ---
-
-<!-- Inhalt folgt -->

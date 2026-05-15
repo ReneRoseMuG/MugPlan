@@ -5,5 +5,3 @@ section: auswertungen
 helpkey: report-drucken
 related: [welcher-report, presets]
 ---
-
-<!-- Inhalt folgt -->

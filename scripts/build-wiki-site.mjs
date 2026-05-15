@@ -8,7 +8,7 @@ const siteRoot = path.join(wikiRoot, "site");
 const indexPath = path.join(wikiRoot, "data", "wiki-index.json");
 
 const posix = path.posix;
-const todayIso = "2026-05-09";
+const todayIso = new Date().toISOString().slice(0, 10);
 
 function readText(file) {
   return fs.readFileSync(file, "utf8").replace(/^\uFEFF/, "");
@@ -66,18 +66,43 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+function parseFrontMatter(markdown) {
+  const normalized = String(markdown ?? "").replace(/\r\n/g, "\n");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  if (!match) {
+    return { data: {}, body: markdown };
+  }
+  const data = {};
+  const rawFrontMatter = match[1];
+  for (const line of rawFrontMatter.split("\n")) {
+    const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
+    if (!match) continue;
+    const [, key, rawValue] = match;
+    data[key] = rawValue.replace(/^["']|["']$/g, "").trim();
+  }
+  return { data, body: normalized.slice(match[0].length) };
+}
+
+function stripFrontMatter(markdown) {
+  return parseFrontMatter(markdown).body;
+}
+
+function frontMatterValue(markdown, key) {
+  return parseFrontMatter(markdown).data[key] ?? "";
+}
+
 function stripFirstHeading(markdown) {
-  return markdown.replace(/^# .*(?:\r?\n)+/, "");
+  return stripFrontMatter(markdown).replace(/^# .*(?:\r?\n)+/, "");
 }
 
 function firstHeading(markdown) {
-  const match = markdown.match(/^#\s+(.+)$/m);
+  const match = stripFrontMatter(markdown).match(/^#\s+(.+)$/m);
   return match ? match[1].trim() : "";
 }
 
 function sectionContent(markdown, headingNames) {
   const names = Array.isArray(headingNames) ? headingNames : [headingNames];
-  const lines = markdown.split(/\r?\n/);
+  const lines = stripFrontMatter(markdown).split(/\r?\n/);
   for (let i = 0; i < lines.length; i += 1) {
     const match = lines[i].match(/^##\s+(.+?)\s*$/);
     if (!match) continue;
@@ -143,7 +168,7 @@ function excerptFrom(markdown, preferredSections) {
 }
 
 function firstParagraph(markdown) {
-  const blocks = markdown
+  const blocks = stripFrontMatter(markdown)
     .split(/\n\s*\n/)
     .map((block) => block.trim())
     .filter(Boolean);
@@ -205,6 +230,18 @@ function relLink(fromOutputRel, toOutputRel) {
 const sourceToOutput = new Map();
 let taskOverviewCache;
 
+function mappedOutputForSource(targetRel) {
+  const normalized = targetRel.replace(/\/$/, "");
+  const direct = sourceToOutput.get(normalized);
+  if (direct) return direct;
+  if (!posix.extname(normalized)) {
+    return sourceToOutput.get(`${normalized}.md`)
+      ?? sourceToOutput.get(posix.join(normalized, "README.md"))
+      ?? "";
+  }
+  return "";
+}
+
 function taskOverviewEntries() {
   if (taskOverviewCache) return taskOverviewCache;
   taskOverviewCache = new Map();
@@ -232,7 +269,7 @@ function resolveMarkdownHref(href, currentSourceRel, currentOutputRel) {
   const [rawPath, anchor = ""] = trimmed.split("#");
   if (!rawPath) return `#${anchor}`;
   const targetRel = posix.normalize(posix.join(posix.dirname(currentSourceRel), rawPath));
-  const mapped = sourceToOutput.get(targetRel);
+  const mapped = mappedOutputForSource(targetRel);
   if (mapped) {
     return `${relLink(currentOutputRel, mapped)}${anchor ? `#${anchor}` : ""}`;
   }
@@ -270,7 +307,7 @@ function renderInline(text, currentSourceRel, currentOutputRel) {
 }
 
 function markdownToHtml(markdown, currentSourceRel, currentOutputRel) {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const lines = stripFrontMatter(markdown).replace(/\r\n/g, "\n").split("\n");
   const html = [];
   let i = 0;
 
@@ -576,7 +613,7 @@ function collectSources() {
     .map(makeNfr)
     .sort((a, b) => a.id.localeCompare(b.id));
   const userDocs = files
-    .filter((rel) => rel.startsWith("user-docs/") && posix.basename(rel) !== "README.md")
+    .filter((rel) => rel.startsWith("user-docs/") && rel !== "user-docs/README.md")
     .map(makeUserDoc)
     .sort((a, b) => `${a.category}/${a.title}`.localeCompare(`${b.category}/${b.title}`));
   const journal = files
@@ -745,20 +782,52 @@ function makeJournal(rel) {
   };
 }
 
+function userDocSegmentLabel(segment) {
+  const labels = {
+    abwesenheiten: "Abwesenheiten",
+    auftraege: "Aufträge",
+    auftragsdetails: "Auftragsdetails",
+    auftragsstand: "Auftragsstand",
+    auswertungen: "Auswertungen",
+    bedarfsplanung: "Bedarfsplanung",
+    datenpflege: "Datenpflege",
+    disponent: "Disponent",
+    geschaeftsfuehrer: "Geschäftsführer",
+    kunden: "Kunden",
+    lager: "Lager",
+    liefertermine: "Liefertermine",
+    personal: "Personal",
+    schreinerei: "Schreinerei",
+    terminplanung: "Terminplanung",
+    ueberblick: "Überblick",
+  };
+  if (labels[segment]) return labels[segment];
+  if (segment === "kw-planung") return "KW-Planung";
+  return segment
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
 function makeUserDoc(rel) {
   const markdown = readText(sourceAbs(rel));
   const heading = firstHeading(markdown);
+  const title = frontMatterValue(markdown, "title") || heading || slugBase(rel);
   const userDocRel = posix.relative("user-docs", rel);
   const categoryPath = posix.dirname(userDocRel);
+  const isReadme = posix.basename(userDocRel) === "README.md";
   const category = categoryPath === "."
     ? "Allgemein"
-    : categoryPath.split("/").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" / ");
-  const outputRel = `benutzerdokumentation/${userDocRel.replace(/\.md$/, ".html")}`;
+    : categoryPath.split("/").map(userDocSegmentLabel).join(" / ");
+  const outputRel = isReadme
+    ? posix.join("benutzerdokumentation", categoryPath, "index.html")
+    : `benutzerdokumentation/${userDocRel.replace(/\.md$/, ".html")}`;
   sourceToOutput.set(rel, outputRel);
   return {
     kind: "user-doc",
-    id: slugBase(rel),
-    title: heading || slugBase(rel),
+    id: frontMatterValue(markdown, "helpkey")
+      || (isReadme ? categoryPath.replaceAll("/", "-") : slugBase(rel)),
+    title,
     rel,
     outputRel,
     markdown,
@@ -1038,19 +1107,24 @@ function renderUserDocsOverview(userDocs) {
   const sections = categories
     .map((category) => {
       const docs = userDocs.filter((doc) => doc.category === category);
+      const cards = docs
+        .map((doc) => {
+          const desc = doc.beschreibung
+            ? `\n              <p class="wiki-doc-card__desc">${escapeHtml(doc.beschreibung)}</p>`
+            : "";
+          const meta = doc.stand
+            ? `\n              <div class="wiki-doc-card__meta"><span>Stand ${escapeHtml(doc.stand)}</span></div>`
+            : "";
+          return `<article class="wiki-doc-card">
+              <p class="wiki-card__eyebrow">${escapeHtml(doc.category)}</p>
+              <h3 class="wiki-doc-card__title">${entityLink(doc, outputRel, doc.title)}</h3>${desc}${meta}
+            </article>`;
+        })
+        .join("");
       return `<section class="wiki-doc-section">
         <h2 class="wiki-h2">${escapeHtml(category)}</h2>
         <div class="wiki-doc-grid">
-          ${docs
-            .map((doc) => `<article class="wiki-doc-card">
-              <p class="wiki-card__eyebrow">${escapeHtml(doc.category)}</p>
-              <h3 class="wiki-doc-card__title">${entityLink(doc, outputRel, doc.title)}</h3>
-              ${doc.beschreibung ? `<p class="wiki-doc-card__desc">${escapeHtml(doc.beschreibung)}</p>` : ""}
-              <div class="wiki-doc-card__meta">
-                ${doc.stand ? `<span>Stand ${escapeHtml(doc.stand)}</span>` : ""}
-              </div>
-            </article>`)
-            .join("")}
+          ${cards}
         </div>
       </section>`;
     })
@@ -1325,7 +1399,7 @@ function validate(sources) {
     ["use_cases", sources.useCases, ["id", "title", "featureId"]],
     ["backlogs", sources.backlogs, ["id", "title", "featureId"]],
     ["nfrs", sources.nfrs, ["id", "title", "status", "kategorie", "beschreibung"]],
-    ["user_docs", sources.userDocs, ["title", "category", "beschreibung"]],
+    ["user_docs", sources.userDocs, ["title", "category"]],
     ["journal", sources.journal, ["title", "datum"]],
   ];
   for (const [key, rows, required] of sourceGroups) {

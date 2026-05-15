@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: mengenzusammenfassung
 related: [produktionsplanung-lesen, shortcodes, saunamodelle-woche]
 ---
-
-<!-- Inhalt folgt -->

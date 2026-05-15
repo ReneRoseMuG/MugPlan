@@ -5,5 +5,3 @@ section: kw-planung
 helpkey: wochenplanung-uebersicht
 related: [tour-kw-mitarbeiter, tour-kw-anwenden, verfuegbarkeit-pruefen]
 ---
-
-<!-- Inhalt folgt -->

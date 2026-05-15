@@ -5,5 +5,3 @@ section: auftragsstand
 helpkey: auftraege-ohne-termin
 related: [auftraege-ueberblick, auftrag-status]
 ---
-
-<!-- Inhalt folgt -->

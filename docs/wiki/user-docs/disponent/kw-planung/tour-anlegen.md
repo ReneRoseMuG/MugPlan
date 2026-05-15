@@ -5,5 +5,3 @@ section: kw-planung
 helpkey: tour-anlegen
 related: [tour-einfuehrung, tour-kw-mitarbeiter]
 ---
-
-<!-- Inhalt folgt -->

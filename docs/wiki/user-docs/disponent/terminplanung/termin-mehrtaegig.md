@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-mehrtaegig
 related: [termin-anlegen, termin-verschieben]
 ---
-
-<!-- Inhalt folgt -->

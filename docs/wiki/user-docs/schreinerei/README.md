@@ -1,9 +1,15 @@
-# Schreinerei – Themenübersicht
+---
+title: "Schreinerei"
+---
 
-- [Auftragsdetails und Artikelpositionen](auftragsdetails/)
-- [Liefertermine und Auftragsstand](liefertermine/)
-- [Personal und Verfügbarkeit](personal/)
+## ↑ Übergeordnet
+
+[MugPlan Benutzerdokumentation](../README.md)
 
 ---
 
-*Stand: 2026-05*
+## Unterbereiche
+
+- [Auftragsdetails](auftragsdetails/README.md)
+- [Liefertermine](liefertermine/README.md)
+- [Personal](personal/README.md)

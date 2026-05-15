@@ -1,10 +1,16 @@
-# Geschäftsführer – Themenübersicht
+---
+title: "Geschäftsführer"
+---
 
-- [Überblick und Auslastung](ueberblick/)
-- [Auftragsstand](auftragsstand/)
-- [Personal und Abwesenheiten](personal/)
-- [Auswertungen](auswertungen/)
+## ↑ Übergeordnet
+
+[MugPlan Benutzerdokumentation](../README.md)
 
 ---
 
-*Stand: 2026-05*
+## Unterbereiche
+
+- [Auftragsstand](auftragsstand/README.md)
+- [Auswertungen](auswertungen/README.md)
+- [Personal](personal/README.md)
+- [Überblick](ueberblick/README.md)

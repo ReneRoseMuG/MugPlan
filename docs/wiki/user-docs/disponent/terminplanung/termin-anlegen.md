@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-anlegen
 related: [termin-auftrag-zuordnen, termin-mehrtaegig, mitarbeiter-zuweisen]
 ---
-
-<!-- Inhalt folgt -->

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disponent – Terminplanung · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../projekt/projekte.html">Projekte</a></li><li><a href="../../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../lastenheft/features.html">Features</a></li><li><a href="../../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../verwaltung/journal.html">Journal</a></li><li><a href="../../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../benutzerdokumentation.html" class="is-active">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Benutzerdokumentation disponent-terminplanung">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><a href="../../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">Disponent – Terminplanung</span></nav>
+        <h1 class="wiki-h1">Disponent – Terminplanung</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Bereich</span><span class="wiki-badge wiki-badge--neutral">Disponent / Terminplanung</span></div>
+    <p class="wiki-lead">Disponent</p>
+    <h2 class="wiki-h2">↑ Übergeordnet</h2>
+<p><a href="../index.html">Disponent</a></p>
+<hr>
+<h2 class="wiki-h2">Seiten</h2>
+<ul><li><a href="termin-anlegen.html">Wo lege ich einen neuen Termin an?</a></li><li><a href="termin-auftrag-zuordnen.html">Wie weise ich einem Termin einen Auftrag zu?</a></li><li><a href="termin-gesperrt-geparkt.html">Warum ist ein Termin gesperrt oder geparkt?</a></li><li><a href="termin-mehrtaegig.html">Wie setze ich Start- und Enddatum für einen mehrtägigen Termin?</a></li><li><a href="termin-notiz.html">Wie füge ich einem Termin eine Notiz hinzu?</a></li><li><a href="termin-stornieren-loeschen.html">Wie storniere oder lösche ich einen Termin?</a></li><li><a href="termin-verschieben.html">Wie verschiebe ich einen bestehenden Termin?</a></li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

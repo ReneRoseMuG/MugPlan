@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: filter-ofentyp
 related: [filter-tuer-fenster, artikelliste-auftrag, saunamodelle-woche]
 ---
-
-<!-- Inhalt folgt -->

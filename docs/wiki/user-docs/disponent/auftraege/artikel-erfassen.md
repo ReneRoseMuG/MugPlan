@@ -5,5 +5,3 @@ section: auftraege
 helpkey: artikel-erfassen
 related: [auftrag-anlegen, tag-sondermass, tag-gespiegelt]
 ---
-
-<!-- Inhalt folgt -->

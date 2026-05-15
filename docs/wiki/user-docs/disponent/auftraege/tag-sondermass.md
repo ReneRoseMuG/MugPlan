@@ -5,5 +5,3 @@ section: auftraege
 helpkey: tag-sondermass
 related: [artikel-erfassen, tag-gespiegelt]
 ---
-
-<!-- Inhalt folgt -->

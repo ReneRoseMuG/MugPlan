@@ -5,5 +5,3 @@ section: auftraege
 helpkey: reklamation
 related: [auftrag-stornieren, termin-stornieren-loeschen]
 ---
-
-<!-- Inhalt folgt -->

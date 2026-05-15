@@ -5,5 +5,3 @@ section: datenpflege
 helpkey: artikelliste-vollstaendig
 related: [artikelliste-zusatzartikel, bedarf-pro-woche]
 ---
-
-<!-- Inhalt folgt -->

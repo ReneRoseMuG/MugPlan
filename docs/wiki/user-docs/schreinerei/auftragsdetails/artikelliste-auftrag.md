@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: artikelliste-auftrag
 related: [saunamodelle-woche, sondermass-erkennen, gespiegelt-erkennen]
 ---
-
-<!-- Inhalt folgt -->

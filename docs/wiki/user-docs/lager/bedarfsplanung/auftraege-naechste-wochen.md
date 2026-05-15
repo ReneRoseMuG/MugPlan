@@ -5,5 +5,3 @@ section: bedarfsplanung
 helpkey: auftraege-naechste-wochen
 related: [artikelliste-zusatzartikel, bedarf-pro-woche, produktionsplanung-lager]
 ---
-
-<!-- Inhalt folgt -->

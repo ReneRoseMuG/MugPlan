@@ -5,5 +5,3 @@ section: kw-planung
 helpkey: tour-kw-freigeben
 related: [tour-kw-blockieren, termin-gesperrt-geparkt]
 ---
-
-<!-- Inhalt folgt -->

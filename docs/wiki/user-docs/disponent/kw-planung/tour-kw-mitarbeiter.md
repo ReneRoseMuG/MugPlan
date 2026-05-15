@@ -5,5 +5,3 @@ section: kw-planung
 helpkey: tour-kw-mitarbeiter
 related: [tour-einfuehrung, tour-kw-anwenden, konflikt-kw-tour]
 ---
-
-<!-- Inhalt folgt -->

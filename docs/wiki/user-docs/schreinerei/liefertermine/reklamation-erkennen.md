@@ -5,5 +5,3 @@ section: liefertermine
 helpkey: reklamation-erkennen
 related: [auftrag-vollstaendig, auftrag-liefertermin]
 ---
-
-<!-- Inhalt folgt -->

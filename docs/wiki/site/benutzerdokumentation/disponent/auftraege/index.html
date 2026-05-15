@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disponent – Aufträge · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../projekt/projekte.html">Projekte</a></li><li><a href="../../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../lastenheft/features.html">Features</a></li><li><a href="../../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../verwaltung/journal.html">Journal</a></li><li><a href="../../../verwaltung/metadaten.html">Metadaten</a></li><li><a href="../../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../../benutzerdokumentation.html" class="is-active">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Benutzerdokumentation disponent-auftraege">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><a href="../../../benutzerdokumentation.html">Benutzerdokumentation</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">Disponent – Aufträge</span></nav>
+        <h1 class="wiki-h1">Disponent – Aufträge</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Bereich</span><span class="wiki-badge wiki-badge--neutral">Disponent / Aufträge</span></div>
+    <p class="wiki-lead">Disponent</p>
+    <h2 class="wiki-h2">↑ Übergeordnet</h2>
+<p><a href="../index.html">Disponent</a></p>
+<hr>
+<h2 class="wiki-h2">Seiten</h2>
+<ul><li><a href="begriffe-kunde-auftrag-projekt.html">Was ist der Unterschied zwischen Kunde, Auftrag und Projekt?</a></li><li><a href="auftrag-anlegen.html">Ich habe einen neuen Auftrag – wo lege ich ihn an?</a></li><li><a href="auftrag-per-pdf.html">Ich habe den Auftrag als PDF – wie bekomme ich die Daten ins System?</a></li><li><a href="auftrag-kunde-zuordnen.html">Wie ordne ich einen Auftrag dem richtigen Kunden zu?</a></li><li><a href="auftrag-suchen.html">Wie finde ich einen Auftrag?</a></li><li><a href="auftrag-nicht-sichtbar.html">Ich sehe einen Auftrag nicht in der Liste – warum?</a></li><li><a href="artikel-erfassen.html">Wie erfasse ich die Artikel und Komponenten eines Auftrags?</a></li><li><a href="notiz-auftrag.html">Wie füge ich einem Auftrag eine Notiz hinzu?</a></li><li><a href="dokument-hochladen.html">Wie lade ich ein Dokument zu einem Auftrag hoch?</a></li><li><a href="tag-sondermass.html">Was bedeutet Sondermaß, und wann setze ich diesen Tag?</a></li><li><a href="tag-gespiegelt.html">Was bedeutet Gespiegelt, und was ändert sich dadurch?</a></li><li><a href="reklamation.html">Was tue ich, wenn ein Auftrag reklamiert wird?</a></li><li><a href="auftrag-stornieren.html">Wie storniere ich einen Auftrag?</a></li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

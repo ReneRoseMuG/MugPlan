@@ -5,5 +5,3 @@ section: ueberblick
 helpkey: auftraege-ueberblick
 related: [auftraege-ohne-termin, touren-belegung, naechste-lieferungen]
 ---
-
-<!-- Inhalt folgt -->

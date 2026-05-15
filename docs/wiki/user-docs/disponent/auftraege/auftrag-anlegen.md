@@ -5,5 +5,3 @@ section: auftraege
 helpkey: auftrag-anlegen
 related: [auftrag-per-pdf, auftrag-kunde-zuordnen, artikel-erfassen]
 ---
-
-<!-- Inhalt folgt -->

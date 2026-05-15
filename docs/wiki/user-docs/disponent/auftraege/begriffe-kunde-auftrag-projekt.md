@@ -5,5 +5,3 @@ section: auftraege
 helpkey: begriffe-kunde-auftrag-projekt
 related: [auftrag-anlegen, auftrag-kunde-zuordnen]
 ---
-
-<!-- Inhalt folgt -->

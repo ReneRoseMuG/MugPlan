@@ -5,5 +5,3 @@ section: ueberblick
 helpkey: kapazitaet-woche
 related: [touren-belegung, verfuegbarkeit-woche, termine-woche-gf]
 ---
-
-<!-- Inhalt folgt -->

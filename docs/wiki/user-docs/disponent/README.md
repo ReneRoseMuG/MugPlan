@@ -1,13 +1,19 @@
-# Disponent – Themenübersicht
+---
+title: "Disponent"
+---
 
-- [Aufträge erfassen und verwalten](auftraege/)
-- [Kunden pflegen](kunden/)
-- [Termine planen](terminplanung/)
-- [Personal zuweisen](personal/)
-- [KW-Planung und Touren](kw-planung/)
-- [Abwesenheiten](abwesenheiten/)
-- [Auswertungen und Reports](auswertungen/)
+## ↑ Übergeordnet
+
+[MugPlan Benutzerdokumentation](../README.md)
 
 ---
 
-*Stand: 2026-05*
+## Unterbereiche
+
+- [Abwesenheiten](abwesenheiten/README.md)
+- [Aufträge](auftraege/README.md)
+- [Auswertungen](auswertungen/README.md)
+- [Kunden](kunden/README.md)
+- [KW-Planung](kw-planung/README.md)
+- [Personal](personal/README.md)
+- [Terminplanung](terminplanung/README.md)

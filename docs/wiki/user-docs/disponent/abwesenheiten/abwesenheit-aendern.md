@@ -5,5 +5,3 @@ section: abwesenheiten
 helpkey: abwesenheit-aendern
 related: [urlaub-erfassen, krankheit-abwesenheit]
 ---
-
-<!-- Inhalt folgt -->

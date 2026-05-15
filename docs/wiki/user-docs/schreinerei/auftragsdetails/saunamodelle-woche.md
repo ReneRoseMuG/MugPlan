@@ -5,5 +5,3 @@ section: auftragsdetails
 helpkey: saunamodelle-woche
 related: [mengenzusammenfassung, produktionsplanung-lesen, artikelliste-auftrag]
 ---
-
-<!-- Inhalt folgt -->

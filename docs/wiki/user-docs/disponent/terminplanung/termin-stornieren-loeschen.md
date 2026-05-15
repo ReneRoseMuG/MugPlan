@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-stornieren-loeschen
 related: [termin-verschieben, termin-gesperrt-geparkt, reklamation]
 ---
-
-<!-- Inhalt folgt -->

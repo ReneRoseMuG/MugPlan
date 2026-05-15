@@ -5,5 +5,3 @@ section: bedarfsplanung
 helpkey: artikelliste-zusatzartikel
 related: [auftraege-naechste-wochen, bedarf-pro-woche, filter-komponentenkategorie]
 ---
-
-<!-- Inhalt folgt -->

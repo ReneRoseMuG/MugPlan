@@ -5,5 +5,3 @@ section: personal
 helpkey: mitarbeiter-tour-woche
 related: [abwesenheiten-woche, personalengpass]
 ---
-
-<!-- Inhalt folgt -->

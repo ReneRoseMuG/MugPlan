@@ -5,5 +5,3 @@ section: auswertungen
 helpkey: welcher-report
 related: [vorlaufliste, produktionsplanung, auftragsliste, tourenplan]
 ---
-
-<!-- Inhalt folgt -->

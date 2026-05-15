@@ -5,5 +5,3 @@ section: terminplanung
 helpkey: termin-verschoben
 related: [liefertermin-auftrag, termin-storniert]
 ---
-
-<!-- Inhalt folgt -->

@@ -5,5 +5,3 @@ section: personal
 helpkey: team-zuweisen
 related: [mitarbeiter-zuweisen, konflikt-doppelbelegung]
 ---
-
-<!-- Inhalt folgt -->
