@@ -572,7 +572,7 @@ async function expectProjectExtractionFixturePersistence(page: Page, fixture: Pr
   await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByTestId("document-extraction-report-missing")).toContainText("Firma");
   await expect(page.getByTestId("document-extraction-report-issues")).toHaveCount(0);
-  await expect(page.getByText("Artikelliste wurde erkannt.")).toBeVisible();
+  await expect(page.getByText("Auftragsinhalt wurde erkannt.")).toBeVisible();
 
   await page.getByTestId("button-project-doc-extract-next").click();
   await expect(page.getByText(fixture.project.saunaModel)).toBeVisible();

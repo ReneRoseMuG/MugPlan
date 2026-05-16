@@ -56,7 +56,7 @@ export function DocumentExtractionProjectSection({
         />
       </div>
       <div className="space-y-1">
-        <Label>Artikelliste</Label>
+        <Label>Erkannter Auftragsinhalt</Label>
         <RichTextEditor
           value={articleListHtml}
           onChange={onArticleListHtmlChange}

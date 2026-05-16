@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-15",
+  "generated_at": "2026-05-16",
   "summary": {
     "projects": {
       "source_count": 2,
@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 68,
-      "generated_count": 68,
+      "source_count": 69,
+      "generated_count": 69,
       "warnings": 0,
       "errors": 0
     }
@@ -3785,6 +3785,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "16-05-26-doc-extract-ui-und-save-review-nacharbeit",
+        "title": "16.05.26 | Implementierung | Doc Extract: UI- und Save-Review-Nacharbeit",
+        "source": "journal/16-05-26-doc-extract-ui-und-save-review-nacharbeit.md",
+        "output": "verwaltung/journal/16-05-26-doc-extract-ui-und-save-review-nacharbeit.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "14-05-26-audit-test-report-fixes",
         "title": "14.05.26 | Teststabilisierung | Audit/Test: Report-Fixes nach Audit",

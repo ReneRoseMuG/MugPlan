@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>16-05-26-doc-extract-ui-und-save-review-nacharbeit: 16.05.26 | Implementierung | Doc Extract: UI- und Save-Review-Nacharbeit · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 16-05-26-doc-extract-ui-und-save-review-nacharbeit">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">16-05-26-doc-extract-ui-und-save-review-nacharbeit 16.05.26 | Implementierung | Doc Extract: UI- und Save-Review-Nacharbeit</span></nav>
+        <h1 class="wiki-h1">16-05-26-doc-extract-ui-und-save-review-nacharbeit: 16.05.26 | Implementierung | Doc Extract: UI- und Save-Review-Nacharbeit</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>16.05.26</div>
+    <p class="wiki-lead">Der Projekt-Doc-Extract-Workflow wurde im Multistep-Dialog textlich und visuell nachgezogen. Mehrere erklärende Infoblöcke wurden entfernt oder gekürzt, die Begriffe rund um die Artikelliste wurden im Extract-Dialog auf „Auftragsinhalt“ umgestellt und der Kundenschritt zeigt den </p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Der Projekt-Doc-Extract-Workflow wurde im Multistep-Dialog textlich und visuell nachgezogen. Mehrere erklärende Infoblöcke wurden entfernt oder gekürzt, die Begriffe rund um die Artikelliste wurden im Extract-Dialog auf „Auftragsinhalt“ umgestellt und der Kundenschritt zeigt den Status zur Kundenauflösung jetzt als kompakten Info-Container oberhalb des Formulars.</p>
+<p>Im Anschluss wurde eine Regression im Projekt-Speichern-Review korrigiert: Nach Doc Extract wird die Artikelliste beim späteren Projektspeichern wieder auf nicht ausgewählte Positionen geprüft, und das erkannte Sauna-Modell kann wieder als Vorschlag zum Projektname-Abgleich in den Speichern-Dialog gelangen.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Lokale UI-Nacharbeit in bestehenden React-Komponenten.</li><li>Korrektur der Übergabe zwischen Doc Extract und Projekt-Speichern-Review.</li><li>Testanpassung für geänderte sichtbare Texte und Statuscontainer.</li><li>Keine DB-Migration, keine neue Abhängigkeit und keine API-Contract-Änderung.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>Projektanlage mit Dokumentextraktion.</li><li>Projektanlage aus einem Termin heraus mit Dokumentextraktion.</li><li>Projekt-Speichern-Review für Artikellistenprüfung und Projektname-Angleichung.</li><li>Kundenschritt im Doc-Extract-Multistep-Dialog.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Im Projekt-Doc-Extract-Dialog wurde der Block „Kundendaten prüfen“ entfernt.</li><li>Im Projektschritt wurde das Label „Artikelliste“ zu „Erkannter Auftragsinhalt“ geändert.</li><li>Die Erfolgsmeldung „Artikelliste wurde erkannt.“ wurde zu „Auftragsinhalt wurde erkannt.“ geändert.</li><li>Der erklärende Reklamationssatz im Mängelschritt wurde entfernt.</li><li>Im Reklamationsschritt wurde der Infoblock „Reklamationsnotiz“ entfernt; Checkbox und Editor bleiben erhalten.</li><li>In der Abschlussübersicht heißt der Status nun „Auftragsinhalt“ statt „Artikelliste“.</li><li>Im Kundenschritt zeigt ein neuer grüner Info-Container mit Icon an, dass ein Kunde beim Übernehmen neu angelegt wird.</li><li>Ein bestehender Kunde wird im Kundenschritt nun in einem orangefarbenen Info-Container mit Icon oberhalb des Formulars angezeigt.</li><li>Im Projekt-Speichern-Dialog wurde der Artikellisten-Hinweis auf „Artikelliste enthält nicht ausgewählte Positionen“ gekürzt.</li><li>Der Projektname-Infoblock wurde entfernt; die eigentliche Checkbox zur Übernahme des Sauna-Modells bleibt erhalten.</li><li><code>ProjectForm</code> übernimmt aus Doc Extract wieder strukturierte Artikelauswahlen, soweit sie gegen vorhandene Masterdaten auflösbar sind.</li><li><code>ProjectForm</code> und der Terminpfad markieren die Artikellistenentscheidung nach Doc Extract nicht mehr als bereits erledigt, damit der spätere Speichern-Review nicht ausgewählte Positionen wieder meldet.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Keine Rollenlogik wurde geändert.</li><li>Zulässige Sichtbarkeit und Aktionen bleiben unverändert: Kundenermittlung, Kundenanlage, Projektanlage, Reklamationsnotiz und Speichern laufen weiterhin über die bestehenden UI- und Serverpfade.</li><li>Die Änderungen weichen keine Berechtigungen auf und führen keine neuen Endpunkte oder Mutationen ein.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li>Safety Gate: <code>.env.test</code> vorhanden, <code>NODE_ENV=test</code> und <code>MUGPLAN_MODE=test</code> über die npm-Testskripte gesetzt.</li><li><code>npm run test:unit -- tests/unit/ui/projectDocumentExtractionWorkflowDialog.render.test.tsx tests/unit/ui/projectSaveReviewDialog.render.test.tsx</code> erfolgreich mit 9 Tests.</li><li><code>npm run test:unit -- tests/unit/ui/projectDocumentExtractionWorkflowDialog.render.test.tsx</code> erfolgreich mit 7 Tests.</li><li><code>npm run test:unit -- tests/unit/ui/projectSaveReview.logic.test.ts tests/unit/ui/projectSaveReviewDialog.render.test.tsx tests/unit/ui/projectDocumentExtractionWorkflowDialog.render.test.tsx</code> erfolgreich mit 15 Tests.</li><li><code>npm run typecheck</code> erfolgreich.</li><li><code>git diff --check</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein vollständiger Browser-E2E-Lauf wurde in dieser Session erneut ausgeführt.</li><li>Lokale Dev-Datenpflege für den Testkunden <code>163116</code> wurde mehrfach über das vorhandene Dev-Löschskript ausgeführt; diese Datenbankoperation ist nicht Teil des Git-Commits.</li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

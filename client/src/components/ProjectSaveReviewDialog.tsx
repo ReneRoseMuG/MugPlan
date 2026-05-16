@@ -52,7 +52,6 @@ export function ProjectSaveReviewDialog({
   open,
   missingArticleLabels,
   saunaModelName = null,
-  currentProjectName,
   reklamationNoteDraft = null,
   duplicateAttachmentSummary = null,
   isBusy = false,
@@ -173,8 +172,7 @@ export function ProjectSaveReviewDialog({
         <section className="space-y-4" data-testid="project-save-review-step-articles">
           <DialogBaseInlineMessage
             tone="warning"
-            title="Artikelliste enthält offene Auswahlen"
-            description="Diese Einträge stehen auf nicht ausgewählt. Das Speichern bleibt möglich."
+            title="Artikelliste enthält nicht ausgewählte Positionen"
           />
           <ul className="grid gap-2 sm:grid-cols-2" data-testid="project-save-review-missing-articles">
             {missingArticleLabels.map((label) => (
@@ -189,11 +187,6 @@ export function ProjectSaveReviewDialog({
 
       {activeStepId === "title" ? (
         <section className="space-y-4" data-testid="project-save-review-step-title">
-          <DialogBaseInlineMessage
-            tone="info"
-            title="Projektname kann aus dem Sauna-Modell übernommen werden"
-            description={`Aktueller Projektname: ${currentProjectName || "ohne Titel"}`}
-          />
           <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
             <input
               checked={adoptSaunaTitle}

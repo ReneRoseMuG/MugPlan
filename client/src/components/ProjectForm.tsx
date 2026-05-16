@@ -78,6 +78,7 @@ import {
   mapProjectOrderItemsToDynamicSelections,
   mapProjectOrderItemsToSelections,
   PROJECT_PRODUCT_FIELDS,
+  resolveSelectionsFromExtraction,
   type DynamicProjectCategorySlot,
   type DynamicProjectProductSelections,
   type ProjectProductFieldKey,
@@ -2052,6 +2053,16 @@ export function ProjectForm({
       }
       setName(payload.saunaModel.trim());
       setExtractedArticleListHtml(payload.articleListHtml.trim());
+      setProductSelections(resolveSelectionsFromExtraction(
+        {
+          saunaModel: payload.saunaModel,
+          categorizedItems: documentExtractionData?.categorizedItems ?? [],
+        },
+        products,
+        components,
+        componentCategories,
+      ));
+      setDynamicProductSelections(createEmptyDynamicProjectProductSelections(dynamicCategorySlots));
       setCustomerId(payload.customerId);
       setDocumentExtractionSelectedCustomer(payload.resolvedCustomer);
       if (extractedOrderNumber.length > 0) {
@@ -2099,7 +2110,7 @@ export function ProjectForm({
         }
       }
       setDocumentExtractionDecisions({
-        articleListReviewed: payload.articleListReviewed,
+        articleListReviewed: false,
         reklamationReviewed: payload.acceptMissingArticleListAsReklamation,
       });
       setDocumentExtractionOpen(false);

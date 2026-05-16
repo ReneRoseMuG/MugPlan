@@ -97,7 +97,10 @@ describe("ProjectSaveReviewDialog", () => {
 
     expect(html).toContain("dialog-project-save-review");
     expect(html).toContain("Artikelliste");
+    expect(html).toContain("Artikelliste enthält nicht ausgewählte Positionen");
+    expect(html).not.toContain("Diese Einträge stehen auf nicht ausgewählt");
     expect(html).toContain("Projektname");
+    expect(html).not.toContain("Projektname kann aus dem Sauna-Modell übernommen werden");
     expect(html).toContain("Ofen");
     expect(html).toContain("Steuerung");
     expect(html).toContain("Weiter");

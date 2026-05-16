@@ -219,10 +219,16 @@ describe("FT21 project document extraction workflow dialog", () => {
     const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
 
     expect(html).toContain("document-extraction-customer-section");
+    expect(html).not.toContain("Kundendaten prüfen");
     expect(html).not.toContain("button-doc-extract-resolve-customer");
     expect(html).not.toContain("Kunde prüfen");
     expect(html).toContain("Bestehender Kunde");
     expect(html).toContain("C-100");
+    expect(html).toContain("bg-orange-50");
+    expect(html).toContain("<svg");
+    expect(html.indexOf("doc-extract-customer-resolution-single")).toBeLessThan(
+      html.indexOf("document-extraction-customer-section"),
+    );
     expect(html).toContain("Leere Stammdaten");
     expect(html).toContain("Vorhandene Kundendaten bleiben");
     expect(html).toContain("checkbox-doc-extract-update-existing-customer");
@@ -230,6 +236,26 @@ describe("FT21 project document extraction workflow dialog", () => {
       value: expect.objectContaining({ customerNumber: "C-100", postalCode: "123456" }),
     });
     expect(html).not.toContain("überschreiben");
+  });
+
+  it("renders the new-customer resolution as a green info container above the form", async () => {
+    const { ProjectDocumentExtractionWorkflowDialog } = await loadWorkflowDialog({
+      activeStepIndex: 0,
+      customerResolution: {
+        resolution: "none",
+        count: 0,
+        customer: null,
+      },
+    });
+    const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
+
+    expect(html).toContain("doc-extract-customer-resolution-none");
+    expect(html).toContain("Kunde wird beim Übernehmen neu angelegt.");
+    expect(html).toContain("bg-emerald-50");
+    expect(html).toContain("<svg");
+    expect(html.indexOf("doc-extract-customer-resolution-none")).toBeLessThan(
+      html.indexOf("document-extraction-customer-section"),
+    );
   });
 
   it("renders missing fields, issues and the reklamation decision for missing article lists", async () => {
@@ -244,6 +270,7 @@ describe("FT21 project document extraction workflow dialog", () => {
     expect(html).toContain("Es konnte keine Artikelliste erkannt werden.");
     expect(html).toContain("checkbox-doc-extract-accept-reklamation");
     expect(html).toContain("Dieses Dokument als Reklamation ohne Artikelliste");
+    expect(html).not.toContain("Markieren Sie das Projekt nur dann als Reklamation");
     expect(html).not.toContain("checkbox-doc-extract-create-reklamation-note");
 
     const warningIndex = html.indexOf("Kundendaten konnten nur teilweise erkannt werden.");
@@ -261,6 +288,7 @@ describe("FT21 project document extraction workflow dialog", () => {
     const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
 
     expect(html).toContain("doc-extract-reklamation-step");
+    expect(html).not.toContain("Die Notiz wird als Draft vorbereitet");
     expect(html).toContain("checkbox-doc-extract-create-reklamation-note");
     expect(html).toContain("doc-extract-reklamation-note-editor");
     expect(html).toContain("input-doc-extract-reklamation-note-title");
@@ -276,6 +304,7 @@ describe("FT21 project document extraction workflow dialog", () => {
     const html = renderWorkflow(ProjectDocumentExtractionWorkflowDialog);
 
     expect(html).toContain("Bereit zur Übernahme");
+    expect(html).toContain("Auftragsinhalt");
     expect(html).not.toContain("Die Entscheidungen aus diesem Dialog werden beim Speichern nicht erneut abgefragt.");
     expect(html).toContain("Dokumenttext wird in die Anmerkungen übernommen.");
   });

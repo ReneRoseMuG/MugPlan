@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ExternalLink, FileText, Loader2 } from "lucide-react";
+import { ExternalLink, FileText, Loader2, UserCheck, UserPlus } from "lucide-react";
 import type { Customer } from "@shared/schema";
 import {
   DialogBaseFooter,
@@ -464,11 +464,24 @@ export function ProjectDocumentExtractionWorkflowDialog({
 
         {data && customerFields && customer && activeStepId === "customer" ? (
           <div className="space-y-5">
-            <DialogBaseInlineMessage
-              tone="info"
-              title="Kundendaten prüfen"
-              description="Erkannte Kundendaten werden automatisch über die Kundennummer aufgelöst."
-            />
+            {customerResolution?.resolution === "none" && canCreateCustomer ? (
+              <div
+                className="flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-950"
+                data-testid="doc-extract-customer-resolution-none"
+              >
+                <UserPlus className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+                <p>Kunde wird beim Übernehmen neu angelegt.</p>
+              </div>
+            ) : null}
+            {customerResolution?.resolution === "single" ? (
+              <div
+                className="flex items-start gap-3 rounded-md border border-orange-200 bg-orange-50 px-3 py-3 text-sm text-orange-950"
+                data-testid="doc-extract-customer-resolution-single"
+              >
+                <UserCheck className="mt-0.5 h-4 w-4 shrink-0 text-orange-700" />
+                <p>Bestehender Kunde wird verknüpft: {customerResolution.customer.customerNumber}</p>
+              </div>
+            ) : null}
             <DocumentExtractionCustomerSection
               value={customerFields}
               onChange={(next) => {
@@ -482,16 +495,6 @@ export function ProjectDocumentExtractionWorkflowDialog({
                 <span className="flex items-center gap-2 text-sm text-slate-600" data-testid="doc-extract-customer-resolution-loading">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Kunde wird automatisch geprüft.
-                </span>
-              ) : null}
-              {customerResolution?.resolution === "single" ? (
-                <div className="text-sm text-emerald-700" data-testid="doc-extract-customer-resolution-single">
-                  <p>Bestehender Kunde wird verknüpft: {customerResolution.customer.customerNumber}</p>
-                </div>
-              ) : null}
-              {customerResolution?.resolution === "none" && canCreateCustomer ? (
-                <span className="text-sm text-amber-700" data-testid="doc-extract-customer-resolution-none">
-                  Kunde wird beim Übernehmen neu angelegt.
                 </span>
               ) : null}
             </div>
@@ -554,14 +557,11 @@ export function ProjectDocumentExtractionWorkflowDialog({
             {missingArticleList ? (
               <DialogBaseInlineMessage tone="warning" title="Artikelliste nicht erkannt" description="Das Dokument kann trotzdem übernommen werden." />
             ) : (
-              <DialogBaseInlineMessage tone="success" title="Artikelliste wurde erkannt." />
+              <DialogBaseInlineMessage tone="success" title="Auftragsinhalt wurde erkannt." />
             )}
             <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3">
               <div>
                 <h3 className="text-sm font-semibold text-amber-950">Reklamation</h3>
-                <p className="mt-1 text-sm text-amber-950">
-                  Markieren Sie das Projekt nur dann als Reklamation, wenn das Dokument fachlich eine Reklamation beschreibt.
-                </p>
               </div>
               <label className="flex items-start gap-3 text-sm text-amber-950">
                 <Checkbox
@@ -581,11 +581,6 @@ export function ProjectDocumentExtractionWorkflowDialog({
 
         {data && activeStepId === "reklamation" ? (
           <div className="space-y-5" data-testid="doc-extract-reklamation-step">
-            <DialogBaseInlineMessage
-              tone="info"
-              title="Reklamationsnotiz"
-              description="Die Notiz wird als Draft vorbereitet und mit dem Projekt gespeichert."
-            />
             <label className="flex items-start gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-3 text-sm">
               <Checkbox
                 checked={createReklamationNote}
@@ -638,7 +633,7 @@ export function ProjectDocumentExtractionWorkflowDialog({
               <p><span className="font-medium">Projekt:</span> {saunaModel || "ohne Titel"}</p>
               <p><span className="font-medium">Auftragsnummer:</span> {orderNumber || "nicht erkannt"}</p>
               <p><span className="font-medium">Kunde:</span> {customer?.customerNumber || "nicht erkannt"}</p>
-              <p><span className="font-medium">Artikelliste:</span> {missingArticleList ? "als Mangel behandelt" : "erkannt"}</p>
+              <p><span className="font-medium">Auftragsinhalt:</span> {missingArticleList ? "als Mangel behandelt" : "erkannt"}</p>
               {acceptMissingArticleListAsReklamation ? (
                 <p>Projekt wird als Reklamation vorbereitet{createReklamationNote ? " und erhält eine Reklamationsnotiz" : ""}.</p>
               ) : null}

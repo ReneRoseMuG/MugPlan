@@ -1863,7 +1863,7 @@ export function AppointmentForm({
         productSelections: createEmptyProjectProductSelections(),
         documentFile: documentExtractionFile,
         documentExtractionDecisions: {
-          articleListReviewed: payload.articleListReviewed,
+          articleListReviewed: false,
           reklamationReviewed: payload.acceptMissingArticleListAsReklamation,
         },
         documentExtractionReklamation: payload.acceptMissingArticleListAsReklamation
