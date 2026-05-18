@@ -44,6 +44,14 @@ Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Frontend-Cache. Die v
 Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Kalender-Performance. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
+### Notizen
+| ID | Aufgabe | Typ | Status |
+| :--- | :--- | :--- | :--- |
+| A-43 | [Messe-Workflow-Notizeditor bleibt nach Speichern offen](terminnotiz-messe-editor-versionskonflikt.md) | Fehler | `offen` |
+
+Diese Aufgabe bündelt den offenen Fehler im Messe-Workflow für Terminnotizen. Die verlinkte Aufgabendatei hält Befund, Ursache, Rollenbezug, Umsetzungshinweise und erwartete Tests für die weitere Bearbeitung zusammen.
+
+
 ### Reports
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |

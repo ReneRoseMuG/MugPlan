@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-16",
+  "generated_at": "2026-05-18",
   "summary": {
     "projects": {
       "source_count": 2,
@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 8,
-      "generated_count": 8,
+      "source_count": 9,
+      "generated_count": 9,
       "warnings": 0,
       "errors": 0
     },
@@ -142,6 +142,15 @@
         "title": "FT-26 Report-Kacheln für Auftragsliste und Produktionsplanung vereinheitlichen",
         "source": "tasks/ft26-report-kacheln-vereinheitlichen.md",
         "output": "projekt/aufgaben/ft26-report-kacheln-vereinheitlichen.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "id": "A-43",
+        "title": "Messe-Workflow-Notizeditor bleibt nach Speichern offen",
+        "source": "tasks/terminnotiz-messe-editor-versionskonflikt.md",
+        "output": "projekt/aufgaben/terminnotiz-messe-editor-versionskonflikt.html",
         "ok": true,
         "warnings": [],
         "errors": []
