@@ -12,6 +12,7 @@ import {
   buildEmployeeIdsFromResourcePreviewSelection,
   getDefaultResourcePreviewSelection,
   hasResourcePreviewDecision,
+  shouldShowResourceResolutionMode,
   type AppointmentResourcePreviewResponse,
 } from "../../../client/src/lib/resource-planning";
 
@@ -74,5 +75,49 @@ describe("resource planning preview helpers", () => {
         { employeeId: 1, employeeName: "Konflikt", status: "conflict", selectable: true, conflictReason: "EMPLOYEE_OVERLAP", source: "current" },
       ],
     })).toBe(true);
+  });
+
+  it("treats planned current removals as a resource decision and removes them from additive resolution", () => {
+    const preview: AppointmentResourcePreviewResponse = {
+      isoYear: 2099,
+      isoWeek: 10,
+      hasWeekPlan: false,
+      currentEmployeeIds: [1],
+      items: [
+        { employeeId: 1, employeeName: "Alt", status: "will_remove", selectable: false, conflictReason: "WILL_REMOVE", source: "current" },
+      ],
+    };
+
+    expect(hasResourcePreviewDecision(preview)).toBe(true);
+    expect(buildEmployeeIdsFromResourcePreviewSelection(preview, [], "additive")).toEqual([]);
+  });
+
+  it("shows additive/replace only for existing appointments in the same tour week with selectable week-plan additions", () => {
+    const preview: AppointmentResourcePreviewResponse = {
+      isoYear: 2099,
+      isoWeek: 10,
+      hasWeekPlan: true,
+      currentEmployeeIds: [1],
+      items: [
+        { employeeId: 1, employeeName: "Alt", status: "current_only", selectable: false, conflictReason: null, source: "current" },
+        { employeeId: 2, employeeName: "Plan", status: "will_add", selectable: true, conflictReason: null, source: "week_plan" },
+      ],
+    };
+
+    expect(shouldShowResourceResolutionMode(preview, {
+      employeeCarryoverMode: "preserve",
+      isExistingAppointment: true,
+      isSameTourAndWeek: true,
+    })).toBe(true);
+    expect(shouldShowResourceResolutionMode(preview, {
+      employeeCarryoverMode: "replace",
+      isExistingAppointment: true,
+      isSameTourAndWeek: false,
+    })).toBe(false);
+    expect(shouldShowResourceResolutionMode(preview, {
+      employeeCarryoverMode: "preserve",
+      isExistingAppointment: false,
+      isSameTourAndWeek: true,
+    })).toBe(false);
   });
 });

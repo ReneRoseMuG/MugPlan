@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18",
+  "generated_at": "2026-05-21",
   "summary": {
     "projects": {
       "source_count": 2,
@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 69,
-      "generated_count": 69,
+      "source_count": 70,
+      "generated_count": 70,
       "warnings": 0,
       "errors": 0
     }
@@ -3794,6 +3794,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "21-05-26-termin-kw-mitarbeiter-uebernahme",
+        "title": "21.05.26 | Implementierung | FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht",
+        "source": "journal/21-05-26-termin-kw-mitarbeiter-uebernahme.md",
+        "output": "verwaltung/journal/21-05-26-termin-kw-mitarbeiter-uebernahme.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "16-05-26-doc-extract-ui-und-save-review-nacharbeit",
         "title": "16.05.26 | Implementierung | Doc Extract: UI- und Save-Review-Nacharbeit",

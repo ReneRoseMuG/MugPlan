@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [21.05.26 - FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht](21-05-26-termin-kw-mitarbeiter-uebernahme.md)
 - [16.05.26 - Doc Extract: UI- und Save-Review-Nacharbeit](16-05-26-doc-extract-ui-und-save-review-nacharbeit.md)
 - [14.05.26 - Audit/Test: Report-Fixes nach Audit](14-05-26-audit-test-report-fixes.md)
 - [14.05.26 - P02: Feature-Testabdeckung und UC-Lücken abgeschlossen](14-05-26-p02-feature-testabdeckung-uc-luecken-abgeschlossen.md)

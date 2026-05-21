@@ -14,6 +14,7 @@ import {
 import {
   buildEmployeeIdsFromResourcePreviewSelection,
   type AppointmentResourcePreviewResponse,
+  type AppointmentResourceResolutionMode,
 } from "@/lib/resource-planning";
 
 type AppointmentSaveReviewStepId = "resources" | "notes" | "employees";
@@ -28,7 +29,9 @@ export type AppointmentSaveReviewResourceRequest = {
   preview: AppointmentResourcePreviewResponse;
   resolutionKey: string;
   selectedIds: number[];
-  resolutionMode: "additive" | "replace";
+  resolutionMode: AppointmentResourceResolutionMode;
+  showResolutionMode?: boolean;
+  resolutionNotice?: string | null;
 };
 
 export type AppointmentSaveReviewNoteReview = {
@@ -81,6 +84,7 @@ function formatReviewRange(startDate: string, endDate: string | null, startTime:
 }
 
 function resourceStatusLabel(item: AppointmentResourcePreviewResponse["items"][number]): string | null {
+  if (item.status === "will_remove") return "Wird vom Termin entfernt";
   if (item.conflictReason === "WILL_REMOVE") return "Wird vom Termin entfernt";
   if (item.status === "conflict" && item.source === "current") {
     return "Überschneidung im Zielzeitraum. Abwählen entfernt den Mitarbeiter beim Speichern.";
@@ -113,7 +117,7 @@ export function AppointmentSaveReviewDialog({
 }: AppointmentSaveReviewDialogProps) {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>(resourceRequest?.selectedIds ?? []);
-  const [resolutionMode, setResolutionMode] = useState<"additive" | "replace">(resourceRequest?.resolutionMode ?? "additive");
+  const [resolutionMode, setResolutionMode] = useState<AppointmentResourceResolutionMode>(resourceRequest?.resolutionMode ?? "additive");
   const [confirmNotesReviewed, setConfirmNotesReviewed] = useState(false);
   const [confirmNoEmployees, setConfirmNoEmployees] = useState(false);
 
@@ -235,6 +239,7 @@ export function AppointmentSaveReviewDialog({
               title="Wochenplanung vor dem Speichern prüfen"
               description="Prüfen Sie, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen."
             />
+            {resourceRequest.showResolutionMode ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border p-3" data-testid="appointment-week-resolution-mode">
               <span className="text-sm font-medium text-slate-700">Übernahme:</span>
               <Button
@@ -258,6 +263,14 @@ export function AppointmentSaveReviewDialog({
                 Ersetzen
               </Button>
             </div>
+            ) : null}
+            {!resourceRequest.showResolutionMode && resourceRequest.resolutionNotice ? (
+              <DialogBaseInlineMessage
+                tone="info"
+                title="Mitarbeiter werden ersetzt"
+                description={resourceRequest.resolutionNotice}
+              />
+            ) : null}
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"

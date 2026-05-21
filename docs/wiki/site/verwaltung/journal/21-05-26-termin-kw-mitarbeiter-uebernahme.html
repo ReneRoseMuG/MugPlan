@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>21-05-26-termin-kw-mitarbeiter-uebernahme: 21.05.26 | Implementierung | FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 21-05-26-termin-kw-mitarbeiter-uebernahme">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">21-05-26-termin-kw-mitarbeiter-uebernahme 21.05.26 | Implementierung | FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht</span></nav>
+        <h1 class="wiki-h1">21-05-26-termin-kw-mitarbeiter-uebernahme: 21.05.26 | Implementierung | FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>21.05.26</div>
+    <p class="wiki-lead">Die Übernahme von Mitarbeitern aus der Tour-KW-Planung in Termine wurde vereinfacht. Die bisherige Additiv/Ersetzen-Auswahl erscheint nicht mehr bei neuen Terminen oder bei fachlich eindeutigen Umplanungen.</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>Die Übernahme von Mitarbeitern aus der Tour-KW-Planung in Termine wurde vereinfacht. Die bisherige Additiv/Ersetzen-Auswahl erscheint nicht mehr bei neuen Terminen oder bei fachlich eindeutigen Umplanungen.</p>
+<p>Bei Tourwechsel oder KW-Wechsel eines bestehenden Termins werden direkte Termin-Mitarbeiter nun als zu entfernende Mitarbeiter angezeigt. Übernommen werden nur ausgewählte Mitarbeiter aus der Ziel-KW-Planung. Bleibt ein bestehender Termin in derselben Tour und derselben KW, bleibt die Additiv/Ersetzen-Entscheidung erhalten, sofern die KW-Planung zusätzliche Mitarbeiter anbietet.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Fachliche Vereinfachung eines bestehenden Termin-/Tour-KW-Flows.</li><li>Erweiterung des bestehenden Preview-Contracts um einen expliziten Mitarbeiter-Mitnahmemodus.</li><li>UI-Anpassung bestehender Vorschau- und Save-Review-Dialoge.</li><li>Erweiterung vorhandener Unit-, Integration- und Browser-E2E-Tests.</li><li>Keine DB-Migration, keine neue Abhängigkeit und keine neue Infrastruktur.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-04 Tour-KW-Planung und Terminübernahme.</li><li>Terminformular bei neuer Tourauswahl, Tourwechsel und KW-Wechsel.</li><li>Termin-Save-Review bei Ressourcenprüfung.</li><li>Kalender-Drag-and-drop in der Wochenansicht.</li><li>Notion-Links wurden im Auftrag nicht belastbar angegeben; Grundlage waren lokale FT-04-Codepfade und bestehende Tests.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>Der Preview-Endpunkt <code>/api/appointments/:id/tour-change-preview</code> akzeptiert optional <code>employeeCarryoverMode</code> mit <code>preserve</code> oder <code>replace</code>.</li><li>Im Modus <code>replace</code> liefert die Preview vorhandene direkte Termin-Mitarbeiter als <code>will_remove</code>.</li><li>Die gemeinsame Ressourcenlogik erkennt geplante Entfernungen, aktuelle Konflikte und echte KW-Planungsentscheidungen getrennt.</li><li><code>AppointmentForm</code> verwendet bei Tour- oder KW-Wechsel bestehender Termine feste Ersetzung und bei gleicher Tour/KW weiterhin die echte Additiv/Ersetzen-Entscheidung.</li><li>Neue Termine mit KW-Planung zeigen keine Additiv/Ersetzen-Auswahl mehr.</li><li>Tour komplett entfernen behält weiterhin direkte Termin-Mitarbeiter.</li><li>Ziel-Touren ohne KW-Planung öffnen bei bestehenden Termin-Mitarbeitern einen Dialog, der die Entfernung kommuniziert; nach Bestätigung wird ohne Mitarbeiter gespeichert.</li><li><code>CalendarWorkspace</code> verwendet dieselbe Regelmatrix für Kalender-Drag-and-drop.</li><li><code>ResourcePlanningDialog</code>, <code>TourEmployeeCascadeDialog</code> und <code>AppointmentSaveReviewDialog</code> zeigen bei festen Ersetzungen einen Hinweis statt der Additiv/Ersetzen-Auswahl.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Sichtbarkeit und Ausführung bleiben auf die bestehenden Rollenpfade beschränkt: <code>ADMIN</code> und <code>DISPONENT</code> können zulässige Termin- und KW-Pfade nutzen.</li><li><code>LESER</code> bleibt read-only; Preview- und Mutationspfade bleiben serverseitig gesperrt.</li><li>Historische Terminlocks, Tour-KW-Sperren und Mitarbeiter-Overlap-Prüfung bleiben serverseitig aktiv.</li><li>Es wurden keine Berechtigungen erweitert und keine neue Rollenlogik eingeführt.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li><code>npm run typecheck</code> erfolgreich.</li><li><code>npm run test:unit -- tests/unit/lib/resource-planning.test.ts tests/unit/ui/calendarMove.helpers.test.ts tests/unit/ui/appointmentSaveReviewDialog.render.test.tsx tests/unit/ui/tourEmployeeCascadeDialog.wiring.test.tsx</code> erfolgreich mit 18 Tests.</li><li><code>npm run test:integration -- tests/integration/server/appointments.tour-change-preview.integration.test.ts</code> erfolgreich mit 6 Tests.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/appointment-form.layout-tour-integration.browser.e2e.spec.ts</code> erfolgreich mit 20 Tests.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/calendar-week-drag-drop.drop-dispatch.browser.e2e.spec.ts</code> erfolgreich mit 2 Tests.</li><li><code>npm run check</code> erfolgreich.</li><li>Playwright Chromium wurde lokal mit <code>npx playwright install chromium</code> nachinstalliert, weil die Browser-Binary für den E2E-Lauf fehlte.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein vollständiger <code>npm run test:all</code>-Lauf wurde in dieser Session ausgeführt.</li><li>Keine offenen fachlichen Punkte aus der Umsetzung bekannt.</li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

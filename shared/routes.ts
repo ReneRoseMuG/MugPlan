@@ -502,6 +502,7 @@ const appointmentWeekEmployeePreviewStatusSchema = z.enum([
   "conflict",
   "already_present",
   "current_only",
+  "will_remove",
 ]);
 
 const appointmentWeekEmployeePreviewSourceSchema = z.enum([
@@ -533,6 +534,7 @@ const appointmentTourChangePreviewInputSchema = z.object({
   newEndDate: z.string().nullable().optional(),
   newStartTime: z.string().nullable().optional(),
   currentEmployeeIds: z.array(z.number().int().positive()).optional(),
+  employeeCarryoverMode: z.enum(["preserve", "replace"]).optional(),
 }).strict();
 
 const appointmentWeekEmployeePreviewResponseSchema = z.object({

@@ -28,7 +28,8 @@ type AppointmentEmployeePreviewStatus =
   | "will_add"
   | "conflict"
   | "already_present"
-  | "current_only";
+  | "current_only"
+  | "will_remove";
 
 type AppointmentEmployeePreviewSource =
   | "week_plan"
@@ -43,6 +44,8 @@ type AppointmentEmployeePreviewItem = {
   conflictReason: string | null;
   source: AppointmentEmployeePreviewSource;
 };
+
+type AppointmentEmployeeCarryoverMode = "preserve" | "replace";
 
 type WeekPlanningRoleKey = "ADMIN" | "DISPONENT" | "LESER" | null | undefined;
 
@@ -436,9 +439,23 @@ async function buildCurrentEmployeePreviewItemsTx(
     startTime?: string | null;
     currentEmployees: Array<{ id: number; fullName: string }>;
     weekEmployeeIds: Set<number>;
+    employeeCarryoverMode: AppointmentEmployeeCarryoverMode;
   },
 ) {
   if (params.currentEmployees.length === 0) return [];
+
+  if (params.employeeCarryoverMode === "replace") {
+    return params.currentEmployees
+      .filter((employee) => !params.weekEmployeeIds.has(employee.id))
+      .map((employee) => ({
+        employeeId: employee.id,
+        employeeName: employee.fullName,
+        status: "will_remove" as const,
+        selectable: false,
+        conflictReason: "WILL_REMOVE",
+        source: "current" as const,
+      }));
+  }
 
   const conflictingEmployees = await appointmentsRepository.getConflictingEmployeesTx(tx, {
     employeeIds: params.currentEmployees.map((employee) => employee.id),
@@ -506,6 +523,7 @@ async function buildAppointmentEmployeePreview(
     startTime?: string | null;
     currentEmployees: Array<{ id: number; fullName: string }>;
     includeAvailableEmployees?: boolean;
+    employeeCarryoverMode?: AppointmentEmployeeCarryoverMode;
   },
 ): Promise<{
   isoYear: number;
@@ -516,6 +534,7 @@ async function buildAppointmentEmployeePreview(
 }> {
   const week = resolveIsoWeekFromDate(params.startDate);
   const currentEmployeeIds = params.currentEmployees.map((employee) => employee.id);
+  const employeeCarryoverMode = params.employeeCarryoverMode ?? "preserve";
   const activeEmployees = params.includeAvailableEmployees ? await employeesRepository.getEmployees("active") : [];
 
   const buildFallbackItems = async (): Promise<AppointmentEmployeePreviewItem[]> => {
@@ -527,6 +546,7 @@ async function buildAppointmentEmployeePreview(
         startTime: params.startTime ?? null,
         currentEmployees: params.currentEmployees,
         weekEmployeeIds: new Set(),
+        employeeCarryoverMode,
       });
 
       if (!params.includeAvailableEmployees) {
@@ -604,6 +624,7 @@ async function buildAppointmentEmployeePreview(
       startTime: params.startTime ?? null,
       currentEmployees: params.currentEmployees,
       weekEmployeeIds,
+      employeeCarryoverMode,
     });
     const currentConflictEmployeeIds = new Set(
       currentItems
@@ -615,7 +636,7 @@ async function buildAppointmentEmployeePreview(
       if (currentConflictEmployeeIds.has(assignment.employeeId)) {
         continue;
       }
-      if (currentEmployeeIds.includes(assignment.employeeId)) {
+      if (employeeCarryoverMode !== "replace" && currentEmployeeIds.includes(assignment.employeeId)) {
         nextItems.push({
           employeeId: assignment.employeeId,
           employeeName: assignment.fullName,
@@ -1105,6 +1126,7 @@ export async function previewAppointmentTourChange(
     newEndDate?: string | null;
     newStartTime?: string | null;
     currentEmployeeIds?: number[];
+    employeeCarryoverMode?: AppointmentEmployeeCarryoverMode;
   },
   roleKey?: WeekPlanningRoleKey,
 ) {
@@ -1147,5 +1169,6 @@ export async function previewAppointmentTourChange(
     endDate: params.newEndDate ?? null,
     startTime: params.newStartTime ?? null,
     currentEmployees,
+    employeeCarryoverMode: params.employeeCarryoverMode ?? "preserve",
   });
 }

@@ -1,10 +1,14 @@
 import { isAbsenceTourName } from "@shared/absenceAppointments";
+import { getISOWeek, getISOWeekYear, parseISO } from "date-fns";
 import type { CalendarAppointment } from "@/lib/calendar-appointments";
 import {
   buildEmployeeIdsFromResourcePreviewSelection,
   getDefaultResourcePreviewSelection,
+  shouldShowResourceResolutionMode,
+  type AppointmentResourceEmployeeCarryoverMode,
   type AppointmentResourcePreviewItem,
   type AppointmentResourcePreviewResponse,
+  type AppointmentResourceResolutionMode,
 } from "@/lib/resource-planning";
 
 export type CalendarMoveSelection = {
@@ -35,6 +39,7 @@ export type CalendarMoveRequest = {
 
 export type AppointmentWeekEmployeePreviewItem = AppointmentResourcePreviewItem;
 export type AppointmentWeekEmployeePreviewResponse = AppointmentResourcePreviewResponse;
+export type CalendarMoveEmployeeCarryoverMode = AppointmentResourceEmployeeCarryoverMode;
 
 const normalizeTourName = (value: string | null | undefined) =>
   (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
@@ -85,7 +90,35 @@ export function getDefaultPreviewSelection(preview: AppointmentWeekEmployeePrevi
 export function buildEmployeeIdsFromPreviewSelection(
   preview: AppointmentWeekEmployeePreviewResponse,
   selectedIds: number[],
-  resolutionMode: "additive" | "replace",
+  resolutionMode: AppointmentResourceResolutionMode,
 ): number[] {
   return buildEmployeeIdsFromResourcePreviewSelection(preview, selectedIds, resolutionMode);
+}
+
+function buildCalendarMoveIsoWeekKey(dateValue: string): string {
+  const parsedDate = parseISO(dateValue);
+  return `${getISOWeekYear(parsedDate)}-${String(getISOWeek(parsedDate)).padStart(2, "0")}`;
+}
+
+export function isCalendarMoveSameTourAndWeek(request: CalendarMoveRequest): boolean {
+  return request.appointment.tourId === request.targetTourId
+    && buildCalendarMoveIsoWeekKey(request.appointment.startDate) === buildCalendarMoveIsoWeekKey(request.targetStartDate);
+}
+
+export function resolveCalendarMoveEmployeeCarryoverMode(
+  request: CalendarMoveRequest,
+): CalendarMoveEmployeeCarryoverMode {
+  return isCalendarMoveSameTourAndWeek(request) ? "preserve" : "replace";
+}
+
+export function shouldShowCalendarMoveResolutionMode(
+  preview: AppointmentWeekEmployeePreviewResponse,
+  request: CalendarMoveRequest,
+  employeeCarryoverMode: CalendarMoveEmployeeCarryoverMode,
+): boolean {
+  return shouldShowResourceResolutionMode(preview, {
+    employeeCarryoverMode,
+    isExistingAppointment: true,
+    isSameTourAndWeek: isCalendarMoveSameTourAndWeek(request),
+  });
 }

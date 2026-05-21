@@ -29,7 +29,7 @@ export type WeekResourcePreviewItem = {
 export type AppointmentResourceDialogPreviewItem = {
   employeeId: number;
   employeeName: string;
-  status: "will_add" | "conflict" | "already_present" | "current_only";
+  status: "will_add" | "conflict" | "already_present" | "current_only" | "will_remove";
   selectable: boolean;
   conflictReason: string | null;
   source?: "week_plan" | "available" | "current";
@@ -57,6 +57,7 @@ interface ResourcePlanningDialogProps {
   resolutionMode?: "additive" | "replace";
   onResolutionModeChange?: (mode: "additive" | "replace") => void;
   showResolutionMode?: boolean;
+  resolutionNotice?: ReactNode;
   summary?: ReactNode;
   executionMessage?: ReactNode;
   error?: unknown;
@@ -100,6 +101,7 @@ function weekStatusLabel(item: WeekResourcePreviewItem): string | null {
 }
 
 function appointmentStatusLabel(item: AppointmentResourceDialogPreviewItem): string | null {
+  if (item.status === "will_remove") return "Wird vom Termin entfernt";
   if (item.conflictReason === "WILL_REMOVE") return "Wird vom Termin entfernt";
   if (item.status === "conflict" && item.source === "current") {
     return "Überschneidung im Zielzeitraum. Abwählen entfernt den Mitarbeiter beim Speichern.";
@@ -251,6 +253,14 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
               Ersetzen
             </Button>
           </div>
+        ) : null}
+
+        {variant === "appointment" && !props.showResolutionMode && props.resolutionNotice ? (
+          <DialogBaseInlineMessage
+            tone="info"
+            title="Mitarbeiter werden ersetzt"
+            description={props.resolutionNotice}
+          />
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2">

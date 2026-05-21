@@ -30,10 +30,18 @@ import {
   getCalendarMoveSelectionTitle,
   getDefaultPreviewSelection,
   isRegularCalendarMoveTarget,
+  resolveCalendarMoveEmployeeCarryoverMode,
+  shouldShowCalendarMoveResolutionMode,
   type AppointmentWeekEmployeePreviewResponse,
+  type CalendarMoveEmployeeCarryoverMode,
   type CalendarMoveRequest,
   type CalendarMoveSelection,
 } from "@/lib/calendar-move";
+import {
+  getDefaultResourceResolutionMode,
+  hasCurrentEmployeeRemovals,
+  type AppointmentResourceResolutionMode,
+} from "@/lib/resource-planning";
 import type { WeekViewRestoreRequest } from "@/pages/Home";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
@@ -44,7 +52,10 @@ type PendingCalendarMove = {
   targetEndDate: string | null;
   preview: AppointmentWeekEmployeePreviewResponse;
   selectedIds: number[];
-  resolutionMode: "additive" | "replace";
+  resolutionMode: AppointmentResourceResolutionMode;
+  employeeCarryoverMode: CalendarMoveEmployeeCarryoverMode;
+  showResolutionMode: boolean;
+  resolutionNotice: string | null;
 };
 
 type OpenAppointmentContext = {
@@ -56,6 +67,9 @@ type OpenAppointmentContext = {
   weekScrollLeft?: number | null;
   weekScrollTop?: number | null;
 };
+
+const FIXED_REPLACE_RESOURCE_NOTICE =
+  "Vorhandene Termin-Mitarbeiter werden entfernt. Übernommen werden nur die ausgewählten Mitarbeiter aus der Ziel-KW.";
 
 interface CalendarWorkspaceProps {
   mode: "global" | "contextual";
@@ -364,6 +378,7 @@ export function CalendarWorkspace({
   const fetchCalendarMovePreview = async (
     request: CalendarMoveRequest,
     targetEndDate: string | null,
+    employeeCarryoverMode: CalendarMoveEmployeeCarryoverMode,
   ): Promise<AppointmentWeekEmployeePreviewResponse> => {
     const response = await fetch(`/api/appointments/${request.appointment.id}/tour-change-preview`, {
       method: "POST",
@@ -375,6 +390,7 @@ export function CalendarWorkspace({
         newEndDate: targetEndDate,
         newStartTime: request.appointment.startTime,
         currentEmployeeIds: request.appointment.employeeIds,
+        employeeCarryoverMode,
       }),
     });
     const payload = await response.json().catch(() => null) as (AppointmentWeekEmployeePreviewResponse & { code?: string; message?: string }) | null;
@@ -471,13 +487,20 @@ export function CalendarWorkspace({
     }
 
     try {
-      const preview = await fetchCalendarMovePreview(request, targetEndDate);
+      const employeeCarryoverMode = resolveCalendarMoveEmployeeCarryoverMode(request);
+      const preview = await fetchCalendarMovePreview(request, targetEndDate, employeeCarryoverMode);
+      const showResolutionMode = shouldShowCalendarMoveResolutionMode(preview, request, employeeCarryoverMode);
       setPendingCalendarMove({
         request,
         targetEndDate,
         preview,
         selectedIds: getDefaultPreviewSelection(preview),
-        resolutionMode: "additive",
+        resolutionMode: getDefaultResourceResolutionMode(employeeCarryoverMode),
+        employeeCarryoverMode,
+        showResolutionMode,
+        resolutionNotice: !showResolutionMode && employeeCarryoverMode === "replace" && hasCurrentEmployeeRemovals(preview)
+          ? FIXED_REPLACE_RESOURCE_NOTICE
+          : null,
       });
     } catch (error) {
       toast({
@@ -730,7 +753,8 @@ export function CalendarWorkspace({
           previewItems={pendingCalendarMove.preview.items}
           selectedIds={pendingCalendarMove.selectedIds}
           resolutionMode={pendingCalendarMove.resolutionMode}
-          showResolutionMode
+          showResolutionMode={pendingCalendarMove.showResolutionMode}
+          resolutionNotice={pendingCalendarMove.resolutionNotice}
           isSubmitting={isCalendarMoveSubmitting}
           confirmLabel="Termin verschieben"
           onSelectedIdsChange={(selectedIds) => {

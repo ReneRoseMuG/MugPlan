@@ -15,7 +15,10 @@ import { describe, expect, it } from "vitest";
 import {
   getDefaultPreviewSelection,
   isRegularCalendarMoveTarget,
+  resolveCalendarMoveEmployeeCarryoverMode,
+  shouldShowCalendarMoveResolutionMode,
   type AppointmentWeekEmployeePreviewResponse,
+  type CalendarMoveRequest,
 } from "../../../client/src/lib/calendar-move";
 
 describe("calendar move helpers", () => {
@@ -41,5 +44,50 @@ describe("calendar move helpers", () => {
     };
 
     expect(getDefaultPreviewSelection(preview)).toEqual([1]);
+  });
+
+  it("uses replace mode for tour or ISO week changes and keeps the mode choice for same-week additions", () => {
+    const baseRequest: CalendarMoveRequest = {
+      appointment: {
+        id: 10,
+        version: 1,
+        projectId: 20,
+        projectName: "Projekt",
+        customerId: 30,
+        customerName: "Kunde",
+        customerNumber: "K-30",
+        startDate: "2099-02-03",
+        endDate: null,
+        startTime: null,
+        tourId: 1,
+        tourName: "Tour A",
+        employeeIds: [4],
+        isCancelled: false,
+        isLocked: false,
+      },
+      targetStartDate: "2099-02-04",
+      targetTourId: 1,
+      mode: "drag",
+    };
+    const preview: AppointmentWeekEmployeePreviewResponse = {
+      isoYear: 2099,
+      isoWeek: 6,
+      hasWeekPlan: true,
+      currentEmployeeIds: [4],
+      items: [
+        { employeeId: 5, employeeName: "Plan", status: "will_add", selectable: true, conflictReason: null, source: "week_plan" },
+      ],
+    };
+
+    expect(resolveCalendarMoveEmployeeCarryoverMode(baseRequest)).toBe("preserve");
+    expect(shouldShowCalendarMoveResolutionMode(preview, baseRequest, "preserve")).toBe(true);
+    expect(resolveCalendarMoveEmployeeCarryoverMode({
+      ...baseRequest,
+      targetTourId: 2,
+    })).toBe("replace");
+    expect(resolveCalendarMoveEmployeeCarryoverMode({
+      ...baseRequest,
+      targetStartDate: "2099-02-10",
+    })).toBe("replace");
   });
 });

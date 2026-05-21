@@ -113,6 +113,84 @@ describe("AppointmentSaveReviewDialog", () => {
     expect(html).toContain("appointment-save-review-step-resources");
     expect(html).toContain("Konflikt Mitarbeiter");
     expect(html).toContain("appointment-week-preview-status-10");
+    expect(html).not.toContain("appointment-week-resolution-mode");
+  });
+
+  it("renders the resource mode selector only for explicit same-week decisions", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentSaveReviewDialog
+        open
+        currentEmployeeIds={[10]}
+        resourceRequest={{
+          resolutionKey: "tour:1|date:2099-01-01",
+          selectedIds: [11],
+          resolutionMode: "additive",
+          showResolutionMode: true,
+          preview: {
+            isoYear: 2099,
+            isoWeek: 1,
+            hasWeekPlan: true,
+            currentEmployeeIds: [10],
+            items: [
+              {
+                employeeId: 11,
+                employeeName: "KW Mitarbeiter",
+                status: "will_add",
+                selectable: true,
+                conflictReason: null,
+                source: "week_plan",
+              },
+            ],
+          },
+        }}
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+        onOpenChange={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("appointment-week-resolution-mode");
+    expect(html).toContain("Additiv");
+    expect(html).toContain("Ersetzen");
+  });
+
+  it("renders a fixed replacement notice without the mode selector", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentSaveReviewDialog
+        open
+        currentEmployeeIds={[10]}
+        resourceRequest={{
+          resolutionKey: "tour:2|date:2099-01-01",
+          selectedIds: [],
+          resolutionMode: "replace",
+          showResolutionMode: false,
+          resolutionNotice: "Vorhandene Termin-Mitarbeiter werden entfernt.",
+          preview: {
+            isoYear: 2099,
+            isoWeek: 1,
+            hasWeekPlan: false,
+            currentEmployeeIds: [10],
+            items: [
+              {
+                employeeId: 10,
+                employeeName: "Alter Mitarbeiter",
+                status: "will_remove",
+                selectable: false,
+                conflictReason: "WILL_REMOVE",
+                source: "current",
+              },
+            ],
+          },
+        }}
+        onCancel={() => undefined}
+        onConfirm={() => undefined}
+        onOpenChange={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mitarbeiter werden ersetzt");
+    expect(html).toContain("Wird vom Termin entfernt");
+    expect(html).not.toContain("appointment-week-resolution-mode");
   });
 
   it("renders moved appointment notes as a blocking save-review step", () => {

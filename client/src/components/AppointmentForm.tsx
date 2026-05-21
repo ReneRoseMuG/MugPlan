@@ -76,9 +76,14 @@ import { fetchTagCatalog, getTagCatalogQueryKey } from "@/lib/tags";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import {
   buildEmployeeIdsFromResourcePreviewSelection,
+  getDefaultResourceResolutionMode,
   getDefaultResourcePreviewSelection,
+  hasCurrentEmployeeRemovals,
   hasResourcePreviewDecision,
+  shouldShowResourceResolutionMode,
+  type AppointmentResourceEmployeeCarryoverMode,
   type AppointmentResourcePreviewResponse,
+  type AppointmentResourceResolutionMode,
 } from "@/lib/resource-planning";
 import {
   createEmptyProjectProductSelections,
@@ -255,7 +260,9 @@ type AppointmentWeekPreviewDialogState = {
   preview: AppointmentWeekEmployeePreviewResponse;
   resolutionKey: string;
   selectedIds: number[];
-  resolutionMode: "additive" | "replace";
+  resolutionMode: AppointmentResourceResolutionMode;
+  showResolutionMode: boolean;
+  resolutionNotice: string | null;
   persistAfterConfirm: boolean;
 };
 
@@ -465,6 +472,18 @@ const buildAppointmentResourceResolutionKey = (params: {
     sortedEmployeeIds,
   ].join("|");
 };
+
+const FIXED_REPLACE_RESOURCE_NOTICE =
+  "Vorhandene Termin-Mitarbeiter werden entfernt. Übernommen werden nur die ausgewählten Mitarbeiter aus der Ziel-KW.";
+
+const getResourceResolutionNotice = (
+  preview: AppointmentWeekEmployeePreviewResponse,
+  employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode,
+) => (
+  employeeCarryoverMode === "replace" && hasCurrentEmployeeRemovals(preview)
+    ? FIXED_REPLACE_RESOURCE_NOTICE
+    : null
+);
 
 const areEmployeeIdsEqual = (left: number[], right: number[]) => {
   if (left.length !== right.length) return false;
@@ -1311,6 +1330,7 @@ export function AppointmentForm({
     endDate?: string | null;
     startTime?: string | null;
     employeeIds?: number[];
+    employeeCarryoverMode?: AppointmentResourceEmployeeCarryoverMode;
   }): Promise<AppointmentWeekEmployeePreviewResponse | null> => {
     if (!appointmentId) return null;
     const response = await apiRequest("POST", `/api/appointments/${appointmentId}/tour-change-preview`, {
@@ -1319,14 +1339,28 @@ export function AppointmentForm({
       newEndDate: overrides?.endDate ?? (isEndDateEnabled ? endDate : null),
       newStartTime: overrides?.startTime ?? (startTimeEnabled ? buildTimeString(startTimeValue) : null),
       currentEmployeeIds: overrides?.employeeIds ?? assignedEmployeeIds,
+      employeeCarryoverMode: overrides?.employeeCarryoverMode ?? "preserve",
     });
     return response.json() as Promise<AppointmentWeekEmployeePreviewResponse>;
   };
 
   const openAppointmentWeekPreviewDialog = (
     preview: AppointmentWeekEmployeePreviewResponse,
-    params: { title: string; description: string; persistAfterConfirm: boolean; resolutionKey: string },
+    params: {
+      title: string;
+      description: string;
+      persistAfterConfirm: boolean;
+      resolutionKey: string;
+      employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode;
+      isExistingAppointment: boolean;
+      isSameTourAndWeek: boolean;
+    },
   ) => {
+    const showResolutionMode = shouldShowResourceResolutionMode(preview, {
+      employeeCarryoverMode: params.employeeCarryoverMode,
+      isExistingAppointment: params.isExistingAppointment,
+      isSameTourAndWeek: params.isSameTourAndWeek,
+    });
     setAppointmentWeekPreviewDialog({
       open: true,
       title: params.title,
@@ -1334,14 +1368,21 @@ export function AppointmentForm({
       preview,
       resolutionKey: params.resolutionKey,
       selectedIds: getDefaultResourcePreviewSelection(preview),
-      resolutionMode: "additive",
+      resolutionMode: getDefaultResourceResolutionMode(params.employeeCarryoverMode),
+      showResolutionMode,
+      resolutionNotice: showResolutionMode ? null : getResourceResolutionNotice(preview, params.employeeCarryoverMode),
       persistAfterConfirm: params.persistAfterConfirm,
     });
   };
 
   const closeAppointmentWeekPreviewDialog = () => {
     if (!appointmentWeekPreviewDialog) return;
-    setResolvedAppointmentWeekPlanKey(appointmentWeekPreviewDialog.resolutionKey);
+    if (
+      appointmentWeekPreviewDialog.resolutionMode !== "replace"
+      || !hasCurrentEmployeeRemovals(appointmentWeekPreviewDialog.preview)
+    ) {
+      setResolvedAppointmentWeekPlanKey(appointmentWeekPreviewDialog.resolutionKey);
+    }
     setAppointmentWeekPreviewDialog(null);
   };
 
@@ -1369,8 +1410,20 @@ export function AppointmentForm({
           startTime: startTimeEnabled ? buildTimeString(startTimeValue) : null,
           employeeIds: assignedEmployeeIds,
         });
+        const isExistingAppointment = isEditing && Boolean(appointmentId);
+        const originalTourId = appointmentDetail?.tourId ?? null;
+        const originalWeekKey = appointmentDetail
+          ? buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate))
+          : buildIsoWeekKey(startDate);
+        const targetWeekKey = buildIsoWeekKey(startDate);
+        const isSameTourAndWeek = isExistingAppointment
+          && originalTourId === tourId
+          && originalWeekKey === targetWeekKey;
+        const employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode = isExistingAppointment && !isSameTourAndWeek
+          ? "replace"
+          : "preserve";
         const preview = isEditing && appointmentId
-          ? await loadAppointmentTourChangePreview({ tourId })
+          ? await loadAppointmentTourChangePreview({ tourId, employeeCarryoverMode })
           : await loadTourAssignmentPreview(tourId, assignedEmployeeIds);
         applyTourChange(tourId);
         if (!preview || !hasResourcePreviewDecision(preview)) {
@@ -1379,9 +1432,14 @@ export function AppointmentForm({
         }
         openAppointmentWeekPreviewDialog(preview, {
           title: "Wochenplanung für Termin übernehmen",
-          description: "Die ausgewählte Tour hat für diese Kalenderwoche eine Planung. Wählen Sie, welche Mitarbeiter übernommen werden sollen.",
+          description: preview.hasWeekPlan
+            ? "Die ausgewählte Tour hat für diese Kalenderwoche eine Planung. Wählen Sie, welche Mitarbeiter übernommen werden sollen."
+            : "Für die ausgewählte Tour gibt es in dieser Kalenderwoche keine übernehmbaren KW-Mitarbeiter. Vorhandene Termin-Mitarbeiter werden entfernt.",
           persistAfterConfirm: false,
           resolutionKey: resolutionKey ?? `${tourId}-${preview.isoYear}-${preview.isoWeek}`,
+          employeeCarryoverMode,
+          isExistingAppointment,
+          isSameTourAndWeek,
         });
       } catch (error) {
         const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
@@ -2087,7 +2145,12 @@ export function AppointmentForm({
           const originalEmployeeIds = appointmentDetail.employees.map((employee) => employee.id);
           const originalWeekKey = buildIsoWeekKey(normalizeDateInputValue(appointmentDetail.startDate));
           const currentWeekKey = buildIsoWeekKey(startDate);
-          const requiresTourPreview = originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey;
+          const requiresTourPreview = selectedTourId !== null
+            && (originalTourId !== selectedTourId || originalWeekKey !== currentWeekKey);
+          const isSameTourAndWeek = selectedTourId !== null
+            && originalTourId === selectedTourId
+            && originalWeekKey === currentWeekKey;
+          const employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode = requiresTourPreview ? "replace" : "preserve";
           shouldLoadResourcePreview = requiresTourPreview
             || originalStartDate !== startDate
             || originalEndDate !== currentEndDate
@@ -2095,24 +2158,34 @@ export function AppointmentForm({
             || !areEmployeeIdsEqual(originalEmployeeIds, assignedEmployeeIds);
 
           if (shouldLoadResourcePreview) {
-            const preview = await loadAppointmentTourChangePreview();
+            const preview = await loadAppointmentTourChangePreview({ employeeCarryoverMode });
             if (preview && hasResourcePreviewDecision(preview)) {
+              const showResolutionMode = shouldShowResourceResolutionMode(preview, {
+                employeeCarryoverMode,
+                isExistingAppointment: true,
+                isSameTourAndWeek,
+              });
               saveReviewResourceRequest = {
                 preview,
                 resolutionKey: currentResolutionKey,
                 selectedIds: getDefaultResourcePreviewSelection(preview),
-                resolutionMode: "additive",
+                resolutionMode: getDefaultResourceResolutionMode(employeeCarryoverMode),
+                showResolutionMode,
+                resolutionNotice: showResolutionMode ? null : getResourceResolutionNotice(preview, employeeCarryoverMode),
               };
             }
           }
         } else if (selectedTourId !== null && shouldLoadResourcePreview) {
           const preview = await loadTourAssignmentPreview(selectedTourId, assignedEmployeeIds);
           if (hasResourcePreviewDecision(preview)) {
+            const employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode = "preserve";
             saveReviewResourceRequest = {
               preview,
               resolutionKey: currentResolutionKey,
               selectedIds: getDefaultResourcePreviewSelection(preview),
-              resolutionMode: "additive",
+              resolutionMode: getDefaultResourceResolutionMode(employeeCarryoverMode),
+              showResolutionMode: false,
+              resolutionNotice: null,
             };
           }
         }
@@ -3204,7 +3277,8 @@ export function AppointmentForm({
           previewItems={appointmentWeekPreviewDialog.preview.items}
           selectedIds={appointmentWeekPreviewDialog.selectedIds}
           resolutionMode={appointmentWeekPreviewDialog.resolutionMode}
-          showResolutionMode
+          showResolutionMode={appointmentWeekPreviewDialog.showResolutionMode}
+          resolutionNotice={appointmentWeekPreviewDialog.resolutionNotice}
           isSubmitting={isSaving}
           onSelectedIdsChange={(selectedIds) => {
             setAppointmentWeekPreviewDialog((current) => current ? { ...current, selectedIds } : current);

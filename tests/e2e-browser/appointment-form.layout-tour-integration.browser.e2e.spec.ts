@@ -325,7 +325,7 @@ test("renders an existing tour as a separate badge and restores the picker after
   }).toBe(null);
 });
 
-test("assigns a tour without week planning and keeps the existing employees unchanged", async ({ page }) => {
+test("assigns a tour without week planning and removes existing employees after confirmation", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const customer = await createCustomerFixture("FT04-NO-WEEKPLAN-CUST");
   const tour = await createTourFixture("#225566");
@@ -343,7 +343,20 @@ test("assigns a tour without week planning and keeps the existing employees unch
   await expect(page.getByTestId(`badge-employee-${existingEmployee.id}`)).toBeVisible();
   await expect(page.getByTestId(`badge-employee-${sideEmployee.id}`)).toBeVisible();
   await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
-  await expect(page.getByTestId("dialog-tour-employee-cascade")).toHaveCount(0);
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Mitarbeiter werden ersetzt");
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${existingEmployee.id}`)).toContainText(
+    "Wird vom Termin entfernt",
+  );
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
+    "Wird vom Termin entfernt",
+  );
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(dialog).toHaveCount(0);
 
   await saveExistingAppointment(page, appointment.id);
 
@@ -356,7 +369,7 @@ test("assigns a tour without week planning and keeps the existing employees unch
     };
   }).toEqual({
     tourId: tour.id,
-    employeeIds: [existingEmployee.id, sideEmployee.id].sort((a, b) => a - b),
+    employeeIds: [],
   });
 });
 
@@ -563,7 +576,8 @@ test("opens the week preview for a new next-week appointment and applies the pla
   await expect(dialog).toContainText("Wochenplanung für Termin übernehmen");
   await expect(dialog.getByTestId(`appointment-week-preview-row-${weekEmployee.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
-  await expect(page.getByTestId("button-appointment-week-mode-additive")).toBeVisible();
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
 
   await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(dialog).toHaveCount(0);
@@ -603,6 +617,8 @@ test("keeps the selected tour but no employees when the week preview is canceled
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${weekEmployee.id}`)).toBeChecked();
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
   await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByTestId("badge-tour")).toBeVisible();
@@ -688,15 +704,16 @@ test("uses the already confirmed preview decision when an existing appointment c
   const immediateDialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(immediateDialog).toBeVisible();
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch bestehende Terminzuweisung erhalten",
+    "Wird vom Termin entfernt",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
-    "Bleibt nur durch bestehende Terminzuweisung erhalten",
+    "Wird vom Termin entfernt",
   );
   await expect(immediateDialog.getByTestId(`appointment-week-preview-status-${weekEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",
   );
-  await page.getByTestId("button-appointment-week-mode-replace").click();
+  await expect(immediateDialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(immediateDialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
   await immediateDialog.getByTestId("button-tour-employee-cascade-confirm").click();
   await expect(immediateDialog).toHaveCount(0);
 
@@ -754,12 +771,13 @@ test("rechecks week planning when the start date moves into another ISO week on 
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("Wochenplanung vor dem Speichern prüfen");
   await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Bleibt nur durch bestehende Terminzuweisung erhalten",
+    "Wird vom Termin entfernt",
   );
   await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
     "Kann aus der Wochenplanung übernommen werden",
   );
-  await page.getByTestId("button-appointment-week-mode-replace").click();
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
   await dialog.getByTestId("button-appointment-save-review-confirm").click();
 
   const saveResponse = await saveResponsePromise;
@@ -776,6 +794,67 @@ test("rechecks week planning when the start date moves into another ISO week on 
   }).toEqual({
     startDate: targetWeekSecondDate,
     tourId: tour.id,
+    employeeIds: [plannedEmployee.id],
+  });
+});
+
+test("keeps the additive or replace decision when an existing appointment stays in the same tour week", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const sameWeekTargetDate = format(addDays(parseISO(nextWeek.weekStartDate), 2), "yyyy-MM-dd");
+  const project = await createProjectFixture({ prefix: "FT04-APPT-SAME-KW", name: "FT04 Appointment Same KW" });
+  const tour = await createTourFixture("#334155");
+  const currentEmployee = await createEmployeeFixture("FT04-APPT-SAME-KW-CURRENT");
+  const plannedEmployee = await createEmployeeFixture("FT04-APPT-SAME-KW-PLAN");
+  await seedAppointmentFormNoise("FT04-APPT-SAME-KW", sameWeekTargetDate);
+
+  await db.insert(tourWeekEmployees).values({
+    tourId: tour.id,
+    isoYear: nextWeek.isoYear,
+    isoWeek: nextWeek.isoWeek,
+    employeeId: plannedEmployee.id,
+  });
+
+  const appointment = await createAppointmentFixture({
+    projectId: project.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: tour.id,
+    employeeIds: [currentEmployee.id],
+  });
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId("input-start-date").fill(sameWeekTargetDate);
+  await expect(page.getByTestId("input-start-date")).toHaveValue(sameWeekTargetDate);
+  await page.getByTestId("button-save-appointment").click();
+
+  const dialog = page.getByTestId("dialog-appointment-save-review");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
+    "Bleibt nur durch bestehende Terminzuweisung erhalten",
+  );
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${plannedEmployee.id}`)).toContainText(
+    "Kann aus der Wochenplanung übernommen werden",
+  );
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toBeVisible();
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toBeVisible();
+
+  const saveResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PATCH"
+    && new URL(response.url()).pathname === `/api/appointments/${appointment.id}`
+  ));
+  await dialog.getByTestId("button-appointment-week-mode-replace").click();
+  await dialog.getByTestId("button-appointment-save-review-confirm").click();
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok()).toBeTruthy();
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      startDate: body.startDate,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    startDate: sameWeekTargetDate,
     employeeIds: [plannedEmployee.id],
   });
 });
@@ -951,6 +1030,51 @@ test("keeps existing employees when removing the tour from an existing appointme
   });
 });
 
+test("removes existing employees after changing to a tour without target week planning", async ({ page }) => {
+  const nextWeek = resolveNextEditableWeek();
+  const customer = await createCustomerFixture("FT04-CHANGE-NO-WEEK-CUST");
+  const sourceTour = await createTourFixture("#0f766e");
+  const targetTour = await createTourFixture("#854d0e");
+  const currentEmployee = await createEmployeeFixture("FT04-CHANGE-NO-WEEK-EMP");
+  const appointment = await createAppointmentFixture({
+    customerId: customer.id,
+    startDate: nextWeek.weekSecondDate,
+    tourId: sourceTour.id,
+    employeeIds: [currentEmployee.id],
+  });
+  await seedAppointmentFormNoise("FT04-CHANGE-NO-WEEK", nextWeek.weekSecondDate);
+
+  await openExistingAppointmentInNextWeek(page, appointment.id);
+  await page.getByTestId("badge-tour-remove").click();
+  await expect(page.getByTestId("section-tour-picker")).toBeVisible();
+  await page.getByTestId(`badge-tour-select-${targetTour.id}-add`).click();
+
+  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("Mitarbeiter werden ersetzt");
+  await expect(dialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
+    "Wird vom Termin entfernt",
+  );
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
+  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(dialog).toHaveCount(0);
+
+  await saveExistingAppointment(page, appointment.id);
+
+  await expect.poll(async () => {
+    const response = await page.request.get(`/api/appointments/${appointment.id}`);
+    const body = await response.json();
+    return {
+      tourId: body.tourId,
+      employeeIds: (body.employees as Array<{ id: number }>).map((entry) => entry.id).sort((a, b) => a - b),
+    };
+  }).toEqual({
+    tourId: targetTour.id,
+    employeeIds: [],
+  });
+});
+
 test("opens the week preview when an existing appointment without tour later gets a tour with week planning and keeps employees empty after cancel", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
   const project = await createProjectFixture({ prefix: "FT04-NO-LANE", name: "FT04 No Lane Projekt" });
@@ -977,6 +1101,8 @@ test("opens the week preview when an existing appointment without tour later get
 
   const dialog = page.getByTestId("dialog-tour-employee-cascade");
   await expect(dialog).toBeVisible();
+  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
+  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
   await expect(dialog).toContainText("Wochenplanung für Termin übernehmen");
   await dialog.getByRole("button", { name: "Abbrechen" }).click();
   await expect(dialog).toHaveCount(0);

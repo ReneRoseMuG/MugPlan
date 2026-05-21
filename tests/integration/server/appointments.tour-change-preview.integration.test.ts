@@ -178,6 +178,111 @@ describe("FT04 integration: appointment tour change preview", () => {
       });
   });
 
+  it("marks old appointment employees for removal when a tour change uses replace carryover", async () => {
+    const admin = await loginAdmin();
+    const targetWeek = resolveNextEditableWeek();
+    const project = await createProjectFixture({ prefix: "FT04-TCP-REPLACE" });
+    const sourceTour = await createTourFixture("#0f766e");
+    const targetTour = await createTourFixture("#7c3aed");
+    const currentEmployee = await createEmployeeFixture("FT04-TCP-REPLACE-OLD");
+    const plannedEmployee = await createEmployeeFixture("FT04-TCP-REPLACE-WEEK");
+
+    await db.insert(tourWeekEmployees).values({
+      tourId: targetTour.id,
+      isoYear: targetWeek.isoYear,
+      isoWeek: targetWeek.isoWeek,
+      employeeId: plannedEmployee.id,
+    });
+
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekSecondDate,
+      tourId: sourceTour.id,
+      employeeIds: [currentEmployee.id],
+    });
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tour-change-preview`)
+      .send({
+        newTourId: targetTour.id,
+        newStartDate: targetWeek.weekSecondDate,
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [currentEmployee.id],
+        employeeCarryoverMode: "replace",
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(expect.objectContaining({
+          isoYear: targetWeek.isoYear,
+          isoWeek: targetWeek.isoWeek,
+          hasWeekPlan: true,
+          currentEmployeeIds: [currentEmployee.id],
+        }));
+        expect(body.items).toEqual(expect.arrayContaining([
+          expect.objectContaining({
+            employeeId: currentEmployee.id,
+            status: "will_remove",
+            selectable: false,
+            conflictReason: "WILL_REMOVE",
+            source: "current",
+          }),
+          expect.objectContaining({
+            employeeId: plannedEmployee.id,
+            status: "will_add",
+            selectable: true,
+            conflictReason: null,
+            source: "week_plan",
+          }),
+        ]));
+      });
+  });
+
+  it("returns a removal-only preview when replace carryover targets a tour week without planning", async () => {
+    const admin = await loginAdmin();
+    const targetWeek = resolveNextEditableWeek();
+    const project = await createProjectFixture({ prefix: "FT04-TCP-NO-WEEK" });
+    const sourceTour = await createTourFixture("#0369a1");
+    const targetTour = await createTourFixture("#854d0e");
+    const currentEmployee = await createEmployeeFixture("FT04-TCP-NO-WEEK-OLD");
+
+    const appointment = await createAppointmentFixture({
+      projectId: project.id,
+      startDate: targetWeek.weekSecondDate,
+      tourId: sourceTour.id,
+      employeeIds: [currentEmployee.id],
+    });
+
+    await admin
+      .post(`/api/appointments/${appointment.id}/tour-change-preview`)
+      .send({
+        newTourId: targetTour.id,
+        newStartDate: targetWeek.weekSecondDate,
+        newEndDate: null,
+        newStartTime: null,
+        currentEmployeeIds: [currentEmployee.id],
+        employeeCarryoverMode: "replace",
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toEqual(expect.objectContaining({
+          isoYear: targetWeek.isoYear,
+          isoWeek: targetWeek.isoWeek,
+          hasWeekPlan: false,
+          currentEmployeeIds: [currentEmployee.id],
+        }));
+        expect(body.items).toEqual([
+          expect.objectContaining({
+            employeeId: currentEmployee.id,
+            status: "will_remove",
+            selectable: false,
+            conflictReason: "WILL_REMOVE",
+            source: "current",
+          }),
+        ]);
+      });
+  });
+
   it("previews current employee conflicts for pure date moves without tour or KW change", async () => {
     const admin = await loginAdmin();
     const targetWeek = resolveNextEditableWeek();
