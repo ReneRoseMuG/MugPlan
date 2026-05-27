@@ -166,10 +166,26 @@ vi.mock("@/hooks/use-toast", () => ({
 }));
 
 vi.mock("@tanstack/react-query", () => ({
+  QueryClient: class QueryClient {
+    invalidateQueries = vi.fn();
+    refetchQueries = vi.fn();
+    setQueryData = vi.fn();
+    getQueryData = vi.fn();
+    ensureQueryData = vi.fn();
+    fetchQuery = vi.fn();
+  },
   useQuery: () => ({
     data: [],
     isLoading: false,
     refetch: vi.fn(),
+  }),
+  useQueryClient: () => ({
+    invalidateQueries: vi.fn(),
+    refetchQueries: vi.fn(),
+    setQueryData: vi.fn(),
+    getQueryData: vi.fn(),
+    ensureQueryData: vi.fn(),
+    fetchQuery: vi.fn(),
   }),
 }));
 

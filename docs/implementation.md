@@ -349,7 +349,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 - kann die globale Kalendermarker-Darstellung `calendar.markerVisualizationStyle` setzen
 - erhält Zugriff auf `/api/monitoring`, aber nicht auf die Admin-Konfiguration unter `/api/admin/monitoring/config`
 - sieht deaktivierte Einträge nur, wenn sie historisch referenziert sind
-- erhält keine inaktiven Stammdateneinträge in Auswahlendpunkten
+- erhält bei Produktkategorien, Produkten, Komponentenkategorien und Komponenten in den Masterdata-Leseendpunkten ausschließlich aktive Einträge; `active=all` oder `active=inactive` wird serverseitig auf aktive Auswahlstammdaten begrenzt
 - erhält bei terminbezogenen Mitarbeiterlisten derzeit dieselbe aktive Mitarbeiterliste wie in der allgemeinen Mitarbeiteransicht; serverseitig aktiv durchgesetzt bleiben in diesem Pfad vor allem Overlap- und Historical-Lock-Regeln
 - darf historische Termine nicht mutieren; die historische Sperre wird serverseitig durchgesetzt
 - darf die laufende Tour-KW bearbeiten und blockieren oder freigeben
@@ -359,6 +359,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 ### Admin
 
 - erhält aktive und inaktive Einträge
+- erhält bei Produktkategorien, Produkten, Komponentenkategorien und Komponenten in den Masterdata-Leseendpunkten aktive und inaktive Einträge, wenn der Filter dies anfordert
 - kann Aktiv-Status ändern
 - kann archivierte Einträge einsehen
 - erhält aktive Kalendermarker über `/api/calendar/markers`
@@ -374,6 +375,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 
 - erhält ausschließlich lesenden Zugriff
 - keine schreibenden Endpunkte verfügbar, mit Ausnahme benutzereigener Report-Presets
+- erhält bei Produktkategorien, Produkten, Komponentenkategorien und Komponenten in den Masterdata-Leseendpunkten ausschließlich aktive Einträge; `active=all` oder `active=inactive` wird serverseitig auf aktive Auswahlstammdaten begrenzt
 - erhält aktive Kalendermarker über `/api/calendar/markers`
 - erhält keinen Zugriff auf die Admin-Pflege unter `/api/admin/calendar-markers`
 - kein Zugriff auf FT31-Monitoring-Endpunkte oder Monitoring-Konfiguration

@@ -2,12 +2,13 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - ADMIN erhaelt aktive und inaktive Produkte, Komponenten und Komponentenkategorien.
- * - DISPONENT und LESER erhalten in den Read-Endpunkten nur aktive Produkte, Komponenten und Komponentenkategorien.
+ * - ADMIN erhaelt aktive und inaktive Produktkategorien, Produkte, Komponenten und Komponentenkategorien.
+ * - DISPONENT und LESER erhalten in den Read-Endpunkten nur aktive Produktkategorien, Produkte, Komponenten und Komponentenkategorien.
  * - Neue Produkte und Komponenten sind standardmaessig aktiv, wenn `isActive` nicht explizit gesetzt wird.
  *
  * Fehlerfaelle:
  * - Nicht-Admin bekommt inaktive Stammdaten ueber Read-Endpunkte ausgeliefert.
+ * - Produktkategorien werden als Report-/Auswahl-Stammdaten weiter faelschlich ADMIN-only behandelt.
  * - Neue Produkte oder Komponenten starten unbeabsichtigt inaktiv.
  *
  * Ziel:
@@ -84,6 +85,11 @@ async function seedVisibilityFixture(admin: SuperAgentTest) {
     .send({ name: `${token}-PROD-CAT`, isActive: true, version: 1 })
     .expect(201);
 
+  const inactiveProductCategory = await admin
+    .post("/api/admin/master-data/product-categories")
+    .send({ name: `${token}-PROD-CAT-I`, isActive: false, version: 1 })
+    .expect(201);
+
   const activeProduct = await admin
     .post("/api/admin/master-data/products")
     .send({
@@ -131,6 +137,8 @@ async function seedVisibilityFixture(admin: SuperAgentTest) {
   return {
     activeComponentCategory: activeComponentCategory.body,
     inactiveComponentCategory: inactiveComponentCategory.body,
+    activeProductCategory: productCategory.body,
+    inactiveProductCategory: inactiveProductCategory.body,
     activeProduct: activeProduct.body,
     inactiveProduct: inactiveProduct.body,
     activeComponent: activeComponent.body,
@@ -169,6 +177,15 @@ describe("FT27 integration: master data visibility by role", () => {
         expect(ids).toContain(fixture.activeComponentCategory.id);
         expect(ids).toContain(fixture.inactiveComponentCategory.id);
       });
+
+    await admin
+      .get("/api/admin/master-data/product-categories?active=all")
+      .expect(200)
+      .expect((res) => {
+        const ids = res.body.map((row: { id: number }) => row.id);
+        expect(ids).toContain(fixture.activeProductCategory.id);
+        expect(ids).toContain(fixture.inactiveProductCategory.id);
+      });
   });
 
   it.each(["DISPATCHER", "READER"] as const)(
@@ -203,6 +220,15 @@ describe("FT27 integration: master data visibility by role", () => {
           const ids = res.body.map((row: { id: number }) => row.id);
           expect(ids).toContain(fixture.activeComponentCategory.id);
           expect(ids).not.toContain(fixture.inactiveComponentCategory.id);
+        });
+
+      await agent
+        .get("/api/admin/master-data/product-categories?active=all")
+        .expect(200)
+        .expect((res) => {
+          const ids = res.body.map((row: { id: number }) => row.id);
+          expect(ids).toContain(fixture.activeProductCategory.id);
+          expect(ids).not.toContain(fixture.inactiveProductCategory.id);
         });
     },
   );

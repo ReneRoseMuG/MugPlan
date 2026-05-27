@@ -5,7 +5,7 @@
  * Use Case: UC27 - Admin verwaltet Kategorien, Produkte und Komponenten
  *
  * Abgedeckte Regeln:
- * - Nur ADMIN darf FT27-Stammdatenoperationen ausfuehren.
+ * - Produktkategorie-Listen sind fuer Report- und Auswahlpfade lesbar, Mutationen bleiben ADMIN-only.
  * - Duplicate-/FK-Fehler werden als BUSINESS_CONFLICT gemappt.
  * - Versionskonflikte werden als VERSION_CONFLICT gemappt.
  * - Gleiche Komponentennamen sind nur innerhalb derselben Kategorie konfliktbehaftet.
@@ -14,7 +14,7 @@
  * - Ohne Filter wird serverseitig auf active normalisiert.
  *
  * Fehlerfaelle:
- * - Nicht-Admin kann FT27-Endpunkte aufrufen.
+ * - Nicht-Admin kann FT27-Mutationen aufrufen oder inaktive Produktkategorien lesen.
  * - DB-Fehlercodes werden inkonsistent nach oben gegeben.
  *
  * Ziel:
@@ -102,18 +102,26 @@ describe("FT27 unit: masterDataService", () => {
     vi.clearAllMocks();
   });
 
-  it("blocks non-admin access with FORBIDDEN", async () => {
-    await expect(listProductCategories(undefined, "DISPONENT")).rejects.toMatchObject<Partial<MasterDataError>>({
-      status: 403,
-      code: "FORBIDDEN",
-    });
-    expect(repositoryMocks.listProductCategories).not.toHaveBeenCalled();
+  it("allows non-admin read access to active product categories", async () => {
+    repositoryMocks.listProductCategories.mockResolvedValueOnce([]);
+
+    await listProductCategories("all", "DISPONENT");
+
+    expect(repositoryMocks.listProductCategories).toHaveBeenCalledWith("active");
   });
 
   it("normalizes undefined filter to active", async () => {
     repositoryMocks.listProductCategories.mockResolvedValueOnce([]);
     await listProductCategories(undefined, "ADMIN");
     expect(repositoryMocks.listProductCategories).toHaveBeenCalledWith("active");
+  });
+
+  it("keeps admin product category read filters intact", async () => {
+    repositoryMocks.listProductCategories.mockResolvedValueOnce([]);
+
+    await listProductCategories("all", "ADMIN");
+
+    expect(repositoryMocks.listProductCategories).toHaveBeenCalledWith("all");
   });
 
   it("maps duplicate category create to BUSINESS_CONFLICT", async () => {

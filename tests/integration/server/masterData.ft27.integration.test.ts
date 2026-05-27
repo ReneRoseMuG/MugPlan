@@ -5,7 +5,7 @@
  * Use Case: UC27 - Admin verwaltet Kategorien, Produkte und Komponenten zentral
  *
  * Abgedeckte Regeln:
- * - FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only.
+ * - Schreibende FT27-Endpunkte unter /api/admin/master-data sind ADMIN-only; Lese-Listen liefern Nicht-Admins nur aktive Auswahlstammdaten.
  * - CRUD folgt Optimistic Locking mit VERSION_CONFLICT bei stale Version.
  * - Gleiche Komponentennamen sind in verschiedenen Komponentenkategorien erlaubt, innerhalb derselben Kategorie aber nicht.
  * - FK-Referenzen blockieren Loeschen referenzierter Kategorien als BUSINESS_CONFLICT.
@@ -14,7 +14,7 @@
  * - Entfernte Legacy-Stammdatenrouten fuer Komponenten-Spezifikationen und Produktzuordnungen bleiben ungueltig.
  *
  * Fehlerfaelle:
- * - Nicht-Admin kann Stammdaten lesen/schreiben.
+ * - Nicht-Admin kann Stammdaten schreiben oder inaktive Auswahlstammdaten lesen.
  * - Delete auf referenzierte Kategorie wird trotz Nutzung ausgefuehrt.
  *
  * Ziel:
@@ -266,15 +266,26 @@ describe("FT27 integration: master data admin API", () => {
       });
   });
 
-  it("returns FORBIDDEN for non-admin on FT27 list endpoint", async () => {
+  it("allows non-admin product-category reads with active filtering", async () => {
     const admin = await loginAdminAgent();
+    const token = `PK-FT27-READ-${userCounter++}`;
+    const activeCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-A`, isActive: true, version: 1 })
+      .expect(201);
+    const inactiveCategory = await admin
+      .post("/api/admin/master-data/product-categories")
+      .send({ name: `${token}-I`, isActive: false, version: 1 })
+      .expect(201);
     const reader = await createAndLoginReaderAgent(admin);
 
     await reader
       .get("/api/admin/master-data/product-categories?active=all")
-      .expect(403)
+      .expect(200)
       .expect((res) => {
-        expect(res.body.code).toBe("FORBIDDEN");
+        const ids = res.body.map((row: { id: number }) => row.id);
+        expect(ids).toContain(activeCategory.body.id);
+        expect(ids).not.toContain(inactiveCategory.body.id);
       });
   });
 

@@ -12,6 +12,7 @@ import {
   logInfo,
   shouldLogHttpRequest,
 } from "./lib/logger";
+import { getRequestActor } from "./lib/requestActor";
 
 const runtimeConfig = initializeRuntimeEnv();
 const dbLogInfo = parseDatabaseLogInfo(runtimeConfig.mysqlDatabaseUrl);
@@ -69,12 +70,17 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (requestPath.startsWith("/api") && shouldLogHttpRequest(res.statusCode, duration)) {
-      logInfo("http_request", {
+      const actor = getRequestActor(req);
+      const meta: Record<string, unknown> = {
         method: req.method,
         path: requestPath,
         status: res.statusCode,
         durationMs: duration,
-      });
+      };
+      if (actor.userId !== null) meta.userId = actor.userId;
+      if (actor.name !== null) meta.userName = actor.name;
+
+      logInfo("http_request", meta);
     }
   });
 

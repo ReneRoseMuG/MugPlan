@@ -366,8 +366,10 @@ export async function listProductCategories(
   filter: "active" | "inactive" | "all" | undefined,
   roleKey: CanonicalRoleKey,
 ): Promise<ProductCategory[]> {
-  requireAdmin(roleKey);
-  return masterDataRepository.listProductCategories(normalizeFilter(filter));
+  if (!roleKey) {
+    throw new MasterDataError(403, "FORBIDDEN");
+  }
+  return masterDataRepository.listProductCategories(normalizeReadFilterForRole(filter, roleKey));
 }
 
 export async function importProductsForCategory(

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Codex Code Discipline"
+  short_description: "Guardrails before implementation edits"
+  default_prompt: "Use $codex-code-discipline before implementing a repository change."
+
+policy:
+  allow_implicit_invocation: true

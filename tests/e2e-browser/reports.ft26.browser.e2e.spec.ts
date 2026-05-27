@@ -39,7 +39,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { closeDispatcherLoginConflictsDialog, loginAsAdmin, loginAsRole, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -270,13 +270,20 @@ async function createAuftragslisteFilterBrowserProject(params: {
   return { customer, project };
 }
 
-async function openReports(page: Page) {
+async function openReports(page: Page, roleCode: "ADMIN" | "DISPATCHER" | "READER" = "ADMIN") {
+  const login = roleCode === "ADMIN"
+    ? loginAsAdmin
+    : (targetPage: Page) => loginAsRole(targetPage, roleCode);
+
   try {
-    await loginAsAdmin(page);
+    await login(page);
   } catch (error) {
     await page.goto("/");
     await page.reload();
-    await loginAsAdmin(page);
+    await login(page);
+  }
+  if (roleCode === "DISPATCHER") {
+    await closeDispatcherLoginConflictsDialog(page);
   }
   await page.getByTestId("nav-reports").click();
   await expect(page.getByTestId("reports-panel")).toBeVisible();
@@ -321,6 +328,10 @@ function rowByText(table: Locator, text: string): Locator {
 function formatIsoDateForUi(value: string): string {
   const [year, month, day] = value.split("-");
   return `${day}.${month}.${year.slice(-2)}`;
+}
+
+function toReportTestIdToken(value: string): string {
+  return value.trim().replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
 }
 
 async function getHeaderTexts(table: Locator) {
@@ -612,6 +623,23 @@ test("covers visible FT26 report interactions, persistence, print preview and pr
   expect(produktionsplanungPrintLayout.pageCount).toBeGreaterThan(0);
   expect(produktionsplanungPrintLayout.blockCount).toBeGreaterThan(0);
   expect(produktionsplanungPrintLayout.overflowingBlocks).toEqual([]);
+});
+
+test("shows Auftragsliste Sauna Modell choices for dispatcher while keeping production layout admin-only", async ({ page }) => {
+  const modelName = `Dispatcher Modell Sichtbar ${Date.now()}`;
+  await createProductFixture({
+    categoryName: "Fass Saunen",
+    name: modelName,
+  });
+
+  await openReports(page, "DISPATCHER");
+
+  await expect(page.getByTestId("button-reports-produktionsplanung-open-category-layout")).toHaveCount(0);
+  await page.getByTestId("button-reports-auftragsliste-open-sauna-model-filter").click();
+  const modelOption = page.getByTestId(`checkbox-reports-auftragsliste-sauna-model-${toReportTestIdToken(modelName)}`);
+  await expect(modelOption).toBeVisible();
+  await modelOption.click();
+  await expect(page.getByTestId("button-reports-auftragsliste-open-sauna-model-filter")).toContainText(modelName);
 });
 
 test("filters the Auftragsliste by reduced tags and Sauna Modell through overlay, print preview and browser print", async ({ page }) => {

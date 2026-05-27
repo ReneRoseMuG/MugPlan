@@ -1,0 +1,5 @@
+interface:
+  display_name: "Projekt Manager Test-Entwurf"
+  short_description: "Strenge Leitplanken für aussagekräftige Tests"
+  default_prompt: "Use $projekt-manager-test-entwurfsleitplanken to design meaningful tests for this Projekt Manager change."
+

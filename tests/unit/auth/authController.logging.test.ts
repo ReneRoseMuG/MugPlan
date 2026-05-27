@@ -3,7 +3,8 @@
  *
  * Abgedeckte Regeln:
  * - Auth-Controller protokollieren Erfolgs- und Auth-Fehlerpfade ueber logAuth.
- * - Login-Erfolg loggt userId nur bei status "authenticated".
+ * - Login-Erfolg loggt userId und userName nur bei status "authenticated".
+ * - Login-Fehler loggen den validierten attemptedUsername.
  * - Logout loggt die Session-userId erst nach erfolgreichem destroy-Callback.
  *
  * Fehlerfaelle:
@@ -88,7 +89,10 @@ describe("authController logging", () => {
 
     await login(req, res as any, next);
 
-    expect(logAuth).toHaveBeenCalledWith("login_success", { userId: 42 });
+    expect(logAuth).toHaveBeenCalledWith("login_success", {
+      userId: 42,
+      userName: "admin-a",
+    });
     expect(res.json).toHaveBeenCalledWith({
       status: "authenticated",
       userId: 42,
@@ -112,7 +116,10 @@ describe("authController logging", () => {
 
     await login(req, res as any, next);
 
-    expect(logAuth).toHaveBeenCalledWith("login_failed", { code: "INVALID_CREDENTIALS" });
+    expect(logAuth).toHaveBeenCalledWith("login_failed", {
+      code: "INVALID_CREDENTIALS",
+      attemptedUsername: "admin-a",
+    });
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ code: "INVALID_CREDENTIALS" });
     expect(next).not.toHaveBeenCalled();
@@ -198,7 +205,10 @@ describe("authController logging", () => {
 
     await quickLogin(req, res as any, next);
 
-    expect(logAuth).toHaveBeenCalledWith("quick_login", { userId: 13 });
+    expect(logAuth).toHaveBeenCalledWith("quick_login", {
+      userId: 13,
+      userName: "dispatcher-a",
+    });
     expect(res.json).toHaveBeenCalledWith({
       status: "authenticated",
       userId: 13,

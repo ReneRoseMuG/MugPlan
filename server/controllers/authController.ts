@@ -61,8 +61,9 @@ export async function setupAdmin(req: Request, res: Response, next: NextFunction
 }
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
+  let input!: { username: string; password: string };
   try {
-    const input = api.auth.login.input.parse(req.body);
+    input = api.auth.login.input.parse(req.body);
     const result = await authService.login(input);
     delete req.session.userId;
     if (result.preAuth) {
@@ -72,7 +73,10 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
     }
     if (result.payload.status === "authenticated") {
       req.session.userId = result.payload.userId;
-      logAuth("login_success", { userId: result.payload.userId });
+      logAuth("login_success", {
+        userId: result.payload.userId,
+        userName: result.payload.username ?? null,
+      });
       triggerAdminHolidaySeed(result.payload);
     }
     res.json(result.payload);
@@ -82,7 +86,10 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
       return;
     }
     if (authService.isAuthError(error)) {
-      logAuth("login_failed", { code: error.code });
+      logAuth("login_failed", {
+        code: error.code,
+        attemptedUsername: input.username,
+      });
       res.status(error.status).json({ code: error.code });
       return;
     }
@@ -159,7 +166,10 @@ export async function quickLogin(req: Request, res: Response, next: NextFunction
     const payload = await authService.quickLoginByRole(input);
     delete req.session.preAuth;
     req.session.userId = payload.userId;
-    logAuth("quick_login", { userId: payload.userId });
+    logAuth("quick_login", {
+      userId: payload.userId,
+      userName: payload.username ?? null,
+    });
     triggerAdminHolidaySeed(payload);
     res.json(payload);
   } catch (error) {

@@ -85,6 +85,20 @@ Wenn ein Auftrag direkten Bezug auf ein bestimmtes Feature oder einen Use Case h
 
 ---
 
+### 1.2 Projektlokale Skills
+
+Projektlokale Skills liegen im Repository unter `skills/`. Wenn ein Auftrag erkennbar zu einem dort vorhandenen Skill passt, liest Codex zuerst dessen `SKILL.md` und folgt den dort beschriebenen Leitplanken auftragsbezogen.
+
+Die Skills ergänzen diese Arbeitsanweisung nur. Bei Widersprüchen gilt immer `agents.md`; der Widerspruch wird kurz dokumentiert.
+
+Aktuell projektlokal verfügbar:
+
+- `skills/projekt-manager-planungsleitplanken`
+- `skills/projekt-manager-test-entwurfsleitplanken`
+- `skills/codex-code-discipline`
+
+---
+
 ## 2. Analyse vor der Umsetzung (Pflicht, aber klein starten)
 
 Bevor Änderungen vorgenommen werden, startet Codex die Analyse **immer klein und auftragsnah**.
