@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>27-05-26-task-7-messe-notizeditor: 27.05.26 | Fehlerbehebung | FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow · MugPlan Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../wiki.css">
+</head>
+<body>
+  <button class="wiki-sidebar-toggle" type="button" aria-label="Navigation umschalten" data-sidebar-toggle>Menü</button>
+  <div class="wiki-app">
+    <aside class="wiki-sidebar" data-screen-label="Sidebar">
+      <a href="../../index.html" class="wiki-sidebar__brand">
+        <span class="wiki-sidebar__mark" aria-hidden="true"></span>
+        MugPlan Wiki
+      </a>
+      <div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Projekte</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../projekt/projekte.html">Projekte</a></li><li><a href="../../projekt/aufgaben.html">Aufgaben</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Lastenheft</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../lastenheft/features.html">Features</a></li><li><a href="../../lastenheft/use-cases.html">Use Cases</a></li><li><a href="../../lastenheft/backlogs.html">Backlogs</a></li><li><a href="../../lastenheft/nfrs.html">NFRs</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Verwaltung</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../journal.html" class="is-active">Journal</a></li><li><a href="../metadaten.html">Metadaten</a></li><li><a href="../../control-report.html">Kontrollbericht</a></li>
+        </ul>
+      </div><div class="wiki-sidebar__group">
+        <p class="wiki-sidebar__group-title">Benutzerdoku</p>
+        <ul class="wiki-sidebar__nav">
+          <li><a href="../../benutzerdokumentation.html">Übersicht</a></li>
+        </ul>
+      </div>
+    </aside>
+    <main class="wiki-content" data-screen-label="Journal 27-05-26-task-7-messe-notizeditor">
+      <div class="wiki-content__inner">
+        <nav class="wiki-breadcrumb" aria-label="Brotkrumen"><a href="../../index.html">MugPlan Wiki</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Verwaltung</a><span class="wiki-breadcrumb__sep">›</span><a href="../journal.html">Journal</a><span class="wiki-breadcrumb__sep">›</span><span class="wiki-breadcrumb__current">27-05-26-task-7-messe-notizeditor 27.05.26 | Fehlerbehebung | FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow</span></nav>
+        <h1 class="wiki-h1">27-05-26-task-7-messe-notizeditor: 27.05.26 | Fehlerbehebung | FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow</h1>
+    <div class="wiki-meta"><span class="wiki-meta__label">Datum</span>27.05.26</div>
+    <p class="wiki-lead">TASK-7 wurde analysiert und umgesetzt. Der Fehler lag im Frontend-State des Neuer-Termin-Post-Save-Flows: Nach dem Erstellen eines Termins auf Tour Messe wurde die vorgeschlagene Vorlagen-Notiz korrekt per POST /api/appointments/:appointmentId/notes angelegt und anschließend im s</p>
+    <h2 class="wiki-h2">Zusammenfassung</h2>
+<p>TASK-7 wurde analysiert und umgesetzt. Der Fehler lag im Frontend-State des Neuer-Termin-Post-Save-Flows: Nach dem Erstellen eines Termins auf Tour Messe wurde die vorgeschlagene Vorlagen-Notiz korrekt per <code>POST /api/appointments/:appointmentId/notes</code> angelegt und anschließend im separaten Vorlageneditor geöffnet. Das spätere Speichern per <code>PUT /api/notes/:noteId</code> war serverseitig erfolgreich, der Erfolgs-Handler in <code>AppointmentForm</code> brach aber bei fehlendem ursprünglichem <code>appointmentId</code>-Prop ab. Dadurch wurden Editor-Schließen und lokale Versionsaktualisierung übersprungen.</p>
+<p>Die Korrektur sorgt dafür, dass der Notizeditor nach erfolgreichem Speichern auch im Neuer-Termin-Post-Save-Flow schließt und die lokale Notizversion aktualisiert wird. Der serverseitige Versionskonflikt für echte Paralleländerungen bleibt unverändert.</p>
+<h2 class="wiki-h2">Art der Änderung</h2>
+<ul><li>Browser-E2E-Regressionstest für den fehlerhaften Messe-Vorlageneditor-Pfad.</li><li>Kleiner Frontend-State-Fix in einer bestehenden Mutation in <code>AppointmentForm</code>.</li><li>Keine API-Contract-Änderung.</li><li>Keine DB-Migration.</li><li>Keine neue Abhängigkeit.</li><li>Keine Änderung an der fachlichen Vorlagenlogik oder Messe-Tag-Automatik.</li></ul>
+<h2 class="wiki-h2">Betroffene Features</h2>
+<ul><li>FT-01 Kalendertermine.</li><li>FT-04 Tourenplanung.</li><li>FT-13 Notizverwaltung.</li><li>Direkte Notion-Links wurden in TASK-7 nicht mitgeliefert und deshalb nicht ergänzt.</li></ul>
+<h2 class="wiki-h2">Konkrete Änderungen</h2>
+<ul><li>In <code>tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts</code> wurde ein Browser-Test ergänzt, der einen neuen Termin auf Tour Messe erstellt, den Notizvorschlag bestätigt, den geöffneten Messe-Vorlageneditor speichert und erwartet, dass der Editor danach geschlossen ist.</li><li>Der neue Test prüft zusätzlich, dass der geänderte Notizinhalt über die echte Terminnotiz-API persistiert wurde.</li><li>In <code>client/src/components/AppointmentForm.tsx</code> nutzt der Update-Erfolg der Terminnotiz jetzt als Zieltermin entweder das bestehende <code>appointmentId</code>-Prop oder, im Neuer-Termin-Post-Save-Fall, <code>pendingPostSaveResult.appointmentId</code>.</li><li><code>setTemplateNoteEditorVersion(...)</code> und <code>setTemplateNoteEditorOpen(false)</code> werden nicht mehr durch den leeren <code>appointmentId</code>-Prop übersprungen.</li><li>Die bestehende Invalidierung der Terminnotizen bleibt erhalten, wenn ein gültiger Zieltermin bestimmt werden kann.</li></ul>
+<h2 class="wiki-h2">Rollen</h2>
+<ul><li>Die Rollenlogik wurde nicht geändert.</li><li>Notizmutationen bleiben serverseitig auf <code>ADMIN</code> und <code>DISPONENT</code> beschränkt.</li><li><code>LESER</code> bleibt für Notizen lesend, aber ohne Mutationsrecht.</li><li>Die Änderung ersetzt keine serverseitige Berechtigungsprüfung und führt keine neue reine UI-Freigabe ein.</li></ul>
+<h2 class="wiki-h2">Tests / Verifikation</h2>
+<ul><li>Safety Gate: <code>.env.test</code> war vorhanden; <code>NODE_ENV=test</code> und <code>MUGPLAN_MODE=test</code> wurden über die npm-Testskripte gesetzt.</li><li>Der neue Browser-Test wurde vor dem Fix gezielt ausgeführt und war rot: <code>PUT /api/notes/...</code> war erfolgreich, aber <code>input-note-title</code> blieb sichtbar.</li><li><code>npm run test:e2e:browser -- tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts -g &quot;closes the Messe template note editor after saving in the new appointment post-save flow&quot;</code> nach dem Fix erfolgreich mit 1 Test.</li><li><code>npm run test:unit -- tests/unit/ui/appointmentForm.noteEditor.behavior.test.tsx</code> erfolgreich mit 6 Tests.</li><li><code>git diff --check -- client/src/components/AppointmentForm.tsx tests/e2e-browser/appointment-form.create-sidebar-persistence.browser.e2e.spec.ts</code> erfolgreich.</li></ul>
+<h2 class="wiki-h2">Offene Punkte</h2>
+<ul><li>Kein vollständiger Browser-E2E-Gesamtlauf wurde in dieser Session ausgeführt.</li><li>Im Arbeitsbaum lagen bereits vor <code>journal</code> fremde Änderungen an <code>tests/e2e-browser/project-form.create-sidebar-persistence.browser.e2e.spec.ts</code> und die unversionierte Datei <code>start-dev-server.cmd</code>; sie wurden inhaltlich nicht von dieser TASK-7-Änderung geprüft.</li></ul>
+      </div>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var btn = document.querySelector('[data-sidebar-toggle]');
+      var app = document.querySelector('.wiki-app');
+      if (!btn || !app) return;
+      btn.addEventListener('click', function () { app.classList.toggle('is-sidebar-open'); });
+    })();
+  </script>
+</body>
+</html>

@@ -9,11 +9,12 @@
  * - Nach dem ersten Save werden Tag, Notiz und Projektanhang dem erzeugten Projekt korrekt zugeordnet.
  * - Eine aus der Dokumentextraktion uebernommene Datei erscheint vor dem Save als pending Projektanhang und nach dem Save als echter Projektanhang.
  * - Auftragsdaten lassen sich auch ohne vorgewaehlten Kunden in das Projektformular uebernehmen.
- * - Die Dokumentextraktion fuellt die strukturierte Artikelliste nicht automatisch mit Produktselektionen vor.
+ * - Die Dokumentextraktion übernimmt passende erkannte Produkte in die strukturierte Artikelliste.
  * - Sichtbare Projektbeschreibung setzt beim Save still das Projekt-Tag `Anmerkungen`.
  * - Auch ein nachtraeglich im Edit-Modus gepflegter Beschreibungstext setzt das Projekt-Tag `Anmerkungen`.
  * - Beim erneuten Oeffnen im Edit-Modus stehen dieselben Daten wieder in der Sidebar zur Verfuegung.
  * - Ungespeicherte Edit-Werte im Projektformular bleiben trotz Tag-Mutation im Sidebar-Picker erhalten.
+ * - Der Speichern-Review bestätigt unvollständige Artikellisten vor der Persistenz.
  *
  * Fehlerfaelle:
  * - Die Create-Sidebar fehlt im Projektformular.
@@ -22,6 +23,7 @@
  * - Der Projekt-Extract bleibt bei fehlendem Kunden oder teilweiser Kundenlesbarkeit unbenutzbar.
  * - Beschreibungstext bleibt ohne das erwartete Projekt-Tag `Anmerkungen`.
  * - Das Edit-Formular setzt lokale Feldwerte nach Tag-Auswahl wieder auf den Serverstand zurueck.
+ * - Ein offener Speichern-Review blockiert die Projektanlage, wenn der Test ihn nicht bestätigt.
  *
  * Ziel:
  * Browser-E2E fuer die angeglichene Create-UX des Projektformulars, die stille `Anmerkungen`-Regel beim Speichern und die Persistenz der Create-Sidebar-Daten bis zum Reopen absichern.
@@ -258,6 +260,97 @@ async function readProjectById(page: Page, projectId: number): Promise<{
       country: string | null;
     };
   }>;
+}
+
+type ProjectSaveReviewStepId = "articles" | "title" | "reklamation" | "attachment";
+
+const projectSaveReviewStepTestIds: Record<ProjectSaveReviewStepId, string> = {
+  articles: "project-save-review-step-articles",
+  title: "project-save-review-step-title",
+  reklamation: "project-save-review-step-reklamation",
+  attachment: "project-save-review-step-attachment",
+};
+
+const missingProjectArticleLabelsFromExtract = [
+  "Sauna",
+  "Ofen",
+  "Steuerung",
+  "Dach",
+  "Fenster",
+  "Tür",
+  "Vorderwand",
+  "Rückwand",
+  "Einrichtung",
+];
+
+async function getVisibleProjectSaveReviewStep(page: Page): Promise<ProjectSaveReviewStepId | null> {
+  for (const [stepId, testId] of Object.entries(projectSaveReviewStepTestIds)) {
+    if (await page.getByTestId(testId).isVisible().catch(() => false)) {
+      return stepId as ProjectSaveReviewStepId;
+    }
+  }
+  return null;
+}
+
+async function applyProjectSaveReviewStepOptions(page: Page, options: {
+  expectedMissingArticleLabels?: string[];
+  adoptSaunaTitle?: boolean;
+  createReklamationNote?: boolean;
+  linkDuplicateAttachment?: boolean;
+}) {
+  if (await page.getByTestId("project-save-review-step-articles").isVisible().catch(() => false)) {
+    const missingList = page.getByTestId("project-save-review-missing-articles");
+    await expect(missingList).toBeVisible();
+    for (const label of options.expectedMissingArticleLabels ?? []) {
+      await expect(missingList).toContainText(label);
+    }
+  }
+
+  const adoptCheckbox = page.getByTestId("checkbox-project-save-review-adopt-sauna-title");
+  if (await adoptCheckbox.isVisible().catch(() => false) && options.adoptSaunaTitle !== undefined) {
+    await adoptCheckbox.setChecked(options.adoptSaunaTitle);
+  }
+
+  const reklamationCheckbox = page.getByTestId("checkbox-project-save-review-create-reklamation-note");
+  if (await reklamationCheckbox.isVisible().catch(() => false) && options.createReklamationNote !== undefined) {
+    await reklamationCheckbox.setChecked(options.createReklamationNote);
+  }
+
+  const attachmentCheckbox = page.getByTestId("checkbox-project-save-review-link-duplicate-attachment");
+  if (await attachmentCheckbox.isVisible().catch(() => false) && options.linkDuplicateAttachment !== undefined) {
+    await attachmentCheckbox.setChecked(options.linkDuplicateAttachment);
+  }
+}
+
+async function confirmProjectSaveReview(page: Page, options: {
+  expectedSteps?: ProjectSaveReviewStepId[];
+  expectedMissingArticleLabels?: string[];
+  adoptSaunaTitle?: boolean;
+  createReklamationNote?: boolean;
+  linkDuplicateAttachment?: boolean;
+} = {}): Promise<ProjectSaveReviewStepId[]> {
+  await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
+
+  const visitedSteps: ProjectSaveReviewStepId[] = [];
+  for (let guard = 0; guard < 5; guard += 1) {
+    const visibleStep = await getVisibleProjectSaveReviewStep(page);
+    if (visibleStep) visitedSteps.push(visibleStep);
+    await applyProjectSaveReviewStepOptions(page, options);
+
+    const nextButton = page.getByTestId("button-project-save-review-next");
+    if (await nextButton.isVisible().catch(() => false)) {
+      await nextButton.click();
+      continue;
+    }
+
+    await page.getByTestId("button-project-save-review-confirm").click();
+    for (const expectedStep of options.expectedSteps ?? []) {
+      expect(visitedSteps).toContain(expectedStep);
+    }
+    return visitedSteps;
+  }
+
+  throw new Error("Project save review did not reach the confirm action.");
 }
 
 type ProjectDocExtractFixtureDialogCase = {
@@ -618,9 +711,11 @@ async function expectProjectExtractionFixturePersistence(page: Page, fixture: Pr
     && new URL(response.url()).pathname === "/api/projects"
   ));
   await page.getByTestId("button-save-project").click();
-  if (await page.getByTestId("dialog-project-save-review").isVisible({ timeout: 1000 }).catch(() => false)) {
-    await page.getByTestId("button-project-save-review-confirm").click();
-  }
+  const visitedReviewSteps = await confirmProjectSaveReview(page, {
+    expectedSteps: ["articles"],
+    expectedMissingArticleLabels: missingProjectArticleLabelsFromExtract,
+  });
+  expect(visitedReviewSteps[0]).toBe("articles");
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = await createdProjectResponse.json() as { id: number };
@@ -675,7 +770,7 @@ test("persists Reklamation workflow from the new project form with a template no
     response.request().method() === "POST"
     && new URL(response.url()).pathname === "/api/projects"
   ));
-  await page.getByTestId("button-project-save-review-confirm").click();
+  await confirmProjectSaveReview(page, { expectedSteps: ["reklamation"] });
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = await createdProjectResponse.json() as { id: number };
@@ -706,12 +801,14 @@ test("does not reopen the Reklamation note suggestion on new project save after 
   await expect(page.getByTestId("dialog-project-save-review")).toBeVisible();
   await expect(page.getByTestId("project-save-review-step-reklamation")).toBeVisible();
   await expect(page.getByTestId("input-project-save-review-note-title")).toHaveValue(MANAGED_COMPLAINT_TAG_NAME);
-  await page.getByTestId("checkbox-project-save-review-create-reklamation-note").click();
   const createdProjectResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "POST"
     && new URL(response.url()).pathname === "/api/projects"
   ));
-  await page.getByTestId("button-project-save-review-confirm").click();
+  await confirmProjectSaveReview(page, {
+    expectedSteps: ["reklamation"],
+    createReklamationNote: false,
+  });
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   const createdProject = await createdProjectResponse.json() as { id: number };
@@ -851,6 +948,10 @@ test("shows an extracted document as pending project attachment before save and 
     && new URL(response.url()).pathname === "/api/projects"
   ));
   await page.getByTestId("button-save-project").click();
+  await confirmProjectSaveReview(page, {
+    expectedSteps: ["articles"],
+    expectedMissingArticleLabels: missingProjectArticleLabelsFromExtract,
+  });
   const createdProjectResponse = await createdProjectResponsePromise;
   expect(createdProjectResponse.ok(), await createdProjectResponse.text()).toBeTruthy();
   await expect(page.getByTestId("button-new-project")).toBeVisible();
@@ -1013,7 +1114,7 @@ test("sets the Anmerkungen tag when an existing project is saved with a newly ad
   }).toEqual(expect.arrayContaining(["Anmerkungen"]));
 });
 
-test("keeps article dropdown selections stable in create mode after document extraction", async ({ page }) => {
+test("keeps auto-matched article dropdown selections stable in create mode after document extraction", async ({ page }) => {
   const customer = await createCustomerFixture("FT24-PROJECT-EXTRACT-SELECT");
   const saunaProduct = await createProductFixture({
     categoryName: "Fass Saunen",
@@ -1033,9 +1134,8 @@ test("keeps article dropdown selections stable in create mode after document ext
 
   await page.getByRole("tab", { name: "Artikelliste" }).click();
   await expect(page.getByTestId("project-product-fields")).toBeVisible();
-  await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue("");
-  await page.getByTestId("select-project-product-saunaModel").selectOption(String(saunaProduct.id));
   await expect(page.getByTestId("select-project-product-saunaModel")).toHaveValue(String(saunaProduct.id));
+  await expect(page.getByTestId("select-project-product-saunaModel")).toContainText(saunaProduct.name);
 
   await page.getByRole("tab", { name: "Anmerkungen" }).click();
   await page.getByRole("tab", { name: "Artikelliste" }).click();

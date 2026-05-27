@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-21",
+  "generated_at": "2026-05-27",
   "summary": {
     "projects": {
       "source_count": 2,
@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 70,
-      "generated_count": 70,
+      "source_count": 71,
+      "generated_count": 71,
       "warnings": 0,
       "errors": 0
     }
@@ -3794,6 +3794,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "27-05-26-task-7-messe-notizeditor",
+        "title": "27.05.26 | Fehlerbehebung | FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow",
+        "source": "journal/27-05-26-task-7-messe-notizeditor.md",
+        "output": "verwaltung/journal/27-05-26-task-7-messe-notizeditor.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "21-05-26-termin-kw-mitarbeiter-uebernahme",
         "title": "21.05.26 | Implementierung | FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht",

@@ -89,10 +89,10 @@ async function createNoteViaDialog(page: Page, input: { title: string; body: str
   await dialog.getByTestId("button-save-note").click();
 }
 
-async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ title: string }>> {
+async function readAppointmentNotes(page: Page, appointmentId: number): Promise<Array<{ title: string; body?: string | null }>> {
   const response = await page.request.get(`/api/appointments/${appointmentId}/notes`);
   expect(response.ok()).toBeTruthy();
-  return response.json() as Promise<Array<{ title: string }>>;
+  return response.json() as Promise<Array<{ title: string; body?: string | null }>>;
 }
 
 async function readAppointmentTagNames(page: Page, appointmentId: number): Promise<string[]> {
@@ -374,6 +374,41 @@ test("creates a new appointment on Tour Messe, persists the managed Messe tag an
   await page.getByTestId(`week-appointment-panel-${createdAppointmentId}`).dblclick();
   await expect(page.getByTestId("button-save-appointment")).toBeVisible();
   await expect(page.getByTestId(`appointment-tag-picker-tag-${messeTagId}`)).toBeVisible();
+});
+
+test("closes the Messe template note editor after saving in the new appointment post-save flow", async ({ page }) => {
+  const fixture = await createAppointmentBrowserFixture({ prefix: "FT06-CREATE-MESSE-SAVE", targetDayOffset: 6 });
+  await renameTourToMesse(fixture.tour.id);
+
+  await openNewAppointmentFromTourLane(page, fixture.tour.id, fixture.targetDate);
+  await selectProjectWithoutAppointments(page, fixture);
+
+  const createdAppointmentId = await saveNewAppointmentAndResolveId(page);
+
+  await expect(page.getByTestId("dialog-note-suggestion")).toBeVisible();
+  await page.getByTestId("button-note-suggestion-confirm").click();
+  await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
+  await expect(page.getByTestId("input-note-title")).toHaveValue(MANAGED_MESSE_TAG_NAME);
+
+  const noteEditor = page.getByRole("dialog").filter({ has: page.getByTestId("input-note-title") }).last();
+  const updatedBody = "Messehinweis aus dem Neuer-Termin-Post-Save-Flow";
+  await noteEditor.getByTestId("richtext-editor").fill(updatedBody);
+
+  const updateNoteResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === "PUT"
+    && new URL(response.url()).pathname.startsWith("/api/notes/")
+  ));
+  await noteEditor.getByTestId("button-save-note").click();
+  const updateNoteResponse = await updateNoteResponsePromise;
+  expect(updateNoteResponse.ok()).toBeTruthy();
+
+  await expect(page.getByTestId("input-note-title")).toHaveCount(0);
+  await expect(page.getByTestId("button-save-appointment")).toHaveCount(0);
+
+  await expect.poll(async () => {
+    const notes = await readAppointmentNotes(page, createdAppointmentId);
+    return notes.some((note) => note.title === MANAGED_MESSE_TAG_NAME && (note.body ?? "").includes(updatedBody));
+  }).toBe(true);
 });
 
 test("persists Reklamation workflow from the new appointment form with a template note draft", async ({ page }) => {

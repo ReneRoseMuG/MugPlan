@@ -1988,9 +1988,11 @@ export function AppointmentForm({
       return res.json();
     },
     onSuccess: (updatedNote: Note) => {
-      if (!appointmentId) return;
-      void invalidateAppointmentNotesQueries(appointmentId);
-      void invalidateRelatedAppointmentQueries(selectedProjectId);
+      const targetAppointmentId = appointmentId ?? pendingPostSaveResult?.appointmentId ?? null;
+      if (typeof targetAppointmentId === "number" && targetAppointmentId > 0) {
+        void invalidateAppointmentNotesQueries(targetAppointmentId);
+        void invalidateRelatedAppointmentQueries(selectedProjectId);
+      }
       setTemplateNoteEditorVersion(updatedNote.version);
       setTemplateNoteEditorOpen(false);
       if (pendingPostSaveResult) {
