@@ -10,13 +10,14 @@ function hasTextContent(value: string | null): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-
 export function ProduktionsplanungProjectCard({
   row,
   categories,
+  className,
 }: {
   row: ReportProduktionsplanungProjectRow;
   categories: ProduktionsplanungArticleCategory[];
+  className?: string;
 }) {
   const articleSection = renderProjectArticleListSection({
     articleItems: buildProjectRowArticleItems(row, categories),
@@ -32,6 +33,7 @@ export function ProduktionsplanungProjectCard({
     <ReportProjectCard
       row={row}
       testIdPrefix={testIdPrefix}
+      className={className}
       headerClassName="bg-slate-100"
       bodyClassName="bg-white"
       footerClassName="bg-slate-100"

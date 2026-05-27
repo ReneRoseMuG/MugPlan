@@ -1,5 +1,4 @@
 import type { ReportProduktionsplanungResponse, ReportProduktionsplanungProjectRow } from "@shared/routes";
-import type { Tag } from "@shared/schema";
 
 import {
   buildCategoryLayoutBlocks,
@@ -9,15 +8,13 @@ import {
   type CategoryLayoutConfig,
 } from "@/lib/produktionsplanung-category-layout";
 import {
-  buildProjectRowArticleItems,
   type ProduktionsplanungArticleCategory,
 } from "@/components/reports/produktionsplanungProjectCard.shared";
+import { ProduktionsplanungProjectCard } from "@/components/reports/ProduktionsplanungProjectCard";
 import {
   paginateMeasuredPrintCards,
   type MeasuredPrintCardHeights,
 } from "@/lib/measured-print-pages";
-import { renderProjectArticleListSection } from "@/components/ui/project-article-description-renderer";
-import { formatDisplayDate } from "@/lib/date-display-format";
 import { cn } from "@/lib/utils";
 
 type ProduktionsplanungItemTotal = {
@@ -50,19 +47,6 @@ export type ProduktionsplanungPrintPage = {
 };
 
 export const PRODUKTIONSPLANUNG_PRINT_BLOCK_GAP_PX = 16;
-
-function formatDate(value: string | null): string {
-  return formatDisplayDate(value, "-");
-}
-
-function resolveValue(value: string | null): string {
-  if (!value || value.trim().length === 0) return "-";
-  return value.trim();
-}
-
-function formatDurationDays(value: number): string {
-  return value === 1 ? "1 Tag" : `${value} Tage`;
-}
 
 function renderCategoryCard(group: ProduktionsplanungCategoryGroup) {
   return (
@@ -128,102 +112,6 @@ function renderCategoryLayoutSection(
         <p className="mt-2 text-xs text-slate-500">Keine Einträge.</p>
       )}
     </section>
-  );
-}
-
-function PrintTagList({
-  tags,
-  testId,
-}: {
-  tags: Tag[];
-  testId: string;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1" data-testid={testId}>
-      {tags.length > 0 ? tags.map((tag) => (
-        <span
-          key={tag.id}
-          className="rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-medium text-slate-700"
-          data-testid={`${testId}-tag-${tag.id}`}
-        >
-          {tag.name}
-        </span>
-      )) : (
-        <span className="text-[10px] text-slate-400">Keine Tags</span>
-      )}
-    </div>
-  );
-}
-
-function PrintProjectCardFooter({ row }: { row: ReportProduktionsplanungProjectRow }) {
-  return (
-    <div className="space-y-2 border-t border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-semibold text-slate-900">Mitarbeiter:</span>
-        {row.employees.length > 0 ? row.employees.map((employee) => (
-          <span key={employee.id} className="rounded-full border border-slate-300 bg-white px-2 py-0.5">
-            {employee.fullName}
-          </span>
-        )) : (
-          <span>-</span>
-        )}
-        <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">Notizen {row.notesCount}</span>
-        <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5">Anhänge {row.attachmentsCount}</span>
-      </div>
-      <PrintTagList tags={row.tags} testId={`print-produktionsplanung-project-card-${row.projectId}-tags`} />
-    </div>
-  );
-}
-
-function PrintProjectCard({
-  row,
-  categories,
-}: {
-  row: ReportProduktionsplanungProjectRow;
-  categories: ProduktionsplanungPrintCategory[];
-}) {
-  const articleSection = renderProjectArticleListSection({
-    articleItems: buildProjectRowArticleItems(row, categories),
-    articleSectionClassName: "space-y-2",
-    articleListClassName: "list-disc space-y-0.5 pl-4 text-[10px] leading-snug text-slate-700",
-    testIdPrefix: `print-produktionsplanung-project-card-${row.projectId}`,
-  });
-
-  return (
-    <article
-      className="break-inside-avoid rounded-lg border border-slate-300 bg-white shadow-sm"
-      data-testid={`print-produktionsplanung-project-card-${row.projectId}`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
-        <div className="space-y-1">
-          <div className="text-sm font-semibold text-slate-900">{resolveValue(row.customerFullName)}</div>
-          <div className="text-xs text-slate-600">{resolveValue(row.customerNumber)}</div>
-        </div>
-        <div className="space-y-1 text-center">
-          <div className="text-sm font-semibold text-slate-900">{resolveValue(row.orderNumber)}</div>
-          <div className="text-sm text-slate-700">{row.projectName}</div>
-          {row.reportCardReasonTags.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-1" data-testid={`print-produktionsplanung-project-card-${row.projectId}-reasons`}>
-              {row.reportCardReasonTags.map((tag) => (
-                <span key={tag.id} className="rounded-full border border-slate-300 px-2 py-0.5 text-[10px] font-medium text-slate-700">
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <div className="space-y-1 text-right">
-          <div className="text-sm font-semibold text-slate-900">{formatDate(row.actualDate)}</div>
-          <div className="text-xs text-slate-600">{formatDurationDays(row.durationDays)}</div>
-          {row.tourName ? <div className="text-xs text-slate-600">{row.tourName}</div> : null}
-        </div>
-      </div>
-      <div className="space-y-3 px-4 py-4">
-        <p className="whitespace-pre-wrap text-sm text-slate-800">{resolveValue(row.projectDescription)}</p>
-        {articleSection}
-      </div>
-      <PrintProjectCardFooter row={row} />
-    </article>
   );
 }
 
@@ -307,7 +195,7 @@ export function renderProduktionsplanungPrintBlock(
     case "section-heading":
       return <h2 className="text-lg font-semibold text-slate-900">{block.label}</h2>;
     case "project":
-      return <PrintProjectCard row={block.row} categories={categories} />;
+      return <ProduktionsplanungProjectCard row={block.row} categories={categories} className="break-inside-avoid" />;
     case "projects-empty":
       return <p className="text-xs text-slate-500">Keine passenden Projekte im gewählten Zeitraum.</p>;
     default:
@@ -357,7 +245,12 @@ export function ProduktionsplanungPrintLayout({
           {data.projectRows.length > 0 ? (
             <div className="grid gap-4">
               {data.projectRows.map((row) => (
-                <PrintProjectCard key={row.projectId} row={row} categories={categories} />
+                <ProduktionsplanungProjectCard
+                  key={row.projectId}
+                  row={row}
+                  categories={categories}
+                  className="break-inside-avoid"
+                />
               ))}
             </div>
           ) : (

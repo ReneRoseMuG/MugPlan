@@ -2,13 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die Druckansicht rendert nur noch die sichtbaren Bloecke Produktionsplanung und Projekte.
- * - Projektkarten zeigen Kopf, Gruende, Artikellisten und statischen Footer mit Mitarbeitern/Badges.
- * - Die alte Projekt-Tabelle und der Sonderblock-Abschnitt entfallen vollstaendig.
+ * - Die Druckansicht rendert nur noch die sichtbaren Blöcke Produktionsplanung und Projekte.
+ * - Projektkarten nutzen denselben gemeinsamen Kachelpfad wie die Produktionsplanung-Overlaykarten.
+ * - Die alte Projekt-Tabelle und der Sonderblock-Abschnitt entfallen vollständig.
  *
- * Fehlerfaelle:
+ * Fehlerfälle:
  * - Die Druckansicht fällt auf Tabelle oder Sonderblock-Bereich zurück.
- * - Projektkarten verlieren Gruende, Artikellisten oder Footer-Informationen.
+ * - Die Druckansicht pflegt wieder eine eigene parallele Projektkartenstruktur.
+ * - Projektkarten verlieren Artikellisten oder Footer-Informationen.
  *
  * Ziel:
  * Die FT26-Druckkomponente in Isolation über statisches Markup regressionssicher absichern.
@@ -16,6 +17,40 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({
+    testId,
+    fullName,
+    renderMode,
+  }: {
+    testId?: string;
+    fullName?: string;
+    renderMode?: string;
+  }) => (
+    <div data-testid={testId ?? "employee-badge"}>
+      {[fullName ?? "leer", renderMode ?? ""].join("|")}
+    </div>
+  ),
+}));
+
+vi.mock("@/components/notes/EntityNotesHoverPreview", () => ({
+  EntityNotesHoverPreview: ({ triggerLabel }: { triggerLabel?: string }) => (
+    <div data-testid="notes-hover">{triggerLabel ?? "Notizen"}</div>
+  ),
+}));
+
+vi.mock("@/components/calendar/CalendarWeekAppointmentAttachmentsHover", () => ({
+  CalendarWeekAppointmentAttachmentsHover: ({ totalAttachmentsCount }: { totalAttachmentsCount: number }) => (
+    <div data-testid="attachments-hover">Anhänge {totalAttachmentsCount}</div>
+  ),
+}));
+
+vi.mock("@/components/ui/entity-tag-footer-row", () => ({
+  EntityTagFooterRow: ({ tags }: { tags: Array<{ name: string }> }) => (
+    <div data-testid="tag-row">{tags.map((tag) => tag.name).join(",")}</div>
+  ),
+}));
 
 import {
   buildProduktionsplanungPrintBlocks,
@@ -103,6 +138,9 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("Projekte");
     expect(html).not.toContain("Projektliste");
     expect(html).not.toContain("Sonderblöcke");
+    expect(html).toContain("reports-produktionsplanung-project-card-1");
+    expect(html).not.toContain("print-produktionsplanung-project-card-1");
+    expect(html).toContain("break-inside-avoid");
     expect(html).toContain("Kunde Alpha");
     expect(html).toContain("C-001");
     expect(html).toContain("ORD-001");
@@ -110,8 +148,8 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("05.11.99");
     expect(html).toContain("2 Tage");
     expect(html).toContain("Tour Nord");
-    expect(html).toContain("Sondermaß");
-    expect(html).toContain("Anmerkungen");
+    expect(html).not.toContain("Sondermaß");
+    expect(html).not.toContain("Anmerkungen");
     expect(html).toContain("Beschreibung Alpha");
     expect(html).toContain("<li");
     expect(html).toContain("Sauna");
@@ -124,9 +162,12 @@ describe("FT26 UI: ProduktionsplanungPrintLayout wiring", () => {
     expect(html).toContain("col-span-1");
     expect(html).toContain("col-span-2");
     expect(html).toContain("grid-cols-2");
-    expect(html).toContain("Max Muster");
-    expect(html).toContain("Notizen 3");
-    expect(html).toContain("Anhänge 1");
+    expect(html).toContain("reports-produktionsplanung-project-card-1-footer-tags-column");
+    expect(html).toContain("reports-produktionsplanung-project-card-1-footer-badges-column");
+    expect(html).toContain("reports-produktionsplanung-project-card-1-employee-8");
+    expect(html).toContain("Max Muster|compact");
+    expect(html).toContain("notes-hover");
+    expect(html).toContain("attachments-hover");
     expect(html).toContain("Info");
   });
 
