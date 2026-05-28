@@ -4,6 +4,7 @@ Neue Einträge stehen oben. Ältere Protokolle vor dem 07.05.26 liegen teilweise
 
 ## Einträge
 
+- [28.05.26 - TASK-8/A-37: Termintabellen in Formularen vereinheitlicht](28-05-26-task-8-termintabellen-vereinheitlicht.md)
 - [27.05.26 - FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow](27-05-26-task-7-messe-notizeditor.md)
 
 - [21.05.26 - FT-04: Termin-/KW-Mitarbeiter-Übernahme vereinfacht](21-05-26-termin-kw-mitarbeiter-uebernahme.md)

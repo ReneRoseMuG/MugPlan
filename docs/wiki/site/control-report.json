@@ -44,8 +44,8 @@
       "errors": 0
     },
     "journal": {
-      "source_count": 71,
-      "generated_count": 71,
+      "source_count": 72,
+      "generated_count": 72,
       "warnings": 0,
       "errors": 0
     }
@@ -3785,6 +3785,15 @@
       }
     ],
     "journal": [
+      {
+        "id": "28-05-26-task-8-termintabellen-vereinheitlicht",
+        "title": "28.05.26 | Implementierung | TASK-8/A-37: Termintabellen in Formularen vereinheitlicht",
+        "source": "journal/28-05-26-task-8-termintabellen-vereinheitlicht.md",
+        "output": "verwaltung/journal/28-05-26-task-8-termintabellen-vereinheitlicht.html",
+        "ok": true,
+        "warnings": [],
+        "errors": []
+      },
       {
         "id": "27-05-26-task-7-messe-notizeditor",
         "title": "27.05.26 | Fehlerbehebung | FT-04/FT-13: Messe-Notizeditor im Neuer-Termin-Flow",
