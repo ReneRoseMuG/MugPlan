@@ -373,7 +373,7 @@ test.describe("Dispatcher form data and actions", () => {
     ));
     await page.getByTestId("button-save-employee").click();
     const saveResponse = await saveResponsePromise;
-    expect(saveResponse.ok(), await saveResponse.text()).toBeTruthy();
+    expect(saveResponse.ok(), `PUT /api/employees/${employee.id} returned ${saveResponse.status()}`).toBeTruthy();
     await expect(page.getByTestId("button-save-employee")).toHaveCount(0);
     await expect(entry).toContainText(editedEmail);
     await entry.dblclick();

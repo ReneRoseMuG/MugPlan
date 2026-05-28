@@ -115,6 +115,7 @@ describe("FT-32 integration: change notification stream", () => {
       .get("/api/change-notifications/stream")
       .expect(401)
       .expect((res) => {
+        expect(res.headers["cache-control"]).toContain("no-store");
         expect(res.body.code).toBe("UNAUTHORIZED");
       });
   });
@@ -129,6 +130,8 @@ describe("FT-32 integration: change notification stream", () => {
     });
 
     expect(response.headers["content-type"]).toContain("text/event-stream");
+    expect(response.headers["cache-control"]).toContain("no-store");
+    expect(response.headers["cache-control"]).toContain("no-transform");
     expect(response.text).toContain("retry: 5000");
     expect(response.text).toContain(": connected");
   });

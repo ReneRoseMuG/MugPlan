@@ -45,6 +45,11 @@ import journalRoutes from "./routes/journalRoutes";
 import correctionWorkflowRoutes from "./routes/correctionWorkflowRoutes";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
+  app.use("/api", (_req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
+
   app.use("/api", sessionAuth);
   app.use("/api", setupGate);
   app.use(authRoutes);

@@ -916,6 +916,7 @@ export function CalendarWeekView({
       ? [`/api/tours/${weekPersonnelPicker.tourId}/week-employees/available`, weekPersonnelPicker.isoYear, weekPersonnelPicker.isoWeek]
       : ["/api/tours/week-employees/available", "idle"],
     enabled: weekPersonnelPicker !== null,
+    staleTime: 0,
     queryFn: async () => {
       if (!weekPersonnelPicker) return [];
       const params = new URLSearchParams({

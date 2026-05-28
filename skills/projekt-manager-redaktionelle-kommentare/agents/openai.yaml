@@ -1,0 +1,7 @@
+interface:
+  display_name: "Projektmanager-Kommentare"
+  short_description: "Schreibt redaktionelle Projektkommentare aus Arbeits- und Testergebnissen."
+  default_prompt: "Schreibe einen redaktionellen Kommentar für den Projektmanager zu den aktuellen Ergebnissen und hänge ihn an die passende Referenz."
+
+policy:
+  allow_implicit_invocation: true

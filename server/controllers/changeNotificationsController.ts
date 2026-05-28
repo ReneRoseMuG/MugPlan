@@ -21,7 +21,7 @@ export async function streamChangeNotifications(req: Request, res: Response, nex
     }
 
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Cache-Control", "no-store, no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders?.();

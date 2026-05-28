@@ -95,6 +95,7 @@ Aktuell projektlokal verfügbar:
 
 - `skills/projekt-manager-planungsleitplanken`
 - `skills/projekt-manager-test-entwurfsleitplanken`
+- `skills/projekt-manager-redaktionelle-kommentare`
 - `skills/codex-code-discipline`
 
 ---

@@ -29,6 +29,7 @@ describe("auth session status", () => {
 
     const response = await agent.get("/api/auth/session").expect(200);
 
+    expect(response.headers["cache-control"]).toContain("no-store");
     expect(response.body).toMatchObject({
       status: "authenticated",
       username: "test-admin",
@@ -38,8 +39,13 @@ describe("auth session status", () => {
   });
 
   it("returns 401 without an authenticated session", async () => {
-    await request(app).get("/api/auth/session").expect(401, {
-      code: "UNAUTHORIZED",
-    });
+    await request(app)
+      .get("/api/auth/session")
+      .expect(401, {
+        code: "UNAUTHORIZED",
+      })
+      .expect((res) => {
+        expect(res.headers["cache-control"]).toContain("no-store");
+      });
   });
 });

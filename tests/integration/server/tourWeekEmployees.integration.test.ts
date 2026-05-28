@@ -33,7 +33,7 @@
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
  */
 import type express from "express";
-import type { SuperAgentTest } from "supertest";
+import request, { type SuperAgentTest } from "supertest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { addDays, addWeeks, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek } from "date-fns";
 import { and, eq } from "drizzle-orm";
@@ -497,6 +497,64 @@ describe("tourWeekEmployees integration", () => {
         expect(availableEmployeeIds).not.toContain(sameWeekOtherTourEmployee.id);
         expect(availableEmployeeIds).not.toContain(inactiveEmployee.id);
       });
+  });
+
+  it("returns the same available employee pool for ADMIN and DISPATCHER", async () => {
+    const admin = await loginAdmin();
+    const dispatcher = await loginRole("DISPATCHER");
+    const targetTour = await createTourFixture("#117799");
+    const targetWeek = resolveNextEditableWeekDates();
+    const freeEmployee = await createEmployeeFixture("TWE-ROLE-SYM-FREE");
+
+    const adminResponse = await admin
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200);
+
+    const dispatcherResponse = await dispatcher
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200);
+
+    const adminIds = adminResponse.body.map((employee: { id: number }) => employee.id);
+    const dispatcherIds = dispatcherResponse.body.map((employee: { id: number }) => employee.id);
+
+    expect(new Set(adminIds)).toEqual(new Set(dispatcherIds));
+    expect(adminIds).toContain(freeEmployee.id);
+    expect(dispatcherIds).toContain(freeEmployee.id);
+  });
+
+  it("rejects READER requests to the available week employee picker", async () => {
+    const reader = await loginRole("READER");
+    const targetTour = await createTourFixture("#117799");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await reader
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(403)
+      .expect((res) => {
+        expect(res.body).toEqual(expect.objectContaining({ code: "FORBIDDEN" }));
+      });
+  });
+
+  it("rejects unauthenticated requests to the available week employee picker", async () => {
+    const targetTour = await createTourFixture("#117799");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await request(app)
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      // requireSessionUser rejects missing sessions before the /available controller guard runs.
+      .expect(401);
+  });
+
+  it("sends no-store cache control for the available week employee picker", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#117799");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    const response = await admin
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200);
+
+    expect(response.headers["cache-control"]).toContain("no-store");
   });
 
   it("filters the available week employee picker to employees conflict-free across all real tour appointments of the target ISO week", async () => {

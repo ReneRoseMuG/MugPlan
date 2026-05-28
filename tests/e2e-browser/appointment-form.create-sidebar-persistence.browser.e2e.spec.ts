@@ -35,7 +35,7 @@
  */
 import { Buffer } from "node:buffer";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../../server/db";
 import { MANAGED_COMPLAINT_TAG_NAME, MANAGED_MESSE_TAG_NAME } from "../../shared/appointmentCancellation";
 import { tags, tours } from "../../shared/schema";
@@ -301,6 +301,11 @@ async function saveNewAppointmentAndResolveId(page: Page) {
 }
 
 async function renameTourToMesse(tourId: number) {
+  await db
+    .update(tours)
+    .set({ name: `Tour Messe vorher ${tourId}` })
+    .where(and(eq(tours.name, "Tour Messe"), ne(tours.id, tourId)));
+
   await db
     .update(tours)
     .set({ name: "Tour Messe" })

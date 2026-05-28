@@ -501,7 +501,7 @@ test("week card tag picker closes after successful custom tag add while calendar
   ));
   await addTagViaWeekCardPicker(page, appointment.id, customTag.id);
   const tagResponse = await tagResponsePromise;
-  expect(tagResponse.ok(), await tagResponse.text()).toBeTruthy();
+  expect(tagResponse.ok(), `POST /api/appointments/${appointment.id}/tags returned ${tagResponse.status()}`).toBeTruthy();
 
   await expect(page.getByTestId(`week-appointment-tags-${appointment.id}-dialog`)).toHaveCount(0, { timeout: 750 });
   await expect(page.getByTestId("dialog-note-suggestion")).toHaveCount(0);
