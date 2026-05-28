@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - ProjectForm rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
- * - Im Edit-Modus zeigt ProjectForm die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
+ * - Im Edit-Modus zeigt ProjectForm die Haupttabs `Details`, `Termine` und `Journal`; im Create-Modus bleiben die Zusatz-Tabs verborgen.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Termine, Attachments, Tags, Notizen.
  * - Footer-Aktionen bleiben im Shell-Layout gesplittet; Delete erscheint nur im Edit-Modus.
  * - Der Reklamationsworkflow ist in Create und Edit als explizite Formularfunktion sichtbar.
@@ -116,6 +116,10 @@ vi.mock("@/components/ProjectAppointmentsPanel", () => ({
     projectAppointmentsPanelCalls.push(props);
     return <section data-testid="project-appointments-panel-marker">appointments</section>;
   },
+}));
+
+vi.mock("@/components/AppointmentsListPage", () => ({
+  AppointmentsListPage: (props: Record<string, unknown>) => <section data-testid="project-main-appointments-list-marker">{JSON.stringify(props.context)}</section>,
 }));
 
 vi.mock("@/components/ProjectAttachmentsPanel", () => ({
@@ -295,6 +299,7 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
 
     expect(markup).toContain("entity-form-shell");
     expect(markup).not.toContain("tabs-project-main");
+    expect(markup).not.toContain("tab-project-termine");
     expect(markup).not.toContain("tab-project-journal");
     expect(getIndex(markup, "project-form-main-column")).toBeLessThan(getIndex(markup, "project-form-sidebar"));
     expect(getIndex(markup, "project-form-sidebar")).toBeLessThan(getIndex(markup, "project-appointments-panel-marker"));
@@ -314,6 +319,7 @@ describe("FT02/FT13/FT24 project form shell layout integration", () => {
     expect(markup).toContain("entity-form-shell");
     expect(markup).toContain("tabs-project-main");
     expect(markup).toContain("tab-project-details");
+    expect(markup).toContain("tab-project-termine");
     expect(markup).toContain("tab-project-journal");
     expect(getIndex(markup, "project-form-main-column")).toBeLessThan(getIndex(markup, "project-form-sidebar"));
     expect(getIndex(markup, "project-form-sidebar")).toBeLessThan(getIndex(markup, "project-appointments-panel-marker"));

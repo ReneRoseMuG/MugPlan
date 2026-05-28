@@ -254,20 +254,22 @@ Zusatz FT28 Filter:
 
 **Datei:** `client/src/components/AppointmentsListPage.tsx`
 
-Die zentrale Terminübersicht mit Filterung, Sortierung und Paginierung. Wird in drei Kontexten eingesetzt, die über ein diskriminiertes `context`-Prop gesteuert werden. Die Komponente leitet daraus intern ab, welche Filter und Spalten sichtbar sind, ob Filterfelder gesperrt werden und ob der Schließen-Button erscheint.
+Die zentrale Terminübersicht mit Filterung, Sortierung und Paginierung. Wird in mehreren Kontexten eingesetzt, die über ein diskriminiertes `context`-Prop gesteuert werden. Die Komponente leitet daraus intern ab, welche Filter und Spalten sichtbar sind, ob Filterfelder gesperrt werden und ob der Schließen-Button erscheint.
 
 ### Kontexte
 
-| Verhalten | `standalone` | `tour` | `employee` |
-|---|---|---|---|
-| Filter Mitarbeiter | sichtbar | sichtbar | ausgeblendet, intern auf `employeeId` gesetzt |
-| Filter Tour | sichtbar | ausgeblendet, intern auf `tourId` gesetzt | sichtbar |
-| Filter Projekt | sichtbar | sichtbar | sichtbar |
-| Filter Kunde | sichtbar | sichtbar | sichtbar |
-| Switch „Alle Termine" | sichtbar, default Off | sichtbar, default Off | sichtbar, default Off |
-| Spalte Tour | sichtbar | ausgeblendet | sichtbar |
-| Schließen-Button | sichtbar | ausgeblendet | ausgeblendet |
-| enforceFromToday | nein | ja, bis Switch On | ja, bis Switch On |
+| Verhalten | `standalone` | `tour` | `employee` | `customer` | `project` |
+|---|---|---|---|---|---|
+| Filter Mitarbeiter | sichtbar | sichtbar | intern auf `employeeId` gesetzt | sichtbar | sichtbar |
+| Filter Tour | sichtbar | ausgeblendet, intern auf `tourId` gesetzt | sichtbar | sichtbar | sichtbar |
+| Filter Projekt | sichtbar | sichtbar | sichtbar | sichtbar | ausgeblendet, intern auf `projectId` gesetzt |
+| Filter Kunde | sichtbar | sichtbar | sichtbar | ausgeblendet, intern auf `customerId` gesetzt | ausgeblendet |
+| Switch „Alle Termine" | sichtbar, default Off | sichtbar, default Off | sichtbar, default Off | sichtbar, default Off | sichtbar, default Off |
+| Spalte Tour | sichtbar | ausgeblendet | sichtbar | sichtbar | sichtbar |
+| Spalte Projekt/Auftrag | sichtbar | sichtbar | sichtbar | sichtbar | ausgeblendet |
+| Spalte Kunde | sichtbar | sichtbar | sichtbar | ausgeblendet | ausgeblendet |
+| Schließen-Button | sichtbar | ausgeblendet | ausgeblendet | ausgeblendet | ausgeblendet |
+| enforceFromToday | nein | nein | nein | nein | nein |
 
 ### Eingesetzt in
 
@@ -357,6 +359,8 @@ FT28-Ergaenzung:
 | Terminliste (Hauptnavigation) | AppointmentsListPage context="standalone" |
 | Terminliste im Tour-Formular | AppointmentsListPage context="tour" |
 | Terminliste im Mitarbeiter-Formular | AppointmentsListPage context="employee" |
+| Terminliste im Kundenformular | AppointmentsListPage context="customer" |
+| Terminliste im Projektformular | AppointmentsListPage context="project" |
 | Tabellenzeile Hover | AppointmentWeeklyPanelPreview |
 | Detailformular | EntityFormLayout (AppointmentForm) |
 | Badge in Panels/Listen | TerminInfoBadge → AppointmentWeeklyPanelPreview |

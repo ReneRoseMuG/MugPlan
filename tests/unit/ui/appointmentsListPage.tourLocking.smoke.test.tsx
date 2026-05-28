@@ -3,11 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - Die Terminliste reagiert im Tour-Kontext sichtbar mit verstecktem Tour-Filter und ohne Tour-Spalte.
+ * - Kunden- und Projektkontexte sperren ihre festen Entitaetsfilter und blenden redundante Spalten aus.
  * - Im Standalone-Kontext bleibt die Tour-Spalte sichtbar.
  * - Stornierte Termine werden in der Liste markiert und blockieren die Mitarbeiter-Entfernen-Aktion.
  *
  * Fehlerfaelle:
  * - Die Tour-Spalte bleibt in eingebetteten Tour-Kontexten sichtbar.
+ * - Eingebettete Kunden-/Projektlisten zeigen wieder freie Filter oder doppelte Kontextspalten.
  * - Stornierte Zeilen verlieren ihre Kennzeichnung oder bleiben fuer Entfernen-Aktionen aktiv.
  *
  * Ziel:
@@ -97,13 +99,19 @@ vi.mock("@/components/ui/list-paging-footer", () => ({
 vi.mock("@/components/ui/filter-panels/appointments-filter-panel", () => ({
   AppointmentsFilterPanel: ({
     hideTourFilter,
+    hideCustomerFilters,
+    hideProjectFilters,
     appointmentScope,
   }: {
     hideTourFilter: boolean;
+    hideCustomerFilters?: boolean;
+    hideProjectFilters?: boolean;
     appointmentScope: string;
   }) => (
     <div data-testid="appointments-filter-panel">
       <span>{hideTourFilter ? "tour-filter-hidden" : "tour-filter-visible"}</span>
+      <span>{hideCustomerFilters ? "customer-filter-hidden" : "customer-filter-visible"}</span>
+      <span>{hideProjectFilters ? "project-filter-hidden" : "project-filter-visible"}</span>
       <span>{`scope-${appointmentScope}`}</span>
     </div>
   ),
@@ -202,6 +210,36 @@ describe("FT04 appointments list page tour locking smoke", () => {
     expect(markup).toContain("orderNumber");
     expect(markup).toContain("project");
     expect(markup).not.toContain(">tour<");
+  });
+
+  it("uses a customer form context with fixed customer filters and without customer columns", () => {
+    const markup = renderToStaticMarkup(
+      <AppointmentsListPage context={{ type: "customer", customerId: 33 }} />,
+    );
+
+    expect(markup).toContain("customer-filter-hidden");
+    expect(markup).toContain("project-filter-visible");
+    expect(markup).toContain("orderNumber");
+    expect(markup).toContain("project");
+    expect(markup).toContain(">tour<");
+    expect(markup).not.toContain("customerNumber");
+    expect(markup).not.toContain(">customer<");
+    expect(markup).toContain("close-hidden");
+  });
+
+  it("uses a project form context with fixed project and customer filters and compact context columns", () => {
+    const markup = renderToStaticMarkup(
+      <AppointmentsListPage context={{ type: "project", projectId: 44 }} />,
+    );
+
+    expect(markup).toContain("customer-filter-hidden");
+    expect(markup).toContain("project-filter-hidden");
+    expect(markup).toContain(">tour<");
+    expect(markup).not.toContain("orderNumber");
+    expect(markup).not.toContain(">project<");
+    expect(markup).not.toContain("customerNumber");
+    expect(markup).not.toContain(">customer<");
+    expect(markup).toContain("close-hidden");
   });
 
   it("keeps the tour column in standalone mode and marks cancelled rows as non-removable", () => {

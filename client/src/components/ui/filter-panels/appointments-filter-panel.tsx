@@ -13,6 +13,8 @@ import { sortToursForDisplay } from "@/lib/tourDisplayOrder";
 
 export type AppointmentListFilters = {
   employeeId?: number;
+  projectId?: number;
+  customerId?: number;
   projectTitle: string;
   customerLastName: string;
   customerNumber: string;
@@ -37,6 +39,8 @@ interface AppointmentsFilterPanelProps {
   availableTags: Tag[];
   tagPickerOpen: boolean;
   onTagPickerOpenChange: (open: boolean) => void;
+  hideCustomerFilters?: boolean;
+  hideProjectFilters?: boolean;
   hideTourFilter?: boolean;
   hidePeriodPicker?: boolean;
 }
@@ -53,6 +57,8 @@ export function AppointmentsFilterPanel({
   availableTags,
   tagPickerOpen,
   onTagPickerOpenChange,
+  hideCustomerFilters = false,
+  hideProjectFilters = false,
   hideTourFilter = false,
   hidePeriodPicker = false,
 }: AppointmentsFilterPanelProps) {
@@ -60,48 +66,56 @@ export function AppointmentsFilterPanel({
 
   return (
     <FilterPanel title="Terminfilter" layout="row">
-      <CustomerNameFilterInput
-        id="appointments-filter-customer-last-name"
-        value={filters.customerLastName}
-        onChange={(value) => onChange({ customerLastName: value })}
-        onClear={() => onChange({ customerLastName: "" })}
-        label="Nachname Kunde"
-        helpKey="appointments.filter.customerLastName"
-        maxLength={18}
-        className="w-full sm:min-w-[10rem] sm:max-w-[18ch]"
-      />
-      <CustomerNumberFilterInput
-        id="appointments-filter-customer-number"
-        value={filters.customerNumber}
-        onChange={(value) => onChange({ customerNumber: value })}
-        onClear={() => onChange({ customerNumber: "" })}
-        label="Kunde Nr."
-        placeholderLabel="Nr."
-        helpKey="appointments.filter.customerNumber"
-        maxLength={8}
-        className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
-      />
-      <ProjectTitleFilterInput
-        id="appointments-filter-project-title"
-        value={filters.projectTitle}
-        onChange={(value) => onChange({ projectTitle: value })}
-        onClear={() => onChange({ projectTitle: "" })}
-        label="Projektname"
-        helpKey="appointments.filter.projectName"
-        maxLength={18}
-        className="w-full sm:min-w-[10rem] sm:max-w-[18ch]"
-      />
-      <ProjectOrderNumberFilterInput
-        id="appointments-filter-order-number"
-        value={filters.orderNumber}
-        onChange={(value) => onChange({ orderNumber: value })}
-        onClear={() => onChange({ orderNumber: "" })}
-        label="Auftrag Nr."
-        placeholderLabel="Nr."
-        helpKey="appointments.filter.orderNumber"
-        maxLength={8}
-        className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
-      />
+      {!hideCustomerFilters ? (
+        <>
+          <CustomerNameFilterInput
+            id="appointments-filter-customer-last-name"
+            value={filters.customerLastName}
+            onChange={(value) => onChange({ customerLastName: value })}
+            onClear={() => onChange({ customerLastName: "" })}
+            label="Nachname Kunde"
+            helpKey="appointments.filter.customerLastName"
+            maxLength={18}
+            className="w-full sm:min-w-[10rem] sm:max-w-[18ch]"
+          />
+          <CustomerNumberFilterInput
+            id="appointments-filter-customer-number"
+            value={filters.customerNumber}
+            onChange={(value) => onChange({ customerNumber: value })}
+            onClear={() => onChange({ customerNumber: "" })}
+            label="Kunde Nr."
+            placeholderLabel="Nr."
+            helpKey="appointments.filter.customerNumber"
+            maxLength={8}
+            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          />
+        </>
+      ) : null}
+      {!hideProjectFilters ? (
+        <>
+          <ProjectTitleFilterInput
+            id="appointments-filter-project-title"
+            value={filters.projectTitle}
+            onChange={(value) => onChange({ projectTitle: value })}
+            onClear={() => onChange({ projectTitle: "" })}
+            label="Projektname"
+            helpKey="appointments.filter.projectName"
+            maxLength={18}
+            className="w-full sm:min-w-[10rem] sm:max-w-[18ch]"
+          />
+          <ProjectOrderNumberFilterInput
+            id="appointments-filter-order-number"
+            value={filters.orderNumber}
+            onChange={(value) => onChange({ orderNumber: value })}
+            onClear={() => onChange({ orderNumber: "" })}
+            label="Auftrag Nr."
+            placeholderLabel="Nr."
+            helpKey="appointments.filter.orderNumber"
+            maxLength={8}
+            className="w-full sm:min-w-[8rem] sm:max-w-[8ch]"
+          />
+        </>
+      ) : null}
       {!hideTourFilter ? (
         <div className="flex min-w-[150px] flex-col gap-1">
           <div className="flex min-h-5 items-center gap-1">

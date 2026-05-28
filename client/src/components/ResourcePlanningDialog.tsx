@@ -73,20 +73,20 @@ function formatShortDate(dateValue: string): string {
 
 function buildWeekTitle(props: ResourcePlanningDialogProps): string {
   if (props.title) return props.title;
-  if (props.mode === "remove") return "Mitarbeiter von Tour-Terminen abziehen";
-  return "Mitarbeiter zu Tour-Terminen hinzufügen";
+  if (props.mode === "remove") return "Mitarbeiter abziehen";
+  return "Mitarbeiter einplanen";
 }
 
 function buildWeekDescription(props: ResourcePlanningDialogProps): string {
   if (props.description) return props.description;
   if (props.mode === "remove") {
     return props.employeeName
-      ? `Wählen Sie die Termine aus, von denen ${props.employeeName} abgezogen werden soll.`
-      : "Wählen Sie die Termine aus, von denen der Mitarbeiter abgezogen werden soll.";
+      ? `${props.employeeName}: Termine zum Abziehen auswählen, bestätigen oder abbrechen.`
+      : "Termine zum Abziehen auswählen, bestätigen oder abbrechen.";
   }
   return props.employeeName
-    ? `Wählen Sie die Termine aus, für die ${props.employeeName} geplant werden soll.`
-    : "Wählen Sie die Termine aus, für die der Mitarbeiter geplant werden soll.";
+    ? `${props.employeeName}: Termine auswählen, bestätigen oder abbrechen.`
+    : "Termine auswählen, bestätigen oder abbrechen.";
 }
 
 function weekStatusLabel(item: WeekResourcePreviewItem): string | null {
@@ -133,7 +133,11 @@ function buildRangeLabel(items: WeekResourcePreviewItem[]): string | null {
     if (endDate > maxDate) maxDate = endDate;
   }
 
-  return `Termine (${items.length}) - Termine im Zeitraum von ${formatShortDate(minDate)} bis ${formatShortDate(maxDate)}`;
+  const itemLabel = items.length === 1 ? "1 Termin" : `${items.length} Termine`;
+  if (minDate === maxDate) {
+    return `${itemLabel}, ${formatShortDate(minDate)}`;
+  }
+  return `${itemLabel}, ${formatShortDate(minDate)} bis ${formatShortDate(maxDate)}`;
 }
 
 export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
@@ -218,14 +222,14 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
         {props.executionMessage ? (
           <DialogBaseInlineMessage
             tone="info"
-            title="Ausführungsstand"
+            title="Status"
             description={props.executionMessage}
           />
         ) : null}
 
         {variant === "week" && (props.weekLabel || weekRangeLabel) ? (
           <p className="text-sm text-slate-500" data-testid="text-tour-employee-cascade-range">
-            {[props.weekLabel, weekRangeLabel].filter(Boolean).join(" - ")}
+            {[props.weekLabel, weekRangeLabel].filter(Boolean).join(" | ")}
           </p>
         ) : null}
 

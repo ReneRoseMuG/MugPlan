@@ -2,7 +2,7 @@
 
 ## Metadaten
 
-- Status: offen
+- Status: erledigt
 - Priorität: Mittel
 - Feature: Formular- und Detailansichten für Kunden, Projekte, Touren und Mitarbeiter
 - Entdeckt: 01.05.26
@@ -29,5 +29,9 @@ Mittel. Das Risiko liegt primär in UI-Regressionen, geänderten Fokus- und Öff
 ## Vorgeschlagene Maßnahme
 
 Kunde und Projekt bevorzugt auf einen Haupttab `Termine` mit tabellarischer Darstellung prüfen. Die Sidebar soll danach nur noch Zusammenfassungen tragen oder entfallen.
+
+## Entscheidung und Abschluss
+
+Variante C wurde am 28.05.26 umgesetzt. Alle Formular-Haupttabellen für Termine nutzen `AppointmentsListPage` mit kontextbezogenen festen Filtern. Kunden- und Projektformulare haben im Edit-Modus einen Haupttab `Termine`; die bestehenden kompakten Sidebar-Panels bleiben als Zusammenfassungen erhalten.
 
 ## Quelle

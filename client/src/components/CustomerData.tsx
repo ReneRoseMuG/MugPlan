@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DialogBaseInlineMessage } from "@/components/ui/dialog-base";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { EditFormContextText } from "@/components/ui/edit-form-context-text";
-import { LayoutList, Mail, MapPin, Phone, ScrollText, User, X } from "lucide-react";
+import { Calendar, LayoutList, Mail, MapPin, Phone, ScrollText, User, X } from "lucide-react";
 import { NotesSection } from "@/components/NotesSection";
 import { LinkedProjectsPanel } from "@/components/LinkedProjectsPanel";
 import { CustomerAppointmentsPanel } from "@/components/CustomerAppointmentsPanel";
+import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
 import { CustomerAttachmentsPanel, type PendingCustomerAttachmentItem } from "@/components/CustomerAttachmentsPanel";
 import { DocumentExtractionDropzone } from "@/components/DocumentExtractionDropzone";
 import {
@@ -37,6 +38,7 @@ interface CustomerDataProps {
   onCancel?: () => void;
   onSave?: () => void;
   onOpenProject?: (id: number) => void;
+  onOpenAppointment?: (appointmentId: number, context: AppointmentsListContext) => void;
 }
 
 type CustomerSubmitPayload = {
@@ -56,7 +58,7 @@ type CustomerSubmitPayload = {
 type CustomerDetail = Customer & { tags: Tag[] };
 type DraftCustomerNote = Note & { templateId?: number };
 
-export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: CustomerDataProps) {
+export function CustomerData({ customerId, onCancel, onSave, onOpenProject, onOpenAppointment }: CustomerDataProps) {
   const { toast } = useToast();
   const userRole = getStoredUserRole();
   const isReadOnlyView = isReaderRole(userRole);
@@ -90,7 +92,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   const [documentExtractionOpen, setDocumentExtractionOpen] = useState(false);
   const [documentExtractionLoading, setDocumentExtractionLoading] = useState(false);
   const [documentExtractionData, setDocumentExtractionData] = useState<ExtractionDialogData | null>(null);
-  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "appointments" | "journal">("details");
   const [mutationError, setMutationError] = useState<NormalizedServerError | null>(null);
   const [draftCustomerTags, setDraftCustomerTags] = useState<TagRelationItem[]>([]);
   const [draftCustomerNotes, setDraftCustomerNotes] = useState<DraftCustomerNote[]>([]);
@@ -735,7 +737,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
   return (
     <Tabs
       value={isEditMode ? activeMainTab : "details"}
-      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "appointments" | "journal")}
       className="h-full"
     >
       <div className="flex h-full min-h-0 w-full flex-1">
@@ -771,6 +773,7 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
                 <TabsList className="w-full" data-testid="tabs-customer-main">
                   <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-customer-details"><LayoutList className="w-4 h-4" />Details</TabsTrigger>
+                  <TabsTrigger value="appointments" className="flex-1 gap-1.5" data-testid="tab-customer-termine"><Calendar className="w-4 h-4" />Termine</TabsTrigger>
                   <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-customer-journal"><ScrollText className="w-4 h-4" />Journal</TabsTrigger>
                 </TabsList>
               </div>
@@ -1032,6 +1035,16 @@ export function CustomerData({ customerId, onCancel, onSave, onOpenProject }: Cu
                 </div>
               )}
 
+          </div>
+        ) : activeMainTab === "appointments" ? (
+          <div className="flex min-h-0 flex-1 flex-col" data-testid="customer-appointments-list-panel">
+            <AppointmentsListPage
+              title="Termine"
+              helpKey="appointments.list.customerForm"
+              context={{ type: "customer", customerId: customerId ?? null }}
+              onOpenAppointment={onOpenAppointment}
+              className="min-h-0 flex-1"
+            />
           </div>
         ) : (
           <JournalRecordsView

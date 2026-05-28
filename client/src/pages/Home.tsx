@@ -741,6 +741,16 @@ export default function Home({ onLogout }: HomeProps) {
                 setProjectReturnView("customer");
                 setView("project");
               }}
+              onOpenAppointment={(appointmentId, context) => {
+                setAppointmentContext({
+                  appointmentId,
+                  returnContext: {
+                    targetView: "customer",
+                    customerId: context.type === "customer" ? context.customerId : selectedCustomerId,
+                  },
+                });
+                setView("appointment");
+              }}
             />
           ) : view === "customerList" ? (
             <CustomersPage

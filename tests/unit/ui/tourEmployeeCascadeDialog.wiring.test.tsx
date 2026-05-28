@@ -91,10 +91,10 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter zu Tour-Terminen hinzuf");
-    expect(html).toContain("W");
+    expect(html).toContain("Mitarbeiter einplanen");
+    expect(html).toContain("Termine auswählen, bestätigen oder abbrechen");
     expect(html).toContain("Mia Muster");
-    expect(html).toContain("Termine (2) - Termine im Zeitraum von 03.02.99 bis 10.02.99");
+    expect(html).toContain("2 Termine, 03.02.99 bis 10.02.99");
     expect(html).toContain("03.02.99");
     expect(html).toContain("bis 05.02.99");
     expect(html).toContain("A-100 - Projekt Nord");
@@ -123,9 +123,9 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter von Tour-Terminen abziehen");
-    expect(html).toContain("von denen Mia Muster abgezogen werden soll");
-    expect(html).toContain("Termine (1) - Termine im Zeitraum von 03.02.99 bis 05.02.99");
+    expect(html).toContain("Mitarbeiter abziehen");
+    expect(html).toContain("Mia Muster: Termine zum Abziehen auswählen, bestätigen oder abbrechen");
+    expect(html).toContain("1 Termin, 03.02.99 bis 05.02.99");
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");
   });

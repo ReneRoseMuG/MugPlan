@@ -35,7 +35,6 @@ Umsetzbare Folgearbeiten werden in der [Aufgabenverwaltung](../tasks/README.md) 
 - [W-22 - FT-07 echter DB-Dry-Run für Dump-Import](w-22-ft07-db-dry-run-dump-import.md)
 - [W-14 - UTF-8-Härtung gegen Umlaute und Mojibake](w-14-utf-8-haertung-mojibake.md)
 - [W-13 - Wochenkalender: Caching-, Render- und Aktualisierungsstrategie](w-13-wochenkalender-caching-und-render-strategie.md)
-- [W-11 - Termintabellen in Formularen vereinheitlichen](w-11-termintabellen-in-formularen.md)
 - [W-10 - Frontend-Cache-Strategie](w-10-frontend-cache-strategie.md)
 - [W-09 - Systemgesteuerte Termin-Workflows generalisieren](w-09-systemgesteuerte-termin-workflows.md)
 
@@ -47,5 +46,5 @@ Umsetzbare Folgearbeiten werden in der [Aufgabenverwaltung](../tasks/README.md) 
 - [A-04 - FT-01, FT-04 und FT-33: Testabdeckung und UC-Lücken schließen](../tasks/closed/ft01-ft04-ft33-testabdeckung-uc-luecken.md), abgeleitet aus W-19
 - [A-05 - FT-26 Reports: verbleibende Testabdeckung schließen](../tasks/closed/ft26-reports-testabdeckung.md), abgeleitet aus W-21
 - [A-36 - App-weite Frontend-Cache-Strategie planen](../tasks/frontend-cache-strategie-planen.md), abgeleitet aus W-10
-- [A-37 - Termintabellen in Formularen vereinheitlichen](../tasks/termintabellen-in-formularen-vereinheitlichen.md), abgeleitet aus W-11
+- [A-37 - Termintabellen in Formularen vereinheitlichen](../tasks/closed/termintabellen-in-formularen-vereinheitlichen.md), abgeleitet aus W-11
 - [A-38 - FT-07 DB-Dry-Run für Dump-Import vorbereiten](../tasks/ft07-db-dry-run-dump-import-vorbereiten.md), abgeleitet aus W-22

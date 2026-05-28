@@ -24,6 +24,7 @@ import {
   WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
+  WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME,
 } from "../../../client/src/components/calendar/weekAppointmentCardStyles";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 
@@ -695,5 +696,35 @@ describe("calendar week appointment card layout", () => {
     expect(html).toContain("@container(max-width:110px)");
     expect(html).toContain("min-w-0 truncate");
     expect(html).toContain("whitespace-nowrap");
+  });
+
+  it("renders the postal code as a prominent hover badge on standard and spanning card headers", () => {
+    const appointment = createAppointment();
+
+    const html = renderWithQueryClient(
+      <>
+        <CalendarWeekAppointmentPanelHeader
+          customerNumber={appointment.customer.customerNumber}
+          postalCode={appointment.customer.postalCode}
+          color="#225588"
+          startDate={appointment.startDate}
+          endDate={null}
+          startTime={appointment.startTime}
+        />
+        <CalendarWeekSpanningTile
+          appointment={appointment}
+          spanColumns={2}
+          visibleStartDate="2099-03-01"
+          visibleDayNumberStart={1}
+        />
+      </>,
+    );
+
+    expect(html.match(/data-role="postal-code-highlight"/g)).toHaveLength(2);
+    expect(html).toContain(WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME);
+    expect(WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME).toContain("hover:ring-2");
+    expect(WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME).toContain("hover:bg-white/40");
+    expect(WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME).toContain("hover:scale-[1.1]");
+    expect(html.match(/PLZ: 12345/g)).toHaveLength(2);
   });
 });

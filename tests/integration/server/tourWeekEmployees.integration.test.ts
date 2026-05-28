@@ -7,12 +7,13 @@
  * - Laufende Wochen sind für Admins und Disponenten editierbar; vergangene Wochen bleiben über die echte API schreibgeschützt.
  * - Remove-Preview markiert Unterbesetzung und Execute entfernt Assignment plus Terminzuweisung selektiv.
  * - Appointment-bezogene Preview-Endpunkte nutzen die bestehende Overlap-Prüfung für Konfliktfälle.
+ * - Abwesende Mitarbeiter werden auch ohne Ziel-Termine in der Tour-KW-Verfügbarkeit berücksichtigt und direkte API-Mutationen werden blockiert.
  * - Leere Wochen, Vollkonflikt-Wochen und Remove-Faelle ohne betroffene Termine bleiben stabil.
  * - Wiederholte Add-Executes für dieselbe Tour/KW/Mitarbeiter-Kombination bleiben idempotent ohne Duplikate.
  * - Wochenplan-Mutationen bumpen die Appointment-Version, sodass stale Termin-Saves blockiert werden.
  * - Beim Öffnen der Tour-Wochenplanung werden ab der kommenden Kalenderwoche vier Tour-KWs idempotent vorbereitet und Legacy-Wochen bleiben weiter sichtbar.
  * - Blockierte Wochen parken Termine, entfernen Wochen-Zuordnungen, blockieren Wochenplan-Mutationen und unterdrücken die aktive Wochenplan-Übernahme.
- * - Die System-Tour `Parkplatz` bleibt von Seed, Listen, Verfuegbarkeit, Previews und Wochen-Mutationen ausgeschlossen.
+ * - Die System-Touren `Parkplatz` und `Abwesenheiten` bleiben von Seed, Listen, Verfügbarkeit, Previews und Wochen-Mutationen ausgeschlossen.
  *
  * Fehlerfaelle:
  * - Wochenzuordnungen werden ohne Terminmutation oder ohne Listen-Refresh angelegt.
@@ -23,11 +24,12 @@
  * - Vollkonflikte verhindern fälschlich die Wochenzuordnung für künftige Termine.
  * - Leere Remove-Previews blockieren das Loeschen der Wochenzuordnung.
  * - Appointment-Previews markieren Konflikte nicht stabil ueber die vorhandene Terminlogik.
+ * - Abwesenheiten in einer leeren Tour-KW werden still ignoriert und erlauben eine fachlich falsche Wochenzuordnung.
  * - Dasselbe Wochenassignment wird beim Wiederholen doppelt persistiert oder in der Liste doppelt angezeigt.
  * - Parallele Terminbearbeitungen können Wochenplan-Mutationen still überschreiben.
  * - Das Rollout legt vergangene oder fachlich fremde Wochen ungefragt als neue Tour-Wochen-Datensaetze an.
  * - Blockierte Wochen behalten stale Wochen-Zuordnungen in Listen oder Join-Tabellen.
- * - Die Wochenplanung erzeugt für `Parkplatz` beim Öffnen wieder KW-Karten oder zeigt Legacy-Zuordnungen weiter an.
+ * - Die Wochenplanung erzeugt für `Parkplatz` oder `Abwesenheiten` beim Öffnen wieder KW-Karten oder zeigt Legacy-Zuordnungen weiter an.
  *
  * Ziel:
  * Die neue Wochenplan-API ueber reale DB-Integration serverseitig absichern.
@@ -53,6 +55,7 @@ import {
 import { getAppointmentEmployeeIds } from "../../helpers/appointmentOverlapFixtures";
 import { hashPassword } from "../../../server/security/passwordHash";
 import { createUser } from "../../../server/repositories/usersRepository";
+import { createEmployeeAppointmentAbsence } from "../../../server/services/employeeAppointmentAbsencesService";
 
 let app: express.Express;
 
@@ -619,6 +622,91 @@ describe("tourWeekEmployees integration", () => {
       });
   });
 
+  it("filters employees with an overlapping absence from the available picker even when the tour week has no appointments", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#0f766e");
+    const targetWeek = resolveNextEditableWeekDates();
+    const freeEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-FREE");
+    const absentEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-BLOCKED");
+    const outsideWeekAbsenceEmployee = await createEmployeeFixture("TWE-ABSENCE-PICKER-OUTSIDE");
+
+    await createEmployeeAppointmentAbsence(absentEmployee.id, {
+      absenceType: "vacation",
+      startDate: targetWeek.weekStartDate,
+      endDate: targetWeek.weekMidDate,
+      note: `TWE-ABSENCE-PICKER-${absentEmployee.id}`,
+    }, "ADMIN");
+    await createEmployeeAppointmentAbsence(outsideWeekAbsenceEmployee.id, {
+      absenceType: "vacation",
+      startDate: targetWeek.previousWeekDate,
+      endDate: targetWeek.previousWeekDate,
+      note: `TWE-ABSENCE-PICKER-OUTSIDE-${outsideWeekAbsenceEmployee.id}`,
+    }, "ADMIN");
+
+    await admin
+      .get(`/api/tours/${targetTour.id}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200)
+      .expect((res) => {
+        const availableEmployeeIds = res.body.map((employee: { id: number }) => employee.id);
+
+        expect(availableEmployeeIds).toContain(freeEmployee.id);
+        expect(availableEmployeeIds).toContain(outsideWeekAbsenceEmployee.id);
+        expect(availableEmployeeIds).not.toContain(absentEmployee.id);
+      });
+  });
+
+  it("rejects direct Tour-KW add preview and execute when the employee is absent in that ISO week", async () => {
+    const admin = await loginAdmin();
+    const targetTour = await createTourFixture("#0f766e");
+    const absentEmployee = await createEmployeeFixture("TWE-ABSENCE-DIRECT-BLOCKED");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await createEmployeeAppointmentAbsence(absentEmployee.id, {
+      absenceType: "sick",
+      startDate: targetWeek.weekStartDate,
+      endDate: targetWeek.weekMidDate,
+      note: `TWE-ABSENCE-DIRECT-${absentEmployee.id}`,
+    }, "ADMIN");
+
+    await admin
+      .post(`/api/tours/${targetTour.id}/week-employees/add/preview`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: absentEmployee.id,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body.message).toContain("abwesend");
+      });
+
+    await admin
+      .post(`/api/tours/${targetTour.id}/week-employees/add`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: absentEmployee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+        expect(res.body.message).toContain("abwesend");
+      });
+
+    const assignments = await db
+      .select()
+      .from(tourWeekEmployees)
+      .where(and(
+        eq(tourWeekEmployees.tourId, targetTour.id),
+        eq(tourWeekEmployees.isoYear, targetWeek.isoYear),
+        eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
+        eq(tourWeekEmployees.employeeId, absentEmployee.id),
+      ));
+    expect(assignments).toEqual([]);
+  });
+
   it("allows admins and dispatchers to edit the current ISO week while past weeks and readers stay locked", async () => {
     const admin = await loginAdmin();
     const dispatcher = await loginRole("DISPATCHER");
@@ -807,6 +895,55 @@ describe("tourWeekEmployees integration", () => {
       .from(tourWeekEmployees)
       .where(and(
         eq(tourWeekEmployees.tourId, parkplatzTour.id),
+        eq(tourWeekEmployees.isoYear, targetWeek.isoYear),
+        eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
+      ));
+    expect(assignments).toHaveLength(0);
+  });
+
+  it("suppresses availability and rejects add preview and execute for the system tour Abwesenheiten", async () => {
+    const admin = await loginAdmin();
+    const absenceTourId = await getTourIdByName("Abwesenheiten");
+    const employee = await createEmployeeFixture("TWE-ABSENCE-TOUR-EMP");
+    const targetWeek = resolveNextEditableWeekDates();
+
+    await admin
+      .get(`/api/tours/${absenceTourId}/week-employees/available?isoYear=${targetWeek.isoYear}&isoWeek=${targetWeek.isoWeek}`)
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toEqual([]);
+      });
+
+    await admin
+      .post(`/api/tours/${absenceTourId}/week-employees/add/preview`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    await admin
+      .post(`/api/tours/${absenceTourId}/week-employees/add`)
+      .send({
+        isoYear: targetWeek.isoYear,
+        isoWeek: targetWeek.isoWeek,
+        employeeId: employee.id,
+        selectedAppointmentIds: [],
+      })
+      .expect(409)
+      .expect((res) => {
+        expect(res.body.code).toBe("BUSINESS_CONFLICT");
+      });
+
+    const assignments = await db
+      .select()
+      .from(tourWeekEmployees)
+      .where(and(
+        eq(tourWeekEmployees.tourId, absenceTourId),
         eq(tourWeekEmployees.isoYear, targetWeek.isoYear),
         eq(tourWeekEmployees.isoWeek, targetWeek.isoWeek),
       ));

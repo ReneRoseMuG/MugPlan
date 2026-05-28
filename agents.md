@@ -65,23 +65,17 @@ Codex dokumentiert kurz:
 - warum diese Auswahl genügt,
 - warum keine weitere Lektüre nötig ist.
 
-### 1.1 Notion als fachlicher Einstiegspunkt
+### 1.1 Projekt-Manager-MCP als fachlicher Einstiegspunkt
 
-Wenn für einen Auftrag fachliche Projektkontexte, Feature-Listen oder Statusstände benötigt werden und die lokalen Repo-Dokumente dafür nicht ausreichen, nutzt Codex als bevorzugten Einstiegspunkt zuerst diese Notion-Seite:
+Wenn für einen Auftrag fachliche Projektkontexte, Feature-Listen, Ticketinhalte oder Statusstände benötigt werden und die lokalen Repo-Dokumente dafür nicht ausreichen, nutzt Codex gezielt den Projekt-Manager-MCP. Für Kurzreferenzen wie `TKT-29`, `TASK-*`, `FEAT-*`, `UC-*` oder `PROJ-*` löst Codex zuerst die Referenz über den Projekt-Manager-MCP auf und liest danach nur die für den Auftrag nötigen Kontextdaten.
 
-- `https://www.notion.so/Meisel-Gerken-Tourenplaner-303da094354e80ba83a5f0a1659bd723`
+Die lokale Dokumentenstrategie aus Abschnitt 1 bleibt der Standard für repo-interne Arbeit. Der Projekt-Manager-MCP ergänzt sie nur dann, wenn fachliche Einordnung, Ticketinhalt oder Projektkontext aus dem Repo allein nicht sicher genug hervorgehen.
 
-Von dort aus ist insbesondere die Datenbank `Lastenheft` relevant. Sie enthält Feature-Dokumente. Die Eigenschaft `Status` ist dabei fachlich wichtig und wird mindestens mit folgenden Werten verwendet:
+Der Notion-Connector, Notion-Seiten, Notion-Datenbanken und Notion-Suche dürfen in diesem Repository nicht verwendet werden, außer der Nutzer erlaubt dies für einen konkreten Auftrag ausdrücklich neu.
 
-- `geplant`
-- `Entfernt`
-- `Abgeschlossen`
+Feature-Dokumente, Use-Case-Beschreibungen, Tickets und Projektmanagement-Einträge sind dabei als informative Arbeitsgrundlage zu lesen, nicht als absolute Wahrheit. Sie können veraltet, unvollständig oder gegenüber dem aktuellen Fachverhalten im Code anders ausgelegt sein.
 
-Codex nutzt diesen Notion-Einstiegspunkt gezielt und nur auftragsbezogen. Die lokale Dokumentenstrategie aus Abschnitt 1 bleibt der Standard für repo-interne Arbeit; Notion ergänzt sie nur dann, wenn fachliche Einordnung oder Projektkontext aus dem Repo allein nicht sicher genug hervorgehen.
-
-Feature-Dokumente und Use-Case-Beschreibungen sind dabei als informative Arbeitsgrundlage zu lesen, nicht als absolute Wahrheit. Sie können veraltet, unvollständig oder gegenüber dem aktuellen Fachverhalten im Code anders ausgelegt sein.
-
-Wenn ein Auftrag direkten Bezug auf ein bestimmtes Feature oder einen Use Case hat und Doku und Code nicht eindeutig zusammenpassen, behandelt Codex diese Abweichung nicht automatisch als Bug. In solchen Fällen fragt Codex vor einer fachlichen Umdeutung oder vor riskanten Änderungen nach. Das gilt besonders dann, wenn bestehender Code fachliche Regeln sichtbar anders auslegt als die Dokumentation.
+Wenn ein Auftrag direkten Bezug auf ein bestimmtes Feature, einen Use Case oder ein Ticket hat und Doku, Projekt-Manager-MCP-Kontext und Code nicht eindeutig zusammenpassen, behandelt Codex diese Abweichung nicht automatisch als Bug. In solchen Fällen fragt Codex vor einer fachlichen Umdeutung oder vor riskanten Änderungen nach. Das gilt besonders dann, wenn bestehender Code fachliche Regeln sichtbar anders auslegt als die Dokumentation.
 
 ---
 
@@ -359,7 +353,7 @@ UI-Elemente darf Codex nur ändern oder ergänzen, wenn dies **explizit im Auftr
 - Alle Quelltexte und Doku-Dateien werden in UTF-8 gespeichert
 - Keine UTF-16-Dateien in `client/`, `server/`, `shared/`, `tests/`, `docs/`, `script/`
 - Für alle sichtbaren und menschenlesbaren Datumsangaben ist projektweit zwingend das Kurzformat `dd.MM.yy` zu verwenden
-- Das gilt ausdrücklich auch für UI-Texte, Labels, Hinweise, Tooltips, Fehlermeldungen, Kommentare im Code, Testbeschreibungen, Testkommentare, Logs, Journaltexte, Notion-Einträge, Dokumentation und sonstige menschenlesbare Ausgaben
+- Das gilt ausdrücklich auch für UI-Texte, Labels, Hinweise, Tooltips, Fehlermeldungen, Kommentare im Code, Testbeschreibungen, Testkommentare, Logs, Journaltexte, Projektmanagement-Einträge, Dokumentation und sonstige menschenlesbare Ausgaben
 - ISO `yyyy-MM-dd` ist ausschließlich für interne Speicherung, Datenbankwerte, API-Payloads, Query-Parameter, maschinenlesbare Werte, technische IDs, Dateinamen, Contracts, SQL, Migrationsnamen, Log-Schlüssel, Testdaten-Token und andere technisch fest vorgegebene Kontexte zulässig
 - Sichtbare Datumsangaben in `yyyy-MM-dd`, `MM/DD/YYYY`, `dd/MM/yyyy`, `dd.MM.yyyy`, englischen Monatsnamen oder anderen davon abweichenden Menschenformaten gelten ausdrücklich als Fehler
 - Für Frontend-Anzeigeformate sind zentrale Helfer verpflichtend zu verwenden; direkte Ad-hoc-Formatierungen sichtbarer Datumswerte sind nur zulässig, wenn der bestehende zentrale Helfer nachweislich nicht passt
@@ -441,7 +435,7 @@ Pflichtablauf:
 
 1. Zuerst den aktuellen Arbeitskontext lesen:
    - letzte reale Änderungen im Code und in Tests
-   - betroffene Features und, falls fachlich nötig, relevante Notion-Feature-Seiten
+   - betroffene Features und, falls fachlich nötig, relevante Projekt-Manager-MCP-Kontexte
    - bestehende Tests im betroffenen Bereich
    - betroffene Services, Hooks, Komponenten, Controller, Repositories und Datenmodelle
 2. Danach die Testsuite so entwerfen, dass sie nicht nur Happy Paths, sondern auch Fachlogik, Edge Cases, Regressionen, Integrationspfade und Browser-/E2E-Flows abdeckt, soweit diese für den betroffenen Auftrag fachlich relevant und technisch sinnvoll prüfbar sind.
@@ -774,13 +768,13 @@ Codex stellt die folgenden Fragen **der Reihe nach** und wartet jeweils auf Antw
 - Enthält der Kontrollbericht Fehler, gilt der Journalauftrag als blockiert. Codex meldet die Fehler konkret und behauptet nicht, die HTML-Wiki sei erfolgreich aktualisiert.
 - Warnungen im Kontrollbericht sind im Abschluss knapp zu benennen, sofern sie durch den neuen Journaleintrag entstanden sind oder den Auftrag fachlich betreffen. Bereits bestehende, unveränderte Warnungen dürfen als bestehende redaktionelle Lücken eingeordnet werden.
 - `docs/wiki/site/` bleibt Build-Ausgabe und wird nicht manuell nachbearbeitet. Änderungen an Darstellung oder Struktur erfolgen über Quellen, Index oder Generator.
-- Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Notion-Feature-Seiten tatsächlich belegt sind.
+- Es dürfen keine Inhalte erfunden werden. Zulässig sind nur reale Änderungen, Entscheidungen, Tests, Verifikationen oder offene Punkte, die im aktuellen Auftrag, im Code, in Testläufen, in Logs oder in bekannten Repo-Wiki- oder Projekt-Manager-MCP-Kontexten tatsächlich belegt sind.
 - Für die Titelzeile ist zwingend dieses Format zu verwenden: `TT.MM.JJ | [Typ] | [Feature]: [Kurztitel]`.
 - Für den Journaltitel ist hier bewusst das projektweite Kurzformat `TT.MM.JJ` zu verwenden, zum Beispiel `01.05.26`.
 - Der Eintrag muss mindestens diese Inhalte enthalten, sofern für den Auftrag jeweils real belegbar:
   - Zusammenfassung
   - Art der Änderung
-  - Betroffene Features mit Notion-Links, soweit bekannt
+  - Betroffene Features mit Repo-Wiki- oder Projekt-Manager-MCP-Bezug, soweit bekannt
   - Konkrete Änderungen
   - Tests / Verifikation
   - Offene Punkte

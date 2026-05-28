@@ -42,6 +42,7 @@ import {
   getWeekAppointmentFooterStyle,
   WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
   WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX,
+  WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME,
 } from "./weekAppointmentCardStyles";
 import { toAlphaColor } from "@/lib/monitoring-ui";
 import { invalidateTagProjectionQueries } from "@/lib/tag-invalidation";
@@ -833,7 +834,11 @@ export function CalendarWeekSpanningTile({
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-white/20 pt-1">
                 {headerDay.isFirst ? <span className="truncate">K: {resolvedCustomerNumber}</span> : <span />}
-                {headerDay.isLast ? <span className="truncate text-right">PLZ: {resolvedPostalCode}</span> : <span />}
+                {headerDay.isLast ? (
+                  <span className={WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME} data-role="postal-code-highlight">
+                    PLZ: {resolvedPostalCode}
+                  </span>
+                ) : <span />}
               </div>
             </div>
           </div>

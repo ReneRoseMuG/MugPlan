@@ -41,6 +41,7 @@ import {
 
 const logPrefix = "[appointments-repo]";
 type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbLike = DbTx | typeof db;
 
 function buildExcludeCancelledAppointmentCondition() {
   return sql`not exists (
@@ -513,6 +514,54 @@ export async function getConflictingEmployeesTx(
     .orderBy(asc(employees.id));
 
   return rows.map((row) => ({ id: row.id, fullName: row.fullName }));
+}
+
+export async function listEmployeeIdsWithAbsenceOverlap(params: {
+  employeeIds: number[];
+  startDate: Date;
+  endDate: Date;
+}): Promise<number[]> {
+  return listEmployeeIdsWithAbsenceOverlapInternal(db, params);
+}
+
+export async function listEmployeeIdsWithAbsenceOverlapTx(
+  tx: DbTx,
+  params: {
+    employeeIds: number[];
+    startDate: Date;
+    endDate: Date;
+  },
+): Promise<number[]> {
+  return listEmployeeIdsWithAbsenceOverlapInternal(tx, params);
+}
+
+async function listEmployeeIdsWithAbsenceOverlapInternal(
+  executor: DbLike,
+  params: {
+    employeeIds: number[];
+    startDate: Date;
+    endDate: Date;
+  },
+): Promise<number[]> {
+  const normalizedEmployeeIds = Array.from(new Set(params.employeeIds));
+  if (normalizedEmployeeIds.length === 0) return [];
+
+  const rows = await executor
+    .select({
+      employeeId: appointmentEmployees.employeeId,
+    })
+    .from(appointmentEmployees)
+    .innerJoin(appointments, eq(appointmentEmployees.appointmentId, appointments.id))
+    .where(and(
+      inArray(appointmentEmployees.employeeId, normalizedEmployeeIds),
+      lte(appointments.startDate, params.endDate),
+      gte(sql<Date>`coalesce(${appointments.endDate}, ${appointments.startDate})`, params.startDate),
+      buildExcludeCancelledAppointmentCondition(),
+      buildAbsenceTourCondition(),
+    ))
+    .groupBy(appointmentEmployees.employeeId);
+
+  return rows.map((row) => Number(row.employeeId));
 }
 
 export async function getInactiveEmployeesByIdsTx(

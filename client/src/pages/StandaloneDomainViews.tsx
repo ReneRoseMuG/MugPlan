@@ -271,6 +271,7 @@ export function StandaloneCustomers() {
   const [isCustomerFormOpen, setIsCustomerFormOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
+  const [appointmentOverlay, setAppointmentOverlay] = useState<AppointmentOverlayState | null>(null);
 
   return (
     <>
@@ -303,6 +304,9 @@ export function StandaloneCustomers() {
               setSelectedProjectId(id);
               setIsProjectFormOpen(true);
             }}
+            onOpenAppointment={(appointmentId) => {
+              setAppointmentOverlay({ appointmentId });
+            }}
           />
         </StandaloneOverlay>
       ) : null}
@@ -319,6 +323,25 @@ export function StandaloneCustomers() {
               setIsProjectFormOpen(false);
               setSelectedProjectId(null);
             }}
+            onOpenAppointment={(context) => {
+              setAppointmentOverlay({
+                appointmentId: context.appointmentId,
+                projectId: context.projectId,
+              });
+            }}
+          />
+        </StandaloneOverlay>
+      ) : null}
+
+      {appointmentOverlay ? (
+        <StandaloneOverlay>
+          <AppointmentForm
+            appointmentId={appointmentOverlay.appointmentId}
+            initialDate={appointmentOverlay.initialDate}
+            initialTourId={appointmentOverlay.initialTourId}
+            projectId={appointmentOverlay.projectId}
+            onCancel={() => setAppointmentOverlay(null)}
+            onSaved={() => setAppointmentOverlay(null)}
           />
         </StandaloneOverlay>
       ) : null}

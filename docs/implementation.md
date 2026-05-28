@@ -391,7 +391,7 @@ Sichtbarkeitsregeln werden serverseitig durchgesetzt. UI-Filter ersetzen keine B
 ### Listenfilter (serverseitig)
 
 - `/api/projects` und `/api/projects/list` unterstützen serverseitig neben Text-, Scope- und Tagfiltern auch `articleProductIds` und `articleComponentIds`. Produkt-IDs bilden die Artikellisten-Kategorie `Sauna`; Komponenten werden über ihre Stammdatenkategorie den festen Artikellistenfeldern zugeordnet. Innerhalb einer Artikellisten-Kategorie gilt ODER, zwischen unterschiedlichen Kategorien gilt UND.
-- `/api/appointments/list` unterstützt serverseitig die Filter `employeeId`, `tourId`, `projectTitle`, `customerLastName`, `customerNumber`, `orderNumber`, `tagIds`, `dateFrom` und `dateTo`
+- `/api/appointments/list` unterstützt serverseitig die Filter `employeeId`, `projectId`, `customerId`, `tourId`, `projectTitle`, `customerLastName`, `customerNumber`, `orderNumber`, `tagIds`, `dateFrom` und `dateTo`
 - Textfilter in der Terminliste werden serverseitig über Projekt- und Kundenfelder ausgewertet; UI-Filter dienen nur als Eingabeoberfläche
 
 ---

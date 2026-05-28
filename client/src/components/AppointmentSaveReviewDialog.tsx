@@ -119,7 +119,6 @@ export function AppointmentSaveReviewDialog({
   const [selectedIds, setSelectedIds] = useState<number[]>(resourceRequest?.selectedIds ?? []);
   const [resolutionMode, setResolutionMode] = useState<AppointmentResourceResolutionMode>(resourceRequest?.resolutionMode ?? "additive");
   const [confirmNotesReviewed, setConfirmNotesReviewed] = useState(false);
-  const [confirmNoEmployees, setConfirmNoEmployees] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -127,7 +126,6 @@ export function AppointmentSaveReviewDialog({
     setSelectedIds(resourceRequest?.selectedIds ?? []);
     setResolutionMode(resourceRequest?.resolutionMode ?? "additive");
     setConfirmNotesReviewed(false);
-    setConfirmNoEmployees(false);
   }, [noteReview, open, resourceRequest]);
 
   const resolvedEmployeeIds = useMemo(() => {
@@ -152,7 +150,7 @@ export function AppointmentSaveReviewDialog({
   const activeStepId = stepIds[activeStepIndex];
   const isLastStep = activeStepIndex >= stepIds.length - 1;
   const notesStepBlocked = activeStepId === "notes" && !confirmNotesReviewed;
-  const noEmployeeStepBlocked = activeStepId === "employees" && !confirmNoEmployees;
+  const dialogTitle = activeStepId === "employees" ? "Termin hat keine Mitarbeiter" : "Termin speichern";
   const steps = stepIds.map<DialogBaseStep>((stepId, index) => ({
     id: stepId,
     title: stepTitles[stepId],
@@ -210,9 +208,9 @@ export function AppointmentSaveReviewDialog({
             variant: "outline",
           }}
           primaryAction={{
-            disabled: isBusy || notesStepBlocked || noEmployeeStepBlocked || stepIds.length === 0,
+            disabled: isBusy || notesStepBlocked || stepIds.length === 0,
             isPending: isBusy,
-            label: isLastStep ? "Termin speichern" : "Weiter",
+            label: activeStepId === "employees" ? "Bestätigen" : isLastStep ? "Termin speichern" : "Weiter",
             onClick: handlePrimaryAction,
             pendingLabel: "Speichern...",
             testId: isLastStep ? "button-appointment-save-review-confirm" : "button-appointment-save-review-next",
@@ -227,7 +225,7 @@ export function AppointmentSaveReviewDialog({
       open={open}
       size="xl"
       testId="dialog-appointment-save-review"
-      title="Termin speichern"
+      title={dialogTitle}
     >
       <div className="space-y-5">
         {steps.length > 1 ? <DialogBaseStepper steps={steps} /> : null}
@@ -391,20 +389,11 @@ export function AppointmentSaveReviewDialog({
         ) : null}
 
         {activeStepId === "employees" ? (
-          <section className="space-y-4" data-testid="appointment-save-review-step-no-employees">
+          <section data-testid="appointment-save-review-step-no-employees">
             <DialogBaseInlineMessage
               tone="warning"
-              title="Termin ohne Mitarbeiter speichern?"
-              description="Der Termin wird ohne zugewiesene Mitarbeiter gespeichert."
+              title="Der Termin hat keine Mitarbeiter, bitte bestätigen oder abbrechen"
             />
-            <label className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
-              <Checkbox
-                checked={confirmNoEmployees}
-                onCheckedChange={(checked) => setConfirmNoEmployees(checked === true)}
-                data-testid="checkbox-appointment-save-review-no-employees"
-              />
-              <span>Termin bewusst ohne Mitarbeiter speichern.</span>
-            </label>
           </section>
         ) : null}
       </div>

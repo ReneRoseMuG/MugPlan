@@ -3,11 +3,13 @@
  *
  * Abgedeckte Regeln:
  * - `AppointmentsListPage` nutzt controlled Filter-, Paging-, Sortier- und `appointmentScope`-Props.
+ * - Eingebettete Kunden- und Projektkontexte setzen ihre festen Entity-Filter in Query-Key und Filterpanel.
  * - Ohne controlled Props startet der Standalone-Fallback mit der ungefilterten Terminmenge.
  * - Reset stellt Scope und freie Terminfilter auf die ungefilterte Grundmenge zurueck.
  *
  * Fehlerfaelle:
  * - Controlled Props werden ignoriert und interne Werte bleiben aktiv.
+ * - Kunden-/Projektkontexte laden wieder ohne `customerId` beziehungsweise `projectId`.
  * - Der uncontrolled Fallback aktiviert unerwartet weiter einen Heute-Filter.
  * - Der Reset behaelt freie Text-/Tag-/Datumsfilter oder den Scope faelschlich bei.
  *
@@ -207,6 +209,29 @@ describe("FT04 appointments list page controlled state", () => {
       orderNumber: "",
       tagIds: [],
     });
+  });
+
+  it("applies fixed customer and project filters for embedded form contexts", () => {
+    renderToStaticMarkup(<AppointmentsListPage context={{ type: "customer", customerId: 12 }} />);
+    renderToStaticMarkup(<AppointmentsListPage context={{ type: "project", projectId: 34 }} />);
+
+    expect(filterPanelCalls[0]).toMatchObject({
+      hideCustomerFilters: true,
+      hideProjectFilters: false,
+      filters: {
+        customerId: 12,
+      },
+    });
+    expect(useQueryMock.mock.calls[2]?.[0]?.queryKey[2]).toMatchObject({ customerId: 12 });
+
+    expect(filterPanelCalls[1]).toMatchObject({
+      hideCustomerFilters: true,
+      hideProjectFilters: true,
+      filters: {
+        projectId: 34,
+      },
+    });
+    expect(useQueryMock.mock.calls[5]?.[0]?.queryKey[2]).toMatchObject({ projectId: 34 });
   });
 
   it("resets scope and free filters back to the base appointments set", () => {

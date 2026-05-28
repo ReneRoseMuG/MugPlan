@@ -51,7 +51,9 @@ export type AppointmentListSortKey = "date" | "customer" | "customerNumber" | "o
 export type AppointmentsListContext =
   | { type: "standalone" }
   | { type: "tour"; tourId: number | null }
-  | { type: "employee"; employeeId: number };
+  | { type: "employee"; employeeId: number }
+  | { type: "customer"; customerId: number | null }
+  | { type: "project"; projectId: number | null };
 
 interface AppointmentsListPageProps {
   onCancel?: () => void;
@@ -115,6 +117,8 @@ function hasUserControlledAppointmentFilters(
     || filters.customerNumber.trim() !== options.baseFilters.customerNumber.trim()
     || filters.orderNumber.trim() !== options.baseFilters.orderNumber.trim()
     || filters.employeeId !== options.baseFilters.employeeId
+    || filters.projectId !== options.baseFilters.projectId
+    || filters.customerId !== options.baseFilters.customerId
     || filters.tourId !== options.baseFilters.tourId
     || (filters.dateFrom ?? undefined) !== (options.baseFilters.dateFrom ?? undefined)
     || (filters.dateTo ?? undefined) !== (options.baseFilters.dateTo ?? undefined)
@@ -151,13 +155,25 @@ export function AppointmentsListPage({
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
   const isEmployeeContext = contextType === "employee";
+  const isCustomerContext = contextType === "customer";
+  const isProjectContext = contextType === "project";
+  const isEmbeddedFormContext = isTourContext || isEmployeeContext || isCustomerContext || isProjectContext;
   const resolvedTourId = context?.type === "tour" ? context.tourId : lockedTourId;
   const resolvedEmployeeId = context?.type === "employee" ? context.employeeId : undefined;
+  const resolvedCustomerId = context?.type === "customer" ? context.customerId : undefined;
+  const resolvedProjectId = context?.type === "project" ? context.projectId : undefined;
+  const resolvedHideCustomerFilters = isCustomerContext || isProjectContext;
+  const resolvedHideProjectFilters = isProjectContext;
   const resolvedHideTourFilter = (isTourContext || isEmployeeContext) ? true : hideTourFilter;
   const resolvedHideTourColumn = isTourContext ? true : hideTourColumn;
-  const resolvedShowCloseButton = (isTourContext || isEmployeeContext) ? false : showCloseButton;
+  const resolvedHideCustomerColumns = isCustomerContext || isProjectContext;
+  const resolvedHideProjectColumns = isProjectContext;
+  const resolvedShowCloseButton = isEmbeddedFormContext ? false : showCloseButton;
   const resolvedEnforceFromToday = enforceFromToday;
   const hasFixedDateRange = Boolean(fixedDateRange?.dateFrom && fixedDateRange?.dateTo);
+  const canLoadContext = resolvedTourId !== null
+    && resolvedCustomerId !== null
+    && resolvedProjectId !== null;
 
   const todayBerlin = getBerlinTodayDateString();
   const [internalPage, setInternalPage] = useState(1);
@@ -172,6 +188,8 @@ export function AppointmentsListPage({
   const [tagPickerOpen, setTagPickerOpen] = useState(false);
   const [internalFilters, setInternalFilters] = useState<AppointmentListFilters>({
     employeeId: resolvedEmployeeId,
+    ...(resolvedProjectId == null ? {} : { projectId: resolvedProjectId }),
+    ...(resolvedCustomerId == null ? {} : { customerId: resolvedCustomerId }),
     projectTitle: "",
     customerLastName: "",
     customerNumber: "",
@@ -192,6 +210,8 @@ export function AppointmentsListPage({
   const setAppointmentScope = onAppointmentScopeChange ?? setInternalAppointmentScope;
   const baseFilters = useMemo<AppointmentListFilters>(() => ({
     employeeId: resolvedEmployeeId,
+    ...(resolvedProjectId == null ? {} : { projectId: resolvedProjectId }),
+    ...(resolvedCustomerId == null ? {} : { customerId: resolvedCustomerId }),
     projectTitle: "",
     customerLastName: "",
     customerNumber: "",
@@ -200,7 +220,16 @@ export function AppointmentsListPage({
     tourId: resolvedTourId ?? undefined,
     dateFrom: fixedDateRange?.dateFrom ?? (resolvedEnforceFromToday ? todayBerlin : undefined),
     dateTo: fixedDateRange?.dateTo,
-  }), [fixedDateRange?.dateFrom, fixedDateRange?.dateTo, resolvedEmployeeId, resolvedEnforceFromToday, resolvedTourId, todayBerlin]);
+  }), [
+    fixedDateRange?.dateFrom,
+    fixedDateRange?.dateTo,
+    resolvedCustomerId,
+    resolvedEmployeeId,
+    resolvedEnforceFromToday,
+    resolvedProjectId,
+    resolvedTourId,
+    todayBerlin,
+  ]);
 
   const applyFiltersPatch = useCallback((patch: Partial<AppointmentListFilters>) => {
     if (onFiltersChange) {
@@ -223,6 +252,22 @@ export function AppointmentsListPage({
     applyFiltersPatch({ employeeId: resolvedEmployeeId });
     setPage(1);
   }, [applyFiltersPatch, filters.employeeId, isEmployeeContext, resolvedEmployeeId, setPage]);
+
+  useEffect(() => {
+    if (!isCustomerContext) return;
+    const nextCustomerId = resolvedCustomerId ?? undefined;
+    if (filters.customerId === nextCustomerId) return;
+    applyFiltersPatch({ customerId: nextCustomerId });
+    setPage(1);
+  }, [applyFiltersPatch, filters.customerId, isCustomerContext, resolvedCustomerId, setPage]);
+
+  useEffect(() => {
+    if (!isProjectContext) return;
+    const nextProjectId = resolvedProjectId ?? undefined;
+    if (filters.projectId === nextProjectId) return;
+    applyFiltersPatch({ projectId: nextProjectId });
+    setPage(1);
+  }, [applyFiltersPatch, filters.projectId, isProjectContext, resolvedProjectId, setPage]);
 
   useEffect(() => {
     if (!hasFixedDateRange || !fixedDateRange) return;
@@ -252,7 +297,7 @@ export function AppointmentsListPage({
 
   const { data, isLoading } = useQuery<AppointmentListResponse>({
     queryKey: ["appointments-list", appointmentScope, filters, page, DEFAULT_PAGE_SIZE, userRole],
-    enabled: resolvedTourId !== null,
+    enabled: canLoadContext,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: String(page),
@@ -260,6 +305,8 @@ export function AppointmentsListPage({
       });
 
       if (filters.employeeId) params.set("employeeId", String(filters.employeeId));
+      if (filters.projectId) params.set("projectId", String(filters.projectId));
+      if (filters.customerId) params.set("customerId", String(filters.customerId));
       if (filters.projectTitle.trim().length > 0) params.set("projectTitle", filters.projectTitle.trim());
       if (filters.customerLastName.trim().length > 0) params.set("customerLastName", filters.customerLastName.trim());
       if (filters.customerNumber.trim().length > 0) params.set("customerNumber", filters.customerNumber.trim());
@@ -288,6 +335,8 @@ export function AppointmentsListPage({
   const focusSignature = useMemo(() => JSON.stringify({
     appointmentScope,
     employeeId: filters.employeeId ?? null,
+    projectId: filters.projectId ?? null,
+    customerId: filters.customerId ?? null,
     projectTitle: filters.projectTitle,
     customerLastName: filters.customerLastName,
     customerNumber: filters.customerNumber,
@@ -303,11 +352,13 @@ export function AppointmentsListPage({
     data?.focusAppointment?.appointmentId,
     data?.focusAppointment?.page,
     filters.customerLastName,
+    filters.customerId,
     filters.customerNumber,
     filters.dateFrom,
     filters.dateTo,
     filters.employeeId,
     filters.orderNumber,
+    filters.projectId,
     filters.projectTitle,
     filters.tagIds,
     filters.tourId,
@@ -318,11 +369,13 @@ export function AppointmentsListPage({
   }, [
     appointmentScope,
     filters.customerLastName,
+    filters.customerId,
     filters.customerNumber,
     filters.dateFrom,
     filters.dateTo,
     filters.employeeId,
     filters.orderNumber,
+    filters.projectId,
     filters.projectTitle,
     filters.tagIds,
     filters.tourId,
@@ -352,7 +405,7 @@ export function AppointmentsListPage({
   const focusedAppointmentId = shouldApplyDateFocus ? data?.focusAppointment?.appointmentId ?? null : null;
 
   const rows = useMemo(() => {
-    if (resolvedTourId === null) return [];
+    if (!canLoadContext) return [];
     const source = data?.items ?? [];
     const multiplier = sortDirection === "asc" ? 1 : -1;
     return [...source].sort((left, right) => {
@@ -367,7 +420,7 @@ export function AppointmentsListPage({
       }
       return resolveDateSortValue(left).localeCompare(resolveDateSortValue(right), "de") * multiplier;
     });
-  }, [data?.items, resolvedTourId, sortDirection, sortKey]);
+  }, [canLoadContext, data?.items, sortDirection, sortKey]);
 
   const toggleSort = (key: AppointmentListSortKey) => {
     if (sortKey === key) {
@@ -405,43 +458,53 @@ export function AppointmentsListPage({
         minWidth: 100,
         cell: ({ row }) => <span>{formatListDate(row.startDate)}</span>,
       },
-      {
-        id: "orderNumber",
-        header: renderSortHeader("Auftrag Nr.", "orderNumber"),
-        accessor: (row) => row.projectOrderNumber ?? "",
-        minWidth: 120,
-        cell: ({ row }) => <span>{row.projectOrderNumber?.trim() || "-"}</span>,
-      },
-      {
-        id: "project",
-        header: "Projekt",
-        accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
-        minWidth: 220,
-        cell: ({ row }) => (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>
-            {row.isCancelled ? (
-              <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                Storniert
-              </span>
-            ) : null}
-          </div>
-        ),
-      },
-      {
-        id: "customerNumber",
-        header: renderSortHeader("Kunde Nr.", "customerNumber"),
-        accessor: (row) => row.customer.customerNumber,
-        minWidth: 110,
-      },
-      {
-        id: "customer",
-        header: renderSortHeader("Kunde", "customer"),
-        accessor: (row) => resolveCustomerSortName(row),
-        minWidth: 220,
-        cell: ({ row }) => <span>{row.customer.fullName ?? "-"}</span>,
-      },
     ];
+
+    if (!resolvedHideProjectColumns) {
+      columns.push(
+        {
+          id: "orderNumber",
+          header: renderSortHeader("Auftrag Nr.", "orderNumber"),
+          accessor: (row) => row.projectOrderNumber ?? "",
+          minWidth: 120,
+          cell: ({ row }) => <span>{row.projectOrderNumber?.trim() || "-"}</span>,
+        },
+        {
+          id: "project",
+          header: "Projekt",
+          accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
+          minWidth: 220,
+          cell: ({ row }) => (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>
+              {row.isCancelled ? (
+                <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                  Storniert
+                </span>
+              ) : null}
+            </div>
+          ),
+        },
+      );
+    }
+
+    if (!resolvedHideCustomerColumns) {
+      columns.push(
+        {
+          id: "customerNumber",
+          header: renderSortHeader("Kunde Nr.", "customerNumber"),
+          accessor: (row) => row.customer.customerNumber,
+          minWidth: 110,
+        },
+        {
+          id: "customer",
+          header: renderSortHeader("Kunde", "customer"),
+          accessor: (row) => resolveCustomerSortName(row),
+          minWidth: 220,
+          cell: ({ row }) => <span>{row.customer.fullName ?? "-"}</span>,
+        },
+      );
+    }
 
     if (!resolvedHideTourColumn) {
       columns.push({
@@ -475,7 +538,7 @@ export function AppointmentsListPage({
     }
 
     return columns;
-  }, [resolvedHideTourColumn, sortDirection, sortKey, onRemoveEmployee]);
+  }, [resolvedHideCustomerColumns, resolvedHideProjectColumns, resolvedHideTourColumn, sortDirection, sortKey, onRemoveEmployee]);
 
   const setFilterAndResetPage = (patch: Partial<AppointmentListFilters>) => {
     const patchWithDate = (appointmentScope === "planned")
@@ -484,9 +547,15 @@ export function AppointmentsListPage({
     const patchWithTour = resolvedTourId == null
       ? patchWithDate
       : { ...patchWithDate, tourId: resolvedTourId };
-    const nextPatch = resolvedEmployeeId == null
+    const patchWithEmployee = resolvedEmployeeId == null
       ? patchWithTour
       : { ...patchWithTour, employeeId: resolvedEmployeeId };
+    const patchWithCustomer = resolvedCustomerId == null
+      ? patchWithEmployee
+      : { ...patchWithEmployee, customerId: resolvedCustomerId };
+    const nextPatch = resolvedProjectId == null
+      ? patchWithCustomer
+      : { ...patchWithCustomer, projectId: resolvedProjectId };
     applyFiltersPatch(nextPatch);
     setPage(1);
   };
@@ -578,6 +647,8 @@ export function AppointmentsListPage({
           availableTags={unselectedTags}
           tagPickerOpen={tagPickerOpen}
           onTagPickerOpenChange={setTagPickerOpen}
+          hideCustomerFilters={resolvedHideCustomerFilters}
+          hideProjectFilters={resolvedHideProjectFilters}
           hideTourFilter={resolvedHideTourFilter}
           hidePeriodPicker={hasFixedDateRange}
         />

@@ -1,5 +1,8 @@
 import { CalendarDays, CalendarRange, Clock3 } from "lucide-react";
-import { WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX } from "./weekAppointmentCardStyles";
+import {
+  WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX,
+  WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME,
+} from "./weekAppointmentCardStyles";
 
 function buildHeaderTopLineClassName(hasStartTime: boolean) {
   return [
@@ -97,7 +100,9 @@ export function CalendarWeekAppointmentPanelHeader({
         </div>
         <div className="flex min-w-0 items-center justify-between gap-2 border-t border-white/20 pt-1 whitespace-nowrap">
           <span className="min-w-0 truncate">K: {resolvedCustomerNumber}</span>
-          <span className="shrink-0 truncate text-right">PLZ: {resolvedPostalCode}</span>
+          <span className={WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME} data-role="postal-code-highlight">
+            PLZ: {resolvedPostalCode}
+          </span>
         </div>
       </div>
     </div>

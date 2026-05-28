@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { EntityFormShell } from "@/components/ui/entity-form-shell";
 import { ProjectAppointmentsPanel } from "@/components/ProjectAppointmentsPanel";
+import { AppointmentsListPage } from "@/components/AppointmentsListPage";
 import {
   ProjectAttachmentsPanel,
   type PendingProjectAttachmentItem,
@@ -40,6 +41,7 @@ import { RelationSlot } from "@/components/ui/relation-slot";
 import {
   FolderKanban,
   FileText,
+  Calendar,
   LayoutList,
   ScrollText,
   Trash2,
@@ -243,7 +245,7 @@ export function ProjectForm({
   const [draftProjectNotes, setDraftProjectNotes] = useState<DraftProjectNote[]>([]);
   const [draftProjectAttachments, setDraftProjectAttachments] = useState<PendingProjectAttachmentItem[]>([]);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState<string>("");
-  const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
+  const [activeMainTab, setActiveMainTab] = useState<"details" | "appointments" | "journal">("details");
   const [didApplyInitialDraft, setDidApplyInitialDraft] = useState(false);
   const didApplyInitialDraftReklamationRef = useRef(false);
   const didInitializeCreateFormRef = useRef(false);
@@ -2141,7 +2143,7 @@ export function ProjectForm({
   return (
     <Tabs
       value={isEditing ? activeMainTab : "details"}
-      onValueChange={(value) => setActiveMainTab(value as "details" | "journal")}
+      onValueChange={(value) => setActiveMainTab(value as "details" | "appointments" | "journal")}
       className="h-full"
     >
       <div className="flex h-full min-h-0 w-full flex-1">
@@ -2174,6 +2176,7 @@ export function ProjectForm({
                 <h3 className="text-sm font-bold tracking-wider text-primary">Daten anzeigen</h3>
                 <TabsList className="w-full" data-testid="tabs-project-main">
                   <TabsTrigger value="details" className="flex-1 gap-1.5" data-testid="tab-project-details"><LayoutList className="w-4 h-4" />Details</TabsTrigger>
+                  <TabsTrigger value="appointments" className="flex-1 gap-1.5" data-testid="tab-project-termine"><Calendar className="w-4 h-4" />Termine</TabsTrigger>
                   <TabsTrigger value="journal" className="flex-1 gap-1.5" data-testid="tab-project-journal"><ScrollText className="w-4 h-4" />Journal</TabsTrigger>
                 </TabsList>
               </div>
@@ -2477,6 +2480,18 @@ export function ProjectForm({
                 />
               ) : null}
 
+          </div>
+        ) : activeMainTab === "appointments" ? (
+          <div className="flex min-h-0 flex-1 flex-col" data-testid="project-appointments-list-panel">
+            <AppointmentsListPage
+              title="Termine"
+              helpKey="appointments.list.projectForm"
+              context={{ type: "project", projectId: effectiveProjectId ?? null }}
+              onOpenAppointment={(appointmentId) => {
+                onOpenAppointment?.({ projectId: effectiveProjectId ?? undefined, appointmentId });
+              }}
+              className="min-h-0 flex-1"
+            />
           </div>
         ) : (
           <JournalRecordsView

@@ -9,7 +9,7 @@ import * as toursRepository from "../repositories/toursRepository";
 import * as userSettingsService from "./userSettingsService";
 import { dispatchCalDavUpsert } from "./caldavSyncDispatcher";
 import { hasAppointmentCancellationTag } from "../lib/appointmentCancellation";
-import { isParkplatzTourName } from "../lib/systemTours";
+import { isAbsenceTourName, isParkplatzTourName } from "../lib/systemTours";
 
 type WeekEmployeeConflictCode =
   | "NOT_FOUND"
@@ -200,12 +200,12 @@ async function getParkplatzTourId(): Promise<number | null> {
 }
 
 function supportsWeekPlanningForTour(tour: { name: string | null | undefined }): boolean {
-  return !isParkplatzTourName(tour.name);
+  return !isParkplatzTourName(tour.name) && !isAbsenceTourName(tour.name);
 }
 
 function assertWeekAssignmentTourAllowed(tour: { name: string | null | undefined }): void {
   if (!supportsWeekPlanningForTour(tour)) {
-    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Die Tour Parkplatz unterstuetzt keine Mitarbeiterplanung.");
+    throw new TourWeekEmployeesError(409, "BUSINESS_CONFLICT", "Diese Systemtour unterstützt keine Mitarbeiterplanung.");
   }
 }
 
@@ -266,6 +266,26 @@ async function assertWeekUniqueAssignment(
     );
   }
   return { existingAssignmentId: existingAssignment.assignmentId };
+}
+
+async function assertEmployeeHasNoAbsenceInWeek(
+  employeeId: number,
+  isoYear: number,
+  isoWeek: number,
+): Promise<void> {
+  const week = resolveIsoWeekWindow(isoYear, isoWeek);
+  const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlap({
+    employeeIds: [employeeId],
+    startDate: week.weekStart,
+    endDate: week.weekEnd,
+  });
+  if (absentEmployeeIds.includes(employeeId)) {
+    throw new TourWeekEmployeesError(
+      409,
+      "BUSINESS_CONFLICT",
+      `Mitarbeiter ist in KW ${isoWeek}/${isoYear} abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
+    );
+  }
 }
 
 async function getMinimumEmployeesThreshold(): Promise<number> {
@@ -782,7 +802,15 @@ export async function listAvailableWeekEmployees(
   ]);
 
   const assignedEmployeeIdSet = new Set(assignedEmployeeIds);
-  const candidates = activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
+  const assignedCandidates = activeEmployees.filter((employee) => !assignedEmployeeIdSet.has(employee.id));
+  const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
+  const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlap({
+    employeeIds: assignedCandidates.map((employee) => employee.id),
+    startDate: week.weekStart,
+    endDate: week.weekEnd,
+  });
+  const absentEmployeeIdSet = new Set(absentEmployeeIds);
+  const candidates = assignedCandidates.filter((employee) => !absentEmployeeIdSet.has(employee.id));
   const { appointments } = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
   const availableEmployees: Employee[] = [];
 
@@ -808,6 +836,7 @@ export async function previewAddWeekEmployee(
   await assertWeekPlanningWritable(tourId, params.isoYear, params.isoWeek, tour.name);
   const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   await assertWeekUniqueAssignment(tourId, params.employeeId, params.isoYear, params.isoWeek);
+  await assertEmployeeHasNoAbsenceInWeek(params.employeeId, params.isoYear, params.isoWeek);
 
   const { appointments } = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
   const items = await buildAddPreviewItems(params.employeeId, appointments);
@@ -843,6 +872,7 @@ export async function executeAddWeekEmployee(
 
   const selectedAppointmentIds = normalizeAppointmentIds(params.selectedAppointmentIds);
   const weekAppointmentsResult = await listWeekAppointments(tourId, params.isoYear, params.isoWeek);
+  const week = resolveIsoWeekWindow(params.isoYear, params.isoWeek);
   const allowedAppointmentIds = new Set(weekAppointmentsResult.appointments.map((appointment) => appointment.appointmentId));
   const changedAppointmentIds: number[] = [];
 
@@ -852,6 +882,19 @@ export async function executeAddWeekEmployee(
       isoYear: params.isoYear,
       isoWeek: params.isoWeek,
     });
+
+    const absentEmployeeIds = await appointmentsRepository.listEmployeeIdsWithAbsenceOverlapTx(tx, {
+      employeeIds: [params.employeeId!],
+      startDate: week.weekStart,
+      endDate: week.weekEnd,
+    });
+    if (absentEmployeeIds.includes(params.employeeId!)) {
+      throw new TourWeekEmployeesError(
+        409,
+        "BUSINESS_CONFLICT",
+        `Mitarbeiter ist in KW ${params.isoWeek}/${params.isoYear} abwesend und kann nicht in die Tour-KW-Planung aufgenommen werden.`,
+      );
+    }
 
     const uniqueCheck = await assertWeekUniqueAssignment(tourId, params.employeeId!, params.isoYear, params.isoWeek);
     let assignmentId = uniqueCheck.existingAssignmentId;

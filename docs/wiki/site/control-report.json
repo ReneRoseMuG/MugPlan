@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27",
+  "generated_at": "2026-05-28",
   "summary": {
     "projects": {
       "source_count": 2,
@@ -8,8 +8,8 @@
       "errors": 0
     },
     "tasks": {
-      "source_count": 9,
-      "generated_count": 9,
+      "source_count": 8,
+      "generated_count": 8,
       "warnings": 0,
       "errors": 0
     },
@@ -115,15 +115,6 @@
         "title": "App-weite Frontend-Cache-Strategie planen",
         "source": "tasks/frontend-cache-strategie-planen.md",
         "output": "projekt/aufgaben/frontend-cache-strategie-planen.html",
-        "ok": true,
-        "warnings": [],
-        "errors": []
-      },
-      {
-        "id": "A-37",
-        "title": "Termintabellen in Formularen vereinheitlichen",
-        "source": "tasks/termintabellen-in-formularen-vereinheitlichen.md",
-        "output": "projekt/aufgaben/termintabellen-in-formularen-vereinheitlichen.html",
         "ok": true,
         "warnings": [],
         "errors": []

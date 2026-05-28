@@ -12,14 +12,6 @@ Offene und laufende Aufgaben - gegliedert nach Thema.
 Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Datensicherung. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
 
 
-### Formularansichten
-| ID | Aufgabe | Typ | Status |
-| :--- | :--- | :--- | :--- |
-| A-37 | [Termintabellen in Formularen vereinheitlichen](termintabellen-in-formularen-vereinheitlichen.md) | Planung | `offen` |
-
-Diese Aufgabe bündelt den offenen Arbeitsstand im Bereich Formularansichten. Die verlinkte Aufgabendatei hält Ziel, Umfang, Umsetzungshinweise und offene Fragen für die weitere Bearbeitung zusammen.
-
-
 ### Frontend-Build
 | ID | Aufgabe | Typ | Status |
 | :--- | :--- | :--- | :--- |

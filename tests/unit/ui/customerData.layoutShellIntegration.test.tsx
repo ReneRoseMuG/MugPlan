@@ -3,7 +3,7 @@
  *
  * Abgedeckte Regeln:
  * - CustomerData rendert EntityFormShell mit sichtbarem Hauptbereich und rechter Sidebar in Create und Edit.
- * - Im Edit-Modus zeigt CustomerData die Haupttabs `Details` und `Journal`; im Create-Modus bleibt der Journal-Tab verborgen.
+ * - Im Edit-Modus zeigt CustomerData die Haupttabs `Details`, `Termine` und `Journal`; im Create-Modus bleiben die Zusatz-Tabs verborgen.
  * - Das Kundenformular zeigt das neue Feld `Land` im Hauptbereich in Create und Edit an.
  * - Die Sidebar behaelt in Create und Edit die Reihenfolge Projekte, Termine, Attachments, Tags, Notizen.
  * - Create-Verdrahtung behaelt Draft-faehige Tags, Notizen und Attachments.
@@ -97,6 +97,10 @@ vi.mock("@/components/CustomerAppointmentsPanel", () => ({
     customerAppointmentsPanelCalls.push(props);
     return <section data-testid="customer-appointments-panel-marker">appointments</section>;
   },
+}));
+
+vi.mock("@/components/AppointmentsListPage", () => ({
+  AppointmentsListPage: (props: Record<string, unknown>) => <section data-testid="customer-main-appointments-list-marker">{JSON.stringify(props.context)}</section>,
 }));
 
 vi.mock("@/components/CustomerAttachmentsPanel", () => ({
@@ -255,6 +259,7 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("button-save-customer");
     expect(markup).toContain("tabs-customer-main");
     expect(markup).toContain("tab-customer-details");
+    expect(markup).toContain("tab-customer-termine");
     expect(markup).toContain("tab-customer-journal");
     expect(markup).toContain("label-country");
     expect(markup).toContain("input-country");
@@ -286,6 +291,7 @@ describe("FT28 customer data shell layout integration", () => {
     expect(markup).toContain("button-cancel-customer");
     expect(markup).toContain("button-save-customer");
     expect(markup).not.toContain("tabs-customer-main");
+    expect(markup).not.toContain("tab-customer-termine");
     expect(markup).not.toContain("tab-customer-journal");
     expect(markup).toContain("customer-document-extraction-dropzone-marker");
     expect(markup).toContain("label-country");

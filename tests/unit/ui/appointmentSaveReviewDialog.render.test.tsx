@@ -62,7 +62,7 @@ describe("AppointmentSaveReviewDialog", () => {
     vi.stubGlobal("React", React);
   });
 
-  it("renders the no-employee save decision as a save-review step", () => {
+  it("renders the no-employee save decision as a compact confirm dialog", () => {
     const html = renderToStaticMarkup(
       <AppointmentSaveReviewDialog
         open
@@ -74,8 +74,11 @@ describe("AppointmentSaveReviewDialog", () => {
     );
 
     expect(html).toContain("dialog-appointment-save-review");
-    expect(html).toContain("Termin ohne Mitarbeiter speichern?");
-    expect(html).toContain("checkbox-appointment-save-review-no-employees");
+    expect(html).toContain("Termin hat keine Mitarbeiter");
+    expect(html).toContain("Der Termin hat keine Mitarbeiter, bitte bestätigen oder abbrechen");
+    expect(html).not.toContain("checkbox-appointment-save-review-no-employees");
+    expect(actions.get("button-appointment-save-review-confirm")?.label).toBe("Bestätigen");
+    expect(actions.get("button-appointment-save-review-confirm")?.disabled).toBe(false);
   });
 
   it("renders resource preview rows before save", () => {

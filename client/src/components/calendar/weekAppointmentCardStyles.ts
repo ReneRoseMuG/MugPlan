@@ -5,6 +5,12 @@ export const WEEK_APPOINTMENT_CARD_FOOTER_SAFE_SPACE_PX = 20;
 export const WEEK_APPOINTMENT_CARD_HEADER_MIN_HEIGHT_PX = 48;
 export const WEEK_APPOINTMENT_CARD_FOOTER_MIN_HEIGHT_PX = 92;
 export const WEEK_APPOINTMENT_CARD_COMPACT_FOOTER_MIN_HEIGHT_PX = 60;
+export const WEEK_APPOINTMENT_POSTAL_CODE_BADGE_CLASSNAME = [
+  "shrink-0 truncate rounded-sm bg-white/15 px-1.5 py-0.5 text-right",
+  "text-[13px] font-extrabold leading-none tracking-normal shadow-sm ring-1 ring-white/20",
+  "transform-gpu transition-all duration-150 ease-out",
+  "hover:-translate-y-0.5 hover:scale-[1.1] hover:bg-white/40 hover:shadow-lg hover:ring-2 hover:ring-white/70 hover:brightness-125",
+].join(" ");
 
 function toTransparentTourColor(color: string | null | undefined, alpha: number): string {
   if (typeof color !== "string") {

@@ -10,11 +10,13 @@
  * - Kunden-Sidebar Termine trennt aktuelle/zukuenftige und vergangene Termine sichtbar.
  * - Kunden-Sidebar Termine zeigt Termine abwaerts nach Datum.
  * - Kunden-Sidebar Projekte soll je Termin-Projekt erscheinen, nach Termindatum abwaerts sortiert, Projekte ohne Termin am Ende.
+ * - Kunden- und Projektformular binden die vereinheitlichte Terminliste als Haupttab mit festem Entity-Kontext ein.
  *
  * Fehlerfaelle:
  * - Trennung zwischen aktuellen und vergangenen Terminen fehlt.
  * - Reihenfolge ist nicht abwaerts sortiert.
  * - Kunden-Projektliste entspricht nicht der Termin-Timeline-Erwartung.
+ * - Der neue Haupttab laedt wieder ungefiltert oder laesst Termin-Oeffnungen nicht bis ins Formular durch.
  *
  * Ziel:
  * Browser-E2E Nachweis fuer Trennung + Sortierung in Sidebar-Panels sowie test-first Erwartungspruefung fuer Kunden-Projektpanel.
@@ -86,6 +88,31 @@ test("project sidebar appointments: visible separation and descending by date", 
   expect(firstHistoricalTop).toBeGreaterThan(separatorTop);
 });
 
+test("project appointments main tab: unified table uses fixed project context and opens appointments", async ({ page }) => {
+  const fixture = await createProjectWithPastAndFutureAppointmentsFixture({
+    prefix: "PW-PROJECT-TAB",
+    futureOffsetDays: 2,
+    pastOffsetDays: -3,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-projekte").click();
+  await page.getByTestId(`project-card-${fixture.project.id}`).dblclick();
+
+  const listResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/appointments/list")
+    && response.url().includes(`projectId=${fixture.project.id}`)
+    && response.status() === 200,
+  );
+  await page.getByTestId("tab-project-termine").click();
+  await listResponse;
+
+  await expect(page.getByTestId("table-appointments-list")).toBeVisible();
+  await expect(page.getByText("2 Einträge")).toBeVisible();
+  await page.getByTestId("table-appointments-list").locator("tbody tr").first().dblclick();
+  await expect(page.getByTestId("button-close-appointment")).toBeVisible();
+});
+
 test("customer sidebar appointments: visible separation and descending by date", async ({ page }) => {
   const fixture = await createCustomerProjectsTimelineFixture({
     prefix: "PW-CUSTOMER-APPTS",
@@ -112,6 +139,30 @@ test("customer sidebar appointments: visible separation and descending by date",
 
   const separator = page.getByText("Vergangene Termine");
   await expect(separator).toBeVisible();
+});
+
+test("customer appointments main tab: unified table uses fixed customer context and opens appointments", async ({ page }) => {
+  const fixture = await createCustomerProjectsTimelineFixture({
+    prefix: "PW-CUSTOMER-TAB",
+    includeProjectWithoutAppointments: true,
+  });
+
+  await loginAsAdmin(page);
+  await page.getByTestId("nav-kunden").click();
+  await page.getByTestId(`customer-card-${fixture.customer.id}`).dblclick();
+
+  const listResponse = page.waitForResponse((response) =>
+    response.url().includes("/api/appointments/list")
+    && response.url().includes(`customerId=${fixture.customer.id}`)
+    && response.status() === 200,
+  );
+  await page.getByTestId("tab-customer-termine").click();
+  await listResponse;
+
+  await expect(page.getByTestId("table-appointments-list")).toBeVisible();
+  await expect(page.getByText("3 Einträge")).toBeVisible();
+  await page.getByTestId("table-appointments-list").locator("tbody tr").first().dblclick();
+  await expect(page.getByTestId("button-close-appointment")).toBeVisible();
 });
 
 test(`customer sidebar projects: one project per appointment-project, descending by appointment date [${TODO_CUSTOMER_PROJECTS_SORTING}]`, async ({ page }) => {
