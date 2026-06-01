@@ -262,7 +262,7 @@ export function TableView<T>({
         onScroll={handleBodyScroll}
       >
         <Table
-          className={cn(totalColumnWidth > 0 ? "w-auto" : "min-w-full", tableClassName)}
+          className={cn(totalColumnWidth > 0 ? "w-auto mx-auto" : "min-w-full", tableClassName)}
           containerClassName="overflow-visible"
           containerRef={tableContainerRef}
           style={totalColumnWidth > 0 ? { minWidth: `${totalColumnWidth}px` } : undefined}

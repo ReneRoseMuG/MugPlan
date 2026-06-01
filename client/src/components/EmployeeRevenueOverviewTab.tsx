@@ -96,6 +96,7 @@ export function EmployeeRevenueOverviewTab({
         stickyHeader
         testId="employee-revenue-overview-table"
         className="min-h-[22rem]"
+        tableClassName="mx-auto"
         emptyState={weekFilter.trim().length > 0
           ? <span data-testid="employee-revenue-overview-empty">Kein Umsatztreffer für den aktuellen Filter.</span>
           : <span data-testid="employee-revenue-overview-empty">Keine Umsatzwochen vorhanden.</span>}

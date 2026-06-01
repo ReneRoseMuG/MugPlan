@@ -826,7 +826,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "abwesenheiten" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht") ? 99999 : undefined}
+        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "abwesenheiten" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht" || activeTab === "wochenplanung") ? 99999 : undefined}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
@@ -991,7 +991,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
             className={`flex min-h-0 flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
             data-testid="employee-form-main-column"
           >
-            <TabsList>
+            <TabsList className="w-full">
               <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
               <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
               {isEditing ? (
