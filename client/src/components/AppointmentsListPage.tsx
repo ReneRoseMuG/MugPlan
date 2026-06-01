@@ -84,6 +84,7 @@ interface AppointmentsListPageProps {
   appointmentScope?: AppointmentListScope;
   onAppointmentScopeChange?: (scope: AppointmentListScope) => void;
   fixedDateRange?: { dateFrom: string; dateTo: string };
+  projectNameMaxLength?: number;
 }
 
 const DEFAULT_PAGE_SIZE = 25;
@@ -151,6 +152,7 @@ export function AppointmentsListPage({
   appointmentScope: controlledAppointmentScope,
   onAppointmentScopeChange,
   fixedDateRange,
+  projectNameMaxLength,
 }: AppointmentsListPageProps) {
   const contextType = context?.type ?? "standalone";
   const isTourContext = contextType === "tour";
@@ -474,16 +476,22 @@ export function AppointmentsListPage({
           header: "Projekt",
           accessor: (row) => resolveAppointmentProjectDisplayName(row.projectName),
           minWidth: 220,
-          cell: ({ row }) => (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{resolveAppointmentProjectDisplayName(row.projectName)}</span>
-              {row.isCancelled ? (
-                <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
-                  Storniert
-                </span>
-              ) : null}
-            </div>
-          ),
+          cell: ({ row }) => {
+            const fullName = resolveAppointmentProjectDisplayName(row.projectName);
+            const displayName = projectNameMaxLength && fullName.length > projectNameMaxLength
+              ? `${fullName.slice(0, projectNameMaxLength)}…`
+              : fullName;
+            return (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium" title={displayName !== fullName ? fullName : undefined}>{displayName}</span>
+                {row.isCancelled ? (
+                  <span className="inline-flex rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                    Storniert
+                  </span>
+                ) : null}
+              </div>
+            );
+          },
         },
       );
     }
@@ -607,19 +615,39 @@ export function AppointmentsListPage({
   );
 
   const AppointmentsIcon = domainIcons.appointmentsList;
-  const tableFooter = (
-    <ListPagingFooter
-      summaryText={`${data?.total ?? 0} Einträge`}
-      page={page}
-      totalPages={totalPages}
-      canGoPrev={canGoPrev}
-      canGoNext={canGoNext}
-      onPrev={() => canGoPrev && setPage((current) => current - 1)}
-      onNext={() => canGoNext && setPage((current) => current + 1)}
-      prevTestId="button-appointments-page-prev"
-      nextTestId="button-appointments-page-next"
-      stateTestId="text-appointments-page-state"
-    />
+  const combinedFooter = (
+    <div className="flex flex-wrap items-end gap-4">
+      <AppointmentsFilterPanel
+        filters={filters}
+        onChange={setFilterAndResetPage}
+        appointmentScope={appointmentScope}
+        onAppointmentScopeChange={handleAppointmentScopeChange}
+        availableRange={availableRange}
+        onResetAll={handleResetAllFilters}
+        tours={tours}
+        selectedTags={selectedTags}
+        availableTags={unselectedTags}
+        tagPickerOpen={tagPickerOpen}
+        onTagPickerOpenChange={setTagPickerOpen}
+        hideCustomerFilters={resolvedHideCustomerFilters}
+        hideProjectFilters={resolvedHideProjectFilters}
+        hideTourFilter={resolvedHideTourFilter}
+        hidePeriodPicker={hasFixedDateRange}
+      />
+      <ListPagingFooter
+        summaryText={`${data?.total ?? 0} Einträge`}
+        page={page}
+        totalPages={totalPages}
+        canGoPrev={canGoPrev}
+        canGoNext={canGoNext}
+        onPrev={() => canGoPrev && setPage((current) => current - 1)}
+        onNext={() => canGoNext && setPage((current) => current + 1)}
+        prevTestId="button-appointments-page-prev"
+        nextTestId="button-appointments-page-next"
+        stateTestId="text-appointments-page-state"
+        className="ml-auto shrink-0"
+      />
+    </div>
   );
 
   return (
@@ -632,28 +660,10 @@ export function AppointmentsListPage({
       onClose={onCancel}
       showCloseButton={resolvedShowCloseButton}
       closeTestId="button-close-appointments-list"
-      className={className}
+      hideHeader={isEmbeddedFormContext}
+      className={isEmbeddedFormContext ? `border-0 shadow-none rounded-none${className ? ` ${className}` : ""}` : className}
       contentClassName="flex min-h-0 flex-col"
-      filterSlot={
-        <AppointmentsFilterPanel
-          filters={filters}
-          onChange={setFilterAndResetPage}
-          appointmentScope={appointmentScope}
-          onAppointmentScopeChange={handleAppointmentScopeChange}
-          availableRange={availableRange}
-          onResetAll={handleResetAllFilters}
-          tours={tours}
-          selectedTags={selectedTags}
-          availableTags={unselectedTags}
-          tagPickerOpen={tagPickerOpen}
-          onTagPickerOpenChange={setTagPickerOpen}
-          hideCustomerFilters={resolvedHideCustomerFilters}
-          hideProjectFilters={resolvedHideProjectFilters}
-          hideTourFilter={resolvedHideTourFilter}
-          hidePeriodPicker={hasFixedDateRange}
-        />
-      }
-      footerSlot={tableFooter}
+      filterSlot={combinedFooter}
       contentSlot={
         <TableView
           testId="table-appointments-list"

@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { useSetting } from "@/hooks/useSettings";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { LayoutList, Mail, Phone, ScrollText, Trash2, Users, X } from "lucide-react";
 import { AppointmentsListPage, type AppointmentsListContext } from "@/components/AppointmentsListPage";
@@ -116,6 +117,7 @@ function extractApiCode(error: unknown): string | null {
 
 export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment, onOpenTourWeek }: EmployeeFormProps) {
   const { toast } = useToast();
+  const contentMaxWidth = useSetting("entityFormShell.contentMaxWidthPx") ?? 960;
   const isEditing = Boolean(employeeId);
   const userRole = getStoredUserRole();
   const isReadOnlyView = isReaderRole(userRole);
@@ -826,7 +828,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
       <div className="flex h-full min-h-0 w-full flex-1">
       <EntityFormShell
         mainClassName="bg-[hsl(var(--color-cream))]"
-        contentMaxWidth={activeMainTab === "details" && (activeTab === "termine" || activeTab === "abwesenheiten" || activeTab === "auslastung" || activeTab === "umsatz-uebersicht") ? 99999 : undefined}
+        contentMaxWidth={99999}
         header={(
           <div className="flex items-center justify-between gap-4 px-6 py-4">
             <div className="flex min-w-0 flex-col gap-3">
@@ -991,7 +993,7 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
             className={`flex min-h-0 flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
             data-testid="employee-form-main-column"
           >
-            <TabsList>
+            <TabsList className="w-full">
               <TabsTrigger value="stammdaten" data-testid="tab-employee-stammdaten">Stammdaten</TabsTrigger>
               <TabsTrigger value="termine" data-testid="tab-employee-termine">Termine</TabsTrigger>
               {isEditing ? (
@@ -1012,8 +1014,11 @@ export function EmployeeForm({ employeeId, onCancel, onSaved, onOpenAppointment,
               <DialogBaseInlineMessage error={mutationError} />
             ) : null}
 
-          <TabsContent value="stammdaten" className="min-h-[620px]">
-            <div className="w-full space-y-6 min-h-0">
+          <TabsContent value="stammdaten" className="min-h-[620px] w-full">
+            <div
+              className="mx-auto w-full space-y-6 min-h-0"
+              style={{ maxWidth: contentMaxWidth }}
+            >
               <div className="sub-panel space-y-4">
                 <h3 className="text-sm font-bold tracking-wider text-primary flex items-center gap-2">
                   <Users className="w-4 h-4" />

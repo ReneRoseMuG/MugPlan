@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Toggle } from "@/components/ui/toggle";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
 import { TourWeekCard, type TourWeekCardData } from "@/components/TourWeekCard";
@@ -472,7 +473,7 @@ export function TourEditForm({
           className={`flex min-h-0 w-full flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
           data-testid="tour-form-main-column"
         >
-          <TabsList>
+          <TabsList className="w-full">
             <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
             <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
             {isWeekPlanningSupported ? (
@@ -527,6 +528,7 @@ export function TourEditForm({
               context={{ type: "tour", tourId: tour?.id ?? null }}
               emptyStateOverride={<></>}
               onOpenAppointment={onOpenAppointment}
+              projectNameMaxLength={15}
               className="min-h-0 flex-1"
             />
           </TabsContent>
@@ -555,31 +557,47 @@ export function TourEditForm({
                     actions={(
                       <>
                         {!readOnly && !week.isLocked && !week.isBlocked ? (
-                          <PlusActionButton
-                            onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
-                            aria-label="Mitarbeiter zur KW hinzufügen"
-                            disabled={isSaving || isMutatingMembers || isMutatingWeeks}
-                            data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
-                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <PlusActionButton
+                                  onClick={() => openEmployeePickerForWeek(week.isoYear, week.isoWeek)}
+                                  aria-label="Mitarbeiter zur KW hinzufügen"
+                                  disabled={isSaving || isMutatingMembers || isMutatingWeeks}
+                                  data-testid={`button-add-tour-week-member-${week.isoYear}-${week.isoWeek}`}
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Mitarbeiter zur Wochenplanung hinzufügen</TooltipContent>
+                          </Tooltip>
                         ) : null}
                         {!readOnly && !week.isLocked && !week.isBlocked ? (
-                          <button
-                            type="button"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void onApplyWeekEmployees?.({
-                                isoYear: week.isoYear,
-                                isoWeek: week.isoWeek,
-                                employeeIds: week.employees.map((employee) => employee.employeeId),
-                              });
-                            }}
-                            aria-label="Tour-KW-Planung auf Termine anwenden"
-                            disabled={isSaving || isMutatingMembers || isMutatingWeeks || week.employees.length === 0}
-                            data-testid={`button-apply-tour-week-member-${week.isoYear}-${week.isoWeek}`}
-                          >
-                            <ListChecks className="h-4 w-4" />
-                          </button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <button
+                                  type="button"
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    void onApplyWeekEmployees?.({
+                                      isoYear: week.isoYear,
+                                      isoWeek: week.isoWeek,
+                                      employeeIds: week.employees.map((employee) => employee.employeeId),
+                                    });
+                                  }}
+                                  aria-label="Tour-KW-Planung auf Termine anwenden"
+                                  disabled={isSaving || isMutatingMembers || isMutatingWeeks || week.employees.length === 0}
+                                  data-testid={`button-apply-tour-week-member-${week.isoYear}-${week.isoWeek}`}
+                                >
+                                  <ListChecks className="h-4 w-4" />
+                                </button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {week.employees.length === 0 ? "Keine Mitarbeiter zum Anwenden geplant" : "Wochenplanung auf Termine anwenden"}
+                            </TooltipContent>
+                          </Tooltip>
                         ) : null}
                         {!readOnly ? (
                         <DropdownMenu>
@@ -716,7 +734,7 @@ export function TourEditForm({
         </Dialog>
 
         <Dialog open={!readOnly && employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+          <DialogContent hideClose className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
             <EmployeePickerDialogList
               employees={availableEmployees}
               teams={[]}

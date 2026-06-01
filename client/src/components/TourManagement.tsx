@@ -945,6 +945,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
           <TourEmployeeCascadeDialog
             variant="week"
             open={weekDialogState.open}
+            employeeId={activeWeekDialogOperation.employeeId}
             title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
             description={
               weekDialogState.mode === "add"
@@ -1013,9 +1014,9 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
               className="flex h-full min-h-0 flex-col"
             >
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 px-4 py-3">
-                <TabsList data-testid="tabs-tour-overview">
-                  <TabsTrigger value="tours" data-testid="tab-tour-overview-list">Touren</TabsTrigger>
-                  <TabsTrigger value="weekPlanning" data-testid="tab-tour-overview-week-planning">Wochenplanung</TabsTrigger>
+                <TabsList className="flex flex-1" data-testid="tabs-tour-overview">
+                  <TabsTrigger className="flex-1" value="tours" data-testid="tab-tour-overview-list">Touren</TabsTrigger>
+                  <TabsTrigger className="flex-1" value="weekPlanning" data-testid="tab-tour-overview-week-planning">Wochenplanung</TabsTrigger>
                 </TabsList>
                 {activeOverviewTab === "weekPlanning" ? (
                   <div className="flex flex-wrap items-center gap-2">
@@ -1163,6 +1164,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         <TourEmployeeCascadeDialog
           variant="week"
           open={weekDialogState.open}
+          employeeId={activeWeekDialogOperation.employeeId}
           title={weekDialogState.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
           description={
             weekDialogState.mode === "add"
