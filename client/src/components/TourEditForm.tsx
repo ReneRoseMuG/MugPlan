@@ -473,7 +473,7 @@ export function TourEditForm({
           className={`flex min-h-0 w-full flex-col space-y-4 ${activeTab === "wochenplanung" ? "" : "h-full"}`}
           data-testid="tour-form-main-column"
         >
-          <TabsList>
+          <TabsList className="w-full">
             <TabsTrigger value="stammdaten" data-testid="tab-tour-stammdaten">Stammdaten</TabsTrigger>
             <TabsTrigger value="termine" data-testid="tab-tour-termine">Termine</TabsTrigger>
             {isWeekPlanningSupported ? (
