@@ -780,7 +780,6 @@ function MonthSheetSection({
         transform: `scale(${scaleFactor})`,
         transformOrigin: "top left",
         width: `${(1 / scaleFactor) * 100}%`,
-        height: `${(1 / scaleFactor) * 100}%`,
       }
     : {};
 
@@ -840,7 +839,7 @@ function MonthSheetSection({
           </button>
         ) : null}
 
-        <div ref={gridContainerRef} className="flex-1 min-h-0 overflow-hidden">
+        <div ref={gridContainerRef} className="flex-1 min-h-0">
           <div style={scaleStyle}>
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
