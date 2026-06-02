@@ -5,13 +5,13 @@
  * - Reguläre, nicht blockierte Kalendereinträge bleiben in Monats- und Wochenansicht drag-fähig.
  * - Historische Parkplatz-Termine bleiben in Monats- und Wochenansicht drag-fähig.
  * - Der positive Drag-Start-Pfad reicht die appointmentId in beide Kalenderansichten an dataTransfer weiter.
- * - Die Wochenansicht schneidet Termine über die Karten-Menüaktion aus, nicht mehr über Pointer-Press.
+ * - Monats- und Wochenansicht schneiden Termine über Karten-Menüaktionen aus, nicht mehr über Pointer-Press.
  *
  * Fehlerfälle:
  * - Reguläre Termine verlieren ihren Drag-Start bereits in der Verdrahtung.
  * - Monats- und Wochenansicht setzen keine appointmentId in dataTransfer.
  * - Historische Parkplatz-Termine verlieren ihre Drag-Freigabe.
- * - Wochenkarten aktivieren die Move-Auswahl wieder durch direktes Anklicken.
+ * - Kalenderkarten aktivieren die Move-Auswahl wieder durch direktes Anklicken.
  *
  * Ziel:
  * Die positive Drag-Start-Verdrahtung und die neue explizite Wochenkarten-Ausschneiden-Aktion regressionssicher absichern.
@@ -22,6 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CalendarAppointment } from "../../../client/src/lib/calendar-appointments";
 
 const compactBarCalls: Array<Record<string, unknown>> = [];
+const dropdownMenuItemCalls: Array<{ children?: React.ReactNode; onClick?: () => void; disabled?: boolean }> = [];
 const weekPanelCalls: Array<Record<string, unknown>> = [];
 const weekSpanningTileCalls: Array<Record<string, unknown>> = [];
 const useSettingMock = vi.fn();
@@ -67,7 +68,29 @@ vi.mock("@/lib/calendar-appointments", async () => {
 vi.mock("@/components/calendar/CalendarAppointmentCompactBar", () => ({
   CalendarAppointmentCompactBar: (props: Record<string, unknown>) => {
     compactBarCalls.push(props);
-    return <div data-testid={`compact-bar-${String((props.appointment as { id?: number })?.id ?? "unknown")}`} />;
+    return (
+      <div data-testid={`compact-bar-${String((props.appointment as { id?: number })?.id ?? "unknown")}`}>
+        {props.menuSlot as React.ReactNode}
+      </div>
+    );
+  },
+}));
+
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    onClick,
+    disabled,
+  }: {
+    children?: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+  }) => {
+    dropdownMenuItemCalls.push({ children, onClick, disabled });
+    return <button type="button" disabled={disabled} onClick={onClick}>{children}</button>;
   },
 }));
 
@@ -178,9 +201,20 @@ function createDragEventRecorder() {
   };
 }
 
+function getNodeText(node: React.ReactNode): string {
+  if (node === null || node === undefined || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(getNodeText).join("");
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getNodeText(node.props.children);
+  }
+  return "";
+}
+
 describe("calendar drag and drop regular draggable wiring", () => {
   beforeEach(() => {
     compactBarCalls.length = 0;
+    dropdownMenuItemCalls.length = 0;
     weekPanelCalls.length = 0;
     weekSpanningTileCalls.length = 0;
     useSettingMock.mockReset();
@@ -260,9 +294,7 @@ describe("calendar drag and drop regular draggable wiring", () => {
     expect(typeof weekPanel?.onDragStart).toBe("function");
   });
 
-  it("marks month-sheet appointments for move after a long left pointer press", async () => {
-    vi.useFakeTimers();
-    Object.assign(window, { setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout });
+  it("wires month-sheet cut actions through compact bar menus instead of pointer presses", async () => {
     const onSelectMoveAppointment = vi.fn();
     configureDefaults([
       createAppointment({ id: 61, startDate: "2099-07-01" }),
@@ -277,15 +309,13 @@ describe("calendar drag and drop regular draggable wiring", () => {
     );
 
     const monthBar = compactBarCalls.find((entry) => (entry.appointment as { id: number }).id === 61);
-    expect(typeof monthBar?.onPointerDown).toBe("function");
+    expect(monthBar?.onPointerDown).toBeUndefined();
 
-    (monthBar?.onPointerDown as (event: { button: number; pointerId: number; clientX: number; clientY: number }) => void)({
-      button: 0,
-      pointerId: 1,
-      clientX: 10,
-      clientY: 10,
-    });
-    vi.advanceTimersByTime(650);
+    const cutItem = dropdownMenuItemCalls.find((entry) => getNodeText(entry.children).includes("Ausschneiden"));
+    expect(cutItem?.disabled).toBeFalsy();
+    expect(typeof cutItem?.onClick).toBe("function");
+
+    cutItem?.onClick?.();
 
     expect(onSelectMoveAppointment).toHaveBeenCalledWith(expect.objectContaining({ id: 61, tourId: 7 }));
   });

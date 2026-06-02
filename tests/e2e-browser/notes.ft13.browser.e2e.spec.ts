@@ -22,7 +22,7 @@ import {
   createProjectFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { confirmAppointmentSaveReviewIfVisible, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -99,14 +99,7 @@ async function verifyNoteEditDialog(page: Page, input: { title: string; cardColo
 
 async function saveAppointmentAndClose(page: Page, appointmentId: number) {
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
   await expect(page.getByTestId(`week-appointment-panel-${appointmentId}`)).toBeVisible();
 }
 

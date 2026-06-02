@@ -59,7 +59,7 @@ import {
   createTourFixture,
   getRelativeBerlinDate,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { confirmAppointmentSaveReviewIfVisible, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -130,14 +130,7 @@ async function saveAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as { id: number };
@@ -150,14 +143,7 @@ async function saveExistingAppointment(page: Page, appointmentId: number) {
     && new URL(response.url()).pathname === `/api/appointments/${appointmentId}`
   ));
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
   const response = await saveResponsePromise;
   expect(response.ok()).toBeTruthy();
 }
@@ -279,8 +265,7 @@ test("shows the tour picker inside the employee panel and persists a newly selec
   await expect(page.locator('[data-testid="section-tour-picker"]')).toHaveCount(0);
 
   await page.getByTestId("button-save-appointment").click();
-  await page.getByTestId("checkbox-appointment-save-review-no-employees").click();
-  await page.getByTestId("button-appointment-save-review-confirm").click();
+  await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -314,8 +299,7 @@ test("renders an existing tour as a separate badge and restores the picker after
   await expect(page.locator('[data-testid="badge-tour"]')).toHaveCount(0);
 
   await page.getByTestId("button-save-appointment").click();
-  await page.getByTestId("checkbox-appointment-save-review-no-employees").click();
-  await page.getByTestId("button-appointment-save-review-confirm").click();
+  await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -893,8 +877,7 @@ test("shows a resource conflict dialog before saving a pure date move in the sam
   await expect(dialog.getByTestId(`appointment-week-preview-checkbox-${employee.id}`)).not.toBeChecked();
   await dialog.getByTestId("button-appointment-save-review-next").click();
   await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
-  await dialog.getByTestId("checkbox-appointment-save-review-no-employees").click();
-  await dialog.getByTestId("button-appointment-save-review-confirm").click();
+  await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/appointments/${appointment.id}`);
@@ -979,12 +962,11 @@ test("requires checking appointment notes when an existing appointment is moved"
   await dialog.getByTestId("button-appointment-save-review-next").click();
 
   await expect(dialog.getByTestId("appointment-save-review-step-no-employees")).toBeVisible();
-  await dialog.getByTestId("checkbox-appointment-save-review-no-employees").click();
   const saveResponsePromise = page.waitForResponse((response) => (
     response.request().method() === "PATCH"
     && new URL(response.url()).pathname === `/api/appointments/${appointment.id}`
   ));
-  await dialog.getByTestId("button-appointment-save-review-confirm").click();
+  await confirmAppointmentSaveReviewIfVisible(page);
   const saveResponse = await saveResponsePromise;
   expect(saveResponse.ok()).toBeTruthy();
 

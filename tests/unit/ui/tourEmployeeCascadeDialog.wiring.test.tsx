@@ -247,6 +247,12 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("appointment-week-preview-group-available");
     expect(html).toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-11")(?=[^>]*checked)/);
     expect(html).not.toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-12")(?=[^>]*checked)/);
+    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
+      html.indexOf("button-appointment-week-select-all"),
+    );
+    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
+      html.indexOf("button-appointment-week-deselect-all"),
+    );
     expect(html).not.toContain("Mitarbeiter auswählen");
   });
 
@@ -285,6 +291,12 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Wird vom Termin entfernt");
     expect(html).not.toContain("button-appointment-week-mode-additive");
     expect(html).not.toContain("button-appointment-week-mode-replace");
+    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
+      html.indexOf("button-appointment-week-select-all"),
+    );
+    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(
+      html.indexOf("button-appointment-week-deselect-all"),
+    );
     expect(html).not.toContain("Mitarbeiter prüfen");
   });
 });

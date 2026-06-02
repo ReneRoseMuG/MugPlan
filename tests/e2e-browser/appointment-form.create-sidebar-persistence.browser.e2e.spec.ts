@@ -48,7 +48,7 @@ import {
   createTagFixture,
   createTourFixture,
 } from "../helpers/testDataFactory";
-import { loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
+import { confirmAppointmentSaveReviewIfVisible, loginAsAdmin, resetBrowserSuiteState } from "../helpers/browserE2e";
 
 test.describe.configure({ mode: "serial" });
 
@@ -285,14 +285,7 @@ async function saveNewAppointmentAndResolveId(page: Page) {
     && new URL(response.url()).pathname === "/api/appointments"
   ));
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
   const response = await createAppointmentResponsePromise;
   expect(response.ok()).toBeTruthy();
   const body = await response.json() as { id: number };
@@ -502,14 +495,7 @@ test("persists tag, note and appointment attachment from the new appointment for
   await expect(page.getByTestId("appointment-form-sidebar").getByText(attachmentName)).toBeVisible();
 
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);
@@ -732,14 +718,7 @@ test("opens an existing project overlay for duplicate order numbers and links it
   await expect(page.getByTestId("badge-project-order-number")).toContainText(existingProject.orderNumber ?? "");
 
   await page.getByTestId("button-save-appointment").click();
-  const saveReview = page.getByTestId("dialog-appointment-save-review");
-  if (await saveReview.isVisible().catch(() => false)) {
-    const noEmployeesCheckbox = saveReview.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      await noEmployeesCheckbox.click();
-    }
-    await saveReview.getByTestId("button-appointment-save-review-confirm").click();
-  }
+  await confirmAppointmentSaveReviewIfVisible(page);
 
   await expect.poll(async () => {
     const response = await page.request.get(`/api/customers/${customer.id}/appointments?scope=all`);

@@ -191,49 +191,41 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
 
   const weekOperationCount = variant === "week" ? getWeekOperationCount(props) : 1;
   const activeWeekOperationIndex = variant === "week" ? getActiveWeekOperationIndex(props.steps) : 0;
+  const appointmentSelectionSummaryBlock = variant === "appointment" ? (
+    <div className="rounded-md border bg-slate-50 p-3" data-testid="appointment-week-selection-summary-panel">
+      <div className="text-sm font-medium text-slate-900">Mitarbeiterauswahl</div>
+      <div className="text-sm text-slate-600" data-testid="appointment-week-selection-summary">
+        {appointmentSelectionSummary}
+      </div>
+    </div>
+  ) : null;
   const selectionControls = (
     <div
       className={
         variant === "appointment"
-          ? "flex flex-col gap-3 rounded-md border bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+          ? "flex flex-wrap items-center gap-2 sm:justify-end"
           : "flex flex-wrap items-center gap-2"
       }
       data-testid={variant === "appointment" ? "appointment-week-selection-toolbar" : undefined}
     >
-      {variant === "appointment" ? (
-        <div className="min-w-0">
-          <div className="text-sm font-medium text-slate-900">Mitarbeiterauswahl</div>
-          <div className="text-sm text-slate-600" data-testid="appointment-week-selection-summary">
-            {appointmentSelectionSummary}
-          </div>
-        </div>
-      ) : null}
-      <div
-        className={
-          variant === "appointment"
-            ? "flex flex-wrap items-center gap-2 sm:justify-end"
-            : "flex flex-wrap items-center gap-2"
-        }
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setSelectedIds(allSelectableIds)}
+        disabled={props.isSubmitting || (variant === "appointment" && allSelectableIds.length === 0)}
+        data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
       >
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSelectedIds(allSelectableIds)}
-          disabled={props.isSubmitting || (variant === "appointment" && allSelectableIds.length === 0)}
-          data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
-        >
-          Alle wählen
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setSelectedIds([])}
-          disabled={props.isSubmitting || (variant === "appointment" && selectedIds.length === 0)}
-          data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
-        >
-          Alle abwählen
-        </Button>
-      </div>
+        Alle wählen
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setSelectedIds([])}
+        disabled={props.isSubmitting || (variant === "appointment" && selectedIds.length === 0)}
+        data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
+      >
+        Alle abwählen
+      </Button>
     </div>
   );
   const weekHeaderContent = variant === "week" && props.employeeName ? (
@@ -334,7 +326,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
           />
         ) : null}
 
-        {variant === "appointment" ? selectionControls : null}
+        {appointmentSelectionSummaryBlock}
 
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {variant === "week" ? (
@@ -456,7 +448,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
           )}
         </div>
 
-        {variant === "week" ? selectionControls : null}
+        {selectionControls}
 
         {props.isSubmitting ? (
           <div className="flex items-center gap-2 text-sm text-slate-600">
