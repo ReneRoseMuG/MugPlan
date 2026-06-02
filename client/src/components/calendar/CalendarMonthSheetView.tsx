@@ -33,7 +33,6 @@ import {
   buildMonthSlotBarsForDay,
   buildMonthTourSlots,
   buildMonthWeekRowLayout,
-  MONTH_COLUMN_HEADER_HEIGHT_PX,
   MONTH_DAY_HEADER_HEIGHT_PX,
   MONTH_SLOT_BAR_GAP_PX,
   MONTH_SLOT_BAR_HEIGHT_PX,
@@ -173,6 +172,8 @@ export function CalendarMonthSheetView({
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(1);
+  const scaleFactorRef = useRef(1);
+  scaleFactorRef.current = scaleFactor;
   const containerRef = useRef<HTMLDivElement>(null);
   const scaleDebounceRef = useRef<number | null>(null);
   const { toast } = useToast();
@@ -374,14 +375,18 @@ export function CalendarMonthSheetView({
       if (scaleDebounceRef.current !== null) window.clearTimeout(scaleDebounceRef.current);
       scaleDebounceRef.current = window.setTimeout(() => {
         scaleDebounceRef.current = null;
-        const available = container.getBoundingClientRect().height;
+        const available = container.clientHeight;
         if (!monthFitPage || available <= 0) {
           setScaleFactor(1);
           return;
         }
-        const totalContentHeight = MONTH_COLUMN_HEADER_HEIGHT_PX
-          + Array.from(weekData.values()).reduce((sum, wd) => sum + wd.rowLayout.rowHeightPx, 0);
-        const raw = available / totalContentHeight;
+        const currentScale = scaleFactorRef.current;
+        // scrollHeight gibt die tatsaechliche Layout-Hoehe des Inhalts inkl. Overflow.
+        // Mit zoom:currentScale gilt: naturalHeight = scrollHeight / currentScale.
+        const naturalHeight = currentScale > 0
+          ? container.scrollHeight / currentScale
+          : container.scrollHeight;
+        const raw = available / naturalHeight;
         setScaleFactor(Math.min(1, Math.max(MONTH_FIT_PAGE_MIN_SCALE, raw)));
       }, 100);
     });
@@ -838,7 +843,7 @@ function MonthSheetSection({
           </button>
         ) : null}
 
-        <div ref={gridContainerRef} className="flex-1 min-h-0 overflow-hidden">
+        <div ref={gridContainerRef} className={`flex-1 min-h-0 ${monthFitPage ? "overflow-hidden" : "overflow-y-auto"}`}>
           <div style={scaleStyle}>
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
