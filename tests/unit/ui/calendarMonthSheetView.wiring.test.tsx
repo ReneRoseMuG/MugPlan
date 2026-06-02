@@ -32,6 +32,7 @@ import type { Tour } from "../../../shared/schema";
 
 const compactBarCalls: Array<Record<string, unknown>> = [];
 const useSettingMock = vi.fn();
+const setSettingMock = vi.fn();
 const useCalendarAppointmentsMock = vi.fn();
 const useCalendarBlockedTourWeeksMock = vi.fn();
 const useQueryMock = vi.fn();
@@ -52,6 +53,7 @@ vi.mock("@/hooks/use-toast", () => ({
 
 vi.mock("@/hooks/useSettings", () => ({
   useSetting: (key: string) => useSettingMock(key),
+  useSettings: () => ({ setSetting: setSettingMock }),
 }));
 
 vi.mock("@/lib/monitoring", () => ({
@@ -175,6 +177,7 @@ describe("calendar month sheet view wiring", () => {
   beforeEach(() => {
     compactBarCalls.length = 0;
     useSettingMock.mockReset();
+    setSettingMock.mockReset();
     useCalendarAppointmentsMock.mockReset();
     useCalendarBlockedTourWeeksMock.mockReset();
     useQueryMock.mockReset();
@@ -217,9 +220,30 @@ describe("calendar month sheet view wiring", () => {
     );
 
     expect(markup).toContain('data-testid="month-sheet-weeks-scroll-2026-03-01"');
-    expect(markup).toContain("flex-1 grid overflow-hidden");
+    expect(markup).toContain("flex-1 min-h-0 overflow-hidden");
     expect(markup).not.toContain("overflow-y-auto");
     expect(markup).toContain("month-sheet-week-number-2026-03-01-2026-03-30");
+  });
+
+  it("skaliert den Fit-Modus nur vertikal und hält einen unteren Sicherheitsabstand", async () => {
+    const {
+      calculateMonthFitScaleFactor,
+      getMonthFitScaleStyle,
+    } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+
+    const scaleFactor = calculateMonthFitScaleFactor(900, 1000);
+    const scaleStyle = getMonthFitScaleStyle(scaleFactor);
+
+    expect(scaleFactor).toBeCloseTo(0.872);
+    expect(calculateMonthFitScaleFactor(898, 1406)).toBeCloseTo(0.6188, 4);
+    expect(calculateMonthFitScaleFactor(500, 1200)).toBe(0.5);
+    expect(scaleStyle).toEqual({
+      transform: `scaleY(${scaleFactor})`,
+      transformOrigin: "top left",
+      width: "100%",
+    });
+    expect(scaleStyle).not.toHaveProperty("zoom");
+    expect(scaleStyle.width).not.toBe(`${(1 / scaleFactor) * 100}%`);
   });
 
   it("bindet eine Header-Aktion in dieselbe Zeile wie den Blatt-Titel ein", async () => {

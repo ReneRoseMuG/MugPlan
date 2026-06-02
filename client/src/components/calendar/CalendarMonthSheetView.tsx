@@ -106,7 +106,26 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
-const MONTH_FIT_PAGE_MIN_SCALE = 0.65;
+const MONTH_FIT_PAGE_MIN_SCALE = 0.5;
+const MONTH_FIT_PAGE_BOTTOM_GUARD_PX = 28;
+
+export function calculateMonthFitScaleFactor(availableHeight: number, naturalHeight: number): number {
+  if (availableHeight <= 0 || naturalHeight <= 0) return 1;
+
+  const guardedAvailableHeight = Math.max(0, availableHeight - MONTH_FIT_PAGE_BOTTOM_GUARD_PX);
+  const raw = guardedAvailableHeight / naturalHeight;
+  return Math.min(1, Math.max(MONTH_FIT_PAGE_MIN_SCALE, raw));
+}
+
+export function getMonthFitScaleStyle(scaleFactor: number): React.CSSProperties {
+  if (scaleFactor >= 1) return {};
+
+  return {
+    transform: `scaleY(${scaleFactor})`,
+    transformOrigin: "top left",
+    width: "100%",
+  };
+}
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
@@ -172,8 +191,6 @@ export function CalendarMonthSheetView({
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
   const [scaleFactor, setScaleFactor] = useState(1);
-  const scaleFactorRef = useRef(1);
-  scaleFactorRef.current = scaleFactor;
   const containerRef = useRef<HTMLDivElement>(null);
   const scaleDebounceRef = useRef<number | null>(null);
   const { toast } = useToast();
@@ -380,14 +397,10 @@ export function CalendarMonthSheetView({
           setScaleFactor(1);
           return;
         }
-        const currentScale = scaleFactorRef.current;
-        // scrollHeight gibt die tatsaechliche Layout-Hoehe des Inhalts inkl. Overflow.
-        // Mit zoom:currentScale gilt: naturalHeight = scrollHeight / currentScale.
-        const naturalHeight = currentScale > 0
-          ? container.scrollHeight / currentScale
-          : container.scrollHeight;
-        const raw = available / naturalHeight;
-        setScaleFactor(Math.min(1, Math.max(MONTH_FIT_PAGE_MIN_SCALE, raw)));
+        // Der Guard hält die letzte Wochenzeile sichtbar oberhalb des Kalender-Footers.
+        const innerEl = container.firstElementChild as HTMLElement | null;
+        const naturalHeight = innerEl ? innerEl.offsetHeight : container.scrollHeight;
+        setScaleFactor(calculateMonthFitScaleFactor(available, naturalHeight));
       }, 100);
     });
 
@@ -780,12 +793,7 @@ function MonthSheetSection({
   const weekStepButtonClassName =
     "inline-flex h-9 w-full items-center justify-center gap-2 border-y border-amber-200 bg-amber-50 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
 
-  const scaleStyle: React.CSSProperties = scaleFactor < 1
-    ? {
-        zoom: scaleFactor,
-        width: `${(1 / scaleFactor) * 100}%`,
-      }
-    : {};
+  const scaleStyle = getMonthFitScaleStyle(scaleFactor);
 
   return (
     <section
@@ -843,7 +851,7 @@ function MonthSheetSection({
           </button>
         ) : null}
 
-        <div ref={gridContainerRef} className={`flex-1 min-h-0 ${monthFitPage ? "" : "overflow-y-auto"}`}>
+        <div ref={gridContainerRef} className={`flex-1 min-h-0 ${monthFitPage ? "overflow-hidden" : "overflow-y-auto"}`}>
           <div style={scaleStyle}>
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
