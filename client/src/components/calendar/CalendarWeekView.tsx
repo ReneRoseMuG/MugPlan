@@ -70,6 +70,7 @@ import { EditFormContextText } from "@/components/ui/edit-form-context-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { WorkflowNoteRemovalDialog, WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
@@ -528,6 +529,7 @@ export function CalendarWeekView({
     currentEmployeeIds: number[];
     selectedIds: number[];
   } | null>(null);
+  const [openActionMenuKey, setOpenActionMenuKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!onFooterActionChange) return undefined;
@@ -2805,32 +2807,48 @@ export function CalendarWeekView({
                                     >
                                       {canPlanLaneWeekPersonnel && canManageWeekPlanning && !isLaneWeekLocked && !isLaneBlocked ? (
                                         <>
-                                          <button
-                                            type="button"
-                                            className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-sm font-bold text-slate-700 shadow-sm hover:bg-white"
-                                            onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
-                                            data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
-                                            aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
-                                          >
-                                            +
-                                          </button>
-                                          <button
-                                            type="button"
-                                            className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm hover:bg-white disabled:opacity-50"
-                                            onClick={() => {
-                                              void openApplyWeekPlanningDialog({
-                                                tourId: tourLane.tourId!,
-                                                isoYear,
-                                                isoWeek,
-                                                employeeIds: laneWeekEmployees.map((employee) => employee.id),
-                                              });
-                                            }}
-                                            disabled={laneWeekEmployees.length === 0 || previewAddWeekEmployeeMutation.isPending || executeAddWeekEmployeeMutation.isPending}
-                                            data-testid={`button-apply-week-personnel-${tourLane.laneKey}`}
-                                            aria-label="Tour-KW-Planung auf Termine anwenden"
-                                          >
-                                            <ListChecks className="h-3.5 w-3.5" />
-                                          </button>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="inline-flex">
+                                                <button
+                                                  type="button"
+                                                  className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-sm font-bold text-slate-700 shadow-sm hover:bg-white"
+                                                  onClick={() => openWeekPersonnelPicker({ tourId: tourLane.tourId!, isoYear, isoWeek })}
+                                                  data-testid={`button-add-week-personnel-${tourLane.laneKey}`}
+                                                  aria-label="Mitarbeiter zur Wochenplanung hinzufügen"
+                                                >
+                                                  +
+                                                </button>
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>Mitarbeiter zur Wochenplanung hinzufügen</TooltipContent>
+                                          </Tooltip>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <span className="inline-flex">
+                                                <button
+                                                  type="button"
+                                                  className="flex h-6 w-6 items-center justify-center rounded-md border border-slate-200/80 bg-white/70 text-slate-700 shadow-sm hover:bg-white disabled:opacity-50"
+                                                  onClick={() => {
+                                                    void openApplyWeekPlanningDialog({
+                                                      tourId: tourLane.tourId!,
+                                                      isoYear,
+                                                      isoWeek,
+                                                      employeeIds: laneWeekEmployees.map((employee) => employee.id),
+                                                    });
+                                                  }}
+                                                  disabled={laneWeekEmployees.length === 0 || previewAddWeekEmployeeMutation.isPending || executeAddWeekEmployeeMutation.isPending}
+                                                  data-testid={`button-apply-week-personnel-${tourLane.laneKey}`}
+                                                  aria-label="Tour-KW-Planung auf Termine anwenden"
+                                                >
+                                                  <ListChecks className="h-3.5 w-3.5" />
+                                                </button>
+                                              </span>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              {laneWeekEmployees.length === 0 ? "Keine Mitarbeiter zum Anwenden geplant" : "Wochenplanung auf Termine anwenden"}
+                                            </TooltipContent>
+                                          </Tooltip>
                                         </>
                                       ) : null}
                                       {canPlanLaneWeekPersonnel ? weekPlanningMenu : null}
@@ -2939,7 +2957,7 @@ export function CalendarWeekView({
                               return (
                                 <HoverPreview
                                   key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  preview={dayPreview ? (
+                                  preview={openActionMenuKey === `${tourLane.laneKey}-${dayBucket.dateKey}` ? null : dayPreview ? (
                                     <CalendarWeekTourLaneDayHoverPreview
                                       weekEmployees={dayPreview.weekEmployees}
                                       additionalDayEmployees={dayPreview.additionalDayEmployees}
@@ -2979,7 +2997,7 @@ export function CalendarWeekView({
                                     )}
                                     {canShowDayAction ? (
                                       canUseMoveTarget ? (
-                                        <DropdownMenu>
+                                        <DropdownMenu onOpenChange={(open) => setOpenActionMenuKey(open ? `${tourLane.laneKey}-${dayBucket.dateKey}` : null)}>
                                           <DropdownMenuTrigger asChild>
                                             <button
                                               type="button"
@@ -3435,17 +3453,22 @@ export function CalendarWeekView({
         </div>
       </div>
       <Dialog open={weekPersonnelPicker !== null} onOpenChange={(open) => { if (!open) setWeekPersonnelPicker(null); }}>
-        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+        <DialogContent hideClose className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableWeekEmployees}
             teams={pickerTeams}
             tours={[]}
             isLoading={availableWeekEmployeesLoading || previewAddWeekEmployeeMutation.isPending}
             title={weekPersonnelPicker ? `Mitarbeiter auswählen - ${weekPersonnelPicker.weekLabel}` : "Mitarbeiter auswählen"}
-            selectedEmployeeId={null}
+            selectionMode="multiple"
             viewModeSettingKey="appointmentEmployeePicker.viewMode"
             onSelectEmployee={(employeeId) => {
               void openAddWeekPlanningDialog(employeeId);
+            }}
+            onConfirmSelection={(employeeIds) => {
+              if (weekPersonnelPicker) {
+                void openApplyWeekPlanningDialog({ ...weekPersonnelPicker, employeeIds });
+              }
             }}
             onClose={() => setWeekPersonnelPicker(null)}
           />
@@ -3456,6 +3479,7 @@ export function CalendarWeekView({
           open
           variant="week"
           mode={weekPlanningDialog.mode}
+          employeeId={activeWeekPlanningOperation.employeeId}
           title={weekPlanningDialog.mode === "add" ? "Mitarbeiter in Wochenplanung aufnehmen" : "Mitarbeiter aus Wochenplanung entfernen"}
           description={
             weekPlanningDialog.mode === "add"

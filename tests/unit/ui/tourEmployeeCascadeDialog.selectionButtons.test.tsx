@@ -32,6 +32,12 @@ vi.mock("@/components/ui/checkbox", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ fullName, testId }: { fullName?: string; testId?: string }) => (
+    <span data-testid={testId}>{fullName}</span>
+  ),
+}));
+
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,

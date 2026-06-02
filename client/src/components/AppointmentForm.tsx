@@ -33,6 +33,7 @@ import { ProjectForm } from "@/components/ProjectForm";
 import { ProjectsPage } from "@/components/ProjectsPage";
 import { CustomersPage } from "@/components/CustomersPage";
 import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList";
+import { AppointmentMoveDialog, type AppointmentMoveDialogContext } from "@/components/AppointmentMoveDialog";
 import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
 import {
   AppointmentAttachmentsPanel,
@@ -264,6 +265,7 @@ type AppointmentWeekPreviewDialogState = {
   showResolutionMode: boolean;
   resolutionNotice: string | null;
   persistAfterConfirm: boolean;
+  moveContext: AppointmentMoveDialogContext | null;
 };
 
 const logPrefix = "[AppointmentForm]";
@@ -1071,13 +1073,15 @@ export function AppointmentForm({
     if (isEditing) return;
     if (initialTourId === null || initialTourId === undefined) return;
     if (weekTourPrefillAppliedRef.current) return;
-
-    handleTourChange(initialTourId);
     weekTourPrefillAppliedRef.current = true;
 
-    console.info(`${logPrefix} week-prefill applied`, {
-      tourId: initialTourId,
-    });
+    console.info(`${logPrefix} week-prefill deferred`, { tourId: initialTourId });
+
+    // Delay so the form is visually established before the cascade dialog appears.
+    const timer = setTimeout(() => {
+      handleTourChange(initialTourId);
+    }, 400);
+    return () => clearTimeout(timer);
   }, [initialTourId, isEditing]);
 
   useEffect(() => {
@@ -1354,6 +1358,7 @@ export function AppointmentForm({
       employeeCarryoverMode: AppointmentResourceEmployeeCarryoverMode;
       isExistingAppointment: boolean;
       isSameTourAndWeek: boolean;
+      moveContext: AppointmentMoveDialogContext | null;
     },
   ) => {
     const showResolutionMode = shouldShowResourceResolutionMode(preview, {
@@ -1372,6 +1377,7 @@ export function AppointmentForm({
       showResolutionMode,
       resolutionNotice: showResolutionMode ? null : getResourceResolutionNotice(preview, params.employeeCarryoverMode),
       persistAfterConfirm: params.persistAfterConfirm,
+      moveContext: params.moveContext,
     });
   };
 
@@ -1430,6 +1436,8 @@ export function AppointmentForm({
           setResolvedAppointmentWeekPlanKey(resolutionKey);
           return;
         }
+        const tourChanged = isExistingAppointment && (appointmentDetail?.tourId ?? null) !== tourId;
+        const weekChanged = isExistingAppointment && originalWeekKey !== targetWeekKey;
         openAppointmentWeekPreviewDialog(preview, {
           title: "Wochenplanung für Termin übernehmen",
           description: preview.hasWeekPlan
@@ -1440,6 +1448,7 @@ export function AppointmentForm({
           employeeCarryoverMode,
           isExistingAppointment,
           isSameTourAndWeek,
+          moveContext: isExistingAppointment ? { tourChanged, weekChanged, isCalendarMove: false } : null,
         });
       } catch (error) {
         const message = getApiErrorMessage(error, "Vorschau konnte nicht geladen werden.");
@@ -3270,7 +3279,22 @@ export function AppointmentForm({
         )}
       </EntityFormShell>
 
-      {appointmentWeekPreviewDialog ? (
+      {appointmentWeekPreviewDialog?.moveContext ? (
+        /* Edit-Modus mit Tour-/Wochenwechsel: neuer kontextueller Dialog */
+        <AppointmentMoveDialog
+          open={appointmentWeekPreviewDialog.open}
+          preview={appointmentWeekPreviewDialog.preview}
+          moveContext={appointmentWeekPreviewDialog.moveContext}
+          selectedIds={appointmentWeekPreviewDialog.selectedIds}
+          onSelectedIdsChange={(selectedIds) => {
+            setAppointmentWeekPreviewDialog((current) => current ? { ...current, selectedIds } : current);
+          }}
+          isSubmitting={isSaving}
+          onConfirm={() => { void handleConfirmAppointmentWeekPreview(); }}
+          onClose={closeAppointmentWeekPreviewDialog}
+        />
+      ) : appointmentWeekPreviewDialog ? (
+        /* Create-Modus oder kein Tourwechselkontext: bisheriges Verhalten erhalten */
         <TourEmployeeCascadeDialog
           variant="appointment"
           open={appointmentWeekPreviewDialog.open}
@@ -3288,9 +3312,7 @@ export function AppointmentForm({
           onResolutionModeChange={(resolutionMode) => {
             setAppointmentWeekPreviewDialog((current) => current ? { ...current, resolutionMode } : current);
           }}
-          onConfirm={() => {
-            void handleConfirmAppointmentWeekPreview();
-          }}
+          onConfirm={() => { void handleConfirmAppointmentWeekPreview(); }}
           onClose={closeAppointmentWeekPreviewDialog}
         />
       ) : null}
@@ -3442,7 +3464,7 @@ export function AppointmentForm({
       </Dialog>
 
       <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+        <DialogContent hideClose className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
             teams={teams}

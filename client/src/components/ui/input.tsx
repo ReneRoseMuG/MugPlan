@@ -3,7 +3,17 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, onClick, ...props }, ref) => {
+    const handleClick = (event: React.MouseEvent<HTMLInputElement>) => {
+      if (type === "date" || type === "time") {
+        try {
+          event.currentTarget.showPicker();
+        } catch {
+          // not supported in all browsers
+        }
+      }
+      onClick?.(event);
+    };
     // h-9 to match icon buttons and default buttons.
     return (
       <input
@@ -13,6 +23,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        onClick={handleClick}
         {...props}
       />
     )

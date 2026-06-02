@@ -62,6 +62,7 @@ interface DialogBaseShellProps {
   closeDisabled?: boolean;
   description?: React.ReactNode;
   footer?: React.ReactNode;
+  headerContent?: React.ReactNode;
   headerMeta?: React.ReactNode;
   icon?: React.ReactNode;
   onOpenChange: (open: boolean) => void;
@@ -114,6 +115,7 @@ interface MutationPreviewDialogBaseProps {
   description?: React.ReactNode;
   error?: NormalizedServerError | unknown;
   footer: React.ReactNode;
+  headerContent?: React.ReactNode;
   info?: React.ReactNode;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -178,6 +180,7 @@ export function DialogBaseShell({
   closeDisabled = false,
   description,
   footer,
+  headerContent,
   headerMeta,
   icon,
   onOpenChange,
@@ -221,6 +224,9 @@ export function DialogBaseShell({
                 </div>
               ) : null}
               <DialogTitle className="leading-snug text-slate-950">{title}</DialogTitle>
+              {headerContent ? (
+                <div className="pt-1">{headerContent}</div>
+              ) : null}
             </div>
             <div aria-hidden="true" className="h-11 w-11" />
           </div>
@@ -476,6 +482,7 @@ export function MutationPreviewDialogBase({
   description,
   error,
   footer,
+  headerContent,
   info,
   onOpenChange,
   open,
@@ -490,6 +497,7 @@ export function MutationPreviewDialogBase({
       closeDisabled={closeDisabled}
       description={description}
       footer={footer}
+      headerContent={headerContent}
       onOpenChange={onOpenChange}
       open={open}
       size={size}

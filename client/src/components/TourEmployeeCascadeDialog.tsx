@@ -10,6 +10,7 @@ interface TourEmployeeCascadeDialogProps {
   open: boolean;
   variant?: "week" | "appointment";
   mode?: "add" | "remove";
+  employeeId?: number | string;
   employeeName?: string;
   title?: string;
   description?: string;

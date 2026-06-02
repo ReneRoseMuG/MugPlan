@@ -52,6 +52,12 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
 vi.mock("@/components/calendar/CalendarWeekNotesButton", () => ({
   CalendarWeekNotesButton: ({ children }: { children: (props: { dialog: React.ReactNode; openDialog: () => void }) => React.ReactNode }) => (
     <>
@@ -178,6 +184,9 @@ describe("TourWeekPlanningView render", () => {
     expect(html).toContain("tour-week-planning-card-41-2099-6-date-hidden");
     expect(html).toContain("button-tour-week-planning-add-41-2099-6");
     expect(html).toContain("button-tour-week-planning-apply-41-2099-6");
+    expect(html).toContain("Mitarbeiter zur Wochenplanung hinzufügen");
+    expect(html).toContain("Wochenplanung auf Termine anwenden");
+    expect(html).toContain("Keine Mitarbeiter zum Anwenden geplant");
     expect(html).toContain("Wochenplanung blockieren");
     expect(employeePickerCalls).toHaveLength(1);
     expect(employeePickerCalls[0]).toMatchObject({

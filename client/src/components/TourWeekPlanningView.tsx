@@ -9,6 +9,7 @@ import { EmployeePickerDialogList } from "@/components/EmployeePickerDialogList"
 import { TourWeekCard, type TourWeekCardData, type TourWeekCardMember } from "@/components/TourWeekCard";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatListDateRange } from "@/lib/list-display-format";
 import { getReadableNoteTextColors } from "@/lib/note-colors";
 import { useToast } from "@/hooks/use-toast";
@@ -390,39 +391,55 @@ export function TourWeekPlanningView({
                             actions={(
                               <>
                                 {!readOnly && !cell.isLocked && !cell.isBlocked ? (
-                                  <button
-                                    type="button"
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      setPendingWeekSelection({ tourId: cell.tourId, isoYear: cell.isoYear, isoWeek: cell.isoWeek });
-                                    }}
-                                    disabled={isBusy}
-                                    aria-label="Mitarbeiter zur KW hinzufügen"
-                                    data-testid={`button-tour-week-planning-add-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
-                                  >
-                                    +
-                                  </button>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex">
+                                        <button
+                                          type="button"
+                                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm font-bold text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            setPendingWeekSelection({ tourId: cell.tourId, isoYear: cell.isoYear, isoWeek: cell.isoWeek });
+                                          }}
+                                          disabled={isBusy}
+                                          aria-label="Mitarbeiter zur KW hinzufügen"
+                                          data-testid={`button-tour-week-planning-add-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
+                                        >
+                                          +
+                                        </button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Mitarbeiter zur Wochenplanung hinzufügen</TooltipContent>
+                                  </Tooltip>
                                 ) : null}
                                 {!readOnly && !cell.isLocked && !cell.isBlocked ? (
-                                  <button
-                                    type="button"
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
-                                    onClick={(event) => {
-                                      event.stopPropagation();
-                                      void onApplyWeekEmployees?.({
-                                        tourId: cell.tourId,
-                                        isoYear: cell.isoYear,
-                                        isoWeek: cell.isoWeek,
-                                        employeeIds: cell.employees.map((employee) => employee.employeeId),
-                                      });
-                                    }}
-                                    disabled={isBusy || cell.employees.length === 0}
-                                    aria-label="Tour-KW-Planung auf Termine anwenden"
-                                    data-testid={`button-tour-week-planning-apply-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
-                                  >
-                                    <ListChecks className="h-4 w-4" />
-                                  </button>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="inline-flex">
+                                        <button
+                                          type="button"
+                                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            void onApplyWeekEmployees?.({
+                                              tourId: cell.tourId,
+                                              isoYear: cell.isoYear,
+                                              isoWeek: cell.isoWeek,
+                                              employeeIds: cell.employees.map((employee) => employee.employeeId),
+                                            });
+                                          }}
+                                          disabled={isBusy || cell.employees.length === 0}
+                                          aria-label="Tour-KW-Planung auf Termine anwenden"
+                                          data-testid={`button-tour-week-planning-apply-${cell.tourId}-${cell.isoYear}-${cell.isoWeek}`}
+                                        >
+                                          <ListChecks className="h-4 w-4" />
+                                        </button>
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      {cell.employees.length === 0 ? "Keine Mitarbeiter zum Anwenden geplant" : "Wochenplanung auf Termine anwenden"}
+                                    </TooltipContent>
+                                  </Tooltip>
                                 ) : null}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -517,7 +534,7 @@ export function TourWeekPlanningView({
       </div>
 
       <Dialog open={!readOnly && pendingWeekSelection !== null} onOpenChange={(open) => { if (!open) setPendingWeekSelection(null); }}>
-        <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+        <DialogContent hideClose className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
             teams={[] as Team[]}

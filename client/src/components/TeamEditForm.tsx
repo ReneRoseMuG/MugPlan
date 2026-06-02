@@ -214,7 +214,7 @@ export function TeamEditForm({
         </div>
 
         <Dialog open={employeePickerOpen} onOpenChange={setEmployeePickerOpen}>
-          <DialogContent className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
+          <DialogContent hideClose className="h-[100dvh] w-[100dvw] max-w-none overflow-hidden rounded-none p-0 sm:h-[85vh] sm:w-[95vw] sm:max-w-5xl sm:rounded-lg">
             <EmployeePickerDialogList
               employees={availableEmployees}
               teams={[]}

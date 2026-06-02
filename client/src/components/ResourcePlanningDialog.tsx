@@ -9,6 +9,7 @@ import {
   type DialogBaseStep,
   MutationPreviewDialogBase,
 } from "@/components/ui/dialog-base";
+import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 
 export type WeekResourcePreviewItem = {
   appointmentId: number;
@@ -41,6 +42,7 @@ interface ResourcePlanningDialogProps {
   open: boolean;
   variant?: ResourcePlanningDialogVariant;
   mode?: "add" | "remove";
+  employeeId?: number | string;
   employeeName?: string;
   title?: string;
   description?: string;
@@ -71,22 +73,33 @@ function formatShortDate(dateValue: string): string {
   return `${day}.${month}.${year.slice(-2)}`;
 }
 
-function buildWeekTitle(props: ResourcePlanningDialogProps): string {
-  if (props.title) return props.title;
-  if (props.mode === "remove") return "Mitarbeiter abziehen";
-  return "Mitarbeiter einplanen";
+function getWeekOperationCount(props: ResourcePlanningDialogProps): number {
+  return Math.max(props.steps?.length ?? 1, 1);
 }
 
-function buildWeekDescription(props: ResourcePlanningDialogProps): string {
-  if (props.description) return props.description;
-  if (props.mode === "remove") {
-    return props.employeeName
-      ? `${props.employeeName}: Termine zum Abziehen auswählen, bestätigen oder abbrechen.`
-      : "Termine zum Abziehen auswählen, bestätigen oder abbrechen.";
-  }
-  return props.employeeName
-    ? `${props.employeeName}: Termine auswählen, bestätigen oder abbrechen.`
-    : "Termine auswählen, bestätigen oder abbrechen.";
+function getActiveWeekOperationIndex(steps: DialogBaseStep[] | undefined): number {
+  if (!steps?.length) return 0;
+  const activeIndex = steps.findIndex((step) => step.state === "active");
+  if (activeIndex >= 0) return activeIndex;
+  const errorIndex = steps.findIndex((step) => step.state === "error");
+  if (errorIndex >= 0) return errorIndex;
+  return 0;
+}
+
+function buildWeekTitle(props: ResourcePlanningDialogProps): string {
+  const action = props.mode === "remove" ? "aus Wochenplanung entfernen" : "in Wochenplanung aufnehmen";
+  const prefix = getWeekOperationCount(props) > 1 ? "Mehrere Mitarbeiter" : "Mitarbeiter";
+  if (props.weekLabel) return `${prefix} für ${props.weekLabel} ${action}`;
+  if (props.title) return props.title;
+  return `${prefix} ${action}`;
+}
+
+function buildWeekConfirmLabel(props: ResourcePlanningDialogProps): string {
+  if (props.confirmLabel === "Offene Schritte erneut ausführen") return props.confirmLabel;
+  const operationCount = getWeekOperationCount(props);
+  if (operationCount <= 1) return "Entscheidung bestätigen";
+  const activeIndex = getActiveWeekOperationIndex(props.steps);
+  return activeIndex < operationCount - 1 ? "Nächster Mitarbeiter" : "Alle Entscheidungen bestätigen";
 }
 
 function weekStatusLabel(item: WeekResourcePreviewItem): string | null {
@@ -120,24 +133,6 @@ function appointmentGroupTitle(source: AppointmentResourceDialogPreviewItem["sou
   }
   if (source === "current") return "Bereits direkt am Termin";
   return "Tour-KW-Mitarbeiter";
-}
-
-function buildRangeLabel(items: WeekResourcePreviewItem[]): string | null {
-  if (items.length === 0) return null;
-  let minDate = items[0].startDate;
-  let maxDate = items[0].endDate ?? items[0].startDate;
-
-  for (const item of items) {
-    const endDate = item.endDate ?? item.startDate;
-    if (item.startDate < minDate) minDate = item.startDate;
-    if (endDate > maxDate) maxDate = endDate;
-  }
-
-  const itemLabel = items.length === 1 ? "1 Termin" : `${items.length} Termine`;
-  if (minDate === maxDate) {
-    return `${itemLabel}, ${formatShortDate(minDate)}`;
-  }
-  return `${itemLabel}, ${formatShortDate(minDate)} bis ${formatShortDate(maxDate)}`;
 }
 
 export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
@@ -184,7 +179,52 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       .map((item) => item.employeeId);
   }, [appointmentPreviewItems, variant, weekPreviewItems]);
 
-  const weekRangeLabel = variant === "week" ? buildRangeLabel(weekPreviewItems) : null;
+  const weekOperationCount = variant === "week" ? getWeekOperationCount(props) : 1;
+  const activeWeekOperationIndex = variant === "week" ? getActiveWeekOperationIndex(props.steps) : 0;
+  const selectionControls = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setSelectedIds(allSelectableIds)}
+        disabled={props.isSubmitting}
+        data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
+      >
+        Alle wählen
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setSelectedIds([])}
+        disabled={props.isSubmitting}
+        data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
+      >
+        Alle abwählen
+      </Button>
+    </div>
+  );
+  const weekHeaderContent = variant === "week" && props.employeeName ? (
+    <div className="flex min-w-0 items-center justify-center gap-2" data-testid="header-tour-employee-cascade-employee">
+      {weekOperationCount > 1 ? (
+        <span
+          className="inline-flex h-7 min-w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+          data-testid="text-tour-employee-cascade-position"
+        >
+          {activeWeekOperationIndex + 1}/{weekOperationCount}
+        </span>
+      ) : null}
+      <EmployeeInfoBadge
+        id={props.employeeId}
+        fullName={props.employeeName}
+        size="sm"
+        showPreview={false}
+        testId="badge-tour-employee-cascade-employee"
+      />
+    </div>
+  ) : undefined;
+  const primaryConfirmLabel = variant === "week"
+    ? buildWeekConfirmLabel(props)
+    : props.confirmLabel ?? "Bestätigen";
   const footer = (
     <DialogBaseFooter
       secondaryAction={{
@@ -193,7 +233,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
         disabled: props.isSubmitting,
       }}
       primaryAction={{
-        label: props.confirmLabel ?? "Bestätigen",
+        label: primaryConfirmLabel,
         pendingLabel: "Speichern...",
         onClick: props.onConfirm,
         isPending: props.isSubmitting,
@@ -210,10 +250,11 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       }}
       closeDisabled={props.isSubmitting}
       title={variant === "week" ? buildWeekTitle(props) : props.title}
-      description={variant === "week" ? buildWeekDescription(props) : props.description}
+      description={variant === "week" ? undefined : props.description}
+      headerContent={weekHeaderContent}
       size="xl"
-      steps={props.steps}
-      summary={props.summary}
+      steps={variant === "week" ? undefined : props.steps}
+      summary={variant === "week" ? undefined : props.summary}
       error={props.error}
       footer={footer}
       testId={props.testId ?? "dialog-tour-employee-cascade"}
@@ -225,12 +266,6 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             title="Status"
             description={props.executionMessage}
           />
-        ) : null}
-
-        {variant === "week" && (props.weekLabel || weekRangeLabel) ? (
-          <p className="text-sm text-slate-500" data-testid="text-tour-employee-cascade-range">
-            {[props.weekLabel, weekRangeLabel].filter(Boolean).join(" | ")}
-          </p>
         ) : null}
 
         {variant === "appointment" && props.showResolutionMode ? (
@@ -267,26 +302,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
           />
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedIds(allSelectableIds)}
-            disabled={props.isSubmitting}
-            data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
-          >
-            Alle wählen
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedIds([])}
-            disabled={props.isSubmitting}
-            data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
-          >
-            Alle abwählen
-          </Button>
-        </div>
+        {variant === "appointment" ? selectionControls : null}
 
         <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {variant === "week" ? (
@@ -407,6 +423,8 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             </div>
           )}
         </div>
+
+        {variant === "week" ? selectionControls : null}
 
         {props.isSubmitting ? (
           <div className="flex items-center gap-2 text-sm text-slate-600">

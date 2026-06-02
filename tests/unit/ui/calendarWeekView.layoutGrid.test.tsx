@@ -133,6 +133,12 @@ vi.mock("@/components/ui/employee-info-badge", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
 import { CalendarWeekAbsenceRow, CalendarWeekView } from "../../../client/src/components/calendar/CalendarWeekView";
 
 function createAppointment(overrides: Partial<CalendarAppointment>): CalendarAppointment {
@@ -568,6 +574,8 @@ describe("CalendarWeekView layout grid regression", () => {
     expect(html).toContain("Mira Plan");
     expect(html).toContain('data-testid="button-add-week-personnel-tour-7"');
     expect(html).toContain('data-testid="button-apply-week-personnel-tour-7"');
+    expect(html).toContain("Mitarbeiter zur Wochenplanung hinzufügen");
+    expect(html).toContain("Wochenplanung auf Termine anwenden");
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-unassigned"');
     expect(html).not.toContain('data-testid="button-apply-week-personnel-tour-unassigned"');
     expect(html).not.toContain('data-testid="button-add-week-personnel-tour-8"');

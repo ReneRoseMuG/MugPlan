@@ -210,7 +210,7 @@ export function EmployeePickerDialogList({
       viewModeKey="employeePickerDialog"
       isLoading={isLoading}
       onClose={onClose}
-      showCloseButton={false}
+      showCloseButton
       contentClassName="min-h-0 overflow-hidden"
       viewModeToggle={isMultipleSelection ? (
         <ToggleGroup

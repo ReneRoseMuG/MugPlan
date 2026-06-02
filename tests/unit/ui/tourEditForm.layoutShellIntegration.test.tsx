@@ -82,6 +82,12 @@ vi.mock("@/components/ui/employee-info-badge", () => ({
   EmployeeInfoBadge: ({ testId }: { testId?: string }) => <div data-testid={testId}>member</div>,
 }));
 
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+}));
+
 vi.mock("@/components/AppointmentsListPage", () => ({
   AppointmentsListPage: ({ emptyStateOverride }: { emptyStateOverride?: React.ReactNode }) => (
     <section data-testid="tour-appointments-list-marker">
@@ -296,6 +302,8 @@ describe("FT04 tour form shell layout integration", () => {
     expect(markup).toContain("card-tour-week-2099-6");
     expect(markup).toContain("button-add-tour-week-member-2099-6");
     expect(markup).toContain("button-apply-tour-week-member-2099-6");
+    expect(markup).toContain("Mitarbeiter zur Wochenplanung hinzufügen");
+    expect(markup).toContain("Wochenplanung auf Termine anwenden");
     expect(markup).toContain("badge-tour-week-member-301");
     expect(markup).toContain("text-tour-week-dialog-title");
     expect(markup).toContain("text-tour-week-dialog-year");
@@ -407,6 +415,7 @@ describe("FT04 tour form shell layout integration", () => {
 
     expect(markup).toContain("button-apply-tour-week-member-2099-8");
     expect(markup).toMatch(/<button(?=[^>]*data-testid="button-apply-tour-week-member-2099-8")(?=[^>]*disabled)/);
+    expect(markup).toContain("Keine Mitarbeiter zum Anwenden geplant");
   });
 
   it("shows the corrected blocked week notice in edit mode", () => {

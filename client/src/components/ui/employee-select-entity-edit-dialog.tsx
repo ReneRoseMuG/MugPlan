@@ -86,7 +86,7 @@ export function EmployeeSelectEntityEditDialog({
       </div>
 
       <Dialog open={selectionDialogOpen} onOpenChange={setSelectionDialogOpen}>
-        <DialogContent className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
+        <DialogContent hideClose className="w-[100dvw] h-[100dvh] max-w-none p-0 overflow-hidden rounded-none sm:w-[95vw] sm:h-[85vh] sm:max-w-5xl sm:rounded-lg">
           <EmployeePickerDialogList
             employees={availableEmployees}
             teams={[]}

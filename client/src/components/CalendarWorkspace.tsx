@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
@@ -15,7 +15,7 @@ import {
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { TourEmployeeCascadeDialog } from "@/components/TourEmployeeCascadeDialog";
+import { AppointmentMoveDialog, type AppointmentMoveDialogContext } from "@/components/AppointmentMoveDialog";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
@@ -29,19 +29,13 @@ import {
   formatCalendarMoveDate,
   getCalendarMoveSelectionTitle,
   getDefaultPreviewSelection,
+  isCalendarMoveSameTourAndWeek,
   isRegularCalendarMoveTarget,
-  resolveCalendarMoveEmployeeCarryoverMode,
-  shouldShowCalendarMoveResolutionMode,
   type AppointmentWeekEmployeePreviewResponse,
-  type CalendarMoveEmployeeCarryoverMode,
   type CalendarMoveRequest,
   type CalendarMoveSelection,
 } from "@/lib/calendar-move";
-import {
-  getDefaultResourceResolutionMode,
-  hasCurrentEmployeeRemovals,
-  type AppointmentResourceResolutionMode,
-} from "@/lib/resource-planning";
+import { hasResourcePreviewDecision } from "@/lib/resource-planning";
 import type { WeekViewRestoreRequest } from "@/pages/Home";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
@@ -52,10 +46,7 @@ type PendingCalendarMove = {
   targetEndDate: string | null;
   preview: AppointmentWeekEmployeePreviewResponse;
   selectedIds: number[];
-  resolutionMode: AppointmentResourceResolutionMode;
-  employeeCarryoverMode: CalendarMoveEmployeeCarryoverMode;
-  showResolutionMode: boolean;
-  resolutionNotice: string | null;
+  moveContext: AppointmentMoveDialogContext;
 };
 
 type OpenAppointmentContext = {
@@ -68,8 +59,10 @@ type OpenAppointmentContext = {
   weekScrollTop?: number | null;
 };
 
-const FIXED_REPLACE_RESOURCE_NOTICE =
-  "Vorhandene Termin-Mitarbeiter werden entfernt. Übernommen werden nur die ausgewählten Mitarbeiter aus der Ziel-KW.";
+function buildMoveWeekKey(dateValue: string): string {
+  const d = parseISO(dateValue);
+  return `${getISOWeekYear(d)}-${String(getISOWeek(d)).padStart(2, "0")}`;
+}
 
 interface CalendarWorkspaceProps {
   mode: "global" | "contextual";
@@ -378,7 +371,7 @@ export function CalendarWorkspace({
   const fetchCalendarMovePreview = async (
     request: CalendarMoveRequest,
     targetEndDate: string | null,
-    employeeCarryoverMode: CalendarMoveEmployeeCarryoverMode,
+    employeeCarryoverMode: "preserve" | "replace",
   ): Promise<AppointmentWeekEmployeePreviewResponse> => {
     const response = await fetch(`/api/appointments/${request.appointment.id}/tour-change-preview`, {
       method: "POST",
@@ -486,21 +479,30 @@ export function CalendarWorkspace({
       return;
     }
 
+    // Same tour and same week: move silently, no dialog needed
+    if (isCalendarMoveSameTourAndWeek(request)) {
+      await executeCalendarMove(request, targetEndDate, request.appointment.employeeIds);
+      return;
+    }
+
     try {
-      const employeeCarryoverMode = resolveCalendarMoveEmployeeCarryoverMode(request);
-      const preview = await fetchCalendarMovePreview(request, targetEndDate, employeeCarryoverMode);
-      const showResolutionMode = shouldShowCalendarMoveResolutionMode(preview, request, employeeCarryoverMode);
+      const preview = await fetchCalendarMovePreview(request, targetEndDate, "replace");
+
+      // No employees affected and no week plan to add from: move silently
+      if (!hasResourcePreviewDecision(preview)) {
+        const employeeIds = buildEmployeeIdsFromPreviewSelection(preview, [], "replace");
+        await executeCalendarMove(request, targetEndDate, employeeIds);
+        return;
+      }
+
+      const tourChanged = request.appointment.tourId !== request.targetTourId;
+      const weekChanged = buildMoveWeekKey(request.appointment.startDate) !== buildMoveWeekKey(request.targetStartDate);
       setPendingCalendarMove({
         request,
         targetEndDate,
         preview,
         selectedIds: getDefaultPreviewSelection(preview),
-        resolutionMode: getDefaultResourceResolutionMode(employeeCarryoverMode),
-        employeeCarryoverMode,
-        showResolutionMode,
-        resolutionNotice: !showResolutionMode && employeeCarryoverMode === "replace" && hasCurrentEmployeeRemovals(preview)
-          ? FIXED_REPLACE_RESOURCE_NOTICE
-          : null,
+        moveContext: { tourChanged, weekChanged, isCalendarMove: true },
       });
     } catch (error) {
       toast({
@@ -516,7 +518,7 @@ export function CalendarWorkspace({
     const employeeIds = buildEmployeeIdsFromPreviewSelection(
       pendingCalendarMove.preview,
       pendingCalendarMove.selectedIds,
-      pendingCalendarMove.resolutionMode,
+      "replace",
     );
     await executeCalendarMove(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
   };
@@ -745,30 +747,17 @@ export function CalendarWorkspace({
         </div>
       )}
       {pendingCalendarMove ? (
-        <TourEmployeeCascadeDialog
-          variant="appointment"
+        <AppointmentMoveDialog
           open
-          title="Termin verschieben"
-          description="Prüfen Sie vor dem Verschieben, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen."
-          previewItems={pendingCalendarMove.preview.items}
+          preview={pendingCalendarMove.preview}
+          moveContext={pendingCalendarMove.moveContext}
           selectedIds={pendingCalendarMove.selectedIds}
-          resolutionMode={pendingCalendarMove.resolutionMode}
-          showResolutionMode={pendingCalendarMove.showResolutionMode}
-          resolutionNotice={pendingCalendarMove.resolutionNotice}
-          isSubmitting={isCalendarMoveSubmitting}
-          confirmLabel="Termin verschieben"
           onSelectedIdsChange={(selectedIds) => {
             setPendingCalendarMove((current) => current ? { ...current, selectedIds } : current);
           }}
-          onResolutionModeChange={(resolutionMode) => {
-            setPendingCalendarMove((current) => current ? { ...current, resolutionMode } : current);
-          }}
-          onConfirm={() => {
-            void confirmPendingCalendarMove();
-          }}
-          onClose={() => {
-            if (!isCalendarMoveSubmitting) setPendingCalendarMove(null);
-          }}
+          isSubmitting={isCalendarMoveSubmitting}
+          onConfirm={() => { void confirmPendingCalendarMove(); }}
+          onClose={() => { if (!isCalendarMoveSubmitting) setPendingCalendarMove(null); }}
         />
       ) : null}
     </div>

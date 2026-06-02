@@ -2,10 +2,10 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Der Kaskadendialog zeigt fuer Hinzufuegen und Abziehen unterschiedliche sichtbare Texte.
- * - Der Header zeigt Terminanzahl und Zeitraum aller Vorschautermine.
+ * - Der Kaskadendialog zeigt fuer Hinzufuegen und Abziehen die neue KW-Titelcopy.
+ * - Der Header zeigt das aktuelle Mitarbeiter-Badge und bei mehreren Mitarbeitern die Position.
  * - Vorschauzeilen zeigen Kurzdatum, Projektkontext, optionalen Kundenkontext und Konflikthinweise.
- * - Die Sammelaktionen "Alle waehlen" und "Alle abwaehlen" sind sichtbar verdrahtet.
+ * - Die Sammelaktionen "Alle waehlen" und "Alle abwaehlen" stehen unter der Terminliste und sind sichtbar verdrahtet.
  *
  * Fehlerfaelle:
  * - Der Dialog faellt auf generische Copy zurueck.
@@ -28,6 +28,12 @@ vi.mock("@/components/ui/button", () => ({
 vi.mock("@/components/ui/checkbox", () => ({
   Checkbox: ({ checked, disabled, ...props }: { checked?: boolean; disabled?: boolean; [key: string]: unknown }) => (
     <input type="checkbox" checked={checked} disabled={disabled} readOnly {...props} />
+  ),
+}));
+
+vi.mock("@/components/ui/employee-info-badge", () => ({
+  EmployeeInfoBadge: ({ fullName, testId }: { fullName?: string; testId?: string }) => (
+    <span data-testid={testId}>{fullName}</span>
   ),
 }));
 
@@ -76,12 +82,14 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     vi.stubGlobal("React", React);
   });
 
-  it("renders add mode with sharpened copy, range summary and contextual preview rows", () => {
+  it("renders add mode with the KW title, header badge and contextual preview rows", () => {
     const html = renderToStaticMarkup(
       <TourEmployeeCascadeDialog
         open
         mode="add"
+        employeeId={7}
         employeeName="Mia Muster"
+        weekLabel="KW 06 / 2099"
         previewItems={basePreviewItems}
         selectedAppointmentIds={[41]}
         isSubmitting={false}
@@ -91,10 +99,13 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter einplanen");
-    expect(html).toContain("Termine auswählen, bestätigen oder abbrechen");
+    expect(html).toContain("Mitarbeiter für KW 06 / 2099 in Wochenplanung aufnehmen");
+    expect(html).toContain('data-testid="badge-tour-employee-cascade-employee"');
     expect(html).toContain("Mia Muster");
-    expect(html).toContain("2 Termine, 03.02.99 bis 10.02.99");
+    expect(html).not.toContain("Termine auswählen");
+    expect(html).not.toContain("2 Termine, 03.02.99 bis 10.02.99");
+    expect(html).not.toContain("Entscheidungsschritt");
+    expect(html).not.toContain("text-tour-employee-cascade-range");
     expect(html).toContain("03.02.99");
     expect(html).toContain("bis 05.02.99");
     expect(html).toContain("A-100 - Projekt Nord");
@@ -102,8 +113,10 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Projekt Sued");
     expect(html).toContain("Überschneidung mit bestehendem Termin");
     expect(html).toContain("button-tour-employee-cascade-confirm");
+    expect(html).toContain("Entscheidung bestätigen");
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");
+    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(html.indexOf("button-tour-cascade-select-all"));
     expect(html).not.toContain("input-tour-cascade-date-from");
     expect(html).not.toContain("input-tour-cascade-date-to");
   });
@@ -113,7 +126,9 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       <TourEmployeeCascadeDialog
         open
         mode="remove"
+        employeeId={7}
         employeeName="Mia Muster"
+        weekLabel="KW 06 / 2099"
         previewItems={[basePreviewItems[0]]}
         selectedAppointmentIds={[41]}
         isSubmitting={false}
@@ -123,11 +138,67 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter abziehen");
-    expect(html).toContain("Mia Muster: Termine zum Abziehen auswählen, bestätigen oder abbrechen");
-    expect(html).toContain("1 Termin, 03.02.99 bis 05.02.99");
+    expect(html).toContain("Mitarbeiter für KW 06 / 2099 aus Wochenplanung entfernen");
+    expect(html).toContain('data-testid="badge-tour-employee-cascade-employee"');
+    expect(html).toContain("Mia Muster");
+    expect(html).not.toContain("Mia Muster: Termine zum Abziehen auswählen");
+    expect(html).not.toContain("1 Termin, 03.02.99 bis 05.02.99");
+    expect(html).toContain("Entscheidung bestätigen");
     expect(html).toContain("button-tour-cascade-select-all");
     expect(html).toContain("button-tour-cascade-deselect-all");
+  });
+
+  it("renders multi-employee progress and dedicated navigation labels", () => {
+    const firstStepHtml = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeId={7}
+        employeeName="Mia Muster"
+        weekLabel="KW 06 / 2099"
+        previewItems={basePreviewItems}
+        selectedAppointmentIds={[41]}
+        steps={[
+          { id: "employee-7", title: "Mia Muster", state: "active" },
+          { id: "employee-8", title: "Max Muster", state: "pending" },
+          { id: "employee-9", title: "Mona Muster", state: "pending" },
+        ]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(firstStepHtml).toContain("Mehrere Mitarbeiter für KW 06 / 2099 in Wochenplanung aufnehmen");
+    expect(firstStepHtml).toContain("1/3");
+    expect(firstStepHtml).toContain("Nächster Mitarbeiter");
+    expect(firstStepHtml).not.toContain("Alle Entscheidungen bestätigen");
+
+    const lastStepHtml = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeId={9}
+        employeeName="Mona Muster"
+        weekLabel="KW 06 / 2099"
+        previewItems={basePreviewItems}
+        selectedAppointmentIds={[41]}
+        steps={[
+          { id: "employee-7", title: "Mia Muster", state: "complete" },
+          { id: "employee-8", title: "Max Muster", state: "complete" },
+          { id: "employee-9", title: "Mona Muster", state: "active" },
+        ]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(lastStepHtml).toContain("3/3");
+    expect(lastStepHtml).toContain("Alle Entscheidungen bestätigen");
+    expect(lastStepHtml).not.toContain("Nächster Mitarbeiter");
   });
 
   it("groups appointment assignment candidates by week plan and conflict-free remainder", () => {
