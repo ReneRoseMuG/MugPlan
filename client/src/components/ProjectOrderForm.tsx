@@ -207,12 +207,14 @@ export function ProjectProductFields({
       ? products.find((p) => String(p.id) === currentValue)?.categoryId
       : undefined;
     const resolvedCategoryId = componentCategoryId ?? productCategoryId;
+    const isWindowField = fieldKey === "window";
 
     return (
       <div
         key={field.key}
         className="space-y-2"
         data-testid={`project-product-field-${field.key}`}
+        title={isWindowField ? "Fenster werden nicht als separater Artikel geführt" : undefined}
       >
         <Label htmlFor={`project-product-${field.key}`}>{field.label}</Label>
         <div className="flex items-center gap-2">
@@ -222,7 +224,7 @@ export function ProjectProductFields({
             onChange={(e) => {
               onSelectField(field.key, e.target.value);
             }}
-            disabled={readOnly}
+            disabled={readOnly || isWindowField}
             className="h-10 min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 text-sm"
             data-testid={`select-project-product-${field.key}`}
           >
@@ -231,7 +233,7 @@ export function ProjectProductFields({
               <option key={item.value} value={item.value}>{item.label}</option>
             ))}
           </select>
-          {isAdmin && !readOnly ? (
+          {isAdmin && !readOnly && !isWindowField ? (
             <Button
               type="button"
               variant="outline"

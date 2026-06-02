@@ -68,7 +68,8 @@ describe("project save review logic", () => {
     });
 
     expect(missingLabels).toContain(PROJECT_PRODUCT_FIELDS.find((field) => field.key === "saunaModel")?.label);
-    expect(missingLabels.length).toBe(PROJECT_PRODUCT_FIELDS.length);
+    expect(missingLabels).not.toContain(PROJECT_PRODUCT_FIELDS.find((field) => field.key === "window")?.label);
+    expect(missingLabels.length).toBe(PROJECT_PRODUCT_FIELDS.filter((field) => field.key !== "window").length);
   });
 
   it("reports missing selections after the article list was touched and cleared", () => {
@@ -81,7 +82,8 @@ describe("project save review logic", () => {
       extractedArticleListHtml: "",
     });
 
-    expect(missingLabels.length).toBe(PROJECT_PRODUCT_FIELDS.length);
+    expect(missingLabels).not.toContain(PROJECT_PRODUCT_FIELDS.find((field) => field.key === "window")?.label);
+    expect(missingLabels.length).toBe(PROJECT_PRODUCT_FIELDS.filter((field) => field.key !== "window").length);
   });
 
   it("suggests the sauna model as project title only for differing titles", () => {

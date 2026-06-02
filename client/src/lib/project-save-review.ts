@@ -53,6 +53,7 @@ export function collectMissingProjectArticleLabels(input: MissingArticleSelectio
   const missingLabels: string[] = [];
 
   for (const field of PROJECT_PRODUCT_FIELDS) {
+    if (field.key === "window") continue;
     const selection = input.productSelections[field.key];
     if (!hasRequiredSelectionValue(selection, field.source)) {
       missingLabels.push(field.label);
