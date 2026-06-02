@@ -7,7 +7,22 @@
       "Bash(node -e \"require\\(''''./server/config/runtimeEnv''''\\)\")",
       "Bash(npm run:*)",
       "Bash(grep -l \"EntityFormShell\\\\|entity-form-shell\\\\|create.*calendar\\\\|calendar.*create\\\\|Termin.*anleg\\\\|anleg.*Termin\" tests/e2e-browser/*.spec.ts)",
-      "mcp__projekt-manager__get_task"
+      "mcp__projekt-manager__get_task",
+      "mcp__projekt-manager__get_milestone",
+      "mcp__projekt-manager__resolve_reference",
+      "mcp__projekt-manager__list_milestones",
+      "mcp__projekt-manager__list_projects",
+      "mcp__projekt-manager__list_tasks_for_parent",
+      "mcp__projekt-manager__list_tickets_for_parent",
+      "Bash(ls \"C:\\\\Users\\\\r.rose\\\\AppData\\\\Roaming\\\\Projekt Manager\")",
+      "Bash(ls \"C:\\\\Users\\\\r.rose\\\\.claude\")",
+      "Bash(node -e \"const s = require\\('fs'\\).readFileSync\\('C:/Users/r.rose/.claude/settings.json','utf8'\\); const j = JSON.parse\\(s\\); const mcp = j.mcpServers; if\\(mcp\\) { Object.entries\\(mcp\\).forEach\\(\\([k,v]\\) => { console.log\\(k, JSON.stringify\\({url:v.url, type:v.type, headers: v.headers ? Object.keys\\(v.headers\\) : undefined}\\)\\); }\\); }\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3001\")",
+      "Bash(findstr \"LISTENING\")",
+      "Bash(findstr \":3001 \")",
+      "PowerShell($proc = Get-Process -Id 23088 -ErrorAction SilentlyContinue; if\\($proc\\) { $proc | Select-Object Id, ProcessName, @{N='Path';E={$_.MainModule.FileName}}; $wmi = Get-WmiObject Win32_Process -Filter \"ProcessId=23088\"; $wmi.CommandLine })",
+      "PowerShell($proc = Get-WmiObject Win32_Process -Filter \"ProcessId=23088\"; Write-Output \"CommandLine: $\\($proc.CommandLine\\)\"; $parentId = $proc.ParentProcessId; Write-Output \"Parent PID: $parentId\"; $parent = Get-WmiObject Win32_Process -Filter \"ProcessId=$parentId\"; Write-Output \"Parent: $\\($parent.Name\\) - $\\($parent.CommandLine\\)\")"
     ]
   }
 }
