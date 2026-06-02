@@ -8,7 +8,6 @@ import { WeekGrid } from "@/components/WeekGrid";
 import {
   getNextMonthWindowStart,
   getPreviousMonthWindowStart,
-  MONTH_SHEET_WINDOW_WEEK_COUNT,
   normalizeMonthWindowStart,
   parseMonthWindowStart,
 } from "@/components/calendar/monthSheetModel";
@@ -343,18 +342,6 @@ export function CalendarWorkspace({
     onDateChange(subWeeks(currentDate, 1));
   };
 
-  const nextWeekWindow = () => {
-    setJumpBackDate(null);
-    setKwJumpError(false);
-    onDateChange(addWeeks(normalizeMonthWindowStart(currentDate), 1));
-  };
-
-  const prevWeekWindow = () => {
-    setJumpBackDate(null);
-    setKwJumpError(false);
-    onDateChange(subWeeks(normalizeMonthWindowStart(currentDate), 1));
-  };
-
   const buildTargetEndDate = (appointment: CalendarMoveSelection, targetStartDate: string) => {
     if (!appointment.endDate) return null;
     const durationDays = differenceInCalendarDays(parseISO(appointment.endDate), parseISO(appointment.startDate));
@@ -610,11 +597,8 @@ export function CalendarWorkspace({
           <MonthSheetGrid
             currentDate={currentDate}
             employeeFilterId={employeeFilterId}
-            visibleWeekCount={MONTH_SHEET_WINDOW_WEEK_COUNT}
             showMonthHeader
             headerAction={calendarAbsenceModeToggle}
-            onPreviousWeek={prevWeekWindow}
-            onNextWeek={nextWeekWindow}
             readOnly={isReaderCalendarReadOnly || calendarAbsenceMode === "absences"}
             absenceVisibility={calendarAbsenceMode}
             conflictHighlightActive={conflictHighlightActive}
