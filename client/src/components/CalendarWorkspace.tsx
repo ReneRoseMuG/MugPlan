@@ -74,6 +74,7 @@ interface CalendarWorkspaceProps {
   onViewChange: (view: CalendarWorkspaceView) => void;
   onDateChange: (date: Date) => void;
   onOpenAppointmentForm: (ctx: OpenAppointmentContext) => void;
+  onOpenProject?: (projectId: number) => void;
   onBack?: () => void;
   projectId?: number;
   hideMainNavigation?: boolean;
@@ -184,6 +185,7 @@ export function CalendarWorkspace({
   onViewChange,
   onDateChange,
   onOpenAppointmentForm,
+  onOpenProject,
   onBack,
   projectId,
   hideMainNavigation = false,
@@ -585,6 +587,7 @@ export function CalendarWorkspace({
               weekScrollTop: options?.scrollTop ?? null,
             });
           }}
+          onOpenProject={onOpenProject}
           selectedMoveAppointment={selectedMoveAppointment}
           onSelectMoveAppointment={isReaderCalendarReadOnly ? undefined : handleSelectMoveAppointment}
           onRequestMoveAppointment={isReaderCalendarReadOnly ? undefined : requestCalendarMove}
@@ -629,6 +632,7 @@ export function CalendarWorkspace({
                 returnView: activeView,
               });
             }}
+            onOpenProject={onOpenProject}
             selectedMoveAppointment={selectedMoveAppointment}
             onSelectMoveAppointment={isReaderCalendarReadOnly || calendarAbsenceMode === "absences" ? undefined : handleSelectMoveAppointment}
             onRequestMoveAppointment={isReaderCalendarReadOnly || calendarAbsenceMode === "absences" ? undefined : requestCalendarMove}

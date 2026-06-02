@@ -310,6 +310,44 @@ describe("PKG-08 home behavior wiring", () => {
     });
   });
 
+  it("opens a project from the global calendar workspace and returns to the calendar view", async () => {
+    const { Home, setters } = await loadHome({
+      1: fixedDate,
+      2: "week",
+    });
+
+    renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    const onOpenProject = calendarWorkspaceCalls[0].onOpenProject as (projectId: number) => void;
+    onOpenProject(123);
+
+    expect(setters.get(4)).toHaveBeenCalledWith(123);
+    expect(setters.get(8)).toHaveBeenCalledWith("week");
+    expect(setters.get(2)).toHaveBeenCalledWith("project");
+  });
+
+  it("opens a project from the contextual calendar workspace and returns to the contextual calendar", async () => {
+    const { Home, setters } = await loadHome({
+      1: fixedDate,
+      2: "calendarContextual",
+      9: {
+        projectId: 44,
+        activeView: "week",
+        currentDate: fixedDate,
+        returnContext: { targetView: "project", projectId: 44 },
+      },
+    });
+
+    renderToStaticMarkup(<Home onLogout={() => undefined} />);
+
+    const onOpenProject = calendarWorkspaceCalls[0].onOpenProject as (projectId: number) => void;
+    onOpenProject(456);
+
+    expect(setters.get(4)).toHaveBeenCalledWith(456);
+    expect(setters.get(8)).toHaveBeenCalledWith("calendarContextual");
+    expect(setters.get(2)).toHaveBeenCalledWith("project");
+  });
+
   it("renders the appointment overlay and closes it via the overlay save handler", async () => {
     const { Home, setters } = await loadHome({
       1: fixedDate,

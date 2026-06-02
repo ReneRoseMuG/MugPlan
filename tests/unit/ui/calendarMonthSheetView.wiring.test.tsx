@@ -72,8 +72,25 @@ vi.mock("@/lib/calendar-appointments", async () => {
 vi.mock("@/components/calendar/CalendarAppointmentCompactBar", () => ({
   CalendarAppointmentCompactBar: (props: Record<string, unknown>) => {
     compactBarCalls.push(props);
-    return <div data-testid={`appointment-bar-${String((props.appointment as { id?: number })?.id ?? "unknown")}`} />;
+    return (
+      <div data-testid={`appointment-bar-${String((props.appointment as { id?: number })?.id ?? "unknown")}`}>
+        {props.menuSlot as React.ReactNode}
+      </div>
+    );
   },
+}));
+
+vi.mock("@/components/ui/dropdown-menu", () => ({
+  DropdownMenu: ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-dropdown-menu">{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) => <div data-testid="mock-dropdown-content">{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    ...props
+  }: {
+    children?: React.ReactNode;
+    [key: string]: unknown;
+  }) => <button type="button" {...props}>{children}</button>,
 }));
 
 function createAppointment(overrides: Partial<CalendarAppointment>): CalendarAppointment {
@@ -297,6 +314,52 @@ describe("calendar month sheet view wiring", () => {
     );
 
     expect(continuationSegment).toBeTruthy();
+  });
+
+  it("renders the project edit action inside editable month compact bar menus", async () => {
+    configureDefaults(
+      [
+        createAppointment({
+          id: 77,
+          projectId: 123,
+          startDate: "2099-03-02",
+        }),
+      ],
+      [{ id: 7, name: "Alpha", color: "#225588", version: 1 }],
+    );
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const activeMarkup = renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2099-03-15T00:00:00Z")}
+        onOpenProject={() => undefined}
+      />,
+    );
+
+    expect(activeMarkup).toContain('data-testid="month-compact-bar-menu-trigger-77"');
+    expect(activeMarkup).toContain("Projekt Editieren");
+    expect(activeMarkup).toMatch(/<button type="button" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
+
+    configureDefaults(
+      [
+        createAppointment({
+          id: 78,
+          projectId: null,
+          startDate: "2099-03-02",
+        }),
+      ],
+      [{ id: 7, name: "Alpha", color: "#225588", version: 1 }],
+    );
+
+    const disabledMarkup = renderToStaticMarkup(
+      <CalendarMonthSheetView
+        currentDate={new Date("2099-03-15T00:00:00Z")}
+        onOpenProject={() => undefined}
+      />,
+    );
+
+    expect(disabledMarkup).toContain("Projekt Editieren");
+    expect(disabledMarkup).toMatch(/<button type="button" disabled="" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
   });
 
   it("passes the conflict marker into compact bars for monitored appointments", async () => {

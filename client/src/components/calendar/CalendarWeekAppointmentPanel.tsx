@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors } from "lucide-react";
+import { MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors, FolderOpen } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -101,6 +101,7 @@ export function CalendarWeekAppointmentPanel({
   appointment,
   weekTileBodyMode = "semiexpanded",
   onDoubleClick,
+  onOpenProject,
   isDragging,
   isMoveSelected = false,
   onDragStart,
@@ -144,6 +145,7 @@ export function CalendarWeekAppointmentPanel({
   appointment: CalendarAppointment;
   weekTileBodyMode?: "collapsed" | "semiexpanded" | "expanded";
   onDoubleClick?: () => void;
+  onOpenProject?: (projectId: number) => void;
   isDragging?: boolean;
   isMoveSelected?: boolean;
   onDragStart?: (event: React.DragEvent) => void;
@@ -431,6 +433,18 @@ export function CalendarWeekAppointmentPanel({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            onClick={() => {
+              if (appointment.projectId) {
+                onOpenProject?.(appointment.projectId);
+              }
+            }}
+            disabled={!appointment.projectId || !onOpenProject}
+            className="gap-2 text-xs cursor-pointer"
+          >
+            <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+            Projekt Editieren
+          </DropdownMenuItem>
           {onCutAppointment ? (
             <DropdownMenuItem
               onClick={onCutAppointment}

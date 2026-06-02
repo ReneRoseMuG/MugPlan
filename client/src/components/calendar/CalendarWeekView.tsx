@@ -104,6 +104,7 @@ type CalendarWeekViewProps = {
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  onOpenProject?: (projectId: number) => void;
   selectedMoveAppointment?: CalendarMoveSelection | null;
   onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
   onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
@@ -481,6 +482,7 @@ export function CalendarWeekView({
   onVisibleDateChange: _onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
+  onOpenProject,
   selectedMoveAppointment,
   onSelectMoveAppointment,
   onRequestMoveAppointment,
@@ -3192,6 +3194,7 @@ export function CalendarWeekView({
                                     onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
+                                    onOpenProject={onOpenProject}
                                     style={{ width: "100%" }}
                                     isDragging={draggedAppointmentId === appointment.id}
                                     isMoveSelected={selectedMoveAppointment?.id === appointment.id}
@@ -3283,6 +3286,7 @@ export function CalendarWeekView({
                                     onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                     onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                     onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
+                                    onOpenProject={onOpenProject}
                                     projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                     containerRef={isCompactWeekMode
                                       ? undefined
@@ -3395,6 +3399,7 @@ export function CalendarWeekView({
                                         onDeleteInlineNote={canWriteNotes ? handleDeleteInlineNote : undefined}
                                         onAssignAppointmentEmployees={canManageWeekPlanning ? handleAssignAppointmentEmployees : undefined}
                                         onRemoveAppointmentEmployee={canManageWeekPlanning ? handleRemoveAppointmentEmployee : undefined}
+                                        onOpenProject={onOpenProject}
                                           projectStatusAreaRef={(node) => measureProjectStatusHeight(weekKey, node)}
                                           containerRef={isCompactWeekMode
                                             ? undefined

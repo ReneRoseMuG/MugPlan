@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { CSSProperties, DragEvent, MouseEvent, PointerEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors } from "lucide-react";
+import { CalendarDays, CalendarRange, Clock3, MoreVertical, Ban, ParkingCircle, ExternalLink, Trash2, ScrollText, StickyNote, UserPlus, Scissors, FolderOpen } from "lucide-react";
 import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
 import {
   DropdownMenu,
@@ -128,6 +128,7 @@ type CalendarWeekSpanningTileProps = {
   onPointerUp?: (event: PointerEvent) => void;
   onPointerCancel?: (event: PointerEvent) => void;
   onContextMenu?: (event: MouseEvent) => void;
+  onOpenProject?: (projectId: number) => void;
   onTagMutationEvents?: (appointmentId: number, mutationEvents: AppointmentMutationEvent[] | undefined) => void | Promise<void>;
   showInlineNotes?: boolean;
   canManageInlineNotes?: boolean;
@@ -172,6 +173,7 @@ export function CalendarWeekSpanningTile({
   onPointerUp,
   onPointerCancel,
   onContextMenu,
+  onOpenProject,
   onTagMutationEvents,
   showInlineNotes = false,
   canManageInlineNotes = false,
@@ -413,6 +415,18 @@ export function CalendarWeekSpanningTile({
               Termin öffnen
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            onClick={() => {
+              if (appointment.projectId) {
+                onOpenProject?.(appointment.projectId);
+              }
+            }}
+            disabled={!appointment.projectId || !onOpenProject}
+            className="gap-2 text-xs cursor-pointer"
+          >
+            <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+            Projekt Editieren
+          </DropdownMenuItem>
           {onCutAppointment ? (
             <DropdownMenuItem
               onClick={onCutAppointment}

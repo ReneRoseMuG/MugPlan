@@ -107,6 +107,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
   });
 
   it("renders the week grid in week mode and forwards week callbacks with return context", () => {
+    const onOpenProject = vi.fn();
     const markup = renderToStaticMarkup(
       <CalendarWorkspace
         mode="global"
@@ -118,6 +119,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         onViewChange={() => undefined}
         onDateChange={() => undefined}
         onOpenAppointmentForm={openAppointmentFormMock}
+        onOpenProject={onOpenProject}
         projectId={88}
         restoreRequest={{ scrollLeft: 144, scrollTop: 55 }}
         onRestoreApplied={() => undefined}
@@ -135,6 +137,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.selectedMoveAppointment).toBeNull();
     expect(props?.onSelectMoveAppointment).toEqual(expect.any(Function));
     expect(props?.onRequestMoveAppointment).toEqual(expect.any(Function));
+    expect(props?.onOpenProject).toBe(onOpenProject);
     expect(props?.conflictHighlightActive).toBe(false);
     expect(props?.conflictAppointmentMap).toBeInstanceOf(Map);
     expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string; color: string }>).get(91)).toEqual({
@@ -186,6 +189,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
   });
 
   it("renders the month sheet grid in month mode and forwards month callbacks with month return context", () => {
+    const onOpenProject = vi.fn();
     const markup = renderToStaticMarkup(
       <CalendarWorkspace
         mode="global"
@@ -197,6 +201,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
         onViewChange={() => undefined}
         onDateChange={() => undefined}
         onOpenAppointmentForm={openAppointmentFormMock}
+        onOpenProject={onOpenProject}
         projectId={42}
       />,
     );
@@ -214,6 +219,7 @@ describe("FT29 UI: calendar workspace week/month wiring", () => {
     expect(props?.onRequestMoveAppointment).toEqual(expect.any(Function));
     expect(props?.onPreviousWeek).toEqual(expect.any(Function));
     expect(props?.onNextWeek).toEqual(expect.any(Function));
+    expect(props?.onOpenProject).toBe(onOpenProject);
     expect(markup).not.toContain("calendar-absence-mode-toggle");
     expect((props?.conflictAppointmentMap as Map<number, { triggerCode: string }>).get(91)?.triggerCode).toBe("TR-01");
     (props?.onNewAppointment as (date: string) => void)("2099-01-12");

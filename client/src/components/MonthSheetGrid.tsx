@@ -17,6 +17,7 @@ interface MonthSheetGridProps {
   conflictAppointmentMap?: Map<number, MonitoringConflictMeta>;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
+  onOpenProject?: (projectId: number) => void;
   selectedMoveAppointment?: CalendarMoveSelection | null;
   onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
   onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
@@ -37,6 +38,7 @@ export function MonthSheetGrid({
   conflictAppointmentMap = new Map<number, MonitoringConflictMeta>(),
   onNewAppointment,
   onOpenAppointment,
+  onOpenProject,
   selectedMoveAppointment,
   onSelectMoveAppointment,
   onRequestMoveAppointment,
@@ -57,6 +59,7 @@ export function MonthSheetGrid({
       conflictAppointmentMap={conflictAppointmentMap}
       onNewAppointment={onNewAppointment}
       onOpenAppointment={onOpenAppointment}
+      onOpenProject={onOpenProject}
       selectedMoveAppointment={selectedMoveAppointment}
       onSelectMoveAppointment={onSelectMoveAppointment}
       onRequestMoveAppointment={onRequestMoveAppointment}

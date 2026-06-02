@@ -967,6 +967,11 @@ export default function Home({ onLogout }: HomeProps) {
               onBack={() => {
                 applyReturnContext(calendarContext.returnContext);
               }}
+              onOpenProject={(projectId) => {
+                setSelectedProjectId(projectId);
+                setProjectReturnView("calendarContextual");
+                setView("project");
+              }}
               projectId={calendarContext.projectId}
               hideMainNavigation
               restoreRequest={calendarContext.activeView === "week" ? pendingWeekRestore : null}
@@ -996,6 +1001,11 @@ export default function Home({ onLogout }: HomeProps) {
                   weekScrollTop: ctx.weekScrollTop,
                 });
                 setView("appointment");
+              }}
+              onOpenProject={(projectId) => {
+                setSelectedProjectId(projectId);
+                setProjectReturnView(view);
+                setView("project");
               }}
               restoreRequest={view === "week" ? pendingWeekRestore : null}
               onRestoreApplied={handleWeekRestoreApplied}

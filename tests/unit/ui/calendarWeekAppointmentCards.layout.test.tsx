@@ -488,6 +488,60 @@ describe("calendar week appointment card layout", () => {
     expect(html.match(/Termin löschen/g)).toHaveLength(2);
   });
 
+  it("renders the project edit menu action for regular week appointment cards", () => {
+    const onOpenProject = vi.fn();
+
+    const activeHtml = renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={createAppointment()}
+        context="week-calendar"
+        onOpenProject={onOpenProject}
+      />,
+    );
+
+    expect(activeHtml).toContain('week-appointment-menu-trigger-42');
+    expect(activeHtml).toContain("Projekt Editieren");
+    expect(activeHtml).toMatch(/<button type="button" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
+
+    const activeSpanningHtml = renderWithQueryClient(
+      <CalendarWeekSpanningTile
+        appointment={createAppointment()}
+        spanColumns={2}
+        visibleStartDate="2099-03-01"
+        visibleDayNumberStart={1}
+        onOpenProject={onOpenProject}
+      />,
+    );
+
+    expect(activeSpanningHtml).toContain('week-spanning-tile-menu-trigger-42');
+    expect(activeSpanningHtml).toContain("Projekt Editieren");
+    expect(activeSpanningHtml).toMatch(/<button type="button" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
+
+    const disabledHtml = renderWithQueryClient(
+      <CalendarWeekAppointmentPanel
+        appointment={createAppointment({ projectId: null })}
+        context="week-calendar"
+        onOpenProject={onOpenProject}
+      />,
+    );
+
+    expect(disabledHtml).toContain("Projekt Editieren");
+    expect(disabledHtml).toMatch(/<button type="button" disabled="" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
+
+    const disabledSpanningHtml = renderWithQueryClient(
+      <CalendarWeekSpanningTile
+        appointment={createAppointment({ projectId: null })}
+        spanColumns={2}
+        visibleStartDate="2099-03-01"
+        visibleDayNumberStart={1}
+        onOpenProject={onOpenProject}
+      />,
+    );
+
+    expect(disabledSpanningHtml).toContain("Projekt Editieren");
+    expect(disabledSpanningHtml).toMatch(/<button type="button" disabled="" class="gap-2 text-xs cursor-pointer">[\s\S]*?Projekt Editieren/);
+  });
+
   it("renders the cut menu action for editable week appointments on both card types", () => {
     const appointment = createAppointment();
     const onCutAppointment = vi.fn();

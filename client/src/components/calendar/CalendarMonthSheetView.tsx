@@ -64,7 +64,7 @@ import {
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
-import { Ban, ChevronDown, ChevronUp, ExternalLink, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
+import { Ban, ChevronDown, ChevronUp, ExternalLink, FolderOpen, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
@@ -86,6 +86,7 @@ type CalendarMonthSheetViewProps = {
   onNextWeek?: () => void;
   onNewAppointment?: (date: string, options?: { scrollLeft?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null }) => void;
+  onOpenProject?: (projectId: number) => void;
   selectedMoveAppointment?: CalendarMoveSelection | null;
   onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
   onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
@@ -163,6 +164,7 @@ export function CalendarMonthSheetView({
   onNextWeek,
   onNewAppointment,
   onOpenAppointment,
+  onOpenProject,
   selectedMoveAppointment,
   onSelectMoveAppointment,
   onRequestMoveAppointment,
@@ -629,6 +631,7 @@ export function CalendarMonthSheetView({
             }
           }}
           onAppointmentClick={handleAppointmentClick}
+          onOpenProject={onOpenProject}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           buildMoveSelectionPointerHandlers={buildMoveSelectionPointerHandlers}
@@ -713,6 +716,7 @@ function MonthSheetSection({
   onDrop,
   onNewAppointment,
   onAppointmentClick,
+  onOpenProject,
   onDragStart,
   onDragEnd,
   buildMoveSelectionPointerHandlers,
@@ -742,6 +746,7 @@ function MonthSheetSection({
   onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null, targetTourName?: string | null) => Promise<void>;
   onNewAppointment: (dateKey: string) => void;
   onAppointmentClick: (appointmentId: number) => void;
+  onOpenProject?: (projectId: number) => void;
   onDragStart: (event: React.DragEvent, appointmentId: number) => void;
   onDragEnd: () => void;
   buildMoveSelectionPointerHandlers: (
@@ -1091,6 +1096,7 @@ function MonthSheetSection({
                                     ? undefined
                                     : () => onAppointmentClick(appointment.id)
                                 }
+                                onOpenProject={onOpenProject}
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
                                 {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
@@ -1184,6 +1190,7 @@ function MonthCompactBarWithMenu({
   isBlocked = false,
   allowHistoricalActions = false,
   onDoubleClick,
+  onOpenProject,
   onDragStart,
   onDragEnd,
   onPointerDown,
@@ -1203,6 +1210,7 @@ function MonthCompactBarWithMenu({
   isBlocked?: boolean;
   allowHistoricalActions?: boolean;
   onDoubleClick?: () => void;
+  onOpenProject?: (projectId: number) => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
   onPointerDown?: (event: React.PointerEvent) => void;
@@ -1351,6 +1359,18 @@ function MonthCompactBarWithMenu({
             Termin öffnen
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onClick={() => {
+            if (appointment.projectId) {
+              onOpenProject?.(appointment.projectId);
+            }
+          }}
+          disabled={!appointment.projectId || !onOpenProject}
+          className="gap-2 text-xs cursor-pointer"
+        >
+          <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+          Projekt Editieren
+        </DropdownMenuItem>
         {!readOnly && !appointment.isCancelled && (
           <DropdownMenuItem
             onClick={() => setCancelConfirmOpen(true)}

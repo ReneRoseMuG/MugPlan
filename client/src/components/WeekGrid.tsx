@@ -17,6 +17,7 @@ interface WeekGridProps {
   onVisibleDateChange?: (date: Date) => void;
   onNewAppointment?: (date: string, options?: { tourId?: number | null; scrollLeft?: number | null; scrollTop?: number | null }) => void;
   onOpenAppointment?: (appointmentId: number, options?: { scrollLeft?: number | null; scrollTop?: number | null }) => void;
+  onOpenProject?: (projectId: number) => void;
   selectedMoveAppointment?: CalendarMoveSelection | null;
   onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
   onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
@@ -39,6 +40,7 @@ export function WeekGrid({
   onVisibleDateChange,
   onNewAppointment,
   onOpenAppointment,
+  onOpenProject,
   selectedMoveAppointment,
   onSelectMoveAppointment,
   onRequestMoveAppointment,
@@ -62,6 +64,7 @@ export function WeekGrid({
         onVisibleDateChange={onVisibleDateChange}
         onNewAppointment={onNewAppointment}
         onOpenAppointment={onOpenAppointment}
+        onOpenProject={onOpenProject}
         selectedMoveAppointment={selectedMoveAppointment}
         onSelectMoveAppointment={onSelectMoveAppointment}
         onRequestMoveAppointment={onRequestMoveAppointment}
