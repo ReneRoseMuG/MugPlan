@@ -178,29 +178,62 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       .filter((item) => item.selectable)
       .map((item) => item.employeeId);
   }, [appointmentPreviewItems, variant, weekPreviewItems]);
+  const selectableIdSet = useMemo(() => new Set(allSelectableIds), [allSelectableIds]);
+  const selectedSelectableCount = useMemo(
+    () => selectedIds.filter((id) => selectableIdSet.has(id)).length,
+    [selectableIdSet, selectedIds],
+  );
+  const appointmentSelectionSummary = allSelectableIds.length === 0
+    ? "Keine auswählbaren Mitarbeiter"
+    : selectedSelectableCount === 0
+      ? `${allSelectableIds.length} verfügbar, keine ausgewählt`
+      : `${selectedSelectableCount} von ${allSelectableIds.length} ausgewählt`;
 
   const weekOperationCount = variant === "week" ? getWeekOperationCount(props) : 1;
   const activeWeekOperationIndex = variant === "week" ? getActiveWeekOperationIndex(props.steps) : 0;
   const selectionControls = (
-    <div className="flex flex-wrap items-center gap-2">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setSelectedIds(allSelectableIds)}
-        disabled={props.isSubmitting}
-        data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
+    <div
+      className={
+        variant === "appointment"
+          ? "flex flex-col gap-3 rounded-md border bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+          : "flex flex-wrap items-center gap-2"
+      }
+      data-testid={variant === "appointment" ? "appointment-week-selection-toolbar" : undefined}
+    >
+      {variant === "appointment" ? (
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-slate-900">Mitarbeiterauswahl</div>
+          <div className="text-sm text-slate-600" data-testid="appointment-week-selection-summary">
+            {appointmentSelectionSummary}
+          </div>
+        </div>
+      ) : null}
+      <div
+        className={
+          variant === "appointment"
+            ? "flex flex-wrap items-center gap-2 sm:justify-end"
+            : "flex flex-wrap items-center gap-2"
+        }
       >
-        Alle wählen
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setSelectedIds([])}
-        disabled={props.isSubmitting}
-        data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
-      >
-        Alle abwählen
-      </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSelectedIds(allSelectableIds)}
+          disabled={props.isSubmitting || (variant === "appointment" && allSelectableIds.length === 0)}
+          data-testid={variant === "week" ? "button-tour-cascade-select-all" : "button-appointment-week-select-all"}
+        >
+          Alle wählen
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setSelectedIds([])}
+          disabled={props.isSubmitting || (variant === "appointment" && selectedIds.length === 0)}
+          data-testid={variant === "week" ? "button-tour-cascade-deselect-all" : "button-appointment-week-deselect-all"}
+        >
+          Alle abwählen
+        </Button>
+      </div>
     </div>
   );
   const weekHeaderContent = variant === "week" && props.employeeName ? (
@@ -224,7 +257,7 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
   ) : undefined;
   const primaryConfirmLabel = variant === "week"
     ? buildWeekConfirmLabel(props)
-    : props.confirmLabel ?? "Bestätigen";
+    : props.confirmLabel ?? "Auswahl übernehmen";
   const footer = (
     <DialogBaseFooter
       secondaryAction={{
@@ -250,7 +283,6 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       }}
       closeDisabled={props.isSubmitting}
       title={variant === "week" ? buildWeekTitle(props) : props.title}
-      description={variant === "week" ? undefined : props.description}
       headerContent={weekHeaderContent}
       size="xl"
       steps={variant === "week" ? undefined : props.steps}

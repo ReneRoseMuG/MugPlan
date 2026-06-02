@@ -236,6 +236,10 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
 
     expect(html).toContain("Tour-KW-Mitarbeiter");
     expect(html).toContain("Weitere konfliktfreie Mitarbeiter");
+    expect(html).toContain("appointment-week-selection-toolbar");
+    expect(html).toContain("Mitarbeiterauswahl");
+    expect(html).toContain("1 von 2 ausgewählt");
+    expect(html).toContain("Auswahl übernehmen");
     expect(html).toContain("Mia Woche");
     expect(html).toContain("Mia Frei");
     expect(html).toContain("Konfliktfrei zuweisbar");
@@ -243,6 +247,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("appointment-week-preview-group-available");
     expect(html).toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-11")(?=[^>]*checked)/);
     expect(html).not.toMatch(/<input(?=[^>]*data-testid="appointment-week-preview-checkbox-12")(?=[^>]*checked)/);
+    expect(html).not.toContain("Mitarbeiter auswählen");
   });
 
   it("renders a fixed replacement notice without additive/replace controls", () => {
@@ -274,8 +279,12 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     );
 
     expect(html).toContain("Mitarbeiter werden ersetzt");
+    expect(html).toContain("appointment-week-selection-toolbar");
+    expect(html).toContain("Keine auswählbaren Mitarbeiter");
+    expect(html).toContain("Auswahl übernehmen");
     expect(html).toContain("Wird vom Termin entfernt");
     expect(html).not.toContain("button-appointment-week-mode-additive");
     expect(html).not.toContain("button-appointment-week-mode-replace");
+    expect(html).not.toContain("Mitarbeiter prüfen");
   });
 });

@@ -3280,7 +3280,7 @@ export function AppointmentForm({
       </EntityFormShell>
 
       {appointmentWeekPreviewDialog?.moveContext ? (
-        /* Edit-Modus mit Tour-/Wochenwechsel: neuer kontextueller Dialog */
+        /* Edit-Modus mit Tour-/Wochenwechsel: Dialog für diesen Kontext */
         <AppointmentMoveDialog
           open={appointmentWeekPreviewDialog.open}
           preview={appointmentWeekPreviewDialog.preview}
