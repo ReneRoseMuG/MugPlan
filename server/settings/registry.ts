@@ -452,6 +452,15 @@ export const userSettingsRegistry = {
     allowedScopes: ["USER"],
     validate: (value: unknown): value is boolean => typeof value === "boolean",
   },
+  calendarMonthFitPage: {
+    key: "calendar.monthFitPage",
+    label: "Monatskalender Seite füllen",
+    description: "Steuert benutzerspezifisch, ob der Monatskalender durch Skalierung die gesamte Bildschirmseite füllt.",
+    type: "boolean",
+    defaultValue: true,
+    allowedScopes: ["USER"],
+    validate: (value: unknown): value is boolean => typeof value === "boolean",
+  },
   reportsCategoryLayout: {
     key: "reports.categoryLayout",
     label: "Kategorie-Layout (Produktionsplanung)",

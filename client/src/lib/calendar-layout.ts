@@ -23,3 +23,19 @@ export function sumWeights(dayWeights: number[], startIndex: number, endIndexExc
   }
   return total;
 }
+
+/**
+ * Erweitert Wochenend-Spalten auf volles Wochentag-Gewicht (1fr), wenn an diesen
+ * Tagen Termine vorliegen — analog zur Logik im Wochenkalender.
+ */
+export function applyWeekendExpansion(
+  dayWeights: number[],
+  hasSaturdayAppointments: boolean,
+  hasSundayAppointments: boolean,
+): number[] {
+  return dayWeights.map((weight, idx) => {
+    if (idx === 5 && hasSaturdayAppointments) return 1;
+    if (idx === 6 && hasSundayAppointments) return 1;
+    return weight;
+  });
+}
