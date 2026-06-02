@@ -44,6 +44,7 @@ export type MonthSlotBarItem = {
   isMultiDay: boolean;
 };
 
+export const MONTH_COLUMN_HEADER_HEIGHT_PX = 52;
 export const MONTH_SLOT_SEPARATOR_HEIGHT_PX = 3;
 export const MONTH_SLOT_BAR_HEIGHT_PX = 22;
 export const MONTH_SLOT_BAR_GAP_PX = 2;

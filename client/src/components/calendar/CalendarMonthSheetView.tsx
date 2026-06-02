@@ -33,6 +33,7 @@ import {
   buildMonthSlotBarsForDay,
   buildMonthTourSlots,
   buildMonthWeekRowLayout,
+  MONTH_COLUMN_HEADER_HEIGHT_PX,
   MONTH_DAY_HEADER_HEIGHT_PX,
   MONTH_SLOT_BAR_GAP_PX,
   MONTH_SLOT_BAR_HEIGHT_PX,
@@ -378,8 +379,8 @@ export function CalendarMonthSheetView({
           setScaleFactor(1);
           return;
         }
-        const totalContentHeight = Array.from(weekData.values())
-          .reduce((sum, wd) => sum + wd.rowLayout.rowHeightPx, 0);
+        const totalContentHeight = MONTH_COLUMN_HEADER_HEIGHT_PX
+          + Array.from(weekData.values()).reduce((sum, wd) => sum + wd.rowLayout.rowHeightPx, 0);
         const raw = available / totalContentHeight;
         setScaleFactor(Math.min(1, Math.max(MONTH_FIT_PAGE_MIN_SCALE, raw)));
       }, 100);
