@@ -604,7 +604,6 @@ export function CalendarMonthSheetView({
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
       <div
-        ref={containerRef}
         className="flex-1 min-h-0 overflow-hidden"
         data-testid="month-sheet-container"
       >
@@ -626,6 +625,7 @@ export function CalendarMonthSheetView({
           showMonthHeader={showMonthHeader}
           headerAction={headerAction}
           draggedAppointmentId={draggedAppointmentId}
+          gridContainerRef={containerRef}
           scaleFactor={scaleFactor}
           monthFitPage={monthFitPage ?? true}
           onToggleFitPage={() => {
@@ -720,6 +720,7 @@ function MonthSheetSection({
   showMonthHeader,
   headerAction,
   draggedAppointmentId,
+  gridContainerRef,
   scaleFactor,
   monthFitPage,
   onToggleFitPage,
@@ -753,6 +754,7 @@ function MonthSheetSection({
   showMonthHeader: boolean;
   headerAction?: ReactNode;
   draggedAppointmentId: number | null;
+  gridContainerRef: React.RefObject<HTMLDivElement>;
   scaleFactor: number;
   monthFitPage: boolean;
   onToggleFitPage: () => void;
@@ -788,7 +790,7 @@ function MonthSheetSection({
       data-visible-start={format(month.visibleStart, "yyyy-MM-dd")}
       data-visible-end={format(month.visibleEnd, "yyyy-MM-dd")}
     >
-      <div className="flex h-full flex-col" style={scaleStyle}>
+      <div className="flex h-full flex-col">
         {showMonthHeader || headerAction ? (
           <div className="flex items-center justify-between gap-4 border-b border-border/40 bg-muted/20 px-6 py-2.5">
             {showMonthHeader ? (
@@ -837,6 +839,8 @@ function MonthSheetSection({
           </button>
         ) : null}
 
+        <div ref={gridContainerRef} className="flex-1 min-h-0 overflow-hidden">
+          <div style={scaleStyle}>
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
             KW
@@ -852,7 +856,7 @@ function MonthSheetSection({
         </div>
 
         <div
-          className="flex-1 grid overflow-hidden"
+          className="grid"
           data-testid={`month-sheet-weeks-scroll-${month.monthKey}`}
           style={{
             gridTemplateRows: month.weeks
@@ -1147,6 +1151,8 @@ function MonthSheetSection({
               </div>
             );
           })}
+        </div>
+          </div>
         </div>
 
         {onNextWeek ? (
