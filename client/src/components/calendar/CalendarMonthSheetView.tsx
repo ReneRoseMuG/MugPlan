@@ -777,8 +777,7 @@ function MonthSheetSection({
 
   const scaleStyle: React.CSSProperties = scaleFactor < 1
     ? {
-        transform: `scale(${scaleFactor})`,
-        transformOrigin: "top left",
+        zoom: scaleFactor,
         width: `${(1 / scaleFactor) * 100}%`,
       }
     : {};
@@ -839,7 +838,7 @@ function MonthSheetSection({
           </button>
         ) : null}
 
-        <div ref={gridContainerRef} className="flex-1 min-h-0">
+        <div ref={gridContainerRef} className="flex-1 min-h-0 overflow-hidden">
           <div style={scaleStyle}>
         <div className="grid border-b border-border/40 bg-muted/30" style={{ gridTemplateColumns: monthRowTemplate }}>
           <div className="border-r border-border/30 py-4 text-center text-sm font-semibold tracking-wider text-muted-foreground">
