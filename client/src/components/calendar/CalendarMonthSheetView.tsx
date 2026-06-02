@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { addDays, format, getISOWeek, getISOWeekYear, isSameDay, parseISO, startOfISOWeek } from "date-fns";
 import { de } from "date-fns/locale";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useSetting } from "@/hooks/useSettings";
+import { useSetting, useSettings } from "@/hooks/useSettings";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import {
@@ -20,7 +20,7 @@ import {
 } from "@/lib/calendar-move";
 import { useCalendarMarkers, type CalendarMarker } from "@/lib/calendar-markers";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
-import { buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
+import { applyWeekendExpansion, buildDayGridTemplate, getDayWeights, normalizeWeekendColumnPercent } from "@/lib/calendar-layout";
 import { getPrimaryCalendarMarkerVisualization } from "@/lib/calendar-marker-visualization";
 import type { CalendarMarkerVisualizationStyle } from "@/hooks/useSettings";
 import {
@@ -64,7 +64,7 @@ import {
   RESERVED_VACANT_TAG_COLOR,
 } from "@shared/appointmentCancellation";
 import { isAbsenceAppointmentSummary, isAbsenceTourName } from "@shared/absenceAppointments";
-import { Ban, ChevronDown, ChevronUp, ExternalLink, FolderOpen, MoreVertical, ParkingCircle, Trash2 } from "lucide-react";
+import { Ban, ChevronDown, ChevronUp, ExternalLink, FolderOpen, MoreVertical, ParkingCircle, Scissors, ScanLine, Trash2 } from "lucide-react";
 import type { Tour } from "@shared/schema";
 import type { MonitoringConflictMeta } from "@/lib/monitoring-ui";
 import { CalendarMarkerHeaderLabel } from "./CalendarMarkerHeaderLabel";
@@ -106,8 +106,7 @@ const BLOCKED_WEEK_OVERLAY_STYLE = {
   backgroundImage: "repeating-linear-gradient(135deg, rgba(194,65,12,0.42) 0px, rgba(194,65,12,0.42) 8px, rgba(251,146,60,0.28) 8px, rgba(251,146,60,0.28) 16px)",
   backgroundColor: "rgba(154,52,18,0.22)",
 } as const;
-const MOVE_SELECTION_LONG_PRESS_MS = 650;
-const MOVE_SELECTION_POINTER_TOLERANCE_PX = 8;
+const MONTH_FIT_PAGE_MIN_SCALE = 0.65;
 
 const normalizeTourName = (value: string | null | undefined) => (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss");
 
@@ -172,25 +171,20 @@ export function CalendarMonthSheetView({
 }: CalendarMonthSheetViewProps) {
   const [draggedAppointmentId, setDraggedAppointmentId] = useState<number | null>(null);
   const [printPreviewOpen, setPrintPreviewOpen] = useState(false);
-  const moveSelectionLongPressRef = useRef<{
-    appointmentId: number;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    timer: number;
-  } | null>(null);
+  const [scaleFactor, setScaleFactor] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scaleDebounceRef = useRef<number | null>(null);
   const { toast } = useToast();
+  const { setSetting } = useSettings();
   const queryClient = useQueryClient();
   const userRole = useMemo(() => getStoredUserRole(), []);
   const isReaderCalendarReadOnly = readOnly || isReaderRole(userRole);
   const weekendColumnPercentSetting = useSetting("calendarWeekendColumnPercent");
   const markerVisualizationStyle = useSetting("calendar.markerVisualizationStyle") ?? "standard";
+  const monthFitPage = useSetting("calendar.monthFitPage") ?? true;
   const isAdmin = userRole === "ADMIN";
   const weekendColumnPercent = normalizeWeekendColumnPercent(weekendColumnPercentSetting);
   const dayWeights = useMemo(() => getDayWeights(weekendColumnPercent), [weekendColumnPercent]);
-  const dayGridTemplate = useMemo(() => buildDayGridTemplate(dayWeights), [dayWeights]);
-  const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
-  const totalDayWeight = useMemo(() => dayWeights.reduce((sum, weight) => sum + weight, 0), [dayWeights]);
   const berlinToday = getBerlinTodayDateString();
 
   useEffect(() => {
@@ -265,6 +259,34 @@ export function CalendarMonthSheetView({
       return absenceVisibility === "absences" ? isAbsence : !isAbsence;
     });
   }, [absenceVisibility, appointments]);
+
+  const effectiveDayWeights = useMemo(() => {
+    const hasSat = visibleAppointments.some((a) => {
+      const start = parseISO(a.startDate);
+      const end = parseISO(getAppointmentEndDate(a));
+      let cursor = start;
+      while (cursor <= end) {
+        if (cursor.getDay() === 6) return true;
+        cursor = addDays(cursor, 1);
+      }
+      return false;
+    });
+    const hasSun = visibleAppointments.some((a) => {
+      const start = parseISO(a.startDate);
+      const end = parseISO(getAppointmentEndDate(a));
+      let cursor = start;
+      while (cursor <= end) {
+        if (cursor.getDay() === 0) return true;
+        cursor = addDays(cursor, 1);
+      }
+      return false;
+    });
+    return applyWeekendExpansion(dayWeights, hasSat, hasSun);
+  }, [dayWeights, visibleAppointments]);
+
+  const dayGridTemplate = useMemo(() => buildDayGridTemplate(effectiveDayWeights), [effectiveDayWeights]);
+  const monthRowTemplate = useMemo(() => `50px ${dayGridTemplate}`, [dayGridTemplate]);
+
   const visibleTours = useMemo(() => {
     if (absenceVisibility === "include") return tours;
     return tours.filter((tour) => {
@@ -286,14 +308,19 @@ export function CalendarMonthSheetView({
 
   const getCurrentScrollLeft = () => null;
 
-  const getSlotBarPosition = (startIndex: number, endIndex: number) => {
-    const startWeight = dayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
-    const spanWeight = dayWeights.slice(startIndex, endIndex + 1).reduce((sum, weight) => sum + weight, 0);
+  const effectiveTotalDayWeight = useMemo(
+    () => effectiveDayWeights.reduce((sum, weight) => sum + weight, 0),
+    [effectiveDayWeights],
+  );
+
+  const getSlotBarPosition = useCallback((startIndex: number, endIndex: number) => {
+    const startWeight = effectiveDayWeights.slice(0, startIndex).reduce((sum, weight) => sum + weight, 0);
+    const spanWeight = effectiveDayWeights.slice(startIndex, endIndex + 1).reduce((sum, weight) => sum + weight, 0);
     return {
-      left: `calc(${(startWeight / totalDayWeight) * 100}% + ${MONTH_SHEET_BAR_HORIZONTAL_INSET_PX}px)`,
-      width: `calc(${(spanWeight / totalDayWeight) * 100}% - ${MONTH_SHEET_BAR_HORIZONTAL_INSET_PX * 2}px)`,
+      left: `calc(${(startWeight / effectiveTotalDayWeight) * 100}% + ${MONTH_SHEET_BAR_HORIZONTAL_INSET_PX}px)`,
+      width: `calc(${(spanWeight / effectiveTotalDayWeight) * 100}% - ${MONTH_SHEET_BAR_HORIZONTAL_INSET_PX * 2}px)`,
     };
-  };
+  }, [effectiveDayWeights, effectiveTotalDayWeight]);
 
   const weekData = useMemo(() => {
     const nextWeekData = new Map<string, MonthSheetRenderWeek>();
@@ -338,59 +365,34 @@ export function CalendarMonthSheetView({
     onOpenAppointment?.(appointmentId, { scrollLeft: getCurrentScrollLeft() });
   };
 
-  const clearMoveSelectionLongPress = () => {
-    const current = moveSelectionLongPressRef.current;
-    if (!current) return;
-    window.clearTimeout(current.timer);
-    moveSelectionLongPressRef.current = null;
-  };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return undefined;
 
-  useEffect(() => clearMoveSelectionLongPress, []);
-
-  const handleMoveSelectionPointerDown = (
-    event: React.PointerEvent,
-    appointment: CalendarAppointment,
-    canSelectForMove: boolean,
-  ) => {
-    if (!canSelectForMove || !onSelectMoveAppointment || event.button !== 0) return;
-    clearMoveSelectionLongPress();
-    const selection = toCalendarMoveSelection(appointment);
-    const timer = window.setTimeout(() => {
-      moveSelectionLongPressRef.current = null;
-      onSelectMoveAppointment(selection);
-    }, MOVE_SELECTION_LONG_PRESS_MS);
-    moveSelectionLongPressRef.current = {
-      appointmentId: appointment.id,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      timer,
-    };
-  };
-
-  const handleMoveSelectionPointerMove = (event: React.PointerEvent) => {
-    const current = moveSelectionLongPressRef.current;
-    if (!current || current.pointerId !== event.pointerId) return;
-    const deltaX = Math.abs(event.clientX - current.startX);
-    const deltaY = Math.abs(event.clientY - current.startY);
-    if (deltaX > MOVE_SELECTION_POINTER_TOLERANCE_PX || deltaY > MOVE_SELECTION_POINTER_TOLERANCE_PX) {
-      clearMoveSelectionLongPress();
-    }
-  };
-
-  const buildMoveSelectionPointerHandlers = (appointment: CalendarAppointment, canSelectForMove: boolean) => (
-    canSelectForMove
-      ? {
-          onPointerDown: (event: React.PointerEvent) => handleMoveSelectionPointerDown(event, appointment, canSelectForMove),
-          onPointerMove: handleMoveSelectionPointerMove,
-          onPointerUp: clearMoveSelectionLongPress,
-          onPointerCancel: clearMoveSelectionLongPress,
+    const observer = new ResizeObserver(() => {
+      if (scaleDebounceRef.current !== null) window.clearTimeout(scaleDebounceRef.current);
+      scaleDebounceRef.current = window.setTimeout(() => {
+        scaleDebounceRef.current = null;
+        const available = container.getBoundingClientRect().height;
+        if (!monthFitPage || available <= 0) {
+          setScaleFactor(1);
+          return;
         }
-      : {}
-  );
+        const totalContentHeight = Array.from(weekData.values())
+          .reduce((sum, wd) => sum + wd.rowLayout.rowHeightPx, 0);
+        const raw = available / totalContentHeight;
+        setScaleFactor(Math.min(1, Math.max(MONTH_FIT_PAGE_MIN_SCALE, raw)));
+      }, 100);
+    });
+
+    observer.observe(container);
+    return () => {
+      observer.disconnect();
+      if (scaleDebounceRef.current !== null) window.clearTimeout(scaleDebounceRef.current);
+    };
+  }, [monthFitPage, weekData]);
 
   const handleDragStart = (event: React.DragEvent, appointmentId: number) => {
-    clearMoveSelectionLongPress();
     setDraggedAppointmentId(appointmentId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(appointmentId));
@@ -602,7 +604,8 @@ export function CalendarMonthSheetView({
   return (
     <div className="flex h-full flex-col overflow-hidden bg-white">
       <div
-        className="flex-1 min-h-0"
+        ref={containerRef}
+        className="flex-1 min-h-0 overflow-hidden"
         data-testid="month-sheet-container"
       >
         <MonthSheetSection
@@ -623,6 +626,11 @@ export function CalendarMonthSheetView({
           showMonthHeader={showMonthHeader}
           headerAction={headerAction}
           draggedAppointmentId={draggedAppointmentId}
+          scaleFactor={scaleFactor}
+          monthFitPage={monthFitPage ?? true}
+          onToggleFitPage={() => {
+            void setSetting({ key: "calendar.monthFitPage", scopeType: "USER", value: !monthFitPage });
+          }}
           getSlotBarPosition={getSlotBarPosition}
           onDrop={handleDrop}
           onNewAppointment={(dateKey) => {
@@ -634,7 +642,7 @@ export function CalendarMonthSheetView({
           onOpenProject={onOpenProject}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          buildMoveSelectionPointerHandlers={buildMoveSelectionPointerHandlers}
+          onSelectMoveAppointment={onSelectMoveAppointment}
           onRequestMoveAppointment={onRequestMoveAppointment}
           weekDays={weekDays}
           onPreviousWeek={onPreviousWeek}
@@ -712,6 +720,9 @@ function MonthSheetSection({
   showMonthHeader,
   headerAction,
   draggedAppointmentId,
+  scaleFactor,
+  monthFitPage,
+  onToggleFitPage,
   getSlotBarPosition,
   onDrop,
   onNewAppointment,
@@ -719,7 +730,7 @@ function MonthSheetSection({
   onOpenProject,
   onDragStart,
   onDragEnd,
-  buildMoveSelectionPointerHandlers,
+  onSelectMoveAppointment,
   onRequestMoveAppointment,
   weekDays,
   onPreviousWeek,
@@ -742,6 +753,9 @@ function MonthSheetSection({
   showMonthHeader: boolean;
   headerAction?: ReactNode;
   draggedAppointmentId: number | null;
+  scaleFactor: number;
+  monthFitPage: boolean;
+  onToggleFitPage: () => void;
   getSlotBarPosition: (startIndex: number, endIndex: number) => { left: string; width: string };
   onDrop: (event: React.DragEvent, targetDate: Date, targetTourId?: number | null, targetTourName?: string | null) => Promise<void>;
   onNewAppointment: (dateKey: string) => void;
@@ -749,15 +763,7 @@ function MonthSheetSection({
   onOpenProject?: (projectId: number) => void;
   onDragStart: (event: React.DragEvent, appointmentId: number) => void;
   onDragEnd: () => void;
-  buildMoveSelectionPointerHandlers: (
-    appointment: CalendarAppointment,
-    canSelectForMove: boolean,
-  ) => {
-    onPointerDown?: (event: React.PointerEvent) => void;
-    onPointerMove?: (event: React.PointerEvent) => void;
-    onPointerUp?: () => void;
-    onPointerCancel?: () => void;
-  };
+  onSelectMoveAppointment?: (appointment: CalendarMoveSelection) => void;
   onRequestMoveAppointment?: (request: CalendarMoveRequest) => void | Promise<void>;
   weekDays: string[];
   onPreviousWeek?: () => void;
@@ -766,6 +772,15 @@ function MonthSheetSection({
   const weekStepButtonClassName =
     "inline-flex h-9 w-full items-center justify-center gap-2 border-y border-amber-200 bg-amber-50 text-xs font-semibold text-amber-800 transition-colors hover:bg-amber-100 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500";
 
+  const scaleStyle: React.CSSProperties = scaleFactor < 1
+    ? {
+        transform: `scale(${scaleFactor})`,
+        transformOrigin: "top left",
+        width: `${(1 / scaleFactor) * 100}%`,
+        height: `${(1 / scaleFactor) * 100}%`,
+      }
+    : {};
+
   return (
     <section
       className="h-full min-w-full w-full border-r border-border/30 last:border-r-0"
@@ -773,7 +788,7 @@ function MonthSheetSection({
       data-visible-start={format(month.visibleStart, "yyyy-MM-dd")}
       data-visible-end={format(month.visibleEnd, "yyyy-MM-dd")}
     >
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col" style={scaleStyle}>
         {showMonthHeader || headerAction ? (
           <div className="flex items-center justify-between gap-4 border-b border-border/40 bg-muted/20 px-6 py-2.5">
             {showMonthHeader ? (
@@ -783,11 +798,30 @@ function MonthSheetSection({
             ) : (
               <span />
             )}
-            {headerAction ? (
-              <div className="shrink-0">
-                {headerAction}
-              </div>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={onToggleFitPage}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                title={monthFitPage ? "Seite füllen aktiv — klicken zum Deaktivieren" : "Seite füllen inaktiv — klicken zum Aktivieren"}
+                data-testid="button-month-fit-page-toggle"
+              >
+                <ScanLine className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Seite füllen</span>
+                <span
+                  className={`relative inline-flex h-4 w-7 shrink-0 rounded-full border transition-colors ${monthFitPage ? "bg-primary border-primary" : "bg-muted border-border"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${monthFitPage ? "translate-x-3" : "translate-x-0.5"}`}
+                  />
+                </span>
+              </button>
+              {headerAction ? (
+                <div>
+                  {headerAction}
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
 
@@ -1099,7 +1133,9 @@ function MonthSheetSection({
                                 onOpenProject={onOpenProject}
                                 onDragStart={canDrag ? (event) => onDragStart(event, appointment.id) : undefined}
                                 onDragEnd={canDrag ? onDragEnd : undefined}
-                                {...buildMoveSelectionPointerHandlers(appointment, canSelectForMove)}
+                                onSelectForMove={canSelectForMove && onSelectMoveAppointment
+                                  ? () => onSelectMoveAppointment(toCalendarMoveSelection(appointment))
+                                  : undefined}
                               />
                             )}
                           </div>
@@ -1193,10 +1229,7 @@ function MonthCompactBarWithMenu({
   onOpenProject,
   onDragStart,
   onDragEnd,
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-  onPointerCancel,
+  onSelectForMove,
 }: {
   appointment: CalendarAppointment;
   readOnly?: boolean;
@@ -1213,10 +1246,7 @@ function MonthCompactBarWithMenu({
   onOpenProject?: (projectId: number) => void;
   onDragStart?: (event: React.DragEvent) => void;
   onDragEnd?: () => void;
-  onPointerDown?: (event: React.PointerEvent) => void;
-  onPointerMove?: (event: React.PointerEvent) => void;
-  onPointerUp?: (event: React.PointerEvent) => void;
-  onPointerCancel?: (event: React.PointerEvent) => void;
+  onSelectForMove?: () => void;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -1371,6 +1401,15 @@ function MonthCompactBarWithMenu({
           <FolderOpen className="h-3.5 w-3.5 shrink-0" />
           Projekt Editieren
         </DropdownMenuItem>
+        {onSelectForMove && (
+          <DropdownMenuItem
+            onClick={onSelectForMove}
+            className="gap-2 text-xs cursor-pointer"
+          >
+            <Scissors className="h-3.5 w-3.5 shrink-0" />
+            Ausschneiden
+          </DropdownMenuItem>
+        )}
         {!readOnly && !appointment.isCancelled && (
           <DropdownMenuItem
             onClick={() => setCancelConfirmOpen(true)}
@@ -1420,10 +1459,6 @@ function MonthCompactBarWithMenu({
         onDoubleClick={onDoubleClick}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
       />
       <AppointmentCancelConfirmDialog
         open={cancelConfirmOpen}

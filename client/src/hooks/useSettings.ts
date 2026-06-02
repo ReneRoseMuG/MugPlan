@@ -36,6 +36,7 @@ export type UserSettingKey =
   | "calendar.weekPersonnelColumn.visible"
   | "calendar.weekInlineNotes.visible"
   | "calendar.weekPersonnelColumn.collapsed"
+  | "calendar.monthFitPage"
   | "reports.categoryLayout";
 
 type UserSettingValueByKey = {
@@ -65,6 +66,7 @@ type UserSettingValueByKey = {
   "calendar.weekPersonnelColumn.visible": boolean;
   "calendar.weekInlineNotes.visible": boolean;
   "calendar.weekPersonnelColumn.collapsed": boolean;
+  "calendar.monthFitPage": boolean;
   "reports.categoryLayout": CategoryLayoutConfig;
 };
 
@@ -200,6 +202,9 @@ export function useSetting<K extends UserSettingKey>(key: K): UserSettingValueBy
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : false) as UserSettingValueByKey[K];
     }
     if (key === "calendar.weekPersonnelColumn.collapsed") {
+      return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : true) as UserSettingValueByKey[K];
+    }
+    if (key === "calendar.monthFitPage") {
       return (typeof setting?.resolvedValue === "boolean" ? setting.resolvedValue : true) as UserSettingValueByKey[K];
     }
     if (key === "calendar.markerVisualizationStyle") {
