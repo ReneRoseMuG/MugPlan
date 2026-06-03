@@ -224,12 +224,15 @@ export function CalendarMonthSheetView({
     return () => onFooterActionChange(null);
   }, [onFooterActionChange]);
 
-  const month = useMemo(
-    () => visibleWeekCount !== undefined
-      ? buildMonthWindowMatrix(startOfISOWeek(currentDate), visibleWeekCount)
-      : buildMonthSheetMatrix(currentDate.getFullYear(), currentDate.getMonth() + 1),
-    [currentDate, visibleWeekCount],
-  );
+  const month = useMemo(() => {
+    if (visibleWeekCount !== undefined) {
+      return buildMonthWindowMatrix(startOfISOWeek(currentDate), visibleWeekCount);
+    }
+    // currentDate ist ein ISO-Wochenstart (Montag), der im Vormonat liegen kann.
+    // +6 Tage liefert den Sonntag derselben Woche und damit den korrekt angezeigten Monat.
+    const effectiveDate = addDays(currentDate, 6);
+    return buildMonthSheetMatrix(effectiveDate.getFullYear(), effectiveDate.getMonth() + 1);
+  }, [currentDate, visibleWeekCount]);
   const stripFromDate = format(month.visibleStart, "yyyy-MM-dd");
   const stripToDate = format(month.visibleEnd, "yyyy-MM-dd");
 
@@ -948,12 +951,9 @@ function MonthSheetSection({
                           className={`grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-1 rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
                         >
                           <span
-                            className={`
-                              flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium
-                              ${dayNumberClassName}
-                            `}
+                            className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${dayNumberClassName}`}
                           >
-                            {format(day.date, "d")}
+                            {weekDays[dayIdx]} {format(day.date, "dd. MMM", { locale: de })}
                           </span>
                           <CalendarMarkerHeaderLabel
                             markers={dayMarkers}

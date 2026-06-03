@@ -194,7 +194,7 @@ export function CalendarWorkspace({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { setSetting } = useSettings();
-  const isKwJumpEnabled = activeView === "week" || activeView === "month" || activeView === "monthSheet";
+  const isKwJumpEnabled = activeView === "week";
   const [conflictHighlightActive, setConflictHighlightActive] = useState(false);
   const [jumpBackDate, setJumpBackDate] = useState<Date | null>(null);
   const [localWeekRestoreRequest, setLocalWeekRestoreRequest] = useState<WeekViewRestoreRequest | null>(null);
