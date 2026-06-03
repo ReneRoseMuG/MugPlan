@@ -925,8 +925,8 @@ function MonthSheetSection({
                         ? "text-foreground/70"
                         : "text-muted-foreground/45";
                     const newAppointmentButtonClassName = day.isCurrentMonth
-                      ? "flex h-5 w-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary"
-                      : "flex h-5 w-5 items-center justify-center rounded text-muted-foreground/25 transition-colors hover:bg-muted/20 hover:text-muted-foreground/40";
+                      ? "flex h-5 w-5 justify-self-end items-center justify-end rounded text-muted-foreground/50 transition-colors hover:bg-primary/10 hover:text-primary"
+                      : "flex h-5 w-5 justify-self-end items-center justify-end rounded text-muted-foreground/25 transition-colors hover:bg-muted/20 hover:text-muted-foreground/40";
 
                     return (
                       <div
@@ -947,8 +947,11 @@ function MonthSheetSection({
                         data-marker-visualization={markerVisualization?.tone ?? "none"}
                       >
                         <div
-                          style={{ height: `${MONTH_DAY_HEADER_HEIGHT_PX}px` }}
-                          className={`grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-1 rounded-md px-1.5 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
+                          style={{
+                            height: `${MONTH_DAY_HEADER_HEIGHT_PX}px`,
+                            gridTemplateColumns: "auto minmax(0, 1fr) 20px",
+                          }}
+                          className={`-mx-1 grid items-center gap-1 rounded-md pl-2 pr-0 ${dayHeaderClassName} ${markerVisualization?.headerClassName ?? ""}`}
                         >
                           <span
                             className={`inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${dayNumberClassName}`}
@@ -970,7 +973,7 @@ function MonthSheetSection({
                               <span className="text-sm font-bold">+</span>
                             </button>
                           ) : (
-                            <span className="h-5 w-5" aria-hidden="true" />
+                            <span className="h-5 w-5 justify-self-end" aria-hidden="true" />
                           )}
                         </div>
 

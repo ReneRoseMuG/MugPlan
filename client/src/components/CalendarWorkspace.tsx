@@ -15,14 +15,24 @@ import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filt
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AppointmentMoveDialog, type AppointmentMoveDialogContext } from "@/components/AppointmentMoveDialog";
+import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
 import { getStoredUserRole, isReaderRole } from "@/lib/auth";
 import { useSetting, useSettings } from "@/hooks/useSettings";
 import type { MonitoringListResponse } from "@shared/routes";
+import type { AppointmentMutationEvent } from "@shared/appointmentMutationEvents";
+import type { NoteTemplate } from "@shared/schema";
+import { MANAGED_MESSE_TAG_NAME } from "@shared/appointmentCancellation";
 import { buildMonitoringConflictMap } from "@/lib/monitoring-ui";
 import { refreshMonitoringWithNotification } from "@/lib/monitoring";
 import { getBerlinTodayDateString } from "@/lib/project-appointments";
+import { computeTagAddedAction } from "@/hooks/useTagRuleEngine";
+import {
+  buildWorkflowNoteDraft,
+  findWorkflowNoteTemplate,
+  normalizeWorkflowNoteTitle,
+} from "@/lib/workflow-note-templates";
 import {
   buildEmployeeIdsFromPreviewSelection,
   formatCalendarMoveDate,
@@ -48,6 +58,18 @@ type PendingCalendarMove = {
   moveContext: AppointmentMoveDialogContext;
 };
 
+type CalendarMoveResponsePayload = {
+  code?: string;
+  message?: string;
+  mutationEvents?: AppointmentMutationEvent[];
+};
+
+type CalendarMoveAppointmentNoteSummary = {
+  id: number;
+  version: number;
+  title: string;
+};
+
 type OpenAppointmentContext = {
   initialDate?: string;
   initialTourId?: number | null;
@@ -61,6 +83,15 @@ type OpenAppointmentContext = {
 function buildMoveWeekKey(dateValue: string): string {
   const d = parseISO(dateValue);
   return `${getISOWeekYear(d)}-${String(getISOWeek(d)).padStart(2, "0")}`;
+}
+
+function normalizeCalendarMoveTourName(value: string | null | undefined): string {
+  return (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss").replace(/ÃŸ/g, "ss");
+}
+
+function isCalendarMoveMesseTourName(value: string | null | undefined): boolean {
+  const normalized = normalizeCalendarMoveTourName(value);
+  return normalized === "messe" || normalized === "tour messe";
 }
 
 interface CalendarWorkspaceProps {
@@ -140,6 +171,69 @@ export function buildWeekNavigationRestoreRequest(
   };
 }
 
+export function collectCalendarMoveWorkflowNoteSuggestions(params: {
+  appointmentId: number;
+  mutationEvents: AppointmentMutationEvent[] | undefined;
+  existingNotes: Array<{ title: string }>;
+}): string[] {
+  if (!params.mutationEvents || params.mutationEvents.length === 0) {
+    return [];
+  }
+
+  const suggestions: string[] = [];
+  const seenTemplateTitles = new Set<string>();
+  for (const event of params.mutationEvents) {
+    if (event.kind !== "tag_mutated" || event.action !== "added") {
+      continue;
+    }
+
+    const action = computeTagAddedAction(
+      event.tagName,
+      params.appointmentId,
+      params.existingNotes.map((note) => ({ title: note.title })),
+    );
+    if (action.kind !== "show_note_suggestion_dialog") {
+      continue;
+    }
+
+    const normalizedTemplateTitle = normalizeWorkflowNoteTitle(action.templateTitle);
+    if (seenTemplateTitles.has(normalizedTemplateTitle)) {
+      continue;
+    }
+    seenTemplateTitles.add(normalizedTemplateTitle);
+    suggestions.push(action.templateTitle);
+  }
+  return suggestions;
+}
+
+export function resolveCalendarMoveWorkflowMutationEvents(
+  request: CalendarMoveRequest,
+  mutationEvents: AppointmentMutationEvent[] | undefined,
+): AppointmentMutationEvent[] | undefined {
+  const events = mutationEvents ?? [];
+  const hasMesseTagAddedEvent = events.some((event) =>
+    event.kind === "tag_mutated"
+    && event.action === "added"
+    && normalizeWorkflowNoteTitle(event.tagName) === normalizeWorkflowNoteTitle(MANAGED_MESSE_TAG_NAME),
+  );
+  const movedToMesseTour = !isCalendarMoveMesseTourName(request.appointment.tourName)
+    && isCalendarMoveMesseTourName(request.targetTourName);
+
+  if (!movedToMesseTour || hasMesseTagAddedEvent) {
+    return mutationEvents;
+  }
+
+  return [
+    ...events,
+    {
+      kind: "tag_mutated",
+      appointmentId: request.appointment.id,
+      tagName: MANAGED_MESSE_TAG_NAME,
+      action: "added",
+    },
+  ];
+}
+
 export function CalendarMoveSelectionCard({
   selection,
   onClear,
@@ -203,12 +297,14 @@ export function CalendarWorkspace({
   const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
   const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
   const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
+  const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
   );
   const [kwJumpError, setKwJumpError] = useState(false);
   const latestWeekViewportRef = useRef<{ scrollLeft: number; scrollTop: number } | null>(null);
   const monthWindowRestoreAppliedRef = useRef(false);
+  const workflowNoteSuggestionSeenRef = useRef(new Set<string>());
   const weekLanesCollapsedSetting = useSetting("calendar.weekLanes.isCollapsed");
   const weekTileBodyModeSetting = useSetting("calendar.weekTileBodyMode");
   const userRole = getStoredUserRole();
@@ -357,6 +453,94 @@ export function CalendarWorkspace({
     return payload?.message ?? fallback;
   };
 
+  const getWorkflowNoteSuggestionKey = (appointmentId: number, templateTitle: string) =>
+    `${appointmentId}:${normalizeWorkflowNoteTitle(templateTitle)}`;
+
+  const openWorkflowNoteSuggestionDialog = (appointmentId: number, templateTitle: string) => {
+    const suggestionKey = getWorkflowNoteSuggestionKey(appointmentId, templateTitle);
+    if (workflowNoteSuggestionSeenRef.current.has(suggestionKey)) {
+      return false;
+    }
+    workflowNoteSuggestionSeenRef.current.add(suggestionKey);
+    setNoteSuggestionDialog({ appointmentId, templateTitle });
+    return true;
+  };
+
+  const loadAppointmentNotes = async (appointmentId: number): Promise<CalendarMoveAppointmentNoteSummary[]> => {
+    const response = await fetch(`/api/appointments/${appointmentId}/notes`, { credentials: "include" });
+    if (!response.ok) {
+      throw new Error("Terminnotizen konnten nicht geladen werden.");
+    }
+    const payload = await response.json().catch(() => []);
+    return Array.isArray(payload) ? payload as CalendarMoveAppointmentNoteSummary[] : [];
+  };
+
+  const loadNoteTemplates = async (): Promise<NoteTemplate[]> => {
+    const response = await fetch("/api/note-templates", { credentials: "include" });
+    if (!response.ok) {
+      throw new Error("Notizvorlagen konnten nicht geladen werden.");
+    }
+    const payload = await response.json().catch(() => []);
+    return Array.isArray(payload) ? payload as NoteTemplate[] : [];
+  };
+
+  const applyCalendarMoveMutationEvents = async (
+    appointmentId: number,
+    mutationEvents: AppointmentMutationEvent[] | undefined,
+  ) => {
+    if (!mutationEvents || mutationEvents.length === 0) {
+      return;
+    }
+
+    const existingNotes = await loadAppointmentNotes(appointmentId);
+    const suggestions = collectCalendarMoveWorkflowNoteSuggestions({
+      appointmentId,
+      mutationEvents,
+      existingNotes,
+    });
+    for (const templateTitle of suggestions) {
+      openWorkflowNoteSuggestionDialog(appointmentId, templateTitle);
+    }
+  };
+
+  const handleCreateAppointmentNoteFromSuggestion = async () => {
+    if (!noteSuggestionDialog) return;
+    try {
+      const templates = await loadNoteTemplates();
+      const template = findWorkflowNoteTemplate(templates, noteSuggestionDialog.templateTitle);
+      if (!template) {
+        toast({
+          title: "Notizvorlage fehlt",
+          description: `Die Notizvorlage „${noteSuggestionDialog.templateTitle}“ wurde nicht gefunden.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const draft = buildWorkflowNoteDraft(template);
+      const response = await fetch(`/api/appointments/${noteSuggestionDialog.appointmentId}/notes`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { message?: string } | null;
+        throw new Error(payload?.message ?? "Notiz konnte nicht erstellt werden.");
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["/api/appointments", noteSuggestionDialog.appointmentId, "notes"] });
+      await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
+      setNoteSuggestionDialog(null);
+    } catch (error) {
+      toast({
+        title: "Notiz konnte nicht erstellt werden",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const fetchCalendarMovePreview = async (
     request: CalendarMoveRequest,
     targetEndDate: string | null,
@@ -404,9 +588,22 @@ export function CalendarWorkspace({
           employeeIds,
         }),
       });
-      const payload = await response.json().catch(() => null) as { code?: string; message?: string } | null;
+      const payload = await response.json().catch(() => null) as CalendarMoveResponsePayload | null;
       if (!response.ok) {
         throw new Error(buildMoveErrorMessage(payload, "Termin konnte nicht verschoben werden."));
+      }
+
+      try {
+        await applyCalendarMoveMutationEvents(
+          request.appointment.id,
+          resolveCalendarMoveWorkflowMutationEvents(request, payload?.mutationEvents),
+        );
+      } catch (error) {
+        toast({
+          title: "Notizworkflow konnte nicht gestartet werden",
+          description: error instanceof Error ? error.message : "Bitte Terminnotizen manuell prüfen.",
+          variant: "destructive",
+        });
       }
 
       await queryClient.invalidateQueries({ queryKey: ["calendarAppointments"] });
@@ -748,6 +945,14 @@ export function CalendarWorkspace({
           onClose={() => { if (!isCalendarMoveSubmitting) setPendingCalendarMove(null); }}
         />
       ) : null}
+      <WorkflowNoteSuggestionDialog
+        open={noteSuggestionDialog !== null}
+        templateTitle={noteSuggestionDialog?.templateTitle}
+        targetLabel="diesen Termin"
+        onOpenChange={(open) => { if (!open) setNoteSuggestionDialog(null); }}
+        onSkip={() => setNoteSuggestionDialog(null)}
+        onConfirm={handleCreateAppointmentNoteFromSuggestion}
+      />
     </div>
   );
 }

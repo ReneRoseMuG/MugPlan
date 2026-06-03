@@ -2972,7 +2972,7 @@ export function CalendarWeekView({
                                   className="z-[9999] w-[320px]"
                                 >
                                   <div
-                                    className="pointer-events-auto relative flex h-full items-center justify-end gap-1 px-1"
+                                    className="pointer-events-auto relative grid h-full grid-cols-[16px_minmax(0,1fr)_16px] items-center gap-1 px-1"
                                     data-testid={`week-tour-lane-day-hover-trigger-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                     onClick={() => {
                                       if (!isCollapsedMode) return;
@@ -2986,16 +2986,17 @@ export function CalendarWeekView({
                                       });
                                     }}
                                   >
+                                    <span className="h-4 w-4" aria-hidden="true" />
                                     {dayAppointmentCounts[dayIdx] > 0 ? (
                                       <span
-                                        className="pointer-events-none ml-auto min-w-0 truncate text-right text-[10px] font-semibold"
+                                        className="pointer-events-none min-w-0 justify-self-center truncate text-center text-[10px] font-semibold"
                                         style={{ color: "#ffffff" }}
                                         data-testid={`week-tour-lane-day-counter-${tourLane.laneKey}-${dayBucket.dateKey}`}
                                       >
                                         {dayAppointmentCounts[dayIdx]} {dayAppointmentCounts[dayIdx] === 1 ? "Termin" : "Termine"}
                                       </span>
                                     ) : (
-                                      <span className="ml-auto" />
+                                      <span aria-hidden="true" />
                                     )}
                                     {canShowDayAction ? (
                                       canUseMoveTarget ? (
@@ -3004,7 +3005,7 @@ export function CalendarWeekView({
                                             <button
                                               type="button"
                                               onClick={(event) => event.stopPropagation()}
-                                              className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                              className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15"
                                               style={{ color: "#ffffff" }}
                                               data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                               title={`Aktionen am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
@@ -3057,7 +3058,7 @@ export function CalendarWeekView({
                                             });
                                             onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
                                           }}
-                                          className="pointer-events-auto h-4 w-4 rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                          className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15"
                                           style={{ color: "#ffffff" }}
                                           data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                           title={`Neuer Termin am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
@@ -3065,7 +3066,9 @@ export function CalendarWeekView({
                                           +
                                         </button>
                                       )
-                                    ) : null}
+                                    ) : (
+                                      <span className="h-4 w-4 justify-self-end" aria-hidden="true" />
+                                    )}
                                   </div>
                                 </HoverPreview>
                               );

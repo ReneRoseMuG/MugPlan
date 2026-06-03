@@ -318,6 +318,20 @@ describe("calendar month sheet view wiring", () => {
     expect(markup).toContain('data-testid="month-sheet-day-2026-03-02" data-month-scope="current"');
   });
 
+  it("keeps a fixed right action column in month day card headers", async () => {
+    configureDefaults([], [{ id: 7, name: "Alpha", color: "#225588", version: 1 }]);
+
+    const { CalendarMonthSheetView } = await import("../../../client/src/components/calendar/CalendarMonthSheetView");
+    const markup = renderToStaticMarkup(
+      <CalendarMonthSheetView currentDate={new Date("2099-03-15T00:00:00Z")} />,
+    );
+
+    expect(markup).toContain("grid-template-columns:auto minmax(0, 1fr) 20px");
+    expect(markup).toContain("-mx-1 grid items-center gap-1 rounded-md pl-2 pr-0");
+    expect(markup).toContain("justify-self-end items-center justify-end");
+    expect(markup).toContain('data-testid="button-new-appointment-month-sheet-2099-03-02"');
+  });
+
   it("keeps the reused compact-bar segment flags intact for clipped continuation segments", async () => {
     configureDefaults(
       [
