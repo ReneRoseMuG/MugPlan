@@ -217,7 +217,14 @@ export function HoverPreview({
   };
 
   useEffect(() => {
+    const handleDragStart = () => {
+      clearOpenTimer();
+      clearCloseTimer();
+      setOpen(false);
+    };
+    document.addEventListener("dragstart", handleDragStart);
     return () => {
+      document.removeEventListener("dragstart", handleDragStart);
       clearOpenTimer();
       clearCloseTimer();
     };

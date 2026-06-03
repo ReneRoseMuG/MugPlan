@@ -15,6 +15,16 @@ import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filt
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { AppointmentMoveDialog, type AppointmentMoveDialogContext } from "@/components/AppointmentMoveDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
@@ -56,6 +66,12 @@ type PendingCalendarMove = {
   preview: AppointmentWeekEmployeePreviewResponse;
   selectedIds: number[];
   moveContext: AppointmentMoveDialogContext;
+};
+
+type NoEmployeesCalendarMovePending = {
+  request: CalendarMoveRequest;
+  targetEndDate: string | null;
+  employeeIds: number[];
 };
 
 type CalendarMoveResponsePayload = {
@@ -297,6 +313,7 @@ export function CalendarWorkspace({
   const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
   const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
   const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
+  const [noEmployeesCalendarMovePending, setNoEmployeesCalendarMovePending] = useState<NoEmployeesCalendarMovePending | null>(null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
@@ -624,6 +641,19 @@ export function CalendarWorkspace({
     }
   };
 
+  const executeCalendarMoveWithEmployeeCheck = async (
+    request: CalendarMoveRequest,
+    targetEndDate: string | null,
+    employeeIds: number[],
+  ) => {
+    if (employeeIds.length === 0) {
+      setPendingCalendarMove(null);
+      setNoEmployeesCalendarMovePending({ request, targetEndDate, employeeIds });
+      return;
+    }
+    await executeCalendarMove(request, targetEndDate, employeeIds);
+  };
+
   const requestCalendarMove = async (request: CalendarMoveRequest) => {
     if (isReaderCalendarReadOnly) {
       toast({ title: "Keine Berechtigung", description: "Leser dürfen Termine nicht verschieben.", variant: "destructive" });
@@ -667,7 +697,7 @@ export function CalendarWorkspace({
 
     // Same tour and same week: move silently, no dialog needed
     if (isCalendarMoveSameTourAndWeek(request)) {
-      await executeCalendarMove(request, targetEndDate, request.appointment.employeeIds);
+      await executeCalendarMoveWithEmployeeCheck(request, targetEndDate, request.appointment.employeeIds);
       return;
     }
 
@@ -677,7 +707,7 @@ export function CalendarWorkspace({
       // No employees affected and no week plan to add from: move silently
       if (!hasResourcePreviewDecision(preview)) {
         const employeeIds = buildEmployeeIdsFromPreviewSelection(preview, [], "replace");
-        await executeCalendarMove(request, targetEndDate, employeeIds);
+        await executeCalendarMoveWithEmployeeCheck(request, targetEndDate, employeeIds);
         return;
       }
 
@@ -706,7 +736,7 @@ export function CalendarWorkspace({
       pendingCalendarMove.selectedIds,
       "replace",
     );
-    await executeCalendarMove(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
+    await executeCalendarMoveWithEmployeeCheck(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
   };
 
   const handleSelectMoveAppointment = (appointment: CalendarMoveSelection) => {
@@ -945,6 +975,33 @@ export function CalendarWorkspace({
           onClose={() => { if (!isCalendarMoveSubmitting) setPendingCalendarMove(null); }}
         />
       ) : null}
+      <AlertDialog
+        open={noEmployeesCalendarMovePending !== null}
+        onOpenChange={(open) => { if (!open && !isCalendarMoveSubmitting) setNoEmployeesCalendarMovePending(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Termin hat keine Mitarbeiter</AlertDialogTitle>
+            <AlertDialogDescription>
+              Der Termin hat keine zugewiesenen Mitarbeiter. Soll er trotzdem verschoben werden?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isCalendarMoveSubmitting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isCalendarMoveSubmitting}
+              onClick={() => {
+                const pending = noEmployeesCalendarMovePending;
+                if (!pending) return;
+                setNoEmployeesCalendarMovePending(null);
+                void executeCalendarMove(pending.request, pending.targetEndDate, pending.employeeIds);
+              }}
+            >
+              Trotzdem verschieben
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <WorkflowNoteSuggestionDialog
         open={noteSuggestionDialog !== null}
         templateTitle={noteSuggestionDialog?.templateTitle}

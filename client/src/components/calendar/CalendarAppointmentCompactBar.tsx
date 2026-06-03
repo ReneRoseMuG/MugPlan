@@ -179,11 +179,11 @@ export function CalendarAppointmentCompactBar({
       mode="cursor"
       openDelay={Math.max(preview.options?.openDelayMs ?? 0, MONTH_APPOINTMENT_PREVIEW_OPEN_DELAY_MS)}
       maxWidth={preview.options?.maxWidth}
-      maxHeight={preview.options?.maxHeight ?? MONTH_APPOINTMENT_PREVIEW_MAX_HEIGHT_PX}
+      maxHeight={preview.options?.maxHeight !== undefined ? preview.options.maxHeight : MONTH_APPOINTMENT_PREVIEW_MAX_HEIGHT_PX}
       cursorOffsetX={MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_X}
       cursorOffsetY={MONTH_APPOINTMENT_PREVIEW_CURSOR_OFFSET_Y}
       viewportPadding={MONTH_APPOINTMENT_PREVIEW_VIEWPORT_PADDING_PX}
-      className="z-[9999] overflow-y-auto"
+      className="z-[9999]"
     >
       {barBody}
     </HoverPreview>
