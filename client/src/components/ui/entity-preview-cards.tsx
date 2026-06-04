@@ -16,7 +16,6 @@ import { EntityNotesHoverPreview } from "@/components/notes/EntityNotesHoverPrev
 import { defaultHeaderColor } from "@/lib/colors";
 import { domainIcons } from "@/lib/domain-icons";
 import { formatListDateTime } from "@/lib/list-display-format";
-import { getReadableNoteTextColors } from "@/lib/note-colors";
 import type { ProjectArticleItem } from "@shared/projectArticleList";
 import type { Tag } from "@shared/schema";
 
@@ -124,7 +123,6 @@ export function ProjectEntityCard({
   const appointmentInfoBorderColor = appointmentInfoTourColor
     ? toSubtleTourColor(appointmentInfoTourColor, 0.32)
     : defaultHeaderColor;
-  const appointmentInfoTextColors = getReadableNoteTextColors(appointmentInfoBackground);
   const canOpenProjectPreview = canOpenProjectInfoPreview(
     project.name,
     project.projectArticleItems,
@@ -227,11 +225,10 @@ export function ProjectEntityCard({
           </Badge>
         ) : null}
         <div
-          className="mt-1 flex min-h-8 shrink-0 items-center rounded-md border px-3 py-1.5 text-xs font-semibold shadow-sm"
+          className="mt-1 flex min-h-8 shrink-0 items-center rounded-md border px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm"
           style={{
             backgroundColor: appointmentInfoBackground,
             borderColor: appointmentInfoBorderColor,
-            color: appointmentInfoTextColors.primary,
           }}
           data-testid={testIds?.appointmentInfo ?? `text-project-next-appointment-${project.id}`}
         >
