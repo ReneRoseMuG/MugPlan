@@ -51,10 +51,6 @@ vi.mock("@/components/ui/filter-panels/calendar-filter-panel", () => ({
   CalendarFilterPanel: () => <div data-testid="calendar-filter-panel-marker">filter</div>,
 }));
 
-vi.mock("@/components/AppointmentMoveDialog", () => ({
-  AppointmentMoveDialog: () => <div data-testid="appointment-move-dialog-marker">move-dialog</div>,
-}));
-
 vi.mock("@/components/notes/WorkflowNoteDialogs", () => ({
   WorkflowNoteSuggestionDialog: () => null,
 }));

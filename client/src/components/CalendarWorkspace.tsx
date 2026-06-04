@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, getISOWeekYear, parseISO, startOfISOWeek, subWeeks } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarDays, format, getISOWeek, parseISO, startOfISOWeek, subWeeks } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
@@ -14,17 +14,12 @@ import {
 import { CalendarFilterPanel } from "@/components/ui/filter-panels/calendar-filter-panel";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { AppointmentMoveDialog, type AppointmentMoveDialogContext } from "@/components/AppointmentMoveDialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  AppointmentSaveReviewDialog,
+  type AppointmentSaveReviewNoteReview,
+  type AppointmentSaveReviewResourceRequest,
+  type AppointmentSaveReviewResult,
+} from "@/components/AppointmentSaveReviewDialog";
 import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
@@ -56,6 +51,7 @@ import {
 } from "@/lib/calendar-move";
 import { hasResourcePreviewDecision } from "@/lib/resource-planning";
 import type { WeekViewRestoreRequest } from "@/pages/Home";
+import type { Note } from "@shared/schema";
 
 type CalendarWorkspaceView = "week" | "month" | "monthSheet";
 type CalendarAbsenceMode = "planning" | "absences";
@@ -63,14 +59,8 @@ type CalendarAbsenceMode = "planning" | "absences";
 type PendingCalendarMove = {
   request: CalendarMoveRequest;
   targetEndDate: string | null;
-  preview: AppointmentWeekEmployeePreviewResponse;
-  selectedIds: number[];
-  moveContext: AppointmentMoveDialogContext;
-};
-
-type NoEmployeesCalendarMovePending = {
-  request: CalendarMoveRequest;
-  targetEndDate: string | null;
+  resourceRequest: AppointmentSaveReviewResourceRequest | null;
+  noteReview: AppointmentSaveReviewNoteReview | null;
   employeeIds: number[];
 };
 
@@ -78,12 +68,6 @@ type CalendarMoveResponsePayload = {
   code?: string;
   message?: string;
   mutationEvents?: AppointmentMutationEvent[];
-};
-
-type CalendarMoveAppointmentNoteSummary = {
-  id: number;
-  version: number;
-  title: string;
 };
 
 type OpenAppointmentContext = {
@@ -95,11 +79,6 @@ type OpenAppointmentContext = {
   weekScrollLeft?: number | null;
   weekScrollTop?: number | null;
 };
-
-function buildMoveWeekKey(dateValue: string): string {
-  const d = parseISO(dateValue);
-  return `${getISOWeekYear(d)}-${String(getISOWeek(d)).padStart(2, "0")}`;
-}
 
 function normalizeCalendarMoveTourName(value: string | null | undefined): string {
   return (value ?? "").trim().toLocaleLowerCase("de").replace(/ß/g, "ss").replace(/ÃŸ/g, "ss");
@@ -313,7 +292,6 @@ export function CalendarWorkspace({
   const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
   const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
   const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
-  const [noEmployeesCalendarMovePending, setNoEmployeesCalendarMovePending] = useState<NoEmployeesCalendarMovePending | null>(null);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
     isKwJumpEnabled ? String(getISOWeek(currentDate)) : "",
@@ -483,13 +461,13 @@ export function CalendarWorkspace({
     return true;
   };
 
-  const loadAppointmentNotes = async (appointmentId: number): Promise<CalendarMoveAppointmentNoteSummary[]> => {
+  const loadAppointmentNotes = async (appointmentId: number): Promise<Note[]> => {
     const response = await fetch(`/api/appointments/${appointmentId}/notes`, { credentials: "include" });
     if (!response.ok) {
       throw new Error("Terminnotizen konnten nicht geladen werden.");
     }
     const payload = await response.json().catch(() => []);
-    return Array.isArray(payload) ? payload as CalendarMoveAppointmentNoteSummary[] : [];
+    return Array.isArray(payload) ? payload as Note[] : [];
   };
 
   const loadNoteTemplates = async (): Promise<NoteTemplate[]> => {
@@ -583,6 +561,63 @@ export function CalendarWorkspace({
     return payload as AppointmentWeekEmployeePreviewResponse;
   };
 
+  const buildCalendarMoveNoteReview = async (
+    request: CalendarMoveRequest,
+    targetEndDate: string | null,
+  ): Promise<AppointmentSaveReviewNoteReview | null> => {
+    const notes = await loadAppointmentNotes(request.appointment.id);
+    if (notes.length === 0) return null;
+
+    return {
+      previousStartDate: request.appointment.startDate,
+      previousEndDate: request.appointment.endDate,
+      previousStartTime: request.appointment.startTime,
+      previousTourName: request.appointment.tourName,
+      nextStartDate: request.targetStartDate,
+      nextEndDate: targetEndDate,
+      nextStartTime: request.appointment.startTime,
+      nextTourName: request.targetTourName ?? request.appointment.tourName,
+      notes,
+    };
+  };
+
+  const requestCalendarMoveSaveReview = async ({
+    request,
+    targetEndDate,
+    resourceRequest,
+    employeeIds,
+  }: {
+    request: CalendarMoveRequest;
+    targetEndDate: string | null;
+    resourceRequest: AppointmentSaveReviewResourceRequest | null;
+    employeeIds: number[];
+  }) => {
+    let noteReview: AppointmentSaveReviewNoteReview | null = null;
+    try {
+      noteReview = await buildCalendarMoveNoteReview(request, targetEndDate);
+    } catch (error) {
+      toast({
+        title: "Terminnotizen konnten nicht geladen werden",
+        description: error instanceof Error ? error.message : "Bitte erneut versuchen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resourceRequest && !noteReview && employeeIds.length > 0) {
+      await executeCalendarMove(request, targetEndDate, employeeIds);
+      return;
+    }
+
+    setPendingCalendarMove({
+      request,
+      targetEndDate,
+      resourceRequest,
+      noteReview,
+      employeeIds,
+    });
+  };
+
   const executeCalendarMove = async (
     request: CalendarMoveRequest,
     targetEndDate: string | null,
@@ -641,19 +676,6 @@ export function CalendarWorkspace({
     }
   };
 
-  const executeCalendarMoveWithEmployeeCheck = async (
-    request: CalendarMoveRequest,
-    targetEndDate: string | null,
-    employeeIds: number[],
-  ) => {
-    if (employeeIds.length === 0) {
-      setPendingCalendarMove(null);
-      setNoEmployeesCalendarMovePending({ request, targetEndDate, employeeIds });
-      return;
-    }
-    await executeCalendarMove(request, targetEndDate, employeeIds);
-  };
-
   const requestCalendarMove = async (request: CalendarMoveRequest) => {
     if (isReaderCalendarReadOnly) {
       toast({ title: "Keine Berechtigung", description: "Leser dürfen Termine nicht verschieben.", variant: "destructive" });
@@ -695,30 +717,43 @@ export function CalendarWorkspace({
       return;
     }
 
-    // Same tour and same week: move silently, no dialog needed
+    // Same tour and same week keeps the current employees, but still runs the shared note/no-employee review.
     if (isCalendarMoveSameTourAndWeek(request)) {
-      await executeCalendarMoveWithEmployeeCheck(request, targetEndDate, request.appointment.employeeIds);
+      await requestCalendarMoveSaveReview({
+        request,
+        targetEndDate,
+        resourceRequest: null,
+        employeeIds: request.appointment.employeeIds,
+      });
       return;
     }
 
     try {
       const preview = await fetchCalendarMovePreview(request, targetEndDate, "replace");
 
-      // No employees affected and no week plan to add from: move silently
+      // No resource decision is needed, but notes and empty employee assignments still require review.
       if (!hasResourcePreviewDecision(preview)) {
         const employeeIds = buildEmployeeIdsFromPreviewSelection(preview, [], "replace");
-        await executeCalendarMoveWithEmployeeCheck(request, targetEndDate, employeeIds);
+        await requestCalendarMoveSaveReview({
+          request,
+          targetEndDate,
+          resourceRequest: null,
+          employeeIds,
+        });
         return;
       }
 
-      const tourChanged = request.appointment.tourId !== request.targetTourId;
-      const weekChanged = buildMoveWeekKey(request.appointment.startDate) !== buildMoveWeekKey(request.targetStartDate);
-      setPendingCalendarMove({
+      await requestCalendarMoveSaveReview({
         request,
         targetEndDate,
-        preview,
-        selectedIds: getDefaultPreviewSelection(preview),
-        moveContext: { tourChanged, weekChanged, isCalendarMove: true },
+        resourceRequest: {
+          preview,
+          resolutionKey: `calendar:${request.appointment.id}:${request.targetTourId}:${request.targetStartDate}:${targetEndDate ?? ""}:${request.mode}`,
+          selectedIds: getDefaultPreviewSelection(preview),
+          resolutionMode: "replace",
+          resolutionNotice: "Vorhandene Termin-Mitarbeiter werden passend zur Ziel-Tour und Ziel-KW neu bewertet.",
+        },
+        employeeIds: request.appointment.employeeIds,
       });
     } catch (error) {
       toast({
@@ -729,14 +764,16 @@ export function CalendarWorkspace({
     }
   };
 
-  const confirmPendingCalendarMove = async () => {
+  const handleCalendarMoveSaveReviewConfirm = (result: AppointmentSaveReviewResult) => {
     if (!pendingCalendarMove) return;
-    const employeeIds = buildEmployeeIdsFromPreviewSelection(
-      pendingCalendarMove.preview,
-      pendingCalendarMove.selectedIds,
-      "replace",
-    );
-    await executeCalendarMoveWithEmployeeCheck(pendingCalendarMove.request, pendingCalendarMove.targetEndDate, employeeIds);
+    const pending = pendingCalendarMove;
+    setPendingCalendarMove(null);
+    void executeCalendarMove(pending.request, pending.targetEndDate, result.employeeIds);
+  };
+
+  const handleCalendarMoveSaveReviewCancel = () => {
+    if (isCalendarMoveSubmitting) return;
+    setPendingCalendarMove(null);
   };
 
   const handleSelectMoveAppointment = (appointment: CalendarMoveSelection) => {
@@ -962,46 +999,23 @@ export function CalendarWorkspace({
         </div>
       )}
       {pendingCalendarMove ? (
-        <AppointmentMoveDialog
+        <AppointmentSaveReviewDialog
           open
-          preview={pendingCalendarMove.preview}
-          moveContext={pendingCalendarMove.moveContext}
-          selectedIds={pendingCalendarMove.selectedIds}
-          onSelectedIdsChange={(selectedIds) => {
-            setPendingCalendarMove((current) => current ? { ...current, selectedIds } : current);
+          currentEmployeeIds={
+            pendingCalendarMove.resourceRequest
+              ? pendingCalendarMove.request.appointment.employeeIds
+              : pendingCalendarMove.employeeIds
+          }
+          resourceRequest={pendingCalendarMove.resourceRequest}
+          noteReview={pendingCalendarMove.noteReview}
+          isBusy={isCalendarMoveSubmitting}
+          onOpenChange={(open) => {
+            if (!open) handleCalendarMoveSaveReviewCancel();
           }}
-          isSubmitting={isCalendarMoveSubmitting}
-          onConfirm={() => { void confirmPendingCalendarMove(); }}
-          onClose={() => { if (!isCalendarMoveSubmitting) setPendingCalendarMove(null); }}
+          onCancel={handleCalendarMoveSaveReviewCancel}
+          onConfirm={handleCalendarMoveSaveReviewConfirm}
         />
       ) : null}
-      <AlertDialog
-        open={noEmployeesCalendarMovePending !== null}
-        onOpenChange={(open) => { if (!open && !isCalendarMoveSubmitting) setNoEmployeesCalendarMovePending(null); }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Termin hat keine Mitarbeiter</AlertDialogTitle>
-            <AlertDialogDescription>
-              Der Termin hat keine zugewiesenen Mitarbeiter. Soll er trotzdem verschoben werden?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCalendarMoveSubmitting}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isCalendarMoveSubmitting}
-              onClick={() => {
-                const pending = noEmployeesCalendarMovePending;
-                if (!pending) return;
-                setNoEmployeesCalendarMovePending(null);
-                void executeCalendarMove(pending.request, pending.targetEndDate, pending.employeeIds);
-              }}
-            >
-              Trotzdem verschieben
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <WorkflowNoteSuggestionDialog
         open={noteSuggestionDialog !== null}
         templateTitle={noteSuggestionDialog?.templateTitle}

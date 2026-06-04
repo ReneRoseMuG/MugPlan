@@ -225,6 +225,7 @@ type AppointmentSaveReviewRequest = {
 };
 
 type AppointmentFormSnapshotData = {
+  tourId: number | null;
   startDate: string;
   endDate: string | null;
   startTimeEnabled: boolean;
@@ -368,6 +369,7 @@ const parseAppointmentFormSnapshotData = (snapshot: string | null): AppointmentF
     const parsed = JSON.parse(snapshot) as Partial<AppointmentFormSnapshotData>;
     if (typeof parsed.startDate !== "string") return null;
     return {
+      tourId: typeof parsed.tourId === "number" && Number.isFinite(parsed.tourId) ? parsed.tourId : null,
       startDate: parsed.startDate,
       endDate: typeof parsed.endDate === "string" ? parsed.endDate : null,
       startTimeEnabled: parsed.startTimeEnabled === true,
@@ -1133,12 +1135,13 @@ export function AppointmentForm({
     currentStartTime: string | null,
   ): AppointmentSaveReviewNoteReview | null => {
     const notes = visibleAppointmentNotes
-      .map((note) => ({ id: note.id, title: note.title }))
-      .filter((note) => Number.isFinite(note.id));
+      .filter((note): note is Note => Number.isFinite(note.id) && note.id > 0);
     if (notes.length === 0) return null;
 
-    const previousTiming = isEditing && appointmentDetail
+    const previousState = isEditing && appointmentDetail
       ? {
+          tourId: appointmentDetail.tourId ?? null,
+          tourName: tours.find((tour) => tour.id === (appointmentDetail.tourId ?? null))?.name ?? null,
           startDate: normalizeDateInputValue(appointmentDetail.startDate),
           endDate: appointmentDetail.endDate ? normalizeDateInputValue(appointmentDetail.endDate) : null,
           startTime: normalizeComparableTime(appointmentDetail.startTime),
@@ -1147,26 +1150,31 @@ export function AppointmentForm({
           const snapshot = parseAppointmentFormSnapshotData(initialFormSnapshot);
           if (!snapshot) return null;
           return {
+            tourId: snapshot.tourId,
+            tourName: tours.find((tour) => tour.id === snapshot.tourId)?.name ?? null,
             startDate: normalizeDateInputValue(snapshot.startDate),
             endDate: snapshot.endDate ? normalizeDateInputValue(snapshot.endDate) : null,
             startTime: snapshot.startTimeEnabled ? normalizeComparableTime(snapshot.startTimeValue) : null,
           };
         })();
 
-    if (!previousTiming || !previousTiming.startDate) return null;
+    if (!previousState || !previousState.startDate) return null;
     const nextEndDate = currentEndDate ? normalizeDateInputValue(currentEndDate) : null;
-    const timingChanged = previousTiming.startDate !== startDate
-      || previousTiming.endDate !== nextEndDate
-      || previousTiming.startTime !== currentStartTime;
-    if (!timingChanged) return null;
+    const timingChanged = previousState.startDate !== startDate
+      || previousState.endDate !== nextEndDate
+      || previousState.startTime !== currentStartTime;
+    const tourChanged = previousState.tourId !== selectedTourId;
+    if (!timingChanged && !tourChanged) return null;
 
     return {
-      previousStartDate: previousTiming.startDate,
-      previousEndDate: previousTiming.endDate,
-      previousStartTime: previousTiming.startTime,
+      previousStartDate: previousState.startDate,
+      previousEndDate: previousState.endDate,
+      previousStartTime: previousState.startTime,
+      previousTourName: previousState.tourName,
       nextStartDate: startDate,
       nextEndDate,
       nextStartTime: currentStartTime,
+      nextTourName: selectedTour?.name ?? null,
       notes,
     };
   };

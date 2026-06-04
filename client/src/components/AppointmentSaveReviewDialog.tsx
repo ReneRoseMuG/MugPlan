@@ -4,6 +4,7 @@ import { Save, TriangleAlert } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { NotesSection } from "@/components/NotesSection";
 import {
   DialogBaseFooter,
   DialogBaseInlineMessage,
@@ -16,6 +17,7 @@ import {
   type AppointmentResourcePreviewResponse,
   type AppointmentResourceResolutionMode,
 } from "@/lib/resource-planning";
+import type { Note } from "@shared/schema";
 
 type AppointmentSaveReviewStepId = "resources" | "notes" | "employees";
 
@@ -38,13 +40,12 @@ export type AppointmentSaveReviewNoteReview = {
   previousStartDate: string;
   previousEndDate: string | null;
   previousStartTime: string | null;
+  previousTourName?: string | null;
   nextStartDate: string;
   nextEndDate: string | null;
   nextStartTime: string | null;
-  notes: Array<{
-    id: number;
-    title: string;
-  }>;
+  nextTourName?: string | null;
+  notes: Note[];
 };
 
 type AppointmentSaveReviewDialogProps = {
@@ -151,6 +152,7 @@ export function AppointmentSaveReviewDialog({
   const isLastStep = activeStepIndex >= stepIds.length - 1;
   const notesStepBlocked = activeStepId === "notes" && !confirmNotesReviewed;
   const dialogTitle = activeStepId === "employees" ? "Termin hat keine Mitarbeiter" : "Termin speichern";
+  const dialogSize = stepIds.length === 1 && activeStepId === "employees" ? "md" : "xl";
   const steps = stepIds.map<DialogBaseStep>((stepId, index) => ({
     id: stepId,
     title: stepTitles[stepId],
@@ -210,7 +212,7 @@ export function AppointmentSaveReviewDialog({
           primaryAction={{
             disabled: isBusy || notesStepBlocked || stepIds.length === 0,
             isPending: isBusy,
-            label: activeStepId === "employees" ? "Bestätigen" : isLastStep ? "Termin speichern" : "Weiter",
+            label: activeStepId === "employees" ? "Trotzdem speichern" : isLastStep ? "Termin speichern" : "Weiter",
             onClick: handlePrimaryAction,
             pendingLabel: "Speichern...",
             testId: isLastStep ? "button-appointment-save-review-confirm" : "button-appointment-save-review-next",
@@ -223,7 +225,7 @@ export function AppointmentSaveReviewDialog({
         onOpenChange(nextOpen);
       }}
       open={open}
-      size="xl"
+      size={dialogSize}
       testId="dialog-appointment-save-review"
       title={dialogTitle}
     >
@@ -345,7 +347,7 @@ export function AppointmentSaveReviewDialog({
             <DialogBaseInlineMessage
               tone="warning"
               title="Terminnotizen prüfen"
-              description="Der Terminzeitraum wurde geändert. Terminnotizen können datumsbezogene Informationen enthalten."
+              description="Datum, Uhrzeit oder Tour wurden geändert. Terminnotizen können bezugsabhängige Informationen enthalten."
             />
             <dl className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-2">
               <div>
@@ -353,30 +355,30 @@ export function AppointmentSaveReviewDialog({
                 <dd className="font-semibold" data-testid="appointment-save-review-notes-previous-date">
                   {formatReviewRange(noteReview.previousStartDate, noteReview.previousEndDate, noteReview.previousStartTime)}
                 </dd>
+                {noteReview.previousTourName ? (
+                  <dd className="text-xs text-muted-foreground" data-testid="appointment-save-review-notes-previous-tour">
+                    Tour: {noteReview.previousTourName}
+                  </dd>
+                ) : null}
               </div>
               <div>
                 <dt className="text-muted-foreground">Neu</dt>
                 <dd className="font-semibold" data-testid="appointment-save-review-notes-next-date">
                   {formatReviewRange(noteReview.nextStartDate, noteReview.nextEndDate, noteReview.nextStartTime)}
                 </dd>
+                {noteReview.nextTourName ? (
+                  <dd className="text-xs text-muted-foreground" data-testid="appointment-save-review-notes-next-tour">
+                    Tour: {noteReview.nextTourName}
+                  </dd>
+                ) : null}
               </div>
             </dl>
-            <div className="rounded-md border border-slate-200">
-              <div className="border-b bg-slate-50 px-3 py-2 text-sm font-medium">
-                Betroffene Terminnotizen ({noteReview.notes.length})
-              </div>
-              <ul className="divide-y" data-testid="appointment-save-review-note-list">
-                {noteReview.notes.map((note) => (
-                  <li
-                    key={note.id}
-                    className="px-3 py-2 text-sm"
-                    data-testid={`appointment-save-review-note-${note.id}`}
-                  >
-                    {note.title.trim() || "Notiz ohne Titel"}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <NotesSection
+              notes={noteReview.notes}
+              onAdd={() => undefined}
+              title="Betroffene Terminnotizen"
+              readOnly
+            />
             <label className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
               <Checkbox
                 checked={confirmNotesReviewed}
@@ -392,7 +394,8 @@ export function AppointmentSaveReviewDialog({
           <section data-testid="appointment-save-review-step-no-employees">
             <DialogBaseInlineMessage
               tone="warning"
-              title="Der Termin hat keine Mitarbeiter, bitte bestätigen oder abbrechen"
+              title="Der Termin hat keine geplanten Mitarbeiter."
+              description="Soll er trotzdem gespeichert werden?"
             />
           </section>
         ) : null}
