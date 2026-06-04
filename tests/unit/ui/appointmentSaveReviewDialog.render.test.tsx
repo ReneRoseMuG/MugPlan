@@ -54,7 +54,31 @@ vi.mock("@/components/ui/checkbox", () => ({
   ),
 }));
 
+vi.mock("@/components/NotesSection", () => ({
+  NotesSection: ({ notes, readOnly, title }: { notes: Array<{ id: number; title: string }>; readOnly?: boolean; title?: string }) => (
+    <section data-testid="mock-notes-section" data-readonly={String(readOnly)}>
+      <h3>{title}</h3>
+      {notes.map((note) => <div key={note.id}>{note.title}</div>)}
+    </section>
+  ),
+}));
+
 import { AppointmentSaveReviewDialog } from "../../../client/src/components/AppointmentSaveReviewDialog";
+
+function buildNote(id: number, title: string) {
+  return {
+    id,
+    title,
+    body: "",
+    cardColor: null,
+    cardColorLocked: false,
+    print: true,
+    isPinned: false,
+    version: 1,
+    createdAt: new Date("2099-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2099-01-01T00:00:00.000Z"),
+  };
+}
 
 describe("AppointmentSaveReviewDialog", () => {
   beforeEach(() => {
@@ -75,9 +99,10 @@ describe("AppointmentSaveReviewDialog", () => {
 
     expect(html).toContain("dialog-appointment-save-review");
     expect(html).toContain("Termin hat keine Mitarbeiter");
-    expect(html).toContain("Der Termin hat keine Mitarbeiter, bitte bestätigen oder abbrechen");
+    expect(html).toContain("Der Termin hat keine geplanten Mitarbeiter.");
+    expect(html).toContain("Soll er trotzdem gespeichert werden?");
     expect(html).not.toContain("checkbox-appointment-save-review-no-employees");
-    expect(actions.get("button-appointment-save-review-confirm")?.label).toBe("Bestätigen");
+    expect(actions.get("button-appointment-save-review-confirm")?.label).toBe("Trotzdem speichern");
     expect(actions.get("button-appointment-save-review-confirm")?.disabled).toBe(false);
   });
 
@@ -208,7 +233,9 @@ describe("AppointmentSaveReviewDialog", () => {
           nextStartDate: "2099-01-03",
           nextEndDate: null,
           nextStartTime: "10:00:00",
-          notes: [{ id: 44, title: "Terminnotiz mit altem Datum" }],
+          previousTourName: "Tour Alt",
+          nextTourName: "Tour Neu",
+          notes: [buildNote(44, "Terminnotiz mit altem Datum")],
         }}
         onCancel={() => undefined}
         onConfirm={() => undefined}
@@ -219,6 +246,10 @@ describe("AppointmentSaveReviewDialog", () => {
     expect(html).toContain("appointment-save-review-step-notes");
     expect(html).toContain("Terminnotizen prüfen");
     expect(html).toContain("Terminnotiz mit altem Datum");
+    expect(html).toContain("Betroffene Terminnotizen");
+    expect(html).toContain("data-readonly=\"true\"");
+    expect(html).toContain("Tour Alt");
+    expect(html).toContain("Tour Neu");
     expect(html).toContain("02.01.99");
     expect(html).toContain("03.01.99");
     expect(html).toContain("checkbox-appointment-save-review-notes-reviewed");

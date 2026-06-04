@@ -954,7 +954,7 @@ test("requires checking appointment notes when an existing appointment is moved"
   const dialog = page.getByTestId("dialog-appointment-save-review");
   await expect(dialog).toBeVisible();
   await expect(dialog.getByTestId("appointment-save-review-step-notes")).toBeVisible();
-  await expect(dialog.getByTestId("appointment-save-review-note-list")).toContainText("Terminnotiz mit altem Datum");
+  await expect(dialog.getByTestId("list-notes")).toContainText("Terminnotiz mit altem Datum");
   await expect(dialog.getByTestId("button-appointment-save-review-next")).toBeDisabled();
 
   await dialog.getByTestId("checkbox-appointment-save-review-notes-reviewed").click();
