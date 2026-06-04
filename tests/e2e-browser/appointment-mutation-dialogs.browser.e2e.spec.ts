@@ -132,11 +132,13 @@ async function dispatchWeekViewDrop(
 
 test("A-01: Terminformular Tour-Wechsel – Titel 'Tourwechsel', Warn-Schritt mit Mitarbeiter-Badges, kein 'Alle wählen'", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-A01" });
   const sourceTour = await createTourFixture("#225566");
   const targetTour = await createTourFixture("#66aa44");
   const removedEmployee = await createEmployeeFixture("DIAL-A01-REMOVED");
 
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
@@ -163,6 +165,7 @@ test("A-01: Terminformular Tour-Wechsel – Titel 'Tourwechsel', Warn-Schritt mi
 
 test("A-02: Terminformular Tour-Wechsel – Schritt 2 Wochenplanung vorselektiert, kein 'Alle wählen'", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-A02" });
   const sourceTour = await createTourFixture("#225577");
   const targetTour = await createTourFixture("#66bb44");
   const currentEmployee = await createEmployeeFixture("DIAL-A02-CURRENT");
@@ -176,6 +179,7 @@ test("A-02: Terminformular Tour-Wechsel – Schritt 2 Wochenplanung vorselektier
   });
 
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: sourceTour.id,
     employeeIds: [currentEmployee.id],
@@ -206,9 +210,11 @@ test("A-03: Terminformular Speichern – Notizen-Schritt ohne Pflicht-Checkbox, 
   const nextWeek = resolveNextEditableWeek();
   const targetWeekStart = startOfISOWeek(addWeeks(parseISO(nextWeek.weekStartDate), 1));
   const targetDate = format(addDays(targetWeekStart, 1), "yyyy-MM-dd");
+  const project = await createProjectFixture({ prefix: "DIAL-A03" });
   const tour = await createTourFixture("#334466");
 
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: tour.id,
   });
@@ -240,11 +246,13 @@ test("A-03: Terminformular Speichern – Notizen-Schritt ohne Pflicht-Checkbox, 
 
 test("A-04: Terminformular Tour-Wechsel Abbrechen – Tourauswahl bleibt erhalten", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-A04" });
   const sourceTour = await createTourFixture("#226688");
   const targetTour = await createTourFixture("#aa4466");
   const employee = await createEmployeeFixture("DIAL-A04-EMP");
 
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: nextWeek.weekSecondDate,
     tourId: sourceTour.id,
     employeeIds: [employee.id],
@@ -270,6 +278,7 @@ test("A-04: Terminformular Tour-Wechsel Abbrechen – Tourauswahl bleibt erhalte
 
 test("B-01: D&D 3-Schritt-Flow – Titel 'Termin verschieben' in jedem Schritt, Stepper korrekt", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B01" });
   const sourceTour = await createTourFixture("#001122");
   const targetTour = await createTourFixture("#334455");
   const removedEmployee = await createEmployeeFixture("DIAL-B01-REMOVED");
@@ -285,7 +294,11 @@ test("B-01: D&D 3-Schritt-Flow – Titel 'Termin verschieben' in jedem Schritt, 
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
@@ -321,6 +334,7 @@ test("B-01: D&D 3-Schritt-Flow – Titel 'Termin verschieben' in jedem Schritt, 
 
 test("B-02: D&D Schritt 1 – nur Warn-Badge, keine Auswahlliste sichtbar", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B02" });
   const sourceTour = await createTourFixture("#112233");
   const targetTour = await createTourFixture("#aabbcc");
   const removedEmployee = await createEmployeeFixture("DIAL-B02-REMOVED");
@@ -336,7 +350,11 @@ test("B-02: D&D Schritt 1 – nur Warn-Badge, keine Auswahlliste sichtbar", asyn
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
@@ -366,6 +384,7 @@ test("B-02: D&D Schritt 1 – nur Warn-Badge, keine Auswahlliste sichtbar", asyn
 
 test("B-03: D&D Schritt 2 – Wochenplanung vorselektiert, kein 'Alle wählen'", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B03" });
   const sourceTour = await createTourFixture("#223344");
   const targetTour = await createTourFixture("#bbccdd");
   const removedEmployee = await createEmployeeFixture("DIAL-B03-REMOVED");
@@ -381,7 +400,11 @@ test("B-03: D&D Schritt 2 – Wochenplanung vorselektiert, kein 'Alle wählen'",
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
@@ -410,6 +433,7 @@ test("B-03: D&D Schritt 2 – Wochenplanung vorselektiert, kein 'Alle wählen'",
 
 test("B-04: D&D Abbrechen in Schritt 1 – Termin verbleibt am Ursprungsort", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B04" });
   const sourceTour = await createTourFixture("#335566");
   const targetTour = await createTourFixture("#ccddee");
   const employee = await createEmployeeFixture("DIAL-B04-EMP");
@@ -417,7 +441,11 @@ test("B-04: D&D Abbrechen in Schritt 1 – Termin verbleibt am Ursprungsort", as
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [employee.id],
@@ -446,6 +474,7 @@ test("B-04: D&D Abbrechen in Schritt 1 – Termin verbleibt am Ursprungsort", as
 
 test("B-05: D&D Abbrechen in Schritt 2 – Termin verbleibt am Ursprungsort", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B05" });
   const sourceTour = await createTourFixture("#446677");
   const targetTour = await createTourFixture("#ddeeff");
   const removedEmployee = await createEmployeeFixture("DIAL-B05-REMOVED");
@@ -461,7 +490,11 @@ test("B-05: D&D Abbrechen in Schritt 2 – Termin verbleibt am Ursprungsort", as
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
@@ -492,6 +525,7 @@ test("B-05: D&D Abbrechen in Schritt 2 – Termin verbleibt am Ursprungsort", as
 
 test("B-06: D&D Mitarbeiter-Abwahl in Schritt 2 wird in DB persistiert", async ({ page }) => {
   const nextWeek = resolveNextEditableWeek();
+  const project = await createProjectFixture({ prefix: "DIAL-B06" });
   const sourceTour = await createTourFixture("#557788");
   const targetTour = await createTourFixture("#eeff00");
   const removedEmployee = await createEmployeeFixture("DIAL-B06-REMOVED");
@@ -506,7 +540,11 @@ test("B-06: D&D Mitarbeiter-Abwahl in Schritt 2 wird in DB persistiert", async (
   const sourceDate = nextWeek.weekSecondDate;
   const targetDate = format(addDays(parseISO(nextWeek.weekStartDate), 3), "yyyy-MM-dd");
 
+  // Termin in Ziel-Tour anlegen, damit die Lane im Kalender sichtbar ist
+  await createAppointmentFixture({ projectId: project.id, startDate: targetDate, tourId: targetTour.id });
+
   const appointment = await createAppointmentFixture({
+    projectId: project.id,
     startDate: sourceDate,
     tourId: sourceTour.id,
     employeeIds: [removedEmployee.id],
