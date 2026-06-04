@@ -518,6 +518,17 @@ const isolationRegistry: TestIsolationRegistryEntry[] = [
     rolloutMode: "pilot-only",
     notes: "Tag-Rule-Engine braucht verwaltete System-Tags und Notizvorlagen und bleibt deshalb seed-abhaengig pilot-only.",
   },
+  {
+    suitePath: "tests/e2e-browser/appointment-mutation-dialogs.browser.e2e.spec.ts",
+    isolationClass: "B",
+    baseline: "seeded",
+    storageProfile: "none",
+    resetScope: "per-suite",
+    canaryProfile: "week-plan-confusion",
+    pilotStatus: "candidate",
+    rolloutMode: "pilot-only",
+    notes: "Prueft Dialog-Verhalten nach Terminmutationen (MILE-53). Seed-abhaengig wegen Tour- und Wochenplan-Fixtures.",
+  },
 ];
 
 export function listRegisteredIsolationSuites(): TestIsolationRegistryEntry[] {

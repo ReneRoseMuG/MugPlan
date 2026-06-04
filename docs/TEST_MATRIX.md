@@ -505,3 +505,5 @@ Zentrale Übersicht aller Testdateien mit fachlicher Kurzbeschreibung.
 
 | [tests/unit/ui/employeeUtilizationView.wiring.test.tsx](../tests/unit/ui/employeeUtilizationView.wiring.test.tsx) | Auslastungsansicht | Unit | Tab-Sichtbarkeit, NavBar-Buttons, weekOffset-Initialisierung und CalendarMonthSheetView-Prop-Weitergabe der EmployeeUtilizationView absichern | Neu |
 | [tests/unit/ui/calendarAppointmentCompactBar.menuSlot.test.tsx](../tests/unit/ui/calendarAppointmentCompactBar.menuSlot.test.tsx) | Monatskalender | Unit | Optionaler menuSlot-Prop in CalendarAppointmentCompactBar: Rendern wenn uebergeben, fehlt wenn nicht uebergeben | Neu |
+
+| [tests/e2e-browser/appointment-mutation-dialogs.browser.e2e.spec.ts](../tests/e2e-browser/appointment-mutation-dialogs.browser.e2e.spec.ts) | MILE-53 | E2E Browser | Bereinigtes Dialog-Verhalten nach Terminmutationen absichern: Titel korrekt (Tourwechsel/Termin speichern/Termin verschieben), kein Alle-waehlen, keine Pflicht-Checkbox, D&D 3-Schritt-Flow, Abbrechen-Verhalten und Mitarbeiter-Selektion DB-wirksam | Neu |
