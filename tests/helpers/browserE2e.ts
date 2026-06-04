@@ -150,22 +150,6 @@ export async function confirmAppointmentSaveReviewIfVisible(page: Page) {
   }
 
   for (let step = 0; step < 5; step += 1) {
-    const notesReviewedCheckbox = dialog.getByTestId("checkbox-appointment-save-review-notes-reviewed");
-    if (await notesReviewedCheckbox.isVisible().catch(() => false)) {
-      if ((await notesReviewedCheckbox.getAttribute("data-state")) !== "checked") {
-        await notesReviewedCheckbox.click();
-      }
-      await expect(notesReviewedCheckbox).toHaveAttribute("data-state", "checked");
-    }
-
-    const noEmployeesCheckbox = dialog.getByTestId("checkbox-appointment-save-review-no-employees");
-    if (await noEmployeesCheckbox.isVisible().catch(() => false)) {
-      if ((await noEmployeesCheckbox.getAttribute("data-state")) !== "checked") {
-        await noEmployeesCheckbox.click();
-      }
-      await expect(noEmployeesCheckbox).toHaveAttribute("data-state", "checked");
-    }
-
     const nextButton = dialog.getByTestId("button-appointment-save-review-next");
     if (await nextButton.isVisible().catch(() => false)) {
       await expect(nextButton).toBeEnabled();
