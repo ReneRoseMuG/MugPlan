@@ -27,7 +27,9 @@
       "Bash(npx tsc *)",
       "Bash(npx eslint *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "mcp__projekt-manager__add_task_to_parent",
+      "Bash(sed -n '/^  [0-9]\\\\+\\) \\\\[chromium\\\\]/,/Error Context:/p' \"C:/Users/R10EC~1.ROS/AppData/Local/Temp/claude/C--Users-r-rose-repos-Plan-releases-work-version02/82e5db4e-f13e-4c9e-a018-439ee2fd3398/tasks/b30fypoxs.output\" 2>&1 | head -300)"
     ]
   }
 }

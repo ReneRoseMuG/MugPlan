@@ -2,16 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Die KW-Eingabe im CalendarWorkspace ist in Kalenderansichten mit der sichtbaren ISO-KW vorbelegt.
+ * - Die KW-Eingabe im CalendarWorkspace ist in der Wochenansicht mit der sichtbaren ISO-KW vorbelegt.
  * - Aenderungen des sichtbaren Datums aktualisieren die KW-Eingabe.
- * - Monatsansichten reichen denselben KW-Sprung wie die Wochenansicht weiter.
  *
  * Fehlerfaelle:
  * - Die KW-Anzeige bleibt auf einem alten Wert stehen.
- * - Der Monatskalender verliert die KW-Vorbelegung oder den KW-Sprung.
  *
  * Ziel:
- * Die sichtbare KW-Synchronisation zwischen CalendarWorkspace und Filter-Panel fuer Woche und Monat absichern.
+ * Die sichtbare KW-Synchronisation zwischen CalendarWorkspace und Filter-Panel fuer die Wochenansicht absichern.
+ * KW-Jump ist im Monatskalender nicht vorhanden (bewusst entfernt).
  */
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -126,19 +125,4 @@ describe("CalendarWorkspace - kw sync wiring", () => {
     expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("15");
   });
 
-  it("passes kw jump controls in month mode with the visible iso week", () => {
-    renderCalendarWorkspace({
-      mode: "global",
-      activeView: "month",
-      currentDate: new Date("2026-03-30T00:00:00Z"),
-      employeeFilterId: null,
-      onEmployeeFilterChange: () => undefined,
-      onViewChange: () => undefined,
-      onDateChange: () => undefined,
-      onOpenAppointmentForm: () => undefined,
-    });
-
-    expect(filterPanelCalls.at(-1)?.showKwJump).toBe(true);
-    expect(filterPanelCalls.at(-1)?.kwJumpValue).toBe("14");
-  });
 });
