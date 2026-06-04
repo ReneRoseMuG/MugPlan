@@ -2,17 +2,15 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - Titelberechnung aus moveContext (Tourwechsel / Wochenwechsel / beides)
+ * - Titelberechnung: Kalender-Move → immer "Termin verschieben", Formular → "Tourwechsel"
  * - Warncontainer mit Mitarbeiter-Badges erscheint genau dann, wenn Mitarbeiter entfernt werden
  * - Einstufiger Dialog bei Entfernung ohne KW-Plan: kein Schritt-Indikator, kein "Weiter"-Button
- * - Zweistufiger Dialog bei Entfernung + KW-Plan: Schritt 1 zeigt Warnung, Schritt 2 zeigt Auswahlliste
+ * - Mehrstufiger Dialog bei Entfernung + KW-Plan: Schritt 1 Warnung, Schritt 2 Auswahlliste
  * - Einstufiger Dialog bei KW-Plan ohne Entfernung: direkt Auswahlliste, kein Warncontainer
  * - Schritt-Navigation: Weiter / Zurück
- * - Auswahl-Buttons (Alle wählen / abwählen) verdrahtet
  *
  * Fehlerfälle:
  * - Warncontainer erscheint, obwohl keine Mitarbeiter entfernt werden
- * - Falscher Dialog-Titel bei einfachem Wochenwechsel
  * - "Weiter"-Button erscheint im einstufigen Modus
  *
  * Ziel:
@@ -87,44 +85,24 @@ describe("AppointmentMoveDialog title computation – Kalender-Move (isCalendarM
     vi.stubGlobal("React", React);
   });
 
-  it("shows Tourwechsel title when only tour changed", () => {
-    const moveContext: AppointmentMoveDialogContext = { tourChanged: true, weekChanged: false, isCalendarMove: true };
-    const html = renderToStaticMarkup(
-      <AppointmentMoveDialog
-        {...defaultProps}
-        preview={makePreview()}
-        moveContext={moveContext}
-      />,
-    );
-    expect(html).toContain("Terminverschiebung mit Tourwechsel");
-    expect(html).not.toContain("Wochenwechsel");
-    expect(html).not.toContain("Tour- und Wochenwechsel");
-  });
-
-  it("shows Wochenwechsel title when only week changed", () => {
-    const moveContext: AppointmentMoveDialogContext = { tourChanged: false, weekChanged: true, isCalendarMove: true };
-    const html = renderToStaticMarkup(
-      <AppointmentMoveDialog
-        {...defaultProps}
-        preview={makePreview()}
-        moveContext={moveContext}
-      />,
-    );
-    expect(html).toContain("Terminverschiebung mit Wochenwechsel");
-    expect(html).not.toContain("Tourwechsel");
-    expect(html).not.toContain("Tour- und Wochenwechsel");
-  });
-
-  it("shows combined title when both tour and week changed", () => {
-    const moveContext: AppointmentMoveDialogContext = { tourChanged: true, weekChanged: true, isCalendarMove: true };
-    const html = renderToStaticMarkup(
-      <AppointmentMoveDialog
-        {...defaultProps}
-        preview={makePreview()}
-        moveContext={moveContext}
-      />,
-    );
-    expect(html).toContain("Terminverschiebung mit Tour- und Wochenwechsel");
+  it("shows 'Termin verschieben' regardless of tour/week flag combination", () => {
+    const combinations: AppointmentMoveDialogContext[] = [
+      { tourChanged: true, weekChanged: false, isCalendarMove: true },
+      { tourChanged: false, weekChanged: true, isCalendarMove: true },
+      { tourChanged: true, weekChanged: true, isCalendarMove: true },
+    ];
+    for (const moveContext of combinations) {
+      const html = renderToStaticMarkup(
+        <AppointmentMoveDialog
+          {...defaultProps}
+          preview={makePreview()}
+          moveContext={moveContext}
+        />,
+      );
+      expect(html).toContain("Termin verschieben");
+      expect(html).not.toContain("Terminverschiebung");
+      expect(html).not.toContain("Tourwechsel");
+    }
   });
 });
 
@@ -277,34 +255,6 @@ describe("AppointmentMoveDialog single-step: week plan only (no removals)", () =
     expect(html).toContain("button-appointment-move-confirm");
   });
 
-  it("wires Alle wählen to pass all selectable IDs", () => {
-    const onSelectedIdsChange = vi.fn();
-    renderToStaticMarkup(
-      <AppointmentMoveDialog
-        {...defaultProps}
-        preview={previewWithWeekPlan}
-        moveContext={{ tourChanged: true, weekChanged: true, isCalendarMove: true }}
-        onSelectedIdsChange={onSelectedIdsChange}
-      />,
-    );
-    getButtonClickHandler("button-appointment-move-select-all")?.();
-    expect(onSelectedIdsChange).toHaveBeenCalledWith([21, 22]);
-  });
-
-  it("wires Alle abwählen to pass empty array", () => {
-    const onSelectedIdsChange = vi.fn();
-    renderToStaticMarkup(
-      <AppointmentMoveDialog
-        {...defaultProps}
-        preview={previewWithWeekPlan}
-        moveContext={{ tourChanged: true, weekChanged: true, isCalendarMove: true }}
-        selectedIds={[21]}
-        onSelectedIdsChange={onSelectedIdsChange}
-      />,
-    );
-    getButtonClickHandler("button-appointment-move-deselect-all")?.();
-    expect(onSelectedIdsChange).toHaveBeenCalledWith([]);
-  });
 });
 
 describe("AppointmentMoveDialog two-step: removals + week plan", () => {

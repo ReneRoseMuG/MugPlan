@@ -119,14 +119,12 @@ export function AppointmentSaveReviewDialog({
   const [activeStepIndex, setActiveStepIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<number[]>(resourceRequest?.selectedIds ?? []);
   const [resolutionMode, setResolutionMode] = useState<AppointmentResourceResolutionMode>(resourceRequest?.resolutionMode ?? "additive");
-  const [confirmNotesReviewed, setConfirmNotesReviewed] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setActiveStepIndex(0);
     setSelectedIds(resourceRequest?.selectedIds ?? []);
     setResolutionMode(resourceRequest?.resolutionMode ?? "additive");
-    setConfirmNotesReviewed(false);
   }, [noteReview, open, resourceRequest]);
 
   const resolvedEmployeeIds = useMemo(() => {
@@ -150,7 +148,6 @@ export function AppointmentSaveReviewDialog({
 
   const activeStepId = stepIds[activeStepIndex];
   const isLastStep = activeStepIndex >= stepIds.length - 1;
-  const notesStepBlocked = activeStepId === "notes" && !confirmNotesReviewed;
   const dialogTitle = activeStepId === "employees" ? "Termin hat keine Mitarbeiter" : "Termin speichern";
   const dialogSize = stepIds.length === 1 && activeStepId === "employees" ? "md" : "xl";
   const steps = stepIds.map<DialogBaseStep>((stepId, index) => ({
@@ -172,13 +169,6 @@ export function AppointmentSaveReviewDialog({
     ].filter((group) => group.items.length > 0);
   }, [resourceRequest]);
 
-  const selectableIds = useMemo(
-    () => (resourceRequest?.preview.items ?? [])
-      .filter((item) => item.selectable)
-      .map((item) => item.employeeId),
-    [resourceRequest],
-  );
-
   const handlePrimaryAction = () => {
     if (!isLastStep) {
       setActiveStepIndex((current) => current + 1);
@@ -187,7 +177,7 @@ export function AppointmentSaveReviewDialog({
     onConfirm({
       employeeIds: resolvedEmployeeIds,
       resourceResolutionKey: resourceRequest?.resolutionKey ?? null,
-      notesReviewed: Boolean(noteReview && confirmNotesReviewed),
+      notesReviewed: Boolean(noteReview),
     });
   };
 
@@ -210,7 +200,7 @@ export function AppointmentSaveReviewDialog({
             variant: "outline",
           }}
           primaryAction={{
-            disabled: isBusy || notesStepBlocked || stepIds.length === 0,
+            disabled: isBusy || stepIds.length === 0,
             isPending: isBusy,
             label: activeStepId === "employees" ? "Trotzdem speichern" : isLastStep ? "Termin speichern" : "Weiter",
             onClick: handlePrimaryAction,
@@ -271,26 +261,6 @@ export function AppointmentSaveReviewDialog({
                 description={resourceRequest.resolutionNotice}
               />
             ) : null}
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedIds(selectableIds)}
-                disabled={isBusy}
-                data-testid="button-appointment-week-select-all"
-              >
-                Alle wählen
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedIds([])}
-                disabled={isBusy}
-                data-testid="button-appointment-week-deselect-all"
-              >
-                Alle abwählen
-              </Button>
-            </div>
             <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-appointment-save-review-preview">
               {groupedItems.map((group) => (
                 <section key={group.key} className="border-b last:border-b-0" data-testid={`appointment-week-preview-group-${group.key}`}>
@@ -379,14 +349,6 @@ export function AppointmentSaveReviewDialog({
               title="Betroffene Terminnotizen"
               readOnly
             />
-            <label className="flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
-              <Checkbox
-                checked={confirmNotesReviewed}
-                onCheckedChange={(checked) => setConfirmNotesReviewed(checked === true)}
-                data-testid="checkbox-appointment-save-review-notes-reviewed"
-              />
-              <span>Terminnotizen geprüft, Termin trotzdem speichern.</span>
-            </label>
           </section>
         ) : null}
 

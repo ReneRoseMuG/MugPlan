@@ -252,7 +252,7 @@ describe("AppointmentSaveReviewDialog", () => {
     expect(html).toContain("Tour Neu");
     expect(html).toContain("02.01.99");
     expect(html).toContain("03.01.99");
-    expect(html).toContain("checkbox-appointment-save-review-notes-reviewed");
-    expect(actions.get("button-appointment-save-review-confirm")?.disabled).toBe(true);
+    expect(html).not.toContain("checkbox-appointment-save-review-notes-reviewed");
+    expect(actions.get("button-appointment-save-review-confirm")?.disabled).toBe(false);
   });
 });

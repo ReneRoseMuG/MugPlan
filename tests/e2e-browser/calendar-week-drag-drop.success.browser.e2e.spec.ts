@@ -188,10 +188,10 @@ test("moves a regular future appointment onto another future day in the week vie
   if (!patchResponse) {
     patchResponsePromise = awaitPatchResponse();
 
-    const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+    const resourceDialog = page.getByTestId("dialog-appointment-move");
     await expect(resourceDialog).toBeVisible();
     await expect(resourceDialog).toContainText("Termin verschieben");
-    await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+    await resourceDialog.getByTestId("button-appointment-move-confirm").click();
 
     patchResponse = await patchResponsePromise;
   }

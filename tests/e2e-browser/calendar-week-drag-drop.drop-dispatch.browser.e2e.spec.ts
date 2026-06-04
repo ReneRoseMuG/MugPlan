@@ -110,10 +110,10 @@ test("dispatches a week-view drop with appointment data and persists the new tar
 
   expect(dropObserved).toBe(true);
 
-  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();
   await expect(resourceDialog).toContainText("Termin verschieben");
-  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await resourceDialog.getByTestId("button-appointment-move-confirm").click();
 
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);
@@ -216,17 +216,17 @@ test("dispatches a week-view drop to another tour and replaces employees from th
 
   expect(dropObserved).toBe(true);
 
-  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();
   await expect(resourceDialog).toContainText("Termin verschieben");
-  await expect(resourceDialog).toContainText("Mitarbeiter werden ersetzt");
-  await expect(resourceDialog.getByTestId(`appointment-week-preview-status-${currentEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(resourceDialog.getByTestId(`appointment-week-preview-checkbox-${plannedEmployee.id}`)).toBeChecked();
-  await expect(resourceDialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
-  await expect(resourceDialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
-  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+
+  // Schritt 1: Mitarbeiter-Abzug
+  await expect(resourceDialog.getByTestId(`badge-appointment-move-removed-${currentEmployee.id}`)).toBeVisible();
+  await resourceDialog.getByRole("button", { name: "Weiter" }).click();
+
+  // Schritt 2: Wochenplanung – vorselektierter Mitarbeiter
+  await expect(resourceDialog.getByTestId(`appointment-move-preview-checkbox-${plannedEmployee.id}`)).toBeChecked();
+  await resourceDialog.getByTestId("button-appointment-move-confirm").click();
 
   const patchResponse = await patchResponsePromise;
   expect(patchResponse.status()).toBe(200);

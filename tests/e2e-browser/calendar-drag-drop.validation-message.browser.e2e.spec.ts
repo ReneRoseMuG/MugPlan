@@ -114,10 +114,10 @@ test("shows the concrete server validation message after dragging an appointment
     ].join("\n"));
   }
 
-  const resourceDialog = page.getByTestId("dialog-tour-employee-cascade");
+  const resourceDialog = page.getByTestId("dialog-appointment-move");
   await expect(resourceDialog).toBeVisible();
   await expect(resourceDialog).toContainText("Termin verschieben");
-  await resourceDialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await resourceDialog.getByTestId("button-appointment-move-confirm").click();
 
   const patchResponse = await patchResponsePromise.catch(() => null);
 
