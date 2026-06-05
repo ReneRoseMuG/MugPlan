@@ -1,57 +1,89 @@
 ---
 name: projekt-manager-planungsleitplanken
-description: Use when Codex creates, reviews, updates, or executes any plan for the Projekt Manager repository, whether directly in chat or in Plan mode. Apply before proposing or executing code changes for feature planning, fixes, audits, tests, branch strategy, migrations, API/Web changes, auth/role decisions, UI rules, architecture decisions, and acceptance criteria in this codebase.
+description: Use when Codex creates, reviews, updates, or executes any plan for the MuGPlan / Projekt Manager repository, including fixes, features, audits, tests, migrations, API/Web changes, UI work, branch strategy, permissions, roles, acceptance criteria, and implementation sequencing. Apply before proposing or executing code changes in this codebase.
 ---
 
 # Projekt Manager Planungsleitplanken
 
-Use this skill as the planning gate for the Projekt Manager repository.
+Nutze diesen Skill als Planungs-Gate für dieses Repository. `agents.md` bleibt die verbindliche Quelle. Bei Widersprüchen gilt `agents.md`; benenne die Abweichung kurz.
 
-## Source Of Truth
+## Pflichtablauf
 
-Treat the repository `agents.md` as the binding source of truth. If this skill and `agents.md` disagree, follow `agents.md` and mention the mismatch.
+1. Auftrag gemäß `agents.md` in Klasse 1 bis 5 einordnen.
+2. Bei möglichen Änderungen Branch und Working Tree prüfen.
+3. Dokumente sparsam lesen: zuerst auftragsnahe Dateien, Architektur- oder Implementierungsindizes nur bei Bedarf, große Dokumente nie automatisch vollständig.
+4. Betroffene Domänen, Schichten, Dateien, API, Datenmodell, Frontend-State, Tests, Journal/Logs und Abnahmekriterien identifizieren.
+5. Explizit entscheiden, ob Auth, Rollen, Permissions, Migrationen, Dumps, Fixtures, sichtbare Datumsformate und UI-Regeln betroffen sind.
+6. Annahmen und Blocker benennen statt Architektur-, Produkt- oder Scope-Entscheidungen still zu treffen.
+7. Den Plan proportional zur Auftragsklasse halten; Sicherheit, Rollen, Tests und Datenmigration nie auslassen, wenn sie relevant sind.
 
-Use this skill to make sure the right parts of `agents.md`, task files, and project references are considered before a plan is proposed or executed.
+## Referenzauswahl
 
-## Required Planning Flow
+Lies `references/plan-checklist.md` für Feature-, Fix-, Refactor-, Audit- oder Testplanung.
 
-1. Classify the request using `agents.md`.
-2. Check the current branch and dirty working tree when the request may lead to changes.
-3. Read only the repo sections needed for the request, expanding context when the first focused read is not enough.
-4. Identify affected domains, layers, files, APIs, data model, frontend state, tests, logs, and acceptance criteria.
-5. Explicitly decide whether auth, roles, permissions, migrations, dumps, fixtures, and UI rules are affected.
-6. State assumptions and blockers instead of silently making architecture, product, or scope decisions.
-7. Keep the plan proportional to the request class, but never omit security, tests, or data migration implications when they are relevant.
+Lies diese Referenzen nur bei Relevanz:
 
-## Reference Selection
+- `references/architecture.md` für Domänen-, Schichten-, Schema-, Shared-Type-, Dump-, Repository- oder Service-Entscheidungen.
+- `references/auth-roles.md` für API, Web-Workflows, Navigation, Admin, Permission oder geschützte Daten.
+- `references/testing.md` für Testpläne, Testmigration, Fixtures, E2E, Testlaufzeit oder Abnahmenachweise.
+- `references/git-workflow.md` für Branch, `save`, Merge, Push, Cleanup oder andere Git-Abläufe.
+- `references/ui-guidelines.md` für Frontend-Layout, Navigation, Komponenten, Menüs, Formulare, Dashboards oder Interaktionen.
+- `references/acceptance-criteria.md` vor finalem Planabschluss oder bevor eine Aufgabe als erledigt gemeldet wird.
 
-Always read `references/plan-checklist.md` for feature, fix, refactor, audit, or test planning.
+Es gibt in diesem Projekt keine verbindliche separate Designrichtlinien-Datei, solange `agents.md` oder eine konkrete Nutzeranweisung sie nicht ausdrücklich nennt. Verwende stattdessen `references/ui-guidelines.md` und die bestehenden UI-Muster.
 
-Read these references only when they are relevant:
+## Plan-Pflichtfragen
 
-- `references/architecture.md` for domain, layer, schema, shared type, dump, repository, or service decisions.
-- `references/auth-roles.md` for any API, web workflow, navigation, admin, permission, or protected data change.
-- `references/testing.md` for test plans, test migration, fixtures, E2E, test runtime, or acceptance evidence.
-- `references/git-workflow.md` for branch, save, savetowork, merge, push, or cleanup planning.
-- `references/ui-guidelines.md` for frontend layout, navigation, component, menu, or interaction planning.
-- `docs/design-richtlinien-visuell.md` relevant sections for any visual frontend, dashboard, page, component, form, layout, styling, or design-system planning.
-- `references/acceptance-criteria.md` before finalizing a plan or calling a task complete.
+Beantworte vor jedem Umsetzungsplan:
 
-## Plan Output Rules
+- Welche Domäne ist betroffen?
+- Welche Routen, Controller, Services, Repositories, Shared Types, Migrationen, Web-APIs, Hooks, Komponenten und Seiten sind betroffen?
+- Erfordert die Änderung Auth, Rollen, Permissions, UI-Gating oder Admin-Verhalten?
+- Berührt die Änderung UI-Visuals, Layout, Styling, Dashboards, Formulare oder Interaktionen?
+- Ist eine DB-Migration, Dump-Registry-Aktualisierung, Fixture- oder Seed-Änderung nötig?
+- Sind Query-Keys, Invalidierung, TanStack-Hooks oder E2E-Setup-Änderungen nötig?
+- Was bleibt bewusst unverändert?
+- Was kann kaputtgehen und wie wird das Risiko begrenzt?
 
-Use German for user-facing planning text in this repository.
+## Rollenprüfung
 
-For implementation plans, include:
+Bei jedem möglichen Rollen-, Auth-, Sichtbarkeits- oder Berechtigungsbezug muss der Plan ausdrücklich nennen:
 
-- What will change and why.
-- Which files, routes, services, components, tests, configs, and migrations are likely affected.
-- What remains intentionally unchanged.
-- Auth, role, permission, and UI impact when applicable.
-- Test strategy with concrete levels and meaningful negative cases.
-- Risks, damage potential, blockers, and acceptance criteria.
+- betroffene Rollen,
+- erlaubte Sichtbarkeit,
+- erlaubte Aktionen,
+- technische Durchsetzung im Frontend, Backend oder beiden Schichten,
+- direkte Aufrufe, Deep Links, API-Calls und Nebenpfade,
+- offene Unklarheiten oder Blocker.
 
-Do not write vague plans such as "add tests" or "update UI". Name the test types and the behavior they must prove.
+Wenn diese Angaben nicht eindeutig belegbar sind, keine Rechteänderung planen oder umsetzen.
 
-## UI Extension Point
+## Plan-Ausgabe
 
-Future component, menu, and layout rules belong in `references/ui-guidelines.md`. Binding visual rules belong in `docs/design-richtlinien-visuell.md`. Apply both during every frontend or product-surface plan, loading only the sections relevant to the concrete task.
+Schreibe Pläne auf Deutsch und im Format aus `agents.md`.
+
+Für Klasse 4 genügen:
+
+- Was ich plane
+- Betroffene Funktionen, Komponenten und Dateien
+- Erwartetes Ergebnis in der App
+
+Für Klasse 5 verwende:
+
+- Was ich plane
+- Betroffene Funktionen, Komponenten und Dateien
+- Auswirkungen der Änderung
+- Risiken und Schadenspotential
+- Erwartetes Ergebnis in der App
+
+Vermeide vage Aussagen wie "Tests hinzufügen" oder "UI aktualisieren". Benenne Testebenen, Negativfälle, sichtbare Wirkungen und Akzeptanzkriterien konkret.
+
+## Hard Stops
+
+Stoppe die Planung und dokumentiere den Blocker, wenn:
+
+- der Scope `agents.md` widerspricht,
+- eine benötigte Architektur-, Rollen- oder Produktentscheidung fehlt,
+- die Umsetzung nur durch nicht freigegebene Infrastruktur-, Dependency- oder Konfigurationsänderungen möglich wäre,
+- vorhandene Nutzeränderungen überschrieben oder entfernt würden,
+- erforderliche Dokumente, Schemas oder Projektkontexte fehlen und alle weiteren Schritte davon abhängen.

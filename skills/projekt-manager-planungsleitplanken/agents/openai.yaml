@@ -1,7 +1,7 @@
 interface:
   display_name: "Projekt Manager Planungsleitplanken"
-  short_description: "Planungsregeln für Projekt Manager"
-  default_prompt: "Use $projekt-manager-planungsleitplanken to plan a Projekt Manager repository change with architecture, auth, test, and acceptance guardrails."
+  short_description: "Planungsregeln für MuGPlan/Projekt Manager"
+  default_prompt: "Use $projekt-manager-planungsleitplanken to plan a repository change with architecture, auth, test, role, UI, and acceptance guardrails."
 
 policy:
   allow_implicit_invocation: true

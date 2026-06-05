@@ -1,0 +1,7 @@
+interface:
+  display_name: "MCP Code Auftrag"
+  short_description: "Orchestriert Projekt-Manager-MCP-Arbeitsaufträge"
+  default_prompt: "Use $mcp-code-auftrag to load the referenced Projekt Manager context and derive the work order."
+
+policy:
+  allow_implicit_invocation: true

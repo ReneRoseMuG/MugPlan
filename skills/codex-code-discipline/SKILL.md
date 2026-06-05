@@ -1,85 +1,79 @@
 ---
 name: codex-code-discipline
-description: Use at the start of every coding or implementation task before editing files. Provides discipline rules that prevent common Codex regressions: removing existing UI elements, breaking event wiring, reverting valid code because a specification is stale, or causing unintended side effects in adjacent components, styles, services, and callers. Apply especially when touching UI components, CSS or styling, event handlers, service methods, shared logic, or files near existing behavior.
+description: Use at the start of every coding or implementation task before editing files. Provides discipline rules that prevent common regressions: removing existing UI elements, breaking event wiring, reverting valid code because a specification is stale, or causing unintended side effects in adjacent components, styles, services, and callers. Apply especially when touching UI components, CSS or styling, event handlers, service methods, shared logic, API routes, permissions, tests, or files near existing behavior.
 ---
 
 # Coding Task Discipline
 
-Use this skill before writing code for an implementation task. These principles protect existing behavior while making the requested change.
+Use this skill before writing code for an implementation task. In this repository, `agents.md` remains binding. If this skill and `agents.md` disagree, follow `agents.md` and mention the mismatch.
 
-## Principle 1: Scan Before You Touch
+## Scan Before Editing
 
-Before modifying any file, read the relevant parts of the existing code.
+Read the relevant existing code before modifying a file.
 
-- Read the whole component or module you are entering and understand what it does today.
-- Identify every UI element currently present: buttons, inputs, icons, event handlers, conditional renders.
-- For CSS or style changes, identify which other components share the same class names, stylesheets, or parent selectors.
-- For service or logic changes, find which other callers depend on the function or method you are modifying.
+- Understand the component or module as it works today.
+- Identify existing UI elements, event handlers, conditional renders, dialogs, tabs, menus, and actions before changing UI code.
+- For CSS or style changes, identify shared class names, stylesheets, parent selectors, and affected component patterns.
+- For service, repository, route, hook, or shared logic changes, find the callers and their assumptions.
+- For permissions or visibility changes, identify current frontend and backend enforcement before editing.
 
-Build a complete model of the current state before changing it. A change you did not anticipate is a change you can break by accident.
+Start with a small, task-local analysis and expand only when the first pass is not enough.
 
-## Principle 2: Code Is the Source of Truth
+## Treat Current Code Carefully
 
-If a background specification and the existing code contradict each other, treat the code as the current truth unless the work order explicitly says otherwise.
+If background documentation and current code contradict each other, treat the code as the current behavior unless the work order explicitly says otherwise.
 
-- Do not revert working, intentional code just because a spec document describes something different.
-- If you notice a discrepancy between spec and code, flag it as an observation instead of silently "fixing" it.
-- If the work order explicitly asks you to align code with a specific spec requirement, the work order is authoritative for that task.
+- Do not revert working, intentional behavior only because a specification appears stale.
+- Report discrepancies as observations instead of silently "fixing" them.
+- If the request explicitly asks to align code with a specification, follow the request and document the impact.
 
-When in doubt, leave working code alone unless the requested change requires touching it.
+## Predict Impact
 
-## Principle 3: Predict the Impact Before You Start
+Before implementing, think through direct and indirect effects.
 
-Before implementing, think through what the change could affect.
+- Which files, callers, tests, API contracts, query keys, migrations, permissions, and UI states can be affected?
+- Could a style change cause overflow, overlap, stacking, or layout shifts elsewhere?
+- Could a signature or return-value change break existing callers?
+- Could a mutation need cache invalidation, server-side validation, or permission tests?
 
-- Which other files will be affected directly or indirectly?
-- Does this CSS change apply to a shared class, and could it shift layout, overflow, or z-index elsewhere?
-- Does this function change affect other callers or their assumptions about return values and side effects?
-- Is the component embedded inside other components that depend on its structure?
+Document the impact when it is more than a narrow local fix.
 
-Write the impact analysis down only when it is complex, but always do the thinking before the edit.
+## Keep Scope Minimal
 
-## Principle 4: Change Only What the Task Requires
+Change only what the task requires.
 
-Keep the scope to the task you were given.
+- Do not refactor adjacent code because it could be cleaner.
+- Do not rename, move, reformat, or reorganize unrelated code.
+- Do not add new patterns, framework changes, dependencies, endpoints, services, or files unless the task or approved plan requires them.
+- If a side change is necessary, state what it is and why it is required.
 
-- Do not refactor adjacent code that is merely cleaner another way.
-- Do not rename things that are not broken.
-- Do not reorganize files that are outside the request.
-- If a side change is necessary for the task to work, state what you are doing and why it is required.
+## Project-Specific Preservation Checklist
 
-Every out-of-scope change can break something unrequested and makes the diff harder to review.
+Before finishing, verify the items that match the touched area.
 
-## Principle 5: Preservation Checklist Before Finishing
+### React And TanStack Query
 
-After implementing, run this checklist before declaring the task done.
+- Server state still flows through existing query hooks; no new `useState` plus `useEffect` server-state fetch was introduced.
+- Mutations use the existing invalidation pattern for the area.
+- Components do not receive raw backend error objects when local helpers already normalize them.
+- Business rules remain outside React components unless the existing local pattern requires otherwise.
 
-### UI Changes
+### UI Components
 
-- Are all buttons, inputs, and interactive elements that existed before still present and functional?
-- Are all event handlers still correctly wired?
-- Does the layout still work without unintended overflow or overlapping components?
-- Does the style change stay contained to the intended scope?
+- Existing buttons, inputs, icons, dialogs, tabs, menus, and handlers are still present and functional.
+- New UI work is explicitly requested and follows existing components.
+- Visible dates use the project format `dd.MM.yy`.
+- Layout has no unintended overflow, overlap, or hidden controls.
 
-### Logic Or Service Changes
+### API, Roles, And Permissions
 
-- Do all existing callers of the changed function or method still work with the new signature or behavior?
-- Are all previously valid states still handled correctly?
-- Did you remove anything that another part of the system might still depend on?
+- New or changed routes, actions, buttons, lists, forms, and deep links have an explicit role and permission decision.
+- Frontend gating improves usability only; server-side enforcement remains mandatory for protected reads and all mutations.
+- No existing role restriction is widened without an explicit request.
 
-### General
+### Tests
 
-- Did you make any change outside the explicitly required scope? If yes, is it necessary and stated?
-- Did you remove or replace code that was intentional and might be missed?
+- Existing tests covering the touched behavior are updated when behavior changes.
+- Added tests prove observable behavior, include relevant negative cases, and respect the repository test strategy.
 
-If you find a problem during the checklist, fix it before finishing unless the work order explicitly permits leaving it open.
-
-## Summary
-
-| Principle | Rule in one line |
-|---|---|
-| Scan first | Read what exists before you change it. |
-| Code over spec | Working code beats an outdated background document. |
-| Predict impact | Think through side effects before editing. |
-| Minimal scope | Change only what the task requires. |
-| Preservation check | Verify existing behavior was not removed or broken. |
+If the checklist finds a regression, fix it before closing the task unless the user explicitly accepts the remaining risk.

@@ -16,7 +16,7 @@ Use this checklist before proposing or executing a plan in the Projekt Manager r
 - Is this a business entity, editable support object, admin configuration, or infrastructure?
 - Which API routes, services, repositories, shared types, migrations, web APIs, hooks, components, and pages are affected?
 - Does the change require auth, role, permission, UI gating, or admin behavior?
-- Does the change touch UI visuals, layout, styling, dashboards, forms, or interactions and therefore require relevant sections from `docs/design-richtlinien-visuell.md`?
+- Does the change touch UI visuals, layout, styling, dashboards, forms, or interactions and therefore require `references/ui-guidelines.md` and existing nearby UI patterns?
 - Does the change require a DB migration, dump registry update, truncate fixture update, or seed change?
 - Does the change require query keys, invalidation, TanStack hooks, or E2E setup changes?
 - What remains intentionally unchanged?

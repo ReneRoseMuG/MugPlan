@@ -1,0 +1,7 @@
+interface:
+  display_name: "Feature Editorial"
+  short_description: "Bereitet Features und Use Cases anwendernah auf"
+  default_prompt: "Use $feature-editorial to prepare the referenced feature or use cases from the user's perspective."
+
+policy:
+  allow_implicit_invocation: true

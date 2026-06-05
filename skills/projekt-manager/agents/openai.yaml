@@ -1,0 +1,7 @@
+interface:
+  display_name: "Projekt Manager"
+  short_description: "Basisregeln für Projekt-Manager-MCP-Interaktionen"
+  default_prompt: "Use $projekt-manager to work with the referenced Projekt Manager object or MCP context."
+
+policy:
+  allow_implicit_invocation: true

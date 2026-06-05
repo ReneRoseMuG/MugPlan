@@ -87,6 +87,10 @@ Die Skills ergänzen diese Arbeitsanweisung nur. Bei Widersprüchen gilt immer `
 
 Aktuell projektlokal verfügbar:
 
+- `skills/projekt-manager`
+- `skills/mcp-code-auftrag`
+- `skills/feature-editorial`
+- `skills/test-quality-review`
 - `skills/projekt-manager-planungsleitplanken`
 - `skills/projekt-manager-test-entwurfsleitplanken`
 - `skills/projekt-manager-redaktionelle-kommentare`
