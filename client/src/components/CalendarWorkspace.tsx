@@ -19,6 +19,12 @@ import {
   AppointmentMoveDialog,
   type AppointmentMoveDialogContext,
 } from "@/components/AppointmentMoveDialog";
+import {
+  AppointmentFinalConflictDialog,
+  normalizeAppointmentConflictEmployees,
+  type AppointmentConflictEmployee,
+  type AppointmentConflictEmployeePayload,
+} from "@/components/AppointmentFinalConflictDialog";
 import { WorkflowNoteSuggestionDialog } from "@/components/notes/WorkflowNoteDialogs";
 import { parseIsoWeekInput, sanitizeIsoWeekInput } from "@/lib/isoWeekInput";
 import { resolveKwJumpTarget } from "@/lib/kwJump";
@@ -69,9 +75,16 @@ type PendingCalendarMove = {
   moveContext: AppointmentMoveDialogContext;
 };
 
+type CalendarMoveFinalConflict = {
+  title: string;
+  description?: string;
+  conflictEmployees: AppointmentConflictEmployee[];
+};
+
 type CalendarMoveResponsePayload = {
   code?: string;
   message?: string;
+  conflictEmployees?: AppointmentConflictEmployeePayload[];
   mutationEvents?: AppointmentMutationEvent[];
 };
 
@@ -296,6 +309,7 @@ export function CalendarWorkspace({
   const [footerAction, setFooterAction] = useState<ReactNode | null>(null);
   const [selectedMoveAppointment, setSelectedMoveAppointment] = useState<CalendarMoveSelection | null>(null);
   const [pendingCalendarMove, setPendingCalendarMove] = useState<PendingCalendarMove | null>(null);
+  const [calendarMoveFinalConflict, setCalendarMoveFinalConflict] = useState<CalendarMoveFinalConflict | null>(null);
   const [isCalendarMoveSubmitting, setIsCalendarMoveSubmitting] = useState(false);
   const [noteSuggestionDialog, setNoteSuggestionDialog] = useState<{ templateTitle: string; appointmentId: number } | null>(null);
   const [kwInputValue, setKwInputValue] = useState(() =>
@@ -655,6 +669,16 @@ export function CalendarWorkspace({
       });
       const payload = await response.json().catch(() => null) as CalendarMoveResponsePayload | null;
       if (!response.ok) {
+        if (payload?.code === "EMPLOYEE_OVERLAP_CONFLICT") {
+          setCalendarMoveFinalConflict({
+            title: request.mode === "insert" ? "Termin einfügen nicht möglich" : "Termin verschieben nicht möglich",
+            description: payload.message
+              ? `${payload.message} Die Aktion wird nicht ausgeführt; der Termin bleibt unverändert.`
+              : "Ein oder mehrere Mitarbeiter sind im Zielzeitraum bereits anderweitig verplant. Die Aktion wird nicht ausgeführt; der Termin bleibt unverändert.",
+            conflictEmployees: normalizeAppointmentConflictEmployees(payload.conflictEmployees),
+          });
+          return;
+        }
         throw new Error(buildMoveErrorMessage(payload, "Termin konnte nicht verschoben werden."));
       }
 
@@ -1024,6 +1048,16 @@ export function CalendarWorkspace({
           isSubmitting={isCalendarMoveSubmitting}
           onConfirm={handleCalendarMoveConfirm}
           onClose={handleCalendarMoveSaveReviewCancel}
+        />
+      ) : null}
+      {calendarMoveFinalConflict ? (
+        <AppointmentFinalConflictDialog
+          open
+          title={calendarMoveFinalConflict.title}
+          description={calendarMoveFinalConflict.description}
+          conflictEmployees={calendarMoveFinalConflict.conflictEmployees}
+          onClose={() => setCalendarMoveFinalConflict(null)}
+          testId="dialog-calendar-move-final-conflict"
         />
       ) : null}
       <WorkflowNoteSuggestionDialog

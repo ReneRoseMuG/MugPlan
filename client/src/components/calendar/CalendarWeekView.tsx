@@ -59,7 +59,6 @@ import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { TourWeekNotesHoverPreview } from "@/components/TourWeekNotesHoverPreview";
 import { isLaneCollapsed, normalizeExpandedLaneId, resolveCollapsedLaneSelection } from "./weekLaneState";
-import { HoverPreview } from "@/components/ui/hover-preview";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ColorSelectButton } from "@/components/ui/color-select-button";
@@ -531,8 +530,6 @@ export function CalendarWeekView({
     currentEmployeeIds: number[];
     selectedIds: number[];
   } | null>(null);
-  const [openActionMenuKey, setOpenActionMenuKey] = useState<string | null>(null);
-
   useEffect(() => {
     if (!onFooterActionChange) return undefined;
 
@@ -2981,7 +2978,7 @@ export function CalendarWeekView({
                                     )}
                                     {canShowDayAction ? (
                                       canUseMoveTarget ? (
-                                        <DropdownMenu onOpenChange={(open) => setOpenActionMenuKey(open ? `${tourLane.laneKey}-${dayBucket.dateKey}` : null)}>
+                                        <DropdownMenu>
                                           <DropdownMenuTrigger asChild>
                                             <button
                                               type="button"

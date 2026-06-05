@@ -53,6 +53,11 @@ import {
   type AppointmentSaveReviewResult,
 } from "@/components/AppointmentSaveReviewDialog";
 import {
+  AppointmentFinalConflictDialog,
+  normalizeAppointmentConflictEmployees,
+  type AppointmentConflictEmployee,
+} from "@/components/AppointmentFinalConflictDialog";
+import {
   type ExtractionCustomerDraft,
   type ExtractionDialogData,
 } from "@/components/DocumentExtractionDialog";
@@ -222,6 +227,12 @@ type ExtractedProjectDraft =
 type AppointmentSaveReviewRequest = {
   resourceRequest: AppointmentSaveReviewResourceRequest | null;
   noteReview: AppointmentSaveReviewNoteReview | null;
+};
+
+type AppointmentFinalConflictState = {
+  title: string;
+  description?: string;
+  conflictEmployees: AppointmentConflictEmployee[];
 };
 
 type AppointmentFormSnapshotData = {
@@ -430,15 +441,6 @@ const getApiErrorMessage = (error: unknown, fallback: string): string => {
   return error.message || fallback;
 };
 
-const formatConflictEmployees = (conflictEmployees?: ApiConflictEmployee[]) => {
-  if (!Array.isArray(conflictEmployees) || conflictEmployees.length === 0) return null;
-  const names = conflictEmployees
-    .map((entry) => (typeof entry.fullName === "string" ? entry.fullName.trim() : ""))
-    .filter((name) => name.length > 0);
-  if (names.length === 0) return null;
-  return names.join(", ");
-};
-
 const isPastStartDate = (startDate: string) => {
   const startDateValue = new Date(`${startDate}T00:00:00`);
   const today = new Date();
@@ -586,6 +588,7 @@ export function AppointmentForm({
   const [closeConfirmOpen, setCloseConfirmOpen] = useState(false);
   const [appointmentWeekPreviewDialog, setAppointmentWeekPreviewDialog] = useState<AppointmentWeekPreviewDialogState | null>(null);
   const [appointmentSaveReviewRequest, setAppointmentSaveReviewRequest] = useState<AppointmentSaveReviewRequest | null>(null);
+  const [appointmentFinalConflict, setAppointmentFinalConflict] = useState<AppointmentFinalConflictState | null>(null);
   const [resolvedAppointmentWeekPlanKey, setResolvedAppointmentWeekPlanKey] = useState<string | null>(null);
   const [activeMainTab, setActiveMainTab] = useState<"details" | "journal">("details");
   const [isSaving, setIsSaving] = useState(false);
@@ -2634,18 +2637,16 @@ export function AppointmentForm({
       console.info(`${logPrefix} submit response`, { status: response.status });
       if (!response.ok) {
         if (parsed?.code === "EMPLOYEE_OVERLAP_CONFLICT") {
-          const conflictNames = formatConflictEmployees(parsed.conflictEmployees);
-          const conflictDetail = conflictNames
-            ? `Konflikt mit: ${conflictNames}.`
-            : "Mindestens ein Mitarbeiter ist in diesem Zeitraum bereits geplant.";
           console.info(`${logPrefix} submit blocked: EMPLOYEE_OVERLAP_CONFLICT`, {
             status: response.status,
             conflictEmployees: parsed.conflictEmployees?.length ?? 0,
           });
-          toast({
-            title: "Speichern nicht möglich",
-            description: `${parsed.message ?? "Termin überschneidet sich mit bestehenden Mitarbeiter-Terminen."} ${conflictDetail}`,
-            variant: "destructive",
+          setAppointmentFinalConflict({
+            title: isEditing ? "Termin speichern nicht möglich" : "Termin erstellen nicht möglich",
+            description: parsed.message
+              ? `${parsed.message} Die Aktion wird nicht ausgeführt; der Termin bleibt unverändert.`
+              : "Ein oder mehrere Mitarbeiter sind im Zielzeitraum bereits anderweitig verplant. Die Aktion wird nicht ausgeführt; der Termin bleibt unverändert.",
+            conflictEmployees: normalizeAppointmentConflictEmployees(parsed.conflictEmployees),
           });
           return;
         }
@@ -3337,6 +3338,15 @@ export function AppointmentForm({
         onCancel={handleAppointmentSaveReviewCancel}
         onConfirm={handleAppointmentSaveReviewConfirm}
       />
+      {appointmentFinalConflict ? (
+        <AppointmentFinalConflictDialog
+          open
+          title={appointmentFinalConflict.title}
+          description={appointmentFinalConflict.description}
+          conflictEmployees={appointmentFinalConflict.conflictEmployees}
+          onClose={() => setAppointmentFinalConflict(null)}
+        />
+      ) : null}
 
       <AlertDialog open={projectReklamationConfirmOpen} onOpenChange={setProjectReklamationConfirmOpen}>
         <AlertDialogContent data-testid="dialog-project-reklamation-appointment-confirm">
