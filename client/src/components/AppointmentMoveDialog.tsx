@@ -226,13 +226,15 @@ export function AppointmentMoveDialog({
                     {buildRemovalWarningText(moveContext)}
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2" data-testid="appointment-move-removed-employees">
+                <div className="flex flex-col gap-2" data-testid="appointment-move-removed-employees">
                   {removedItems.map((item) => (
                     <EmployeeInfoBadge
                       key={item.employeeId}
                       id={item.employeeId}
                       fullName={item.employeeName}
                       size="sm"
+                      fullWidth
+                      renderMode="detail"
                       showPreview={false}
                       testId={`badge-appointment-move-removed-${item.employeeId}`}
                     />

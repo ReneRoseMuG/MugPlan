@@ -55,7 +55,6 @@ import {
 } from "./CalendarWeekAppointmentPanel";
 import { CalendarWeekSpanningTile, WEEK_SPANNING_TILE_FOOTER_SAFE_SPACE_PX } from "./CalendarWeekSpanningTile";
 import { getWeekAppointmentFooterStyle } from "./weekAppointmentCardStyles";
-import { CalendarWeekTourLaneDayHoverPreview } from "./CalendarWeekTourLaneDayHoverPreview";
 import { CalendarWeekTourLaneHeaderBar } from "./CalendarWeekTourLaneHeaderBar";
 import { CalendarWeekNotesButton } from "./CalendarWeekNotesButton";
 import { TourWeekNotesHoverPreview } from "@/components/TourWeekNotesHoverPreview";
@@ -151,6 +150,7 @@ type AppointmentEmployeePreviewItem = {
 type WeekPlanningDialogOperation = {
   mode: "add" | "remove";
   tourId: number;
+  tourName?: string;
   isoYear: number;
   isoWeek: number;
   assignmentId?: number;
@@ -1478,6 +1478,7 @@ export function CalendarWeekView({
           buildWeekPlanningDialogOperation({
             mode: "add",
             tourId: params.tourId,
+            tourName: tours.find((t) => t.id === params.tourId)?.name,
             isoYear: preview.isoYear,
             isoWeek: preview.isoWeek,
             employeeId: preview.employee.employeeId,
@@ -1527,6 +1528,7 @@ export function CalendarWeekView({
         operations.push(buildWeekPlanningDialogOperation({
           mode: "add",
           tourId: params.tourId,
+          tourName: tours.find((t) => t.id === params.tourId)?.name,
           isoYear: preview.isoYear,
           isoWeek: preview.isoWeek,
           employeeId: preview.employee.employeeId,
@@ -1562,6 +1564,7 @@ export function CalendarWeekView({
           buildWeekPlanningDialogOperation({
             mode: "remove",
             tourId: params.tourId,
+            tourName: tours.find((t) => t.id === params.tourId)?.name,
             isoYear: preview.isoYear,
             isoWeek: preview.isoWeek,
             assignmentId: preview.assignmentId,
@@ -2911,7 +2914,7 @@ export function CalendarWeekView({
                             </div>
                           ) : null}
                           <div className="min-w-0">
-                        <div className="relative">
+                        <div className="relative group">
                           <CalendarWeekTourLaneHeaderBar
                             label={tourLane.label}
                             color={tourLane.color}
@@ -2941,15 +2944,6 @@ export function CalendarWeekView({
                             style={{ gridTemplateColumns: weekDayGridTemplate }}
                           >
                             {tourLane.dayBuckets.map((dayBucket, dayIdx) => {
-                              const dayPreview = tourLane.tourId == null
-                                ? null
-                                : weekLaneEmployeePreviewByTourDay.get(`${tourLane.tourId}-${dayBucket.dateKey}`) ?? {
-                                    date: dayBucket.dateKey,
-                                    weekStartDate: format(startOfWeek(parseISO(dayBucket.dateKey), { weekStartsOn: 1, locale: de }), "yyyy-MM-dd"),
-                                    tourId: tourLane.tourId,
-                                    weekEmployees: [],
-                                    additionalDayEmployees: [],
-                                  };
                               const canUseMoveTarget = selectedMoveAppointment != null
                                 && !isLaneBlocked
                                 && isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label)
@@ -2957,35 +2951,22 @@ export function CalendarWeekView({
                               const canShowDayAction = !isReaderCalendarReadOnly && !isAbsenceLane && dayBucket.dateKey >= berlinToday;
 
                               return (
-                                <HoverPreview
+                                <div
                                   key={`lane-add-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                  preview={openActionMenuKey === `${tourLane.laneKey}-${dayBucket.dateKey}` ? null : dayPreview ? (
-                                    <CalendarWeekTourLaneDayHoverPreview
-                                      weekEmployees={dayPreview.weekEmployees}
-                                      additionalDayEmployees={dayPreview.additionalDayEmployees}
-                                    />
-                                  ) : null}
-                                  side="bottom"
-                                  align="start"
-                                  maxWidth={320}
-                                  maxHeight={320}
-                                  className="z-[9999] w-[320px]"
-                                >
-                                  <div
-                                    className="pointer-events-auto relative grid h-full grid-cols-[16px_minmax(0,1fr)_16px] items-center gap-1 px-1"
-                                    data-testid={`week-tour-lane-day-hover-trigger-${tourLane.laneKey}-${dayBucket.dateKey}`}
-                                    onClick={() => {
-                                      if (!isCollapsedMode) return;
-                                      void handleLaneHeaderClick(tourLane.laneKey).catch((error) => {
-                                        console.error(`${logPrefix} lane day hover click failed`, error);
-                                        toast({
-                                          title: "Lane-Zustand konnte nicht gespeichert werden",
-                                          description: "Bitte erneut versuchen.",
-                                          variant: "destructive",
-                                        });
+                                  className="pointer-events-auto relative grid h-full grid-cols-[16px_minmax(0,1fr)_16px] items-center gap-1 px-1"
+                                  data-testid={`week-tour-lane-day-hover-trigger-${tourLane.laneKey}-${dayBucket.dateKey}`}
+                                  onClick={() => {
+                                    if (!isCollapsedMode) return;
+                                    void handleLaneHeaderClick(tourLane.laneKey).catch((error) => {
+                                      console.error(`${logPrefix} lane day hover click failed`, error);
+                                      toast({
+                                        title: "Lane-Zustand konnte nicht gespeichert werden",
+                                        description: "Bitte erneut versuchen.",
+                                        variant: "destructive",
                                       });
-                                    }}
-                                  >
+                                    });
+                                  }}
+                                >
                                     <span className="h-4 w-4" aria-hidden="true" />
                                     {dayAppointmentCounts[dayIdx] > 0 ? (
                                       <span
@@ -3005,7 +2986,7 @@ export function CalendarWeekView({
                                             <button
                                               type="button"
                                               onClick={(event) => event.stopPropagation()}
-                                              className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                              className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15 lane-header-plus"
                                               style={{ color: "#ffffff" }}
                                               data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                               title={`Aktionen am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
@@ -3058,7 +3039,7 @@ export function CalendarWeekView({
                                             });
                                             onNewAppointment?.(dayBucket.dateKey, { tourId: tourLane.tourId, scrollLeft, scrollTop });
                                           }}
-                                          className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15"
+                                          className="pointer-events-auto h-4 w-4 justify-self-end rounded text-[11px] font-bold leading-none hover:bg-white/15 lane-header-plus"
                                           style={{ color: "#ffffff" }}
                                           data-testid={`button-new-appointment-week-${dayBucket.dateKey}-lane-${tourLane.laneKey}`}
                                           title={`Neuer Termin am ${formatCalendarMoveDate(dayBucket.dateKey)}`}
@@ -3070,7 +3051,6 @@ export function CalendarWeekView({
                                       <span className="h-4 w-4 justify-self-end" aria-hidden="true" />
                                     )}
                                   </div>
-                                </HoverPreview>
                               );
                             })}
                           </div>
@@ -3111,8 +3091,7 @@ export function CalendarWeekView({
                                 aria-hidden
                               />
                             ) : null}
-                            {hasLaneContent
-                            && draggedAppointmentId !== null
+                            {draggedAppointmentId !== null
                             && !isReaderCalendarReadOnly
                             && !isLaneBlocked
                             && isRegularCalendarMoveTarget(tourLane.tourId, tourLane.label) ? (
@@ -3495,6 +3474,7 @@ export function CalendarWeekView({
               : `${activeWeekPlanningOperation.employeeName} wird für ${activeWeekPlanningOperation.weekLabel} aus der Planung entfernt.`
           }
           weekLabel={activeWeekPlanningOperation.weekLabel}
+          tourName={activeWeekPlanningOperation.tourName}
           employeeName={activeWeekPlanningOperation.employeeName}
           previewItems={activeWeekPlanningOperation.previewItems}
           selectedIds={activeWeekPlanningOperation.selectedIds}
@@ -3607,6 +3587,9 @@ export function CalendarWeekView({
         description={appointmentEmployeeDialog?.description ?? ""}
         previewItems={appointmentEmployeeDialog?.previewItems ?? []}
         selectedIds={appointmentEmployeeDialog?.selectedIds ?? []}
+        employeeId={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.employeeId : undefined}
+        employeeName={appointmentEmployeeDialog?.action === "remove" ? appointmentEmployeeDialog.previewItems[0]?.employeeName : undefined}
+        infoText={appointmentEmployeeDialog?.action === "remove" ? "wird vom Termin entfernt" : undefined}
         isSubmitting={assignAppointmentEmployeesMutation.isPending || removeAppointmentEmployeeMutation.isPending}
         onSelectedIdsChange={(ids) => {
           setAppointmentEmployeeDialog((current) => current ? { ...current, selectedIds: ids } : current);
@@ -3629,7 +3612,7 @@ export function CalendarWeekView({
           });
         }}
         onClose={() => setAppointmentEmployeeDialog(null)}
-        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Entfernen" : "Zuweisen"}
+        confirmLabel={appointmentEmployeeDialog?.action === "remove" ? "Entscheidung bestätigen" : "Zuweisen"}
       />
       <WorkflowNoteRemovalDialog
         open={noteRemovalDialog !== null}

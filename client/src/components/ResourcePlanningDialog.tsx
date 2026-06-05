@@ -60,6 +60,8 @@ interface ResourcePlanningDialogProps {
   onResolutionModeChange?: (mode: "additive" | "replace") => void;
   showResolutionMode?: boolean;
   resolutionNotice?: ReactNode;
+  tourName?: string;
+  infoText?: string;
   summary?: ReactNode;
   executionMessage?: ReactNode;
   error?: unknown;
@@ -89,7 +91,6 @@ function getActiveWeekOperationIndex(steps: DialogBaseStep[] | undefined): numbe
 function buildWeekTitle(props: ResourcePlanningDialogProps): string {
   const action = props.mode === "remove" ? "aus Wochenplanung entfernen" : "in Wochenplanung aufnehmen";
   const prefix = getWeekOperationCount(props) > 1 ? "Mehrere Mitarbeiter" : "Mitarbeiter";
-  if (props.weekLabel) return `${prefix} für ${props.weekLabel} ${action}`;
   if (props.title) return props.title;
   return `${prefix} ${action}`;
 }
@@ -228,23 +229,14 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       </Button>
     </div>
   );
-  const weekHeaderContent = variant === "week" && props.employeeName ? (
+  const weekHeaderContent = variant === "week" && weekOperationCount > 1 ? (
     <div className="flex min-w-0 items-center justify-center gap-2" data-testid="header-tour-employee-cascade-employee">
-      {weekOperationCount > 1 ? (
-        <span
-          className="inline-flex h-7 min-w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
-          data-testid="text-tour-employee-cascade-position"
-        >
-          {activeWeekOperationIndex + 1}/{weekOperationCount}
-        </span>
-      ) : null}
-      <EmployeeInfoBadge
-        id={props.employeeId}
-        fullName={props.employeeName}
-        size="sm"
-        showPreview={false}
-        testId="badge-tour-employee-cascade-employee"
-      />
+      <span
+        className="inline-flex h-7 min-w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700"
+        data-testid="text-tour-employee-cascade-position"
+      >
+        {activeWeekOperationIndex + 1}/{weekOperationCount}
+      </span>
     </div>
   ) : undefined;
   const primaryConfirmLabel = variant === "week"
@@ -284,6 +276,27 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
       testId={props.testId ?? "dialog-tour-employee-cascade"}
     >
       <div className="space-y-4" data-testid="dialog-resource-planning">
+        {(variant === "week" && props.employeeName) || (props.infoText && props.employeeName) ? (
+          <div className="rounded-md border bg-slate-50 p-4" data-testid="week-planning-employee-context">
+            <EmployeeInfoBadge
+              id={props.employeeId}
+              fullName={props.employeeName}
+              size="sm"
+              fullWidth
+              renderMode="detail"
+              showPreview={false}
+              testId="badge-tour-employee-cascade-employee"
+            />
+            <p className="mt-2 text-sm text-slate-600">
+              {props.infoText
+                ? props.infoText
+                : props.mode === "remove"
+                  ? `wird aus der Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName ? `Tour ${props.tourName}` : null, props.weekLabel].filter(Boolean).join(" / ")}` : ""} entfernt`
+                  : `wird in die Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName ? `Tour ${props.tourName}` : null, props.weekLabel].filter(Boolean).join(" / ")}` : ""} übernommen`}
+            </p>
+          </div>
+        ) : null}
+
         {props.executionMessage ? (
           <DialogBaseInlineMessage
             tone="info"
@@ -326,9 +339,9 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
           />
         ) : null}
 
-        {appointmentSelectionSummaryBlock}
+        {props.infoText ? null : appointmentSelectionSummaryBlock}
 
-        <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
+        {props.infoText ? null : <div className="max-h-[60vh] overflow-auto rounded-md border" data-testid="list-tour-employee-cascade-preview">
           {variant === "week" ? (
             weekPreviewItems.length === 0 ? (
               <div className="p-4 text-sm text-slate-500">
@@ -446,9 +459,9 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
               ))}
             </div>
           )}
-        </div>
+        </div>}
 
-        {selectionControls}
+        {variant === "appointment" && !props.infoText ? selectionControls : null}
 
         {props.isSubmitting ? (
           <div className="flex items-center gap-2 text-sm text-slate-600">

@@ -27,6 +27,8 @@ interface TourEmployeeCascadeDialogProps {
   resolutionMode?: "additive" | "replace";
   onResolutionModeChange?: (mode: "additive" | "replace") => void;
   showResolutionMode?: boolean;
+  tourName?: string;
+  infoText?: string;
   resolutionNotice?: ReactNode;
   summary?: ReactNode;
   executionMessage?: ReactNode;

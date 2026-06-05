@@ -203,9 +203,7 @@ export function DialogBaseShell({
           }
         }}
         onInteractOutside={(event) => {
-          if (closeDisabled) {
-            event.preventDefault();
-          }
+          event.preventDefault();
         }}
       >
         <DialogHeader className="border-b bg-slate-50 px-6 py-4">

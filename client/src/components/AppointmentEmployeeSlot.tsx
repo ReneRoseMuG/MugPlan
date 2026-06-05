@@ -112,7 +112,7 @@ export function AppointmentEmployeeSlot({
 
       <div className="space-y-2">
         <Label className="text-xs text-muted-foreground">Zugewiesen</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2">
           {assignedEmployees.length === 0 ? (
             <div className="text-sm text-muted-foreground italic">Keine Mitarbeiter zugewiesen</div>
           ) : (
@@ -125,6 +125,8 @@ export function AppointmentEmployeeSlot({
                 action={badgeActionLocked ? "none" : "remove"}
                 onRemove={() => onRemoveEmployee(employee.id)}
                 size="sm"
+                fullWidth
+                renderMode="detail"
                 testId={`badge-employee-${employee.id}`}
               />
             ))

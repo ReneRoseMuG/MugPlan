@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MuGPlan – Dialog-Mockups (Terminmutation & KW-Planung)</title>
+<style>
+  /* ——— Reset & Base ——— */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 32px 24px;
+    line-height: 1.5;
+  }
+  h1 { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+  h2 { font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .06em; margin: 40px 0 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+
+  /* ——— Legend ——— */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 32px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: #059669; }
+  .dot-orange { background: #d97706; }
+  .dot-red { background: #dc2626; }
+  .dot-blue { background: #2563eb; }
+
+  /* ——— Grid of dialog cards ——— */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 32px; }
+
+  /* ——— Dialog Wrapper Card ——— */
+  .dialog-card {
+    background: #fff; border-radius: 12px; border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+    display: flex; flex-direction: column;
+  }
+  .dialog-card-label {
+    padding: 8px 14px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: #475569;
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .dialog-card-label .tag {
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
+    letter-spacing: .04em;
+  }
+  .tag-base { background: #dbeafe; color: #1d4ed8; }        /* DialogBaseShell */
+  .tag-mutation { background: #ede9fe; color: #6d28d9; }     /* MutationPreviewDialogBase */
+  .tag-alert { background: #fce7f3; color: #9d174d; }        /* AlertDialog raw */
+  .tag-raw { background: #fef3c7; color: #92400e; }          /* Dialog raw */
+
+  /* ——— Dialog Chrome (simulated) ——— */
+  .dialog-chrome {
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    margin: 0 12px 12px; border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  /* ——— Dialog Header ——— */
+  .dialog-header {
+    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+    padding: 16px 24px;
+    display: grid; grid-template-columns: 2.75rem 1fr 2.75rem; gap: 12px;
+    align-items: end;
+    text-align: center;
+  }
+  .dialog-header.no-icon { display: block; text-align: left; }
+  .dialog-header.raw-header { background: #fff; border-bottom: none; padding: 20px 24px 0; display: block; text-align: left; }
+  .dialog-header.alert-header-plain { background: #fff; border-bottom: none; padding: 20px 24px 8px; display: block; text-align: left; }
+  .header-icon-frame {
+    width: 44px; height: 44px; border-radius: 8px;
+    background: #f1f5f9; border: 1px solid #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    color: #475569; font-size: 16px; flex-shrink: 0;
+  }
+  .header-placeholder { width: 44px; height: 44px; }
+  .dialog-title { font-size: 16px; font-weight: 600; color: #020617; line-height: 1.3; align-self: end; }
+  .dialog-title-sm { font-size: 15px; font-weight: 600; color: #020617; line-height: 1.3; }
+  .dialog-close-btn {
+    width: 44px; height: 44px; border-radius: 8px; border: 1px solid transparent;
+    display: flex; align-items: center; justify-content: center;
+    color: #64748b; cursor: pointer; background: transparent;
+    font-size: 16px; align-self: end;
+  }
+  .dialog-close-btn:hover { background: #f1f5f9; border-color: #e2e8f0; }
+
+  /* ——— Dialog Body ——— */
+  .dialog-body { padding: 20px 24px; overflow: auto; background: #fff; }
+  .dialog-body.raw-body { padding: 16px 24px 20px; }
+  .dialog-body.alert-body { padding: 10px 24px 20px; }
+
+  /* ——— Dialog Footer ——— */
+  .dialog-footer {
+    background: #f8fafc; border-top: 1px solid #e2e8f0;
+    padding: 16px 24px;
+    display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  }
+  .dialog-footer.has-back { justify-content: space-between; }
+  .dialog-footer.raw-footer { background: #fff; border-top: 1px solid #e2e8f0; }
+  .dialog-footer.alert-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; }
+
+  /* ——— Buttons ——— */
+  .btn {
+    padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid transparent; white-space: nowrap; line-height: 1.4;
+  }
+  .btn-default { background: #0f172a; color: #fff; border-color: #0f172a; }
+  .btn-default:hover { background: #1e293b; }
+  .btn-outline { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+  .btn-outline:hover { background: #f8fafc; }
+  .btn-ghost { background: transparent; color: #0f172a; border-color: transparent; }
+  .btn-ghost:hover { background: #f1f5f9; }
+  .btn-destructive { background: #dc2626; color: #fff; border-color: #dc2626; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-active-toggle { background: #0f172a; color: #fff; }
+  .btn-inactive-toggle { background: transparent; color: #64748b; }
+  .btn svg { width: 14px; height: 14px; }
+
+  /* ——— Stepper ——— */
+  .stepper { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .step {
+    display: flex; align-items: center; gap: 8px;
+    border-radius: 6px; border: 1px solid #e2e8f0;
+    background: rgba(0,0,0,.02); padding: 8px 12px; font-size: 13px;
+  }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+    border: 1px solid;
+  }
+  .step-active { border-color: #0f172a; background: #0f172a; color: #fff; }
+  .step-complete { border-color: #059669; background: #059669; color: #fff; }
+  .step-pending { border-color: rgba(100,116,139,.4); background: #fff; color: #64748b; }
+  .step-error { border-color: #dc2626; background: #dc2626; color: #fff; }
+  .step-label { font-size: 12px; color: #475569; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step-label.active { color: #0f172a; font-weight: 600; }
+
+  /* ——— Warning Box ——— */
+  .warn-box {
+    border-radius: 6px; border: 1px solid #fecaca; background: #fef2f2;
+    padding: 16px; display: flex; gap: 12px;
+  }
+  .warn-icon { color: #dc2626; font-size: 18px; flex-shrink: 0; margin-top: 2px; }
+  .warn-title { font-size: 13px; font-weight: 600; color: #7f1d1d; }
+  .warn-desc { font-size: 12px; color: #991b1b; margin-top: 4px; }
+
+  /* ——— Info Box ——— */
+  .info-box {
+    border-radius: 6px; border: 1px solid #bfdbfe; background: #eff6ff;
+    padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .info-box.warning { border-color: #fde68a; background: #fffbeb; }
+  .info-icon { color: #2563eb; font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .info-icon.warn { color: #d97706; }
+  .info-title { font-size: 13px; font-weight: 600; color: #1e40af; }
+  .info-title.warn { color: #92400e; }
+  .info-desc { font-size: 12px; color: #1e40af; margin-top: 2px; }
+  .info-desc.warn { color: #78350f; }
+
+  /* ——— Employee List ——— */
+  .employee-list { border-radius: 6px; border: 1px solid #e2e8f0; overflow: hidden; }
+  .group-header {
+    padding: 6px 16px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #64748b; background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+    position: sticky; top: 0;
+  }
+  .employee-row {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .employee-row:last-child { border-bottom: none; }
+  .checkbox-mock {
+    width: 16px; height: 16px; border-radius: 3px; border: 2px solid #cbd5e1;
+    flex-shrink: 0; margin-top: 2px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .checkbox-mock.checked { background: #0f172a; border-color: #0f172a; color: #fff; font-size: 10px; }
+  .employee-name { font-size: 13px; font-weight: 500; color: #0f172a; }
+  .employee-status { font-size: 12px; display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+  .status-conflict { color: #dc2626; }
+  .status-ok { color: #475569; }
+  .status-success { color: #059669; }
+  .status-warn { color: #d97706; }
+  .opacity-low { opacity: .6; }
+
+  /* ——— Summary Box ——— */
+  .summary-box {
+    border-radius: 6px; border: 1px solid #e2e8f0; background: rgba(0,0,0,.02);
+    padding: 12px; font-size: 13px; color: #475569;
+  }
+  .selection-summary {
+    border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; padding: 12px;
+    margin-bottom: 8px;
+  }
+  .selection-summary-label { font-size: 13px; font-weight: 500; color: #0f172a; }
+  .selection-summary-value { font-size: 12px; color: #475569; }
+
+  /* ——— Selection Controls ——— */
+  .selection-controls { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+  /* ——— Employee Context Box ——— */
+  .employee-context-box {
+    border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; padding: 16px;
+  }
+  .employee-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 6px 10px; font-size: 12px; color: #0f172a;
+  }
+  .employee-badge-avatar {
+    width: 28px; height: 28px; border-radius: 50%; background: #dbeafe;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #1d4ed8;
+  }
+  .employee-context-text { font-size: 13px; color: #475569; margin-top: 8px; }
+
+  /* ——— Resolve Mode ——— */
+  .resolve-mode-bar {
+    border-radius: 6px; border: 1px solid #e2e8f0; padding: 12px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .resolve-label { font-size: 13px; font-weight: 500; color: #334155; }
+
+  /* ——— Notes Section ——— */
+  .notes-section { border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px; background: #fafafa; }
+  .notes-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; margin-bottom: 8px; }
+  .note-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 10px 12px; margin-bottom: 6px;
+  }
+  .note-card:last-child { margin-bottom: 0; }
+  .note-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .note-body { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+  /* ——— Date Grid ——— */
+  .date-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 12px;
+  }
+  .date-label { font-size: 11px; color: #64748b; }
+  .date-value { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .date-meta { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+  /* ——— Position Badge ——— */
+  .position-badge {
+    display: inline-flex; height: 28px; min-width: 36px;
+    align-items: center; justify-content: center;
+    border-radius: 6px; border: 1px solid #e2e8f0; background: #fff;
+    padding: 0 8px; font-size: 11px; font-weight: 700; color: #334155;
+  }
+
+  /* ——— Alert Dialog specific ——— */
+  .alert-dialog-content {
+    border-radius: 8px; border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12); overflow: hidden;
+  }
+
+  /* ——— Inconsistency callouts ——— */
+  .callout {
+    border-left: 4px solid #f59e0b; background: #fffbeb;
+    padding: 10px 14px; margin-top: 10px; border-radius: 0 6px 6px 0;
+    font-size: 12px; color: #78350f;
+  }
+  .callout strong { color: #92400e; }
+
+  /* ——— Comparison Table ——— */
+  .comparison-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+  .comparison-table th {
+    text-align: left; padding: 8px 12px; background: #f8fafc;
+    border: 1px solid #e2e8f0; color: #475569; font-weight: 600; font-size: 11px; text-transform: uppercase;
+  }
+  .comparison-table td { padding: 8px 12px; border: 1px solid #e2e8f0; vertical-align: top; }
+  .comparison-table tr:nth-child(even) td { background: #fafafa; }
+  .diff-yes { color: #dc2626; font-weight: 600; }
+  .diff-ok { color: #059669; font-weight: 500; }
+
+  /* ——— Overlapping dialogs note ——— */
+  .variant-note {
+    font-size: 11px; font-weight: 600; color: #7c3aed;
+    background: #ede9fe; padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; display: inline-block;
+  }
+  .variant-note.red { background: #fce7f3; color: #9d174d; }
+  .variant-note.green { background: #d1fae5; color: #065f46; }
+  .variant-note.orange { background: #ffedd5; color: #9a3412; }
+
+  /* ——— Spacing helpers ——— */
+  .mt4 { margin-top: 4px; }
+  .mt8 { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mt16 { margin-top: 16px; }
+  .space-y > * + * { margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<h1>MuGPlan – Terminmutation &amp; KW-Planung: Dialog-Übersicht</h1>
+<p class="subtitle">Alle Dialoge die im Wochenkalender, Monatskalender und der Tourverwaltung erscheinen können — mit konkreten Button-Bezeichnungen, Struktur und erkannten Inkonsistenzen.</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot dot-blue"></div>DialogBaseShell</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6d28d9"></div>MutationPreviewDialogBase</div>
+  <div class="legend-item"><div class="legend-dot dot-red"></div>AlertDialog (roh)</div>
+  <div class="legend-item"><div class="legend-dot dot-orange"></div>Dialog (roh)</div>
+  <div class="legend-item">⚠ = Inkonsistenz im Vergleich zum Hauptmuster</div>
+</div>
+
+<!-- ================================================================ -->
+<h2>1 · Termin stornieren</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      AppointmentCancelConfirmDialog
+      <span class="tag tag-alert">AlertDialog roh ⚠</span>
+    </div>
+    <div class="dialog-chrome">
+      <div class="dialog-header alert-header-plain">
+        <div class="dialog-title-sm">Termin stornieren?</div>
+      </div>
+      <div class="dialog-body alert-body">
+        <p style="font-size:13px;color:#374151;line-height:1.6;">
+          Der Termin wird dauerhaft als storniert markiert. Alle Mitarbeiter werden vom Termin abgezogen und sind im Terminzeitraum zur erneuten Planung verfügbar. Der Auftragswert wird im System auf 0,- Euro gesetzt. Stornierte Termine können nicht reaktiviert werden.
+        </p>
+      </div>
+      <div class="dialog-footer alert-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn" style="background:#ef4444;color:#fff;border-color:#ef4444;">Termin stornieren</button>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Inkonsistenzen:</strong><br>
+      • Kein Header-Hintergrund (bg-slate-50) — alle anderen Dialoge haben ihn<br>
+      • Kein Icon-Frame links im Header<br>
+      • Kein X-Schließen-Button oben rechts (AlertDialog hat keinen)<br>
+      • Kein <code>border-b</code> unter dem Header<br>
+      • Verwendet <code>AlertDialogContent</code> ohne <code>gap-0 overflow-hidden p-0</code> Reset — hat noch Padding-Innenraum<br>
+      • Zerstörender Button ohne <code>border border-destructive-border</code> Klasse (nur inline style)
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>2 · Wochenplanung blockieren (ConfirmDialogBase)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      ConfirmDialogBase via TourManagement
+      <span class="tag tag-alert">AlertDialog (ConfirmDialogBase)</span>
+    </div>
+    <div class="dialog-chrome">
+      <div class="dialog-header">
+        <div class="header-icon-frame">🗺</div>
+        <div>
+          <div class="dialog-title">Wochenplanung blockieren?</div>
+        </div>
+        <div class="header-placeholder"></div>
+      </div>
+      <div class="dialog-body">
+        <p style="font-size:13px;color:#374151;line-height:1.6;">
+          KW 23 / 2026 wird blockiert. Danach sind Ressourcenänderungen in dieser Tour-KW gesperrt, bis sie wieder freigegeben wird.
+        </p>
+      </div>
+      <div class="dialog-footer alert-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Blockieren</button>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Hinweis:</strong> ConfirmDialogBase korrekt umgesetzt — Icon-Frame, Header bg-slate-50, Border, Footer bg-slate-50 vorhanden.<br>
+      • Kein X-Button (AlertDialog-verhalten korrekt für Bestätigungs-Dialoge)
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>3 · Termin speichern – AppointmentSaveReviewDialog (DialogBaseShell)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Variante A: Nur Ressourcen-Schritt
+      <span class="tag tag-base">DialogBaseShell</span>
+    </div>
+    <span class="variant-note">Schritt 1/1: Mitarbeiter</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header">
+        <div class="header-icon-frame">💾</div>
+        <div class="dialog-title">Termin speichern</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="info-box mt4">
+          <div class="info-icon">ℹ</div>
+          <div>
+            <div class="info-title">Wochenplanung vor dem Speichern prüfen</div>
+            <div class="info-desc">Prüfen Sie, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.</div>
+          </div>
+        </div>
+        <div class="mt12">
+          <div class="resolve-mode-bar">
+            <span class="resolve-label">Übernahme:</span>
+            <button class="btn btn-sm btn-default">Additiv</button>
+            <button class="btn btn-sm btn-outline">Ersetzen</button>
+          </div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Max Mustermann</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+          <div class="employee-row">
+            <div class="checkbox-mock"></div>
+            <div class="opacity-low">
+              <div class="employee-name">Anna Beispiel</div>
+              <div class="employee-status status-conflict">⚠ Überschneidung mit bestehendem Termin</div>
+            </div>
+          </div>
+          <div class="group-header">Bereits direkt am Termin</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Klaus Meier</div>
+              <div class="employee-status status-ok">Bereits im Termin</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Termin speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Variante B: Ressourcen + Notizen (2 Schritte)
+      <span class="tag tag-base">DialogBaseShell</span>
+    </div>
+    <span class="variant-note">Schritt 1/2: Mitarbeiter → Schritt 2/2: Notizen</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header">
+        <div class="header-icon-frame">💾</div>
+        <div class="dialog-title">Termin speichern</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-active">✓</div>
+            <span class="step-label active">Mitarbeiter</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-pending">2</div>
+            <span class="step-label">Notizen</span>
+          </div>
+        </div>
+        <div class="info-box">
+          <div class="info-icon">ℹ</div>
+          <div>
+            <div class="info-title">Wochenplanung vor dem Speichern prüfen</div>
+            <div class="info-desc">Prüfen Sie, welche Mitarbeiter übernommen oder wegen Konflikten entfernt werden sollen.</div>
+          </div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Max Mustermann</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer has-back">
+        <div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline">Abbrechen</button>
+          <button class="btn btn-default">Weiter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Variante B – Schritt 2: Notizen
+      <span class="tag tag-base">DialogBaseShell</span>
+    </div>
+    <span class="variant-note">Schritt 2/2: Notizen</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header">
+        <div class="header-icon-frame">💾</div>
+        <div class="dialog-title">Termin speichern</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-complete">✓</div>
+            <span class="step-label">Mitarbeiter</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-active">✓</div>
+            <span class="step-label active">Notizen</span>
+          </div>
+        </div>
+        <div class="info-box warning mt12">
+          <div class="info-icon warn">⚠</div>
+          <div>
+            <div class="info-title warn">Terminnotizen prüfen</div>
+            <div class="info-desc warn">Datum, Uhrzeit oder Tour wurden geändert. Terminnotizen können bezugsabhängige Informationen enthalten.</div>
+          </div>
+        </div>
+        <div class="date-grid mt12">
+          <div>
+            <div class="date-label">Bisher</div>
+            <div class="date-value">12.05.26, 08:00 Uhr</div>
+            <div class="date-meta">Tour: Tour 2</div>
+          </div>
+          <div>
+            <div class="date-label">Neu</div>
+            <div class="date-value">19.05.26, 08:00 Uhr</div>
+            <div class="date-meta">Tour: Tour 3</div>
+          </div>
+        </div>
+        <div class="notes-section mt12">
+          <div class="notes-label">Betroffene Terminnotizen</div>
+          <div class="note-card">
+            <div class="note-title">Anfahrt beachten</div>
+            <div class="note-body">Zufahrt über Hintertür. Termin findet am 12.05.26 statt.</div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer has-back">
+        <button class="btn btn-ghost">← Zurück</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline">Abbrechen</button>
+          <button class="btn btn-default">Termin speichern</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Variante C: Kein Mitarbeiter (Warnung)
+      <span class="tag tag-base">DialogBaseShell</span>
+    </div>
+    <span class="variant-note">Schritt 1/1: Ohne Mitarbeiter</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header">
+        <div class="header-icon-frame">💾</div>
+        <div class="dialog-title">Termin hat keine Mitarbeiter</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="info-box warning">
+          <div class="info-icon warn">⚠</div>
+          <div>
+            <div class="info-title warn">Der Termin hat keine geplanten Mitarbeiter.</div>
+            <div class="info-desc warn">Soll er trotzdem gespeichert werden?</div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Trotzdem speichern</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>4 · Termin verschieben / Tourwechsel – AppointmentMoveDialog (MutationPreviewDialogBase)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Schritt: Mitarbeiter-Warnung (isCalendarMove: true)
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Titel: "Termin verschieben" · Schritt 1/2</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header no-icon" style="display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;text-align:center;align-items:end;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Termin verschieben</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-active">●</div>
+            <span class="step-label active">Mitarbeiter</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-pending">2</div>
+            <span class="step-label">Notizen</span>
+          </div>
+        </div>
+        <div class="warn-box">
+          <div class="warn-icon">⚠</div>
+          <div>
+            <div class="warn-title">Achtung: Mitarbeiter werden abgezogen</div>
+            <div class="warn-desc mt4">Die folgenden Mitarbeiter werden beim Verschieben vom Termin entfernt, um Konflikte in Tour und Woche zu vermeiden:</div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px;">
+              <div class="employee-badge"><div class="employee-badge-avatar">MM</div> Max Mustermann</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Weiter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Schritt: Wochenplanung (isCalendarMove: true)
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Titel: "Termin verschieben" · Schritt 2/2 oder 1/1</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Termin verschieben</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-complete">✓</div>
+            <span class="step-label">Mitarbeiter</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-active">●</div>
+            <span class="step-label active">Wochenplanung</span>
+          </div>
+        </div>
+        <div class="employee-list">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Klaus Meier</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+          <div class="group-header">Weitere konfliktfreie Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Sabine Koch</div>
+              <div class="employee-status status-ok">Konfliktfrei zuweisbar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer has-back">
+        <button class="btn btn-ghost">← Zurück</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline">Abbrechen</button>
+          <button class="btn btn-default">Termin verschieben</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Tourwechsel (isCalendarMove: false)
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note orange">Titel: "Tourwechsel" · Confirm: "Tourwechsel bestätigen"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Tourwechsel</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="employee-list">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Max Mustermann</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Tourwechsel bestätigen</button>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Hinweis:</strong> Warnung-Text bei isCalendarMove: false → "Die folgenden Mitarbeiter werden bei der Neuzuweisung der Tour vom Termin entfernt, um Konflikte zu vermeiden:" (ohne "Tour und Woche")
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>5 · Mitarbeiter in Wochenplanung aufnehmen / entfernen (TourEmployeeCascadeDialog / ResourcePlanningDialog week-Variante)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Einzelschritt – Aufnehmen
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note green">Confirm: "Entscheidung bestätigen"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Mitarbeiter in Wochenplanung aufnehmen</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="employee-context-box">
+          <div class="employee-badge"><div class="employee-badge-avatar">MM</div> Max Mustermann</div>
+          <div class="employee-context-text">wird in die Wochenplanung von Tour 2 / KW 23 / 2026 übernommen</div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name" style="font-size:12px;font-weight:500;">14.06.26 – Müller GmbH / 4711 - Renovation</div>
+              <div class="employee-status status-ok">Wird zum Termin hinzugefügt</div>
+            </div>
+          </div>
+          <div class="employee-row">
+            <div class="checkbox-mock"></div>
+            <div class="opacity-low">
+              <div class="employee-name" style="font-size:12px;font-weight:500;">21.06.26 – Becker AG</div>
+              <div class="employee-status status-conflict">⚠ Überschneidung mit bestehendem Termin</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Entscheidung bestätigen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Mehrschritt – 2 Mitarbeiter – Schritt 1/2
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Confirm: "Nächster Mitarbeiter"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div>
+          <div class="dialog-title">Mehrere Mitarbeiter in Wochenplanung aufnehmen</div>
+          <div style="margin-top:6px;display:flex;justify-content:center;">
+            <span class="position-badge">1/2</span>
+          </div>
+        </div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-active">●</div>
+            <span class="step-label active">Max Mustermann</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-pending">2</div>
+            <span class="step-label">Anna Beispiel</span>
+          </div>
+        </div>
+        <div class="summary-box">2 Entscheidungsschritte in dieser Ressourcenplanung.</div>
+        <div class="employee-context-box mt12">
+          <div class="employee-badge"><div class="employee-badge-avatar">MM</div> Max Mustermann</div>
+          <div class="employee-context-text">wird in die Wochenplanung von Tour 2 / KW 23 / 2026 übernommen</div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name" style="font-size:12px;">14.06.26 – Müller GmbH</div>
+              <div class="employee-status status-ok">Wird zum Termin hinzugefügt</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Nächster Mitarbeiter</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Mehrschritt – letzter Schritt / Alle bestätigen
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Confirm: "Alle Entscheidungen bestätigen"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div>
+          <div class="dialog-title">Mehrere Mitarbeiter in Wochenplanung aufnehmen</div>
+          <div style="margin-top:6px;display:flex;justify-content:center;">
+            <span class="position-badge">2/2</span>
+          </div>
+        </div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-complete">✓</div>
+            <span class="step-label">Max Mustermann</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-active">●</div>
+            <span class="step-label active">Anna Beispiel</span>
+          </div>
+        </div>
+        <div class="summary-box">2 Entscheidungsschritte in dieser Ressourcenplanung.</div>
+        <div class="employee-context-box mt12">
+          <div class="employee-badge"><div class="employee-badge-avatar">AB</div> Anna Beispiel</div>
+          <div class="employee-context-text">wird in die Wochenplanung von Tour 2 / KW 23 / 2026 übernommen</div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name" style="font-size:12px;">14.06.26 – Becker AG</div>
+              <div class="employee-status status-ok">Wird zum Termin hinzugefügt</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Alle Entscheidungen bestätigen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Fehlerzustand – partial_error Phase
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note red">Confirm: "Offene Schritte erneut ausführen"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Mehrere Mitarbeiter in Wochenplanung aufnehmen</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="stepper">
+          <div class="step">
+            <div class="step-num step-complete">✓</div>
+            <span class="step-label">Max Mustermann</span>
+          </div>
+          <div class="step">
+            <div class="step-num step-error">✕</div>
+            <span class="step-label">Anna Beispiel</span>
+          </div>
+        </div>
+        <div class="info-box mt8">
+          <div class="info-icon">ℹ</div>
+          <div>
+            <div class="info-title">Status</div>
+            <div class="info-desc">Ein Schritt konnte nicht ausgeführt werden. Bereits erfolgreiche Schritte werden beim erneuten Ausführen übersprungen.</div>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Offene Schritte erneut ausführen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Einzelschritt – Entfernen
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Confirm: "Entscheidung bestätigen"</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Mitarbeiter aus Wochenplanung entfernen</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="employee-context-box">
+          <div class="employee-badge"><div class="employee-badge-avatar">MM</div> Max Mustermann</div>
+          <div class="employee-context-text">wird aus der Wochenplanung von Tour 2 / KW 23 / 2026 entfernt</div>
+        </div>
+        <div class="employee-list mt12">
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name" style="font-size:12px;">14.06.26 – Müller GmbH</div>
+              <div class="employee-status status-warn">⚠ Warnung: Termin wird unterbesetzt</div>
+            </div>
+          </div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name" style="font-size:12px;">21.06.26 – Becker AG</div>
+              <div class="employee-status status-ok">Wird vom Termin entfernt</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Entscheidung bestätigen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>6 · Mitarbeiter-Ressourcenplanung im Terminformular (ResourcePlanningDialog appointment-Variante)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Appointment-Variante – Auswahl übernehmen
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">Confirm: "Auswahl übernehmen" (default)</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Mitarbeiter zuweisen</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="selection-summary">
+          <div class="selection-summary-label">Mitarbeiterauswahl</div>
+          <div class="selection-summary-value">2 von 3 ausgewählt</div>
+        </div>
+        <div class="employee-list">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Max Mustermann</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+          <div class="group-header">Weitere konfliktfreie Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Sabine Koch</div>
+              <div class="employee-status status-ok">Konfliktfrei zuweisbar</div>
+            </div>
+          </div>
+          <div class="group-header">Bereits direkt am Termin</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Klaus Meier</div>
+              <div class="employee-status status-ok">Bereits im Termin</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Auswahl übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Mit Resolution-Mode Toggle
+      <span class="tag tag-mutation">MutationPreviewDialogBase</span>
+    </div>
+    <span class="variant-note">showResolutionMode: true</span>
+    <div class="dialog-chrome">
+      <div class="dialog-header" style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:16px 24px;display:grid;grid-template-columns:2.75rem 1fr 2.75rem;gap:12px;align-items:end;text-align:center;">
+        <div style="width:44px;height:44px;"></div>
+        <div class="dialog-title">Mitarbeiter zuweisen</div>
+        <button class="dialog-close-btn">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="info-box">
+          <div class="info-icon">ℹ</div>
+          <div>
+            <div class="info-title">Mitarbeiter werden ersetzt</div>
+            <div class="info-desc">Die bestehenden Terminmitarbeiter werden durch die Wochenplanung ersetzt.</div>
+          </div>
+        </div>
+        <div class="resolve-mode-bar mt12">
+          <span class="resolve-label">Übernahme:</span>
+          <button class="btn btn-sm btn-default">Additiv</button>
+          <button class="btn btn-sm btn-outline">Ersetzen</button>
+        </div>
+        <div class="selection-summary mt12">
+          <div class="selection-summary-label">Mitarbeiterauswahl</div>
+          <div class="selection-summary-value">1 von 2 ausgewählt</div>
+        </div>
+        <div class="employee-list">
+          <div class="group-header">Tour-KW-Mitarbeiter</div>
+          <div class="employee-row">
+            <div class="checkbox-mock checked">✓</div>
+            <div>
+              <div class="employee-name">Max Mustermann</div>
+              <div class="employee-status status-ok">Kann aus der Wochenplanung übernommen werden</div>
+            </div>
+          </div>
+        </div>
+        <div class="selection-controls mt8">
+          <button class="btn btn-sm btn-outline">Alle wählen</button>
+          <button class="btn btn-sm btn-outline">Alle abwählen</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-outline">Abbrechen</button>
+        <button class="btn btn-default">Auswahl übernehmen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>7 · KW-Notizen Dialog (CalendarWeekNotesDialog)</h2>
+<!-- ================================================================ -->
+<div class="grid">
+
+  <div class="dialog-card">
+    <div class="dialog-card-label">
+      Kalenderwochen-Notizen
+      <span class="tag tag-raw">Dialog roh ⚠</span>
+    </div>
+    <div class="dialog-chrome">
+      <div class="dialog-header raw-header">
+        <div class="dialog-title-sm">Notizen – KW 23 / 2026 – Tour 2</div>
+      </div>
+      <div class="dialog-body raw-body">
+        <div class="notes-section">
+          <div class="notes-label">Notizen</div>
+          <div class="note-card">
+            <div class="note-title">Standort prüfen</div>
+            <div class="note-body">Baustelle ab KW 24 nicht mehr zugänglich. Umleitungsbeschilderung beachten.</div>
+          </div>
+          <div class="note-card">
+            <div class="note-title">Material</div>
+            <div class="note-body">Lieferung erwartet bis 06.06.26.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Kein Footer -->
+    </div>
+    <div class="callout">
+      <strong>Inkonsistenzen:</strong><br>
+      • Verwendet rohes <code>&lt;Dialog&gt;</code> ohne <code>DialogBaseShell</code><br>
+      • Kein Header-Hintergrund (bg-slate-50), kein <code>border-b</code><br>
+      • Kein Icon-Frame, kein X-Schließen-Button im Header (X ist Teil des Radix-Primitiv, aber ohne Styling-Reset)<br>
+      • <code>max-h-[80vh]</code> statt <code>max-h-[calc(100vh-2rem)]</code><br>
+      • Kein <code>gap-0 overflow-hidden p-0</code> Reset auf DialogContent → Standard-Radix-Padding aktiv<br>
+      • Kein Footer (korrekt für Notizen-Dialog, aber Inkonsistenz in Header-Styling)
+    </div>
+  </div>
+
+</div>
+
+<!-- ================================================================ -->
+<h2>8 · Strukturvergleich aller Dialoge</h2>
+<!-- ================================================================ -->
+<div style="overflow:auto;">
+<table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Dialog</th>
+      <th>Basis-Komponente</th>
+      <th>Header bg-slate-50</th>
+      <th>Header border-b</th>
+      <th>Icon-Frame</th>
+      <th>X-Button</th>
+      <th>Footer bg-slate-50</th>
+      <th>Footer border-t</th>
+      <th>Stepper</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>AppointmentCancelConfirmDialog</td>
+      <td class="diff-yes">AlertDialog (roh) ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>ConfirmDialogBase (Woche blockieren)</td>
+      <td class="diff-ok">ConfirmDialogBase</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja (Route-Icon)</td>
+      <td class="diff-yes">Nein (korrekt)</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>AppointmentSaveReviewDialog</td>
+      <td class="diff-ok">DialogBaseShell</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja (Save-Icon)</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>Optional (≥2 Schritte)</td>
+    </tr>
+    <tr>
+      <td>AppointmentMoveDialog</td>
+      <td class="diff-ok">MutationPreviewDialogBase</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>Optional (≥2 Schritte)</td>
+    </tr>
+    <tr>
+      <td>TourEmployeeCascadeDialog (week)</td>
+      <td class="diff-ok">MutationPreviewDialogBase</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>Optional (≥2 Mitarbeiter)</td>
+    </tr>
+    <tr>
+      <td>ResourcePlanningDialog (appointment)</td>
+      <td class="diff-ok">MutationPreviewDialogBase</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td class="diff-ok">Ja</td>
+      <td>Optional</td>
+    </tr>
+    <tr>
+      <td>CalendarWeekNotesDialog</td>
+      <td class="diff-yes">Dialog (roh) ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td class="diff-yes">Nein ⚠</td>
+      <td>Ja (Radix-Standard)</td>
+      <td>– (kein Footer)</td>
+      <td>– (kein Footer)</td>
+      <td>–</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ================================================================ -->
+<h2>9 · Button-Bezeichnungen im Überblick</h2>
+<!-- ================================================================ -->
+<div style="overflow:auto;">
+<table class="comparison-table">
+  <thead>
+    <tr>
+      <th>Dialog / Zustand</th>
+      <th>Zurück-Button</th>
+      <th>Sekundär-Button</th>
+      <th>Primär-Button</th>
+      <th>Primär-Pending-Label</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>CancelConfirmDialog</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Termin stornieren</td>
+      <td>Termin stornieren...</td>
+    </tr>
+    <tr>
+      <td>ConfirmDialogBase (Blockieren)</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Blockieren</td>
+      <td>Blockieren...</td>
+    </tr>
+    <tr>
+      <td>SaveReview – Zwischenschritt</td>
+      <td>← Zurück</td>
+      <td>Abbrechen</td>
+      <td>Weiter</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>SaveReview – letzter Schritt (resources/notes)</td>
+      <td>← Zurück</td>
+      <td>Abbrechen</td>
+      <td>Termin speichern</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>SaveReview – letzter Schritt (employees)</td>
+      <td>← Zurück</td>
+      <td>Abbrechen</td>
+      <td>Trotzdem speichern</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>MoveDialog – Zwischenschritt</td>
+      <td>← Zurück (ab Schritt 2)</td>
+      <td>Abbrechen</td>
+      <td>Weiter</td>
+      <td>–</td>
+    </tr>
+    <tr>
+      <td>MoveDialog – letzter Schritt (isCalendarMove)</td>
+      <td>← Zurück</td>
+      <td>Abbrechen</td>
+      <td>Termin verschieben</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>MoveDialog – letzter Schritt (!isCalendarMove)</td>
+      <td>← Zurück</td>
+      <td>Abbrechen</td>
+      <td>Tourwechsel bestätigen</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CascadeDialog – 1 Mitarbeiter</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Entscheidung bestätigen</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CascadeDialog – n Mitarbeiter, nicht letzter</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td class="diff-yes">Nächster Mitarbeiter ⚠</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CascadeDialog – n Mitarbeiter, letzter</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Alle Entscheidungen bestätigen</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CascadeDialog – partial_error Phase</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Offene Schritte erneut ausführen</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CascadeDialog – Ausführen (WeekOverview)</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td class="diff-yes">Auswahl ausführen ⚠</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>ResourcePlanningDialog (appointment)</td>
+      <td>–</td>
+      <td>Abbrechen</td>
+      <td>Auswahl übernehmen</td>
+      <td>Speichern...</td>
+    </tr>
+    <tr>
+      <td>CalendarWeekNotesDialog</td>
+      <td colspan="4" style="color:#64748b;font-style:italic;">Kein Footer – nur Notizen-Bereich</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div style="margin-top:32px;padding:16px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;font-size:12px;color:#64748b;">
+  <strong>Generiert:</strong> 04.06.26 · Quelle: Komponenten-Analyse der aktuellen <code>work</code>-Branch ·
+  Vollständig aus dem Code extrahiert, kein Laufzeit-Rendering.
+</div>
+
+</body>
+</html>

@@ -62,6 +62,7 @@ type TourWeekStatusMutationResponse = {
 type WeekDialogOperation = {
   mode: "add" | "remove";
   tourId: number;
+  tourName?: string;
   isoYear: number;
   isoWeek: number;
   assignmentId?: number;
@@ -447,6 +448,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
       buildWeekDialogOperation({
         mode: "add",
         tourId: targetTourId,
+        tourName: tours.find((t) => t.id === targetTourId)?.name,
         isoYear: preview.isoYear,
         isoWeek: preview.isoWeek,
         weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
@@ -535,6 +537,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         operations.push(buildWeekDialogOperation({
           mode: "add",
           tourId: targetTourId,
+          tourName: tours.find((t) => t.id === targetTourId)?.name,
           isoYear: preview.isoYear,
           isoWeek: preview.isoWeek,
           weekLabel: buildWeekLabel(preview.isoYear, preview.isoWeek),
@@ -561,6 +564,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
         buildWeekDialogOperation({
           mode: "remove",
           tourId: targetTourId,
+          tourName: tours.find((t) => t.id === targetTourId)?.name,
           isoYear: preview.isoYear,
           isoWeek: preview.isoWeek,
           assignmentId: preview.assignmentId,
@@ -953,6 +957,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
                 : `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} aus der Planung entfernt.`
             }
             weekLabel={activeWeekDialogOperation.weekLabel}
+            tourName={activeWeekDialogOperation.tourName}
             previewItems={activeWeekDialogOperation.previewItems}
             selectedIds={activeWeekDialogOperation.selectedIds}
             steps={weekDialogSteps}
@@ -1172,6 +1177,7 @@ export function TourManagement({ onCancel, userRole, onOpenAppointment, initialT
               : `${activeWeekDialogOperation.employeeName} wird für ${activeWeekDialogOperation.weekLabel} aus der Planung entfernt.`
           }
           weekLabel={activeWeekDialogOperation.weekLabel}
+          tourName={activeWeekDialogOperation.tourName}
           previewItems={activeWeekDialogOperation.previewItems}
           selectedIds={activeWeekDialogOperation.selectedIds}
           steps={weekDialogSteps}
