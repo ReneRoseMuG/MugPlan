@@ -2,16 +2,14 @@
  * Test Scope:
  *
  * Abgedeckte Regeln:
- * - "Alle waehlen" uebernimmt nur eligible Termine.
- * - "Alle abwaehlen" leert die Auswahl vollstaendig.
- * - Die Sammelbuttons funktionieren in Add- und Remove-Modus gleich.
+ * - "Alle waehlen" und "Alle abwaehlen" werden im Wochenplanungsdialog nicht gerendert.
+ * - Die Auswahl bleibt auf explizite Termin-Checkboxen begrenzt.
  *
  * Fehlerfaelle:
- * - Ineligible Termine werden durch "Alle waehlen" mitselektiert.
- * - "Alle abwaehlen" laesst alte Auswahlreste stehen.
+ * - Sammelbuttons kehren in Add- oder Remove-Modus sichtbar zurueck.
  *
  * Ziel:
- * Die neuen Sammelbuttons des TourEmployeeCascadeDialog ueber ihre verdrahteten Handler absichern.
+ * Die entfernten Sammelbuttons des TourEmployeeCascadeDialog gegen Regressionen absichern.
  */
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -105,7 +103,7 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
     vi.stubGlobal("React", React);
   });
 
-  it("selects only eligible appointments in add mode", async () => {
+  it("does not render bulk selection buttons in add mode", async () => {
     const onSelectedAppointmentIdsChange = vi.fn();
     const { TourEmployeeCascadeDialog } = await loadDialog();
 
@@ -123,12 +121,12 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
       />,
     );
 
-    getButtonClickHandler("button-tour-cascade-select-all")?.();
-
-    expect(onSelectedAppointmentIdsChange).toHaveBeenCalledWith([51, 53]);
+    expect(getButtonClickHandler("button-tour-cascade-select-all")).toBeUndefined();
+    expect(getButtonClickHandler("button-tour-cascade-deselect-all")).toBeUndefined();
+    expect(onSelectedAppointmentIdsChange).not.toHaveBeenCalled();
   });
 
-  it("clears the complete selection in remove mode", async () => {
+  it("does not render bulk selection buttons in remove mode", async () => {
     const onSelectedAppointmentIdsChange = vi.fn();
     const { TourEmployeeCascadeDialog } = await loadDialog();
 
@@ -146,31 +144,8 @@ describe("FT04 TourEmployeeCascadeDialog selection buttons", () => {
       />,
     );
 
-    getButtonClickHandler("button-tour-cascade-deselect-all")?.();
-
-    expect(onSelectedAppointmentIdsChange).toHaveBeenCalledWith([]);
-  });
-
-  it("selects only eligible appointments in remove mode as well", async () => {
-    const onSelectedAppointmentIdsChange = vi.fn();
-    const { TourEmployeeCascadeDialog } = await loadDialog();
-
-    renderToStaticMarkup(
-      <TourEmployeeCascadeDialog
-        open
-        mode="remove"
-        employeeName="Mia Muster"
-        previewItems={previewItems}
-        selectedAppointmentIds={[]}
-        isSubmitting={false}
-        onSelectedAppointmentIdsChange={onSelectedAppointmentIdsChange}
-        onConfirm={() => undefined}
-        onClose={() => undefined}
-      />,
-    );
-
-    getButtonClickHandler("button-tour-cascade-select-all")?.();
-
-    expect(onSelectedAppointmentIdsChange).toHaveBeenCalledWith([51, 53]);
+    expect(getButtonClickHandler("button-tour-cascade-select-all")).toBeUndefined();
+    expect(getButtonClickHandler("button-tour-cascade-deselect-all")).toBeUndefined();
+    expect(onSelectedAppointmentIdsChange).not.toHaveBeenCalled();
   });
 });

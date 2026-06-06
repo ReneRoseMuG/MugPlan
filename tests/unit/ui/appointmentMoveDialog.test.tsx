@@ -41,6 +41,25 @@ vi.mock("@/components/ui/employee-info-badge", () => ({
   ),
 }));
 
+vi.mock("@/components/NotesSection", () => ({
+  NotesSection: ({
+    notes,
+    readOnly,
+    title,
+    maxVisibleNotes,
+  }: {
+    notes: Array<{ id: number; title: string }>;
+    readOnly?: boolean;
+    title?: string;
+    maxVisibleNotes?: number;
+  }) => (
+    <section data-testid="mock-notes-section" data-readonly={String(readOnly)} data-max-visible-notes={maxVisibleNotes}>
+      <h3>{title}</h3>
+      {notes.map((note) => <div key={note.id}>{note.title}</div>)}
+    </section>
+  ),
+}));
+
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   DialogContent: ({ children, ...props }: { children?: React.ReactNode; [key: string]: unknown }) => <section {...props}>{children}</section>,
@@ -62,6 +81,21 @@ function makePreview(overrides: Partial<AppointmentResourcePreviewResponse> = {}
     currentEmployeeIds: [],
     items: [],
     ...overrides,
+  };
+}
+
+function buildNote(id: number, title: string) {
+  return {
+    id,
+    title,
+    body: "",
+    cardColor: null,
+    cardColorLocked: false,
+    print: true,
+    isPinned: false,
+    version: 1,
+    createdAt: new Date("2099-01-01T00:00:00.000Z"),
+    updatedAt: new Date("2099-01-01T00:00:00.000Z"),
   };
 }
 
@@ -124,7 +158,7 @@ describe("AppointmentMoveDialog title computation – Formular-Tourwechsel (isCa
     expect(html).not.toContain("Terminverschiebung");
   });
 
-  it("shows 'Tourwechsel bestätigen' as confirm button label", () => {
+  it("uses the same confirm button label as the calendar move dialog", () => {
     const html = renderToStaticMarkup(
       <AppointmentMoveDialog
         {...defaultProps}
@@ -132,11 +166,11 @@ describe("AppointmentMoveDialog title computation – Formular-Tourwechsel (isCa
         moveContext={{ tourChanged: true, weekChanged: false, isCalendarMove: false }}
       />,
     );
-    expect(html).toContain("Tourwechsel bestätigen");
+    expect(html).toContain("Bestätigen");
     expect(html).not.toContain("Termin verschieben");
   });
 
-  it("shows Neuzuweisung wording in the warning text", () => {
+  it("uses the same warning text as the calendar move dialog", () => {
     const preview = makePreview({
       hasWeekPlan: false,
       currentEmployeeIds: [11],
@@ -144,15 +178,25 @@ describe("AppointmentMoveDialog title computation – Formular-Tourwechsel (isCa
         { employeeId: 11, employeeName: "Ana Alt", status: "will_remove", selectable: false, conflictReason: "WILL_REMOVE", source: "current" },
       ],
     });
-    const html = renderToStaticMarkup(
+    const tourChangeHtml = renderToStaticMarkup(
       <AppointmentMoveDialog
         {...defaultProps}
         preview={preview}
         moveContext={{ tourChanged: true, weekChanged: false, isCalendarMove: false }}
       />,
     );
-    expect(html).toContain("Neuzuweisung");
-    expect(html).not.toContain("beim Verschieben");
+    const calendarMoveHtml = renderToStaticMarkup(
+      <AppointmentMoveDialog
+        {...defaultProps}
+        preview={preview}
+        moveContext={{ tourChanged: true, weekChanged: false, isCalendarMove: true }}
+      />,
+    );
+    const warningText = "Die folgenden Mitarbeiter werden vom Termin entfernt, um Konflikte zu vermeiden:";
+    expect(tourChangeHtml).toContain(warningText);
+    expect(calendarMoveHtml).toContain(warningText);
+    expect(tourChangeHtml).not.toContain("Neuzuweisung");
+    expect(tourChangeHtml).not.toContain("beim Verschieben");
   });
 });
 
@@ -196,7 +240,7 @@ describe("AppointmentMoveDialog single-step: removal only (no week plan)", () =>
       />,
     );
     expect(html).not.toContain(">Weiter<");
-    expect(html).toContain("Termin verschieben");
+    expect(html).toContain("Bestätigen");
     expect(html).toContain("button-appointment-move-confirm");
   });
 
@@ -255,6 +299,45 @@ describe("AppointmentMoveDialog single-step: week plan only (no removals)", () =
     expect(html).toContain("button-appointment-move-confirm");
   });
 
+});
+
+describe("AppointmentMoveDialog notes step", () => {
+  beforeEach(() => {
+    buttonPropsLog.length = 0;
+    vi.stubGlobal("React", React);
+  });
+
+  it("limits affected appointment notes to two visible cards", () => {
+    const html = renderToStaticMarkup(
+      <AppointmentMoveDialog
+        {...defaultProps}
+        preview={null}
+        moveContext={{ tourChanged: true, weekChanged: false, isCalendarMove: true }}
+        noteReview={{
+          previousStartDate: "2099-01-02",
+          previousEndDate: null,
+          previousStartTime: "09:00:00",
+          nextStartDate: "2099-01-03",
+          nextEndDate: null,
+          nextStartTime: "10:00:00",
+          previousTourName: "Tour Alt",
+          nextTourName: "Tour Neu",
+          notes: [
+            buildNote(44, "Erste Terminnotiz"),
+            buildNote(45, "Zweite Terminnotiz"),
+            buildNote(46, "Dritte Terminnotiz"),
+          ],
+        }}
+      />,
+    );
+
+    expect(html).toContain("appointment-move-step-notes");
+    expect(html).toContain("Betroffene Terminnotizen");
+    expect(html).toContain('data-readonly="true"');
+    expect(html).toContain('data-max-visible-notes="2"');
+    expect(html).toContain("Erste Terminnotiz");
+    expect(html).toContain("Dritte Terminnotiz");
+  });
 });
 
 describe("AppointmentMoveDialog two-step: removals + week plan", () => {

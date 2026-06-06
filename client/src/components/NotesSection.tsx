@@ -37,6 +37,7 @@ interface NotesSectionProps {
   readOnly?: boolean;
   prefillDraft?: NoteInput | null;
   onPrefillDraftConsumed?: () => void;
+  maxVisibleNotes?: number;
 }
 
 function NoteCard({
@@ -44,20 +45,27 @@ function NoteCard({
   onEdit,
   onTogglePin,
   onDelete,
+  constrainedHeight = false,
 }: {
   note: Note;
   onEdit?: () => void;
   onTogglePin?: (isPinned: boolean) => void;
   onDelete?: () => void;
+  constrainedHeight?: boolean;
 }) {
   const noteTextColors = getReadableNoteTextColors(note.cardColor ?? fallbackCardColor);
   const iconButtonClassName = noteTextColors.isLight
     ? "text-white/80 hover:bg-white/15 hover:text-white"
     : "text-slate-400 hover:bg-slate-100 hover:text-slate-600";
+  const noteCardClassName = [
+    "relative rounded-lg border p-4 shadow-sm",
+    constrainedHeight ? "min-h-32" : null,
+    onEdit ? "cursor-pointer" : null,
+  ].filter(Boolean).join(" ");
 
   return (
     <div
-      className={`relative rounded-lg border p-4 shadow-sm ${onEdit ? "cursor-pointer" : ""}`}
+      className={noteCardClassName}
       style={{ backgroundColor: note.cardColor ?? fallbackCardColor }}
       data-testid={`note-card-${note.id}`}
       onDoubleClick={onEdit}
@@ -136,6 +144,7 @@ export function NotesSection({
   readOnly = false,
   prefillDraft = null,
   onPrefillDraftConsumed,
+  maxVisibleNotes,
 }: NotesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
@@ -239,6 +248,16 @@ export function NotesSection({
   };
 
   const isEditMode = editingNoteId !== null;
+  const normalizedMaxVisibleNotes = typeof maxVisibleNotes === "number" && Number.isFinite(maxVisibleNotes)
+    ? Math.max(1, Math.floor(maxVisibleNotes))
+    : null;
+  const noteListStyle = normalizedMaxVisibleNotes
+    ? { maxHeight: `${normalizedMaxVisibleNotes * 8 + Math.max(normalizedMaxVisibleNotes - 1, 0) * 0.5}rem` }
+    : undefined;
+  const noteListClassName = [
+    normalizedMaxVisibleNotes ? null : "max-h-[400px]",
+    "space-y-2 overflow-y-auto",
+  ].filter(Boolean).join(" ");
 
   return (
     <div className="sub-panel space-y-4">
@@ -254,7 +273,12 @@ export function NotesSection({
         ) : null}
       </div>
 
-      <div className="max-h-[400px] space-y-2 overflow-y-auto" data-testid="list-notes">
+      <div
+        className={noteListClassName}
+        style={noteListStyle}
+        data-testid="list-notes"
+        data-max-visible-notes={normalizedMaxVisibleNotes ?? undefined}
+      >
         {isLoading ? (
           <div className="space-y-2 animate-pulse">
             <div className="h-20 rounded-lg bg-slate-200 dark:bg-slate-700" />
@@ -266,6 +290,7 @@ export function NotesSection({
               <NoteCard
                 key={note.id}
                 note={note}
+                constrainedHeight={normalizedMaxVisibleNotes !== null}
                 onEdit={!readOnly && onUpdate ? () => handleOpenEdit(note) : undefined}
                 onTogglePin={!readOnly && onTogglePin ? (isPinned) => onTogglePin(note.id, isPinned) : undefined}
                 onDelete={!readOnly && onDelete ? () => handleDelete(note) : undefined}

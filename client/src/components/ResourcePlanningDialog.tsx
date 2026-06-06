@@ -289,10 +289,10 @@ export function ResourcePlanningDialog(props: ResourcePlanningDialogProps) {
             />
             <p className="mt-2 text-sm text-slate-600">
               {props.infoText
-                ? props.infoText
-                : props.mode === "remove"
-                  ? `wird aus der Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName ? `Tour ${props.tourName}` : null, props.weekLabel].filter(Boolean).join(" / ")}` : ""} entfernt`
-                  : `wird in die Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName ? `Tour ${props.tourName}` : null, props.weekLabel].filter(Boolean).join(" / ")}` : ""} übernommen`}
+                  ? props.infoText
+                  : props.mode === "remove"
+                  ? `wird aus der Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName, props.weekLabel].filter(Boolean).join(" / ")}` : ""} entfernt`
+                  : `wird in die Wochenplanung${props.tourName || props.weekLabel ? ` von ${[props.tourName, props.weekLabel].filter(Boolean).join(" / ")}` : ""} übernommen`}
             </p>
           </div>
         ) : null}

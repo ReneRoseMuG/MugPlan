@@ -60,15 +60,12 @@ function buildTitle(ctx: AppointmentMoveDialogContext): string {
   return "Termin verschieben";
 }
 
-function buildRemovalWarningText(ctx: AppointmentMoveDialogContext): string {
-  if (!ctx.isCalendarMove) {
-    return "Die folgenden Mitarbeiter werden bei der Neuzuweisung der Tour vom Termin entfernt, um Konflikte zu vermeiden:";
-  }
-  return "Die folgenden Mitarbeiter werden beim Verschieben vom Termin entfernt, um Konflikte in Tour und Woche zu vermeiden:";
+function buildRemovalWarningText(): string {
+  return "Die folgenden Mitarbeiter werden vom Termin entfernt, um Konflikte zu vermeiden:";
 }
 
-function buildConfirmLabel(ctx: AppointmentMoveDialogContext): string {
-  return ctx.isCalendarMove ? "Termin verschieben" : "Tourwechsel bestätigen";
+function buildConfirmLabel(): string {
+  return "Bestätigen";
 }
 
 function resolveItemStatusLabel(item: AppointmentResourcePreviewItem): string | null {
@@ -187,7 +184,7 @@ export function AppointmentMoveDialog({
         !isLastStep
           ? { label: "Weiter", onClick: () => setStepIndex((i) => i + 1) }
           : {
-              label: buildConfirmLabel(moveContext),
+              label: buildConfirmLabel(),
               pendingLabel: "Speichern...",
               onClick: onConfirm,
               isPending: isSubmitting,
@@ -223,7 +220,7 @@ export function AppointmentMoveDialog({
                     Achtung: Mitarbeiter werden abgezogen
                   </p>
                   <p className="mt-1 text-sm text-red-700">
-                    {buildRemovalWarningText(moveContext)}
+                    {buildRemovalWarningText()}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2" data-testid="appointment-move-removed-employees">
@@ -354,6 +351,7 @@ export function AppointmentMoveDialog({
               onAdd={() => undefined}
               title="Betroffene Terminnotizen"
               readOnly
+              maxVisibleNotes={2}
             />
           </section>
         ) : null}

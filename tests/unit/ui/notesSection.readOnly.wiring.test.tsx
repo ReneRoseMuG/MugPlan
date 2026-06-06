@@ -133,4 +133,25 @@ describe("FT13 UI: notes section readonly wiring", () => {
     expect(markup).not.toContain("button-pin-note-1");
     expect(markup).not.toContain("button-delete-note-1");
   });
+
+  it("limits the note list height to two visible notes when requested", () => {
+    const markup = renderToStaticMarkup(
+      <NotesSection
+        notes={[
+          ...notes,
+          { ...notes[0], id: 2, title: "Zweite Notiz" },
+          { ...notes[0], id: 3, title: "Dritte Notiz" },
+        ] as never}
+        readOnly
+        maxVisibleNotes={2}
+        onAdd={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain('data-testid="list-notes"');
+    expect(markup).toContain('data-max-visible-notes="2"');
+    expect(markup).toContain("overflow-y-auto");
+    expect(markup).toContain("max-height:16.5rem");
+    expect(markup).toContain("min-h-32");
+  });
 });

@@ -5,7 +5,7 @@
  * - Der Kaskadendialog zeigt fuer Hinzufuegen und Abziehen die neue KW-Titelcopy.
  * - Der Header zeigt das aktuelle Mitarbeiter-Badge und bei mehreren Mitarbeitern die Position.
  * - Vorschauzeilen zeigen Kurzdatum, Projektkontext, optionalen Kundenkontext und Konflikthinweise.
- * - Die Sammelaktionen "Alle waehlen" und "Alle abwaehlen" stehen unter der Terminliste und sind sichtbar verdrahtet.
+ * - Die Sammelaktionen "Alle waehlen" und "Alle abwaehlen" sind im Wochenplanungsdialog nicht sichtbar.
  *
  * Fehlerfaelle:
  * - Der Dialog faellt auf generische Copy zurueck.
@@ -99,7 +99,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter für KW 06 / 2099 in Wochenplanung aufnehmen");
+    expect(html).toContain("Mitarbeiter in Wochenplanung aufnehmen");
     expect(html).toContain('data-testid="badge-tour-employee-cascade-employee"');
     expect(html).toContain("Mia Muster");
     expect(html).not.toContain("Termine auswählen");
@@ -114,9 +114,8 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
     expect(html).toContain("Überschneidung mit bestehendem Termin");
     expect(html).toContain("button-tour-employee-cascade-confirm");
     expect(html).toContain("Entscheidung bestätigen");
-    expect(html).toContain("button-tour-cascade-select-all");
-    expect(html).toContain("button-tour-cascade-deselect-all");
-    expect(html.indexOf('data-testid="list-tour-employee-cascade-preview"')).toBeLessThan(html.indexOf("button-tour-cascade-select-all"));
+    expect(html).not.toContain("button-tour-cascade-select-all");
+    expect(html).not.toContain("button-tour-cascade-deselect-all");
     expect(html).not.toContain("input-tour-cascade-date-from");
     expect(html).not.toContain("input-tour-cascade-date-to");
   });
@@ -138,14 +137,54 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(html).toContain("Mitarbeiter für KW 06 / 2099 aus Wochenplanung entfernen");
+    expect(html).toContain("Mitarbeiter aus Wochenplanung entfernen");
     expect(html).toContain('data-testid="badge-tour-employee-cascade-employee"');
     expect(html).toContain("Mia Muster");
     expect(html).not.toContain("Mia Muster: Termine zum Abziehen auswählen");
     expect(html).not.toContain("1 Termin, 03.02.99 bis 05.02.99");
     expect(html).toContain("Entscheidung bestätigen");
-    expect(html).toContain("button-tour-cascade-select-all");
-    expect(html).toContain("button-tour-cascade-deselect-all");
+    expect(html).not.toContain("button-tour-cascade-select-all");
+    expect(html).not.toContain("button-tour-cascade-deselect-all");
+  });
+
+  it("uses the existing tour name without adding another tour prefix", () => {
+    const addHtml = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="add"
+        employeeId={7}
+        employeeName="Mia Muster"
+        tourName="Tour 1"
+        weekLabel="KW 06 / 2099"
+        previewItems={[basePreviewItems[0]]}
+        selectedAppointmentIds={[41]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+    const removeHtml = renderToStaticMarkup(
+      <TourEmployeeCascadeDialog
+        open
+        mode="remove"
+        employeeId={7}
+        employeeName="Mia Muster"
+        tourName="Tour 1"
+        weekLabel="KW 06 / 2099"
+        previewItems={[basePreviewItems[0]]}
+        selectedAppointmentIds={[41]}
+        isSubmitting={false}
+        onSelectedAppointmentIdsChange={() => undefined}
+        onConfirm={() => undefined}
+        onClose={() => undefined}
+      />,
+    );
+
+    expect(addHtml).toContain("wird in die Wochenplanung von Tour 1 / KW 06 / 2099 übernommen");
+    expect(removeHtml).toContain("wird aus der Wochenplanung von Tour 1 / KW 06 / 2099 entfernt");
+    expect(addHtml).not.toContain("Tour Tour 1");
+    expect(removeHtml).not.toContain("Tour Tour 1");
   });
 
   it("renders multi-employee progress and dedicated navigation labels", () => {
@@ -170,7 +209,7 @@ describe("FT04 TourEmployeeCascadeDialog visible behavior", () => {
       />,
     );
 
-    expect(firstStepHtml).toContain("Mehrere Mitarbeiter für KW 06 / 2099 in Wochenplanung aufnehmen");
+    expect(firstStepHtml).toContain("Mehrere Mitarbeiter in Wochenplanung aufnehmen");
     expect(firstStepHtml).toContain("1/3");
     expect(firstStepHtml).toContain("Nächster Mitarbeiter");
     expect(firstStepHtml).not.toContain("Alle Entscheidungen bestätigen");

@@ -348,6 +348,7 @@ export function AppointmentSaveReviewDialog({
               onAdd={() => undefined}
               title="Betroffene Terminnotizen"
               readOnly
+              maxVisibleNotes={2}
             />
           </section>
         ) : null}

@@ -55,8 +55,18 @@ vi.mock("@/components/ui/checkbox", () => ({
 }));
 
 vi.mock("@/components/NotesSection", () => ({
-  NotesSection: ({ notes, readOnly, title }: { notes: Array<{ id: number; title: string }>; readOnly?: boolean; title?: string }) => (
-    <section data-testid="mock-notes-section" data-readonly={String(readOnly)}>
+  NotesSection: ({
+    notes,
+    readOnly,
+    title,
+    maxVisibleNotes,
+  }: {
+    notes: Array<{ id: number; title: string }>;
+    readOnly?: boolean;
+    title?: string;
+    maxVisibleNotes?: number;
+  }) => (
+    <section data-testid="mock-notes-section" data-readonly={String(readOnly)} data-max-visible-notes={maxVisibleNotes}>
       <h3>{title}</h3>
       {notes.map((note) => <div key={note.id}>{note.title}</div>)}
     </section>
@@ -248,6 +258,7 @@ describe("AppointmentSaveReviewDialog", () => {
     expect(html).toContain("Terminnotiz mit altem Datum");
     expect(html).toContain("Betroffene Terminnotizen");
     expect(html).toContain("data-readonly=\"true\"");
+    expect(html).toContain("data-max-visible-notes=\"2\"");
     expect(html).toContain("Tour Alt");
     expect(html).toContain("Tour Neu");
     expect(html).toContain("02.01.99");
