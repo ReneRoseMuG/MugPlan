@@ -37,3 +37,4 @@ shared/backups
 !.claude/skills/**
 !.claude/project-context/
 !.claude/project-context/**
+graphify-out/
