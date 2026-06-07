@@ -32,5 +32,8 @@ shared/uploads
 shared/backups
 .codex
 .codex/.tasks
-.claude
-.claude/tasks
+.claude/**
+!.claude/skills/
+!.claude/skills/**
+!.claude/project-context/
+!.claude/project-context/**
