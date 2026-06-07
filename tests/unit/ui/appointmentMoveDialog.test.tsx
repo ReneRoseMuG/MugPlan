@@ -4,9 +4,10 @@
  * Abgedeckte Regeln:
  * - Titelberechnung: Kalender-Move → immer "Termin verschieben", Formular → "Tourwechsel"
  * - Warncontainer mit Mitarbeiter-Badges erscheint genau dann, wenn Mitarbeiter entfernt werden
- * - Einstufiger Dialog bei Entfernung ohne KW-Plan: kein Schritt-Indikator, kein "Weiter"-Button
+ * - Einstufiger Dialog bei Entfernung ohne KW-Plan (verbleibende Mitarbeiter > 0): kein "Weiter"-Button
  * - Mehrstufiger Dialog bei Entfernung + KW-Plan: Schritt 1 Warnung, Schritt 2 Auswahlliste
- * - Einstufiger Dialog bei KW-Plan ohne Entfernung: direkt Auswahlliste, kein Warncontainer
+ * - Einstufiger Dialog bei KW-Plan (Mitarbeiter gewählt): direkt Auswahlliste, kein Warncontainer
+ * - Schritt "Keine Mitarbeiter" erscheint, wenn resolvedEmployeeIds nach dem Move leer ist
  * - Schritt-Navigation: Weiter / Zurück
  *
  * Fehlerfälle:
@@ -106,6 +107,7 @@ function getButtonClickHandler(testId: string): (() => void) | undefined {
 
 const defaultProps = {
   open: true,
+  baseEmployeeIds: [] as number[],
   selectedIds: [] as number[],
   onSelectedIdsChange: () => undefined,
   isSubmitting: false,
@@ -162,7 +164,12 @@ describe("AppointmentMoveDialog title computation – Formular-Tourwechsel (isCa
     const html = renderToStaticMarkup(
       <AppointmentMoveDialog
         {...defaultProps}
-        preview={makePreview()}
+        preview={makePreview({
+          currentEmployeeIds: [99],
+          items: [
+            { employeeId: 99, employeeName: "Fest MA", status: "already_present", selectable: false, conflictReason: null, source: "current" },
+          ],
+        })}
         moveContext={{ tourChanged: true, weekChanged: false, isCalendarMove: false }}
       />,
     );
@@ -208,10 +215,11 @@ describe("AppointmentMoveDialog single-step: removal only (no week plan)", () =>
 
   const previewWithRemovals = makePreview({
     hasWeekPlan: false,
-    currentEmployeeIds: [11, 12],
+    currentEmployeeIds: [11, 12, 13],
     items: [
       { employeeId: 11, employeeName: "Anna Alt", status: "will_remove", selectable: false, conflictReason: "WILL_REMOVE", source: "current" },
       { employeeId: 12, employeeName: "Bert Alt", status: "will_remove", selectable: false, conflictReason: "WILL_REMOVE", source: "current" },
+      { employeeId: 13, employeeName: "Carl Bleibt", status: "already_present", selectable: false, conflictReason: null, source: "current" },
     ],
   });
 
@@ -314,10 +322,11 @@ describe("AppointmentMoveDialog single-step: week plan only (no removals)", () =
     expect(html).not.toContain("appointment-move-preview-checkbox-23");
   });
 
-  it("shows the confirm button directly without a 'Weiter' step", () => {
+  it("shows the confirm button directly without a 'Weiter' step when an employee is selected", () => {
     const html = renderToStaticMarkup(
       <AppointmentMoveDialog
         {...defaultProps}
+        selectedIds={[21]}
         preview={previewWithWeekPlan}
         moveContext={{ tourChanged: true, weekChanged: true, isCalendarMove: true }}
       />,

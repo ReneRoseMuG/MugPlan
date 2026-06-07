@@ -5,8 +5,9 @@
  * - Same-Tour-Same-Week wird nie geöffnet (Eltern-Logik)
  * - Titelberechnung: Kalender-Move → "Termin verschieben", Formular → "Tourwechsel"
  * - Warncontainer erscheint genau dann, wenn Mitarbeiter entfernt werden
- * - Schritte: Mitarbeiter (Warn) → Wochenplanung (Select) → Notizen, nur wenn jeweils relevant
+ * - Schritte: Mitarbeiter (Warn) → Wochenplanung (Select) → Notizen → Keine Mitarbeiter, nur wenn jeweils relevant
  * - Schritt-Navigation vorwärts und zurück
+ * - Ergibt der Move 0 Mitarbeiter, erscheint abschließend der Schritt "Keine Mitarbeiter" mit "Trotzdem verschieben"
  *
  * Ziel:
  * Klar verständlicher Dialog für Terminverschiebungen und Tourwechsel.
@@ -26,6 +27,7 @@ import { EmployeeInfoBadge } from "@/components/ui/employee-info-badge";
 import { NotesSection } from "@/components/NotesSection";
 import type { AppointmentResourcePreviewResponse, AppointmentResourcePreviewItem } from "@/lib/resource-planning";
 import {
+  buildEmployeeIdsFromResourcePreviewSelection,
   hasCurrentEmployeeRemovals,
   isBlockedWeekPlanOverlap,
   isCurrentEmployeeOverlapRemoval,
@@ -39,7 +41,7 @@ export type AppointmentMoveDialogContext = {
   isCalendarMove: boolean;
 };
 
-type MoveStep = "warn" | "select" | "notes";
+type MoveStep = "warn" | "select" | "notes" | "employees";
 type SelectionGroupKey = "week_plan_conflict" | "week_plan" | "available";
 type SelectionGroup = {
   key: SelectionGroupKey;
@@ -51,11 +53,13 @@ const stepTitles: Record<MoveStep, string> = {
   warn: "Mitarbeiter",
   select: "Wochenplanung",
   notes: "Notizen",
+  employees: "Keine Mitarbeiter",
 };
 
 interface AppointmentMoveDialogProps {
   open: boolean;
   preview: AppointmentResourcePreviewResponse | null;
+  baseEmployeeIds: number[];
   moveContext: AppointmentMoveDialogContext;
   selectedIds: number[];
   onSelectedIdsChange: (ids: number[]) => void;
@@ -135,6 +139,7 @@ function formatReviewRange(startDate: string, endDate: string | null, startTime:
 export function AppointmentMoveDialog({
   open,
   preview,
+  baseEmployeeIds,
   moveContext,
   selectedIds,
   onSelectedIdsChange,
@@ -173,13 +178,22 @@ export function AppointmentMoveDialog({
   const hasBlockedWeekPlanItems = weekPlanItems.some(isBlockedWeekPlanOverlap);
   const selectStepInfo = selectionInfoMessage(items);
 
+  const resolvedEmployeeIds = useMemo(
+    () => preview
+      ? buildEmployeeIdsFromResourcePreviewSelection(preview, selectedIds, "replace")
+      : baseEmployeeIds,
+    [preview, baseEmployeeIds, selectedIds],
+  );
+  const hasEmployeesStep = resolvedEmployeeIds.length === 0;
+
   const stepIds = useMemo<MoveStep[]>(() => {
     const ids: MoveStep[] = [];
     if (hasRemovals) ids.push("warn");
     if (hasWeekPlanStep) ids.push("select");
     if (hasNotesStep) ids.push("notes");
+    if (hasEmployeesStep) ids.push("employees");
     return ids;
-  }, [hasRemovals, hasWeekPlanStep, hasNotesStep]);
+  }, [hasRemovals, hasWeekPlanStep, hasNotesStep, hasEmployeesStep]);
 
   const currentStep = stepIds[stepIndex] ?? "warn";
   const isLastStep = stepIndex >= stepIds.length - 1;
@@ -234,7 +248,7 @@ export function AppointmentMoveDialog({
         !isLastStep
           ? { label: "Weiter", onClick: () => setStepIndex((i) => i + 1) }
           : {
-              label: buildConfirmLabel(),
+              label: currentStep === "employees" ? "Trotzdem verschieben" : buildConfirmLabel(),
               pendingLabel: "Speichern...",
               onClick: onConfirm,
               isPending: isSubmitting,
@@ -398,6 +412,16 @@ export function AppointmentMoveDialog({
               )}
             </div>
           </>
+        ) : null}
+
+        {currentStep === "employees" ? (
+          <section data-testid="appointment-move-step-no-employees">
+            <DialogBaseInlineMessage
+              tone="warning"
+              title="Der Termin hat keine geplanten Mitarbeiter."
+              description="Soll er trotzdem verschoben werden?"
+            />
+          </section>
         ) : null}
 
         {currentStep === "notes" && noteReview ? (

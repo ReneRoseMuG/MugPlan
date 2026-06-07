@@ -328,18 +328,14 @@ test("assigns a tour without week planning and removes existing employees after 
   await expect(page.getByTestId(`badge-employee-${sideEmployee.id}`)).toBeVisible();
   await page.getByTestId(`badge-tour-select-${tour.id}-add`).click();
 
-  const dialog = page.getByTestId("dialog-tour-employee-cascade");
+  const dialog = page.getByTestId("dialog-appointment-move");
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("Mitarbeiter werden ersetzt");
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${existingEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(dialog.getByTestId(`appointment-week-preview-status-${sideEmployee.id}`)).toContainText(
-    "Wird vom Termin entfernt",
-  );
-  await expect(dialog.getByTestId("button-appointment-week-mode-additive")).toHaveCount(0);
-  await expect(dialog.getByTestId("button-appointment-week-mode-replace")).toHaveCount(0);
-  await dialog.getByTestId("button-tour-employee-cascade-confirm").click();
+  await expect(dialog).toContainText("Achtung: Mitarbeiter werden abgezogen");
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${existingEmployee.id}`)).toBeVisible();
+  await expect(dialog.getByTestId(`badge-appointment-move-removed-${sideEmployee.id}`)).toBeVisible();
+  await dialog.getByRole("button", { name: "Weiter" }).click();
+  await expect(dialog).toContainText("Der Termin hat keine geplanten Mitarbeiter.");
+  await dialog.getByTestId("button-appointment-move-confirm").click();
   await expect(dialog).toHaveCount(0);
 
   await saveExistingAppointment(page, appointment.id);

@@ -3293,6 +3293,7 @@ export function AppointmentForm({
         <AppointmentMoveDialog
           open={appointmentWeekPreviewDialog.open}
           preview={appointmentWeekPreviewDialog.preview}
+          baseEmployeeIds={appointmentWeekPreviewDialog.preview.currentEmployeeIds}
           moveContext={appointmentWeekPreviewDialog.moveContext}
           selectedIds={appointmentWeekPreviewDialog.selectedIds}
           onSelectedIdsChange={(selectedIds) => {

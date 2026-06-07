@@ -625,7 +625,7 @@ export function CalendarWorkspace({
       return;
     }
 
-    if (!preview && !noteReview) {
+    if (!preview && !noteReview && baseEmployeeIds.length > 0) {
       await executeCalendarMove(request, targetEndDate, baseEmployeeIds);
       return;
     }
@@ -1039,6 +1039,7 @@ export function CalendarWorkspace({
         <AppointmentMoveDialog
           open
           preview={pendingCalendarMove.preview}
+          baseEmployeeIds={pendingCalendarMove.baseEmployeeIds}
           moveContext={pendingCalendarMove.moveContext}
           selectedIds={pendingCalendarMove.selectedIds}
           onSelectedIdsChange={(ids) => {

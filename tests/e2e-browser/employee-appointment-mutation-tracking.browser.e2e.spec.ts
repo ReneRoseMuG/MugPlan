@@ -4,7 +4,7 @@
  * Abgedeckte Regeln:
  * - Mitarbeiter können über den Wochenplan-Dialog selektiv von Tour-Terminen entfernt werden.
  * - Mitarbeiter können über den Wochenplan-Dialog selektiv zu Tour-Terminen hinzugefügt werden.
- * - Der Datumsfilter und die Sammelbuttons arbeiten im Wochenplan-Dialog auf der gefilterten Ansicht.
+ * - Der Datumsfilter arbeitet im Wochenplan-Dialog auf der gefilterten Ansicht.
  * - Mitarbeiter können weiterhin direkt über das Mitarbeiterformular von einzelnen Terminen entfernt werden.
  *
  * Fehlerfälle:
@@ -129,8 +129,8 @@ test("Test 1: Entfernen über Wochenplan-Dialog mit Datumsfilter", async ({ page
 
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${removeDialogAppointment.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${addDialogAppointment.id}`)).toBeVisible();
-  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`).click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`).click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${minusButtonAppointment.id}`).click();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`)).toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`)).not.toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${minusButtonAppointment.id}`)).not.toBeChecked();
@@ -175,8 +175,8 @@ test("Test 2: Hinzufügen über Wochenplan-Dialog mit Datumsfilter", async ({ pa
 
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${addDialogAppointment.id}`)).toBeVisible();
   await expect(dialog.getByTestId(`tour-employee-cascade-row-${removeDialogAppointment.id}`)).toBeVisible();
-  await dialog.getByTestId("button-tour-cascade-deselect-all").click();
-  await dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`).click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`).click();
+  await dialog.getByTestId(`tour-employee-cascade-checkbox-${minusButtonAppointment.id}`).click();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${addDialogAppointment.id}`)).toBeChecked();
   await expect(dialog.getByTestId(`tour-employee-cascade-checkbox-${removeDialogAppointment.id}`)).not.toBeChecked();
 
